@@ -1087,9 +1087,9 @@ jQuery(async () => {
     
     // 添加设置面板HTML
     const settingsHtml = await $.get(`${extensionFolderPath}/settings.html`);
-    $('#extensions_settings2').append(settingsHtml);
-    $('#expiry_info').html(displayExpiryInfo());
     
+    $('#expiry_info').html(displayExpiryInfo());
+    $('#extensions_settings').append(settingsHtml);
     // 添加华丽的CSS样式
     addAuthStyles();
     
