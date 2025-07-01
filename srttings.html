@@ -1,0 +1,135 @@
+<div id="amily2_chat_optimiser">
+    <!-- 华丽授权面板 -->
+    <div id="auth_panel">
+        <div class="auth-header">
+            <div class="auth-title">
+                <i class="fas fa-crown"></i> Amily2号优化助手 - 授权验证
+            </div>
+            <div class="auth-subtitle">
+                解锁完整功能 享受智能优化体验
+            </div>
+            <div id="expiry_info"></div>
+        </div>
+        
+        <div class="auth-code-input">
+            <input type="password" id="auth_input" placeholder="输入授权码...">
+            <button id="auth_submit">验证</button>
+        </div>
+        
+        <div class="auth-footer">
+            需要授权码？请联系开发者获取
+        </div>
+    </div>
+    
+    <!-- 插件功能面板 (激活后显示) -->
+    <div class="plugin-features">
+        <div class="inline-drawer">
+            <div class="inline-drawer-toggle inline-drawer-header">
+                <b><i class="fas fa-stars"></i> Amily2号优化助手</b>
+                <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+            </div>
+            <div class="inline-drawer-content">
+                <div class="amily2_settings_block flex-container">
+                    <input id="amily2_enabled" type="checkbox" />
+                    <label for="amily2_enabled">启动Amily2号</label>
+                </div>
+                
+                <hr>
+                
+                <!-- 新增弹窗控制区域 -->
+                <div class="amily2_settings_block">
+                    <div class="flex-container" style="align-items: center; justify-content: space-between">
+                        <div>
+                            <input id="amily2_show_toast" type="checkbox">
+                            <label for="amily2_show_toast">显示分析通知</label>
+                        </div>
+                        <button class="menu_button small" id="amily2_reset_toast">
+                            <i class="fas fa-undo"></i> 重置设置
+                        </button>
+                    </div>
+                    <p class="notes">控制优化完成后的通知显示</p>
+                </div>
+                
+                <hr>
+                
+                <h4><i class="fas fa-cog"></i> API 配置</h4>
+                
+                <div class="amily2_settings_block">
+                    <label for="amily2_api_url">API URL</label>
+                    <input id="amily2_api_url" type="text" class="text_pole" placeholder="http://localhost:3000/v1" />
+                    <small class="notes">OpenAI兼容接口地址</small>
+                </div>
+                
+                <div class="amily2_settings_block">
+                    <label for="amily2_api_key">API Key</label>
+                    <input id="amily2_api_key" type="password" class="text_pole" placeholder="sk-..." />
+                </div>
+                
+                <div class="amily2_settings_block">
+                    <div class="flex-container">
+                        <select id="amily2_model" class="text_pole" style="flex: 1">
+                            <option value="">-- 等待加载 --</option>
+                        </select>
+                        <button id="amily2_refresh_models" class="menu_button" style="white-space: nowrap">
+                            <i class="fas fa-sync-alt"></i> 刷新模型
+                        </button>
+                    </div>
+                    <div id="amily2_model_notes" class="notes"></div>
+                </div>
+                
+                <div class="amily2_settings_block">
+                    <label for="amily2_max_tokens">
+                        最大Token数: <span id="amily2_max_tokens_value"></span>
+                    </label>
+                    <input id="amily2_max_tokens" type="range" min="100" max="20000" step="50" />
+                </div>
+                
+                <div class="amily2_settings_block">
+                    <label for="amily2_temperature">
+                        思考活跃度: <span id="amily2_temperature_value"></span>
+                    </label>
+                    <input id="amily2_temperature" type="range" min="0" max="2" step="0.1" />
+                </div>
+                
+                <div class="amily2_settings_block">
+                    <label for="amily2_context_messages">
+                        上下文消息数量: <span id="amily2_context_messages_value"></span>
+                    </label>
+                    <input id="amily2_context_messages" type="range" min="0" max="10" step="1" />
+                    <small class="notes">提供更多上下文提升优化准确度</small>
+                </div>
+                
+                <hr>
+                
+                <h4><i class="fas fa-star"></i> 核心提示词配置</h4>
+                
+                <div class="amily2_settings_block">
+                    <label for="amily2_main_prompt">破限提示词</label>
+                    <textarea id="amily2_main_prompt" class="text_pole" rows="6"></textarea>
+                    <small class="notes">使用think标签包裹思考过程，content标签包裹优化结果</small>
+                </div>
+                
+                <div class="amily2_settings_block">
+                    <label for="amily2_system_prompt">预设提示词</label>
+                    <textarea id="amily2_system_prompt" class="text_pole" rows="8"></textarea>
+                    <small class="notes">默认系统提示词</small>
+                </div>
+                
+                <hr>
+                
+                <h4><i class="fas fa-tools"></i> 操作面板</h4>
+                
+                <div class="amily2_settings_block">
+                    <div class="flex-container">
+                        <button class="menu_button primary" id="amily2_test">
+                            <i class="fas fa-search"></i> 测试检查
+                        </button>
+                        <button class="menu_button accent" id="amily2_fix_now">
+                            <i class="fas fa-magic"></i> 立即修复
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

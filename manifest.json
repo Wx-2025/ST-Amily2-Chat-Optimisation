@@ -1,0 +1,13 @@
+{
+    "display_name": "Amily2号聊天优化助手",
+    "loading_order": 100,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "Wx-2025",
+    "version": "2.0.1",
+    "homePage": "https://github.com/Wx-2025/sillytavern.git",
+    "description": "自动检查和修复AI聊天回复中的重复内容和抢话问题",
+    "minSillyTavernVersion": "1.10.0"
+} 

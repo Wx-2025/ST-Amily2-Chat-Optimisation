@@ -1,0 +1,22 @@
+{
+  "name": "ST-Amily2-Chat-Optimisation",
+  "version": "2.0.1",
+  "description": "Amily2's advanced chat optimization engine",
+  "main": "index.js",
+  "scripts": {
+    "zip": "zip -r amily2-chat-optimiser.zip . -x '*.git*' -x 'node_modules/*' -x '*.zip' -x 'package*.json'"
+  },
+  "keywords": [
+    "sillytavern",
+    "extension",
+    "chat",
+    "ai",
+    "optimization"
+  ],
+  "author": "Wx-2025",  
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Wx-2025/sillytavern-chat-optimiser.git"  
+  }
+}
