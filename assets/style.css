@@ -1,0 +1,49 @@
+
+#amily2-drawer-content .flex-container {
+    width: 100%;
+    height: 100%;
+    display: flex; 
+    flex-direction: column; 
+}
+
+
+#amily2_chat_optimiser {
+    width: 100%; 
+    flex-grow: 1; 
+    overflow-y: auto; 
+
+
+    padding: 15px 20px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+=
+
+
+#auth_panel { background: linear-gradient(135deg, #1a237e, #4a148c); padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+#auth_panel .auth-header { text-align: center; margin-bottom: 20px; }
+#auth_panel .auth-title { font-size: 1.8rem; background: linear-gradient(to right, #ff9800, #ff5722); -webkit-background-clip: text; background-clip: text; color: transparent; }
+#auth_panel .auth-subtitle { color: #ccc; margin-top: 5px; }
+#auth_panel .auth-code-input { display: flex; margin-bottom: 15px; }
+#auth_panel #amily2_auth_code { flex: 1; padding: 10px; border-radius: 8px 0 0 8px; border: 1px solid #7e57c2; background: rgba(0,0,0,0.2); color: white; }
+#auth_panel #auth_submit { padding: 10px 15px; border: none; background: #7e57c2; color: white; border-radius: 0 8px 8px 0; cursor: pointer; }
+#auth_panel .auth-footer { text-align: center; font-size: 0.8em; color: #999; }
+.auth-status { padding: 10px; border-radius: 8px; text-align: center; margin-top: 15px; }
+.auth-status.valid { background-color: rgba(76, 175, 80, 0.2); border: 1px solid #4CAF50; }
+.auth-status.expired { background-color: rgba(244, 67, 54, 0.2); border: 1px solid #f44336; }
+h4 { border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; margin-top: 10px; margin-bottom: 15px; font-size: 1.1em; color: #eee; }
+h4 > i { margin-right: 8px; color: #7e57c2; }
+hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0; }
+.amily2_settings_block { display: flex; flex-direction: column; gap: 8px; }
+.amily2_settings_block label { font-weight: bold; color: #ddd; }
+.amily2_settings_block .notes { font-size: 0.85em; color: #aaa; opacity: 0.8; }
+.text_pole, select { width: 100%; box-sizing: border-box; }
+.radio-group { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; margin-top: 5px; }
+.radio-group label { font-weight: normal; }
+.prompt-container { display: flex; align-items: flex-start; gap: 10px; }
+.prompt-container textarea { flex: 1; }
+.prompt-container .small_button { height: auto; padding: 8px 12px; align-self: flex-start; white-space: nowrap; }
+.flex-container .primary { background-color: #2196F3; }
+.flex-container .accent { background-color: #FF5722; }
