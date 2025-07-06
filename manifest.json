@@ -1,9 +1,9 @@
 {
     "name": "Amily2号聊天优化助手",
     "display_name": "Amily2号聊天优化助手",
-    "version": "2.0.1",
+    "version": "1.0.1",
     "author": "Wx-2025",
-    "description": "一个拥有独立UI的智能优化引擎，能连接世界书，并具备即时总结与自动存档能力，是您的御用档案大师。",
+    "description": "一个拥有独立UI的智能优化引擎，连接世界书，并具备即时总结与自动存档能力，御用档案大师。",
     "minSillyTavernVersion": "1.10.0",
     "requires": [],
     "homePage": "https://github.com/Wx-2025/sillytavern-chat-optimiser.git",
