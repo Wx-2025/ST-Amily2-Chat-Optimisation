@@ -201,9 +201,15 @@ export async function checkAndFixWithAPI(latestMessage, previousMessages) {
 
     console.groupCollapsed("Amily2号-统一情报卷宗");
     let userCommand = "请根据以下信息，执行你的多任务指令：\n\n";
-    const history = previousMessages
+const lastUserMessage = (previousMessages.length > 0 && previousMessages[previousMessages.length - 1].is_user)
+        ? previousMessages[previousMessages.length - 1]
+        : null;
+    const historyMessages = lastUserMessage ? previousMessages.slice(0, -1) : previousMessages;
+
+    const history = historyMessages
       .map((m) => `${m.is_user ? "陛下" : "姐姐Amily"}: ${m.mes}`)
       .join("\n");
+
     if (history) {
       console.log("【历史对话】已装载");
       userCommand += `[近期对话历史]:\n${history}\n\n---\n`;
@@ -216,8 +222,14 @@ export async function checkAndFixWithAPI(latestMessage, previousMessages) {
       console.log("【指令】已附加破限提示词");
       userCommand += `[最高优先级指令]:\n${settings.mainPrompt}\n\n---\n`;
     }
-    userCommand += `[待处理的原文]:\n${textToOptimize}`;
 
+    let currentInteractionContent = "";
+    if (lastUserMessage) {
+        currentInteractionContent = `陛下: ${lastUserMessage.mes}\n姐姐Amily: ${textToOptimize}`;
+    } else {
+        currentInteractionContent = textToOptimize;
+    }
+    userCommand += `[待处理的原文]:\n${currentInteractionContent}`;
     let finalSystemPrompt = settings.systemPrompt;
     console.log("【规则】已附加系统提示词 (预设提示词)");
     if (settings.outputFormatPrompt && settings.outputFormatPrompt.trim()) {
