@@ -1,10 +1,51 @@
-
 import { extension_settings, getContext } from "/scripts/extensions.js";
 import { characters } from "/script.js";
 import { world_names } from "/scripts/world-info.js";
 import { extensionName } from "../utils/settings.js";
-import { getCombinedWorldbookContent, findLatestSummaryLore, DEDICATED_LOREBOOK_NAME, getChatIdentifier } from "./lore.js";
+import {
+  getCombinedWorldbookContent,
+  findLatestSummaryLore,
+  DEDICATED_LOREBOOK_NAME,
+  getChatIdentifier,
+} from "./lore.js";
 
+
+const UPDATE_CHECK_URL =
+  "https://raw.githubusercontent.com/Wx-2025/ST-Amily2-Chat-Optimisation/refs/heads/main/amily2_update_info.json";
+
+
+export async function checkForUpdates() {
+    if (!UPDATE_CHECK_URL || UPDATE_CHECK_URL.includes('YourUsername')) {
+        console.log('[Amily2号-外交部] 任务取消：陛下尚未配置情报来源URL。');
+        return null;
+    }
+
+
+    try {
+		console.log('[Amily2号-外交部] 已派遣使者前往云端获取最新情报...');
+        const response = await fetch(UPDATE_CHECK_URL, {
+            method: 'GET',
+            cache: 'no-store',
+            mode: 'cors'
+        });
+
+
+
+        if (!response.ok) {
+            throw new Error(`远方服务器响应异常，状态: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('[Amily2号-外交部] 情报已成功获取并解析。');
+        return data;
+
+    } catch (error) {
+        console.error('[Amily2号-外交部] 紧急军情：外交任务失败！', error);
+        return null;
+    }
+}
+
+// =========================================================================
 
 let isFetchingModels = false;
 
@@ -127,9 +168,8 @@ export async function fetchSupportedModels() {
   }
 }
 
-
 export async function checkAndFixWithAPI(latestMessage, previousMessages) {
-	  if (window.AMILY2_SYSTEM_PARALYZED === true) {
+  if (window.AMILY2_SYSTEM_PARALYZED === true) {
     console.error("[Amily2-制裁] 系统完整性已受损，所有外交活动被无限期中止。");
     return null;
   }
@@ -201,10 +241,14 @@ export async function checkAndFixWithAPI(latestMessage, previousMessages) {
 
     console.groupCollapsed("Amily2号-统一情报卷宗");
     let userCommand = "请根据以下信息，执行你的多任务指令：\n\n";
-const lastUserMessage = (previousMessages.length > 0 && previousMessages[previousMessages.length - 1].is_user)
+    const lastUserMessage =
+      previousMessages.length > 0 &&
+      previousMessages[previousMessages.length - 1].is_user
         ? previousMessages[previousMessages.length - 1]
         : null;
-    const historyMessages = lastUserMessage ? previousMessages.slice(0, -1) : previousMessages;
+    const historyMessages = lastUserMessage
+      ? previousMessages.slice(0, -1)
+      : previousMessages;
 
     const history = historyMessages
       .map((m) => `${m.is_user ? "陛下" : "姐姐Amily"}: ${m.mes}`)
@@ -225,9 +269,9 @@ const lastUserMessage = (previousMessages.length > 0 && previousMessages[previou
 
     let currentInteractionContent = "";
     if (lastUserMessage) {
-        currentInteractionContent = `陛下: ${lastUserMessage.mes}\n姐姐Amily: ${textToOptimize}`;
+      currentInteractionContent = `陛下: ${lastUserMessage.mes}\n姐姐Amily: ${textToOptimize}`;
     } else {
-        currentInteractionContent = textToOptimize;
+      currentInteractionContent = textToOptimize;
     }
     userCommand += `[待处理的原文]:\n${currentInteractionContent}`;
     let finalSystemPrompt = settings.systemPrompt;
@@ -244,7 +288,7 @@ const lastUserMessage = (previousMessages.length > 0 && previousMessages[previou
       console.log("【总结】已附加总结提示词");
       finalSystemPrompt += `\n\n[总结附加指令]:\n${settings.summarizationPrompt}`;
     }
-    console.groupEnd(); 
+    console.groupEnd();
 
     const messages = [
       { role: "system", content: finalSystemPrompt },
