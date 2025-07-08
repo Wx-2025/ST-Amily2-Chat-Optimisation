@@ -3,45 +3,36 @@ import { saveSettingsDebounced } from "/script.js";
 import { defaultSettings, extensionName } from "../utils/settings.js";
 import { pluginAuthStatus, activatePluginAuthorization } from "../utils/auth.js";
 import { fetchSupportedModels } from "../core/api.js";
-import { setAvailableModels, populateModelDropdown } from "./state.js";
+
+import { setAvailableModels, populateModelDropdown, getLatestUpdateInfo } from "./state.js";
 import { fixCommand, testReplyChecker } from "../core/commands.js";
 
-
 export function bindModalEvents() {
-  const container = $("#amily2-drawer-content");
+    const container = $("#amily2_drawer_content");
 
-  if (container.data("events-bound")) return;
+    if (container.data("events-bound")) return;
 
-
-  const snakeToCamel = (s) => s.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
-  const updateAndSaveSetting = (key, value) => {
-
-    console.log(`[Amily-谕令确认] 收到指令: 将 [${key}] 设置为 ->`, value);
-
-    if (!extension_settings[extensionName]) {
-      extension_settings[extensionName] = {};
-    }
-    extension_settings[extensionName] = {
-      ...extension_settings[extensionName],
-      [key]: value,
+    const snakeToCamel = (s) => s.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+    const updateAndSaveSetting = (key, value) => {
+        console.log(`[Amily-谕令确认] 收到指令: 将 [${key}] 设置为 ->`, value);
+        if (!extension_settings[extensionName]) {
+            extension_settings[extensionName] = {};
+        }
+        extension_settings[extensionName] = { ...extension_settings[extensionName], [key]: value };
+        saveSettingsDebounced();
+        console.log(`[Amily-谕令镌刻] [${key}] 的新状态已保存。`);
     };
-    saveSettingsDebounced();
 
-    console.log(`[Amily-谕令镌刻] [${key}] 的新状态已保存。`);
-  };
-
-
-  container
-    .off("click.amily2.auth")
-    .on("click.amily2.auth", "#auth_submit", async function () {
-      const authCode = $("#amily2_auth_code").val().trim();
-      if (authCode) {
-        await activatePluginAuthorization(authCode);
-      } else {
-        toastr.warning("请输入授权码", "Amily2号");
-      }
-    });
-
+    container
+        .off("click.amily2.auth")
+        .on("click.amily2.auth", "#auth_submit", async function () {
+            const authCode = $("#amily2_auth_code").val().trim();
+            if (authCode) {
+                await activatePluginAuthorization(authCode);
+            } else {
+                toastr.warning("请输入授权码", "Amily2号");
+            }
+        });
 
   container
     .off("click.amily2.actions")
@@ -83,6 +74,62 @@ export function bindModalEvents() {
         }
       },
     );
+	
+
+    container
+        .off("click.amily2.expand_editor")
+        .on("click.amily2.expand_editor", "#amily2_expand_editor", function (event) {
+            if (!pluginAuthStatus.authorized) return;
+            event.stopPropagation();
+            const selectedKey = $("#amily2_prompt_selector").val();
+            const currentContent = $("#amily2_unified_editor").val();
+            const dialogHtml = `
+                <dialog class="popup wide_dialogue_popup large_dialogue_popup">
+                  <div class="popup-body">
+                    <h4 style="margin-top:0; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">正在编辑: ${selectedKey}</h4>
+                    <div class="popup-content" style="height: 70vh;"><div class="height100p wide100p flex-container"><textarea id="amily2_dialog_editor" class="height100p wide100p maximized_textarea text_pole"></textarea></div></div>
+                    <div class="popup-controls"><div class="popup-button-ok menu_button menu_button_primary interactable">保存并关闭</div><div class="popup-button-cancel menu_button interactable" style="margin-left: 10px;">取消</div></div>
+                  </div>
+                </dialog>`;
+            const dialogElement = $(dialogHtml).appendTo('body');
+            const dialogTextarea = dialogElement.find('#amily2_dialog_editor');
+            dialogTextarea.val(currentContent);
+            const closeDialog = () => { dialogElement[0].close(); dialogElement.remove(); };
+            dialogElement.find('.popup-button-ok').on('click', () => {
+                const newContent = dialogTextarea.val();
+                $("#amily2_unified_editor").val(newContent);
+                updateAndSaveSetting(selectedKey, newContent);
+                toastr.success(`谕令 [${selectedKey}] 已镌刻！`, "Amily2号");
+                closeDialog();
+            });
+            dialogElement.find('.popup-button-cancel').on('click', closeDialog);
+            dialogElement[0].showModal();
+        });
+
+  container
+    .off("click.amily2.update")
+    .on("click.amily2.update", "#amily2_update_button", function() {
+        $("#amily2_update_indicator").hide();
+
+        const updateInfo = getLatestUpdateInfo();
+        if (updateInfo && updateInfo.changelog) {
+            const dialogHtml = `
+                <dialog class="popup wide_dialogue_popup">
+                  <div class="popup-body">
+                    <h3 style="margin-top:0; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;"><i class="fas fa-bell" style="color: #ff9800;"></i> 帝国最新情报</h3>
+                    <div class="popup-content" style="height: 60vh; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 5px; white-space: pre-wrap; font-family: 'Consolas', 'Monaco', monospace;">${updateInfo.changelog}</div>
+                    <div class="popup-controls"><div class="popup-button-ok menu_button menu_button_primary interactable">朕已阅</div></div>
+                  </div>
+                </dialog>`;
+            const dialogElement = $(dialogHtml).appendTo('body');
+            const closeDialog = () => { dialogElement[0].close(); dialogElement.remove(); };
+            dialogElement.find('.popup-button-ok').on('click', closeDialog);
+            dialogElement[0].showModal();
+
+        } else {
+            toastr.info("未能获取到云端情报，请稍后再试。", "情报部回报");
+        }
+    });
 
   container
     .off("change.amily2.checkbox")
