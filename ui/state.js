@@ -2,8 +2,28 @@ import { extension_settings } from "/scripts/extensions.js";
 import { extensionName } from "../utils/settings.js";
 import { pluginAuthStatus } from "../utils/auth.js";
 
-let availableModels = []; 
 
+
+let availableModels = [];
+let latestUpdateInfo = null;
+let newVersionAvailable = false;
+
+export function setUpdateInfo(isNew, updateInfo) {
+    newVersionAvailable = isNew;
+    latestUpdateInfo = updateInfo;
+}
+
+
+export function applyUpdateIndicator() {
+    if (newVersionAvailable) {
+        $('#amily2_update_indicator').show();
+    } else {
+    }
+}
+
+export function getLatestUpdateInfo() {
+    return latestUpdateInfo;
+}
 
 export function setAvailableModels(models) {
   availableModels = models;
@@ -53,9 +73,8 @@ export function updateUI() {
     $(".plugin-features").show();
 
     const settings = extension_settings[extensionName];
-    if (!settings) return; // 安全检查
+    if (!settings) return; 
 
-    // --- 通用设置 ---
     $("#amily2_enabled").prop("checked", settings.enabled);
     $("#amily2_api_url").val(settings.apiUrl);
     $("#amily2_api_key").val(settings.apiKey);
