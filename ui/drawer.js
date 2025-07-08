@@ -1,4 +1,3 @@
-
 import { getSlideToggleOptions } from '/script.js';
 import { slideToggle } from '/lib.js';
 import { extension_settings } from "/scripts/extensions.js";
@@ -12,6 +11,7 @@ import {
   updateUI,
   setAvailableModels,
   populateModelDropdown,
+  applyUpdateIndicator,
 } from "./state.js";
 import { bindModalEvents } from "./bindings.js";
 import { fetchSupportedModels } from "../core/api.js";
@@ -71,7 +71,6 @@ const amily2DrawerHtml = `
               <i class="drawer-icon fa-solid fa-magic fa-fw"></i>
           </div>
           <div id="amily2_drawer_content" class="drawer-content closedDrawer" style="display: none;">
-              <!-- 王座将在此处动态加载 -->
           </div>
       </div>
   `;
@@ -128,6 +127,7 @@ $(document).on(
         bindModalEvents();
         contentPanel.data("initialized", true);
         console.log("[Amily2号-建设部] 宫殿内室已根据最高指令激活。");
+		    applyUpdateIndicator();
       } catch (error) {
         console.error("[Amily2号-建设部] 加载宫殿内部HTML失败:", error);
         contentPanel.html(
