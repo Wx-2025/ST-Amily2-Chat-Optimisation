@@ -47,3 +47,15 @@ hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 20px 0; 
 .prompt-container .small_button { height: auto; padding: 8px 12px; align-self: flex-start; white-space: nowrap; }
 .flex-container .primary { background-color: #2196F3; }
 .flex-container .accent { background-color: #FF5722; }
+
+#amily2_drawer_icon.closedIcon {
+    opacity: 0.5;
+}
+
+#amily2_drawer_icon.openIcon {
+    opacity: 1;
+}
+
+#amily2_drawer_icon.interactable:hover {
+    opacity: 1;
+}
