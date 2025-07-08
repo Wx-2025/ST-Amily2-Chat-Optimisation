@@ -1,6 +1,5 @@
-
 import { extension_settings } from "/scripts/extensions.js";
-import { saveSettings } from "./settings.js";
+import { saveSettings, extensionName } from "./settings.js";
 import { updateUI } from "../ui/state.js";
 
 
