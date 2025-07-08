@@ -63,10 +63,10 @@ async function loadSettings() {
 }
 
 export function createDrawer() {
-  if ($("#amily2-main-drawer").length > 0) return;
+if ($("#amily2_main_drawer").length > 0) return;
 
 const amily2DrawerHtml = `
-      <div id="amily2-main-drawer" class="drawer">
+      <div id="amily2_main_drawer" class="drawer">
           <div id="amily2_drawer_icon" class="drawer-toggle drawer-header closedIcon interactable" title="Amily2号优化助手" tabindex="0">
               <i class="drawer-icon fa-solid fa-magic fa-fw"></i>
           </div>
