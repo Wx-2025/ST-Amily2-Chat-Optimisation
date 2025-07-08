@@ -1,4 +1,3 @@
-
 <div class="flex-container">
     <div id="amily2_chat_optimiser">
 
@@ -14,145 +13,181 @@
             <div class="auth-footer">授权码请联系开发者获取，完全免费，禁止商用。但目前不是很想发联系方式啊等等再说吧。</div>
         </div>
 
+
         <div class="plugin-features" style="display: none;">
 
-            <div class="amily2_settings_block flex-container">
-                <input id="amily2_enabled" type="checkbox" />
-                <label for="amily2_enabled">启动Amily2号</label>
-            </div>
-            <hr>
 
-            <h4><i class="fas fa-cogs"></i> 中央枢密院 (核心功能)</h4>
-            <div class="amily2_settings_block">
-                <input id="amily2_optimization_enabled" type="checkbox" />
-                <label for="amily2_optimization_enabled"><strong>启动优化功能</strong></label>
-                <small class="notes">核心开关：决定是否对AI的回复进行优化处理。</small>
-            </div>
-            <div class="amily2_settings_block">
-                <input id="amily2_summarization_enabled" type="checkbox" />
-                <label for="amily2_summarization_enabled">启用即时总结功能</label>
-                <small class="notes">独立开关：决定是否生成总结并写入世界书。</small>
-            </div>
-            <hr style="border-style: dashed; margin: 10px 0;">
-            <div class="amily2_settings_block">
-                <input id="amily2_show_optimization_toast" type="checkbox">
-                <label for="amily2_show_optimization_toast">显示优化分析通知</label>
-                <small class="notes">启用后，将以“已优化并将总结...”的格式弹出通知。</small>
-            </div>
-            <div class="amily2_settings_block">
-                <label>优化模式选择:</label>
-                <div class="radio-group">
-                    <input type="radio" id="amily2_mode_intercept" name="amily2_optimization_mode" value="intercept" checked>
-                    <label for="amily2_mode_intercept">无感优化 (推荐)</label>
-                    <input type="radio" id="amily2_mode_refresh" name="amily2_optimization_mode" value="refresh">
-                    <label for="amily2_mode_refresh">刷新优化</label>
+            <div class="amily2-header">
+                <div class="main-toggle amily2_settings_block">
+                    <input id="amily2_enabled" type="checkbox" />
+                    <label for="amily2_enabled"><strong>启动Amily2号</strong></label>
                 </div>
-                <small class="notes">无感优化：直接替换文本，需关流式，适合高楼层使用；刷新优化：重载聊天界面，适合低楼层使用。</small>
-            </div>
-            <hr>
-            <h4><i class="fas fa-cog"></i> API 配置</h4>
-            <div class="amily2_settings_block">
-                <label for="amily2_api_url">API URL</label>
-                <input id="amily2_api_url" type="text" class="text_pole" placeholder="http://localhost:3000/v1" />
-            </div>
-            <div class="amily2_settings_block">
-                <label for="amily2_api_key">API Key</label>
-                <input id="amily2_api_key" type="password" class="text_pole" placeholder="sk-..." />
-            </div>
-            <div class="amily2_settings_block">
-                <div class="flex-container">
-                    <select id="amily2_model" class="text_pole" style="flex: 1"></select>
-                    <button id="amily2_refresh_models" class="menu_button interactable"><i class="fas fa-sync-alt"></i> 刷新模型</button>
+                <div class="update-section">
+                    <button id="amily2_update_button" class="menu_button small_button interactable" title="查看更新日志">
+                        <i class="fas fa-bell"></i>
+                        <span id="amily2_update_indicator" class="update-indicator" style="display: none;"></span>
+                    </button>
                 </div>
-                <div id="amily2_model_notes" class="notes"></div>
             </div>
-            <div class="amily2_settings_block">
-                <label for="amily2_max_tokens">最大Token数: <span id="amily2_max_tokens_value"></span></label>
-                <input id="amily2_max_tokens" type="range" min="100" max="20000" step="50" />
-            </div>
-            <div class="amily2_settings_block">
-                <label for="amily2_temperature">思考活跃度: <span id="amily2_temperature_value"></span></label>
-                <input id="amily2_temperature" type="range" min="0" max="2" step="0.1" />
-            </div>
-            <div class="amily2_settings_block">
-                <label for="amily2_context_messages">上下文消息数量: <span id="amily2_context_messages_value"></span></label>
-                <input id="amily2_context_messages" type="range" min="0" max="10" step="1" />
-            </div>
-            <hr>
-            <h4><i class="fas fa-edit"></i> 统一提示词编辑器</h4>
-            <div class="amily2_settings_block">
-                <label for="amily2_prompt_selector">选择要编辑的谕令:</label>
-                <select id="amily2_prompt_selector" class="text_pole">
-                    <option value="mainPrompt">破限提示词 (最高优先级)</option>
-                    <option value="systemPrompt">预设提示词（任务规则）</option>
-                    <option value="summarizationPrompt">总结提示词</option>
-                    <option value="outputFormatPrompt">格式提示词 </option>
-                </select>
-            </div>
-            <div class="amily2_settings_block">
-                <div class="prompt-container">
-                    <textarea id="amily2_unified_editor" class="text_pole" rows="8"></textarea>
-                    <div class="prompt-buttons">
+            <hr class="header-divider">
+
+            <fieldset class="settings-group">
+                <legend><i class="fas fa-cogs"></i> 核心功能</legend>
+
+
+                <div class="control-pair-container">
+                    <div class="amily2_settings_block">
+                        <label for="amily2_optimization_enabled">启动优化</label>
+                        <label class="toggle-switch">
+                            <input id="amily2_optimization_enabled" type="checkbox" />
+                            <span class="slider"></span>
+                        </label>
+                        <small class="notes">核心处理开关</small>
+                    </div>
+                    <div class="amily2_settings_block">
+                        <label for="amily2_summarization_enabled">即时总结</label>
+                        <label class="toggle-switch">
+                            <input id="amily2_summarization_enabled" type="checkbox" />
+                            <span class="slider"></span>
+                        </label>
+                        <small class="notes">生成对话总结</small>
+                    </div>
+                </div>
+
+                <hr style="border-style: dashed; margin: 10px 0;">
+
+                <div class="amily2_settings_block">
+                    <input id="amily2_show_optimization_toast" type="checkbox">
+                    <label for="amily2_show_optimization_toast">显示优化总结通知</label>
+                    <small class="notes">启用后，将以“已优化并将总结...”的格式弹出通知。</small>
+                </div>
+
+                <div class="amily2_settings_block">
+                    <label>优化模式选择:</label>
+                    <div class="radio-toggle-group">
+                        <input type="radio" id="amily2_mode_intercept" name="amily2_optimization_mode" value="intercept" checked>
+                        <label for="amily2_mode_intercept">无感优化</label>
+                        <input type="radio" id="amily2_mode_refresh" name="amily2_optimization_mode" value="refresh">
+                        <label for="amily2_mode_refresh">刷新优化</label>
+                    </div>
+                    <small class="notes">无感优化：直接替换文本，速度更快但要关流式，高楼层推荐。刷新优化：重载聊天界面，更加稳定无需关流式，低楼层推荐。</small>
+                </div>
+            </fieldset>
+
+            <fieldset class="settings-group">
+                <legend><i class="fas fa-network-wired"></i> API与模型配置</legend>
+                <div class="amily2_settings_block">
+                    <label for="amily2_api_url">API URL</label>
+                    <input id="amily2_api_url" type="text" class="text_pole" placeholder="http://localhost:3000/v1" />
+                </div>
+                <div class="amily2_settings_block">
+                    <label for="amily2_api_key">API Key</label>
+                    <input id="amily2_api_key" type="password" class="text_pole" placeholder="sk-..." />
+                </div>
+                <div class="amily2_settings_block">
+                    <div class="flex-container">
+                        <select id="amily2_model" class="text_pole" style="flex: 1"></select>
+                        <button id="amily2_refresh_models" class="menu_button interactable"><i class="fas fa-sync-alt"></i> 刷新</button>
+                    </div>
+                    <div id="amily2_model_notes" class="notes"></div>
+                </div>
+                <div class="amily2_settings_block">
+                    <label for="amily2_max_tokens">最大Token数: <span id="amily2_max_tokens_value"></span></label>
+                    <input id="amily2_max_tokens" type="range" min="100" max="20000" step="50" />
+                </div>
+                <div class="amily2_settings_block">
+                    <label for="amily2_temperature">思考活跃度: <span id="amily2_temperature_value"></span></label>
+                    <input id="amily2_temperature" type="range" min="0" max="2" step="0.1" />
+                </div>
+                <div class="amily2_settings_block">
+                    <label for="amily2_context_messages">上下文参考数: <span id="amily2_context_messages_value"></span></label>
+                    <input id="amily2_context_messages" type="range" min="0" max="10" step="1" />
+                </div>
+            </fieldset>
+
+            <fieldset class="settings-group">
+                <legend><i class="fas fa-edit"></i> 统一提示词编辑器</legend>
+
+
+                <div class="amily2_settings_block">
+                    <div class="label-with-button">
+                        <label for="amily2_prompt_selector">选择要编辑的设定:</label>
+                        <i id="amily2_expand_editor" class="editor_maximize fa-solid fa-maximize right_menu_button interactable" title="展开编辑器" tabindex="0"></i>
+                    </div>
+                    <select id="amily2_prompt_selector" class="text_pole">
+                        <option value="mainPrompt">破限提示词 (最高优先级)</option>
+                        <option value="systemPrompt">预设提示词（任务规则）</option>
+                        <option value="summarizationPrompt">总结提示词</option>
+                        <option value="outputFormatPrompt">格式提示词 </option>
+                    </select>
+                </div>
+
+                <div class="amily2_settings_block prompt-editor-area">
+                    <textarea id="amily2_unified_editor" class="text_pole" rows="4"></textarea>
+                    <div class="editor-buttons-panel">
                         <button id="amily2_unified_save_button" class="menu_button accent small_button interactable"><i class="fas fa-save"></i> 保存当前</button>
                         <button id="amily2_unified_restore_button" class="menu_button secondary small_button interactable"><i class="fas fa-undo"></i> 恢复默认</button>
                     </div>
                 </div>
-            </div>
+            </fieldset>
 
-            <hr>
-
-            <h4><i class="fas fa-book-open"></i> 世界书档案司</h4>
-            <div class="amily2_settings_block">
-                <input id="amily2_worldbook_enabled" type="checkbox">
-                <label for="amily2_worldbook_enabled">连接世界书进行优化</label>
-                <small class="notes">独立开关：决定优化时是否读取世界书内容作为参考。</small>
-            </div>
-            <div class="amily2_settings_block">
-                <label>总结写入目标:</label>
-                <div class="radio-group">
-                    <input type="radio" id="amily2_target_main" name="amily2_lorebook_target" value="character_main" checked>
-                    <label for="amily2_target_main">写入【主世界书】</label>
-                    <input type="radio" id="amily2_target_dedicated" name="amily2_lorebook_target" value="dedicated">
-                    <label for="amily2_target_dedicated">写入【独立档案】</label>
+            <fieldset class="settings-group">
+                <legend><i class="fas fa-book-open"></i> 世界书档案司</legend>
+                <div class="amily2_settings_block">
+                     <label>连接世界书进行优化</label>
+                     <label class="toggle-switch">
+                        <input id="amily2_worldbook_enabled" type="checkbox">
+                        <span class="slider"></span>
+                     </label>
+                    <small class="notes">独立开关：决定优化时是否读取世界书内容作为参考，个人不推荐。</small>
                 </div>
-                <small class="notes">此设置仅在“中央枢密院”的“启用即时总结”开启时生效。</small>
-            </div>
-            <hr>
+                <div class="amily2_settings_block">
+                    <label>总结写入目标:</label>
+                    <div class="radio-group">
+                        <input type="radio" id="amily2_target_main" name="amily2_lorebook_target" value="character_main" checked>
+                        <label for="amily2_target_main">写入【主世界书】</label>
+                        <input type="radio" id="amily2_target_dedicated" name="amily2_lorebook_target" value="dedicated">
+                        <label for="amily2_target_dedicated">写入【独立档案】</label>
+                    </div>
+                    <small class="notes">此设置仅在“启用即时总结”开启时生效。</small>
+                </div>
+            </fieldset>
 
-            <h4><i class="fas fa-tools"></i> 操作面板</h4>
-            <div class="amily2_settings_block button-pair">
-                <button class="menu_button primary interactable" id="amily2_test"><i class="fas fa-search"></i> 测试检查</button>
-                <button class="menu_button accent interactable" id="amily2_fix_now"><i class="fas fa-magic"></i> 立即修复</button>
-            </div>
+             <fieldset class="settings-group">
+                <legend><i class="fas fa-tools"></i> 诊断与操作</legend>
+                <div class="amily2_settings_block button-pair">
+                    <button class="menu_button primary interactable" id="amily2_test"><i class="fas fa-search"></i> 测试检查</button>
+                    <button class="menu_button accent interactable" id="amily2_fix_now"><i class="fas fa-magic"></i> 立即修复</button>
+                </div>
+            </fieldset>
         </div>
 
-    <div id="amily2_hidden_prompts" style="display:none;">
-        <div class="amily2_settings_block">
-            <div class="prompt-container">
-                <textarea id="amily2_main_prompt" class="text_pole" rows="6"></textarea>
-                <button id="save_main_prompt" class="menu_button small_button interactable"><i class="fas fa-save"></i> 保存</button>
-            </div>
-        </div>
-        <div class="amily2_settings_block">
-            <div class="prompt-container">
-                <textarea id="amily2_system_prompt" class="text_pole" rows="8"></textarea>
-                <button id="save_system_prompt" class="menu_button small_button interactable"><i class="fas fa-save"></i> 保存</button>
-            </div>
-        </div>
 
-         <div class="amily2_settings_block">
-            <div class="prompt-container">
-                <textarea id="amily2_summarization_prompt" class="text_pole" rows="3"></textarea>
-                <button id="save_summarization_prompt" class="menu_button small_button interactable"><i class="fas fa-save"></i> 保存</button>
+        <div id="amily2_hidden_prompts" style="display:none;">
+            <div class="amily2_settings_block">
+                <div class="prompt-container">
+                    <textarea id="amily2_main_prompt" class="text_pole" rows="6"></textarea>
+                    <button id="save_main_prompt" class="menu_button small_button interactable"><i class="fas fa-save"></i> 保存</button>
+                </div>
             </div>
-        </div>
-
-        <div class="amily2_settings_block">
-            <div class="prompt-container">
-                <textarea id="amily2_output_format_prompt" class="text_pole" rows="4"></textarea>
-                <button id="save_output_format_prompt" class="menu_button small_button interactable"><i class="fas fa-save"></i> 保存</button>
+            <div class="amily2_settings_block">
+                <div class="prompt-container">
+                    <textarea id="amily2_system_prompt" class="text_pole" rows="8"></textarea>
+                    <button id="save_system_prompt" class="menu_button small_button interactable"><i class="fas fa-save"></i> 保存</button>
+                </div>
+            </div>
+            <div class="amily2_settings_block">
+                <div class="prompt-container">
+                    <textarea id="amily2_summarization_prompt" class="text_pole" rows="3"></textarea>
+                    <button id="save_summarization_prompt" class="menu_button small_button interactable"><i class="fas fa-save"></i> 保存</button>
+                </div>
+            </div>
+            <div class="amily2_settings_block">
+                <div class="prompt-container">
+                    <textarea id="amily2_output_format_prompt" class="text_pole" rows="4"></textarea>
+                    <button id="save_output_format_prompt" class="menu_button small_button interactable"><i class="fas fa-save"></i> 保存</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 </div>
