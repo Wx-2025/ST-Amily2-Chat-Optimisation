@@ -118,6 +118,7 @@ export function updateUI() {
       `input[name="amily2_lorebook_target"][value="${settings.lorebookTarget}"]`,
     ).prop("checked", true);
 
+    $(`input[name="amily2_icon_location"][value="${settings.iconLocation}"]`).prop("checked", true);
     populateModelDropdown(); 
   }
 }
