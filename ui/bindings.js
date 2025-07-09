@@ -6,11 +6,13 @@ import { fetchSupportedModels } from "../core/api.js";
 
 import { setAvailableModels, populateModelDropdown, getLatestUpdateInfo } from "./state.js";
 import { fixCommand, testReplyChecker } from "../core/commands.js";
+import { createDrawer } from '../ui/drawer.js';
+import { messageFormatting } from '/script.js';
 
 export function bindModalEvents() {
-    const container = $("#amily2_drawer_content");
+    const container = $("#amily2_drawer_content").length ? $("#amily2_drawer_content") : $("#amily2_chat_optimiser");
 
-    if (container.data("events-bound")) return;
+    if (!container.length || container.data("events-bound")) return;
 
     const snakeToCamel = (s) => s.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
     const updateAndSaveSetting = (key, value) => {
@@ -34,47 +36,46 @@ export function bindModalEvents() {
             }
         });
 
-  container
-    .off("click.amily2.actions")
-    .on(
-      "click.amily2.actions",
-      "#amily2_refresh_models, #amily2_test, #amily2_fix_now",
-      async function () {
-        if (!pluginAuthStatus.authorized) return;
-        const button = $(this);
-        const originalHtml = button.html();
-        button
-          .prop("disabled", true)
-          .html('<i class="fas fa-spinner fa-spin"></i> 处理中');
-        try {
-          switch (this.id) {
-            case "amily2_refresh_models":
-              const models = await fetchSupportedModels();
-              if (models.length > 0) {
-                setAvailableModels(models);
+    container
+        .off("click.amily2.actions")
+        .on(
+            "click.amily2.actions",
+            "#amily2_refresh_models, #amily2_test, #amily2_fix_now",
+            async function () {
+                if (!pluginAuthStatus.authorized) return;
+                const button = $(this);
+                const originalHtml = button.html();
+                button
+                    .prop("disabled", true)
+                    .html('<i class="fas fa-spinner fa-spin"></i> 处理中');
+                try {
+                    switch (this.id) {
+                        case "amily2_refresh_models":
+                            const models = await fetchSupportedModels();
+                            if (models.length > 0) {
+                                setAvailableModels(models);
                 localStorage.setItem(
                   "cached_models_amily2",
                   JSON.stringify(models),
                 );
-                populateModelDropdown();
-              }
-              break;
-            case "amily2_test":
-              await testReplyChecker();
-              break;
-            case "amily2_fix_now":
-              await fixCommand();
-              break;
-          }
-        } catch (error) {
-          console.error(`[Amily2-工部] 操作按钮 ${this.id} 执行失败:`, error);
-          toastr.error(`操作失败: ${error.message}`, "Amily2号");
-        } finally {
-          button.prop("disabled", false).html(originalHtml);
-        }
-      },
-    );
-	
+                                populateModelDropdown();
+                            }
+                            break;
+                        case "amily2_test":
+                            await testReplyChecker();
+                            break;
+                        case "amily2_fix_now":
+                            await fixCommand();
+                            break;
+                    }
+                } catch (error) {
+                    console.error(`[Amily2-工部] 操作按钮 ${this.id} 执行失败:`, error);
+                    toastr.error(`操作失败: ${error.message}`, "Amily2号");
+                } finally {
+                    button.prop("disabled", false).html(originalHtml);
+                }
+            },
+        );
 
     container
         .off("click.amily2.expand_editor")
@@ -106,138 +107,149 @@ export function bindModalEvents() {
             dialogElement[0].showModal();
         });
 
-  container
-    .off("click.amily2.update")
-    .on("click.amily2.update", "#amily2_update_button", function() {
-        $("#amily2_update_indicator").hide();
+    container
+        .off("click.amily2.update")
+        .on("click.amily2.update", "#amily2_update_button", function() {
+            $("#amily2_update_indicator").hide();
+            const updateInfo = getLatestUpdateInfo();
+            if (updateInfo && updateInfo.changelog) {
+                const formattedChangelog = messageFormatting(updateInfo.changelog);
 
-        const updateInfo = getLatestUpdateInfo();
-        if (updateInfo && updateInfo.changelog) {
-            const dialogHtml = `
+
+                const dialogHtml = `
                 <dialog class="popup wide_dialogue_popup">
                   <div class="popup-body">
                     <h3 style="margin-top:0; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;"><i class="fas fa-bell" style="color: #ff9800;"></i> 帝国最新情报</h3>
-                    <div class="popup-content" style="height: 60vh; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 5px; white-space: pre-wrap; font-family: 'Consolas', 'Monaco', monospace;">${updateInfo.changelog}</div>
+                    <div class="popup-content" style="height: 60vh; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 5px;">
+                        <div class="mes_text">${formattedChangelog}</div>
+                    </div>
                     <div class="popup-controls"><div class="popup-button-ok menu_button menu_button_primary interactable">朕已阅</div></div>
-                  </div>
-                </dialog>`;
-            const dialogElement = $(dialogHtml).appendTo('body');
-            const closeDialog = () => { dialogElement[0].close(); dialogElement.remove(); };
-            dialogElement.find('.popup-button-ok').on('click', closeDialog);
-            dialogElement[0].showModal();
+                  </dialog>`;
+                const dialogElement = $(dialogHtml).appendTo('body');
+                const closeDialog = () => { dialogElement[0].close(); dialogElement.remove(); };
+                dialogElement.find('.popup-button-ok').on('click', closeDialog);
+                dialogElement[0].showModal();
+            } else {
+                toastr.info("未能获取到云端情报，请稍后再试。", "情报部回报");
+            }
+        });
 
-        } else {
-            toastr.info("未能获取到云端情报，请稍后再试。", "情报部回报");
-        }
-    });
+    container
+        .off("change.amily2.checkbox")
+        .on(
+            "change.amily2.checkbox",
+            'input[type="checkbox"][id^="amily2_"]',
+            function () {
+                if (!pluginAuthStatus.authorized) return;
+                const key = snakeToCamel(this.id.replace("amily2_", ""));
+                updateAndSaveSetting(key, this.checked);
+            },
+        );
 
-  container
-    .off("change.amily2.checkbox")
-    .on(
-      "change.amily2.checkbox",
-      'input[type="checkbox"][id^="amily2_"]',
-      function () {
-        if (!pluginAuthStatus.authorized) return;
-        const key = snakeToCamel(this.id.replace("amily2_", ""));
-        updateAndSaveSetting(key, this.checked);
-      },
-    );
+    container
+        .off("change.amily2.radio")
+        .on(
+            "change.amily2.radio",
+            'input[type="radio"][name^="amily2_"]:not([name="amily2_icon_location"])', // 排除我们的特殊开关
+            function () {
+                if (!pluginAuthStatus.authorized) return;
+                const key = snakeToCamel(this.name.replace("amily2_", ""));
+                const value = $(`input[name="${this.name}"]:checked`).val();
+                updateAndSaveSetting(key, value);
+            },
+        );
 
+    container
+        .off("change.amily2.text")
+        .on("change.amily2.text", "#amily2_api_url, #amily2_api_key", function () {
+            if (!pluginAuthStatus.authorized) return;
+            const key = snakeToCamel(this.id.replace("amily2_", ""));
+            updateAndSaveSetting(key, this.value);
+            toastr.success(`配置 [${key}] 已自动保存!`, "Amily2号");
+        });
 
-  container
-    .off("change.amily2.radio")
-    .on(
-      "change.amily2.radio",
-      'input[type="radio"][name^="amily2_"]',
-      function () {
-        if (!pluginAuthStatus.authorized) return;
-        const key = snakeToCamel(this.name.replace("amily2_", ""));
-        const value = $(`input[name="${this.name}"]:checked`).val();
-        updateAndSaveSetting(key, value);
-      },
-    );
+    container
+        .off("change.amily2.select")
+        .on("change.amily2.select", "select#amily2_model", function () {
+            if (!pluginAuthStatus.authorized) return;
+            const key = snakeToCamel(this.id.replace("amily2_", ""));
+            updateAndSaveSetting(key, this.value);
+            populateModelDropdown();
+        });
 
-  container
-    .off("change.amily2.text")
-    .on("change.amily2.text", "#amily2_api_url, #amily2_api_key", function () {
-      if (!pluginAuthStatus.authorized) return;
-      const key = snakeToCamel(this.id.replace("amily2_", ""));
-      updateAndSaveSetting(key, this.value);
-      toastr.success(`配置 [${key}] 已自动保存!`, "Amily2号");
-    });
+    container
+        .off("input.amily2.range")
+        .on(
+            "input.amily2.range",
+            'input[type="range"][id^="amily2_"]',
+            function () {
+                if (!pluginAuthStatus.authorized) return;
+                const key = snakeToCamel(this.id.replace("amily2_", ""));
+                const value = this.id.includes("temperature")
+                    ? parseFloat(this.value)
+                    : parseInt(this.value, 10);
+                $(`#${this.id}_value`).text(value);
+                updateAndSaveSetting(key, value);
+            },
+        );
 
+    const promptMap = {
+        mainPrompt: "#amily2_main_prompt",
+        systemPrompt: "#amily2_system_prompt",
+        summarizationPrompt: "#amily2_summarization_prompt",
+        outputFormatPrompt: "#amily2_output_format_prompt",
+    };
+    const selector = "#amily2_prompt_selector";
+    const editor = "#amily2_unified_editor";
+    const unifiedSaveButton = "#amily2_unified_save_button";
 
-  container
-    .off("change.amily2.select")
-    .on("change.amily2.select", "select#amily2_model", function () {
-      if (!pluginAuthStatus.authorized) return;
-      const key = snakeToCamel(this.id.replace("amily2_", ""));
-      updateAndSaveSetting(key, this.value);
-      populateModelDropdown();
-    });
+    function updateEditorView() {
+        if (!$(selector).length) return;
+        const selectedKey = $(selector).val();
+        if (!selectedKey) return;
+        const content = extension_settings[extensionName][selectedKey] || "";
+        $(editor).val(content);
+    }
 
+    container
+        .off("change.amily2.prompt_selector")
+        .on("change.amily2.prompt_selector", selector, updateEditorView);
 
-  container
-    .off("input.amily2.range")
-    .on(
-      "input.amily2.range",
-      'input[type="range"][id^="amily2_"]',
-      function () {
-        if (!pluginAuthStatus.authorized) return;
-        const key = snakeToCamel(this.id.replace("amily2_", ""));
-        const value = this.id.includes("temperature")
-          ? parseFloat(this.value)
-          : parseInt(this.value, 10);
-        $(`#${this.id}_value`).text(value);
-        updateAndSaveSetting(key, value);
-      },
-    );
+    container
+        .off("click.amily2.unified_save")
+        .on("click.amily2.unified_save", unifiedSaveButton, function () {
+            const selectedKey = $(selector).val();
+            if (!selectedKey) return;
+            const newContent = $(editor).val();
+            updateAndSaveSetting(selectedKey, newContent);
+            toastr.success(`谕令 [${selectedKey}] 已镌刻!`, "Amily2号");
+        });
 
+    container
+        .off("click.amily2.unified_restore")
+        .on("click.amily2.unified_restore", "#amily2_unified_restore_button", function () {
+            const selectedKey = $(selector).val();
+            if (!selectedKey) return;
+            const defaultValue = defaultSettings[selectedKey];
+            $(editor).val(defaultValue);
+            updateAndSaveSetting(selectedKey, defaultValue);
+            toastr.success(`谕令 [${selectedKey}] 已成功恢复为帝国初始蓝图。`, "Amily2号");
+        });
 
-  const promptMap = {
-    mainPrompt: "#amily2_main_prompt",
-    systemPrompt: "#amily2_system_prompt",
-    summarizationPrompt: "#amily2_summarization_prompt",
-    outputFormatPrompt: "#amily2_output_format_prompt",
-  };
-  const selector = "#amily2_prompt_selector";
-  const editor = "#amily2_unified_editor";
-  const unifiedSaveButton = "#amily2_unified_save_button";
+    setTimeout(updateEditorView, 100);
 
-  function updateEditorView() {
-    const selectedKey = $(selector).val();
-    if (!selectedKey) return;
-    const content = extension_settings[extensionName][selectedKey] || "";
-    $(editor).val(content);
-  }
-
-
-  container
-    .off("change.amily2.prompt_selector")
-    .on("change.amily2.prompt_selector", selector, updateEditorView);
-
-  container
-    .off("click.amily2.unified_save")
-    .on("click.amily2.unified_save", unifiedSaveButton, function () {
-      const selectedKey = $(selector).val();
-      if (!selectedKey) return;
-      const newContent = $(editor).val();
-      updateAndSaveSetting(selectedKey, newContent);
-      toastr.success(`谕令 [${selectedKey}] 已镌刻!`, "Amily2号");
-    });
-
-  container
-    .off("click.amily2.unified_restore")
-    .on("click.amily2.unified_restore", "#amily2_unified_restore_button", function () {
-      const selectedKey = $(selector).val();
-      if (!selectedKey) return;
-      const defaultValue = defaultSettings[selectedKey];
-      $(editor).val(defaultValue);
-      updateAndSaveSetting(selectedKey, defaultValue);
-      toastr.success(`谕令 [${selectedKey}] 已成功恢复为帝国初始蓝图。`, "Amily2号");
-    });
-
-  setTimeout(updateEditorView, 100);
-
-  container.data("events-bound", true);
+    container.data("events-bound", true);
 }
+$(document).on('change', 'input[name="amily2_icon_location"]', function() {
+    if (!pluginAuthStatus.authorized) return;
+    const newLocation = $(this).val();
+    extension_settings[extensionName]['iconLocation'] = newLocation;
+    saveSettingsDebounced();
+    console.log(`[Amily-禁卫军] 收到迁都指令 -> ${newLocation}。圣意已存档。`);
+    toastr.info(`正在将帝国徽记迁往 [${newLocation === 'topbar' ? '顶栏' : '扩展区'}]...`, "迁都令", { timeOut: 2000 });
+    $('#amily2_main_drawer').remove(); 
+    $(document).off("mousedown.amily2Drawer"); 
+    $('#amily2_extension_frame').remove();
+
+    setTimeout(createDrawer, 50); 
+});
