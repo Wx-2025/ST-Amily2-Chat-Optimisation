@@ -166,6 +166,7 @@ export const defaultSettings = {
   lorebookTarget: "character_main",
   summarizeToMainWorldbook: true,
   createChatLoreAsSub: false,
+  iconLocation: 'topbar',
 };
 
 export function validateSettings() {
