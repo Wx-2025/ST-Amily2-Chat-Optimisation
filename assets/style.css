@@ -42,7 +42,9 @@ hr.header-divider { border: none; border-top: 1px solid rgba(255,255,255,0.1); m
     font-size: 1.1em; font-weight: bold; color: #eee; padding: 0 10px; margin-left: 10px;
 }
 .settings-group legend > i { margin-right: 8px; color: #7e57c2; }
-
+.settings-group legend > i.fa-palette {
+    color: #ff9800;
+}
 .toggle-switch {
     position: relative; display: inline-block; width: 50px; height: 26px;
 }
@@ -138,3 +140,79 @@ hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 0; }
 #amily2_drawer_icon.closedIcon { opacity: 0.5; }
 #amily2_drawer_icon.openIcon { opacity: 1; }
 #amily2_drawer_icon.interactable:hover { opacity: 1; }
+
+#amily2_optimization_enabled:checked + .slider {
+    background: linear-gradient(to right, #28a745, #20c997);
+    box-shadow: 0 0 10px rgba(40, 167, 69, 0.7);
+}
+
+
+#amily2_summarization_enabled:checked + .slider {
+    background: linear-gradient(to right, #007bff, #17a2b8);
+    box-shadow: 0 0 10px rgba(0, 123, 255, 0.7);
+}
+
+
+#amily2_icon_location_topbar:checked + label {
+    background: linear-gradient(135deg, #0d6efd, #0dcaf0);
+    color: white;
+    font-weight: bold;
+    box-shadow: inset 0 0 8px rgba(255, 255, 255, 0.5), 0 0 12px rgba(13, 110, 253, 0.6);
+    transform: translateY(-2px); 
+    border-color: #0dcaf0;
+}
+
+
+#amily2_icon_location_extensions:checked + label {
+    background: linear-gradient(135deg, #ffc107, #fd7e14);
+    color: #492000;
+    font-weight: bold;
+    text-shadow: 0 0 1px rgba(255,255,255,0.7);
+    box-shadow: inset 0 0 8px rgba(255, 255, 255, 0.6), 0 0 12px rgba(255, 193, 7, 0.6);
+    transform: translateY(-2px); 
+    border-color: #ffc107;
+}
+
+
+.radio-toggle-group label {
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+#amily2_mode_intercept:checked + label {
+    background: linear-gradient(135deg, #00bfa5, #00acc1); 
+    color: white;
+    text-shadow: 0 0 3px rgba(0,0,0,0.4);
+    box-shadow: inset 0 0 8px rgba(255, 255, 255, 0.4), 0 0 10px rgba(0, 191, 165, 0.6);
+    transform: translateY(-2px);
+}
+
+#amily2_mode_refresh:checked + label {
+    background: linear-gradient(135deg, #3f51b5, #2196f3);
+    color: white;
+    text-shadow: 0 0 3px rgba(0,0,0,0.4);
+    box-shadow: inset 0 0 8px rgba(255, 255, 255, 0.4), 0 0 10px rgba(63, 81, 181, 0.6);
+    transform: translateY(-2px);
+}
+
+#amily2_refresh_models {
+    background: linear-gradient(to right, #2196F3, #1976D2);
+    border: 1px solid #1565C0;
+    transition: all 0.3s ease;
+}
+#amily2_refresh_models:hover {
+    background: linear-gradient(to right, #1976D2, #2196F3);
+    box-shadow: 0 0 8px rgba(33, 150, 243, 0.7);
+    transform: scale(1.03); 
+}
+
+#amily2_unified_restore_button.secondary {
+    background: linear-gradient(to right, #ffb300, #fb8c00);
+    border: 1px solid #f57c00;
+    color: #4d2c00;
+    transition: all 0.3s ease;
+}
+#amily2_unified_restore_button.secondary:hover {
+    background: linear-gradient(to right, #fb8c00, #ffb300);
+    box-shadow: 0 0 8px rgba(255, 179, 0, 0.7);
+    transform: scale(1.03);
+}
