@@ -4,7 +4,8 @@ import { onMessageReceived, onChatChanged } from "./core/events.js";
 import { eventSource, event_types } from '/script.js';
 import { checkForUpdates } from './core/api.js';
 import { setUpdateInfo } from './ui/state.js';
-import { pluginVersion } from './utils/settings.js';
+import { pluginVersion, extensionName, defaultSettings } from './utils/settings.js';
+import { extension_settings } from '/scripts/extensions.js';
 
 
 function compareVersions(v1, v2) {
@@ -65,15 +66,24 @@ window.addEventListener("error", (event) => {
 jQuery(async () => {
   console.log("[Amily2号-帝国枢密院] 开始执行开国大典...");
 
+  if (!extension_settings[extensionName]) {
+    extension_settings[extensionName] = {};
+  }
+  Object.assign(extension_settings[extensionName], {
+    ...defaultSettings,
+    ...extension_settings[extensionName],
+  });
+  console.log("[Amily2号-帝国枢密院] 帝国基本法已确认，档案室已与国库对接完毕。");
+
   let attempts = 0;
   const maxAttempts = 100;
   const checkInterval = 100;
-  const targetSelector = "#sys-settings-button";
+  const targetSelector = "#sys-settings-button"; 
 
   const deploymentInterval = setInterval(async () => {
     if ($(targetSelector).length > 0) {
       clearInterval(deploymentInterval);
-      console.log("[Amily2号-帝国枢密院] 目标邻居已确认，开国大典正式开始！");
+      console.log("[Amily2号-帝国枢密院] SillyTavern宫殿主体已确认，开国大典正式开始！");
 
       try {
         console.log("[Amily2号-开国大典] 步骤一：为宫殿披上华服...");
@@ -83,7 +93,7 @@ jQuery(async () => {
         await registerSlashCommands();
 
         console.log("[Amily2号-开国大典] 步骤三：开始召唤府邸...");
-        createDrawer();
+        createDrawer(); 
 
         console.log("[Amily2号-开国大典] 步骤四：部署帝国哨兵网络...");
         if (!window.amily2EventsRegistered) {
