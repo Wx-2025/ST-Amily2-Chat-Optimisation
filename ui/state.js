@@ -87,6 +87,7 @@ export function updateUI() {
     $("#amily2_temperature_value").text(settings.temperature);
     $("#amily2_context_messages").val(settings.contextMessages);
     $("#amily2_context_messages_value").text(settings.contextMessages);
+	$("#amily2_optimization_target_tag").val(settings.optimizationTargetTag);
 
 
     $(
