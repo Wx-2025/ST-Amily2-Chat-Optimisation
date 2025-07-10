@@ -23,7 +23,7 @@ export async function checkForUpdates() {
 
 
     try {
-		console.log('[Amily2号-外交部] 已派遣使者前往云端获取最新情报...');
+        console.log('[Amily2号-外交部] 已派遣使者前往云端获取最新情报...');
         const response = await fetch(UPDATE_CHECK_URL, {
             method: 'GET',
             cache: 'no-store',
@@ -191,10 +191,7 @@ export async function checkAndFixWithAPI(latestMessage, previousMessages) {
     const originalFullMessage = latestMessage.mes;
     let textToOptimize = extractContentByTag(originalFullMessage, targetTag);
     const wasTagFound = textToOptimize !== null;
-
-    if (!wasTagFound) {
-      textToOptimize = originalFullMessage;
-    }
+    if (!wasTagFound) { textToOptimize = originalFullMessage; }
 
     if (wasTagFound && (!textToOptimize || textToOptimize.trim() === '')) {
       console.log(`[空文驳回] 目标标签 <${targetTag}> 内容为空，优化任务已跳过。`);
@@ -206,11 +203,14 @@ export async function checkAndFixWithAPI(latestMessage, previousMessages) {
     const lastUserMessage = previousMessages.length > 0 && previousMessages[previousMessages.length - 1].is_user ? previousMessages[previousMessages.length - 1] : null;
     const historyMessages = lastUserMessage ? previousMessages.slice(0, -1) : previousMessages;
 
+    console.groupCollapsed("[Amily2号-优化任务]");
+    console.log("【陛下最新圣旨】:", lastUserMessage ? lastUserMessage.mes : "(无)");
+    console.log("【待优化原文】:", originalFullMessage);
+    console.groupEnd();
+
     const history = historyMessages
       .map(m => (m.mes && m.mes.trim() ? `${m.is_user ? "陛下" : "姐姐Amily"}: ${m.mes.trim()}` : null))
-      .filter(Boolean)
-      .join("\n");
-
+      .filter(Boolean).join("\n");
 
     let worldbookContent = "";
     if (settings.worldbookEnabled) {
@@ -221,40 +221,40 @@ export async function checkAndFixWithAPI(latestMessage, previousMessages) {
       }
     }
 
-    console.groupCollapsed("Amily2号-国书构建日志：分步圣谕模式");
+
+    console.groupCollapsed("[Amily2号-参考内容]");
+    console.log("【世界书档案】:", worldbookContent || "(未启用或为空)");
+    console.log("【上下文参考】:", history || "(无历史记录)");
+    console.groupEnd();
+
 
     const messages = [];
 
+    console.groupCollapsed("[Amily2号-提示设定]");
     if (settings.mainPrompt?.trim()) {
-      messages.push({ role: "system", content: settings.mainPrompt.trim() });
+        console.log("【破限】:", settings.mainPrompt.trim());
+        messages.push({ role: "system", content: settings.mainPrompt.trim() });
     }
     if (settings.systemPrompt?.trim()) {
-      messages.push({ role: "system", content: settings.systemPrompt.trim() });
+        console.log("【预设】:", settings.systemPrompt.trim());
+        messages.push({ role: "system", content: settings.systemPrompt.trim() });
     }
     if (settings.outputFormatPrompt?.trim()) {
-      messages.push({ role: "system", content: `[输出格式指令]:\n${settings.outputFormatPrompt.trim()}` });
+        const formatPrompt = `[输出格式指令]:\n${settings.outputFormatPrompt.trim()}`;
+        console.log("【格式】:", formatPrompt);
+        messages.push({ role: "system", content: formatPrompt });
     }
     if (settings.summarizationEnabled && settings.summarizationPrompt?.trim()) {
-      messages.push({ role: "system", content: `[总结附加指令]:\n${settings.summarizationPrompt.trim()}` });
+        const summaryPrompt = `[总结附加指令]:\n${settings.summarizationPrompt.trim()}`;
+        console.log("【总结】:", summaryPrompt);
+        messages.push({ role: "system", content: summaryPrompt });
     }
+    console.groupEnd();
 
-    if (worldbookContent) {
-      messages.push({ role: "user", content: `[世界书档案]:\n${worldbookContent}` });
-    }
-    if (history) {
-      messages.push({ role: "user", content: `[上下文参考]:\n${history}` });
-    }
-
-    let currentInteractionContent = lastUserMessage
-      ? `陛下: ${lastUserMessage.mes}\n姐姐Amily: ${textToOptimize}`
-      : textToOptimize;
+    if (worldbookContent) { messages.push({ role: "user", content: `[世界书档案]:\n${worldbookContent}` }); }
+    if (history) { messages.push({ role: "user", content: `[上下文参考]:\n${history}` }); }
+    let currentInteractionContent = lastUserMessage ? `陛下: ${lastUserMessage.mes}\n姐姐Amily: ${textToOptimize}` : textToOptimize;
     messages.push({ role: "user", content: `[核心处理内容]:\n${currentInteractionContent}` });
-
-    console.groupEnd();
-
-    console.groupCollapsed("📜 【枢密院日志】发往Amily2号的国书副本");
-    console.log(JSON.stringify(messages, null, 2));
-    console.groupEnd();
 
     console.time("API请求耗时");
     let apiUrl = settings.apiUrl.trim();
@@ -263,14 +263,19 @@ export async function checkAndFixWithAPI(latestMessage, previousMessages) {
     if (settings.apiKey) headers["Authorization"] = `Bearer ${settings.apiKey}`;
     const response = await fetch(apiUrl, { method: "POST", headers: headers, body: JSON.stringify({ model: settings.model, messages, max_tokens: settings.maxTokens, temperature: settings.temperature, stream: false }) });
     console.timeEnd("API请求耗时");
+
     if (!response.ok) { throw new Error(`API请求失败: ${response.status} ${response.statusText} - ${await response.text()}`); }
     const data = await response.json();
     const rawContent = data.choices?.[0]?.message?.content;
     if (!rawContent) { return null; }
 
+    console.groupCollapsed("[Amily2号-最终回复]");
+    console.log(rawContent);
+    console.groupEnd();
+
     const separator = "###AMILY2-SUMMARY###";
     let optimizedTextFromModelB = rawContent;
-    let summary = null; 
+    let summary = null;
     if (rawContent.includes(separator)) {
       const parts = rawContent.split(separator);
       optimizedTextFromModelB = parts[0].trim();
@@ -278,26 +283,18 @@ export async function checkAndFixWithAPI(latestMessage, previousMessages) {
     }
 
     let finalMessage;
+
     const purifiedTextFromB = extractContentByTag(optimizedTextFromModelB, targetTag);
 
-    if (purifiedTextFromB !== null) {
-      console.log(`[圣裁：采纳] 模型B的回复中找到了御定标签 <${targetTag}>，优化内容已被接受。`);
-
-      if (wasTagFound) {
+    if (purifiedTextFromB !== null && purifiedTextFromB.trim() !== '') {
+        console.log(`[圣裁：采纳] 已从模型B的回复中提取<${targetTag}>内容，并将其置换入模型A的原始结构中。`);
         finalMessage = replaceContentByTag(originalFullMessage, targetTag, purifiedTextFromB);
-      } else {
-        finalMessage = purifiedTextFromB;
-      }
     } else {
-
-      console.log(`[圣裁：驳回] 模型B的回复中未找到御定标签 <${targetTag}>，其优化内容已被驳回，采纳模型A的原文。`);
-      finalMessage = originalFullMessage; 
+        console.log(`[圣裁：驳回] 模型B的回复中未找到或内容为空的<${targetTag}>标签，其优化内容已被废黜，采纳模型A的原文。`);
+        finalMessage = originalFullMessage;
     }
 
-    if (summary) {
-      console.log("[Amily2号] 生成总结: ", summary);
-    }
-
+    if (summary) { console.log("[Amily2号] 生成总结: ", summary); }
     console.timeEnd("优化任务总耗时");
     console.groupEnd();
     return { optimizedContent: finalMessage, summary: summary };
