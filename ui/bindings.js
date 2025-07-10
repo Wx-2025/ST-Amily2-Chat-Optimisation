@@ -150,7 +150,7 @@ export function bindModalEvents() {
         .off("change.amily2.radio")
         .on(
             "change.amily2.radio",
-            'input[type="radio"][name^="amily2_"]:not([name="amily2_icon_location"])', // 排除我们的特殊开关
+            'input[type="radio"][name^="amily2_"]:not([name="amily2_icon_location"])', 
             function () {
                 if (!pluginAuthStatus.authorized) return;
                 const key = snakeToCamel(this.name.replace("amily2_", ""));
@@ -161,7 +161,7 @@ export function bindModalEvents() {
 
     container
         .off("change.amily2.text")
-        .on("change.amily2.text", "#amily2_api_url, #amily2_api_key", function () {
+        .on("change.amily2.text", "#amily2_api_url, #amily2_api_key, #amily2_optimization_target_tag", function () {
             if (!pluginAuthStatus.authorized) return;
             const key = snakeToCamel(this.id.replace("amily2_", ""));
             updateAndSaveSetting(key, this.value);
