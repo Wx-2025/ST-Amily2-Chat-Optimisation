@@ -1,5 +1,3 @@
-
-
 import { getContext, extension_settings } from "/scripts/extensions.js";
 import { characters, saveChatConditional, reloadCurrentChat } from "/script.js";
 import { extensionName } from "../utils/settings.js";
@@ -11,7 +9,7 @@ const pendingWriteData = {
   summary: null,
   targetLorebook: null,
   chatIdentifier: null,
-  sourceAiMessageTimestamp: null, 
+  sourceAiMessageTimestamp: null,
 };
 
 export async function onMessageReceived(data) {
@@ -29,6 +27,12 @@ export async function onMessageReceived(data) {
   if (latestMessage.is_user || !settings.enabled) {
     return;
   }
+
+  if (chat.length < 2 || !chat[chat.length - 2].is_user) {
+    console.log("[Amily2号] 检测到消息并非AI对用户的直接回复（可能是角色问候语或连续AI消息），已跳过优化任务。");
+    return;
+  }
+  // =============================================================
 
   if (pendingWriteData.summary) {
     await writeSummaryToLorebook(pendingWriteData);
