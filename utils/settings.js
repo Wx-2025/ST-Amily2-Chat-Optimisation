@@ -161,6 +161,7 @@ export const defaultSettings = {
   suppressToast: false,
   optimizationMode: "intercept",
   worldbookEnabled: false,
+  optimizationTargetTag: 'content',
   optimizationEnabled: true,
   summarizationEnabled: false,
   lorebookTarget: "character_main",
