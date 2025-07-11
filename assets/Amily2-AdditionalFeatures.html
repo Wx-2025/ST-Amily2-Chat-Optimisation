@@ -1,0 +1,74 @@
+
+<div class="amily2-header">
+    <div class="additional-features-title">
+        <i class="fas fa-landmark-dome"></i> 内阁密室
+    </div>
+    <button id="amily2_back_to_main_settings" class="menu_button secondary small_button interactable">
+        <i class="fas fa-arrow-left"></i> 返回主殿
+    </button>
+</div>
+<hr class="header-divider">
+
+
+<fieldset class="settings-group">
+    <legend><i class="fas fa-scroll"></i> 皇家史册管理员</legend>
+
+    <div class="control-pair-container">
+        <div class="amily2_settings_block">
+            <label for="amily2_auto_hide_enabled">启用自动隐藏</label>
+            <label class="toggle-switch">
+                <input id="amily2_auto_hide_enabled" type="checkbox" />
+                <span class="slider"></span>
+            </label>
+        </div>
+
+
+<div class="amily2_settings_block">
+    <button id="amily2_unhide_all_button" class="menu_button secondary small_button interactable" title="一键取消所有已隐藏的楼层">
+        <i class="fas fa-folder-open"></i>
+        <span>全部可见</span>
+    </button>
+</div>
+
+    </div>
+
+    <hr style="border-style: dashed; margin: 10px 0;">
+
+
+    <div class="amily2_settings_block">
+        <label for="amily2_auto_hide_threshold">保留最新消息层数: <span id="amily2_auto_hide_threshold_value">30</span></label>
+        <input id="amily2_auto_hide_threshold" type="range" min="5" max="100" step="1" value="30" />
+        <small class="notes">设定始终在你的上下文中保留的最新消息数量。</small>
+    </div>
+</fieldset>
+
+
+
+<fieldset class="settings-group">
+    <legend><i class="fas fa-pen-ruler"></i> 手动敕令司</legend>
+
+
+    <div class="manual-command-block">
+        <label>隐藏范围:</label>
+        <input type="number" id="amily2_manual_hide_from" class="manual-input" placeholder="起始层">
+        <span class="manual-command-divider">-</span>
+        <input type="number" id="amily2_manual_hide_to" class="manual-input" placeholder="结束层">
+        <button id="amily2_manual_hide_confirm" class="menu_button primary small_button interactable">
+            <i class="fas fa-eye-slash"></i> 确认隐藏
+        </button>
+    </div>
+
+    <div class="manual-command-block">
+        <label>取消隐藏:</label>
+        <input type="number" id="amily2_manual_unhide_from" class="manual-input" placeholder="起始层">
+        <span class="manual-command-divider">-</span>
+        <input type="number" id="amily2_manual_unhide_to" class="manual-input" placeholder="结束层">
+        <button id="amily2_manual_unhide_confirm" class="menu_button accent small_button interactable">
+            <i class="fas fa-eye"></i> 确认取消
+        </button>
+    </div>
+
+    <small class="notes" style="text-align: center; display: block; margin-top: 10px;">
+        提示：若“起始层”留空，则仅操作“结束层”所指定的单层。
+    </small>
+</fieldset>
