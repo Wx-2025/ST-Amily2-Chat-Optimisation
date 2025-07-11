@@ -3,7 +3,7 @@ import { characters, saveChatConditional, reloadCurrentChat } from "/script.js";
 import { extensionName } from "../utils/settings.js";
 import { checkAndFixWithAPI } from "./api.js";
 import { writeSummaryToLorebook, getChatIdentifier } from "./lore.js";
-
+import { executeAutoHide } from './autoHideManager.js';
 
 const pendingWriteData = {
   summary: null,
@@ -24,15 +24,20 @@ export async function onMessageReceived(data) {
 
   const latestMessage = chat[chat.length - 1];
 
-  if (latestMessage.is_user || !settings.enabled) {
+  if (latestMessage.is_user) {
+    return;
+  }
+
+  await executeAutoHide();
+
+  if (!settings.enabled) {
     return;
   }
 
   if (chat.length < 2 || !chat[chat.length - 2].is_user) {
-    console.log("[Amily2号] 检测到消息并非AI对用户的直接回复（可能是角色问候语或连续AI消息），已跳过优化任务。");
+    console.log("[Amily2号] 检测到消息并非AI对用户的直接回复，已跳过优化总结。");
     return;
   }
-  // =============================================================
 
   if (pendingWriteData.summary) {
     await writeSummaryToLorebook(pendingWriteData);
@@ -62,7 +67,6 @@ export async function onMessageReceived(data) {
     }
 
     if (result.summary && settings.summarizationEnabled) {
-
       pendingWriteData.summary = result.summary;
       pendingWriteData.sourceAiMessageTimestamp = latestMessage.send_date;
       pendingWriteData.targetLorebook = settings.lorebookTarget;
@@ -83,7 +87,6 @@ export async function onMessageReceived(data) {
     }
   }
 }
-
 
 export function onChatChanged() {
   const context = getContext();
