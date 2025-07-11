@@ -18,14 +18,13 @@ import { fetchSupportedModels } from "../core/api.js";
 
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
+
 async function loadSettings() {
-  if (!extension_settings[extensionName]) {
-    extension_settings[extensionName] = {};
-  }
-  Object.assign(extension_settings[extensionName], {
+  extension_settings[extensionName] = {
     ...defaultSettings,
-    ...extension_settings[extensionName],
-  });
+    ...(extension_settings[extensionName] || {}),
+  };
+
 
   checkAuthorization();
 
@@ -117,13 +116,21 @@ export function createDrawer() {
           try {
             const modalContent = await $.get(`${extensionFolderPath}/assets/amily2-modal.html`);
             contentPanel.html(modalContent);
+            const mainContainer = contentPanel.find('#amily2_chat_optimiser');
+
+            if (mainContainer.length) {
+                const additionalFeaturesContent = await $.get(`${extensionFolderPath}/assets/Amily2-AdditionalFeatures.html`);
+                const additionalPanelHtml = `<div id="amily2_additional_features_panel">${additionalFeaturesContent}</div>`;
+                mainContainer.append(additionalPanelHtml);
+            }
+
             await loadSettings();
             bindModalEvents();
             contentPanel.data("initialized", true);
-            console.log("[Amily2号-建设部] 顶栏宫殿内室已根据最高指令激活。");
+            console.log("[Amily-重构] 顶栏宫殿已按模块化蓝图竣工。");
             applyUpdateIndicator();
           } catch (error) {
-            console.error("[Amily2号-建设部] 加载顶栏宫殿内部HTML失败:", error);
+            console.error("[Amily-建设部] 紧急报告：加载模块化蓝图时发生意外:", error);
             contentPanel.html('<p style="color:red; padding: 20px;">紧急报告：无法加载Amily2号府邸内饰。</p>');
           }
         }
@@ -150,16 +157,24 @@ export function createDrawer() {
 
     (async () => {
       try {
-        console.log("[Amily2号-建设部] 收到指令，开始在'扩展'官方区域建造宫殿。");
+        console.log("[Amily-重构] 收到指令，开始在'扩展'官方区域模块化建造宫殿。");
+        const contentPanel = $('#amily2_extension_frame .inline-drawer-content');
         const modalContent = await $.get(`${extensionFolderPath}/assets/amily2-modal.html`);
-        $('#amily2_extension_frame .inline-drawer-content').html(modalContent);
+        contentPanel.html(modalContent);
+        const mainContainer = contentPanel.find('#amily2_chat_optimiser');
+
+        if (mainContainer.length) {
+            const additionalFeaturesContent = await $.get(`${extensionFolderPath}/assets/Amily2-AdditionalFeatures.html`);
+            const additionalPanelHtml = `<div id="amily2_additional_features_panel">${additionalFeaturesContent}</div>`;
+            mainContainer.append(additionalPanelHtml);
+        }
+
         await loadSettings();
         bindModalEvents();
-        console.log("[Amily2号-建设部] '扩展'宫殿已根据最高指令建成并完全激活。");
+        console.log("[Amily-重构] '扩展'宫殿已按模块化蓝图竣工。");
         applyUpdateIndicator();
-
       } catch (error) {
-        console.error("[Amily2号-建设部] 在'扩展'区域加载宫殿HTML失败:", error);
+        console.error("[Amily-建设部] 紧急报告：加载模块化蓝图时发生意外:", error);
         $('#extensions_settings2').append('<p style="color:red; padding:10px; border:1px solid red; border-radius:5px;">紧急报告：在扩展区域建造Amily2号府邸时发生意外。</p>');
       }
     })();
