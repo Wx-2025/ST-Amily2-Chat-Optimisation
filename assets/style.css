@@ -4,8 +4,11 @@
 }
 
 #amily2_chat_optimiser {
-    width: 100%; flex-grow: 1; overflow-y: auto; padding: 15px 20px;
-    box-sizing: border-box; display: flex; flex-direction: column; gap: 20px;
+    width: 100%;
+    flex-grow: 1; 
+    overflow-y: auto; 
+    padding: 15px 20px;
+    box-sizing: border-box;
 }
 
 #auth_panel { background: linear-gradient(135deg, #1a237e, #4a148c); padding: 20px; border-radius: 12px; margin-bottom: 20px; }
@@ -45,6 +48,13 @@ hr.header-divider { border: none; border-top: 1px solid rgba(255,255,255,0.1); m
 .settings-group legend > i.fa-palette {
     color: #ff9800;
 }
+#amily2_chat_optimiser .settings-group {
+    margin-bottom: 20px;
+}
+#amily2_chat_optimiser .settings-group:last-child {
+    margin-bottom: 0;
+}
+
 .toggle-switch {
     position: relative; display: inline-block; width: 50px; height: 26px;
 }
@@ -75,8 +85,9 @@ input:checked + .slider:before { transform: translateX(24px); }
 }
 
 .control-pair-container {
-    display: flex; justify-content: space-around; align-items: flex-start; gap: 20px;
+    display: flex; justify-content: space-around; align-items: center; gap: 20px;
 }
+
 .control-pair-container .amily2_settings_block {
     flex: 1; display: flex; flex-direction: column; align-items: center; gap: 10px;
 }
@@ -215,4 +226,138 @@ hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 0; }
     background: linear-gradient(to right, #fb8c00, #ffb300);
     box-shadow: 0 0 8px rgba(255, 179, 0, 0.7);
     transform: scale(1.03);
+}
+.amily2-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 5px;
+}
+
+.header-actions-group {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 6px;
+}
+
+
+.additional-features-section {
+    width: 100%;
+}
+
+
+.secret-chamber-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 6px 10px;
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--text_color);
+    background-color: var(--background_secondary);
+    border: 1px solid var(--border_color);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+}
+
+.secret-chamber-button i {
+    margin-right: 8px;
+}
+
+.secret-chamber-button:hover {
+    background-color: var(--background_tertiary);
+    border-color: var(--text_color_half);
+    color: var(--primary_color);
+}
+.amily2-header .main-toggle label {
+    font-size: 15px;
+}
+#amily2_additional_features_panel {
+    display: none;
+}
+
+.amily2-panel-visible {
+    display: flex !important;
+    flex-direction: column;
+    flex-grow: 1;
+    gap: 15px;
+}
+
+.manual-command-block {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
+.manual-command-block label {
+    flex-shrink: 0;
+    margin-right: 5px;
+}
+
+.manual-command-block .manual-input {
+    width: 80px;
+    padding: 6px;
+    text-align: center;
+    border: 1px solid var(--border_color);
+    background-color: var(--background_secondary);
+    color: var(--text_color);
+    border-radius: 5px;
+}
+
+.manual-command-block .manual-command-divider {
+    font-weight: bold;
+    color: var(--text_color_half);
+}
+
+
+.manual-command-block .menu_button {
+    flex-grow: 1;
+    margin: 0;
+}
+
+
+#amily2_unhide_all_button {
+    width: 42px;
+    height: 42px;
+    padding: 0;
+
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+
+    background: linear-gradient(135deg, #28a745, #20c997);
+    border: 1px solid #198754;
+    color: white;
+    font-weight: bold;
+    text-shadow: 0 0 2px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
+    border-radius: 8px;
+}
+
+#amily2_unhide_all_button:hover {
+    background: linear-gradient(135deg, #20c997, #28a745);
+    box-shadow: 0 0 10px rgba(40, 167, 69, 0.7);
+    transform: translateY(-2px);
+    border-color: #1a9c5c;
+}
+
+#amily2_unhide_all_button {
+    font-size: 13px;
+    line-height: 1.2;
+}
+
+#amily2_unhide_all_button i {
+    font-size: 16px;
+    margin: 0;
+}
+#amily2_unhide_all_button span {
+    font-size: 9px;
+    font-weight: normal;
 }
