@@ -8,6 +8,7 @@ import { setAvailableModels, populateModelDropdown, getLatestUpdateInfo } from "
 import { fixCommand, testReplyChecker } from "../core/commands.js";
 import { createDrawer } from '../ui/drawer.js';
 import { messageFormatting } from '/script.js';
+import { executeManualCommand } from '../core/autoHideManager.js';
 
 export function bindModalEvents() {
     const container = $("#amily2_drawer_content").length ? $("#amily2_drawer_content") : $("#amily2_chat_optimiser");
@@ -133,6 +134,64 @@ export function bindModalEvents() {
                 toastr.info("未能获取到云端情报，请稍后再试。", "情报部回报");
             }
         });
+		
+
+    container
+        .off("click.amily2.manual_command")
+        .on(
+            "click.amily2.manual_command",
+            "#amily2_unhide_all_button, #amily2_manual_hide_confirm, #amily2_manual_unhide_confirm",
+            async function () {
+                if (!pluginAuthStatus.authorized) return;
+
+                const buttonId = this.id;
+                let commandType = '';
+                let params = {};
+
+                switch (buttonId) {
+                    case 'amily2_unhide_all_button':
+                        commandType = 'unhide_all';
+                        break;
+
+                    case 'amily2_manual_hide_confirm':
+                        commandType = 'manual_hide';
+                        params = {
+                            from: $('#amily2_manual_hide_from').val(),
+                            to: $('#amily2_manual_hide_to').val()
+                        };
+                        break;
+
+                    case 'amily2_manual_unhide_confirm':
+                        commandType = 'manual_unhide';
+                        params = {
+                            from: $('#amily2_manual_unhide_from').val(),
+                            to: $('#amily2_manual_unhide_to').val()
+                        };
+                        break;
+                }
+
+                if (commandType) {
+                    await executeManualCommand(commandType, params);
+                }
+            }
+        );	
+		
+container
+    .off("click.amily2.chamber_nav")
+    .on("click.amily2.chamber_nav", "#amily2_open_additional_features, #amily2_back_to_main_settings", function () {
+        if (!pluginAuthStatus.authorized) return;
+
+        const mainPanel = container.find('.plugin-features');
+        const additionalPanel = container.find('#amily2_additional_features_panel');
+
+        if (this.id === 'amily2_open_additional_features') {
+            mainPanel.hide();
+            additionalPanel.addClass('amily2-panel-visible');
+        } else {
+            additionalPanel.removeClass('amily2-panel-visible');
+            mainPanel.show();
+        }
+    });
 
     container
         .off("change.amily2.checkbox")
