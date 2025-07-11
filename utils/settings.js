@@ -3,7 +3,7 @@ import { saveSettingsDebounced } from "/script.js";
 import { pluginAuthStatus } from "./auth.js";
 
 export const extensionName = "ST-Amily2-Chat-Optimisation";
-export const pluginVersion = "1.0.7";
+export const pluginVersion = "1.0.8";
 
 
 export const defaultSettings = {
@@ -168,6 +168,8 @@ export const defaultSettings = {
   summarizeToMainWorldbook: true,
   createChatLoreAsSub: false,
   iconLocation: 'topbar',
+  autoHideEnabled: false,
+  autoHideThreshold: 30,
 };
 
 export function validateSettings() {
