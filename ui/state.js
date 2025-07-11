@@ -120,6 +120,9 @@ export function updateUI() {
     ).prop("checked", true);
 
     $(`input[name="amily2_icon_location"][value="${settings.iconLocation}"]`).prop("checked", true);
+    $("#amily2_auto_hide_enabled").prop("checked", settings.autoHideEnabled);
+    $("#amily2_auto_hide_threshold").val(settings.autoHideThreshold);
+    $("#amily2_auto_hide_threshold_value").text(settings.autoHideThreshold);
     populateModelDropdown(); 
   }
 }
