@@ -295,6 +295,53 @@ container
             toastr.success(`谕令 [${selectedKey}] 已成功恢复为帝国初始蓝图。`, "Amily2号");
         });
 
+    container
+        .off("change.amily2.lore_settings")
+        .on("change.amily2.lore_settings",
+            'select[id^="amily2_lore_"], input#amily2_lore_depth_input',
+            function () {
+                if (!pluginAuthStatus.authorized) return;
+				
+
+
+                let key = snakeToCamel(this.id.replace("amily2_", ""));
+                if (key === 'loreDepthInput') {
+                    key = 'loreDepth';
+                }
+
+                const value = (this.type === 'number') ? parseInt(this.value, 10) : this.value;
+                updateAndSaveSetting(key, value);
+
+
+                if (this.id === 'amily2_lore_insertion_position') {
+                    const depthContainer = $('#amily2_lore_depth_container');
+
+                    if (this.value === 'at_depth') {
+                        depthContainer.slideDown(200);
+                    } else {
+                        depthContainer.slideUp(200);
+                    }
+                }
+            }
+        );
+
+    container
+        .off("click.amily2.lore_save")
+        .on("click.amily2.lore_save", '#amily2_save_lore_settings', function () {
+            if (!pluginAuthStatus.authorized) return;
+
+            const button = $(this);
+            const statusElement = $('#amily2_lore_save_status');
+
+            button.prop('disabled', true).html('<i class="fas fa-check"></i> 已确认');
+            statusElement.text('圣意已在您每次更改时自动镌刻。').stop().fadeIn();
+
+            setTimeout(() => {
+                button.prop('disabled', false).html('<i class="fas fa-save"></i> 确认敕令');
+                statusElement.fadeOut();
+            }, 2500);
+        });
+
     setTimeout(updateEditorView, 100);
 
     container.data("events-bound", true);
