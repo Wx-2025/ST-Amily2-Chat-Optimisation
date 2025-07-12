@@ -119,123 +119,108 @@ async function refreshWorldbookListOnly(newBookName = null) {
 }
 
 export async function writeSummaryToLorebook(pendingData) {
-  if (!pendingData || !pendingData.summary || !pendingData.sourceAiMessageTimestamp) return;
-
-  const context = getContext();
-  const chat = context.chat;
-  let isSourceMessageValid = false;
-  let sourceMessageCandidate = null;
-
-  for (let i = chat.length - 2; i >= 0; i--) {
-    if (!chat[i].is_user) {
-      sourceMessageCandidate = chat[i];
-      break;
-    }
-  }
-
-  if (
-    sourceMessageCandidate &&
-    sourceMessageCandidate.send_date === pendingData.sourceAiMessageTimestamp
-  ) {
-    isSourceMessageValid = true;
-  }
-
-
-  const summaryToCommit = pendingData.summary;
-  const targetLorebookFromPending = pendingData.targetLorebook;
-
-
-  if (!isSourceMessageValid) {
-    console.log(
-      "[Amily2号-逆时寻踪] 裁决: 源消息已被修改或删除，遵旨废黜过时总结。",
-    );
-    return;
-  }
-
-  console.groupCollapsed(
-    `[Amily2号-存档任务-v19.0 最终版] ${new Date().toLocaleTimeString()}`,
-  );
-  console.time("总结写入总耗时");
-
-  try {
-    const chatIdentifier = await getChatIdentifier();
-    const character = characters[context.characterId];
-    let targetLorebookName = null;
-    let isNewBook = false;
-
-    switch (targetLorebookFromPending) {
-      case "character_main":
-        targetLorebookName = character?.data?.extensions?.world;
-        if (!targetLorebookName) {
-          toastr.warning(
-            "角色未绑定主世界书，总结写入任务已中止。",
-            "Amily2号",
-          );
-          console.groupEnd();
-          return;
-        }
-        break;
-      case "dedicated":
-        targetLorebookName = `${DEDICATED_LOREBOOK_NAME}-${chatIdentifier}`;
-        break;
-      default:
-        toastr.error(
-          `收到未知的写入指令: "${targetLorebookFromPending}"`,
-          "Amily2号",
-        );
-        console.groupEnd();
+    if (!pendingData || !pendingData.summary || !pendingData.sourceAiMessageTimestamp || !pendingData.settings) {
+        console.warn("[Amily2-国史馆] 接到一份残缺的待办文书，写入任务已中止。", pendingData);
         return;
     }
 
-    if (!world_names.includes(targetLorebookName)) {
-      await createNewWorldInfo(targetLorebookName);
-      isNewBook = true;
+    const context = getContext();
+    const chat = context.chat;
+    let isSourceMessageValid = false;
+    let sourceMessageCandidate = null;
+    for (let i = chat.length - 2; i >= 0; i--) {
+        if (!chat[i].is_user) { sourceMessageCandidate = chat[i]; break; }
+    }
+    if (sourceMessageCandidate && sourceMessageCandidate.send_date === pendingData.sourceAiMessageTimestamp) {
+        isSourceMessageValid = true;
+    }
+    if (!isSourceMessageValid) {
+        console.log("[Amily2号-逆时寻踪] 裁决: 源消息已被修改或删除，遵旨废黜过时总结。");
+        return;
     }
 
-    const uniqueLoreName = `${LOREBOOK_PREFIX}${chatIdentifier}`;
-    const bookData = await loadWorldInfo(targetLorebookName);
-    if (!bookData) {
-      toastr.error(`无法加载世界书《${targetLorebookName}》`, "Amily2号");
-      console.groupEnd();
-      return;
+    const { summary: summaryToCommit, settings } = pendingData;
+
+    console.groupCollapsed(`[Amily2号-存档任务-v21.0 最终圣旨版] ${new Date().toLocaleTimeString()}`);
+    console.time("总结写入总耗时");
+
+    try {
+        const chatIdentifier = await getChatIdentifier();
+        const character = characters[context.characterId];
+        let targetLorebookName = null;
+        let isNewBook = false;
+        switch (settings.target) {
+            case "character_main":
+                targetLorebookName = character?.data?.extensions?.world;
+                if (!targetLorebookName) {
+                    toastr.warning("角色未绑定主世界书，总结写入任务已中止。", "Amily2号");
+                    console.groupEnd();
+                    return;
+                }
+                break;
+            case "dedicated":
+                targetLorebookName = `${DEDICATED_LOREBOOK_NAME}-${chatIdentifier}`;
+                break;
+            default:
+                toastr.error(`收到未知的写入指令: "${settings.target}"`, "Amily2号");
+                console.groupEnd();
+                return;
+        }
+
+        if (!world_names.includes(targetLorebookName)) {
+            await createNewWorldInfo(targetLorebookName);
+            isNewBook = true;
+        }
+
+        const uniqueLoreName = `${LOREBOOK_PREFIX}${chatIdentifier}`;
+        const bookData = await loadWorldInfo(targetLorebookName);
+        if (!bookData) {
+            toastr.error(`无法加载世界书《${targetLorebookName}》`, "Amily2号");
+            console.groupEnd();
+            return;
+        }
+
+        const existingEntry = Object.values(bookData.entries).find(e => e.comment === uniqueLoreName && !e.disable);
+
+        if (existingEntry) {
+            const existingContent = existingEntry.content.replace(INTRODUCTORY_TEXT, "").trim();
+            const lines = existingContent ? existingContent.split("\n") : [];
+            const nextNumber = lines.length + 1;
+            existingEntry.content += `\n${nextNumber}. ${summaryToCommit}`;
+        } else {
+
+            const positionMap = {
+                'before_char': 0, 'after_char': 1, 'before_an': 2,
+                'after_an': 3, 'at_depth': 4
+            };
+
+            const finalKeywords = settings.keywords.split(',').map(k => k.trim()).filter(Boolean);
+            const isConstant = settings.activationMode === 'always';
+            const newEntry = createWorldInfoEntry(targetLorebookName, bookData);
+            Object.assign(newEntry, {
+                comment: uniqueLoreName,
+                content: `${INTRODUCTORY_TEXT}1. ${summaryToCommit}`,
+                key: finalKeywords,
+                constant: isConstant,
+                position: positionMap[settings.insertionPosition] ?? 4,
+                depth: settings.depth,
+                disable: false,
+            });
+        }
+
+
+        await saveWorldInfo(targetLorebookName, bookData, true);
+        console.log(`[史官司] 总结已遵旨写入《${targetLorebookName}》文件。`);
+
+        if (isNewBook) {
+            await refreshWorldbookListOnly(targetLorebookName);
+            toastr.success(`已创建并写入新档案《${targetLorebookName}》！`, "Amily2号");
+        }
+    } catch (error) {
+        console.error("[Amily2号-写入失败] 写入流程发生意外错误:", error);
+        toastr.error("后台写入总结时发生错误。", "Amily2号");
+    } finally {
+        console.timeEnd("总结写入总耗时");
+        console.groupEnd();
     }
-
-    const existingEntry = Object.values(bookData.entries).find(
-      (e) => e.comment === uniqueLoreName && !e.disable,
-    );
-
-    if (existingEntry) {
-      const existingContent = existingEntry.content
-        .replace(INTRODUCTORY_TEXT, "")
-        .trim();
-      const lines = existingContent ? existingContent.split("\n") : [];
-      const nextNumber = lines.length + 1;
-      existingEntry.content += `\n${nextNumber}. ${summaryToCommit}`;
-    } else {
-      const newEntry = createWorldInfoEntry(targetLorebookName, bookData);
-      Object.assign(newEntry, {
-        comment: uniqueLoreName,
-        content: `${INTRODUCTORY_TEXT}1. ${summaryToCommit}`,
-        key: [chatIdentifier, "Amily2", "总结"],
-        disable: false,
-      });
-    }
-
-    await saveWorldInfo(targetLorebookName, bookData, true);
-    console.log(`[史官司] 总结已遵旨写入《${targetLorebookName}》文件。`);
-
-    if (isNewBook) {
-      await refreshWorldbookListOnly(targetLorebookName);
-      toastr.success(
-        `已创建并写入新档案《${targetLorebookName}》！`,
-        "Amily2号",
-      );
-    }
-  } catch (error) {
-    console.error("[Amily2号-写入失败] 写入流程发生意外错误:", error);
-    toastr.error("后台写入总结时发生错误。", "Amily2号");
-  } finally {
-    console.timeEnd("总结写入总耗时");
-    console.groupEnd();
-  }
 }
