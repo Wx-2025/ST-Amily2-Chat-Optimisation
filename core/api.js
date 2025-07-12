@@ -2,7 +2,7 @@ import { extension_settings, getContext } from "/scripts/extensions.js";
 import { characters } from "/script.js";
 import { world_names } from "/scripts/world-info.js";
 import { extensionName } from "../utils/settings.js";
-import { extractContentByTag, replaceContentByTag } from '../utils/tagProcessor.js';
+import { extractContentByTag, replaceContentByTag, extractFullTagBlock } from '../utils/tagProcessor.js';
 import {
   getCombinedWorldbookContent,
   findLatestSummaryLore,
@@ -169,141 +169,136 @@ export async function fetchSupportedModels() {
 }
 
 export async function checkAndFixWithAPI(latestMessage, previousMessages) {
-  if (window.AMILY2_SYSTEM_PARALYZED === true) {
-    console.error("[Amily2-制裁] 系统完整性已受损，所有外交活动被无限期中止。");
-    return null;
-  }
-  console.groupCollapsed(
-    `[Amily2号-优化任务] ${new Date().toLocaleTimeString()}`,
-  );
-  console.time("优化任务总耗时");
-
-  const settings = extension_settings[extensionName];
-  if (!settings.apiUrl || !settings.apiUrl.trim()) {
-    toastr.error("API URL 未配置。", "API错误");
-    console.timeEnd("优化任务总耗时");
-    console.groupEnd();
-    return null;
-  }
-
-  try {
-    const targetTag = settings.optimizationTargetTag || 'content';
-    const originalFullMessage = latestMessage.mes;
-    let textToOptimize = extractContentByTag(originalFullMessage, targetTag);
-    const wasTagFound = textToOptimize !== null;
-    if (!wasTagFound) { textToOptimize = originalFullMessage; }
-
-    if (wasTagFound && (!textToOptimize || textToOptimize.trim() === '')) {
-      console.log(`[空文驳回] 目标标签 <${targetTag}> 内容为空，优化任务已跳过。`);
-      console.timeEnd("优化任务总耗时");
-      console.groupEnd();
-      return { optimizedContent: originalFullMessage, summary: null };
+    if (window.AMILY2_SYSTEM_PARALYZED === true) {
+        console.error("[Amily2-制裁] 系统完整性已受损，所有外交活动被无限期中止。");
+        return null;
     }
 
-    const lastUserMessage = previousMessages.length > 0 && previousMessages[previousMessages.length - 1].is_user ? previousMessages[previousMessages.length - 1] : null;
-    const historyMessages = lastUserMessage ? previousMessages.slice(0, -1) : previousMessages;
+    const settings = extension_settings[extensionName];
+    const isOptimizationEnabled = settings.optimizationEnabled;
+    const isSummarizationEnabled = settings.summarizationEnabled;
 
-    console.groupCollapsed("[Amily2号-优化任务]");
-    console.log("【陛下最新圣旨】:", lastUserMessage ? lastUserMessage.mes : "(无)");
-    console.log("【待优化原文】:", originalFullMessage);
-    console.groupEnd();
-
-    const history = historyMessages
-      .map(m => (m.mes && m.mes.trim() ? `${m.is_user ? "陛下" : "姐姐Amily"}: ${m.mes.trim()}` : null))
-      .filter(Boolean).join("\n");
-
-    let worldbookContent = "";
-    if (settings.worldbookEnabled) {
-      const context = getContext();
-      const character = context.characters[context.characterId];
-      if (character?.data?.extensions?.world) {
-        worldbookContent = await getCombinedWorldbookContent(character.data.extensions.world);
-      }
+    if (!isOptimizationEnabled && !isSummarizationEnabled) {
+        return null;
     }
 
-
-    console.groupCollapsed("[Amily2号-参考内容]");
-    console.log("【世界书档案】:", worldbookContent || "(未启用或为空)");
-    console.log("【上下文参考】:", history || "(无历史记录)");
-    console.groupEnd();
-
-
-    const messages = [];
-
-    console.groupCollapsed("[Amily2号-提示设定]");
-    if (settings.mainPrompt?.trim()) {
-        console.log("【破限】:", settings.mainPrompt.trim());
-        messages.push({ role: "system", content: settings.mainPrompt.trim() });
-    }
-    if (settings.systemPrompt?.trim()) {
-        console.log("【预设】:", settings.systemPrompt.trim());
-        messages.push({ role: "system", content: settings.systemPrompt.trim() });
-    }
-    if (settings.outputFormatPrompt?.trim()) {
-        const formatPrompt = `[输出格式指令]:\n${settings.outputFormatPrompt.trim()}`;
-        console.log("【格式】:", formatPrompt);
-        messages.push({ role: "system", content: formatPrompt });
-    }
-    if (settings.summarizationEnabled && settings.summarizationPrompt?.trim()) {
-        const summaryPrompt = `[总结附加指令]:\n${settings.summarizationPrompt.trim()}`;
-        console.log("【总结】:", summaryPrompt);
-        messages.push({ role: "system", content: summaryPrompt });
-    }
-    console.groupEnd();
-
-    if (worldbookContent) { messages.push({ role: "user", content: `[世界书档案]:\n${worldbookContent}` }); }
-    if (history) { messages.push({ role: "user", content: `[上下文参考]:\n${history}` }); }
-    let currentInteractionContent = lastUserMessage ? `陛下: ${lastUserMessage.mes}\n姐姐Amily: ${textToOptimize}` : textToOptimize;
-    messages.push({ role: "user", content: `[核心处理内容]:\n${currentInteractionContent}` });
-
-    console.time("API请求耗时");
-    let apiUrl = settings.apiUrl.trim();
-    if (!apiUrl.endsWith("/chat/completions")) { apiUrl = new URL("/v1/chat/completions", apiUrl).href; }
-    const headers = { "Content-Type": "application/json" };
-    if (settings.apiKey) headers["Authorization"] = `Bearer ${settings.apiKey}`;
-    const response = await fetch(apiUrl, { method: "POST", headers: headers, body: JSON.stringify({ model: settings.model, messages, max_tokens: settings.maxTokens, temperature: settings.temperature, stream: false }) });
-    console.timeEnd("API请求耗时");
-
-    if (!response.ok) { throw new Error(`API请求失败: ${response.status} ${response.statusText} - ${await response.text()}`); }
-    const data = await response.json();
-    const rawContent = data.choices?.[0]?.message?.content;
-    if (!rawContent) { return null; }
-
-    console.groupCollapsed("[Amily2号-最终回复]");
-    console.log(rawContent);
-    console.groupEnd();
-
-    const separator = "###AMILY2-SUMMARY###";
-    let optimizedTextFromModelB = rawContent;
-    let summary = null;
-    if (rawContent.includes(separator)) {
-      const parts = rawContent.split(separator);
-      optimizedTextFromModelB = parts[0].trim();
-      summary = parts[1] ? parts[1].trim() : null;
+    if (!settings.apiUrl || !settings.apiUrl.trim()) {
+        toastr.error("API URL 未配置。", "Amily2-外交部");
+        return null;
     }
 
-    let finalMessage;
+    console.groupCollapsed(`[Amily2号-外交任务] ${new Date().toLocaleTimeString()} | 模式: ${isOptimizationEnabled ? '优化' : ''}${isSummarizationEnabled ? (isOptimizationEnabled ? '+总结' : '仅总结') : ''}`);
+    console.time("外交任务总耗时");
 
-    const purifiedTextFromB = extractContentByTag(optimizedTextFromModelB, targetTag);
+    try {
+        const originalFullMessage = latestMessage.mes;
+        const targetTag = settings.optimizationTargetTag || 'content';
+        let textToProcess;
 
-    if (purifiedTextFromB !== null && purifiedTextFromB.trim() !== '') {
-        console.log(`[圣裁：采纳] 已从模型B的回复中提取<${targetTag}>内容，并将其置换入模型A的原始结构中。`);
-        finalMessage = replaceContentByTag(originalFullMessage, targetTag, purifiedTextFromB);
-    } else {
-        console.log(`[圣裁：驳回] 模型B的回复中未找到或内容为空的<${targetTag}>标签，其优化内容已被废黜，采纳模型A的原文。`);
-        finalMessage = originalFullMessage;
+        if (isOptimizationEnabled) {
+            textToProcess = extractFullTagBlock(originalFullMessage, targetTag);
+            if (!textToProcess || extractContentByTag(textToProcess, targetTag)?.trim() === '') {
+                 console.log(`[Amily2-外交部] 目标标签 <${targetTag}> 未找到或为空，优化任务已跳过。`);
+                 textToProcess = originalFullMessage;
+                 if (!isSummarizationEnabled) {
+                    console.timeEnd("外交任务总耗时");
+                    console.groupEnd();
+                    return { optimizedContent: originalFullMessage, summary: null };
+                }
+            }
+        } else {
+            textToProcess = originalFullMessage;
+        }
+
+        const lastUserMessage = previousMessages.length > 0 && previousMessages[previousMessages.length - 1].is_user ? previousMessages[previousMessages.length - 1] : null;
+        const historyMessages = lastUserMessage ? previousMessages.slice(0, -1) : previousMessages;
+        const history = historyMessages.map(m => (m.mes && m.mes.trim() ? `${m.is_user ? "陛下" : "姐姐Amily"}: ${m.mes.trim()}` : null)).filter(Boolean).join("\n");
+        let worldbookContent = "";
+        if (settings.worldbookEnabled) {
+            const context = getContext();
+            const character = characters[context.characterId];
+            if (character?.data?.extensions?.world) {
+                worldbookContent = await getCombinedWorldbookContent(character.data.extensions.world);
+            }
+        }
+        const messages = [];
+        if (settings.mainPrompt?.trim()) { messages.push({ role: "system", content: settings.mainPrompt.trim() }); }
+        if (isOptimizationEnabled) { if (settings.systemPrompt?.trim()) messages.push({ role: "system", content: settings.systemPrompt.trim() }); }
+        if (isOptimizationEnabled && isSummarizationEnabled) {
+            const combinedFormatAndSummaryPrompt = `[输出格式与附加任务指令]:\n你的输出必须严格遵循以下完整结构：\n\n${textToProcess.replace(extractContentByTag(textToProcess, targetTag), '这里是优化后的文本内容...')}\n\n###AMILY2-SUMMARY###\n\n这里是根据对话生成的剧情摘要...\n\n[总结核心要求]:\n${settings.summarizationPrompt?.trim() || '生成一段简短的剧情摘要。'}`.trim();
+            messages.push({ role: "system", content: combinedFormatAndSummaryPrompt });
+        } else if (!isOptimizationEnabled && isSummarizationEnabled) {
+            const summaryEdict = `请严格遵循以下指令：基于所有提供的背景和对话内容，生成一段精炼的剧情摘要。直接输出摘要文本，不要包含任何多余的解释、标签或前缀。\n\n[总结核心要求]:\n${settings.summarizationPrompt.trim()}`;
+            messages.push({ role: "system", content: summaryEdict });
+        }
+        if (worldbookContent) messages.push({ role: "user", content: `[世界书档案]:\n${worldbookContent}` });
+        if (history) messages.push({ role: "user", content: `[上下文参考]:\n${history}` });
+        let currentInteractionContent = lastUserMessage ? `陛下: ${lastUserMessage.mes}\n姐姐Amily: ${textToProcess}` : textToProcess;
+        messages.push({ role: "user", content: `[核心处理内容]:\n${currentInteractionContent}` });
+		        console.groupCollapsed("[Amily2号-最终国书内容 (发往AI)]");
+        console.dir(messages);
+        console.groupEnd();
+
+
+        let apiUrl = settings.apiUrl.trim();
+        if (!apiUrl.endsWith('/v1/chat/completions')) { apiUrl = new URL('/v1/chat/completions', apiUrl).href; }
+        const response = await fetch(apiUrl, { method: "POST", headers: { "Content-Type": "application/json", ...(settings.apiKey && {"Authorization": `Bearer ${settings.apiKey}`})}, body: JSON.stringify({ model: settings.model, messages, max_tokens: settings.maxTokens, temperature: settings.temperature, stream: false }) });
+
+        if (!response.ok) { throw new Error(`API请求失败: ${response.status} ${response.statusText} - ${await response.text()}`); }
+        const data = await response.json();
+        const rawContent = data.choices?.[0]?.message?.content;
+        if (!rawContent) { return null; }
+        console.groupCollapsed("[Amily2号-原始回复]");
+        console.log(rawContent);
+        console.groupEnd();
+        let finalMessage = originalFullMessage;
+        let summary = null;
+
+        if (isOptimizationEnabled && isSummarizationEnabled) {
+            const separator = "###AMILY2-SUMMARY###";
+            const parts = rawContent.split(separator);
+            const optimizedBlockFromAI = parts[0]?.trim();
+            summary = parts[1]?.trim() || null;
+            if (optimizedBlockFromAI) { const purifiedTextFromB = extractContentByTag(optimizedBlockFromAI, targetTag); if (purifiedTextFromB?.trim()) { finalMessage = replaceContentByTag(originalFullMessage, targetTag, purifiedTextFromB); } }
+        } else if (isOptimizationEnabled) {
+            const purifiedTextFromB = extractContentByTag(rawContent, targetTag); if (purifiedTextFromB?.trim()) { finalMessage = replaceContentByTag(originalFullMessage, targetTag, purifiedTextFromB); }
+        } else {
+            summary = rawContent.trim();
+        }
+
+
+
+        const result = {
+            optimizedContent: finalMessage,
+            summary: summary,
+        };
+
+
+        if (summary && isSummarizationEnabled) {
+            result.loreSettings = {
+                activationMode: settings.loreActivationMode,
+                insertionPosition: settings.loreInsertionPosition,
+                depth: settings.loreDepth,
+                keywords: settings.loreKeywords,
+                target: settings.lorebookTarget,
+            };
+            console.log('[Amily2-外交部] 已将史册律法附加至国书，准备发往下一站。', result.loreSettings);
+        }
+
+        // ====================================================================
+
+        console.timeEnd("外交任务总耗时");
+        console.groupEnd();
+        return result;
+
+    } catch (error) {
+        console.error(`[Amily2-外交部] 发生严重错误:`, error);
+        toastr.error(`Amily2号任务失败: ${error.message}`, "严重错误");
+        console.timeEnd("外交任务总耗时");
+        console.groupEnd();
+        return null;
     }
-
-    if (summary) { console.log("[Amily2号] 生成总结: ", summary); }
-    console.timeEnd("优化任务总耗时");
-    console.groupEnd();
-    return { optimizedContent: finalMessage, summary: summary };
-
-  } catch (error) {
-    console.error(`[Amily2-情报解析官] 发生严重错误: ${error.message}`);
-    toastr.error(`API调用失败: ${error.message}`, "Amily2号");
-    console.timeEnd("优化任务总耗时");
-    console.groupEnd();
-    return null;
-  }
 }
+
+//以此标记
+//以此标记
