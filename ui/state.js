@@ -123,6 +123,15 @@ export function updateUI() {
     $("#amily2_auto_hide_enabled").prop("checked", settings.autoHideEnabled);
     $("#amily2_auto_hide_threshold").val(settings.autoHideThreshold);
     $("#amily2_auto_hide_threshold_value").text(settings.autoHideThreshold);
+        $('#amily2_lore_activation_mode').val(settings.loreActivationMode);
+        $('#amily2_lore_insertion_position').val(settings.loreInsertionPosition);
+        $('#amily2_lore_depth_input').val(settings.loreDepth);
+        if (settings.loreInsertionPosition === 'at_depth') {
+            $('#amily2_lore_depth_container').show();
+        } else {
+            $('#amily2_lore_depth_container').hide(); 
+        }
+
     populateModelDropdown(); 
   }
 }
