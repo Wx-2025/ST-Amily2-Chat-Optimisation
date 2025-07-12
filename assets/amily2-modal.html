@@ -148,27 +148,65 @@
                 </div>
             </fieldset>
 
-            <fieldset class="settings-group">
-                <legend><i class="fas fa-book-open"></i> 世界书档案司</legend>
-                <div class="amily2_settings_block">
-                     <label>连接世界书进行优化</label>
-                     <label class="toggle-switch">
-                        <input id="amily2_worldbook_enabled" type="checkbox">
-                        <span class="slider"></span>
-                     </label>
-                    <small class="notes">独立开关：决定优化时是否读取世界书内容作为参考，个人不推荐。</small>
-                </div>
-                <div class="amily2_settings_block">
-                    <label>总结写入目标:</label>
-                    <div class="radio-group">
-                        <input type="radio" id="amily2_target_main" name="amily2_lorebook_target" value="character_main" checked>
-                        <label for="amily2_target_main">写入【主世界书】</label>
-                        <input type="radio" id="amily2_target_dedicated" name="amily2_lorebook_target" value="dedicated">
-                        <label for="amily2_target_dedicated">写入【独立档案】</label>
-                    </div>
-                    <small class="notes">此设置仅在“启用即时总结”开启时生效。</small>
-                </div>
-            </fieldset>
+<fieldset class="settings-group">
+
+    <legend><i class="fas fa-book-open"></i> 世界书档案司与律法</legend>
+
+    <div class="amily2_lore_config_wrapper">
+
+        <div class="amily2_lore_config_section">
+            <div class="amily2_settings_block">
+                <label>连接世界书进行优化</label>
+                <label class="toggle-switch">
+                   <input id="amily2_worldbook_enabled" type="checkbox">
+                   <span class="slider"></span>
+                </label>
+               <small class="notes">独立开关：决定优化时是否读取世界书内容作为参考。</small>
+           </div>
+           <div class="amily2_settings_block">
+               <label>总结写入目标:</label>
+               <div class="radio-group">
+                   <input type="radio" id="amily2_target_main" name="amily2_lorebook_target" value="character_main" checked>
+                   <label for="amily2_target_main">写入【主世界书】</label>
+                   <input type="radio" id="amily2_target_dedicated" name="amily2_lorebook_target" value="dedicated">
+                   <label for="amily2_target_dedicated">写入【独立档案】</label>
+               </div>
+               <small class="notes">此设置仅在“启用即时总结”开启时生效。</small>
+           </div>
+        </div>
+
+        <div class="amily2_vertical_divider"></div>
+
+        <div class="amily2_lore_config_section">
+            <div class="amily2_settings_block">
+                <label for="amily2_lore_activation_mode">默认激活模式:</label>
+                <select id="amily2_lore_activation_mode" class="text_pole">
+                    <option value="always">🔵 蓝灯 (始终激活)</option>
+                    <option value="keyed">🟢 绿灯 (关键词触发)</option>
+                </select>
+            </div>
+            <div class="amily2_settings_block">
+                <label for="amily2_lore_insertion_position">默认插入位置:</label>
+                <select id="amily2_lore_insertion_position" class="text_pole">
+                    <option value="before_char">角色定义之前</option>
+                    <option value="after_char">角色定义之后</option>
+                    <option value="before_an">作者注释之前</option>
+                    <option value="after_an">作者注释之后</option>
+                    <option value="at_depth">@D 注入指定深度</option>
+                </select>
+            </div>
+            <div id="amily2_lore_depth_container" class="amily2_settings_block" style="display: none;">
+                <label for="amily2_lore_depth_input">注入深度:</label>
+                <input id="amily2_lore_depth_input" title="深度" class="text_pole wideMax100px margin0" type="number" name="depth" placeholder="2" min="0" max="9999" style="width: calc(3em + 25px);">
+            </div>
+            <div class="amily2_settings_block" style="margin-top: auto;">
+                <button id="amily2_save_lore_settings" class="menu_button"><i class="fas fa-save"></i> 确认敕令</button>
+                <small id="amily2_lore_save_status" class="notes" style="text-align: center; width: 100%;"></small>
+            </div>
+        </div>
+
+    </div>
+</fieldset>
 
 			 
 			<fieldset class="settings-group">
