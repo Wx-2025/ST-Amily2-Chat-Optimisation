@@ -138,6 +138,46 @@ input:checked + .slider:before { transform: translateX(24px); }
     background-color: rgba(255, 255, 255, 0.1);
     color: white;
 }
+
+
+.amily2_lore_config_wrapper {
+    display: flex;
+    gap: 15px;
+}
+
+.amily2_lore_config_section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.amily2_vertical_divider {
+    width: 1px;
+    background-color: rgba(255, 255, 255, 0.2);
+    align-self: stretch;
+}
+
+#amily2_save_lore_settings {
+    width: 100%;
+    background: linear-gradient(135deg, #7e57c2, #5e35b1);
+    border: 1px solid #4527a0;
+}
+#amily2_save_lore_settings:hover {
+    background: linear-gradient(135deg, #5e35b1, #7e57c2);
+    box-shadow: 0 0 8px rgba(126, 87, 194, 0.6);
+}
+
+
+#amily2_lore_save_status {
+    color: #66bb6a;
+    font-weight: bold;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+    padding-top: 5px;
+}
+
+
 hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 0; }
 .text_pole, select { width: 100%; box-sizing: border-box; }
 
