@@ -1,6 +1,6 @@
 {
   "name": "ST-Amily2-Chat-Optimisation",
-  "version": "1.0.9",
+  "version": "1.1.0",
   "description": "Amily2's advanced chat optimization engine",
   "main": "index.js",
   "scripts": {
