@@ -72,3 +72,150 @@
         提示：若“起始层”留空，则仅操作“结束层”所指定的单层。
     </small>
 </fieldset>
+
+<fieldset class="settings-group" id="amily2_manual_historiography_bureau">
+    <legend><i class="fas fa-gavel"></i> 手动敕史局</legend>
+    <small class="notes" style="text-align: center; display: block; margin-bottom: 15px;">
+        赋予你选取任意对话、熔铸为永恒史册的至高权力。
+    </small>
+
+
+    <fieldset class="settings-group" style="border-style: dashed;">
+        <legend>📜 微言录 (Small Summary)</legend>
+
+
+        <div class="amily2_settings_block">
+            <div class="label-with-button">
+                <label for="amily2_mhb_small_prompt_selector">选择编辑的谕旨:</label>
+                <i id="amily2_mhb_small_expand_editor" class="editor_maximize fa-solid fa-maximize right_menu_button interactable" title="展开编辑器" tabindex="0"></i>
+            </div>
+            <select id="amily2_mhb_small_prompt_selector" class="text_pole">
+                <option value="jailbreak">破限谕旨 (最高优先级)</option>
+                <option value="summary">敕史纲要 (总结任务)</option>
+            </select>
+        </div>
+        <div class="amily2_settings_block prompt-editor-area">
+            <textarea id="amily2_mhb_small_editor" class="text_pole" rows="3"></textarea>
+            <div class="editor-buttons-panel">
+                <button id="amily2_mhb_small_save_button" class="menu_button accent small_button interactable"><i class="fas fa-save"></i> 保存当前</button>
+                <button id="amily2_mhb_small_restore_button" class="menu_button secondary small_button interactable"><i class="fas fa-undo"></i> 恢复默认</button>
+            </div>
+        </div>
+
+
+        <div class="mhb-controls-wrapper">
+
+            <div class="manual-command-block">
+                <label>手动熔铸范围:</label>
+                <input type="number" id="amily2_mhb_small_start_floor" class="manual-input" placeholder="起始层">
+                <span class="manual-command-divider">-</span>
+                <input type="number" id="amily2_mhb_small_end_floor" class="manual-input" placeholder="结束层">
+                <button id="amily2_mhb_small_manual_execute" class="menu_button primary small_button interactable">
+                    <i class="fas fa-fire"></i> 熔铸
+                </button>
+            </div>
+
+
+            <div class="auto-command-block" id="amily2_mhb_auto_command_block">
+
+                <button id="amily2_mhb_small_expedition_execute" class="menu_button primary small_button interactable" title="立即发动一次彻底的总结远征，将所有未归档的历史一次性清算。">
+                    <i class="fas fa-flag-checkered"></i> 开始远征
+                </button>
+
+
+                <div class="auto-control-pair">
+                    <label for="amily2_mhb_small_auto_enabled" title="在您聊天时，于后台默默守护史册的完整。">自动巡录:</label>
+                    <label class="toggle-switch">
+                        <input id="amily2_mhb_small_auto_enabled" type="checkbox" />
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+
+                <div class="auto-control-pair">
+                    <label for="amily2_mhb_small_trigger_count" title="“自动巡录”和“开始远征”的单次作战楼层数。">远征阈值:</label>
+                    <input id="amily2_mhb_small_trigger_count" type="number" min="1" class="text_pole" style="width: 70px;" placeholder="30">
+                </div>
+            </div>
+
+
+            <small class="notes" style="text-align: center; display: block; margin-top: 5px;">
+                【开始远征】将立即清算所有未记录的历史。 【自动巡录】则在您聊天时，于后台默默守护史册的完整。
+            </small>
+
+
+        </div>
+    </fieldset>
+
+    <!-- 上下分割线 -->
+    <hr class="header-divider" style="margin: 20px 0;">
+
+    <fieldset class="settings-group" style="border-style: dashed;">
+        <legend>💎 宏史卷 (史册精炼)</legend>
+
+
+        <div class="amily2_settings_block">
+            <div class="label-with-button">
+                <label for="amily2_mhb_large_prompt_selector">选择编辑的谕旨:</label>
+                <i id="amily2_mhb_large_expand_editor" class="editor_maximize fa-solid fa-maximize right_menu_button interactable" title="展开编辑器" tabindex="0"></i>
+            </div>
+            <select id="amily2_mhb_large_prompt_selector" class="text_pole">
+                <option value="jailbreak">破限谕旨 (最高优先级)</option>
+                <option value="summary">精炼纲要 (精炼任务)</option>
+            </select>
+        </div>
+        <div class="amily2_settings_block prompt-editor-area">
+            <textarea id="amily2_mhb_large_editor" class="text_pole" rows="4"></textarea>
+            <div class="editor-buttons-panel">
+                <button id="amily2_mhb_large_save_button" class="menu_button accent small_button interactable"><i class="fas fa-save"></i> 保存当前</button>
+                <button id="amily2_mhb_large_restore_button" class="menu_button secondary small_button interactable"><i class="fas fa-undo"></i> 恢复默认</button>
+            </div>
+        </div>
+
+
+          <div class="mhb-controls-wrapper">
+
+            <div class="mhb-selector-container">
+
+                <div class="mhb-selector-group">
+                    <label for="amily2_mhb_large_worldbook_selector">目标国史馆 (世界书)</label>
+                    <div class="select-with-refresh">
+                        <select id="amily2_mhb_large_worldbook_selector" class="text_pole" style="flex-grow: 1;">
+                            <option value="">刷新列表...</option>
+                        </select>
+                        <button id="amily2_mhb_large_refresh_worldbooks" class="menu_button secondary small_button interactable" title="刷新世界书列表">
+                            <i class="fas fa-atlas"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mhb-selector-group">
+                    <label for="amily2_mhb_large_lore_selector">待精炼的史册条目</label>
+                    <div class="select-with-refresh">
+                        <select id="amily2_mhb_large_lore_selector" class="text_pole" style="flex-grow: 1;">
+                            <option value="">请先选择世界书...</option>
+                        </select>
+                        <button id="amily2_mhb_large_refresh_lores" class="menu_button secondary small_button interactable" title="刷新所选世界书的史册列表">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+
+            <button id="amily2_mhb_large_refine_execute" class="menu_button primary small_button interactable" style="margin-top: 15px; width: 100%;">
+                <i class="fas fa-gem"></i> 开始精炼
+            </button>
+        </div>
+        </div>
+    </fieldset>
+
+
+    <div id="amily2_mhb_hidden_prompts" style="display:none;">
+        <textarea id="amily2_mhb_small_jailbreak_prompt"></textarea>
+        <textarea id="amily2_mhb_small_summary_prompt"></textarea>
+        <textarea id="amily2_mhb_large_jailbreak_prompt"></textarea>
+        <textarea id="amily2_mhb_large_summary_prompt"></textarea>
+    </div>
+
+</fieldset>
