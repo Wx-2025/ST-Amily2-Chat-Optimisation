@@ -18,12 +18,26 @@
 
 
 <div class="amily2-header">
-    <div class="main-toggle amily2_settings_block">
-        <input id="amily2_enabled" type="checkbox" />
-        <label for="amily2_enabled"><strong>启动Amily2号</strong></label>
-    </div>
-
-
+    <!-- 左侧垂直布局容器 -->
+    <div class="header-left-panel">
+        <!-- 主开关 -->
+        <div class="main-toggle amily2_settings_block">
+            <label for="amily2_enabled" class="main-toggle-label"><strong>启动Amily2号</strong></label>
+            <label class="toggle-switch">
+                <input id="amily2_enabled" type="checkbox" />
+                <span class="slider"></span>
+            </label>
+        </div>
+ 
+        <!-- 翰林院入口 -->
+        <div class="rag-palace-entry-container">
+            <button id="amily2_open_rag_palace" class="secret-chamber-button interactable">
+                <i class="fas fa-brain"></i> 翰林院
+            </button>
+        </div>
+    </div> <!-- 左侧容器结束 -->
+ 
+    <!-- 右侧操作按钮组 -->
     <div class="header-actions-group">
         <div class="update-section">
             <button id="amily2_update_button" class="menu_button small_button interactable" title="查看更新日志">
@@ -31,7 +45,6 @@
                 <span id="amily2_update_indicator" class="update-indicator" style="display: none;"></span>
             </button>
         </div>
-
         <div class="additional-features-section">
             <button id="amily2_open_additional_features" class="secret-chamber-button interactable">
                 <i class="fas fa-landmark-dome"></i> 内阁密室
@@ -39,6 +52,7 @@
         </div>
     </div>
 </div>
+ 
 <hr class="header-divider">
 
             <fieldset class="settings-group">
@@ -101,13 +115,31 @@
                     <label for="amily2_api_key">API Key</label>
                     <input id="amily2_api_key" type="password" class="text_pole" placeholder="sk-..." />
                 </div>
-                <div class="amily2_settings_block">
-                    <div class="flex-container">
-                        <select id="amily2_model" class="text_pole" style="flex: 1"></select>
-                        <button id="amily2_refresh_models" class="menu_button interactable"><i class="fas fa-sync-alt"></i> 刷新</button>
-                    </div>
-                    <div id="amily2_model_notes" class="notes"></div>
-                </div>
+				
+				
+<div class="amily2_settings_block">
+    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+        <input id="amily2_force_proxy" type="checkbox" />
+        <span>强制使用SillyTavern代理 (用于Claw/特殊接口)</span>
+    </label>
+    <div class="notes">勾选后将禁用模型刷新，并需要您在下方手动输入模型名称。</div>
+</div>
+
+<div class="amily2_settings_block">
+    <label for="amily2_model_selector">模型</label>
+    <div class="flex-container" id="amily2_model_selector">
+        <!-- 自动获取模式的容器 -->
+        <div id="amily2_model_autofetch_wrapper" style="display: flex; flex: 1; gap: 5px;">
+            <select id="amily2_model" class="text_pole" style="flex: 1;"></select>
+            <button id="amily2_refresh_models" class="menu_button interactable"><i class="fas fa-sync-alt"></i> 刷新</button>
+        </div>
+        <!-- 手动输入模式的容器 (默认隐藏) -->
+        <input id="amily2_manual_model_input" type="text" class="text_pole" style="flex: 1; display: none;" placeholder="请在此手动输入并保存模型ID"/>
+    </div>
+    <div id="amily2_model_notes" class="notes"></div>
+</div>
+
+
                 <div class="amily2_settings_block">
                     <label for="amily2_max_tokens">最大Token数: <span id="amily2_max_tokens_value"></span></label>
                     <input id="amily2_max_tokens" type="range" min="100" max="20000" step="50" />
