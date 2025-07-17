@@ -81,7 +81,7 @@
 
 
     <fieldset class="settings-group" style="border-style: dashed;">
-        <legend>📜 微言录 (小总结)</legend>
+        <legend>📜 微言录 (Small Summary)</legend>
 
 
         <div class="amily2_settings_block">
@@ -133,6 +133,22 @@
 
 
                 <div class="auto-control-pair">
+                    <label for="historiography_write_to_lorebook" title="将生成的总结写入世界书。">写入史册:</label>
+                    <label class="toggle-switch">
+                        <input id="historiography_write_to_lorebook" type="checkbox" checked />
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="auto-control-pair">
+                    <label for="historiography_ingest_to_rag" title="将生成的总结存入翰林院进行向量化。">存入翰林院:</label>
+                    <label class="toggle-switch">
+                        <input id="historiography_ingest_to_rag" type="checkbox" />
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="auto-control-pair">
                     <label for="amily2_mhb_small_trigger_count" title="“自动巡录”和“开始远征”的单次作战楼层数。">远征阈值:</label>
                     <input id="amily2_mhb_small_trigger_count" type="number" min="1" class="text_pole" style="width: 70px;" placeholder="30">
                 </div>
@@ -140,7 +156,7 @@
 
 
             <small class="notes" style="text-align: center; display: block; margin-top: 5px;">
-                【开始远征】将根据阈值立即总结当前所有未总结楼层。 【自动巡录】在你聊天时根据阈值设定自动总结。
+                【开始远征】将立即清算所有未记录的历史。 【自动巡录】则在您聊天时，于后台默默守护史册的完整。
             </small>
 
 
@@ -151,7 +167,7 @@
     <hr class="header-divider" style="margin: 20px 0;">
 
     <fieldset class="settings-group" style="border-style: dashed;">
-        <legend>💎 宏史卷 (大总结)</legend>
+        <legend>💎 宏史卷 (史册精炼)</legend>
 
 
         <div class="amily2_settings_block">

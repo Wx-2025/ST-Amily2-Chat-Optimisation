@@ -1,0 +1,224 @@
+/* hanlinyuan.css - Scoped to #amily2_hanlinyuan_panel to prevent global style conflicts */
+
+#amily2_hanlinyuan_panel {
+    background-color: #f0f2f5;
+    color: #333;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    padding: 20px;
+}
+
+#amily2_hanlinyuan_panel .container {
+    max-width: 800px;
+    margin: auto;
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#amily2_hanlinyuan_panel .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+}
+
+#amily2_hanlinyuan_panel .header h2 {
+    margin: 0;
+    color: #1d2129;
+}
+
+#amily2_hanlinyuan_panel .header p {
+    margin: 5px 0 0;
+    color: #606770;
+}
+
+#amily2_hanlinyuan_panel .section {
+    margin-bottom: 25px;
+}
+
+#amily2_hanlinyuan_panel .section h3, 
+#amily2_hanlinyuan_panel .tab-content h4 {
+    color: #4b4f56;
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+#amily2_hanlinyuan_panel .form-group {
+    margin-bottom: 15px;
+}
+
+#amily2_hanlinyuan_panel .form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+#amily2_hanlinyuan_panel .form-group small {
+    display: block;
+    color: #606770;
+    font-size: 0.85em;
+    margin-top: 5px;
+}
+
+#amily2_hanlinyuan_panel .text_pole {
+    width: calc(100% - 22px);
+    padding: 10px;
+    border: 1px solid #dddfe2;
+    border-radius: 6px;
+    font-size: 1em;
+}
+
+#amily2_hanlinyuan_panel .text_pole:focus {
+    border-color: #1877f2;
+    outline: none;
+}
+
+#amily2_hanlinyuan_panel .button-group {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: center; /* Align items vertically */
+}
+
+/* New style for inline button groups */
+#amily2_hanlinyuan_panel .button-group.inline {
+    flex-direction: row;
+    justify-content: flex-start;
+}
+
+#amily2_hanlinyuan_panel .menu_button {
+    padding: 10px 15px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background-color: #4a4a4a; /* Standard button color like main panel */
+    color: white;
+    font-size: 1em;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+    text-align: center;
+}
+
+#amily2_hanlinyuan_panel .menu_button:hover {
+    background-color: #5a5a5a;
+}
+
+/* Compact button style */
+#amily2_hanlinyuan_panel .menu_button.compact {
+    padding: 5px 10px;
+    font-size: 0.9em;
+}
+
+/* Primary/Accent button color */
+#amily2_hanlinyuan_panel .menu_button.accent {
+    background-color: #007bff; /* A common accent color */
+    border-color: #007bff;
+}
+#amily2_hanlinyuan_panel .menu_button.accent:hover {
+    background-color: #0069d9;
+}
+
+#amily2_hanlinyuan_panel .menu_button:hover {
+    background-color: #166fe5;
+}
+
+#amily2_hanlinyuan_panel .menu_button.danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+#amily2_hanlinyuan_panel .menu_button.danger:hover {
+    background-color: #c82333;
+}
+
+/* Tab navigation */
+#amily2_hanlinyuan_panel .tab-nav {
+    display: flex;
+    border-bottom: 2px solid #dddfe2;
+    margin-bottom: 20px;
+}
+
+#amily2_hanlinyuan_panel .tab-button {
+    padding: 10px 20px;
+    cursor: pointer;
+    border: none;
+    background-color: transparent;
+    font-size: 1.1em;
+    color: #606770;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+}
+
+#amily2_hanlinyuan_panel .tab-button.active {
+    color: #1877f2;
+    border-bottom-color: #1877f2;
+}
+
+#amily2_hanlinyuan_panel .tab-content {
+    display: none;
+}
+
+#amily2_hanlinyuan_panel .tab-content.active {
+    display: block;
+}
+
+/* Status and Log panels */
+#amily2_hanlinyuan_panel .status-panel, 
+#amily2_hanlinyuan_panel .log-panel {
+    background-color: #f7f7f7;
+    border: 1px solid #e9e9e9;
+    border-radius: 6px;
+    padding: 15px;
+    margin-top: 15px;
+}
+
+#amily2_hanlinyuan_panel .status-panel p {
+    margin: 0 0 10px;
+}
+#amily2_hanlinyuan_panel .status-panel p:last-child {
+    margin-bottom: 0;
+}
+
+#amily2_hanlinyuan_panel .log-panel {
+    min-height: 100px;
+    max-height: 200px;
+    overflow-y: auto;
+    font-family: "Courier New", Courier, monospace;
+    font-size: 0.9em;
+}
+
+#amily2_hanlinyuan_panel #vector-list-container {
+    margin-top: 20px;
+}
+
+#amily2_hanlinyuan_panel #vector-list {
+    list-style: none;
+    padding: 0;
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #dddfe2;
+    border-radius: 6px;
+}
+
+#amily2_hanlinyuan_panel #vector-list li {
+    padding: 10px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#amily2_hanlinyuan_panel #vector-list li:last-child {
+    border-bottom: none;
+}
+
+#amily2_hanlinyuan_panel #vector-list .vector-text {
+    flex-grow: 1;
+    margin-right: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
