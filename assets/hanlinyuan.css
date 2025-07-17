@@ -1,4 +1,4 @@
-/* hanlinyuan.css - Scoped to #amily2_hanlinyuan_panel to prevent global style conflicts */
+
 
 #amily2_hanlinyuan_panel {
     background-color: #f0f2f5;
@@ -80,10 +80,10 @@
     display: flex;
     gap: 10px;
     flex-wrap: wrap;
-    align-items: center; /* Align items vertically */
+    align-items: center;
 }
 
-/* New style for inline button groups */
+
 #amily2_hanlinyuan_panel .button-group.inline {
     flex-direction: row;
     justify-content: flex-start;
@@ -93,7 +93,7 @@
     padding: 10px 15px;
     border: 1px solid transparent;
     border-radius: 4px;
-    background-color: #4a4a4a; /* Standard button color like main panel */
+    background-color: #4a4a4a;
     color: white;
     font-size: 1em;
     font-weight: bold;
@@ -106,15 +106,15 @@
     background-color: #5a5a5a;
 }
 
-/* Compact button style */
+
 #amily2_hanlinyuan_panel .menu_button.compact {
     padding: 5px 10px;
     font-size: 0.9em;
 }
 
-/* Primary/Accent button color */
+
 #amily2_hanlinyuan_panel .menu_button.accent {
-    background-color: #007bff; /* A common accent color */
+    background-color: #007bff; 
     border-color: #007bff;
 }
 #amily2_hanlinyuan_panel .menu_button.accent:hover {
@@ -134,7 +134,7 @@
     background-color: #c82333;
 }
 
-/* Tab navigation */
+
 #amily2_hanlinyuan_panel .tab-nav {
     display: flex;
     border-bottom: 2px solid #dddfe2;
@@ -165,7 +165,7 @@
     display: block;
 }
 
-/* Status and Log panels */
+
 #amily2_hanlinyuan_panel .status-panel, 
 #amily2_hanlinyuan_panel .log-panel {
     background-color: #f7f7f7;
