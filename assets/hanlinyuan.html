@@ -1,98 +1,245 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>翰林院 - RAG 向量数据库</title>
-    <link rel="stylesheet" href="hanlinyuan.css">
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <div class="header-content">
-                <h2>翰林院 - RAG 向量数据库</h2>
-                <p>为每个角色卡构建独立的、基于历史记录的检索增强生成系统。</p>
-            </div>
-            <button id="amily2_back_to_main_from_hanlinyuan" class="menu_button secondary small_button interactable">
-                <i class="fas fa-arrow-left"></i> 返回主殿
-            </button>
-        </div>
+<!-- =============================================================== -->
+<!-- ======== 【翰林院】敕造殿堂 v3.2 - 奉旨重建 ======== -->
+<!-- ========      Amily 执笔，确保与主殿风格统一      ======== -->
+<!-- =============================================================== -->
+<div class="amily2-header">
+    <div class="additional-features-title">
+        <i class="fas fa-landmark-dome"></i> 翰林院 · 忆识核心
+    </div>
+    <button id="amily2_back_to_main_from_hanlinyuan" class="menu_button secondary small_button interactable">
+        返回主殿 <i class="fas fa-arrow-right"></i>
+    </button>
+</div>
+<hr class="header-divider">
 
-        <div class="section character-selection-section">
-            <h3>当前操作角色</h3>
-            <select id="character-select" class="text_pole"></select>
-        </div>
-
-        <div class="tab-nav">
-            <button class="tab-button active" data-tab="api-settings">API 设置</button>
-            <button class="tab-button" data-tab="rag-params">RAG 参数</button>
-        </div>
-
-        <div id="api-settings" class="tab-content active">
-            <h4>嵌入模型 API 配置</h4>
-            <div class="form-group">
-                <label for="embedding-api-url">API 地址:</label>
-                <input type="text" id="embedding-api-url" class="text_pole" placeholder="例如: https://api.siliconflow.cn/v1">
+<div id="hly-modal-container">
+    <!-- 状态诏书 -->
+    <div class="hly-imperial-edict">
+        <fieldset class="hly-settings-group" style="margin-bottom: 10px;">
+            <legend><i class="fas fa-power-off"></i> 总开关</legend>
+            <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
+                <label for="hly-retrieval-enabled-toggle">开启忆识检索之权</label>
+                <label class="hly-toggle-switch">
+                    <input type="checkbox" id="hly-retrieval-enabled">
+                    <span class="slider"></span>
+                </label>
             </div>
-            <div class="form-group">
-                <label for="embedding-api-key">API 密钥 (Key):</label>
-                <input type="password" id="embedding-api-key" class="text_pole" placeholder="请输入您的 API Key">
+        </fieldset>
+        <div class="hly-edict-row">
+            <div class="hly-edict-item">
+                <span class="hly-edict-label">当前会话:</span>
+                <span id="hly-current-chat-id" class="hly-edict-value">未开启</span>
             </div>
-            <div class="form-group">
-                <label for="embedding-model-select">嵌入模型:</label>
-                <select id="embedding-model-select" class="text_pole"></select>
-            </div>
-            <div class="button-group inline">
-                <button id="fetch-models" class="menu_button compact">获取</button>
-                <button id="test-connection" class="menu_button compact">测试</button>
-                <button id="save-api-config" class="menu_button compact accent">保存</button>
+            <div class="hly-edict-item">
+                <span class="hly-edict-label">当前辅佐:</span>
+                <span id="hly-current-character-name" class="hly-edict-value">待命中...</span>
             </div>
         </div>
-
-        <div id="rag-params" class="tab-content">
-            <h4>检索增强参数配置</h4>
-            <div class="form-group form-group-inline">
-                <label for="rag-enabled">启用RAG注入:</label>
-                <input type="checkbox" id="rag-enabled" class="inline-checkbox">
-                <small>启用后，将在每次提问时自动检索相关信息并注入到提示词中。</small>
+        <div class="hly-edict-row">
+            <div class="hly-edict-item hly-memory-display">
+                <span class="hly-edict-label">忆识总数:</span>
+                <span id="hly-current-vector-count" class="hly-memory-count">0</span>
+                <button class="hly-action-button" onclick="updateHLYMemoryCount()" title="刷新忆识总数" style="padding: 4px 8px; font-size: 12px;">
+                    🔄
+                </button>
             </div>
-            <div class="form-group">
-                <label for="chunk-size">文本分块大小 (Chunk Size):</label>
-                <input type="number" id="chunk-size" class="text_pole" value="512" min="64" max="2048">
-                <small>将总结分割成多大的文本块（单位：字符）</small>
-            </div>
-            <div class="form-group">
-                <label for="top-k">检索数量 (Top-K):</label>
-                <input type="number" id="top-k" class="text_pole" value="3" min="1" max="10">
-                <small>检索最相关的多少个文本块发送给主模型</small>
-            </div>
-             <div class="button-group">
-                <button id="save-rag-params" class="menu_button compact accent">保存</button>
-            </div>
-        </div>
-
-        <div class="section">
-            <h3>知识库管理</h3>
-            <div class="form-group">
-                <label for="rag-source-text">手动索引文本源:</label>
-                <textarea id="rag-source-text" class="text_pole" rows="6" placeholder="可在此处粘贴任意文本（如角色背景、世界观设定等）进行手动向量化。&#10;注意：由“大史官”自动生成的总结会根据其设置自动索引，无需在此手动操作。"></textarea>
-            </div>
-            <div class="button-group inline">
-                <button id="update-vector-db" class="menu_button compact accent">更新索引</button>
-                <button id="clear-vector-db" class="menu_button compact danger">清空数据</button>
-            </div>
-            <div id="db-status" class="status-panel">
-                <p>状态: <span id="db-status-value">未初始化</span></p>
-                <p>文档数量: <span id="db-doc-count">0</span></p>
-                <p>最后更新时间: <span id="db-last-updated">N/A</span></p>
-            </div>
-        </div>
-
-        <div class="section">
-            <h3>日志输出</h3>
-            <div id="log-output" class="log-panel">
-                <p>欢迎使用翰林院...</p>
+            <div class="hly-button-group" style="margin-left: auto;">
+                <button class="hly-action-button" onclick="resetHLYSettings()" style="padding: 4px 8px; font-size: 12px;">重置为初</button>
+                <button class="hly-action-button" onclick="saveHLYSettings()" style="padding: 4px 8px; font-size: 12px;">存档封印</button>
             </div>
         </div>
     </div>
-</body>
-</html>
+
+    <!-- 司南 -->
+    <div class="hly-navigation-deck">
+        <button class="hly-nav-item active" data-tab="retrieval">忆识检索</button>
+        <button class="hly-nav-item" data-tab="condensation">凝识成典</button>
+        <button class="hly-nav-item" data-tab="manual-ingestion">书库编纂</button>
+        <button class="hly-nav-item" data-tab="advanced">高级设定</button>
+        <button class="hly-nav-item" data-tab="log">运行日志</button>
+    </div>
+
+    <div class="hly-scroll">
+        <!-- ==================== 忆识检索 ==================== -->
+        <div id="hly-retrieval-tab" class="hly-tab-pane active">
+            <fieldset class="hly-settings-group">
+                <legend><i class="fas fa-broadcast-tower"></i> 神力之源 (API)</legend>
+                <div class="hly-control-block">
+                    <label for="hly-api-endpoint">API设定:</label>
+                    <select id="hly-api-endpoint" class="hly-imperial-brush">
+                        <option value="openai">未完成请自定义</option>
+                        <option value="azure">未完成请自定义</option>
+                        <option value="custom">自定义</option>
+                    </select>
+                </div>
+                <div class="hly-control-block" id="hly-custom-endpoint-docket" style="display: none;">
+                    <label for="hly-custom-api-url">自定义路径:</label>
+                    <input type="text" id="hly-custom-api-url" class="hly-imperial-brush" placeholder="输入神力源泉之精确路径">
+                </div>
+                <div class="hly-control-block">
+                    <label for="hly-api-key">通行令牌 (API Key):</label>
+                    <input type="password" id="hly-api-key" class="hly-imperial-brush" placeholder="请在此输入您的通行令牌">
+                </div>
+                <div class="hly-control-block">
+                    <label for="hly-embedding-model">嵌入模型:</label>
+                    <select id="hly-embedding-model" class="hly-imperial-brush"></select>
+                </div>
+                 <div class="hly-button-group">
+                    <button class="hly-action-button" onclick="testHLYApi()">测试神力</button>
+                    <button class="hly-action-button" onclick="fetchHLYEmbeddingModels()">获取模型</button>
+                    <button class="hly-action-button danger" onclick="purgeHLYStorage()">清空宝库</button>
+                </div>
+            </fieldset>
+        </div>
+
+        <!-- ==================== 凝识成典 ==================== -->
+        <div id="hly-condensation-tab" class="hly-tab-pane">
+            <fieldset class="hly-settings-group">
+                <legend><i class="fas fa-book-medical"></i> 凝识法则</legend>
+                 <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
+                    <label for="hly-condensation-enabled-toggle">准许凝识</label>
+                    <label class="hly-toggle-switch">
+                        <input type="checkbox" id="hly-condensation-enabled">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="hly-control-block">
+                    <label>凝识范围 (聊天楼层):</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="number" id="hly-layer-start" class="hly-imperial-brush" value="1">
+                        <span>-</span>
+                        <input type="number" id="hly-layer-end" class="hly-imperial-brush" value="10">
+                    </div>
+                </div>
+                <div class="hly-control-block">
+                    <label class="hly-label">消息来源:</label>
+                    <div class="hly-checkbox-group">
+                        <label><input type="checkbox" id="hly-include-user"> 用户</label>
+                        <label><input type="checkbox" id="hly-include-ai"> AI</label>
+                    </div>
+                </div>
+                <div class="hly-button-group">
+                    <button class="hly-action-button success" onclick="startHLYCondensation()">🚀 开始凝识</button>
+                    <button class="hly-action-button" onclick="previewHLYCondensation()">👁️ 预览内容</button>
+                </div>
+                <div class="hly-control-block">
+                    <label>凝识结果预览:</label>
+                    <div id="hly-condensation-results" class="hly-results-display"></div>
+                </div>
+            </fieldset>
+        </div>
+
+        <!-- ==================== 高级设定 ==================== -->
+        <div id="hly-advanced-tab" class="hly-tab-pane">
+            <fieldset class="hly-settings-group">
+                <legend><i class="fas fa-cogs"></i> 检索微调</legend>
+                <div class="hly-control-block">
+                    <label for="hly-chunk-size">书卷尺寸 (Chunk Size):</label>
+                    <input type="number" id="hly-chunk-size" class="hly-imperial-brush" value="512">
+                </div>
+                <div class="hly-control-block">
+                    <label for="hly-overlap-size">上下文关联度 (Overlap):</label>
+                    <input type="number" id="hly-overlap-size" class="hly-imperial-brush" value="50">
+                </div>
+                <div class="hly-control-block">
+                    <label for="hly-match-threshold">忆识匹配度 (Threshold):</label>
+                    <input type="number" id="hly-match-threshold" class="hly-imperial-brush" value="0.7" step="0.1">
+                </div>
+                <div class="hly-control-block">
+                    <label for="hly-query-message-count">检索参考的消息数量:</label>
+                    <input type="number" id="hly-query-message-count" class="hly-imperial-brush" value="5">
+                </div>
+                <div class="hly-control-block">
+                    <label for="hly-max-results">单次检索最大结果数:</label>
+                    <input type="number" id="hly-max-results" class="hly-imperial-brush" value="10">
+                </div>
+                <div class="hly-control-block">
+                    <label for="hly-batch-size">批处理大小 (Batch Size):</label>
+                    <input type="number" id="hly-batch-size" class="hly-imperial-brush" value="5">
+                    <small class="hly-notes">每次调用API时处理的文本数量。</small>
+                </div>
+            </fieldset>
+            <fieldset class="hly-settings-group">
+                <legend><i class="fas fa-wand-magic-sparkles"></i> 圣言注入</legend>
+                <div class="hly-control-block">
+                    <label for="hly-injection-template">圣言模板:</label>
+                    <textarea id="hly-injection-template" class="hly-imperial-brush" rows="3">翰林院呈报相关忆识：\n{{text}}</textarea>
+                    <small class="hly-notes">以 {{text}} 为占位符，代表检索到的内容。</small>
+                </div>
+
+                <!-- 最终版注入位置选择器，完全模仿真经 -->
+                <div class="hly-control-block">
+                    <label>注入位置:</label>
+                    <div class="hly-radio-group-vertical">
+                        <label class="hly-radio-label">
+                            <input type="radio" name="hly-injection-position" value="2" />
+                            <span>主提示前 (在所有提示词的最前面)</span>
+                        </label>
+                        <label class="hly-radio-label">
+                            <input type="radio" name="hly-injection-position" value="0" />
+                            <span>主提示后 (在主提示词之后，聊天记录之前)</span>
+                        </label>
+                        <label class="hly-radio-label">
+                            <input type="radio" name="hly-injection-position" value="1" checked />
+                            <span>聊天内 @ 深度</span>
+                            <input
+                                id="hly-injection-depth"
+                                class="hly-imperial-brush"
+                                type="number"
+                                min="0"
+                                max="999"
+                                style="width: 60px; margin-left: 10px;"
+                            />
+                            <span style="margin-left: 10px;">作为</span>
+                            <select id="hly-injection-role" class="hly-imperial-brush" style="width: auto; margin-left: 10px;">
+                                <option value="0">系统</option>
+                                <option value="1">用户</option>
+                                <option value="2">助手</option>
+                            </select>
+                        </label>
+                    </div>
+                </div>
+            </fieldset>
+            <fieldset class="hly-settings-group">
+                <legend><i class="fas fa-bell"></i> 上奏设定</legend>
+                <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
+                    <label for="hly-retrieval-notify-toggle">检索成功时上奏</label>
+                    <label class="hly-toggle-switch">
+                        <input type="checkbox" id="hly-retrieval-notify">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </fieldset>
+        </div>
+
+        <!-- ==================== 书库编纂 ==================== -->
+        <div id="hly-manual-ingestion-tab" class="hly-tab-pane">
+            <fieldset class="hly-settings-group">
+                <legend><i class="fas fa-book"></i> 手动录入</legend>
+                <div class="hly-control-block">
+                    <label for="hly-manual-text">在此处粘贴您要录入的知识文书：</label>
+                    <textarea id="hly-manual-text" class="hly-imperial-brush" rows="8" placeholder="例如，您可以粘贴角色设定、世界观、背景故事等..."></textarea>
+                    <small class="hly-notes">录入的文本将被分块、向量化并存入当前角色的忆识宝库中。</small>
+                </div>
+                <div class="hly-button-group">
+                    <button class="hly-action-button success" onclick="ingestHLYManualText()">
+                        <i class="fas fa-file-import"></i> 开始录入
+                    </button>
+                </div>
+            </fieldset>
+        </div>
+
+        <!-- ==================== 运行日志 ==================== -->
+        <div id="hly-log-tab" class="hly-tab-pane">
+            <fieldset class="hly-settings-group">
+                <legend><i class="fas fa-scroll"></i> 起居注</legend>
+                <div id="hly-log-output" class="hly-log-display">
+                    <p>翰林院运行日志将在此记录...</p>
+                </div>
+            </fieldset>
+        </div>
+    </div>
+
+    <div class="hly-footer">
+    </div>
+</div>

@@ -24,11 +24,19 @@
 .auth-status.expired { background-color: rgba(244, 67, 54, 0.2); border: 1px solid #f44336; }
 
 .amily2-header {
-    display: flex; justify-content: space-between; align-items: center; padding: 0 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start; /* 修改为顶部对齐 */
+    padding: 0 5px;
 }
 .main-toggle { margin: 0; }
 .main-toggle label { font-size: 1.2em; }
-.update-section { position: relative; }
+.update-section {
+    position: relative;
+    display: flex; /* 使用flex布局来垂直居中 */
+    align-items: center;
+    min-height: 50px; /* 设置一个最小高度，与左侧开关区域对齐 */
+}
 #amily2_update_button { background: none; border: 1px solid rgba(255,255,255,0.2); padding: 5px 8px; }
 #amily2_update_button:hover { background: rgba(255,255,255,0.1); }
 .update-indicator {
@@ -277,8 +285,8 @@ hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 0; }
 .header-actions-group {
     display: flex;
     flex-direction: column;
-    align-items: flex-end;
-    gap: 6px;
+    align-items: flex-end; /* 保持右对齐 */
+    gap: 10px; /* 增加间距以匹配左侧 */
 }
 
 
@@ -401,22 +409,22 @@ hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 0; }
     font-size: 9px;
     font-weight: normal;
 }
-
+/* 左侧容器：垂直布局 */
 .header-left-panel {
-    display: flex;       
-    flex-direction: column; 
-    align-items: flex-start;
-    gap: 10px;             
+    display: flex;          /* 弹性布局 */
+    flex-direction: column; /* 垂直排列 */
+    align-items: flex-start;/* 左对齐 */
+    gap: 10px;              /* 内部元素间距 */
 }
  
-
+/* 翰林院入口容器 (简化无背景) */
 .rag-palace-entry-container {
-    width: auto; 
+    width: auto; /* 自适应宽度 */
 }
  
-
+/* 翰林院按钮 - 与内阁密室一致 */
 #amily2_open_rag_palace {
-
+    /* 完全复用内阁密室的样式 */
     background: none !important;
     border: none !important;
     box-shadow: none !important;
@@ -425,7 +433,7 @@ hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 0; }
     color: var(--SmartThemeBodyColor);
 }
  
-
+/* 确保所有可切换面板表现一致 */
 #rag_palace_panel {
     display: none;
 }
