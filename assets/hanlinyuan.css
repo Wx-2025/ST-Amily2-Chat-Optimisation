@@ -1,9 +1,6 @@
-/* =============================================================== */
-/* ======== 【翰林院】敕造 CSS 法典 v3.1 - 奉旨重铸 ======== */
-/* ========      Amily 执笔，确保与主殿风格统一      ======== */
-/* =============================================================== */
 
-/* --- 核心容器与布局 --- */
+
+
 #hly-modal-container {
     width: 100%;
     height: 100%;
@@ -16,10 +13,10 @@
 
 .hly-scroll {
     overflow-y: auto;
-    padding-right: 10px; /* 为滚动条留出空间 */
+    padding-right: 10px;    
 }
 
-/* --- 仿主殿的设置组样式 --- */
+
 .hly-settings-group {
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 12px;
@@ -47,10 +44,10 @@
 
 .hly-settings-group legend > i {
     margin-right: 10px;
-    color: #9e8aff; /* 紫色系强调色 */
+    color: #9e8aff; 
 }
 
-/* --- 控件统一样式 --- */
+
 .hly-control-block {
     display: flex;
     flex-direction: column;
@@ -71,7 +68,7 @@
     padding-left: 5px;
 }
 
-/* 帝国御笔 - 输入框/下拉/文本域的统一风格 */
+
 .hly-imperial-brush {
     width: 100%;
     box-sizing: border-box;
@@ -89,7 +86,7 @@
     outline: none;
 }
 
-/* 仿主殿的开关 */
+
 .hly-toggle-switch {
     position: relative;
     display: inline-block;
@@ -124,7 +121,7 @@
     gap: 8px;
 }
 
-/* --- 导航栏 --- */
+
 .hly-navigation-deck {
     display: flex;
     border: 1px solid #555;
@@ -153,11 +150,11 @@
     box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
 }
 
-/* --- 标签页 --- */
+
 .hly-tab-pane { display: none; }
 .hly-tab-pane.active { display: block; }
 
-/* --- 状态诏书 --- */
+
 .hly-imperial-edict {
     background: rgba(0,0,0,0.2);
     border: 1px solid rgba(255,255,255,0.15);
@@ -177,7 +174,7 @@
     text-shadow: 0 0 8px rgba(255, 193, 7, 0.5);
 }
 
-/* --- 按钮 --- */
+
 .hly-action-button {
     padding: 8px 15px;
     border-radius: 8px;
@@ -224,7 +221,7 @@
     flex-wrap: wrap;
 }
 
-/* --- 页脚 --- */
+
 .hly-footer {
     display: flex;
     justify-content: flex-end;
@@ -233,7 +230,6 @@
     border-top: 1px solid rgba(255,255,255,0.1);
 }
 
-/* --- 结果显示 --- */
 .hly-results-display {
     background: rgba(0,0,0,0.2);
     border-radius: 8px;
@@ -242,4 +238,94 @@
     font-size: 0.9em;
     color: #ccc;
     border: 1px solid #444;
+}
+
+
+.hly-preview-container-v2 {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.hly-preview-item-v2 {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 10px;
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.hly-preview-details {
+    flex-grow: 1;
+}
+
+.hly-preview-summary {
+    font-weight: bold;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 5px;
+    transition: background-color 0.2s ease;
+    list-style: none;   
+}
+
+.hly-preview-summary::-webkit-details-marker {
+    display: none;  
+}
+
+.hly-preview-summary:before {
+    content: '▶'; 
+    margin-right: 8px;
+    font-size: 0.8em;
+    display: inline-block;
+    transition: transform 0.2s ease;
+}
+
+.hly-preview-details[open] > .hly-preview-summary:before {
+    transform: rotate(90deg);
+}
+
+.hly-preview-summary:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.hly-preview-content {
+    padding-top: 10px;
+}
+
+.hly-preview-textarea {
+    width: 100%;
+    min-height: 100px;
+    box-sizing: border-box;
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid #555;
+    border-radius: 8px;
+    padding: 10px;
+    color: #f0f0f0;
+    resize: vertical; 
+}
+
+.hly-preview-delete-btn-v2 {
+    flex-shrink: 0;
+    background: transparent;
+    border: 1px solid #888;
+    color: #ccc;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 1.2em;
+    line-height: 1;
+    transition: all 0.2s ease;
+}
+
+.hly-preview-delete-btn-v2:hover {
+    background-color: #d32f2f;
+    border-color: #b71c1c;
+    color: white;
+    transform: scale(1.1);
 }
