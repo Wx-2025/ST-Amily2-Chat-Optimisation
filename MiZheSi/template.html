@@ -1,0 +1,99 @@
+<div class="mizhesi-container">
+    <div class="mizhesi-header">
+        <i class="fas fa-scroll"></i>
+        <h3>【密折司】圣前最终奏章审批</h3>
+    </div>
+    <div id="mizhesi-editor-container" class="mizhesi-editor-container">
+
+    </div>
+</div>
+<style>
+    .mizhesi-container {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: #ddd;
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+    }
+    .mizhesi-header {
+        padding-bottom: 10px;
+        border-bottom: 1px solid #555;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .mizhesi-header i {
+        font-size: 1.5em;
+        color: #d4af37;
+    }
+    .mizhesi-header h3 {
+        margin: 0;
+        font-weight: 600;
+    }
+    .mizhesi-editor-container {
+        flex-grow: 1;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+    .mizhesi-message-block {
+        border: 1px solid #444;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        background-color: #2b2d31;
+    }
+    .mizhesi-message-header {
+        padding: 8px 12px;
+        background-color: #3a3d42;
+        border-top-left-radius: 7px;
+        border-top-right-radius: 7px;
+        font-weight: bold;
+        text-transform: uppercase;
+        font-size: 0.9em;
+        cursor: pointer; 
+        position: relative;
+    }
+    .mizhesi-message-header::after {
+        content: '▶'; 
+        position: absolute;
+        right: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        transition: transform 0.2s ease-in-out;
+    }
+    .mizhesi-message-block.expanded .mizhesi-message-header::after {
+        transform: translateY(-50%) rotate(90deg);
+    }
+    .mizhesi-message-content {
+        padding: 12px;
+        display: none; 
+    }
+    .mizhesi-message-content textarea {
+        width: 100%;
+        min-height: 80px;
+        height: auto;
+        background-color: #202225;
+        color: #ccc;
+        border: 1px solid #555;
+        border-radius: 4px;
+        padding: 10px;
+        box-sizing: border-box;
+        font-size: 0.95em;
+        line-height: 1.5;
+        resize: vertical;
+    }
+
+    /* Role-specific colors */
+    .mizhesi-message-block[data-role="system"] .mizhesi-message-header {
+        background-color: #5865f2; /* Discord Blurple */
+        color: white;
+    }
+    .mizhesi-message-block[data-role="user"] .mizhesi-message-header {
+        background-color: #57f287; /* Discord Green */
+        color: #060607;
+    }
+    .mizhesi-message-block[data-role="assistant"] .mizhesi-message-header {
+        background-color: #f25757; /* Discord Red */
+        color: white;
+    }
+</style>
