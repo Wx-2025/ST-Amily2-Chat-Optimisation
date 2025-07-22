@@ -10,7 +10,6 @@
 <hr class="header-divider">
 
 <div id="hly-modal-container">
-    <!-- 状态诏书 -->
     <div class="hly-imperial-edict">
         <fieldset class="hly-settings-group" style="margin-bottom: 10px;">
             <legend><i class="fas fa-power-off"></i> 总开关</legend>
@@ -47,7 +46,6 @@
         </div>
     </div>
 
-    <!-- 司南 -->
     <div class="hly-navigation-deck">
         <button class="hly-nav-item active" data-tab="retrieval">忆识检索</button>
         <button class="hly-nav-item" data-tab="historiography">书库编纂</button>
@@ -169,6 +167,9 @@
                 <div id="hly-tag-input-container" class="hly-control-block" style="display: none;">
                     <label for="hly-tag-input">输入标签 (以逗号分隔):</label>
                     <textarea id="hly-tag-input" class="hly-imperial-brush" rows="2" placeholder="例如: content,details,摘要" data-setting-key="condensation.tags" data-type="string"></textarea>
+                </div>
+                <div class="hly-button-group" style="justify-content: flex-start;">
+                    <button id="hly-exclusion-rules-btn" class="hly-action-button">内容排除</button>
                 </div>
                 <div class="hly-button-group">
                     <button class="hly-action-button success" onclick="startHLYCondensation()"> 开始凝识</button>
