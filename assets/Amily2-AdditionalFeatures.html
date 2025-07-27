@@ -115,6 +115,29 @@
                 </button>
             </div>
 
+            <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center; margin-top: 10px;">
+                <label for="historiography-tag-extraction-toggle">标签提取</label>
+                <label class="hly-toggle-switch">
+                    <input type="checkbox" id="historiography-tag-extraction-toggle" data-setting-key="condensation.tagExtractionEnabled" data-type="boolean">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div id="historiography-tag-input-container" class="hly-control-block" style="display: none;">
+                <label for="historiography-tag-input">输入标签 (以逗号分隔):</label>
+                <textarea id="historiography-tag-input" class="hly-imperial-brush" rows="2" placeholder="例如: content,details" data-setting-key="condensation.tags" data-type="string"></textarea>
+            </div>
+            <div class="hly-button-group" style="justify-content: flex-start; margin-top: 10px; display: flex; align-items: center; gap: 20px;">
+                <button id="historiography-exclusion-rules-btn" class="hly-action-button">内容排除</button>
+                
+                <div class="auto-control-pair" style="margin-bottom: 0;">
+                    <label for="historiography_auto_summary_interactive" title="开启后，“自动巡录”将弹出交互窗口确认，而不是在后台静默运行。">交互式巡录:</label>
+                    <label class="toggle-switch">
+                        <input id="historiography_auto_summary_interactive" type="checkbox" />
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
 
             <div class="auto-command-block" id="amily2_mhb_auto_command_block">
 
