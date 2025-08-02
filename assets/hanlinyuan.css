@@ -329,3 +329,52 @@
     color: white;
     transform: scale(1.1);
 }
+
+/* ================== 起居注 (日志) 样式 ================== */
+.hly-log-display {
+    background: rgba(0,0,0,0.25);
+    border-radius: 8px;
+    padding: 12px;
+    border: 1px solid #444;
+    max-height: 200px; /* 固定最大高度 */
+    overflow-y: auto;  /* 内容超出时显示滚动条 */
+    font-size: 0.9em;
+    color: #ccc;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.hly-log-entry {
+    margin: 0;
+    padding: 4px 8px;
+    border-radius: 4px;
+    line-height: 1.5;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+.hly-log-entry .fa-solid {
+    margin-right: 8px;
+    width: 16px; /* 固定图标宽度，使文本对齐 */
+    text-align: center;
+}
+
+.log-info {
+    color: #a0c4ff; /* 淡蓝色 */
+    border-left: 3px solid #6b9eff;
+}
+
+.log-success {
+    color: #a8d8b4; /* 淡绿色 */
+    border-left: 3px solid #5cb85c;
+}
+
+.log-error {
+    color: #ffadad; /* 淡红色 */
+    border-left: 3px solid #d9534f;
+}
+
+.log-warn {
+    color: #ffd6a5; /* 淡黄色 */
+    border-left: 3px solid #f0ad4e;
+}
