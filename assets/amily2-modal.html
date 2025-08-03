@@ -77,12 +77,12 @@
                         <small class="notes">核心处理开关</small>
                     </div>
                     <div class="amily2_settings_block">
-                        <label for="amily2_summarization_enabled">即时总结</label>
+                        <label for="amily2_optimization_exclusion_enabled">内容排除</label>
                         <label class="toggle-switch">
-                            <input id="amily2_summarization_enabled" type="checkbox" />
+                            <input id="amily2_optimization_exclusion_enabled" type="checkbox" />
                             <span class="slider"></span>
                         </label>
-                        <small class="notes">生成对话总结</small>
+                        <small class="notes">点击开关可直接编辑规则</small>
                     </div>
                 </div>
 
@@ -97,8 +97,8 @@
 
                 <div class="amily2_settings_block">
                     <input id="amily2_show_optimization_toast" type="checkbox">
-                    <label for="amily2_show_optimization_toast">显示优化总结通知</label>
-                    <small class="notes">启用后，将以“已优化并将总结...”的格式弹出通知。</small>
+                    <label for="amily2_show_optimization_toast">显示优化通知</label>
+                    <small class="notes">启用后，将在优化完成后弹出通知。</small>
                 </div>
 
                 <div class="amily2_settings_block">
@@ -174,7 +174,6 @@
                     <select id="amily2_prompt_selector" class="text_pole">
                         <option value="mainPrompt">破限提示词 (最高优先级)</option>
                         <option value="systemPrompt">预设提示词（任务规则）</option>
-                        <option value="summarizationPrompt">总结提示词</option>
                         <option value="outputFormatPrompt">格式提示词 </option>
                     </select>
                 </div>
@@ -282,12 +281,6 @@
                 <div class="prompt-container">
                     <textarea id="amily2_system_prompt" class="text_pole" rows="8"></textarea>
                     <button id="save_system_prompt" class="menu_button small_button interactable"><i class="fas fa-save"></i> 保存</button>
-                </div>
-            </div>
-            <div class="amily2_settings_block">
-                <div class="prompt-container">
-                    <textarea id="amily2_summarization_prompt" class="text_pole" rows="3"></textarea>
-                    <button id="save_summarization_prompt" class="menu_button small_button interactable"><i class="fas fa-save"></i> 保存</button>
                 </div>
             </div>
             <div class="amily2_settings_block">
