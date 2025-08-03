@@ -443,3 +443,50 @@ hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 0; }
     flex-direction: column;
     flex-grow: 1;
 }
+
+/* === Styles for Content Exclusion Modal === */
+.opt-exclusion-rule-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.opt-exclusion-rule-row input[type="text"] {
+    flex-grow: 1;
+}
+
+/* Specific styles for the delete button in the exclusion rule modal */
+.delete-rule-btn.danger_button {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    border: 1px solid #a93226;
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    line-height: 1; /* Adjusted for better vertical centering of '×' */
+    text-align: center;
+    padding: 0;
+    flex-shrink: 0;
+    transition: all 0.2s ease-in-out;
+}
+
+.delete-rule-btn.danger_button:hover {
+    background: linear-gradient(135deg, #ec7063, #e74c3c);
+    box-shadow: 0 0 8px rgba(231, 76, 60, 0.7);
+    transform: scale(1.05);
+}
+
+.amily2-add-rule-btn {
+    width: auto;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    border: 1px solid #229954;
+    color: white;
+    font-weight: bold;
+}
+
+.amily2-add-rule-btn:hover {
+    background: linear-gradient(135deg, #58d68d, #2ecc71);
+    box-shadow: 0 0 10px rgba(46, 204, 113, 0.7);
+}
