@@ -23,12 +23,6 @@
 .auth-status.valid { background-color: rgba(76, 175, 80, 0.2); border: 1px solid #4CAF50; }
 .auth-status.expired { background-color: rgba(244, 67, 54, 0.2); border: 1px solid #f44336; }
 
-.amily2-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start; /* 修改为顶部对齐 */
-    padding: 0 5px;
-}
 .main-toggle { margin: 0; }
 .main-toggle label { font-size: 1.2em; }
 .update-section {
@@ -275,12 +269,6 @@ hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 0; }
     box-shadow: 0 0 8px rgba(255, 179, 0, 0.7);
     transform: scale(1.03);
 }
-.amily2-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-bottom: 5px;
-}
 
 .header-actions-group {
     display: flex;
@@ -290,15 +278,10 @@ hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 0; }
 }
 
 
-.additional-features-section {
-    width: 100%;
-}
-
-
 .secret-chamber-button {
     display: flex;
     align-items: center;
-    justify-content: center;
+   justify-content: center;
     width: 100%;
     padding: 6px 10px;
     font-size: 14px;
@@ -320,12 +303,8 @@ hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 0; }
     border-color: var(--text_color_half);
     color: var(--primary_color);
 }
-.amily2-header .main-toggle label {
-    font-size: 15px;
-}
-#amily2_additional_features_panel {
-    display: none;
-}
+
+
 
 .amily2-panel-visible {
     display: flex !important;
