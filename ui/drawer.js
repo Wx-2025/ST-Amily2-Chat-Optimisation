@@ -1,1 +1,199 @@
-(function(_0x4c7359,_0x2ad8cb){const _0x44265c=_0x57f8,_0x36d915=_0x4c7359();while(!![]){try{const _0x464513=parseInt(_0x44265c(0xf5))/0x1+-parseInt(_0x44265c(0xde))/0x2*(-parseInt(_0x44265c(0x106))/0x3)+parseInt(_0x44265c(0x11e))/0x4*(-parseInt(_0x44265c(0x111))/0x5)+parseInt(_0x44265c(0x110))/0x6*(parseInt(_0x44265c(0xd5))/0x7)+-parseInt(_0x44265c(0xd7))/0x8+-parseInt(_0x44265c(0xf8))/0x9+parseInt(_0x44265c(0xfd))/0xa;if(_0x464513===_0x2ad8cb)break;else _0x36d915['push'](_0x36d915['shift']());}catch(_0x1ee61e){_0x36d915['push'](_0x36d915['shift']());}}}(_0x3f16,0x837fe));const _0x1b3295=_0x4bfe;(function(_0x55a4b2,_0x408bc9){const _0x33d5b7=_0x57f8,_0x52ca04=_0x4bfe,_0x17b939=_0x55a4b2();while(!![]){try{const _0x53c89a=parseInt(_0x52ca04(0x8b))/0x1+-parseInt(_0x52ca04(0x91))/0x2+-parseInt(_0x52ca04(0xd4))/0x3*(-parseInt(_0x52ca04(0x94))/0x4)+-parseInt(_0x52ca04(0xcd))/0x5*(-parseInt(_0x52ca04(0xd3))/0x6)+-parseInt(_0x52ca04(0xc9))/0x7*(-parseInt(_0x52ca04(0xbe))/0x8)+-parseInt(_0x52ca04(0xa4))/0x9*(-parseInt(_0x52ca04(0x8a))/0xa)+-parseInt(_0x52ca04(0xc1))/0xb*(parseInt(_0x52ca04(0xc4))/0xc);if(_0x53c89a===_0x408bc9)break;else _0x17b939[_0x33d5b7(0x11c)](_0x17b939[_0x33d5b7(0x114)]());}catch(_0x203a83){_0x17b939['push'](_0x17b939[_0x33d5b7(0x114)]());}}}(_0x33cf,0x6b89c));function _0x33cf(){const _0x5c2c39=_0x57f8,_0x45e1fb=[_0x5c2c39(0xdb),_0x5c2c39(0xe1),_0x5c2c39(0x10c),'append',_0x5c2c39(0x119),_0x5c2c39(0xf1),'closest','toggleClass','get',_0x5c2c39(0xdf),_0x5c2c39(0xdd),'2334117yYXOsa',_0x5c2c39(0xd2),'/assets/hanlinyuan.html',_0x5c2c39(0xe6),_0x5c2c39(0x102),_0x5c2c39(0x100),_0x5c2c39(0x109),'#expiry_info','\x0a\x20\x20\x20\x20\x20\x20<div\x20id=\x22amily2_extension_frame\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22inline-drawer\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22inline-drawer-toggle\x20inline-drawer-header\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<b><i\x20class=\x22fas\x20fa-crown\x22\x20style=\x22color:\x20#ffc107;\x22></i>\x20Amily2号\x20优化中枢</b>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22inline-drawer-icon\x20fa-solid\x20fa-circle-chevron-down\x20down\x22></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22inline-drawer-content\x22\x20style=\x22display:\x20none;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20','classList',_0x5c2c39(0xdc),_0x5c2c39(0xe3),'791314sntMCy',_0x5c2c39(0xff),_0x5c2c39(0x10a),_0x5c2c39(0x105),_0x5c2c39(0xd6),_0x5c2c39(0xea),_0x5c2c39(0xfe),'[Amily2-兼容性]\x20检测到新版环境，已绑定官方点击事件。',_0x5c2c39(0x10f),'addClass',_0x5c2c39(0x115),_0x5c2c39(0xfa),'hasClass',_0x5c2c39(0x104),_0x5c2c39(0xf6),'#sys-settings-button',_0x5c2c39(0xed),_0x5c2c39(0xd1),_0x5c2c39(0x118),'9GDCnCx',_0x5c2c39(0xcf),_0x5c2c39(0xf2),'.openDrawer',_0x5c2c39(0xe9),_0x5c2c39(0xe5),_0x5c2c39(0x108),_0x5c2c39(0x107),_0x5c2c39(0xf9),'function','openIcon','openDrawer\x20closedDrawer',_0x5c2c39(0xfc),_0x5c2c39(0x101),_0x5c2c39(0xf0),_0x5c2c39(0xda),_0x5c2c39(0xd0),_0x5c2c39(0x117),'remove',_0x5c2c39(0x10e),_0x5c2c39(0xd8),'after','closedIcon',_0x5c2c39(0xec),_0x5c2c39(0xd9),_0x5c2c39(0xeb),'6058312MSBEyd',_0x5c2c39(0xf4),_0x5c2c39(0xe0),_0x5c2c39(0x113),_0x5c2c39(0x11a),_0x5c2c39(0x11b),_0x5c2c39(0xe8),_0x5c2c39(0x103),_0x5c2c39(0x116),_0x5c2c39(0xef),_0x5c2c39(0x112)];return _0x33cf=function(){return _0x45e1fb;},_0x33cf();}import{getSlideToggleOptions}from'/script.js';import{slideToggle}from'/lib.js';function _0x4bfe(_0x1c526c,_0x1049a3){const _0x279b28=_0x33cf();return _0x4bfe=function(_0x2a7967,_0x2b82c8){_0x2a7967=_0x2a7967-0x86;let _0xc94396=_0x279b28[_0x2a7967];return _0xc94396;},_0x4bfe(_0x1c526c,_0x1049a3);}import{extension_settings,renderExtensionTemplateAsync}from'/scripts/extensions.js';import{extensionName,defaultSettings}from'../utils/settings.js';import{checkAuthorization,displayExpiryInfo,pluginAuthStatus}from'../utils/auth.js';import{updateUI,setAvailableModels,populateModelDropdown,applyUpdateIndicator}from'./state.js';import{bindModalEvents}from'./bindings.js';import{fetchSupportedModels}from'../core/api.js';import{bindHistoriographyEvents}from'./historiography-bindings.js';import{bindHanlinyuanEvents}from'./hanlinyuan-bindings.js';import{showContentModal}from'./page-window.js';const extensionFolderPath=_0x1b3295(0xa9)+extensionName;async function loadSettings(){const _0xd17416=_0x57f8,_0x12fd7d=_0x1b3295;extension_settings[extensionName]={...defaultSettings,...extension_settings[extensionName]||{}},checkAuthorization();const _0x59b2d2=localStorage[_0x12fd7d(0xbc)]('plugin_auto_login')===_0x12fd7d(0x93);console[_0x12fd7d(0x9b)](_0xd17416(0x10d)+pluginAuthStatus[_0x12fd7d(0xab)]+_0x12fd7d(0xa8)+_0x59b2d2),_0x59b2d2&&pluginAuthStatus[_0x12fd7d(0xab)]&&console[_0x12fd7d(0x9b)](_0x12fd7d(0x9c)),($(_0x12fd7d(0x8c))[_0x12fd7d(0x99)](displayExpiryInfo()),updateUI());if(pluginAuthStatus['authorized']&&extension_settings[extensionName][_0xd17416(0xd3)]){const _0x30fad5=localStorage[_0xd17416(0xd9)](_0x12fd7d(0xa6));if(_0x30fad5){const _0x505ec5=JSON[_0x12fd7d(0xc7)](_0x30fad5);console['log'](_0x12fd7d(0x89)+_0x505ec5['length']+'个)'),setAvailableModels(_0x505ec5),populateModelDropdown();}else toastr[_0x12fd7d(0xc3)]('正在自动加载模型列表...',_0xd17416(0xe4)),setTimeout(async()=>{const _0x28caf5=_0xd17416,_0x3fa9e8=_0x12fd7d,_0x265465=await fetchSupportedModels();_0x265465[_0x3fa9e8(0xc8)]>0x0&&(setAvailableModels(_0x265465),localStorage[_0x3fa9e8(0xb8)](_0x3fa9e8(0xa6),JSON[_0x28caf5(0xe7)](_0x265465)),populateModelDropdown());},0x1f4);}}function _0x3f16(){const _0x5d1f9d=['addClass','error','262515QAgTIm','click','topbar','8244270UxvniD','.openIcon','[Amily2号]\x20检测到有效授权，将执行自动UI更新。','</div>','.inline-drawer-content','20592470sOslKR','doNavbarIconClick\x20is\x20not\x20a\x20function','/assets/amily2-modal.html','2609510mZswep','data','[Amily2号]\x20从缓存加载模型列表\x20(','removeClass','each','4wQbnKZ','128313OxNrjD','authorized','<p\x20style=\x22color:red;\x20padding:\x2020px;\x22>紧急报告：无法加载Amily2号府邸内饰。</p>','128384PSZTqI','true','classList','[Amily-重构]\x20宫殿模块已按蓝图竣工。','[Amily2-调试]\x20授权状态:\x20','/assets/Amily2-AdditionalFeatures.html','html','2138322yxlHAJ','5hFDLay','length','198RKykZu','shift','log','initialized','find','not','5PyYQvg','[Amily-建设部]\x20紧急报告：加载模块化蓝图时发生意外:','info','push','#amily2_chat_optimiser','1922552DjIILa','get','.drawerPinnedOpen','resizing','\x0a\x20\x20\x20\x20\x20\x20<div\x20id=\x22amily2_main_drawer\x22\x20class=\x22drawer\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22drawer-toggle\x22\x20data-drawer=\x22amily2_drawer_content\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22amily2_drawer_icon\x22\x20class=\x22drawer-icon\x20fa-solid\x20fa-magic\x20fa-fw\x20closedIcon\x20interactable\x22\x20title=\x22Amily2号优化助手\x22\x20tabindex=\x220\x22></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22amily2_drawer_content\x22\x20class=\x22drawer-content\x20closedDrawer\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20','#amily2_main_drawer','apiUrl','iconLocation','7vJElWW',':visible','6627208yloxos','setItem','getItem','closedIcon\x20openIcon','7lCPfUz','#amily2_drawer_content','2666856FMmYWl','4xiOIBd','#extensions_settings2','closedDrawer\x20openDrawer','#amily2_drawer_icon','.pinnedOpen','extensions','Amily2号','scripts/extensions/third-party/','.drawer-content','stringify','1022004HvxVZE',',\x20自动登录标志:\x20','[Amily2-兼容性]\x20检测到旧版环境\x20(无法导入\x20doNavbarIconClick)，已绑定后备点击事件。','#amily2_main_drawer\x20.drawer-toggle','#extensions_settings2\x20#amily2_chat_optimiser','<div\x20id=\x22amily2_hanlinyuan_panel\x22\x20style=\x22display:\x20none;\x22>','remove','parse','/script.js','<p\x20style=\x22color:red;\x20padding:10px;\x20border:1px\x20solid\x20red;\x20border-radius:5px;\x22>紧急报告：在扩展区域建造Amily2号府邸时发生意外。</p>','cached_models_amily2'];_0x3f16=function(){return _0x5d1f9d;};return _0x3f16();}async function initializePanel(_0x332c71,_0x2a1b7f){const _0x3cab50=_0x57f8,_0x83f49d=_0x1b3295;if(_0x332c71[_0x83f49d(0xb1)](_0x83f49d(0xc6)))return;try{const _0x3800af=await $[_0x83f49d(0xd1)](extensionFolderPath+_0x83f49d(0x92));_0x332c71[_0x3cab50(0x10f)](_0x3800af);const _0x2f2d44=_0x332c71[_0x83f49d(0xb5)](_0x3cab50(0x11d));if(_0x2f2d44[_0x83f49d(0xc8)]){const _0x28f55b=await $[_0x83f49d(0xd1)](extensionFolderPath+_0x83f49d(0xb7)),_0x14f008='<div\x20id=\x22amily2_additional_features_panel\x22\x20style=\x22display:\x20none;\x22>'+_0x28f55b+_0x3cab50(0xfb);_0x2f2d44['append'](_0x14f008);const _0x3a8620=await $[_0x3cab50(0x11f)](extensionFolderPath+_0x83f49d(0x87)),_0x59f024=_0x83f49d(0xa1)+_0x3a8620+_0x3cab50(0xfb);_0x2f2d44[_0x83f49d(0xcc)](_0x59f024);}await loadSettings(),bindModalEvents(),bindHistoriographyEvents(),bindHanlinyuanEvents(),_0x332c71[_0x3cab50(0x101)](_0x83f49d(0xc6),!![]),console[_0x83f49d(0x9b)](_0x83f49d(0xcb)),applyUpdateIndicator();}catch(_0x2f70c4){console[_0x83f49d(0xbf)](_0x83f49d(0xc2),_0x2f70c4);const _0x3a2756=_0x2a1b7f?_0x83f49d(0xce):_0x83f49d(0xaa);_0x2a1b7f?_0x2a1b7f['append'](_0x3a2756):_0x332c71[_0x83f49d(0x99)](_0x3a2756);}}function _0x57f8(_0x3d2b44,_0x2a0ea5){const _0x3f161b=_0x3f16();return _0x57f8=function(_0x57f82a,_0x53b8ca){_0x57f82a=_0x57f82a-0xcf;let _0x1dd1f5=_0x3f161b[_0x57f82a];return _0x1dd1f5;},_0x57f8(_0x3d2b44,_0x2a0ea5);}function toggleDrawerFallback(){const _0x9d4343=_0x57f8,_0x27ae45=_0x1b3295,_0x497118=$(_0x27ae45(0xca)),_0x389552=$('#amily2_drawer_content');_0x497118[_0x27ae45(0x9d)](_0x27ae45(0xae))&&!_0x389552['is'](_0x27ae45(0x95))&&_0x497118[_0x27ae45(0xc5)](_0x27ae45(0xae))[_0x27ae45(0x9a)](_0x27ae45(0xba)),_0x497118[_0x27ae45(0x9d)](_0x27ae45(0xba))?($(_0x27ae45(0xa7))['not'](_0x389552)[_0x27ae45(0xa3)](_0x9d4343(0xe2))[_0x27ae45(0x9a)](_0x27ae45(0xb4))[_0x27ae45(0x9e)]((_0xf3dc37,_0x4a042f)=>{slideToggle(_0x4a042f,{...getSlideToggleOptions(),'onAnimationEnd':function(_0x508f10){const _0x33dc9e=_0x57f8,_0x3b514e=_0x4bfe;_0x508f10[_0x3b514e(0xcf)](_0x3b514e(0x88))[_0x33dc9e(0x10b)][_0x33dc9e(0xee)](_0x3b514e(0xb4));}});}),$(_0x27ae45(0xac))[_0x9d4343(0x118)](_0x497118)[_0x27ae45(0xa3)](_0x27ae45(0xa5))[_0x27ae45(0xd0)](_0x27ae45(0xb3)),$('.openDrawer')[_0x9d4343(0x118)](_0x389552)[_0x27ae45(0xa3)](_0x9d4343(0xe2))[_0x27ae45(0xd0)](_0x27ae45(0xc0)),_0x497118[_0x27ae45(0xd0)]('closedIcon\x20openIcon'),_0x389552[_0x27ae45(0xd0)](_0x27ae45(0xc0)),_0x389552[_0x27ae45(0x9a)](_0x27ae45(0xb4))[_0x27ae45(0x9e)]((_0x2ddd15,_0x477d42)=>{slideToggle(_0x477d42,{...getSlideToggleOptions(),'onAnimationEnd':function(_0x4bfd0f){const _0x340365=_0x4bfe;_0x4bfd0f[_0x340365(0xcf)]('.drawer-content')['classList'][_0x340365(0xb6)](_0x340365(0xb4));}});})):(_0x497118[_0x27ae45(0xd0)]('openIcon\x20closedIcon'),_0x389552[_0x27ae45(0xd0)](_0x27ae45(0xaf)),_0x389552[_0x9d4343(0xf3)](_0x27ae45(0xb4))[_0x27ae45(0x9e)]((_0xb2f15a,_0x56cfb5)=>{slideToggle(_0x56cfb5,{...getSlideToggleOptions(),'onAnimationEnd':function(_0x5ef985){const _0x46f247=_0x57f8,_0x27a4fa=_0x4bfe;_0x5ef985[_0x27a4fa(0xcf)](_0x27a4fa(0x88))[_0x27a4fa(0x8e)][_0x46f247(0xee)](_0x27a4fa(0xb4));}});}));}export async function createDrawer(){const _0x40c492=_0x57f8,_0x3003fe=_0x1b3295,_0x375141=extension_settings[extensionName],_0x2c634c=_0x375141[_0x40c492(0xd4)]||_0x40c492(0xf7);if(_0x2c634c===_0x40c492(0xf7)){if($(_0x3003fe(0x86))[_0x3003fe(0xc8)]>0x0)return;const _0x10597b=_0x3003fe(0xa2);$(_0x3003fe(0xa0))[_0x3003fe(0xb9)](_0x10597b);const _0x2ed2f3=$(_0x3003fe(0x8f));await initializePanel(_0x2ed2f3);try{const {doNavbarIconClick:_0x16385d}=await import(_0x3003fe(0xb2));if(typeof _0x16385d===_0x3003fe(0xad))$(_0x3003fe(0xbd))['on'](_0x3003fe(0x9f),_0x16385d),console[_0x3003fe(0x9b)](_0x3003fe(0x98));else throw new Error(_0x3003fe(0x97));}catch(_0x276c43){$(_0x3003fe(0xbd))['on'](_0x40c492(0xf6),toggleDrawerFallback),console[_0x3003fe(0x9b)](_0x3003fe(0x96));}}else{if(_0x2c634c===_0x3003fe(0x90)){if($(_0x3003fe(0xbb))[_0x3003fe(0xc8)]>0x0)return;const _0x33180f=_0x3003fe(0x8d),_0x2d2eff=$(_0x33180f);$(_0x3003fe(0xd2))['append'](_0x2d2eff);const _0x305d54=_0x2d2eff[_0x3003fe(0xb5)](_0x3003fe(0xb0));initializePanel(_0x305d54,_0x2d2eff);}}}
+import { getSlideToggleOptions } from '/script.js';
+import { slideToggle } from '/lib.js';
+import { extension_settings } from "/scripts/extensions.js";
+import { extensionName, defaultSettings } from "../utils/settings.js";
+import {
+  checkAuthorization,
+  displayExpiryInfo,
+  pluginAuthStatus,
+} from "../utils/auth.js";
+import {
+  updateUI,
+  setAvailableModels,
+  populateModelDropdown,
+  applyUpdateIndicator,
+} from "./state.js";
+import { bindModalEvents } from "./bindings.js";
+import { fetchSupportedModels } from "../core/api.js";
+import { bindHistoriographyEvents } from "./historiography-bindings.js";
+import { bindHanlinyuanEvents } from "./hanlinyuan-bindings.js";
+import { showContentModal } from "./page-window.js";
+const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
+
+
+async function loadSettings() {
+  extension_settings[extensionName] = {
+    ...defaultSettings,
+    ...(extension_settings[extensionName] || {}),
+  };
+
+
+  checkAuthorization();
+
+
+  const autoLogin = localStorage.getItem("plugin_auto_login") === "true";
+  console.log(
+    `[Amily2-调试] 授权状态: ${pluginAuthStatus.authorized}, 自动登录标志: ${autoLogin}`,
+  );
+  if (autoLogin && pluginAuthStatus.authorized) {
+    console.log("[Amily2号] 检测到有效授权，将执行自动UI更新。");
+  }
+
+  $("#expiry_info").html(displayExpiryInfo());
+  updateUI();
+
+  if (pluginAuthStatus.authorized && extension_settings[extensionName].apiUrl) {
+    const cachedModels = localStorage.getItem("cached_models_amily2");
+    if (cachedModels) {
+      const models = JSON.parse(cachedModels);
+      console.log(`[Amily2号] 从缓存加载模型列表 (${models.length}个)`);
+      setAvailableModels(models);
+      populateModelDropdown();
+    } else {
+      toastr.info("正在自动加载模型列表...", "Amily2号");
+      setTimeout(async () => {
+        const models = await fetchSupportedModels();
+        if (models.length > 0) {
+          setAvailableModels(models);
+          localStorage.setItem("cached_models_amily2", JSON.stringify(models));
+          populateModelDropdown();
+        }
+      }, 500);
+    }
+  }
+}
+
+export function createDrawer() {
+  const settings = extension_settings[extensionName];
+  const location = settings.iconLocation || 'topbar'; 
+
+  if (location === 'topbar') {
+    if ($("#amily2_main_drawer").length > 0) return; 
+
+
+    const amily2DrawerHtml = `
+      <div id="amily2_main_drawer" class="drawer">
+          <div id="amily2_drawer_icon" class="drawer-toggle drawer-header closedIcon interactable" title="Amily2号优化助手" tabindex="0">
+              <i class="drawer-icon fa-solid fa-magic fa-fw"></i>
+          </div>
+          <div id="amily2_drawer_content" class="drawer-content closedDrawer" style="display: none;">
+          </div>
+      </div>
+    `;
+    $("#sys-settings-button").after(amily2DrawerHtml);
+
+    $(document).off("mousedown.amily2Drawer").on(
+      "mousedown.amily2Drawer",
+      "#amily2_drawer_icon",
+      async function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const drawerIcon = $(this);
+        const contentPanel = $("#amily2_drawer_content");
+
+        $('.openDrawer').not(contentPanel).not('.pinnedOpen').addClass('resizing').each((_, el) => {
+            slideToggle(el, {
+                ...getSlideToggleOptions(),
+                onAnimationEnd: function (el) {
+                    el.closest('.drawer-content').classList.remove('resizing');
+                },
+            });
+        });
+        $('.openIcon').not(drawerIcon).not('.drawerPinnedOpen').toggleClass('closedIcon openIcon');
+        $('.openDrawer').not(contentPanel).not('.pinnedOpen').toggleClass('closedDrawer openDrawer');
+        drawerIcon.toggleClass('closedIcon openIcon');
+        contentPanel.toggleClass('closedDrawer openDrawer');
+        contentPanel.addClass('resizing').each((_, el) => {
+            slideToggle(el, {
+                ...getSlideToggleOptions(),
+                onAnimationEnd: function (el) {
+                    el.closest('.drawer-content').classList.remove('resizing');
+                },
+            });
+        });
+
+        const isInitialized = contentPanel.data("initialized");
+        if (drawerIcon.hasClass("openIcon") && !isInitialized) {
+          try {
+            const modalContent = await $.get(`${extensionFolderPath}/assets/amily2-modal.html`);
+            contentPanel.html(modalContent);
+            const mainContainer = contentPanel.find('#amily2_chat_optimiser');
+
+            if (mainContainer.length) {
+                // 加载内阁密室
+                const additionalFeaturesContent = await $.get(`${extensionFolderPath}/assets/Amily2-AdditionalFeatures.html`);
+                const additionalPanelHtml = `<div id="amily2_additional_features_panel" style="display: none;">${additionalFeaturesContent}</div>`;
+                mainContainer.append(additionalPanelHtml);
+
+                // 加载翰林院
+                const hanlinyuanContent = await $.get(`${extensionFolderPath}/assets/hanlinyuan.html`);
+                const hanlinyuanPanelHtml = `<div id="amily2_hanlinyuan_panel" style="display: none;">${hanlinyuanContent}</div>`;
+                mainContainer.append(hanlinyuanPanelHtml);
+            }
+
+            await loadSettings();
+            bindModalEvents();
+            bindHistoriographyEvents();
+            bindHanlinyuanEvents(); // 【圣谕】召唤翰林院工匠
+            contentPanel.data("initialized", true);
+            console.log("[Amily-重构] 顶栏宫殿已按模块化蓝图竣工。");
+            applyUpdateIndicator();
+          } catch (error) {
+            console.error("[Amily-建设部] 紧急报告：加载模块化蓝图时发生意外:", error);
+            contentPanel.html('<p style="color:red; padding: 20px;">紧急报告：无法加载Amily2号府邸内饰。</p>');
+          }
+        }
+      },
+    );
+
+  } else if (location === 'extensions') {
+    if ($("#extensions_settings2 #amily2_chat_optimiser").length > 0) return; 
+    const amilyFrameHtml = `
+      <div id="amily2_extension_frame">
+          <div class="inline-drawer">
+              <div class="inline-drawer-toggle inline-drawer-header">
+                  <b><i class="fas fa-crown" style="color: #ffc107;"></i> Amily2号 优化中枢</b>
+                  <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+              </div>
+              <div class="inline-drawer-content" style="display: none;">
+                  <!-- 宫殿的真正内室将在这里安家 -->
+              </div>
+          </div>
+      </div>
+    `;
+
+    $('#extensions_settings2').append(amilyFrameHtml);
+
+    (async () => {
+      try {
+        console.log("[Amily-重构] 收到指令，开始在'扩展'官方区域模块化建造宫殿。");
+        const contentPanel = $('#amily2_extension_frame .inline-drawer-content');
+        const modalContent = await $.get(`${extensionFolderPath}/assets/amily2-modal.html`);
+        contentPanel.html(modalContent);
+        const mainContainer = contentPanel.find('#amily2_chat_optimiser');
+
+        if (mainContainer.length) {
+            // 加载内阁密室
+            const additionalFeaturesContent = await $.get(`${extensionFolderPath}/assets/Amily2-AdditionalFeatures.html`);
+            const additionalPanelHtml = `<div id="amily2_additional_features_panel" style="display: none;">${additionalFeaturesContent}</div>`;
+            mainContainer.append(additionalPanelHtml);
+
+            // 加载翰林院
+            const hanlinyuanContent = await $.get(`${extensionFolderPath}/assets/hanlinyuan.html`);
+            const hanlinyuanPanelHtml = `<div id="amily2_hanlinyuan_panel" style="display: none;">${hanlinyuanContent}</div>`;
+            mainContainer.append(hanlinyuanPanelHtml);
+        }
+
+        await loadSettings();
+        bindModalEvents();
+        bindHistoriographyEvents();
+        bindHanlinyuanEvents(); // 【圣谕】再次召唤，以适应不同宫殿
+        applyUpdateIndicator();
+      } catch (error) {
+        console.error("[Amily-建设部] 紧急报告：加载模块化蓝图时发生意外:", error);
+        $('#extensions_settings2').append('<p style="color:red; padding:10px; border:1px solid red; border-radius:5px;">紧急报告：在扩展区域建造Amily2号府邸时发生意外。</p>');
+      }
+    })();
+  }
+}
