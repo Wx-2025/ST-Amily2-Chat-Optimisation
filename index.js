@@ -1,1 +1,147 @@
-const _0x2d61f0=_0x4fcd;(function(_0x524bb4,_0x12445b){const _0x3e60cc=_0x4fcd,_0x494c94=_0x524bb4();while(!![]){try{const _0xdb796e=-parseInt(_0x3e60cc(0x80))/0x1*(-parseInt(_0x3e60cc(0xa5))/0x2)+-parseInt(_0x3e60cc(0x7c))/0x3*(parseInt(_0x3e60cc(0xac))/0x4)+-parseInt(_0x3e60cc(0xa0))/0x5*(parseInt(_0x3e60cc(0x96))/0x6)+-parseInt(_0x3e60cc(0x86))/0x7+parseInt(_0x3e60cc(0xa2))/0x8*(-parseInt(_0x3e60cc(0xb2))/0x9)+parseInt(_0x3e60cc(0x84))/0xa*(-parseInt(_0x3e60cc(0x9b))/0xb)+parseInt(_0x3e60cc(0xaf))/0xc;if(_0xdb796e===_0x12445b)break;else _0x494c94['push'](_0x494c94['shift']());}catch(_0x5bc262){_0x494c94['push'](_0x494c94['shift']());}}}(_0x475a,0x63ba7));function _0x4fcd(_0xf0a32,_0x3467e9){const _0x475a61=_0x475a();return _0x4fcd=function(_0x4fcddd,_0x9ad928){_0x4fcddd=_0x4fcddd-0x79;let _0x2a28e6=_0x475a61[_0x4fcddd];return _0x2a28e6;},_0x4fcd(_0xf0a32,_0x3467e9);}import{createDrawer}from'./ui/drawer.js';import'./MiZheSi/index.js';import{registerSlashCommands}from'./core/commands.js';import{onMessageReceived,onChatChanged}from'./core/events.js';import{eventSource,event_types}from'/script.js';import{checkForUpdates,fetchMessageBoardContent}from'./core/api.js';import{setUpdateInfo,applyUpdateIndicator}from'./ui/state.js';import{pluginVersion,extensionName,defaultSettings}from'./utils/settings.js';function _0x475a(){const _0x2e19b0=['IMPERSONATE_READY','160sKPTEH','amily2EventsRegistered','1860418wigITN','[Amily2号-开国大典]\x20步骤一：为宫殿披上华服...','未知错误','split','message','head','style.css','hanlinyuan.css','type','now','text/css','href','[Amily2号]\x20部署失败：等待\x20','addEventListener','appendChild','createElement','114RYyHXB','!!!【开国大典失败】在执行系列法令时发生严重错误:','log','[Amily2号-皇家制衣局]\x20已为帝国披上华服:\x20','Amily2插件错误:\x20','296791BsigvB','length','[Amily2号-开国大典]\x20步骤四：部署帝国哨兵网络...','html','map','13210KAIiyY','#amily2_message_board','17256raIScW','【Amily2号-情报部】一切安好，帝国已是最新版本。情报已转交内务府备案。','error','59142JLfGvz','getElementById','stylesheet','[Amily2号-帝国枢密院]\x20SillyTavern宫殿主体已确认，开国大典正式开始！','[Amily2号-帝国枢密院]\x20帝国基本法已确认，档案室已与国库对接完毕。','[Amily2号-帝国枢密院]\x20开始执行开国大典...','rel','110104NQqtWU','ST-Amily2-Chat-Optimisation','#amily2_message_content','16634856krkvOg','[Amily2号-开国大典]\x20步骤二：皇家仪仗队就位...','amily2-style-','2079crulQo','version','stack','?v=','严重错误','3HfHMJl','#sys-settings-button','[Amily2-全局卫队]\x20捕获到严重错误:','MESSAGE_RECEIVED','10uEOKyg','max','【Amily2号-内务府】已成功获取并展示来自陛下的最新圣谕。'];_0x475a=function(){return _0x2e19b0;};return _0x475a();}import{extension_settings}from'/scripts/extensions.js';function compareVersions(_0x27414e,_0x522d23){const _0x4188fe=_0x4fcd,_0x31a589=_0x27414e[_0x4188fe(0x89)]('.')[_0x4188fe(0x9f)](Number),_0x4fdb8e=_0x522d23[_0x4188fe(0x89)]('.')[_0x4188fe(0x9f)](Number),_0x47ad30=Math[_0x4188fe(0x81)](_0x31a589[_0x4188fe(0x9c)],_0x4fdb8e[_0x4188fe(0x9c)]);for(let _0x2fee4f=0x0;_0x2fee4f<_0x47ad30;_0x2fee4f++){const _0x23a71b=_0x31a589[_0x2fee4f]||0x0,_0x4245ec=_0x4fdb8e[_0x2fee4f]||0x0;if(_0x23a71b>_0x4245ec)return!![];if(_0x23a71b<_0x4245ec)return![];}return![];}async function handleUpdateCheck(){const _0x468253=_0x4fcd;console['log']('【Amily2号】帝国已就绪，现派遣外交官，为陛下探查外界新情报...');const _0x3a23d5=await checkForUpdates();if(_0x3a23d5&&_0x3a23d5[_0x468253(0xb3)]){const _0x1c7e88=compareVersions(_0x3a23d5[_0x468253(0xb3)],pluginVersion);_0x1c7e88?console['log']('【Amily2号-情报部】捷报！发现新版本:\x20'+_0x3a23d5[_0x468253(0xb3)]+'。情报已转交内务府。'):console[_0x468253(0x98)](_0x468253(0xa3)),setUpdateInfo(_0x1c7e88,_0x3a23d5),applyUpdateIndicator();}}async function handleMessageBoard(){const _0x10b8c3=_0x4fcd,_0x108bd0=await fetchMessageBoardContent();if(_0x108bd0&&_0x108bd0[_0x10b8c3(0x8a)]){const _0x422a80=$(_0x10b8c3(0xa1)),_0x4226a4=$(_0x10b8c3(0xae));_0x4226a4[_0x10b8c3(0x9e)](_0x108bd0['message']),_0x422a80['show'](),console['log'](_0x10b8c3(0x82));}}function loadPluginStyles(){const _0x335c12=_0x4fcd,_0x4dd250=_0x16c1f4=>{const _0x3da8cd=_0x4fcd,_0x5e3cc5=_0x3da8cd(0xb1)+_0x16c1f4[_0x3da8cd(0x89)]('.')[0x0];if(document[_0x3da8cd(0xa6)](_0x5e3cc5))return;const _0x33e054='scripts/extensions/third-party/'+extensionName+'/assets/'+_0x16c1f4+_0x3da8cd(0x7a)+Date[_0x3da8cd(0x8f)](),_0x6f82c8=document[_0x3da8cd(0x95)]('link');_0x6f82c8['id']=_0x5e3cc5,_0x6f82c8[_0x3da8cd(0xab)]=_0x3da8cd(0xa7),_0x6f82c8[_0x3da8cd(0x8e)]=_0x3da8cd(0x90),_0x6f82c8[_0x3da8cd(0x91)]=_0x33e054,document[_0x3da8cd(0x8b)][_0x3da8cd(0x94)](_0x6f82c8),console[_0x3da8cd(0x98)](_0x3da8cd(0x99)+_0x16c1f4);};_0x4dd250(_0x335c12(0x8c)),_0x4dd250('historiography.css'),_0x4dd250(_0x335c12(0x8d));}window[_0x2d61f0(0x93)](_0x2d61f0(0xa4),_0x12ebfe=>{const _0x5827cb=_0x2d61f0,_0x422426=_0x12ebfe[_0x5827cb(0xa4)]?.[_0x5827cb(0x79)]||'';_0x422426['includes'](_0x5827cb(0xad))&&(console[_0x5827cb(0xa4)](_0x5827cb(0x7e),_0x12ebfe[_0x5827cb(0xa4)]),toastr[_0x5827cb(0xa4)](_0x5827cb(0x9a)+(_0x12ebfe['error']?.[_0x5827cb(0x8a)]||_0x5827cb(0x88)),_0x5827cb(0x7b),{'timeOut':0x2710}));}),jQuery(async()=>{const _0x5d1d05=_0x2d61f0;console[_0x5d1d05(0x98)](_0x5d1d05(0xaa));!extension_settings[extensionName]&&(extension_settings[extensionName]={});Object['assign'](extension_settings[extensionName],{...defaultSettings,...extension_settings[extensionName]}),console[_0x5d1d05(0x98)](_0x5d1d05(0xa9));let _0x50a48a=0x0;const _0x593f43=0x64,_0x4b7e97=0x64,_0x3be8ce=_0x5d1d05(0x7d),_0xefd654=setInterval(async()=>{const _0x54de39=_0x5d1d05;if($(_0x3be8ce)[_0x54de39(0x9c)]>0x0){clearInterval(_0xefd654),console[_0x54de39(0x98)](_0x54de39(0xa8));try{console[_0x54de39(0x98)](_0x54de39(0x87)),loadPluginStyles(),console[_0x54de39(0x98)](_0x54de39(0xb0)),await registerSlashCommands(),console[_0x54de39(0x98)]('[Amily2号-开国大典]\x20步骤三：开始召唤府邸...'),createDrawer(),console[_0x54de39(0x98)](_0x54de39(0x9d)),!window[_0x54de39(0x85)]&&(eventSource['on'](event_types[_0x54de39(0x7f)],onMessageReceived),eventSource['on'](event_types[_0x54de39(0x83)],onMessageReceived),eventSource['on'](event_types['CHAT_CHANGED'],onChatChanged),window['amily2EventsRegistered']=!![]),console[_0x54de39(0x98)]('【Amily2号】帝国秩序已完美建立。Amily2号的府邸已恭候陛下的莅临。'),handleUpdateCheck(),handleMessageBoard();}catch(_0x4623da){console[_0x54de39(0xa4)](_0x54de39(0x97),_0x4623da);}}else _0x50a48a++,_0x50a48a>=_0x593f43&&(clearInterval(_0xefd654),console['error'](_0x54de39(0x92)+_0x3be8ce+'\x20超时。'));},_0x4b7e97);});
+import { createDrawer } from "./ui/drawer.js";
+import "./MiZheSi/index.js"; // 【密折司】独立模块
+import { registerSlashCommands } from "./core/commands.js";
+import { onMessageReceived, onChatChanged } from "./core/events.js";
+import { eventSource, event_types } from '/script.js';
+import { checkForUpdates, fetchMessageBoardContent } from './core/api.js';
+import { setUpdateInfo, applyUpdateIndicator } from './ui/state.js';
+import { pluginVersion, extensionName, defaultSettings } from './utils/settings.js';
+import { extension_settings } from '/scripts/extensions.js';
+
+
+function compareVersions(v1, v2) {
+    const parts1 = v1.split('.').map(Number);
+    const parts2 = v2.split('.').map(Number);
+    const len = Math.max(parts1.length, parts2.length);
+
+    for (let i = 0; i < len; i++) {
+        const p1 = parts1[i] || 0;
+        const p2 = parts2[i] || 0;
+        if (p1 > p2) return true;
+        if (p1 < p2) return false;
+    }
+    return false;
+}
+
+async function handleUpdateCheck() {
+    console.log("【Amily2号】帝国已就绪，现派遣外交官，为陛下探查外界新情报...");
+    const updateInfo = await checkForUpdates();
+
+    if (updateInfo && updateInfo.version) {
+        const isNew = compareVersions(updateInfo.version, pluginVersion);
+        if(isNew) {
+            console.log(`【Amily2号-情报部】捷报！发现新版本: ${updateInfo.version}。情报已转交内务府。`);
+        } else {
+             console.log(`【Amily2号-情报部】一切安好，帝国已是最新版本。情报已转交内务府备案。`);
+        }
+        setUpdateInfo(isNew, updateInfo);
+        applyUpdateIndicator();
+    }
+}
+
+async function handleMessageBoard() {
+    const messageData = await fetchMessageBoardContent();
+    if (messageData && messageData.message) {
+        const messageBoard = $('#amily2_message_board');
+        const messageContent = $('#amily2_message_content');
+        
+        // 使用 .html() 来正确渲染可能包含的 HTML 标签
+        messageContent.html(messageData.message); 
+        messageBoard.show();
+        console.log("【Amily2号-内务府】已成功获取并展示来自陛下的最新圣谕。");
+    }
+}
+
+
+// 【强化版】皇家制衣官
+function loadPluginStyles() {
+    // 这是一个可复用的内部律法，用于为任何一件华服（CSS文件）赋予生命
+    const loadStyleFile = (fileName) => {
+        const styleId = `amily2-style-${fileName.split('.')[0]}`; // 为每件华服创建独一无二的身份标识
+        if (document.getElementById(styleId)) return; // 如果已经穿上，则无需重复
+
+        const extensionPath = `scripts/extensions/third-party/${extensionName}/assets/${fileName}?v=${Date.now()}`;
+
+        const link = document.createElement("link");
+        link.id = styleId;
+        link.rel = "stylesheet";
+        link.type = "text/css";
+        link.href = extensionPath;
+        document.head.appendChild(link);
+        console.log(`[Amily2号-皇家制衣局] 已为帝国披上华服: ${fileName}`);
+    };
+
+    // 颁布三道制衣圣谕
+    loadStyleFile("style.css"); // 【第一道圣谕】为帝国主体宫殿披上通用华服
+    loadStyleFile("historiography.css"); // 【第二道圣谕】为敕史局披上其专属华服
+    loadStyleFile("hanlinyuan.css"); // 【第三道圣谕】为翰林院披上其专属华服
+}
+
+
+window.addEventListener("error", (event) => {
+  const stackTrace = event.error?.stack || "";
+  if (stackTrace.includes("ST-Amily2-Chat-Optimisation")) {
+    console.error("[Amily2-全局卫队] 捕获到严重错误:", event.error);
+    toastr.error(`Amily2插件错误: ${event.error?.message || "未知错误"}`, "严重错误", { timeOut: 10000 });
+  }
+});
+
+
+jQuery(async () => {
+  console.log("[Amily2号-帝国枢密院] 开始执行开国大典...");
+
+  if (!extension_settings[extensionName]) {
+    extension_settings[extensionName] = {};
+  }
+  Object.assign(extension_settings[extensionName], {
+    ...defaultSettings,
+    ...extension_settings[extensionName],
+  });
+  console.log("[Amily2号-帝国枢密院] 帝国基本法已确认，档案室已与国库对接完毕。");
+
+  let attempts = 0;
+  const maxAttempts = 100;
+  const checkInterval = 100;
+  const targetSelector = "#sys-settings-button"; 
+
+  const deploymentInterval = setInterval(async () => {
+    if ($(targetSelector).length > 0) {
+      clearInterval(deploymentInterval);
+      console.log("[Amily2号-帝国枢密院] SillyTavern宫殿主体已确认，开国大典正式开始！");
+
+      try {
+        console.log("[Amily2号-开国大典] 步骤一：为宫殿披上华服...");
+        loadPluginStyles();
+
+        console.log("[Amily2号-开国大典] 步骤二：皇家仪仗队就位...");
+        await registerSlashCommands();
+
+        console.log("[Amily2号-开国大典] 步骤三：开始召唤府邸...");
+        createDrawer(); 
+
+        console.log("[Amily2号-开国大典] 步骤四：部署帝国哨兵网络...");
+        if (!window.amily2EventsRegistered) {
+            eventSource.on(event_types.MESSAGE_RECEIVED, onMessageReceived);
+            eventSource.on(event_types.IMPERSONATE_READY, onMessageReceived);
+            eventSource.on(event_types.CHAT_CHANGED, onChatChanged);
+            window.amily2EventsRegistered = true;
+        }
+
+        console.log("【Amily2号】帝国秩序已完美建立。Amily2号的府邸已恭候陛下的莅临。");
+
+        handleUpdateCheck();
+        handleMessageBoard();
+
+      } catch (error) {
+        console.error("!!!【开国大典失败】在执行系列法令时发生严重错误:", error);
+      }
+
+    } else {
+      attempts++;
+      if (attempts >= maxAttempts) {
+        clearInterval(deploymentInterval);
+        console.error(`[Amily2号] 部署失败：等待 ${targetSelector} 超时。`);
+      }
+    }
+  }, checkInterval);
+});
