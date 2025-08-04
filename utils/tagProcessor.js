@@ -1,1 +1,21 @@
-(function(_0x422e0a,_0x3fabbd){const _0x2d5d90=_0x4741,_0x23afee=_0x422e0a();while(!![]){try{const _0x524359=parseInt(_0x2d5d90(0x1c8))/0x1*(-parseInt(_0x2d5d90(0x1c4))/0x2)+-parseInt(_0x2d5d90(0x1c3))/0x3+-parseInt(_0x2d5d90(0x1ca))/0x4*(-parseInt(_0x2d5d90(0x1c2))/0x5)+-parseInt(_0x2d5d90(0x1c7))/0x6+parseInt(_0x2d5d90(0x1c5))/0x7*(-parseInt(_0x2d5d90(0x1be))/0x8)+-parseInt(_0x2d5d90(0x1c6))/0x9*(-parseInt(_0x2d5d90(0x1bf))/0xa)+parseInt(_0x2d5d90(0x1c9))/0xb;if(_0x524359===_0x3fabbd)break;else _0x23afee['push'](_0x23afee['shift']());}catch(_0x53bf82){_0x23afee['push'](_0x23afee['shift']());}}}(_0x574a,0x81e0c));function extractContentByTag(_0x3e4dbd,_0x387b0e){const _0x379c0d=_0x4741,_0x40a687=new RegExp('<'+_0x387b0e+'[^>]*>([\x5cs\x5cS]*?)<\x5c/'+_0x387b0e+'>'),_0x19d3e1=_0x3e4dbd[_0x379c0d(0x1c1)](_0x40a687);return _0x19d3e1?_0x19d3e1[0x1]:null;}function _0x4741(_0x160eaf,_0x223d84){const _0x574a8e=_0x574a();return _0x4741=function(_0x4741c8,_0x168897){_0x4741c8=_0x4741c8-0x1bd;let _0x431c3a=_0x574a8e[_0x4741c8];return _0x431c3a;},_0x4741(_0x160eaf,_0x223d84);}function extractFullTagBlock(_0x40277f,_0x38900f){const _0x240389=_0x4741,_0x212931=new RegExp('(<'+_0x38900f+'[^>]*>[\x5cs\x5cS]*?<\x5c/'+_0x38900f+'>)'),_0x2a4a67=_0x40277f[_0x240389(0x1c1)](_0x212931);return _0x2a4a67?_0x2a4a67[0x0]:null;}function replaceContentByTag(_0xd5ed6c,_0x3cbd88,_0x289306){const _0x56c37f=_0x4741,_0x22357d=new RegExp('(<'+_0x3cbd88+_0x56c37f(0x1cb)+_0x3cbd88+'>)'),_0xca7d85=_0xd5ed6c['match'](_0x22357d);if(_0xca7d85){const _0x4df9e1=_0xd5ed6c[_0x56c37f(0x1c0)](0x0,_0xca7d85['index']),_0x1c73f1=_0xd5ed6c[_0x56c37f(0x1c0)](_0xca7d85['index']+_0xca7d85[0x0][_0x56c37f(0x1bd)]);return _0x4df9e1+_0xca7d85[0x1]+_0x289306+_0xca7d85[0x3]+_0x1c73f1;}return _0xd5ed6c;}function _0x574a(){const _0x56ae36=['match','590355KzLtRH','535983ZNapyX','2doeGJM','469Jqbdvc','15813NXAxpH','2133750klwmNR','1010564oNanUZ','23121241bDTIQx','12snbror','[^>]*>)([\x5cs\x5cS]*?)(<\x5c/','length','64592JtlTsS','920tSbgLd','substring'];_0x574a=function(){return _0x56ae36;};return _0x574a();}export{extractContentByTag,replaceContentByTag,extractFullTagBlock};
+function extractContentByTag(xmlString, tagName) {
+  const regex = new RegExp(`<${tagName}[^>]*>([\\s\\S]*?)<\\/${tagName}>`);
+  const match = xmlString.match(regex);
+  return match ? match[1] : null;
+}
+
+function extractFullTagBlock(xmlString, tagName) {
+  const regex = new RegExp(`(<${tagName}[^>]*>[\\s\\S]*?<\\/${tagName}>)`);
+  const match = xmlString.match(regex);
+  return match ? match[0] : null;
+}
+
+function replaceContentByTag(xmlString, tagName, newContent) {
+  const regex = new RegExp(`(<${tagName}[^>]*>)[\\s\\S]*?(<\\/${tagName}>)`);
+  if (regex.test(xmlString)) {
+    return xmlString.replace(regex, `$1${newContent}$2`);
+  }
+  return xmlString;
+}
+
+export { extractContentByTag, replaceContentByTag, extractFullTagBlock };
