@@ -1,1 +1,326 @@
-const _0x3b4a62=_0x3f3e;(function(_0x214c2d,_0x1c97f1){const _0x1eb7e1=_0x3f3e,_0x25fee9=_0x214c2d();while(!![]){try{const _0x419760=parseInt(_0x1eb7e1(0xd5))/0x1+-parseInt(_0x1eb7e1(0xa2))/0x2+-parseInt(_0x1eb7e1(0xd0))/0x3+-parseInt(_0x1eb7e1(0x107))/0x4+parseInt(_0x1eb7e1(0x117))/0x5+parseInt(_0x1eb7e1(0xf9))/0x6*(-parseInt(_0x1eb7e1(0x118))/0x7)+-parseInt(_0x1eb7e1(0xf5))/0x8*(-parseInt(_0x1eb7e1(0xa9))/0x9);if(_0x419760===_0x1c97f1)break;else _0x25fee9['push'](_0x25fee9['shift']());}catch(_0x3aec4b){_0x25fee9['push'](_0x25fee9['shift']());}}}(_0x3271,0x56571));import{extension_settings,getContext}from'/scripts/extensions.js';function _0x3271(){const _0x59bf47=['data','[Amily2号-外交部]\x20已成功召唤“皇家信使”(ChatCompletionService)。','[Amily2号-外交部]\x20紧急军情：外交任务失败！','filter','[Amily2号-使节团]\x20第\x20','2707892DRCZCD','hostname','Google','replace','/openai','[Amily2号-外交部]\x20使节团尝试使用地址:\x20','\x20位使节\x20(Key:\x20...','name','json','任务总结','[Amily2号-外交部]\x20情报已成功获取并解析。','Authorization','<无法提取错误正文>','push','#amily2_api_url','origin','2278150UgmLOj','3434011DHmQKd','Key\x20...','love.qinyan.xyz','empty','[Amily2号-使节团]\x20上次任务尚未完成，本次任务取消。','ai.google.dev',')\x20...','text','toLowerCase','模型获取失败:\x20','AMILY2_LOCK_MODEL_FETCHING','Bearer\x20','897876EKOUtT','info','ChatCompletionService','similarity','/scripts/custom-request.js','https://raw.githubusercontent.com/Wx-2025/ST-Amily2-Chat-Optimisation/refs/heads/main/amily2_message_board.json','status','14860251RdlCmN','[Amily2号-外交部]\x20已派遣使者前往云端获取最新情报...','code','prop','模式切换','/v1/chat/completions','手动模式已启用','warn','未知的模型列表格式','no-store','split','API\x20Key无效','成功获取\x20','#amily2_api_key','href','append','所有使节均未能完成任务。详情请见控制台(F12)。','length','[Amily2号-外交部]\x20API\x20类型:\x20','Amily2-ChatPlugin','audio','trim','/v1beta/projects/locations/global/models','#amily2_refresh_models','无法识别的\x20Google\x20API\x20端点','location','<option>','<i\x20class=\x22fas\x20fa-spinner\x20fa-spin\x22></i>\x20加载中','endsWith','stringify','任务成功','\x20个模型！','服务器响应异常:\x20','map','/chat/completions','[Amily2号-使节团]\x20已启用“皇家密道”模式，跳过模型列表获取。请手动输入模型ID并保存。','\x20个可用模型','join','string','1468560bzmSXK','https://raw.githubusercontent.com/Wx-2025/ST-Amily2-Chat-Optimisation/refs/heads/main/amily2_update_info.json','val','\x20失败:\x20','includes','352884nmeheA','\x20个Key)','models','pathname','\x20个模型\x20(使用第\x20','[Amily2号-外交部]\x20未能召唤“皇家信使”，部分高级功能（如Claw代理）将受限。请考虑更新SillyTavern版本。','whisper','未知的\x20Google\x20模型列表格式','[Amily2号-使节团]\x20失败详情汇总:\x0a','GET','陛下，请先赐予\x20API\x20地址与至少一枚\x20API\x20Key。','OpenAI\x20兼容','\x20个\x20Google\x20模型\x20(使用第\x20','X-goog-api-key','[Amily2号-内务府]\x20任务取消：陛下尚未配置留言板URL。','isArray','\x20位使节任务失败:','配置缺失','message','statusText','error','html','cors','X-Custom-Proxy','omit','YourUsername','embed','generativelanguage.googleapis.com','已启用手动模式，请直接输入模型ID。','上次任务尚未完成，请稍后再试。','log','application/json','8ENKJkD','陛下，您提供的\x20API\x20Key\x20无效或为空。','forceProxyForCustomApi','aiplatform.googleapis.com','6hiLzPJ','success','disabled','外交任务失败','<i\x20class=\x22fas\x20fa-sync-alt\x22></i>\x20刷新模型','/v1','#amily2_model','sort','slice'];_0x3271=function(){return _0x59bf47;};return _0x3271();}import{characters}from'/script.js';function _0x3f3e(_0x350933,_0x5379c6){const _0x32713c=_0x3271();return _0x3f3e=function(_0x3f3e9f,_0x580028){_0x3f3e9f=_0x3f3e9f-0x9a;let _0x123f0c=_0x32713c[_0x3f3e9f];return _0x123f0c;},_0x3f3e(_0x350933,_0x5379c6);}import{world_names}from'/scripts/world-info.js';import{extensionName}from'../utils/settings.js';import{extractContentByTag,replaceContentByTag,extractFullTagBlock}from'../utils/tagProcessor.js';import{getCombinedWorldbookContent,findLatestSummaryLore,DEDICATED_LOREBOOK_NAME,getChatIdentifier}from'./lore.js';import{checkAndFixWithAPI as _0x22c814}from'./summarizer.js';import{isGoogleEndpoint,convertToGoogleRequest,parseGoogleResponse,buildGoogleApiUrl}from'../core/utils/googleAdapter.js';import{intelligentPoll,createGooglePollingTask,progressTracker}from'../core/utils/pollingManager.js';let ChatCompletionService=undefined;try{const module=await import(_0x3b4a62(0xa6));ChatCompletionService=module[_0x3b4a62(0xa4)],console[_0x3b4a62(0xf3)](_0x3b4a62(0x103));}catch(_0x3438bf){console[_0x3b4a62(0xb0)](_0x3b4a62(0xda),_0x3438bf);}const UPDATE_CHECK_URL=_0x3b4a62(0xd1),MESSAGE_BOARD_URL=_0x3b4a62(0xa7);export async function fetchMessageBoardContent(){const _0xbf0dde=_0x3b4a62;if(!MESSAGE_BOARD_URL)return console['log'](_0xbf0dde(0xe3)),null;try{const _0x165f3f=await fetch(MESSAGE_BOARD_URL,{'cache':_0xbf0dde(0xb2)});if(!_0x165f3f['ok'])throw new Error(_0xbf0dde(0xc9)+_0x165f3f['status']);const _0x45fd6a=await _0x165f3f[_0xbf0dde(0x10f)]();return _0x45fd6a;}catch(_0x5dea6c){return console[_0xbf0dde(0xe9)]('[Amily2号-内务府]\x20获取留言板内容失败:',_0x5dea6c),null;}}export async function checkForUpdates(){const _0xf0e92f=_0x3b4a62;if(!UPDATE_CHECK_URL||UPDATE_CHECK_URL[_0xf0e92f(0xd4)](_0xf0e92f(0xee)))return console[_0xf0e92f(0xf3)]('[Amily2号-外交部]\x20任务取消：陛下尚未配置情报来源URL。'),null;try{console['log'](_0xf0e92f(0xaa));const _0x3e3178=await fetch(UPDATE_CHECK_URL,{'method':_0xf0e92f(0xde),'cache':_0xf0e92f(0xb2),'mode':_0xf0e92f(0xeb)});if(!_0x3e3178['ok'])throw new Error('远方服务器响应异常，状态:\x20'+_0x3e3178[_0xf0e92f(0xa8)]);const _0x13afa3=await _0x3e3178[_0xf0e92f(0x10f)]();return console[_0xf0e92f(0xf3)](_0xf0e92f(0x111)),_0x13afa3;}catch(_0x45df1c){return console[_0xf0e92f(0xe9)](_0xf0e92f(0x104),_0x45df1c),null;}}let isFetchingModels=![];export async function fetchSupportedModels(){const _0x9879a4=_0x3b4a62,_0x42036d=extension_settings[extensionName];if(_0x42036d&&_0x42036d[_0x9879a4(0xf7)]){console[_0x9879a4(0xf3)](_0x9879a4(0xcc)),toastr[_0x9879a4(0xa3)](_0x9879a4(0xf1),_0x9879a4(0xad));const _0x3f3e5b=$(_0x9879a4(0xff));return _0x3f3e5b['empty']()[_0x9879a4(0xb8)]($('<option>',{'value':'','text':_0x9879a4(0xaf)})),[];}if(window[_0x9879a4(0xa0)])return console[_0x9879a4(0xb0)](_0x9879a4(0x9a)),toastr[_0x9879a4(0xa3)](_0x9879a4(0xf2),'任务排队中'),[];window['AMILY2_LOCK_MODEL_FETCHING']=!![];try{const _0x4e6235=$(_0x9879a4(0x115))[_0x9879a4(0xd2)]()[_0x9879a4(0xbe)](),_0x5cc3b5=$(_0x9879a4(0xb6))[_0x9879a4(0xd2)]()[_0x9879a4(0xbe)](),_0x203b83=$(_0x9879a4(0xc0)),_0x5a6bcf=$(_0x9879a4(0xff));if(!_0x4e6235||!_0x5cc3b5)return toastr['error'](_0x9879a4(0xdf),_0x9879a4(0xe6)),[];_0x203b83[_0x9879a4(0xac)](_0x9879a4(0xfb),!![])[_0x9879a4(0xea)](_0x9879a4(0xc4)),_0x5a6bcf[_0x9879a4(0x11b)]()[_0x9879a4(0xb8)]($(_0x9879a4(0xc3),{'value':'','text':'正在轮换使节团获取模型...'}));const _0x223047=_0x5cc3b5[_0x9879a4(0xb3)](',')[_0x9879a4(0xca)](_0x2d1a84=>_0x2d1a84[_0x9879a4(0xbe)]())[_0x9879a4(0x105)](Boolean);if(_0x223047[_0x9879a4(0xba)]===0x0)return toastr['error'](_0x9879a4(0xf6),_0x9879a4(0xb4)),_0x5a6bcf['empty']()[_0x9879a4(0xb8)]($('<option>',{'value':'','text':_0x9879a4(0xb4)})),[];const _0x50dffa=[];let _0x3065fb=[];for(let _0x2d40be=0x0;_0x2d40be<_0x223047[_0x9879a4(0xba)];_0x2d40be++){const _0x5b42f9=_0x223047[_0x2d40be];console[_0x9879a4(0xf3)]('[Amily2号-使节团]\x20派遣第\x20'+(_0x2d40be+0x1)+'/'+_0x223047[_0x9879a4(0xba)]+_0x9879a4(0x10d)+_0x5b42f9[_0x9879a4(0x101)](-0x4)+_0x9879a4(0x9c));try{let _0x2c33c1;const _0x385de9=new URL(_0x4e6235),_0x51b6a6=isGoogleEndpoint(_0x4e6235);if(_0x51b6a6){if(_0x385de9[_0x9879a4(0x108)][_0x9879a4(0xd4)](_0x9879a4(0xf0))||_0x385de9[_0x9879a4(0x108)][_0x9879a4(0xd4)](_0x9879a4(0x9b)))_0x385de9[_0x9879a4(0xd8)]='/v1beta/models';else{if(_0x385de9['hostname'][_0x9879a4(0xd4)](_0x9879a4(0xf8)))_0x385de9[_0x9879a4(0xd8)]=_0x9879a4(0xbf);else throw new Error(_0x9879a4(0xc1));}_0x2c33c1=_0x385de9[_0x9879a4(0xb7)];}else{let _0x473fe2=_0x385de9['pathname'];if(_0x473fe2[_0x9879a4(0x9e)]()[_0x9879a4(0xd4)](_0x9879a4(0x10b)))_0x473fe2=_0x473fe2[_0x9879a4(0x10a)](/\/$/,'');else{if(_0x473fe2[_0x9879a4(0xc5)](_0x9879a4(0xae)))_0x473fe2=_0x473fe2['substring'](0x0,_0x473fe2[_0x9879a4(0xba)]-_0x9879a4(0xcb)[_0x9879a4(0xba)]);else{if(_0x473fe2[_0x9879a4(0xc5)]('/v1/'))_0x473fe2=_0x473fe2[_0x9879a4(0x101)](0x0,-0x1);else!_0x473fe2[_0x9879a4(0xc5)](_0x9879a4(0xfe))&&(_0x473fe2=_0x473fe2['replace'](/\/$/,'')+_0x9879a4(0xfe));}}_0x385de9[_0x9879a4(0xd8)]=_0x473fe2[_0x9879a4(0x10a)](/\/$/,'')+'/models',_0x2c33c1=_0x385de9[_0x9879a4(0xb7)];}console[_0x9879a4(0xf3)](_0x9879a4(0x10c)+_0x2c33c1),console[_0x9879a4(0xf3)](_0x9879a4(0xbb)+(_0x51b6a6?_0x9879a4(0x109):_0x9879a4(0xe0)));const _0x507ccd={'Content-Type':'application/json','Accept':_0x9879a4(0xf4)};if(_0x51b6a6){console[_0x9879a4(0xf3)]('[Amily2号-使节团]\x20使用\x20Google\x20API\x20Key:\x20...'+_0x5b42f9['slice'](-0x4));if(_0x385de9[_0x9879a4(0x108)][_0x9879a4(0xd4)](_0x9879a4(0xf0))||_0x385de9[_0x9879a4(0x108)][_0x9879a4(0xd4)](_0x9879a4(0x9b)))_0x507ccd[_0x9879a4(0xe2)]=_0x5b42f9;else _0x385de9[_0x9879a4(0x108)][_0x9879a4(0xd4)](_0x9879a4(0xf8))&&(_0x507ccd['Authorization']='Bearer\x20'+_0x5b42f9);}else _0x507ccd[_0x9879a4(0x112)]=_0x9879a4(0xa1)+_0x5b42f9;_0x2c33c1[_0x9879a4(0xd4)](_0x9879a4(0x11a))&&(_0x507ccd[_0x9879a4(0xec)]=_0x9879a4(0xbc),_0x507ccd['Origin']=window[_0x9879a4(0xc2)][_0x9879a4(0x116)]);const _0x59544d=await fetch(_0x2c33c1,{'method':_0x9879a4(0xde),'headers':_0x507ccd,'mode':'cors','credentials':_0x9879a4(0xed)});if(!_0x59544d['ok']){let _0x81e642='';try{const _0x3751e0=await _0x59544d[_0x9879a4(0x10f)]();_0x81e642=JSON[_0x9879a4(0xc6)](_0x3751e0,null,0x2);}catch{try{_0x81e642=await _0x59544d[_0x9879a4(0x9d)]();}catch(_0x14168e){_0x81e642=_0x9879a4(0x113);}}throw new Error('API返回错误:\x20'+_0x59544d[_0x9879a4(0xa8)]+'\x20'+_0x59544d[_0x9879a4(0xe8)]+'\x0a'+_0x81e642);}const _0x1f0f46=await _0x59544d['json']();let _0x26acf9=[];if(_0x51b6a6){if(_0x1f0f46[_0x9879a4(0xd7)]&&Array['isArray'](_0x1f0f46[_0x9879a4(0xd7)]))_0x26acf9=_0x1f0f46[_0x9879a4(0xd7)][_0x9879a4(0xca)](_0x1f70ba=>_0x1f70ba[_0x9879a4(0x10e)]);else{if(_0x1f0f46[_0x9879a4(0x102)]&&Array['isArray'](_0x1f0f46[_0x9879a4(0x102)]))_0x26acf9=_0x1f0f46['data'][_0x9879a4(0xca)](_0x4dc3e6=>_0x4dc3e6[_0x9879a4(0x10e)]||_0x4dc3e6['id']);else{if(Array['isArray'](_0x1f0f46))_0x26acf9=_0x1f0f46[_0x9879a4(0xca)](_0x4e463d=>_0x4e463d['name']);else throw new Error(_0x9879a4(0xdc));}}}else{if(Array[_0x9879a4(0xe4)](_0x1f0f46))_0x26acf9=_0x1f0f46['map'](_0x3118e5=>_0x3118e5['id']||_0x3118e5);else{if(_0x1f0f46[_0x9879a4(0x102)]&&Array['isArray'](_0x1f0f46[_0x9879a4(0x102)]))_0x26acf9=_0x1f0f46[_0x9879a4(0x102)][_0x9879a4(0xca)](_0x2f5707=>_0x2f5707['id']);else{if(_0x1f0f46['models']&&Array[_0x9879a4(0xe4)](_0x1f0f46['models']))_0x26acf9=_0x1f0f46[_0x9879a4(0xd7)][_0x9879a4(0xca)](_0xf5921d=>_0xf5921d['id']);else throw new Error(_0x9879a4(0xb1));}}}const _0x1124f0=_0x26acf9[_0x9879a4(0x105)](_0xdbcd0d=>typeof _0xdbcd0d===_0x9879a4(0xcf))[_0x9879a4(0x105)](_0x19bdbd=>!_0x19bdbd[_0x9879a4(0x9e)]()['includes'](_0x9879a4(0xef)))[_0x9879a4(0x105)](_0x14e510=>!_0x14e510[_0x9879a4(0x9e)]()[_0x9879a4(0xd4)]('search'))[_0x9879a4(0x105)](_0x1f5675=>!_0x1f5675[_0x9879a4(0x9e)]()['includes'](_0x9879a4(0xa5)))[_0x9879a4(0x105)](_0x31b5d2=>!_0x31b5d2[_0x9879a4(0x9e)]()['includes'](_0x9879a4(0xbd)))[_0x9879a4(0x105)](_0x2507fe=>!_0x2507fe[_0x9879a4(0x9e)]()[_0x9879a4(0xd4)](_0x9879a4(0xab)))[_0x9879a4(0x105)](_0x1a6df7=>!_0x1a6df7['toLowerCase']()[_0x9879a4(0xd4)](_0x9879a4(0xdb)));_0x1124f0[_0x9879a4(0x100)]((_0x2784d7,_0x524b88)=>_0x2784d7['localeCompare'](_0x524b88)),console[_0x9879a4(0xf3)](_0x9879a4(0x106)+(_0x2d40be+0x1)+'\x20位使节成功带回\x20'+_0x1124f0['length']+_0x9879a4(0xc8)),_0x3065fb=[...new Set([..._0x3065fb,..._0x1124f0])],_0x3065fb[_0x9879a4(0x100)]();_0x51b6a6?toastr['success']('成功获取\x20'+_0x1124f0['length']+_0x9879a4(0xe1)+(_0x2d40be+0x1)+_0x9879a4(0xd6),_0x9879a4(0xc7)):toastr[_0x9879a4(0xfa)](_0x9879a4(0xb5)+_0x1124f0['length']+_0x9879a4(0xd9)+(_0x2d40be+0x1)+_0x9879a4(0xd6),_0x9879a4(0xc7));break;}catch(_0xb27f40){const _0x5b92ab=_0x9879a4(0x119)+_0x5b42f9[_0x9879a4(0x101)](-0x4)+_0x9879a4(0xd3)+_0xb27f40[_0x9879a4(0xe7)];console['error'](_0x9879a4(0x106)+(_0x2d40be+0x1)+_0x9879a4(0xe5),_0xb27f40),_0x50dffa[_0x9879a4(0x114)](_0x5b92ab);}}if(_0x3065fb[_0x9879a4(0xba)]>0x0)return console[_0x9879a4(0xf3)]('[Amily2号-使节团]\x20最终带回\x20'+_0x3065fb['length']+_0x9879a4(0xcd)),toastr[_0x9879a4(0xa3)]('所有使节团任务完成，找到\x20'+_0x3065fb[_0x9879a4(0xba)]+_0x9879a4(0xcd),_0x9879a4(0x110)),_0x3065fb;return toastr[_0x9879a4(0xe9)](_0x9879a4(0xb9),_0x9879a4(0xfc)),console[_0x9879a4(0xe9)](_0x9879a4(0xdd)+_0x50dffa[_0x9879a4(0xce)]('\x0a')),[];}catch(_0x44a8fc){return console[_0x9879a4(0xe9)]('[Amily2号-使节团]\x20全局错误:',_0x44a8fc),toastr['error'](_0x9879a4(0x9f)+_0x44a8fc['message'],'系统错误'),[];}finally{window[_0x9879a4(0xa0)]=![];const _0x57ca40=$(_0x9879a4(0xc0));_0x57ca40['prop'](_0x9879a4(0xfb),![])[_0x9879a4(0xea)](_0x9879a4(0xfd));}}export async function checkAndFixWithAPI(_0x3d3cb2,_0x5e8e17){return await _0x22c814(_0x3d3cb2,_0x5e8e17);}
+import { extension_settings, getContext } from "/scripts/extensions.js";
+import { characters } from "/script.js";
+import { world_names } from "/scripts/world-info.js";
+import { extensionName } from "../utils/settings.js";
+import { extractContentByTag, replaceContentByTag, extractFullTagBlock } from '../utils/tagProcessor.js';
+import {
+  getCombinedWorldbookContent,
+  findLatestSummaryLore,
+  DEDICATED_LOREBOOK_NAME,
+  getChatIdentifier,
+} from "./lore.js";
+import { checkAndFixWithAPI as summarizerCheckAndFix } from './summarizer.js';
+ 
+// 导入 Google 适配器和轮询管理器
+import {
+  isGoogleEndpoint,
+  convertToGoogleRequest,
+  parseGoogleResponse,
+  buildGoogleApiUrl
+} from '../core/utils/googleAdapter.js';
+ 
+import {
+  intelligentPoll,
+  createGooglePollingTask,
+  progressTracker
+} from '../core/utils/pollingManager.js';
+
+
+let ChatCompletionService = undefined;
+try {
+    const module = await import('/scripts/custom-request.js');
+    ChatCompletionService = module.ChatCompletionService;
+    console.log('[Amily2号-外交部] 已成功召唤“皇家信使”(ChatCompletionService)。');
+} catch (e) {
+    console.warn("[Amily2号-外交部] 未能召唤“皇家信使”，部分高级功能（如Claw代理）将受限。请考虑更新SillyTavern版本。", e);
+}
+ 
+const UPDATE_CHECK_URL =
+  "https://raw.githubusercontent.com/Wx-2025/ST-Amily2-Chat-Optimisation/refs/heads/main/amily2_update_info.json";
+
+const MESSAGE_BOARD_URL =
+  "https://raw.githubusercontent.com/Wx-2025/ST-Amily2-Chat-Optimisation/refs/heads/main/amily2_message_board.json";
+ 
+export async function fetchMessageBoardContent() {
+    if (!MESSAGE_BOARD_URL) {
+        console.log('[Amily2号-内务府] 任务取消：陛下尚未配置留言板URL。');
+        return null;
+    }
+    try {
+        const response = await fetch(MESSAGE_BOARD_URL, { cache: 'no-store' });
+        if (!response.ok) {
+            throw new Error(`服务器响应异常: ${response.status}`);
+        }
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('[Amily2号-内务府] 获取留言板内容失败:', error);
+        return null;
+    }
+}
+ 
+export async function checkForUpdates() {
+    if (!UPDATE_CHECK_URL || UPDATE_CHECK_URL.includes('YourUsername')) {
+        console.log('[Amily2号-外交部] 任务取消：陛下尚未配置情报来源URL。');
+        return null;
+    }
+ 
+ 
+    try {
+        console.log('[Amily2号-外交部] 已派遣使者前往云端获取最新情报...');
+        const response = await fetch(UPDATE_CHECK_URL, {
+            method: 'GET',
+            cache: 'no-store',
+            mode: 'cors'
+        });
+ 
+ 
+ 
+        if (!response.ok) {
+            throw new Error(`远方服务器响应异常，状态: ${response.status}`);
+        }
+ 
+        const data = await response.json();
+        console.log('[Amily2号-外交部] 情报已成功获取并解析。');
+        return data;
+ 
+    } catch (error) {
+        console.error('[Amily2号-外交部] 紧急军情：外交任务失败！', error);
+        return null;
+    }
+}
+ 
+let isFetchingModels = false;
+export async function fetchSupportedModels() {
+	  const settings = extension_settings[extensionName];
+  if (settings && settings.forceProxyForCustomApi) {
+    console.log('[Amily2号-使节团] 已启用“皇家密道”模式，跳过模型列表获取。请手动输入模型ID并保存。');
+    toastr.info("已启用手动模式，请直接输入模型ID。", "模式切换");
+
+    const $selector = $("#amily2_model");
+    $selector.empty().append($('<option>', { value: '', text: '手动模式已启用' }));
+    return []; // 直接结束任务，不再执行后续的网络请求
+  }
+  if (window.AMILY2_LOCK_MODEL_FETCHING) {
+    console.warn("[Amily2号-使节团] 上次任务尚未完成，本次任务取消。");
+    toastr.info("上次任务尚未完成，请稍后再试。", "任务排队中");
+    return [];
+  }
+  
+  window.AMILY2_LOCK_MODEL_FETCHING = true;
+  
+  try {
+    const apiUrl = $("#amily2_api_url").val().trim();
+    const apiKeysString = $("#amily2_api_key").val().trim();
+    const $button = $("#amily2_refresh_models");
+    const $selector = $("#amily2_model");
+ 
+    if (!apiUrl || !apiKeysString) {
+      toastr.error("陛下，请先赐予 API 地址与至少一枚 API Key。", "配置缺失");
+      return [];
+    }
+ 
+    $button.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> 加载中');
+    $selector.empty().append($('<option>', { value: '', text: '正在轮换使节团获取模型...' }));
+ 
+    const apiKeys = apiKeysString.split(',').map(k => k.trim()).filter(Boolean);
+    if (apiKeys.length === 0) {
+      toastr.error("陛下，您提供的 API Key 无效或为空。", "API Key无效");
+      $selector.empty().append($('<option>', { value: '', text: 'API Key无效' }));
+      return [];
+    }
+ 
+    const errorLog = [];
+    let successResults = [];
+ 
+    for (let i = 0; i < apiKeys.length; i++) {
+      const currentApiKey = apiKeys[i];
+      console.log(`[Amily2号-使节团] 派遣第 ${i + 1}/${apiKeys.length} 位使节 (Key: ...${currentApiKey.slice(-4)}) ...`);
+      
+      try {
+        let modelsApiUrl;
+        const baseUrlObject = new URL(apiUrl);
+        const isGoogleAPI = isGoogleEndpoint(apiUrl);
+ 
+        // 处理 Google API 端点
+        if (isGoogleAPI) {
+          if (baseUrlObject.hostname.includes("generativelanguage.googleapis.com") ||
+              baseUrlObject.hostname.includes("ai.google.dev")) {
+            baseUrlObject.pathname = '/v1beta/models';
+          } else if (baseUrlObject.hostname.includes("aiplatform.googleapis.com")) {
+            baseUrlObject.pathname = '/v1beta/projects/locations/global/models';
+          } else {
+            throw new Error("无法识别的 Google API 端点");
+          }
+          modelsApiUrl = baseUrlObject.href;
+        }
+        // 处理 OpenAI 兼容端点
+        else {
+          let path = baseUrlObject.pathname;
+          /*
+          // 旧的逻辑 - 过于宽泛，会导致对Google兼容层URL错误地附加/v1
+          if (path.endsWith('/v1/chat/completions')) {
+            path = path.substring(0, path.length - '/chat/completions'.length);
+          } else if (path.endsWith('/v1/')) {
+            path = path.slice(0, -1);
+          } else if (!path.endsWith('/v1')) {
+            path = path.replace(/\/$/, '') + '/v1';
+          }
+          */
+
+          // 新逻辑：区分处理 Google OpenAI 兼容层和通用 OpenAI 接口
+          if (path.toLowerCase().includes('/openai')) {
+            // 对于 Google 的兼容层 (e.g., /v1beta/openai)，我们假定它就是根路径
+            // 直接附加 /models，并确保没有尾部斜杠
+            path = path.replace(/\/$/, '');
+          } else {
+            // 原有的、通用的 OpenAI 兼容端点逻辑
+            if (path.endsWith('/v1/chat/completions')) {
+              path = path.substring(0, path.length - '/chat/completions'.length);
+            } else if (path.endsWith('/v1/')) {
+              path = path.slice(0, -1);
+            } else if (!path.endsWith('/v1')) {
+              path = path.replace(/\/$/, '') + '/v1';
+            }
+          }
+          baseUrlObject.pathname = path.replace(/\/$/, '') + '/models';
+          modelsApiUrl = baseUrlObject.href;
+        }
+ 
+        console.log(`[Amily2号-外交部] 使节团尝试使用地址: ${modelsApiUrl}`);
+        console.log(`[Amily2号-外交部] API 类型: ${isGoogleAPI ? 'Google' : 'OpenAI 兼容'}`);
+ 
+        const headers = {
+          "Content-Type": "application/json",
+          Accept: "application/json"
+        };
+ 
+        // Google API 认证头处理
+        if (isGoogleAPI) {
+          console.log(`[Amily2号-使节团] 使用 Google API Key: ...${currentApiKey.slice(-4)}`);
+          
+          if (baseUrlObject.hostname.includes("generativelanguage.googleapis.com") || 
+              baseUrlObject.hostname.includes("ai.google.dev")) {
+            headers["X-goog-api-key"] = currentApiKey;
+          } else if (baseUrlObject.hostname.includes("aiplatform.googleapis.com")) {
+            headers["Authorization"] = `Bearer ${currentApiKey}`;
+          }
+        } 
+        // OpenAI 兼容 API 认证头处理
+        else {
+          headers["Authorization"] = `Bearer ${currentApiKey}`;
+        }
+ 
+        // 自定义代理头
+        if (modelsApiUrl.includes("love.qinyan.xyz")) {
+          headers["X-Custom-Proxy"] = "Amily2-ChatPlugin";
+          headers["Origin"] = window.location.origin;
+        }
+ 
+        const response = await fetch(modelsApiUrl, {
+          method: "GET",
+          headers: headers,
+          mode: "cors",
+          credentials: "omit",
+        });
+ 
+        if (!response.ok) {
+          let errorBody = "";
+          try {
+            const jsonError = await response.json();
+            errorBody = JSON.stringify(jsonError, null, 2);
+          } catch {
+            try { errorBody = await response.text(); } 
+            catch (e) { errorBody = "<无法提取错误正文>"; }
+          }
+          throw new Error(`API返回错误: ${response.status} ${response.statusText}\n${errorBody}`);
+        }
+ 
+        const data = await response.json();
+        let models = [];
+        
+        // Google API 模型解析
+        if (isGoogleAPI) {
+          if (data.models && Array.isArray(data.models)) {
+            models = data.models.map(m => m.name);
+          } else if (data.data && Array.isArray(data.data)) {
+            models = data.data.map(m => m.name || m.id);
+          } else if (Array.isArray(data)) {
+            models = data.map(m => m.name);
+          } else {
+            throw new Error("未知的 Google 模型列表格式");
+          }
+        } 
+        // OpenAI 兼容 API 模型解析
+        else {
+          if (Array.isArray(data)) {
+            models = data.map((m) => m.id || m);
+          } else if (data.data && Array.isArray(data.data)) {
+            models = data.data.map((m) => m.id);
+          } else if (data.models && Array.isArray(data.models)) {
+            models = data.models.map(m => m.id);
+          } else {
+            throw new Error("未知的模型列表格式");
+          }
+        }
+ 
+        // 过滤不需要的模型（嵌入/音频等）
+        const availableModels = models
+          .filter(m => typeof m === 'string')
+          .filter(m => !m.toLowerCase().includes("embed"))
+          .filter(m => !m.toLowerCase().includes("search"))
+          .filter(m => !m.toLowerCase().includes("similarity"))
+          .filter(m => !m.toLowerCase().includes("audio"))
+          .filter(m => !m.toLowerCase().includes("code"))
+          .filter(m => !m.toLowerCase().includes("whisper"));
+ 
+        availableModels.sort((a, b) => a.localeCompare(b));
+        console.log(`[Amily2号-使节团] 第 ${i + 1} 位使节成功带回 ${availableModels.length} 个模型！`);
+ 
+        // 合并结果并过滤重复项
+        successResults = [...new Set([...successResults, ...availableModels])];
+        successResults.sort();
+ 
+        if (isGoogleAPI) {
+          toastr.success(`成功获取 ${availableModels.length} 个 Google 模型 (使用第 ${i + 1} 个Key)`, "任务成功");
+        } else {
+          toastr.success(`成功获取 ${availableModels.length} 个模型 (使用第 ${i + 1} 个Key)`, "任务成功");
+        }
+ 
+        // 不再继续尝试，返回成功结果
+        break;
+      } catch (error) {
+        const errorMessage = `Key ...${currentApiKey.slice(-4)} 失败: ${error.message}`;
+        console.error(`[Amily2号-使节团] 第 ${i + 1} 位使节任务失败:`, error);
+        errorLog.push(errorMessage);
+      }
+    }
+ 
+    if (successResults.length > 0) {
+      console.log(`[Amily2号-使节团] 最终带回 ${successResults.length} 个可用模型`);
+      toastr.info(`所有使节团任务完成，找到 ${successResults.length} 个可用模型`, "任务总结");
+      return successResults;
+    }
+ 
+    toastr.error("所有使节均未能完成任务。详情请见控制台(F12)。", "外交任务失败");
+    console.error("[Amily2号-使节团] 失败详情汇总:\n" + errorLog.join("\n"));
+    return [];
+    
+  } catch (error) {
+    console.error("[Amily2号-使节团] 全局错误:", error);
+    toastr.error("模型获取失败: " + error.message, "系统错误");
+    return [];
+  } finally {
+    window.AMILY2_LOCK_MODEL_FETCHING = false;
+    const $button = $("#amily2_refresh_models");
+    $button.prop("disabled", false).html('<i class="fas fa-sync-alt"></i> 刷新模型');
+  }
+}
+ 
+export async function checkAndFixWithAPI(latestMessage, previousMessages) {
+    // 将实现委托给 summarizer 模块
+    return await summarizerCheckAndFix(latestMessage, previousMessages);
+}
+ 
+//以此标记
+//以此标记
