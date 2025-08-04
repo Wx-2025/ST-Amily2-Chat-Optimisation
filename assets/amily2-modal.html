@@ -1,3 +1,46 @@
+<style>
+    .amily2-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        width: 100%;
+    }
+    .header-column {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+    .header-column.center {
+        gap: 0px;
+    }
+    .side-button {
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        height: 140px;
+        width: 50px;
+        padding: 10px 5px;
+        text-align: center;
+        line-height: 1.3;
+    }
+    .side-button > i {
+        writing-mode: horizontal-tb;
+        display: block;
+        margin: 0 auto 10px auto;
+        font-size: 1.3em;
+    }
+    #amily2_open_tutorial, #amily2_update_button_new {
+        writing-mode: horizontal-tb !important;
+        height: auto !important;
+        width: auto !important;
+        padding: 5px 10px !important;
+        line-height: normal !important;
+    }
+    #amily2_update_button_new {
+        display: none;
+        background-color: #4CAF50 !important;
+    }
+</style>
 <div class="flex-container">
     <div id="amily2_chat_optimiser">
 
@@ -19,48 +62,54 @@
         </div>
 
 
-        <div class="plugin-features" style="display: none;">
+<div class="plugin-features" style="display: none;">
 
-
-<div class="amily2-header">
-    <!-- 左侧垂直布局容器 -->
-    <div class="header-left-panel">
-        <!-- 主开关 -->
-        <div class="main-toggle amily2_settings_block">
-            <label for="amily2_enabled" class="main-toggle-label"><strong>启动Amily2号</strong></label>
-            <label class="toggle-switch">
-                <input id="amily2_enabled" type="checkbox" />
-                <span class="slider"></span>
-            </label>
-        </div>
- 
-        <!-- 翰林院入口 -->
-        <div class="rag-palace-entry-container">
-            <button id="amily2_open_rag_palace" class="secret-chamber-button interactable">
-                <i class="fas fa-brain"></i> 翰林院
+<fieldset class="settings-group">
+    <legend>Amily中枢</legend>
+    <div class="amily2-header">
+        <!-- 左列 -->
+        <div class="header-column left">
+            <button id="amily2_open_rag_palace" class="secret-chamber-button interactable side-button">
+                <i class="fas fa-brain"></i>翰林学院
             </button>
         </div>
-    </div> <!-- 左侧容器结束 -->
- 
-    <!-- 右侧操作按钮组 -->
-    <div class="header-actions-group">
-        <div class="update-section">
-            <button id="amily2_update_button" class="menu_button small_button interactable" title="查看更新日志">
-                <i class="fas fa-bell"></i>
-                <span id="amily2_update_indicator" class="update-indicator" style="display: none;"></span>
-            </button>
-            <button id="amily2_open_tutorial" class="menu_button small_button interactable" title="查看使用教程" style="background: none; border: 1px solid rgba(255,255,255,0.2); padding: 5px 8px;">
+
+        <!-- 中间列 -->
+        <div class="header-column center">
+            <div style="position: relative;">
+                <button id="amily2_update_button" class="menu_button small_button interactable" title="查看更新日志">
+                    <i class="fas fa-bell"></i>
+                </button>
+                <div id="amily2_update_indicator" class="update-indicator" style="display: none;"></div>
+            </div>
+            <div class="main-toggle amily2_settings_block">
+                <label class="toggle-switch">
+                    <input id="amily2_enabled" type="checkbox" />
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <button id="amily2_open_tutorial" class="menu_button small_button interactable" title="查看使用教程">
                 教程
             </button>
+            <button id="amily2_update_button_new" class="menu_button small_button interactable" title="查看更新日志">更新</button>
         </div>
-        <div class="additional-features-section">
-            <button id="amily2_open_additional_features" class="secret-chamber-button interactable">
-                <i class="fas fa-landmark-dome"></i> 内阁密室
+
+        <!-- 右列 -->
+        <div class="header-column right">
+            <button id="amily2_open_additional_features" class="secret-chamber-button interactable side-button">
+                <i class="fas fa-landmark-dome"></i>内阁密室
             </button>
         </div>
     </div>
-</div>
+</fieldset>
  
+<fieldset class="settings-group">
+    <legend><i class="fas fa-bullhorn"></i> 作者留言</legend>
+    <div id="amily2_message_board" style="display: flex; justify-content: center; align-items: center; padding: 8px; background-color: rgba(255, 255, 255, 0.05); border-radius: 5px; min-height: 40px;">
+        <div id="amily2_message_content" style="color: #adb6e6; font-size: 13px; line-height: 1.5; text-align: center;"></div>
+    </div>
+</fieldset>
+
 <hr class="header-divider">
 
             <fieldset class="settings-group">
