@@ -1,1 +1,407 @@
-(function(_0x289057,_0x5f5da1){const _0x11a7cc=_0x3057,_0x2dfa38=_0x289057();while(!![]){try{const _0x836a9e=-parseInt(_0x11a7cc(0xdd))/0x1*(-parseInt(_0x11a7cc(0x12f))/0x2)+parseInt(_0x11a7cc(0x10a))/0x3+-parseInt(_0x11a7cc(0xdc))/0x4*(-parseInt(_0x11a7cc(0x129))/0x5)+-parseInt(_0x11a7cc(0x11c))/0x6+-parseInt(_0x11a7cc(0x142))/0x7+-parseInt(_0x11a7cc(0x10b))/0x8+parseInt(_0x11a7cc(0x122))/0x9;if(_0x836a9e===_0x5f5da1)break;else _0x2dfa38['push'](_0x2dfa38['shift']());}catch(_0x48c9d1){_0x2dfa38['push'](_0x2dfa38['shift']());}}}(_0x5de4,0x405c1));import{extension_settings}from'/scripts/extensions.js';import{extensionName,defaultSettings,saveSettings}from'../utils/settings.js';import{showHtmlModal}from'./page-window.js';function _0x5de4(){const _0x45fdc7=['<option\x20value=\x22\x22>此国史馆为空</option>','amily2_mhb_small_manual_execute','<option\x20value=\x22\x22>正在检阅史册...</option>','addEventListener','historiography_auto_summary_interactive','_expand_editor','large','change','block','classList','menu_button\x20small_button\x20interactable','trim','running','start','破限谕旨','hly-delete-rule-btn','请先选择一个国史馆及其中的史册条目！','.hly-exclusion-rule-row','close','<option\x20value=\x22\x22>正在遍览帝国疆域...</option>','已镌刻！','宏史卷','#historiography-add-rule-btn','542349tLWSRd','3603200KBzfMS','input','log','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<dialog\x20class=\x22popup\x20wide_dialogue_popup\x20large_dialogue_popup\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-body\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h4\x20style=\x22margin-top:0;\x20color:\x20#eee;\x20border-bottom:\x201px\x20solid\x20rgba(255,255,255,0.2);\x20padding-bottom:\x2010px;\x22>正在编辑:\x20','length','option','style','jailbreak','join','appendChild','.popup-button-ok','保存规则','编辑内容排除规则','<option\x20value=\x22\x22>请先选择国史馆</option>','historiographyLargeJailbreakPrompt','none','dispatchEvent','2247000pgmOxa','insertAdjacentHTML','menu_button\x20small_button\x20interactable\x20danger','historiography_ingest_to_rag','_editor','请输入有效的起始和结束楼层！','4872708OLcxMM','success','historiographySmallAutoEnable','dataset','value','圣旨已达','forEach','111135hJzAlA','querySelector','checked','historiographySmallTriggerThreshold','textContent','paused','14msginy','historiography-tag-input-container','innerHTML','getElementById','small','target','historiography-tag-input','state','historiography-exclusion-rules-btn','historiography-tag-extraction-toggle','key','圣谕不全','\x22\x20placeholder=\x22开始字符,\x20如\x20<!--\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span>到</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20class=\x22hly-imperial-brush\x22\x20value=\x22','已保存！','historiographyWriteToLorebook','amily2_mhb_','amily2_mhb_small_start_floor','amily2_mhb_large_worldbook_selector','each','2098551hnRpKb','menu_button\x20small_button\x20interactable\x20success','</h4>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-content\x22\x20style=\x22height:\x2070vh;\x22><div\x20class=\x22height100p\x20wide100p\x20flex-container\x22><textarea\x20class=\x22height100p\x20wide100p\x20maximized_textarea\x20text_pole\x22></textarea></div></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-controls\x22><div\x20class=\x22popup-button-ok\x20menu_button\x20menu_button_primary\x20interactable\x22>保存并关闭</div><div\x20class=\x22popup-button-cancel\x20menu_button\x20interactable\x22\x20style=\x22margin-left:\x2010px;\x22>取消</div></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</dialog>','_restore_button','display','className','click','warning','map','idle','#historiography-rules-list','info','contains','historiographyTagExtractionEnabled','<i\x20class=\x22fas\x20fa-play-circle\x22></i>\x20继续远征','historiography-exclusion-rules-container','text','historiographyTags','amily2_mhb_large_lore_selector','88JTuOql','25303lGmkGI','historiographyAutoSummaryInteractive','body','error','selectedIndex','圣谕有误','historiographySmallJailbreakPrompt','historiographySmallSummaryPrompt','find','historiography_write_to_lorebook','val','historiographyLargeRefinePrompt','remove','detail','options','historiographyIngestToRag','微言录','appendTo','\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22historiography-exclusion-rules-container\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22hly-notes\x22>在这里定义需要从提取内容中排除的文本片段。例如，排除HTML注释，可以设置开始字符为\x20`<!--`，结束字符为\x20`-->`。</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22historiography-rules-list\x22>','</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20id=\x22historiography-add-rule-btn\x22\x20class=\x22hly-action-button\x22\x20style=\x22margin-top:\x2010px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<i\x20class=\x22fas\x20fa-plus\x22></i>\x20添加新规则\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20<style>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20.hly-exclusion-rule-row\x20{\x20display:\x20flex;\x20align-items:\x20center;\x20gap:\x2010px;\x20margin-bottom:\x2010px;\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20.hly-exclusion-rule-row\x20input\x20{\x20flex-grow:\x201;\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20.hly-delete-rule-btn\x20{\x20background:\x20#c0392b;\x20color:\x20white;\x20border:\x20none;\x20border-radius:\x2050%;\x20width:\x2024px;\x20height:\x2024px;\x20cursor:\x20pointer;\x20font-size:\x2016px;\x20line-height:\x2024px;\x20text-align:\x20center;\x20padding:\x200;\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20</style>\x0a\x20\x20\x20\x20','beforeend','[Amily2号-工部]\x20【敕史局】的专属工匠已就位...'];_0x5de4=function(){return _0x45fdc7;};return _0x5de4();}import{applyExclusionRules,extractBlocksByTags}from'../core/utils/rag-tag-extractor.js';import{getAvailableWorldbooks,getLoresForWorldbook,executeManualSummary,executeRefinement,executeExpedition,stopExpedition}from'../core/historiographer.js';function _0x3057(_0x2c2886,_0x124b38){const _0x5de4bd=_0x5de4();return _0x3057=function(_0x305753,_0x23d5b){_0x305753=_0x305753-0xcf;let _0x4546c9=_0x5de4bd[_0x305753];return _0x4546c9;},_0x3057(_0x2c2886,_0x124b38);}function setupPromptEditor(_0x357d4d){const _0x3a44b8=_0x3057,_0x1ffb18=document['getElementById'](_0x3a44b8(0x13e)+_0x357d4d+'_prompt_selector'),_0x375e35=document['getElementById']('amily2_mhb_'+_0x357d4d+_0x3a44b8(0x120)),_0x14d258=document[_0x3a44b8(0x132)](_0x3a44b8(0x13e)+_0x357d4d+'_save_button'),_0x19d520=document[_0x3a44b8(0x132)](_0x3a44b8(0x13e)+_0x357d4d+_0x3a44b8(0x145)),_0x429f50=_0x357d4d===_0x3a44b8(0x133)?_0x3a44b8(0xe3):_0x3a44b8(0x119),_0x4913ee=_0x357d4d===_0x3a44b8(0x133)?_0x3a44b8(0xe4):_0x3a44b8(0xe8),_0x59447a=()=>{const _0x1b86eb=_0x3a44b8,_0x3f4e65=_0x1ffb18[_0x1b86eb(0x126)];_0x3f4e65===_0x1b86eb(0x112)?_0x375e35[_0x1b86eb(0x126)]=extension_settings[extensionName][_0x429f50]:_0x375e35['value']=extension_settings[extensionName][_0x4913ee];};_0x1ffb18['addEventListener']('change',_0x59447a),_0x14d258['addEventListener']('click',()=>{const _0x5dd53e=_0x3a44b8,_0x33c23f=_0x1ffb18[_0x5dd53e(0x126)];_0x33c23f===_0x5dd53e(0x112)?extension_settings[extensionName][_0x429f50]=_0x375e35[_0x5dd53e(0x126)]:extension_settings[extensionName][_0x4913ee]=_0x375e35['value'],saveSettings()&&toastr[_0x5dd53e(0x123)]((_0x357d4d===_0x5dd53e(0x133)?_0x5dd53e(0xed):_0x5dd53e(0x108))+'的'+(_0x33c23f===_0x5dd53e(0x112)?_0x5dd53e(0x101):'纲要')+_0x5dd53e(0x13c));}),_0x19d520[_0x3a44b8(0xf6)]('click',()=>{const _0xc4ce4f=_0x3a44b8,_0xec492a=_0x1ffb18[_0xc4ce4f(0x126)];_0xec492a==='jailbreak'?_0x375e35['value']=defaultSettings[_0x429f50]:_0x375e35['value']=defaultSettings[_0x4913ee],toastr[_0xc4ce4f(0xd4)]('已恢复为默认谕旨，请点击“保存当前”以确认。');}),_0x59447a();const _0x377686=document[_0x3a44b8(0x132)](_0x3a44b8(0x13e)+_0x357d4d+_0x3a44b8(0xf8));_0x377686[_0x3a44b8(0xf6)](_0x3a44b8(0xcf),()=>{const _0x4ac542=_0x3a44b8,_0x4e0e7d=_0x1ffb18[_0x4ac542(0x126)],_0x4f1a74=_0x1ffb18[_0x4ac542(0xeb)][_0x1ffb18[_0x4ac542(0xe1)]][_0x4ac542(0xd9)],_0x2f08bb=_0x375e35[_0x4ac542(0x126)],_0x17bd48=_0x4ac542(0x10e)+_0x4f1a74+_0x4ac542(0x144),_0x207b0a=$(_0x17bd48)[_0x4ac542(0xee)](_0x4ac542(0xdf)),_0x32a182=_0x207b0a[_0x4ac542(0xe5)]('textarea');_0x32a182[_0x4ac542(0xe7)](_0x2f08bb);const _0x55d6a6=()=>{const _0x2815d5=_0x4ac542;_0x207b0a[0x0][_0x2815d5(0x105)](),_0x207b0a[_0x2815d5(0xe9)]();};_0x207b0a[_0x4ac542(0xe5)](_0x4ac542(0x115))['on']('click',()=>{const _0x84056=_0x4ac542,_0x197e0a=_0x32a182['val']();_0x375e35[_0x84056(0x126)]=_0x197e0a,_0x4e0e7d==='jailbreak'?extension_settings[extensionName][_0x429f50]=_0x197e0a:extension_settings[extensionName][_0x4913ee]=_0x197e0a,saveSettings()&&toastr['success']((_0x357d4d==='small'?_0x84056(0xed):_0x84056(0x108))+'的'+_0x4f1a74+_0x84056(0x107)),_0x55d6a6();}),_0x207b0a[_0x4ac542(0xe5)]('.popup-button-cancel')['on'](_0x4ac542(0xcf),_0x55d6a6),_0x207b0a[0x0]['showModal']();});}export function bindHistoriographyEvents(){const _0xa97fd6=_0x3057;console[_0xa97fd6(0x10d)](_0xa97fd6(0xf2)),setupPromptEditor(_0xa97fd6(0x133)),setupPromptEditor(_0xa97fd6(0xf9));const _0x29544a=document[_0xa97fd6(0x132)](_0xa97fd6(0x13f)),_0x4001fc=document[_0xa97fd6(0x132)]('amily2_mhb_small_end_floor'),_0x52c191=document[_0xa97fd6(0x132)](_0xa97fd6(0xf4)),_0x423c3e=document[_0xa97fd6(0x132)]('amily2_mhb_small_auto_enabled'),_0x261f89=document[_0xa97fd6(0x132)]('amily2_mhb_small_trigger_count'),_0x2e692f=document['getElementById'](_0xa97fd6(0xe6)),_0x41c114=document['getElementById'](_0xa97fd6(0x11f));_0x52c191[_0xa97fd6(0xf6)](_0xa97fd6(0xcf),()=>{const _0x191901=_0xa97fd6,_0x2bfb64=parseInt(_0x29544a[_0x191901(0x126)],0xa),_0x57db0b=parseInt(_0x4001fc[_0x191901(0x126)],0xa);if(isNaN(_0x2bfb64)||isNaN(_0x57db0b)||_0x2bfb64<=0x0||_0x57db0b<=0x0||_0x2bfb64>_0x57db0b){toastr[_0x191901(0xe0)](_0x191901(0x121),'圣谕有误');return;}executeManualSummary(_0x2bfb64,_0x57db0b);}),_0x423c3e[_0xa97fd6(0xf6)](_0xa97fd6(0xfa),_0x2480fb=>{const _0x3010cf=_0xa97fd6;extension_settings[extensionName][_0x3010cf(0x124)]=_0x2480fb['target'][_0x3010cf(0x12b)],saveSettings();}),_0x261f89[_0xa97fd6(0xf6)]('change',_0x11f4fc=>{const _0x2c55ac=_0xa97fd6,_0x8fb9b5=parseInt(_0x11f4fc[_0x2c55ac(0x134)][_0x2c55ac(0x126)],0xa);if(isNaN(_0x8fb9b5)||_0x8fb9b5<0x1){_0x11f4fc[_0x2c55ac(0x134)][_0x2c55ac(0x126)]=defaultSettings[_0x2c55ac(0x12c)],toastr[_0x2c55ac(0xd0)]('远征阈值必须是大于0的数字。已重置。',_0x2c55ac(0xe2));return;}extension_settings[extensionName][_0x2c55ac(0x12c)]=_0x8fb9b5,saveSettings();}),_0x2e692f[_0xa97fd6(0xf6)]('change',_0x325384=>{const _0x266e07=_0xa97fd6;extension_settings[extensionName][_0x266e07(0x13d)]=_0x325384[_0x266e07(0x134)][_0x266e07(0x12b)],saveSettings();}),_0x41c114[_0xa97fd6(0xf6)](_0xa97fd6(0xfa),_0x4a9811=>{const _0x3ea7b0=_0xa97fd6;extension_settings[extensionName][_0x3ea7b0(0xec)]=_0x4a9811['target'][_0x3ea7b0(0x12b)],saveSettings();}),_0x423c3e[_0xa97fd6(0x12b)]=extension_settings[extensionName][_0xa97fd6(0x124)]??![],_0x261f89[_0xa97fd6(0x126)]=extension_settings[extensionName][_0xa97fd6(0x12c)]??0x1e,_0x2e692f[_0xa97fd6(0x12b)]=extension_settings[extensionName][_0xa97fd6(0x13d)]??!![],_0x41c114[_0xa97fd6(0x12b)]=extension_settings[extensionName][_0xa97fd6(0xec)]??![];const _0x3b62ac=document[_0xa97fd6(0x132)](_0xa97fd6(0xf7));_0x3b62ac[_0xa97fd6(0x12b)]=extension_settings[extensionName][_0xa97fd6(0xde)]??![],_0x3b62ac['addEventListener']('change',_0x155c06=>{const _0x19213d=_0xa97fd6;extension_settings[extensionName]['historiographyAutoSummaryInteractive']=_0x155c06[_0x19213d(0x134)][_0x19213d(0x12b)],saveSettings();});const _0x161f8a=document[_0xa97fd6(0x132)](_0xa97fd6(0x138)),_0x2760ff=document['getElementById'](_0xa97fd6(0x130)),_0x4227c9=document[_0xa97fd6(0x132)](_0xa97fd6(0x135)),_0x21b0f3=document[_0xa97fd6(0x132)](_0xa97fd6(0x137));_0x161f8a[_0xa97fd6(0x12b)]=extension_settings[extensionName][_0xa97fd6(0xd6)]??![],_0x4227c9[_0xa97fd6(0x126)]=extension_settings[extensionName][_0xa97fd6(0xda)]??'',_0x2760ff[_0xa97fd6(0x111)][_0xa97fd6(0x146)]=_0x161f8a[_0xa97fd6(0x12b)]?_0xa97fd6(0xfb):'none',_0x161f8a[_0xa97fd6(0xf6)](_0xa97fd6(0xfa),_0x343d0f=>{const _0x3447f4=_0xa97fd6,_0x2c531c=_0x343d0f['target']['checked'];extension_settings[extensionName]['historiographyTagExtractionEnabled']=_0x2c531c,_0x2760ff[_0x3447f4(0x111)]['display']=_0x2c531c?_0x3447f4(0xfb):_0x3447f4(0x11a),saveSettings();}),_0x4227c9[_0xa97fd6(0xf6)](_0xa97fd6(0xfa),_0x47841b=>{const _0x91cfa5=_0xa97fd6;extension_settings[extensionName][_0x91cfa5(0xda)]=_0x47841b['target'][_0x91cfa5(0x126)],saveSettings();}),_0x21b0f3[_0xa97fd6(0xf6)](_0xa97fd6(0xcf),showHistoriographyExclusionRulesModal);const _0x4b70c6=document[_0xa97fd6(0x132)]('amily2_mhb_small_expedition_execute'),_0x2b91c3=_0x23687e=>{const _0xa29173=_0xa97fd6;_0x4b70c6[_0xa29173(0x125)][_0xa29173(0x136)]=_0x23687e;switch(_0x23687e){case _0xa29173(0xff):_0x4b70c6[_0xa29173(0x131)]='<i\x20class=\x22fas\x20fa-stop-circle\x22></i>\x20停止远征',_0x4b70c6['className']=_0xa29173(0x11e);break;case'paused':_0x4b70c6['innerHTML']=_0xa29173(0xd7),_0x4b70c6[_0xa29173(0x147)]=_0xa29173(0x143);break;case'idle':default:_0x4b70c6[_0xa29173(0x131)]='<i\x20class=\x22fas\x20fa-flag-checkered\x22></i>\x20开始远征',_0x4b70c6[_0xa29173(0x147)]=_0xa29173(0xfd);break;}};document['addEventListener']('amily2-expedition-state-change',_0x363607=>{const _0x184f53=_0xa97fd6,{isRunning:_0x445d2c,manualStop:_0x36672e}=_0x363607[_0x184f53(0xea)];if(_0x445d2c)_0x2b91c3(_0x184f53(0xff));else _0x36672e?_0x2b91c3(_0x184f53(0x12e)):_0x2b91c3(_0x184f53(0xd2));}),_0x4b70c6[_0xa97fd6(0xf6)]('click',()=>{const _0x3928c3=_0xa97fd6,_0x6de665=_0x4b70c6[_0x3928c3(0x125)][_0x3928c3(0x136)]||_0x3928c3(0xd2);_0x6de665===_0x3928c3(0xff)?stopExpedition():executeExpedition();}),_0x2b91c3(_0xa97fd6(0xd2));const _0x95d4c2=document['getElementById'](_0xa97fd6(0x140)),_0x550349=document[_0xa97fd6(0x132)](_0xa97fd6(0xdb)),_0x29a2ad=document[_0xa97fd6(0x132)]('amily2_mhb_large_refresh_worldbooks'),_0x52e078=document[_0xa97fd6(0x132)]('amily2_mhb_large_refresh_lores'),_0x69408f=document[_0xa97fd6(0x132)]('amily2_mhb_large_refine_execute'),_0x229a71=async()=>{const _0x16a888=_0xa97fd6;_0x95d4c2[_0x16a888(0x131)]=_0x16a888(0x106);const _0x3e9edb=await getAvailableWorldbooks();_0x95d4c2[_0x16a888(0x131)]='',_0x3e9edb&&_0x3e9edb[_0x16a888(0x10f)]>0x0?(_0x3e9edb[_0x16a888(0x128)](_0x2e6e48=>{const _0xccd4ed=_0x16a888,_0x3c4978=document['createElement'](_0xccd4ed(0x110));_0x3c4978[_0xccd4ed(0x126)]=_0x2e6e48,_0x3c4978[_0xccd4ed(0x12d)]=_0x2e6e48,_0x95d4c2[_0xccd4ed(0x114)](_0x3c4978);}),_0x95d4c2[_0x16a888(0x11b)](new Event(_0x16a888(0xfa)))):_0x95d4c2[_0x16a888(0x131)]='<option\x20value=\x22\x22>未发现任何国史馆</option>';},_0x7431fa=async()=>{const _0x5aa2a4=_0xa97fd6,_0x1fefce=_0x95d4c2[_0x5aa2a4(0x126)];if(!_0x1fefce){_0x550349['innerHTML']=_0x5aa2a4(0x118);return;}_0x550349['innerHTML']=_0x5aa2a4(0xf5);const _0x5398e3=await getLoresForWorldbook(_0x1fefce);_0x550349[_0x5aa2a4(0x131)]='',_0x5398e3&&_0x5398e3[_0x5aa2a4(0x10f)]>0x0?_0x5398e3[_0x5aa2a4(0x128)](_0x12e664=>{const _0x1aefe9=_0x5aa2a4,_0x4ec6e3=document['createElement'](_0x1aefe9(0x110));_0x4ec6e3[_0x1aefe9(0x126)]=_0x12e664[_0x1aefe9(0x139)],_0x4ec6e3[_0x1aefe9(0x12d)]='['+_0x12e664[_0x1aefe9(0x139)]+']\x20'+_0x12e664['comment'],_0x550349['appendChild'](_0x4ec6e3);}):_0x550349[_0x5aa2a4(0x131)]=_0x5aa2a4(0xf3);};_0x29a2ad[_0xa97fd6(0xf6)](_0xa97fd6(0xcf),_0x229a71),_0x95d4c2[_0xa97fd6(0xf6)](_0xa97fd6(0xfa),_0x7431fa),_0x52e078[_0xa97fd6(0xf6)](_0xa97fd6(0xcf),_0x7431fa),_0x69408f[_0xa97fd6(0xf6)]('click',()=>{const _0x4d17eb=_0xa97fd6,_0x22ae15=_0x95d4c2[_0x4d17eb(0x126)],_0x5786b9=_0x550349['value'];if(!_0x22ae15||!_0x5786b9){toastr[_0x4d17eb(0xe0)](_0x4d17eb(0x103),_0x4d17eb(0x13a));return;}executeRefinement(_0x22ae15,_0x5786b9);});}function showHistoriographyExclusionRulesModal(){const _0x48465b=_0x3057,_0x2ea5b8=extension_settings[extensionName]['historiographyExclusionRules']||[],_0x18ea12=(_0x2bdf43={'start':'','end':''},_0xe8f9a2)=>'\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22hly-exclusion-rule-row\x22\x20data-index=\x22'+_0xe8f9a2+'\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20class=\x22hly-imperial-brush\x22\x20value=\x22'+_0x2bdf43[_0x48465b(0x100)]+_0x48465b(0x13b)+_0x2bdf43['end']+'\x22\x20placeholder=\x22结束字符,\x20如\x20-->\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22hly-delete-rule-btn\x22\x20title=\x22删除此规则\x22>&times;</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20',_0x46f216=_0x2ea5b8[_0x48465b(0xd1)](_0x18ea12)[_0x48465b(0x113)](''),_0x5adfbb=_0x48465b(0xef)+_0x46f216+_0x48465b(0xf0);showHtmlModal(_0x48465b(0x117),_0x5adfbb,{'okText':_0x48465b(0x116),'onOk':_0x3cdc7b=>{const _0x11aa83=_0x48465b,_0xe3ccb8=[];_0x3cdc7b[_0x11aa83(0xe5)](_0x11aa83(0x104))[_0x11aa83(0x141)](function(){const _0x2b10fa=_0x11aa83,_0x41604d=$(this)[_0x2b10fa(0xe5)]('input')['eq'](0x0)[_0x2b10fa(0xe7)]()[_0x2b10fa(0xfe)](),_0x122f43=$(this)[_0x2b10fa(0xe5)](_0x2b10fa(0x10c))['eq'](0x1)['val']()[_0x2b10fa(0xfe)]();_0x41604d&&_0x122f43&&_0xe3ccb8['push']({'start':_0x41604d,'end':_0x122f43});}),extension_settings[extensionName]['historiographyExclusionRules']=_0xe3ccb8,saveSettings(),toastr[_0x11aa83(0x123)]('内容排除规则已保存。',_0x11aa83(0x127));}});const _0x1ac6e7=document[_0x48465b(0x132)](_0x48465b(0xd8)),_0x34cd72=_0x1ac6e7[_0x48465b(0x12a)](_0x48465b(0xd3));_0x1ac6e7[_0x48465b(0x12a)](_0x48465b(0x109))[_0x48465b(0xf6)]('click',()=>{const _0x4d7fea=_0x48465b,_0xf03565=_0x34cd72['children']['length'],_0x32247e=_0x18ea12({'start':'','end':''},_0xf03565);_0x34cd72[_0x4d7fea(0x11d)](_0x4d7fea(0xf1),_0x32247e);}),_0x34cd72['addEventListener'](_0x48465b(0xcf),_0x5a50f0=>{const _0x937f93=_0x48465b;_0x5a50f0[_0x937f93(0x134)][_0x937f93(0xfc)][_0x937f93(0xd5)](_0x937f93(0x102))&&_0x5a50f0[_0x937f93(0x134)]['closest']('.hly-exclusion-rule-row')[_0x937f93(0xe9)]();});}
+import { extension_settings } from "/scripts/extensions.js";
+import {
+  extensionName,
+  defaultSettings,
+  saveSettings,
+} from "../utils/settings.js";
+import { showHtmlModal } from './page-window.js';
+import { applyExclusionRules, extractBlocksByTags } from '../core/utils/rag-tag-extractor.js';
+
+import {
+  getAvailableWorldbooks, getLoresForWorldbook,
+  executeManualSummary, executeRefinement,
+  executeExpedition, stopExpedition // 【新】停战钦差已就位！
+} from "../core/historiographer.js";
+
+
+// 一个辅助函数，用于处理两个谕旨编辑器的通用逻辑
+function setupPromptEditor(type) {
+  const selector = document.getElementById(
+    `amily2_mhb_${type}_prompt_selector`,
+  );
+  const editor = document.getElementById(`amily2_mhb_${type}_editor`);
+  const saveBtn = document.getElementById(`amily2_mhb_${type}_save_button`);
+  const restoreBtn = document.getElementById(
+    `amily2_mhb_${type}_restore_button`,
+  );
+
+  // 我们需要从主设置对象中读取这些真实、隐藏的提示词
+  const jailbreakKey =
+    type === "small"
+      ? "historiographySmallJailbreakPrompt"
+      : "historiographyLargeJailbreakPrompt";
+  const mainPromptKey =
+    type === "small"
+      ? "historiographySmallSummaryPrompt"
+      : "historiographyLargeRefinePrompt";
+
+  // 更新编辑器内容以匹配选择
+  const updateEditorView = () => {
+    const selected = selector.value;
+    if (selected === "jailbreak") {
+      editor.value = extension_settings[extensionName][jailbreakKey];
+    } else {
+      editor.value = extension_settings[extensionName][mainPromptKey];
+    }
+  };
+
+  // 事件监听
+  selector.addEventListener("change", updateEditorView);
+
+  saveBtn.addEventListener("click", () => {
+    const selected = selector.value;
+    if (selected === "jailbreak") {
+      extension_settings[extensionName][jailbreakKey] = editor.value;
+    } else {
+      extension_settings[extensionName][mainPromptKey] = editor.value;
+    }
+    if (saveSettings()) {
+      toastr.success(
+        `${type === "small" ? "微言录" : "宏史卷"}的${selected === "jailbreak" ? "破限谕旨" : "纲要"}已保存！`,
+      );
+    }
+  });
+
+  restoreBtn.addEventListener("click", () => {
+    const selected = selector.value;
+    if (selected === "jailbreak") {
+      editor.value = defaultSettings[jailbreakKey];
+    } else {
+      editor.value = defaultSettings[mainPromptKey];
+    }
+    toastr.info("已恢复为默认谕旨，请点击“保存当前”以确认。");
+  });
+
+  // 初始化视图
+      updateEditorView();
+
+//=======【从这里开始新增】=======
+
+    // 【最终圣谕：为“展开谕旨”按钮注入灵魂】
+    const expandBtn = document.getElementById(`amily2_mhb_${type}_expand_editor`);
+
+    expandBtn.addEventListener('click', () => {
+        const selectedValue = selector.value;
+        const selectedText = selector.options[selector.selectedIndex].text; // 获取"破限谕旨"或"敕史纲要"
+        const currentContent = editor.value;
+
+        const dialogHtml = `
+            <dialog class="popup wide_dialogue_popup large_dialogue_popup">
+              <div class="popup-body">
+                <h4 style="margin-top:0; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">正在编辑: ${selectedText}</h4>
+                <div class="popup-content" style="height: 70vh;"><div class="height100p wide100p flex-container"><textarea class="height100p wide100p maximized_textarea text_pole"></textarea></div></div>
+                <div class="popup-controls"><div class="popup-button-ok menu_button menu_button_primary interactable">保存并关闭</div><div class="popup-button-cancel menu_button interactable" style="margin-left: 10px;">取消</div></div>
+              </div>
+            </dialog>`;
+
+        const dialogElement = $(dialogHtml).appendTo('body');
+        const dialogTextarea = dialogElement.find('textarea');
+        dialogTextarea.val(currentContent);
+
+        const closeDialog = () => { dialogElement[0].close(); dialogElement.remove(); };
+
+        dialogElement.find('.popup-button-ok').on('click', () => {
+            const newContent = dialogTextarea.val();
+            // 1. 将新内容更新回我们小小的编辑器
+            editor.value = newContent;
+
+            // 2.【核心】调用我们已有的保存逻辑，将改动真正写入帝国法典
+            if (selectedValue === "jailbreak") {
+                extension_settings[extensionName][jailbreakKey] = newContent;
+            } else {
+                extension_settings[extensionName][mainPromptKey] = newContent;
+            }
+            if (saveSettings()) {
+                toastr.success(`${type === 'small' ? '微言录' : '宏史卷'}的${selectedText}已镌刻！`);
+            }
+
+            // 3. 关闭这个弹出窗口
+            closeDialog();
+        });
+
+        dialogElement.find('.popup-button-cancel').on('click', closeDialog);
+        dialogElement[0].showModal();
+    });
+
+}
+
+// 帝国【敕史局工部】的主体
+// 帝国【敕史局工部】的主体 (已全面升级)
+export function bindHistoriographyEvents() {
+    console.log("[Amily2号-工部] 【敕史局】的专属工匠已就位...");
+
+    setupPromptEditor("small");
+    setupPromptEditor("large");
+
+    // ========== 📜 微言录 (Small Summary) 绑定 (无改动) ==========
+    const smallStartFloor = document.getElementById("amily2_mhb_small_start_floor");
+    const smallEndFloor = document.getElementById("amily2_mhb_small_end_floor");
+    const smallExecuteBtn = document.getElementById("amily2_mhb_small_manual_execute");
+    const smallAutoEnable = document.getElementById("amily2_mhb_small_auto_enabled");
+    const smallTriggerThreshold = document.getElementById("amily2_mhb_small_trigger_count");
+    const writeToLorebook = document.getElementById("historiography_write_to_lorebook");
+    const ingestToRag = document.getElementById("historiography_ingest_to_rag");
+
+    smallExecuteBtn.addEventListener("click", () => {
+        const start = parseInt(smallStartFloor.value, 10);
+        const end = parseInt(smallEndFloor.value, 10);
+        if (isNaN(start) || isNaN(end) || start <= 0 || end <= 0 || start > end) {
+            toastr.error("请输入有效的起始和结束楼层！", "圣谕有误");
+            return;
+        }
+        executeManualSummary(start, end);
+    });
+
+    smallAutoEnable.addEventListener("change", (event) => {
+        extension_settings[extensionName].historiographySmallAutoEnable = event.target.checked;
+        saveSettings();
+    });
+
+    smallTriggerThreshold.addEventListener("change", (event) => {
+        const value = parseInt(event.target.value, 10);
+        if (isNaN(value) || value < 1) {
+            // 如果输入无效，则从默认设置中恢复，而不是硬编码
+            event.target.value = defaultSettings.historiographySmallTriggerThreshold;
+            toastr.warning("远征阈值必须是大于0的数字。已重置。", "圣谕有误");
+            return; // 阻止保存无效值
+        }
+        extension_settings[extensionName].historiographySmallTriggerThreshold = value;
+        saveSettings();
+    });
+
+    writeToLorebook.addEventListener("change", (event) => {
+        extension_settings[extensionName].historiographyWriteToLorebook = event.target.checked;
+        saveSettings();
+    });
+
+    ingestToRag.addEventListener("change", (event) => {
+        extension_settings[extensionName].historiographyIngestToRag = event.target.checked;
+        saveSettings();
+    });
+
+    // 初始化加载设置
+    smallAutoEnable.checked = extension_settings[extensionName].historiographySmallAutoEnable ?? false;
+    smallTriggerThreshold.value = extension_settings[extensionName].historiographySmallTriggerThreshold ?? 30;
+    writeToLorebook.checked = extension_settings[extensionName].historiographyWriteToLorebook ?? true;
+    ingestToRag.checked = extension_settings[extensionName].historiographyIngestToRag ?? false;
+
+    // 【新增】为“交互式巡录”开关注入灵魂
+    const autoSummaryInteractive = document.getElementById("historiography_auto_summary_interactive");
+    autoSummaryInteractive.checked = extension_settings[extensionName].historiographyAutoSummaryInteractive ?? false;
+    autoSummaryInteractive.addEventListener("change", (event) => {
+        extension_settings[extensionName].historiographyAutoSummaryInteractive = event.target.checked;
+        saveSettings();
+    });
+
+    // ========== 🏷️ 标签与排除规则绑定 (新增) ==========
+    const tagExtractionToggle = document.getElementById("historiography-tag-extraction-toggle");
+    const tagInputContainer = document.getElementById("historiography-tag-input-container");
+    const tagInput = document.getElementById("historiography-tag-input");
+    const exclusionRulesBtn = document.getElementById("historiography-exclusion-rules-btn");
+
+    // 加载设置
+    tagExtractionToggle.checked = extension_settings[extensionName].historiographyTagExtractionEnabled ?? false;
+    tagInput.value = extension_settings[extensionName].historiographyTags ?? '';
+    tagInputContainer.style.display = tagExtractionToggle.checked ? 'block' : 'none';
+
+    // 绑定事件
+    tagExtractionToggle.addEventListener("change", (event) => {
+        const isEnabled = event.target.checked;
+        extension_settings[extensionName].historiographyTagExtractionEnabled = isEnabled;
+        tagInputContainer.style.display = isEnabled ? 'block' : 'none';
+        saveSettings();
+    });
+
+    tagInput.addEventListener("change", (event) => {
+        extension_settings[extensionName].historiographyTags = event.target.value;
+        saveSettings();
+    });
+    
+    exclusionRulesBtn.addEventListener("click", showHistoriographyExclusionRulesModal);
+
+
+    // ========== ⚔️ 远征指挥台 (Expedition Command) 绑定 (核心升级区) ==========
+    const expeditionExecuteBtn = document.getElementById("amily2_mhb_small_expedition_execute");
+
+    // 【新】百变神兵：一个专门负责更新指挥按钮状态的函数
+    const updateExpeditionButtonUI = (state) => {
+        expeditionExecuteBtn.dataset.state = state; // 将当前状态记录在按钮上
+        switch (state) {
+            case 'running':
+                expeditionExecuteBtn.innerHTML = '<i class="fas fa-stop-circle"></i> 停止远征';
+                expeditionExecuteBtn.className = 'menu_button small_button interactable danger'; // 更换为“危险”的红色战旗
+                break;
+            case 'paused':
+                expeditionExecuteBtn.innerHTML = '<i class="fas fa-play-circle"></i> 继续远征';
+                expeditionExecuteBtn.className = 'menu_button small_button interactable success'; // 更换为“希望”的绿色战旗
+                break;
+            case 'idle':
+            default:
+                expeditionExecuteBtn.innerHTML = '<i class="fas fa-flag-checkered"></i> 开始远征';
+                expeditionExecuteBtn.className = 'menu_button small_button interactable'; // 恢复默认战旗 (紫色)
+                break;
+        }
+    };
+
+    // 【新】顺风之耳：监听来自【大史官】的帝国广播，实时更新UI
+    document.addEventListener('amily2-expedition-state-change', (e) => {
+        const { isRunning, manualStop } = e.detail;
+        if (isRunning) {
+            updateExpeditionButtonUI('running');
+        } else if (manualStop) {
+            updateExpeditionButtonUI('paused');
+        } else {
+            updateExpeditionButtonUI('idle');
+        }
+    });
+
+    // 【新】智能核心：指挥按钮现在拥有了判断战局的能力
+    expeditionExecuteBtn.addEventListener("click", () => {
+        const currentState = expeditionExecuteBtn.dataset.state || 'idle';
+        if (currentState === 'running') {
+            stopExpedition(); // 如果正在打仗，就派钦差去叫停
+        } else {
+            executeExpedition(); // 否则，就命令战争大臣开战或继续
+        }
+    });
+
+    // 【初始仪仗】确保每次进入殿堂时，按钮都处于正确的“开始远征”状态
+    updateExpeditionButtonUI('idle');
+
+  // ========== 💎 宏史卷 (史册精炼) 绑定 ==========
+  const largeWbSelector = document.getElementById(
+    "amily2_mhb_large_worldbook_selector",
+  );
+  const largeLoreSelector = document.getElementById(
+    "amily2_mhb_large_lore_selector",
+  );
+  const largeRefreshWbBtn = document.getElementById(
+    "amily2_mhb_large_refresh_worldbooks",
+  );
+  const largeRefreshLoresBtn = document.getElementById(
+    "amily2_mhb_large_refresh_lores",
+  );
+  const largeRefineBtn = document.getElementById(
+    "amily2_mhb_large_refine_execute",
+  );
+
+  const updateWorldbookList = async () => {
+    largeWbSelector.innerHTML = '<option value="">正在遍览帝国疆域...</option>';
+    const worldbooks = await getAvailableWorldbooks();
+    largeWbSelector.innerHTML = ""; // 清空
+    if (worldbooks && worldbooks.length > 0) {
+      worldbooks.forEach((wb) => {
+        const option = document.createElement("option");
+        option.value = wb;
+        option.textContent = wb;
+        largeWbSelector.appendChild(option);
+      });
+      // 自动触发一次change来加载第一个世界书的条目
+      largeWbSelector.dispatchEvent(new Event("change"));
+    } else {
+      largeWbSelector.innerHTML = '<option value="">未发现任何国史馆</option>';
+    }
+  };
+
+  const updateLoreList = async () => {
+    const selectedWb = largeWbSelector.value;
+    if (!selectedWb) {
+      largeLoreSelector.innerHTML = '<option value="">请先选择国史馆</option>';
+      return;
+    }
+    largeLoreSelector.innerHTML = '<option value="">正在检阅史册...</option>';
+    const lores = await getLoresForWorldbook(selectedWb);
+    largeLoreSelector.innerHTML = ""; // 清空
+    if (lores && lores.length > 0) {
+      lores.forEach((lore) => {
+        const option = document.createElement("option");
+        option.value = lore.key;
+        option.textContent = `[${lore.key}] ${lore.comment}`;
+        largeLoreSelector.appendChild(option);
+      });
+    } else {
+      largeLoreSelector.innerHTML = '<option value="">此国史馆为空</option>';
+    }
+  };
+
+  largeRefreshWbBtn.addEventListener("click", updateWorldbookList);
+  largeWbSelector.addEventListener("change", updateLoreList);
+  largeRefreshLoresBtn.addEventListener("click", updateLoreList);
+
+  largeRefineBtn.addEventListener("click", () => {
+    const worldbook = largeWbSelector.value;
+    const loreKey = largeLoreSelector.value;
+    if (!worldbook || !loreKey) {
+      toastr.error("请先选择一个国史馆及其中的史册条目！", "圣谕不全");
+      return;
+    }
+    // 调用未来的【大史官】执行精炼任务
+    executeRefinement(worldbook, loreKey);
+  });
+}
+
+
+/**
+ * 【新增】显示和编辑史官内容排除规则的弹窗
+ */
+function showHistoriographyExclusionRulesModal() {
+    const rules = extension_settings[extensionName].historiographyExclusionRules || [];
+
+    const createRuleRowHtml = (rule = { start: '', end: '' }, index) => `
+        <div class="hly-exclusion-rule-row" data-index="${index}">
+            <input type="text" class="hly-imperial-brush" value="${rule.start}" placeholder="开始字符, 如 <!--">
+            <span>到</span>
+            <input type="text" class="hly-imperial-brush" value="${rule.end}" placeholder="结束字符, 如 -->">
+            <button class="hly-delete-rule-btn" title="删除此规则">&times;</button>
+        </div>
+    `;
+
+    const rulesHtml = rules.map(createRuleRowHtml).join('');
+
+    const modalHtml = `
+        <div id="historiography-exclusion-rules-container">
+            <p class="hly-notes">在这里定义需要从提取内容中排除的文本片段。例如，排除HTML注释，可以设置开始字符为 \`<!--\`，结束字符为 \`-->\`。</p>
+            <div id="historiography-rules-list">${rulesHtml}</div>
+            <button id="historiography-add-rule-btn" class="hly-action-button" style="margin-top: 10px;">
+                <i class="fas fa-plus"></i> 添加新规则
+            </button>
+        </div>
+        <style>
+            .hly-exclusion-rule-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+            .hly-exclusion-rule-row input { flex-grow: 1; }
+            .hly-delete-rule-btn { background: #c0392b; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 16px; line-height: 24px; text-align: center; padding: 0; }
+        </style>
+    `;
+
+    showHtmlModal('编辑内容排除规则', modalHtml, {
+        okText: '保存规则',
+        onOk: (dialogElement) => {
+            const newRules = [];
+            dialogElement.find('.hly-exclusion-rule-row').each(function() {
+                const start = $(this).find('input').eq(0).val().trim();
+                const end = $(this).find('input').eq(1).val().trim();
+                if (start && end) {
+                    newRules.push({ start, end });
+                }
+            });
+            extension_settings[extensionName].historiographyExclusionRules = newRules;
+            saveSettings();
+            toastr.success('内容排除规则已保存。', '圣旨已达');
+        }
+    });
+
+    const modalContent = document.getElementById('historiography-exclusion-rules-container');
+    const rulesList = modalContent.querySelector('#historiography-rules-list');
+
+    modalContent.querySelector('#historiography-add-rule-btn').addEventListener('click', () => {
+        const newIndex = rulesList.children.length;
+        const newRowHtml = createRuleRowHtml({ start: '', end: '' }, newIndex);
+        rulesList.insertAdjacentHTML('beforeend', newRowHtml);
+    });
+
+    rulesList.addEventListener('click', (event) => {
+        if (event.target.classList.contains('hly-delete-rule-btn')) {
+            event.target.closest('.hly-exclusion-rule-row').remove();
+        }
+    });
+}

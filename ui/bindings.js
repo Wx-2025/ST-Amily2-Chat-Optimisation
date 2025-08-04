@@ -1,1 +1,526 @@
-const _0x3271f6=_0x3af2;function _0x3af2(_0xd8b3df,_0x10222c){const _0x1cf7e1=_0x1cf7();return _0x3af2=function(_0x3af2ef,_0x4fb12d){_0x3af2ef=_0x3af2ef-0x17e;let _0x5bbae2=_0x1cf7e1[_0x3af2ef];return _0x5bbae2;},_0x3af2(_0xd8b3df,_0x10222c);}(function(_0x146755,_0x314426){const _0x3686c7=_0x3af2,_0x235580=_0x146755();while(!![]){try{const _0x239769=parseInt(_0x3686c7(0x1ce))/0x1*(parseInt(_0x3686c7(0x1fa))/0x2)+parseInt(_0x3686c7(0x1e3))/0x3*(-parseInt(_0x3686c7(0x1d2))/0x4)+parseInt(_0x3686c7(0x19c))/0x5*(-parseInt(_0x3686c7(0x193))/0x6)+parseInt(_0x3686c7(0x1c6))/0x7+-parseInt(_0x3686c7(0x20a))/0x8*(-parseInt(_0x3686c7(0x1b6))/0x9)+-parseInt(_0x3686c7(0x1eb))/0xa+parseInt(_0x3686c7(0x215))/0xb*(parseInt(_0x3686c7(0x1b4))/0xc);if(_0x239769===_0x314426)break;else _0x235580['push'](_0x235580['shift']());}catch(_0x5cf182){_0x235580['push'](_0x235580['shift']());}}}(_0x1cf7,0x8a0b4));import{extension_settings}from'/scripts/extensions.js';import{saveSettingsDebounced}from'/script.js';import{defaultSettings,extensionName}from'../utils/settings.js';import{pluginAuthStatus,activatePluginAuthorization,getPasswordForDate}from'../utils/auth.js';function _0x1cf7(){const _0x271db1=['prop','loreDepth','success','319Agtarl','amily2_optimization_exclusion_enabled','\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20class=\x22text_pole\x22\x20value=\x22','#amily2_manual_hide_from',']\x20的新状态已保存。','\x22\x20placeholder=\x22开始字符,\x20如\x20<!--\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span>到</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20class=\x22text_pole\x22\x20value=\x22','url','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22optimization-exclusion-rules-container\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22notes\x22>在这里定义需要从优化内容中排除的文本片段。例如，排除HTML注释，可以设置开始字符为\x20`<!--`，结束字符为\x20`-->`。</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22optimization-rules-list\x22\x20style=\x22max-height:\x2045vh;\x20overflow-y:\x20auto;\x20padding:\x2010px;\x20border:\x201px\x20solid\x20rgba(255,255,255,0.1);\x20border-radius:\x205px;\x20margin-bottom:10px;\x22>','#amily2_unified_save_button','click.amily2.unified_save','\x20执行失败:','addEventListener','#amily2_force_proxy','length','#amily2_model_autofetch_wrapper','textContent','amily2_manual_unhide_confirm','#amily2_main_prompt','cached_models_amily2','amily2_','amily2_back_to_main_settings','number','操作失败:\x20','manual_hide','模型ID\x20[','#amily2_unified_editor','off','input[type=\x22radio\x22][name^=\x22amily2_\x22]:not([name=\x22amily2_icon_location\x22])','data','[Amily-谕令确认]\x20收到指令:\x20将\x20[','amily2_back_to_main_from_hanlinyuan','#amily2_lore_depth_container','change.amily2.lore_settings','join','scripts/extensions/third-party/ST-Amily2-Chat-Optimisation/NeiGe.md','amily2_unhide_all_button','temperature','click.amily2.chamber_nav','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<dialog\x20class=\x22popup\x20wide_dialogue_popup\x20large_dialogue_popup\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-body\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h4\x20style=\x22margin-top:0;\x20color:\x20#eee;\x20border-bottom:\x201px\x20solid\x20rgba(255,255,255,0.2);\x20padding-bottom:\x2010px;\x22>正在编辑:\x20','click','first','find','#amily2_save_lore_settings','log','click.amily2.lore_save','#amily2_chat_optimiser','info','toUpperCase',']...','input[name=\x22amily2_icon_location\x22]','unhide_all','#amily2_drawer_content','#amily2_update_indicator','writeText','18330TmBzMj','排除规则已更新。','model','map','change.amily2.checkbox','close','.popup-button-cancel','#optimization-exclusion-rules-container',']\x20已镌刻！','755xjBLBo','内阁使用教程','value','编辑内容排除规则','events-bound','replace','[Amily-谕令镌刻]\x20[','trim','checked','<i\x20class=\x22fas\x20fa-check\x22></i>\x20已确认','hide','授权码已复制到剪贴板！','forceProxyForCustomApi','#optimization-add-rule-btn','stopPropagation','disabled',']\x20已自动保存!','html','#optimization-rules-list','click.amily2.tutorial','复制失败，请手动复制。','#amily2_manual_unhide_to','title','fadeIn','368616NfxBLH','push','186291sLfMws','includes','then','#amily2_open_tutorial,\x20#amily2_open_neige_tutorial','change.amily2.select','showModal','未能获取到云端情报，请稍后再试。','#amily2_api_url,\x20#amily2_api_key,\x20#amily2_optimization_target_tag','stringify','.plugin-features','#amily2_unhide_all_button,\x20#amily2_manual_hide_confirm,\x20#amily2_manual_unhide_confirm','<i\x20class=\x22fas\x20fa-save\x22></i>\x20确认敕令','谕令\x20[','click.amily2.unified_restore','text','#amily2_additional_features_panel','778995sWDNul','show','#amily2_expand_editor',']\x20设置为\x20->','#amily2_prompt_selector','change.amily2.radio','amily2_manual_hide_confirm','val','825686RdGgWM','authorized','amily2_refresh_models','amily2_lore_insertion_position','3688496LviiXK','slideDown','at_depth','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22opt-exclusion-rule-row\x22\x20data-index=\x22','迁都令','appendTo','#amily2_extension_frame','amily2_fix_now','amily2_open_additional_features','.popup-button-ok','input','</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22text-align:\x20center;\x20margin-top:\x2010px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20id=\x22optimization-add-rule-btn\x22\x20class=\x22menu_button\x20amily2-add-rule-btn\x22><i\x20class=\x22fas\x20fa-plus\x22></i>\x20添加新规则</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>','#amily2_main_drawer','.opt-exclusion-rule-row','select#amily2_model',']\x20已镌刻!','change','3mPBnxI','amily2_open_rag_palace','manual_unhide','请输入授权码','#amily2_manual_hide_to','name','changelog','扩展区','6861970ttACcE','input[name=\x22','click.amily2.update','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<dialog\x20class=\x22popup\x20wide_dialogue_popup\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-body\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h3\x20style=\x22margin-top:0;\x20color:\x20#eee;\x20border-bottom:\x201px\x20solid\x20rgba(255,255,255,0.2);\x20padding-bottom:\x2010px;\x22><i\x20class=\x22fas\x20fa-bell\x22\x20style=\x22color:\x20#ff9800;\x22></i>\x20帝国最新情报</h3>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-content\x22\x20style=\x22height:\x2060vh;\x20overflow-y:\x20auto;\x20background:\x20rgba(0,0,0,0.2);\x20padding:\x2015px;\x20border-radius:\x205px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22mes_text\x22>','_value','圣意已在您每次更改时自动镌刻。','remove','optimizationExclusionRules','click.amily2.actions','change.amily2.prompt_selector','click.amily2.expand_editor','Amily2号','click.amily2.update_new','click.amily2.auth','closest','2gUUkTS','#amily2_manual_unhide_from','#amily2_update_button','#amily2_system_prompt','\x22]:checked','#amily2_refresh_models,\x20#amily2_test,\x20#amily2_fix_now','change.amily2.force_proxy','body','clipboard','type','#amily2_manual_model_input','topbar','error','loreDepthInput','#amily2_update_button_new','span[data-i18n=\x22Manage\x20extensions\x22]','312YjQsXl','warning','getElementById','正在将帝国徽记迁往\x20[','input[type=\x22range\x22][id^=\x22amily2_\x22]','mousedown.amily2Drawer','change.amily2.text','input.amily2.range'];_0x1cf7=function(){return _0x271db1;};return _0x1cf7();}import{fetchSupportedModels}from'../core/api.js';import{setAvailableModels,populateModelDropdown,getLatestUpdateInfo}from'./state.js';import{fixCommand,testReplyChecker}from'../core/commands.js';import{createDrawer}from'../ui/drawer.js';import{messageFormatting}from'/script.js';import{executeManualCommand}from'../core/autoHideManager.js';import{showContentModal,showHtmlModal}from'./page-window.js';function displayDailyAuthCode(){const _0x58986e=_0x3af2,_0x4fe86c=document[_0x58986e(0x20c)]('amily2_daily_code_display'),_0x2d9b6f=document['getElementById']('amily2_copy_daily_code');if(_0x4fe86c&&_0x2d9b6f){const _0xbaae09=getPasswordForDate(new Date());_0x4fe86c[_0x58986e(0x224)]=_0xbaae09,_0x2d9b6f[_0x58986e(0x220)](_0x58986e(0x184),()=>{const _0xf2b1eb=_0x58986e;navigator[_0xf2b1eb(0x202)][_0xf2b1eb(0x192)](_0xbaae09)[_0xf2b1eb(0x1b8)](()=>{const _0xf3e9e9=_0xf2b1eb;toastr[_0xf3e9e9(0x214)](_0xf3e9e9(0x1a7));},()=>{const _0xbd09d6=_0xf2b1eb;toastr[_0xbd09d6(0x206)](_0xbd09d6(0x1b0));});});}}export function bindModalEvents(){const _0x52b1f6=_0x3af2,_0xfc02f7=$('#amily2_drawer_content')[_0x52b1f6(0x222)]?$(_0x52b1f6(0x190)):$(_0x52b1f6(0x18a));displayDailyAuthCode();function _0xb14184(){const _0x154660=_0x52b1f6,_0x556be2=extension_settings[extensionName]||{},_0x257e65=_0x556be2[_0x154660(0x1a8)]===!![],_0x33f5f5=_0x556be2[_0x154660(0x195)]||'';_0xfc02f7[_0x154660(0x186)]('#amily2_force_proxy')[_0x154660(0x212)](_0x154660(0x1a4),_0x257e65),_0xfc02f7[_0x154660(0x186)]('#amily2_manual_model_input')[_0x154660(0x1cd)](_0x33f5f5);const _0x302710=_0xfc02f7[_0x154660(0x186)](_0x154660(0x223)),_0x15ecc8=_0xfc02f7[_0x154660(0x186)]('#amily2_manual_model_input');_0x257e65?(_0x302710[_0x154660(0x1a6)](),_0x15ecc8['show']()):(_0x302710['show'](),_0x15ecc8['hide']());}if(!_0xfc02f7[_0x52b1f6(0x222)]||_0xfc02f7[_0x52b1f6(0x231)](_0x52b1f6(0x1a0)))return;const _0x1f7a53=_0x458780=>_0x458780[_0x52b1f6(0x1a1)](/_([a-z])/g,_0x1ab7b4=>_0x1ab7b4[0x1][_0x52b1f6(0x18c)]()),_0x54cf65=(_0x3c1b21,_0x260132)=>{const _0x37572e=_0x52b1f6;console['log'](_0x37572e(0x232)+_0x3c1b21+_0x37572e(0x1c9),_0x260132),!extension_settings[extensionName]&&(extension_settings[extensionName]={}),extension_settings[extensionName]={...extension_settings[extensionName],[_0x3c1b21]:_0x260132},saveSettingsDebounced(),console[_0x37572e(0x188)](_0x37572e(0x1a2)+_0x3c1b21+_0x37572e(0x219));};_0xfc02f7[_0x52b1f6(0x22f)](_0x52b1f6(0x200))['on'](_0x52b1f6(0x200),_0x52b1f6(0x221),function(){const _0x2a49c4=_0x52b1f6;if(!pluginAuthStatus[_0x2a49c4(0x1cf)])return;_0x54cf65(_0x2a49c4(0x1a8),this[_0x2a49c4(0x1a4)]),_0xb14184();}),_0xfc02f7[_0x52b1f6(0x22f)]('change.amily2.manual_model')['on']('change.amily2.manual_model',_0x52b1f6(0x204),function(){const _0x2f1973=_0x52b1f6;if(!pluginAuthStatus[_0x2f1973(0x1cf)])return;_0x54cf65(_0x2f1973(0x195),this[_0x2f1973(0x19e)]),toastr[_0x2f1973(0x214)](_0x2f1973(0x22d)+this[_0x2f1973(0x19e)]+_0x2f1973(0x1ac),'Amily2号');}),_0xfc02f7['off'](_0x52b1f6(0x1f8))['on'](_0x52b1f6(0x1f8),'#auth_submit',async function(){const _0x4b89f0=_0x52b1f6,_0x1617f8=$('#amily2_auth_code')[_0x4b89f0(0x1cd)]()['trim']();_0x1617f8?await activatePluginAuthorization(_0x1617f8):toastr[_0x4b89f0(0x20b)](_0x4b89f0(0x1e6),_0x4b89f0(0x1f6));}),_0xfc02f7[_0x52b1f6(0x22f)](_0x52b1f6(0x1f3))['on'](_0x52b1f6(0x1f3),_0x52b1f6(0x1ff),async function(){const _0x3e5a35=_0x52b1f6;if(!pluginAuthStatus[_0x3e5a35(0x1cf)])return;const _0x224d3e=$(this),_0x524a30=_0x224d3e[_0x3e5a35(0x1ad)]();_0x224d3e['prop'](_0x3e5a35(0x1ab),!![])[_0x3e5a35(0x1ad)]('<i\x20class=\x22fas\x20fa-spinner\x20fa-spin\x22></i>\x20处理中');try{switch(this['id']){case _0x3e5a35(0x1d0):const _0x1265e0=await fetchSupportedModels();_0x1265e0[_0x3e5a35(0x222)]>0x0&&(setAvailableModels(_0x1265e0),localStorage['setItem'](_0x3e5a35(0x227),JSON[_0x3e5a35(0x1be)](_0x1265e0)),populateModelDropdown());break;case'amily2_test':await testReplyChecker();break;case _0x3e5a35(0x1d9):await fixCommand();break;}}catch(_0x34b641){console[_0x3e5a35(0x206)]('[Amily2-工部]\x20操作按钮\x20'+this['id']+_0x3e5a35(0x21f),_0x34b641),toastr[_0x3e5a35(0x206)](_0x3e5a35(0x22b)+_0x34b641['message'],_0x3e5a35(0x1f6));}finally{_0x224d3e['prop'](_0x3e5a35(0x1ab),![])[_0x3e5a35(0x1ad)](_0x524a30);}}),_0xfc02f7[_0x52b1f6(0x22f)](_0x52b1f6(0x1f5))['on'](_0x52b1f6(0x1f5),_0x52b1f6(0x1c8),function(_0x1b8609){const _0x11bd27=_0x52b1f6;if(!pluginAuthStatus[_0x11bd27(0x1cf)])return;_0x1b8609[_0x11bd27(0x1aa)]();const _0x2d369d=$(_0x11bd27(0x1ca))[_0x11bd27(0x1cd)](),_0x117801=$(_0x11bd27(0x22e))[_0x11bd27(0x1cd)](),_0x242589=_0x11bd27(0x183)+_0x2d369d+'</h4>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-content\x22\x20style=\x22height:\x2070vh;\x22><div\x20class=\x22height100p\x20wide100p\x20flex-container\x22><textarea\x20id=\x22amily2_dialog_editor\x22\x20class=\x22height100p\x20wide100p\x20maximized_textarea\x20text_pole\x22></textarea></div></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-controls\x22><div\x20class=\x22popup-button-ok\x20menu_button\x20menu_button_primary\x20interactable\x22>保存并关闭</div><div\x20class=\x22popup-button-cancel\x20menu_button\x20interactable\x22\x20style=\x22margin-left:\x2010px;\x22>取消</div></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</dialog>',_0x3a94eb=$(_0x242589)[_0x11bd27(0x1d7)](_0x11bd27(0x201)),_0x3e0d96=_0x3a94eb['find']('#amily2_dialog_editor');_0x3e0d96[_0x11bd27(0x1cd)](_0x117801);const _0x4e85b3=()=>{const _0xce1151=_0x11bd27;_0x3a94eb[0x0][_0xce1151(0x198)](),_0x3a94eb[_0xce1151(0x1f1)]();};_0x3a94eb[_0x11bd27(0x186)](_0x11bd27(0x1db))['on'](_0x11bd27(0x184),()=>{const _0x24c797=_0x11bd27,_0x2e80aa=_0x3e0d96[_0x24c797(0x1cd)]();$(_0x24c797(0x22e))[_0x24c797(0x1cd)](_0x2e80aa),_0x54cf65(_0x2d369d,_0x2e80aa),toastr[_0x24c797(0x214)](_0x24c797(0x1c2)+_0x2d369d+_0x24c797(0x19b),_0x24c797(0x1f6)),_0x4e85b3();}),_0x3a94eb['find'](_0x11bd27(0x199))['on'](_0x11bd27(0x184),_0x4e85b3),_0x3a94eb[0x0][_0x11bd27(0x1bb)]();}),_0xfc02f7['off'](_0x52b1f6(0x1af))['on'](_0x52b1f6(0x1af),_0x52b1f6(0x1b9),function(){const _0xae2ae0=_0x52b1f6;if(!pluginAuthStatus[_0xae2ae0(0x1cf)])return;const _0x5b9939={'amily2_open_tutorial':{'title':'主殿使用教程','url':'scripts/extensions/third-party/ST-Amily2-Chat-Optimisation/ZhuDian.md'},'amily2_open_neige_tutorial':{'title':_0xae2ae0(0x19d),'url':_0xae2ae0(0x17f)}},_0x386548=_0x5b9939[this['id']];_0x386548&&showContentModal(_0x386548[_0xae2ae0(0x1b2)],_0x386548[_0xae2ae0(0x21b)]);}),_0xfc02f7[_0x52b1f6(0x22f)](_0x52b1f6(0x1ed))['on'](_0x52b1f6(0x1ed),_0x52b1f6(0x1fc),function(){const _0x1061ae=_0x52b1f6;$(_0x1061ae(0x191))[_0x1061ae(0x1a6)]();const _0xd11550=getLatestUpdateInfo();if(_0xd11550&&_0xd11550[_0x1061ae(0x1e9)]){const _0x59683c=messageFormatting(_0xd11550[_0x1061ae(0x1e9)]),_0x250b9f=_0x1061ae(0x1ee)+_0x59683c+'</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-controls\x22><div\x20class=\x22popup-button-ok\x20menu_button\x20menu_button_primary\x20interactable\x22>朕已阅</div></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</dialog>',_0x50f72a=$(_0x250b9f)['appendTo'](_0x1061ae(0x201)),_0x103c38=()=>{const _0x511873=_0x1061ae;_0x50f72a[0x0][_0x511873(0x198)](),_0x50f72a[_0x511873(0x1f1)]();};_0x50f72a['find']('.popup-button-ok')['on'](_0x1061ae(0x184),_0x103c38),_0x50f72a[0x0][_0x1061ae(0x1bb)]();}else toastr[_0x1061ae(0x18b)](_0x1061ae(0x1bc),'情报部回报');}),_0xfc02f7[_0x52b1f6(0x22f)](_0x52b1f6(0x1f7))['on'](_0x52b1f6(0x1f7),_0x52b1f6(0x208),function(){const _0x2e1dd1=_0x52b1f6;$(_0x2e1dd1(0x209))[_0x2e1dd1(0x185)]()[_0x2e1dd1(0x184)]();}),_0xfc02f7[_0x52b1f6(0x22f)]('click.amily2.manual_command')['on']('click.amily2.manual_command',_0x52b1f6(0x1c0),async function(){const _0x4020c3=_0x52b1f6;if(!pluginAuthStatus['authorized'])return;const _0x1992f2=this['id'];let _0x3624ec='',_0x2291af={};switch(_0x1992f2){case _0x4020c3(0x180):_0x3624ec=_0x4020c3(0x18f);break;case _0x4020c3(0x1cc):_0x3624ec=_0x4020c3(0x22c),_0x2291af={'from':$(_0x4020c3(0x218))[_0x4020c3(0x1cd)](),'to':$(_0x4020c3(0x1e7))['val']()};break;case _0x4020c3(0x225):_0x3624ec=_0x4020c3(0x1e5),_0x2291af={'from':$(_0x4020c3(0x1fb))[_0x4020c3(0x1cd)](),'to':$(_0x4020c3(0x1b1))[_0x4020c3(0x1cd)]()};break;}_0x3624ec&&await executeManualCommand(_0x3624ec,_0x2291af);}),_0xfc02f7[_0x52b1f6(0x22f)](_0x52b1f6(0x182))['on'](_0x52b1f6(0x182),'#amily2_open_additional_features,\x20#amily2_open_rag_palace,\x20#amily2_back_to_main_settings,\x20#amily2_back_to_main_from_hanlinyuan',function(){const _0xf3a19d=_0x52b1f6;if(!pluginAuthStatus[_0xf3a19d(0x1cf)])return;const _0x39bf6b=_0xfc02f7[_0xf3a19d(0x186)](_0xf3a19d(0x1bf)),_0x3ca4ac=_0xfc02f7[_0xf3a19d(0x186)](_0xf3a19d(0x1c5)),_0x5609a8=_0xfc02f7[_0xf3a19d(0x186)]('#amily2_hanlinyuan_panel');_0x39bf6b[_0xf3a19d(0x1a6)](),_0x3ca4ac['hide'](),_0x5609a8[_0xf3a19d(0x1a6)]();switch(this['id']){case _0xf3a19d(0x1da):_0x3ca4ac[_0xf3a19d(0x1c7)]();break;case _0xf3a19d(0x1e4):_0x5609a8['show']();break;case _0xf3a19d(0x229):case _0xf3a19d(0x233):_0x39bf6b[_0xf3a19d(0x1c7)]();break;}}),_0xfc02f7[_0x52b1f6(0x22f)](_0x52b1f6(0x197))['on']('change.amily2.checkbox','input[type=\x22checkbox\x22][id^=\x22amily2_\x22]',function(_0x2da3af){const _0x205003=_0x52b1f6;if(!pluginAuthStatus[_0x205003(0x1cf)])return;const _0x1dc21f=this['id'],_0x4f75e4=$(this),_0x2eee3c=_0x1f7a53(_0x1dc21f[_0x205003(0x1a1)]('amily2_',''));_0x54cf65(_0x2eee3c,_0x4f75e4['prop'](_0x205003(0x1a4)));if(_0x1dc21f===_0x205003(0x216)&&_0x4f75e4['prop'](_0x205003(0x1a4))){const _0x2a810d=extension_settings[extensionName],_0x194d41=_0x2a810d[_0x205003(0x1f2)]||[],_0x2db4ef=(_0x336403={'start':'','end':''},_0x397a4c)=>_0x205003(0x1d5)+_0x397a4c+_0x205003(0x217)+_0x336403['start']+_0x205003(0x21a)+_0x336403['end']+'\x22\x20placeholder=\x22结束字符,\x20如\x20-->\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22delete-rule-btn\x20menu_button\x20danger_button\x22\x20title=\x22删除此规则\x22>&times;</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>',_0x46bd0a=_0x194d41[_0x205003(0x196)](_0x2db4ef)[_0x205003(0x17e)](''),_0x5e9226=_0x205003(0x21c)+_0x46bd0a+_0x205003(0x1dd);showHtmlModal(_0x205003(0x19f),_0x5e9226,{'okText':'确认','cancelText':'取消','onOk':_0x50252d=>{const _0x58421c=_0x205003,_0x17d19e=[];_0x50252d[_0x58421c(0x186)](_0x58421c(0x1df))['each'](function(){const _0x5a1044=_0x58421c,_0x37e06d=$(this)[_0x5a1044(0x186)](_0x5a1044(0x1dc))['eq'](0x0)[_0x5a1044(0x1cd)]()[_0x5a1044(0x1a3)](),_0x1dbeea=$(this)['find'](_0x5a1044(0x1dc))['eq'](0x1)['val']()[_0x5a1044(0x1a3)]();if(_0x37e06d&&_0x1dbeea)_0x17d19e[_0x5a1044(0x1b5)]({'start':_0x37e06d,'end':_0x1dbeea});}),_0x54cf65(_0x58421c(0x1f2),_0x17d19e),toastr[_0x58421c(0x214)](_0x58421c(0x194),_0x58421c(0x1f6));},'onCancel':()=>{}});const _0x310b5f=$(_0x205003(0x19a)),_0x23ab35=_0x310b5f[_0x205003(0x186)](_0x205003(0x1ae));_0x310b5f[_0x205003(0x186)](_0x205003(0x1a9))['on'](_0x205003(0x184),()=>{const _0x55992e=_0x23ab35['children']()['length'];_0x23ab35['append'](_0x2db4ef(undefined,_0x55992e));}),_0x23ab35['on']('click','.delete-rule-btn',function(){const _0x7df127=_0x205003;$(this)[_0x7df127(0x1f9)]('.opt-exclusion-rule-row')[_0x7df127(0x1f1)]();});}}),_0xfc02f7[_0x52b1f6(0x22f)](_0x52b1f6(0x1cb))['on'](_0x52b1f6(0x1cb),_0x52b1f6(0x230),function(){const _0x1cb1e9=_0x52b1f6;if(!pluginAuthStatus[_0x1cb1e9(0x1cf)])return;const _0x3d3f06=_0x1f7a53(this[_0x1cb1e9(0x1e8)][_0x1cb1e9(0x1a1)]('amily2_','')),_0x488e78=$(_0x1cb1e9(0x1ec)+this[_0x1cb1e9(0x1e8)]+_0x1cb1e9(0x1fe))[_0x1cb1e9(0x1cd)]();_0x54cf65(_0x3d3f06,_0x488e78);}),_0xfc02f7['off']('change.amily2.text')['on'](_0x52b1f6(0x210),_0x52b1f6(0x1bd),function(){const _0x15e2bb=_0x52b1f6;if(!pluginAuthStatus['authorized'])return;const _0x381bec=_0x1f7a53(this['id']['replace'](_0x15e2bb(0x228),''));_0x54cf65(_0x381bec,this['value']),toastr[_0x15e2bb(0x214)]('配置\x20['+_0x381bec+_0x15e2bb(0x1ac),_0x15e2bb(0x1f6));}),_0xfc02f7['off'](_0x52b1f6(0x1ba))['on']('change.amily2.select',_0x52b1f6(0x1e0),function(){const _0x43ddf6=_0x52b1f6;if(!pluginAuthStatus[_0x43ddf6(0x1cf)])return;const _0x5b7b36=_0x1f7a53(this['id'][_0x43ddf6(0x1a1)](_0x43ddf6(0x228),''));_0x54cf65(_0x5b7b36,this[_0x43ddf6(0x19e)]),populateModelDropdown();}),_0xfc02f7[_0x52b1f6(0x22f)](_0x52b1f6(0x211))['on'](_0x52b1f6(0x211),_0x52b1f6(0x20e),function(){const _0xd40281=_0x52b1f6;if(!pluginAuthStatus['authorized'])return;const _0x4d4c5c=_0x1f7a53(this['id'][_0xd40281(0x1a1)](_0xd40281(0x228),'')),_0x547865=this['id'][_0xd40281(0x1b7)](_0xd40281(0x181))?parseFloat(this[_0xd40281(0x19e)]):parseInt(this['value'],0xa);$('#'+this['id']+_0xd40281(0x1ef))[_0xd40281(0x1c4)](_0x547865),_0x54cf65(_0x4d4c5c,_0x547865);});const _0x90bd78={'mainPrompt':_0x52b1f6(0x226),'systemPrompt':_0x52b1f6(0x1fd),'outputFormatPrompt':'#amily2_output_format_prompt'},_0xb4de8=_0x52b1f6(0x1ca),_0xf701fc='#amily2_unified_editor',_0x1ef581=_0x52b1f6(0x21d);function _0x4af64c(){const _0x2b0625=_0x52b1f6;if(!$(_0xb4de8)[_0x2b0625(0x222)])return;const _0x49a571=$(_0xb4de8)[_0x2b0625(0x1cd)]();if(!_0x49a571)return;const _0x5d00c0=extension_settings[extensionName][_0x49a571]||'';$(_0xf701fc)[_0x2b0625(0x1cd)](_0x5d00c0);}_0xfc02f7[_0x52b1f6(0x22f)]('change.amily2.prompt_selector')['on'](_0x52b1f6(0x1f4),_0xb4de8,_0x4af64c),_0xfc02f7[_0x52b1f6(0x22f)]('click.amily2.unified_save')['on'](_0x52b1f6(0x21e),_0x1ef581,function(){const _0x3eb3c0=_0x52b1f6,_0x2eeb90=$(_0xb4de8)['val']();if(!_0x2eeb90)return;const _0x18b600=$(_0xf701fc)[_0x3eb3c0(0x1cd)]();_0x54cf65(_0x2eeb90,_0x18b600),toastr[_0x3eb3c0(0x214)](_0x3eb3c0(0x1c2)+_0x2eeb90+_0x3eb3c0(0x1e1),_0x3eb3c0(0x1f6));}),_0xfc02f7['off'](_0x52b1f6(0x1c3))['on'](_0x52b1f6(0x1c3),'#amily2_unified_restore_button',function(){const _0x3cc657=_0x52b1f6,_0x19e4f4=$(_0xb4de8)[_0x3cc657(0x1cd)]();if(!_0x19e4f4)return;const _0x13de0f=defaultSettings[_0x19e4f4];$(_0xf701fc)[_0x3cc657(0x1cd)](_0x13de0f),_0x54cf65(_0x19e4f4,_0x13de0f),toastr[_0x3cc657(0x214)](_0x3cc657(0x1c2)+_0x19e4f4+']\x20已成功恢复为帝国初始蓝图。',_0x3cc657(0x1f6));}),_0xfc02f7[_0x52b1f6(0x22f)](_0x52b1f6(0x235))['on'](_0x52b1f6(0x235),'select[id^=\x22amily2_lore_\x22],\x20input#amily2_lore_depth_input',function(){const _0x594256=_0x52b1f6;if(!pluginAuthStatus[_0x594256(0x1cf)])return;let _0x515555=_0x1f7a53(this['id'][_0x594256(0x1a1)](_0x594256(0x228),''));_0x515555===_0x594256(0x207)&&(_0x515555=_0x594256(0x213));const _0x4dc30a=this[_0x594256(0x203)]===_0x594256(0x22a)?parseInt(this[_0x594256(0x19e)],0xa):this[_0x594256(0x19e)];_0x54cf65(_0x515555,_0x4dc30a);if(this['id']===_0x594256(0x1d1)){const _0xdddee3=$(_0x594256(0x234));this['value']===_0x594256(0x1d4)?_0xdddee3[_0x594256(0x1d3)](0xc8):_0xdddee3['slideUp'](0xc8);}}),_0xfc02f7['off']('click.amily2.lore_save')['on'](_0x52b1f6(0x189),_0x52b1f6(0x187),function(){const _0x3d589d=_0x52b1f6;if(!pluginAuthStatus['authorized'])return;const _0x212205=$(this),_0x5c44b6=$('#amily2_lore_save_status');_0x212205[_0x3d589d(0x212)]('disabled',!![])[_0x3d589d(0x1ad)](_0x3d589d(0x1a5)),_0x5c44b6[_0x3d589d(0x1c4)](_0x3d589d(0x1f0))['stop']()[_0x3d589d(0x1b3)](),setTimeout(()=>{const _0xf6b3c4=_0x3d589d;_0x212205[_0xf6b3c4(0x212)](_0xf6b3c4(0x1ab),![])[_0xf6b3c4(0x1ad)](_0xf6b3c4(0x1c1)),_0x5c44b6['fadeOut']();},0x9c4);}),setTimeout(_0x4af64c,0x64),_0xb14184(),_0xfc02f7[_0x52b1f6(0x231)](_0x52b1f6(0x1a0),!![]);}$(document)['on'](_0x3271f6(0x1e2),_0x3271f6(0x18e),function(){const _0x2e307e=_0x3271f6;if(!pluginAuthStatus[_0x2e307e(0x1cf)])return;const _0x4afd0f=$(this)[_0x2e307e(0x1cd)]();extension_settings[extensionName]['iconLocation']=_0x4afd0f,saveSettingsDebounced(),console[_0x2e307e(0x188)]('[Amily-禁卫军]\x20收到迁都指令\x20->\x20'+_0x4afd0f+'。圣意已存档。'),toastr['info'](_0x2e307e(0x20d)+(_0x4afd0f===_0x2e307e(0x205)?'顶栏':_0x2e307e(0x1ea))+_0x2e307e(0x18d),_0x2e307e(0x1d6),{'timeOut':0x7d0}),$(_0x2e307e(0x1de))[_0x2e307e(0x1f1)](),$(document)[_0x2e307e(0x22f)](_0x2e307e(0x20f)),$(_0x2e307e(0x1d8))[_0x2e307e(0x1f1)](),setTimeout(createDrawer,0x32);});
+import { extension_settings } from "/scripts/extensions.js";
+import { saveSettingsDebounced } from "/script.js";
+import { defaultSettings, extensionName } from "../utils/settings.js";
+import { pluginAuthStatus, activatePluginAuthorization, getPasswordForDate } from "../utils/auth.js";
+import { fetchSupportedModels } from "../core/api.js";
+
+import { setAvailableModels, populateModelDropdown, getLatestUpdateInfo } from "./state.js";
+import { fixCommand, testReplyChecker } from "../core/commands.js";
+import { createDrawer } from '../ui/drawer.js';
+import { messageFormatting } from '/script.js';
+import { executeManualCommand } from '../core/autoHideManager.js';
+import { showContentModal, showHtmlModal } from './page-window.js';
+
+function displayDailyAuthCode() {
+    const displayEl = document.getElementById('amily2_daily_code_display');
+    const copyBtn = document.getElementById('amily2_copy_daily_code');
+
+    if (displayEl && copyBtn) {
+        const todayCode = getPasswordForDate(new Date());
+        displayEl.textContent = todayCode;
+
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(todayCode).then(() => {
+                toastr.success('授权码已复制到剪贴板！');
+            }, () => {
+                toastr.error('复制失败，请手动复制。');
+            });
+        });
+    }
+}
+
+export function bindModalEvents() {
+    const container = $("#amily2_drawer_content").length ? $("#amily2_drawer_content") : $("#amily2_chat_optimiser");
+    displayDailyAuthCode(); // 在绑定事件时就显示今日授权码
+	    function updateModelInputView() {
+        const settings = extension_settings[extensionName] || {};
+        const forceProxy = settings.forceProxyForCustomApi === true;
+        const model = settings.model || '';
+
+        container.find('#amily2_force_proxy').prop('checked', forceProxy);
+        container.find('#amily2_manual_model_input').val(model);
+
+        const autoFetchWrapper = container.find('#amily2_model_autofetch_wrapper');
+        const manualInput = container.find('#amily2_manual_model_input');
+
+        if (forceProxy) {
+            autoFetchWrapper.hide();
+            manualInput.show();
+        } else {
+            autoFetchWrapper.show();
+            manualInput.hide();
+        }
+    }
+
+    if (!container.length || container.data("events-bound")) return;
+
+    const snakeToCamel = (s) => s.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+    const updateAndSaveSetting = (key, value) => {
+        console.log(`[Amily-谕令确认] 收到指令: 将 [${key}] 设置为 ->`, value);
+        if (!extension_settings[extensionName]) {
+            extension_settings[extensionName] = {};
+        }
+        extension_settings[extensionName] = { ...extension_settings[extensionName], [key]: value };
+        saveSettingsDebounced();
+        console.log(`[Amily-谕令镌刻] [${key}] 的新状态已保存。`);
+    };
+
+    // 在这里添加以下代码
+    container
+        .off("change.amily2.force_proxy")
+        .on("change.amily2.force_proxy", '#amily2_force_proxy', function () {
+            if (!pluginAuthStatus.authorized) return;
+            // 镌刻圣意
+            updateAndSaveSetting('forceProxyForCustomApi', this.checked);
+            // 立即执行仪式，切换界面
+            updateModelInputView();
+        });
+		    // 在这里添加以下代码
+    container
+        .off("change.amily2.manual_model")
+        .on("change.amily2.manual_model", '#amily2_manual_model_input', function() {
+            if (!pluginAuthStatus.authorized) return;
+            // 将您御笔钦定的模型名称，镌刻入“model”这条核心法典
+            updateAndSaveSetting('model', this.value);
+            toastr.success(`模型ID [${this.value}] 已自动保存!`, "Amily2号");
+        });
+
+
+    container
+        .off("click.amily2.auth")
+        .on("click.amily2.auth", "#auth_submit", async function () {
+            const authCode = $("#amily2_auth_code").val().trim();
+            if (authCode) {
+                await activatePluginAuthorization(authCode);
+            } else {
+                toastr.warning("请输入授权码", "Amily2号");
+            }
+        });
+
+    container
+        .off("click.amily2.actions")
+        .on(
+            "click.amily2.actions",
+            "#amily2_refresh_models, #amily2_test, #amily2_fix_now",
+            async function () {
+                if (!pluginAuthStatus.authorized) return;
+                const button = $(this);
+                const originalHtml = button.html();
+                button
+                    .prop("disabled", true)
+                    .html('<i class="fas fa-spinner fa-spin"></i> 处理中');
+                try {
+                    switch (this.id) {
+                        case "amily2_refresh_models":
+                            const models = await fetchSupportedModels();
+                            if (models.length > 0) {
+                                setAvailableModels(models);
+                localStorage.setItem(
+                  "cached_models_amily2",
+                  JSON.stringify(models),
+                );
+                                populateModelDropdown();
+                            }
+                            break;
+                        case "amily2_test":
+                            await testReplyChecker();
+                            break;
+                        case "amily2_fix_now":
+                            await fixCommand();
+                            break;
+                    }
+                } catch (error) {
+                    console.error(`[Amily2-工部] 操作按钮 ${this.id} 执行失败:`, error);
+                    toastr.error(`操作失败: ${error.message}`, "Amily2号");
+                } finally {
+                    button.prop("disabled", false).html(originalHtml);
+                }
+            },
+        );
+
+    container
+        .off("click.amily2.expand_editor")
+        .on("click.amily2.expand_editor", "#amily2_expand_editor", function (event) {
+            if (!pluginAuthStatus.authorized) return;
+            event.stopPropagation();
+            const selectedKey = $("#amily2_prompt_selector").val();
+            const currentContent = $("#amily2_unified_editor").val();
+            const dialogHtml = `
+                <dialog class="popup wide_dialogue_popup large_dialogue_popup">
+                  <div class="popup-body">
+                    <h4 style="margin-top:0; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">正在编辑: ${selectedKey}</h4>
+                    <div class="popup-content" style="height: 70vh;"><div class="height100p wide100p flex-container"><textarea id="amily2_dialog_editor" class="height100p wide100p maximized_textarea text_pole"></textarea></div></div>
+                    <div class="popup-controls"><div class="popup-button-ok menu_button menu_button_primary interactable">保存并关闭</div><div class="popup-button-cancel menu_button interactable" style="margin-left: 10px;">取消</div></div>
+                  </div>
+                </dialog>`;
+            const dialogElement = $(dialogHtml).appendTo('body');
+            const dialogTextarea = dialogElement.find('#amily2_dialog_editor');
+            dialogTextarea.val(currentContent);
+            const closeDialog = () => { dialogElement[0].close(); dialogElement.remove(); };
+            dialogElement.find('.popup-button-ok').on('click', () => {
+                const newContent = dialogTextarea.val();
+                $("#amily2_unified_editor").val(newContent);
+                updateAndSaveSetting(selectedKey, newContent);
+                toastr.success(`谕令 [${selectedKey}] 已镌刻！`, "Amily2号");
+                closeDialog();
+            });
+            dialogElement.find('.popup-button-cancel').on('click', closeDialog);
+            dialogElement[0].showModal();
+        });
+
+    container
+        .off("click.amily2.tutorial")
+        .on("click.amily2.tutorial", "#amily2_open_tutorial, #amily2_open_neige_tutorial", function() {
+            if (!pluginAuthStatus.authorized) return;
+
+            const tutorials = {
+                "amily2_open_tutorial": {
+                    title: "主殿使用教程",
+                    url: "scripts/extensions/third-party/ST-Amily2-Chat-Optimisation/ZhuDian.md"
+                },
+                "amily2_open_neige_tutorial": {
+                    title: "内阁使用教程",
+                    url: "scripts/extensions/third-party/ST-Amily2-Chat-Optimisation/NeiGe.md"
+                }
+            };
+            
+            const tutorial = tutorials[this.id];
+            if (tutorial) {
+                showContentModal(tutorial.title, tutorial.url);
+            }
+        });
+
+    container
+        .off("click.amily2.update")
+        .on("click.amily2.update", "#amily2_update_button", function() {
+            $("#amily2_update_indicator").hide();
+            const updateInfo = getLatestUpdateInfo();
+            if (updateInfo && updateInfo.changelog) {
+                const formattedChangelog = messageFormatting(updateInfo.changelog);
+
+
+                const dialogHtml = `
+                <dialog class="popup wide_dialogue_popup">
+                  <div class="popup-body">
+                    <h3 style="margin-top:0; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;"><i class="fas fa-bell" style="color: #ff9800;"></i> 帝国最新情报</h3>
+                    <div class="popup-content" style="height: 60vh; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 5px;">
+                        <div class="mes_text">${formattedChangelog}</div>
+                    </div>
+                    <div class="popup-controls"><div class="popup-button-ok menu_button menu_button_primary interactable">朕已阅</div></div>
+                  </dialog>`;
+                const dialogElement = $(dialogHtml).appendTo('body');
+                const closeDialog = () => { dialogElement[0].close(); dialogElement.remove(); };
+                dialogElement.find('.popup-button-ok').on('click', closeDialog);
+                dialogElement[0].showModal();
+            } else {
+                toastr.info("未能获取到云端情报，请稍后再试。", "情报部回报");
+            }
+        });
+
+    container
+        .off("click.amily2.update_new")
+        .on("click.amily2.update_new", "#amily2_update_button_new", function() {
+            // 最终修正：根据用户提供的元素信息，使用属性选择器定位并点击“管理扩展”按钮
+            $('span[data-i18n="Manage extensions"]').first().click();
+        });
+
+    // This block is intentionally left empty as the logic is now handled
+    // within the 'change.amily2.checkbox' event listener below.
+
+		
+
+    container
+        .off("click.amily2.manual_command")
+        .on(
+            "click.amily2.manual_command",
+            "#amily2_unhide_all_button, #amily2_manual_hide_confirm, #amily2_manual_unhide_confirm",
+            async function () {
+                if (!pluginAuthStatus.authorized) return;
+
+                const buttonId = this.id;
+                let commandType = '';
+                let params = {};
+
+                switch (buttonId) {
+                    case 'amily2_unhide_all_button':
+                        commandType = 'unhide_all';
+                        break;
+
+                    case 'amily2_manual_hide_confirm':
+                        commandType = 'manual_hide';
+                        params = {
+                            from: $('#amily2_manual_hide_from').val(),
+                            to: $('#amily2_manual_hide_to').val()
+                        };
+                        break;
+
+                    case 'amily2_manual_unhide_confirm':
+                        commandType = 'manual_unhide';
+                        params = {
+                            from: $('#amily2_manual_unhide_from').val(),
+                            to: $('#amily2_manual_unhide_to').val()
+                        };
+                        break;
+                }
+
+                if (commandType) {
+                    await executeManualCommand(commandType, params);
+                }
+            }
+        );	
+		
+container
+    .off("click.amily2.chamber_nav")
+    .on("click.amily2.chamber_nav", "#amily2_open_additional_features, #amily2_open_rag_palace, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan", function () {
+        if (!pluginAuthStatus.authorized) return;
+
+        const mainPanel = container.find('.plugin-features');
+        const additionalPanel = container.find('#amily2_additional_features_panel');
+        const hanlinyuanPanel = container.find('#amily2_hanlinyuan_panel');
+
+        // Hide all panels first
+        mainPanel.hide();
+        additionalPanel.hide();
+        hanlinyuanPanel.hide();
+
+        switch (this.id) {
+            case 'amily2_open_additional_features':
+                additionalPanel.show();
+                break;
+            case 'amily2_open_rag_palace':
+                hanlinyuanPanel.show();
+                break;
+            case 'amily2_back_to_main_settings':
+            case 'amily2_back_to_main_from_hanlinyuan':
+                mainPanel.show();
+                break;
+        }
+    });
+
+    container
+        .off("change.amily2.checkbox")
+        .on(
+            "change.amily2.checkbox",
+            'input[type="checkbox"][id^="amily2_"]',
+            function (event) {
+                if (!pluginAuthStatus.authorized) return;
+
+                const elementId = this.id;
+                const mainToggle = $(this);
+                const key = snakeToCamel(elementId.replace("amily2_", ""));
+
+                // Default behavior for all checkboxes: save their state immediately.
+                updateAndSaveSetting(key, mainToggle.prop('checked'));
+
+                // Special action for the exclusion toggle: also open the modal, but only when turning it ON.
+                if (elementId === 'amily2_optimization_exclusion_enabled' && mainToggle.prop('checked')) {
+                    const settings = extension_settings[extensionName];
+                    const rules = settings.optimizationExclusionRules || [];
+
+                    const createRuleRowHtml = (rule = { start: '', end: '' }, index) => `
+                        <div class="opt-exclusion-rule-row" data-index="${index}">
+                            <input type="text" class="text_pole" value="${rule.start}" placeholder="开始字符, 如 <!--">
+                            <span>到</span>
+                            <input type="text" class="text_pole" value="${rule.end}" placeholder="结束字符, 如 -->">
+                            <button class="delete-rule-btn menu_button danger_button" title="删除此规则">&times;</button>
+                        </div>`;
+
+                    const rulesHtml = rules.map(createRuleRowHtml).join('');
+                    const modalHtml = `
+                        <div id="optimization-exclusion-rules-container">
+                             <p class="notes">在这里定义需要从优化内容中排除的文本片段。例如，排除HTML注释，可以设置开始字符为 \`<!--\`，结束字符为 \`-->\`。</p>
+                             <div id="optimization-rules-list" style="max-height: 45vh; overflow-y: auto; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 5px; margin-bottom:10px;">${rulesHtml}</div>
+                             <div style="text-align: center; margin-top: 10px;">
+                                <button id="optimization-add-rule-btn" class="menu_button amily2-add-rule-btn"><i class="fas fa-plus"></i> 添加新规则</button>
+                             </div>
+                        </div>`;
+
+                    showHtmlModal('编辑内容排除规则', modalHtml, {
+                        okText: '确认',
+                        cancelText: '取消',
+                        onOk: (dialog) => {
+                            const newRules = [];
+                            dialog.find('.opt-exclusion-rule-row').each(function() {
+                                const start = $(this).find('input').eq(0).val().trim();
+                                const end = $(this).find('input').eq(1).val().trim();
+                                if (start && end) newRules.push({ start, end });
+                            });
+                            updateAndSaveSetting('optimizationExclusionRules', newRules);
+                            toastr.success('排除规则已更新。', 'Amily2号');
+                        },
+                        onCancel: () => {
+                            // Do nothing, just close the modal.
+                        }
+                    });
+                    
+                    const modalContent = $('#optimization-exclusion-rules-container');
+                    const rulesList = modalContent.find('#optimization-rules-list');
+
+                    modalContent.find('#optimization-add-rule-btn').on('click', () => {
+                        const newIndex = rulesList.children().length;
+                        rulesList.append(createRuleRowHtml(undefined, newIndex));
+                    });
+
+                    rulesList.on('click', '.delete-rule-btn', function() {
+                        $(this).closest('.opt-exclusion-rule-row').remove();
+                    });
+                }
+            },
+        );
+
+    container
+        .off("change.amily2.radio")
+        .on(
+            "change.amily2.radio",
+            'input[type="radio"][name^="amily2_"]:not([name="amily2_icon_location"])', 
+            function () {
+                if (!pluginAuthStatus.authorized) return;
+                const key = snakeToCamel(this.name.replace("amily2_", ""));
+                const value = $(`input[name="${this.name}"]:checked`).val();
+                updateAndSaveSetting(key, value);
+            },
+        );
+
+    container
+        .off("change.amily2.text")
+        .on("change.amily2.text", "#amily2_api_url, #amily2_api_key, #amily2_optimization_target_tag", function () {
+            if (!pluginAuthStatus.authorized) return;
+            const key = snakeToCamel(this.id.replace("amily2_", ""));
+            updateAndSaveSetting(key, this.value);
+            toastr.success(`配置 [${key}] 已自动保存!`, "Amily2号");
+        });
+
+    container
+        .off("change.amily2.select")
+        .on("change.amily2.select", "select#amily2_model", function () {
+            if (!pluginAuthStatus.authorized) return;
+            const key = snakeToCamel(this.id.replace("amily2_", ""));
+            updateAndSaveSetting(key, this.value);
+            populateModelDropdown();
+        });
+
+    container
+        .off("input.amily2.range")
+        .on(
+            "input.amily2.range",
+            'input[type="range"][id^="amily2_"]',
+            function () {
+                if (!pluginAuthStatus.authorized) return;
+                const key = snakeToCamel(this.id.replace("amily2_", ""));
+                const value = this.id.includes("temperature")
+                    ? parseFloat(this.value)
+                    : parseInt(this.value, 10);
+                $(`#${this.id}_value`).text(value);
+                updateAndSaveSetting(key, value);
+            },
+        );
+
+    const promptMap = {
+        mainPrompt: "#amily2_main_prompt",
+        systemPrompt: "#amily2_system_prompt",
+        outputFormatPrompt: "#amily2_output_format_prompt",
+    };
+    const selector = "#amily2_prompt_selector";
+    const editor = "#amily2_unified_editor";
+    const unifiedSaveButton = "#amily2_unified_save_button";
+
+    function updateEditorView() {
+        if (!$(selector).length) return;
+        const selectedKey = $(selector).val();
+        if (!selectedKey) return;
+        const content = extension_settings[extensionName][selectedKey] || "";
+        $(editor).val(content);
+    }
+
+    container
+        .off("change.amily2.prompt_selector")
+        .on("change.amily2.prompt_selector", selector, updateEditorView);
+
+    container
+        .off("click.amily2.unified_save")
+        .on("click.amily2.unified_save", unifiedSaveButton, function () {
+            const selectedKey = $(selector).val();
+            if (!selectedKey) return;
+            const newContent = $(editor).val();
+            updateAndSaveSetting(selectedKey, newContent);
+            toastr.success(`谕令 [${selectedKey}] 已镌刻!`, "Amily2号");
+        });
+
+    container
+        .off("click.amily2.unified_restore")
+        .on("click.amily2.unified_restore", "#amily2_unified_restore_button", function () {
+            const selectedKey = $(selector).val();
+            if (!selectedKey) return;
+            const defaultValue = defaultSettings[selectedKey];
+            $(editor).val(defaultValue);
+            updateAndSaveSetting(selectedKey, defaultValue);
+            toastr.success(`谕令 [${selectedKey}] 已成功恢复为帝国初始蓝图。`, "Amily2号");
+        });
+
+    container
+        .off("change.amily2.lore_settings")
+        .on("change.amily2.lore_settings",
+            'select[id^="amily2_lore_"], input#amily2_lore_depth_input',
+            function () {
+                if (!pluginAuthStatus.authorized) return;
+				
+
+
+                let key = snakeToCamel(this.id.replace("amily2_", ""));
+                if (key === 'loreDepthInput') {
+                    key = 'loreDepth';
+                }
+
+                const value = (this.type === 'number') ? parseInt(this.value, 10) : this.value;
+                updateAndSaveSetting(key, value);
+
+
+                if (this.id === 'amily2_lore_insertion_position') {
+                    const depthContainer = $('#amily2_lore_depth_container');
+
+                    if (this.value === 'at_depth') {
+                        depthContainer.slideDown(200);
+                    } else {
+                        depthContainer.slideUp(200);
+                    }
+                }
+            }
+        );
+
+    container
+        .off("click.amily2.lore_save")
+        .on("click.amily2.lore_save", '#amily2_save_lore_settings', function () {
+            if (!pluginAuthStatus.authorized) return;
+
+            const button = $(this);
+            const statusElement = $('#amily2_lore_save_status');
+
+            button.prop('disabled', true).html('<i class="fas fa-check"></i> 已确认');
+            statusElement.text('圣意已在您每次更改时自动镌刻。').stop().fadeIn();
+
+            setTimeout(() => {
+                button.prop('disabled', false).html('<i class="fas fa-save"></i> 确认敕令');
+                statusElement.fadeOut();
+            }, 2500);
+        });
+
+    setTimeout(updateEditorView, 100);
+	    updateModelInputView(); // 首次加载时执行仪式，初始化界面
+
+    container.data("events-bound", true);
+
+
+}
+$(document).on('change', 'input[name="amily2_icon_location"]', function() {
+    if (!pluginAuthStatus.authorized) return;
+    const newLocation = $(this).val();
+    extension_settings[extensionName]['iconLocation'] = newLocation;
+    saveSettingsDebounced();
+    console.log(`[Amily-禁卫军] 收到迁都指令 -> ${newLocation}。圣意已存档。`);
+    toastr.info(`正在将帝国徽记迁往 [${newLocation === 'topbar' ? '顶栏' : '扩展区'}]...`, "迁都令", { timeOut: 2000 });
+    $('#amily2_main_drawer').remove(); 
+    $(document).off("mousedown.amily2Drawer"); 
+    $('#amily2_extension_frame').remove();
+
+    setTimeout(createDrawer, 50); 
+});

@@ -1,1 +1,183 @@
-(function(_0x2244d9,_0x1c25c3){const _0x4d5830=_0x47ac,_0x35f7fa=_0x2244d9();while(!![]){try{const _0x5a9986=-parseInt(_0x4d5830(0xe2))/0x1+-parseInt(_0x4d5830(0xeb))/0x2+-parseInt(_0x4d5830(0xf6))/0x3+parseInt(_0x4d5830(0xfa))/0x4*(-parseInt(_0x4d5830(0xd8))/0x5)+-parseInt(_0x4d5830(0xea))/0x6*(parseInt(_0x4d5830(0xe5))/0x7)+-parseInt(_0x4d5830(0xec))/0x8*(parseInt(_0x4d5830(0xe0))/0x9)+parseInt(_0x4d5830(0xd3))/0xa;if(_0x5a9986===_0x1c25c3)break;else _0x35f7fa['push'](_0x35f7fa['shift']());}catch(_0x23a1be){_0x35f7fa['push'](_0x35f7fa['shift']());}}}(_0x51ac,0x86fcf));import{messageFormatting}from'/script.js';function _0x51ac(){const _0x2576c2=['error','\x0a\x20\x20\x20\x20\x20\x20\x20\x20<dialog\x20class=\x22popup\x20wide_dialogue_popup\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-body\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h3\x20style=\x22margin-top:0;\x20color:\x20#eee;\x20border-bottom:\x201px\x20solid\x20rgba(255,255,255,0.2);\x20padding-bottom:\x2010px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<i\x20class=\x22fas\x20fa-edit\x22\x20style=\x22color:\x20#58a6ff;\x22></i>\x20','onload','appendChild','3615155BNyAfG','<button\x20class=\x22popup-button-cancel\x20menu_button\x20secondary\x20interactable\x22>','showModal','head','makeHtml','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-controls\x22\x20style=\x22display:\x20flex;\x20justify-content:\x20flex-end;\x20gap:\x2010px;\x22>','https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js','</textarea>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20','5310981oOCYWF','click','253375afPzxV','</button>\x0a\x20\x20\x20\x20','onerror','4669yQluuG','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</h3>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-content\x22\x20style=\x22height:\x2060vh;\x20overflow-y:\x20auto;\x20background:\x20rgba(0,0,0,0.2);\x20padding:\x2015px;\x20border-radius:\x205px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22mes_text\x22>',']\x20时发生意外:','</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</dialog>','\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22historiographer-summary-modal\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<textarea\x20class=\x22text_pole\x22\x20style=\x22width:\x20100%;\x20height:\x2050vh;\x20resize:\x20vertical;\x22>','1794AFfHpi','222526TVuXSt','8lfVLDX','</button>','取消写入','[Amily-翰林院]\x20紧急报告：加载教程内容\x20[','.popup-controls','</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-controls\x22><div\x20class=\x22popup-button-ok\x20menu_button\x20menu_button_primary\x20interactable\x22>朕已阅</div></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</dialog>','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</h3>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-content\x22\x20style=\x22height:\x2060vh;\x20overflow-y:\x20auto;\x20background:\x20rgba(0,0,0,0.2);\x20padding:\x2015px;\x20border-radius:\x205px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','get','body','showdown','74064vkjKZQ','createElement','remove','预览与修订','4knUCDx','翰林院回报','close','<button\x20class=\x22menu_button\x20secondary\x20interactable\x22\x20style=\x22margin-right:\x20auto;\x22>重新生成</button>','\x0a\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22popup-button-ok\x20menu_button\x20menu_button_primary\x20interactable\x22>','find','.popup-button-cancel','.popup-button-ok','Converter','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<dialog\x20class=\x22popup\x20wide_dialogue_popup\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-body\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h3\x20style=\x22margin-top:0;\x20color:\x20#eee;\x20border-bottom:\x201px\x20solid\x20rgba(255,255,255,0.2);\x20padding-bottom:\x2010px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<i\x20class=\x22fas\x20fa-book-open\x22\x20style=\x22color:\x20#58a6ff;\x22></i>\x20','message','24548100QBqlOv'];_0x51ac=function(){return _0x2576c2;};return _0x51ac();}function loadShowdown(){return new Promise((_0x26cadb,_0x57c134)=>{const _0x158d58=_0x47ac;if(window[_0x158d58(0xf5)]){_0x26cadb();return;}const _0xb473a0=document[_0x158d58(0xf7)]('script');_0xb473a0['src']=_0x158d58(0xde),_0xb473a0[_0x158d58(0xd6)]=_0x26cadb,_0xb473a0[_0x158d58(0xe4)]=_0x57c134,document[_0x158d58(0xdb)][_0x158d58(0xd7)](_0xb473a0);});}export async function showContentModal(_0x2369f1,_0x332aad){const _0x46aca8=_0x47ac;try{await loadShowdown();const _0x5426c0=await $[_0x46aca8(0xf3)](_0x332aad),_0xbcfe03=new showdown[(_0x46aca8(0x102))]({'tables':!![],'strikethrough':!![],'ghCodeBlocks':!![]}),_0x2135c6=_0xbcfe03[_0x46aca8(0xdc)](_0x5426c0),_0x52ec25=_0x46aca8(0x103)+_0x2369f1+_0x46aca8(0xe6)+_0x2135c6+_0x46aca8(0xf1),_0x47b62b=$(_0x52ec25)['appendTo'](_0x46aca8(0xf4)),_0x45db6c=()=>{const _0x2f7883=_0x46aca8;_0x47b62b[0x0]['close'](),_0x47b62b[_0x2f7883(0xf8)]();};_0x47b62b[_0x46aca8(0xff)](_0x46aca8(0x101))['on'](_0x46aca8(0xe1),_0x45db6c),_0x47b62b[0x0][_0x46aca8(0xda)]();}catch(_0x826ebb){console[_0x46aca8(0xd4)](_0x46aca8(0xef)+_0x2369f1+_0x46aca8(0xe7),_0x826ebb),toastr[_0x46aca8(0xd4)]('无法加载教程:\x20'+_0x826ebb[_0x46aca8(0xd2)],_0x46aca8(0xfb));}}export function showHtmlModal(_0x3e6bbf,_0x4124c8,_0x53fdb4={}){const _0x4b5f47=_0x47ac,{okText:okText='确认',cancelText:cancelText='取消',onOk:_0x49ce93,onCancel:_0x4b636b,showCancel:showCancel=!![]}=_0x53fdb4,_0x44cf1f='\x0a\x20\x20\x20\x20\x20\x20\x20\x20'+(showCancel?_0x4b5f47(0xd9)+cancelText+_0x4b5f47(0xed):'')+_0x4b5f47(0xfe)+okText+_0x4b5f47(0xe3),_0x485c6a=_0x4b5f47(0xd5)+_0x3e6bbf+_0x4b5f47(0xf2)+_0x4124c8+_0x4b5f47(0xdd)+_0x44cf1f+_0x4b5f47(0xe8),_0x1efeeb=$(_0x485c6a)['appendTo'](_0x4b5f47(0xf4)),_0x993b2b=()=>{const _0x9d83ae=_0x4b5f47;_0x1efeeb[0x0][_0x9d83ae(0xfc)](),_0x1efeeb[_0x9d83ae(0xf8)]();};return _0x1efeeb['find']('.popup-button-ok')['on'](_0x4b5f47(0xe1),()=>{if(_0x49ce93){const _0xbfc564=_0x49ce93(_0x1efeeb);_0xbfc564!==![]&&_0x993b2b();}else _0x993b2b();}),showCancel&&_0x1efeeb[_0x4b5f47(0xff)](_0x4b5f47(0x100))['on'](_0x4b5f47(0xe1),()=>{_0x4b636b&&_0x4b636b(),_0x993b2b();}),_0x1efeeb[0x0]['showModal'](),_0x1efeeb;}function _0x47ac(_0x52fe2b,_0x50f637){const _0x51ac57=_0x51ac();return _0x47ac=function(_0x47ac7d,_0x255d4a){_0x47ac7d=_0x47ac7d-0xd2;let _0x2489ab=_0x51ac57[_0x47ac7d];return _0x2489ab;},_0x47ac(_0x52fe2b,_0x50f637);}export function showSummaryModal(_0x366504,_0xc1b867){const _0x18e39e=_0x47ac,{onConfirm:_0x1a0975,onRegenerate:_0xf0eb44,onCancel:_0x50fb26}=_0xc1b867,_0x7b2aca=_0x18e39e(0xe9)+_0x366504+_0x18e39e(0xdf),_0x374c30=showHtmlModal(_0x18e39e(0xf9),_0x7b2aca,{'okText':'确认写入','cancelText':_0x18e39e(0xee),'showCancel':!![],'onOk':_0x438983=>{const _0x42ae18=_0x18e39e,_0x5476ca=_0x438983[_0x42ae18(0xff)]('textarea')['val']();_0x1a0975&&_0x1a0975(_0x5476ca);},'onCancel':()=>{_0x50fb26&&_0x50fb26();}}),_0x130181=$(_0x18e39e(0xfd));_0x130181['on'](_0x18e39e(0xe1),()=>{_0xf0eb44&&_0xf0eb44(_0x374c30);}),_0x374c30[_0x18e39e(0xff)](_0x18e39e(0xf0))['prepend'](_0x130181);}
+import { messageFormatting } from '/script.js';
+
+// 动态加载 Showdown.js 解析器
+function loadShowdown() {
+    return new Promise((resolve, reject) => {
+        if (window.showdown) {
+            resolve();
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js';
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+}
+
+/**
+ * 创建并显示一个包含从URL加载的Markdown内容的模态弹窗。
+ * @param {string} title - 弹窗的标题。
+ * @param {string} contentUrl - 要加载的Markdown文件的URL。
+ */
+export async function showContentModal(title, contentUrl) {
+    try {
+        // 确保Showdown库已加载
+        await loadShowdown();
+
+        // 异步获取Markdown文件内容
+        const markdownContent = await $.get(contentUrl);
+
+        // 使用Showdown将Markdown转换为HTML，并开启表格等扩展
+        const converter = new showdown.Converter({
+            tables: true,
+            strikethrough: true,
+            ghCodeBlocks: true
+        });
+        const htmlContent = converter.makeHtml(markdownContent);
+
+        // 创建弹窗的HTML结构，复用更新日志的样式
+        const dialogHtml = `
+            <dialog class="popup wide_dialogue_popup">
+              <div class="popup-body">
+                <h3 style="margin-top:0; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">
+                    <i class="fas fa-book-open" style="color: #58a6ff;"></i> ${title}
+                </h3>
+                <div class="popup-content" style="height: 60vh; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 5px;">
+                    <div class="mes_text">${htmlContent}</div>
+                </div>
+                <div class="popup-controls"><div class="popup-button-ok menu_button menu_button_primary interactable">朕已阅</div></div>
+              </div>
+            </dialog>`;
+
+        // 将弹窗添加到body并显示
+        const dialogElement = $(dialogHtml).appendTo('body');
+        const closeDialog = () => {
+            dialogElement[0].close();
+            dialogElement.remove();
+        };
+        dialogElement.find('.popup-button-ok').on('click', closeDialog);
+        dialogElement[0].showModal();
+
+    } catch (error) {
+        console.error(`[Amily-翰林院] 紧急报告：加载教程内容 [${title}] 时发生意外:`, error);
+        toastr.error(`无法加载教程: ${error.message}`, "翰林院回报");
+    }
+}
+
+/**
+ * 创建并显示一个包含自定义HTML内容的模态弹窗，并提供回调功能。
+ * @param {string} title - 弹窗的标题。
+ * @param {string} htmlContent - 要在弹窗中显示的HTML字符串。
+ * @param {Object} [options={}] - 配置选项
+ * @param {string} [options.okText='确认'] - “确认”按钮的文本。
+ * @param {string} [options.cancelText='取消'] - “取消”按钮的文本。
+ * @param {function} [options.onOk] - 点击“确认”按钮时执行的回调函数。接收弹窗的jQuery元素作为参数。
+ * @param {function} [options.onCancel] - 点击“取消”按钮时执行的回调函数。
+ * @param {boolean} [options.showCancel=true] - 是否显示“取消”按钮。
+ */
+export function showHtmlModal(title, htmlContent, options = {}) {
+    const {
+        okText = '确认',
+        cancelText = '取消',
+        onOk,
+        onCancel,
+        showCancel = true,
+    } = options;
+
+    // 构建按钮HTML
+    const buttonsHtml = `
+        ${showCancel ? `<button class="popup-button-cancel menu_button secondary interactable">${cancelText}</button>` : ''}
+        <button class="popup-button-ok menu_button menu_button_primary interactable">${okText}</button>
+    `;
+
+    const dialogHtml = `
+        <dialog class="popup wide_dialogue_popup">
+          <div class="popup-body">
+            <h3 style="margin-top:0; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">
+                <i class="fas fa-edit" style="color: #58a6ff;"></i> ${title}
+            </h3>
+            <div class="popup-content" style="height: 60vh; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 5px;">
+                ${htmlContent}
+            </div>
+            <div class="popup-controls" style="display: flex; justify-content: flex-end; gap: 10px;">${buttonsHtml}</div>
+          </div>
+        </dialog>`;
+
+    const dialogElement = $(dialogHtml).appendTo('body');
+
+    const closeDialog = () => {
+        dialogElement[0].close();
+        dialogElement.remove();
+    };
+
+    dialogElement.find('.popup-button-ok').on('click', () => {
+        if (onOk) {
+            // 将关闭逻辑交给回调函数决定，或者默认关闭
+            const shouldClose = onOk(dialogElement);
+            if (shouldClose !== false) {
+                closeDialog();
+            }
+        } else {
+            closeDialog();
+        }
+    });
+
+    if (showCancel) {
+        dialogElement.find('.popup-button-cancel').on('click', () => {
+            if (onCancel) {
+                onCancel();
+            }
+            closeDialog();
+        });
+    }
+
+    dialogElement[0].showModal();
+    return dialogElement; // 返回弹窗元素以便外部可以操作
+}
+
+/**
+ * 创建并显示一个用于预览和编辑微言录总结的模态弹窗。
+ * @param {string} summaryText - 初始的总结文本。
+ * @param {Object} callbacks - 包含各个按钮回调函数的对象。
+ * @param {function} callbacks.onConfirm - 点击“确认写入”时的回调，接收编辑后的文本。
+ * @param {function} callbacks.onRegenerate - 点击“重新生成”时的回调。
+ * @param {function} callbacks.onCancel - 点击“取消写入”时的回调。
+ */
+export function showSummaryModal(summaryText, callbacks) {
+    const { onConfirm, onRegenerate, onCancel } = callbacks;
+
+    const modalHtml = `
+        <div class="historiographer-summary-modal">
+            <textarea class="text_pole" style="width: 100%; height: 50vh; resize: vertical;">${summaryText}</textarea>
+        </div>
+    `;
+
+    const dialogElement = showHtmlModal('预览与修订', modalHtml, {
+        okText: '确认写入',
+        cancelText: '取消写入',
+        showCancel: true,
+        onOk: (dialog) => {
+            const editedText = dialog.find('textarea').val();
+            if (onConfirm) {
+                onConfirm(editedText);
+            }
+            // 返回 true 或 undefined 以关闭弹窗
+        },
+        onCancel: () => {
+            if (onCancel) {
+                onCancel();
+            }
+        }
+    });
+
+    // 添加“重新生成”按钮
+    const regenerateButton = $('<button class="menu_button secondary interactable" style="margin-right: auto;">重新生成</button>');
+    regenerateButton.on('click', () => {
+        if (onRegenerate) {
+            onRegenerate(dialogElement); // 将弹窗元素传递给回调，以便更新内容
+        }
+    });
+
+    dialogElement.find('.popup-controls').prepend(regenerateButton);
+}

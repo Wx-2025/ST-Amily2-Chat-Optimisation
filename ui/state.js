@@ -1,1 +1,149 @@
-(function(_0x201485,_0x2850d5){const _0x168421=_0x4dbc,_0x183abd=_0x201485();while(!![]){try{const _0x5161d3=parseInt(_0x168421(0xf9))/0x1+parseInt(_0x168421(0xb6))/0x2*(-parseInt(_0x168421(0xe4))/0x3)+parseInt(_0x168421(0xdf))/0x4+-parseInt(_0x168421(0xbd))/0x5*(-parseInt(_0x168421(0xdd))/0x6)+-parseInt(_0x168421(0xf8))/0x7+parseInt(_0x168421(0xf0))/0x8*(-parseInt(_0x168421(0xe1))/0x9)+-parseInt(_0x168421(0xac))/0xa*(-parseInt(_0x168421(0xfa))/0xb);if(_0x5161d3===_0x2850d5)break;else _0x183abd['push'](_0x183abd['shift']());}catch(_0x17a26a){_0x183abd['push'](_0x183abd['shift']());}}}(_0x1dc4,0x2018e));function _0x1dc4(){const _0x15c44a=['historiographySmallTriggerThreshold','#amily2_worldbook_enabled','\x20个可用模型','val','length','show','65OudUQb','mainPrompt','systemPrompt','temperature','iconLocation','contextMessages','#amily2_summarization_prompt','historiographySmallAutoEnable','outputFormatPrompt','loreDepth','#amily2_summarization_enabled','#amily2_lore_depth_input','maxTokens','autoHideEnabled','prop','#amily2_context_messages','selected','#amily2_api_key','#amily2_context_messages_value','optimizationEnabled','model','at_depth','已选择:\x20<strong>','checked','autoHideThreshold','input[name=\x22amily2_icon_location\x22][value=\x22','showOptimizationToast','optimizationTargetTag','<span\x20style=\x22color:\x20#ff9800;\x22>请检查API配置后点击\x22刷新模型\x22</span>','</strong>','hide','html','36486YLyMzZ','forEach','132396gDDUXy','summarizationPrompt','108hPwcGb','已加载\x20','#amily2_system_prompt','5895chJYPJ','worldbookEnabled','#auth_panel','loreInsertionPosition','empty','#amily2_mhb_small_trigger_count','.plugin-features','#amily2_main_prompt','#amily2_auto_hide_threshold_value','#amily2_model','<option\x20value=\x22\x22>无可用模型，请刷新</option>','#amily2_lore_activation_mode','57864nXdzGU','<option></option>','text','#amily2_update_indicator','--\x20选择模型\x20--','#amily2_optimization_target_tag','#amily2_temperature_value','#amily2_lore_insertion_position','1785126cOPSmy','89067QXoHxk','1550395Lnnzxl','#amily2_lore_depth_container','#amily2_enabled','#amily2_auto_hide_threshold','apiUrl','input[name=\x22amily2_lorebook_target\x22][value=\x22','#amily2_show_optimization_toast','#amily2_update_button_new','summarizationEnabled','20kFoIDc','#amily2_optimization_enabled','#amily2_suppress_toast','append','suppressToast','loreActivationMode','#amily2_output_format_prompt','#amily2_max_tokens','optimizationExclusionEnabled','#amily2_optimization_exclusion_enabled','10AIXWLs'];_0x1dc4=function(){return _0x15c44a;};return _0x1dc4();}import{extension_settings}from'/scripts/extensions.js';import{extensionName}from'../utils/settings.js';import{pluginAuthStatus}from'../utils/auth.js';let availableModels=[],latestUpdateInfo=null,newVersionAvailable=![];function _0x4dbc(_0xa86568,_0x3a4b6){const _0x1dc42b=_0x1dc4();return _0x4dbc=function(_0x4dbc2d,_0xfff98a){_0x4dbc2d=_0x4dbc2d-0xaa;let _0x5aa421=_0x1dc42b[_0x4dbc2d];return _0x5aa421;},_0x4dbc(_0xa86568,_0x3a4b6);}export function setUpdateInfo(_0x4f4dc6,_0x1a76c9){newVersionAvailable=_0x4f4dc6,latestUpdateInfo=_0x1a76c9;}export function applyUpdateIndicator(){const _0x163aee=_0x4dbc;newVersionAvailable?($('#amily2_update_indicator')[_0x163aee(0xbc)](),$(_0x163aee(0xaa))[_0x163aee(0xbc)]()):($(_0x163aee(0xf3))['hide'](),$('#amily2_update_button_new')[_0x163aee(0xdb)]());}export function getLatestUpdateInfo(){return latestUpdateInfo;}export function setAvailableModels(_0x266c9e){availableModels=_0x266c9e;}export function populateModelDropdown(){const _0x22cd3c=_0x4dbc,_0x72d76b=$('#amily2_model'),_0x173f9b=$('#amily2_model_notes');_0x72d76b[_0x22cd3c(0xe8)]();const _0x47cd49=extension_settings[extensionName]?.[_0x22cd3c(0xd1)]||'';if(availableModels['length']===0x0){_0x72d76b[_0x22cd3c(0xaf)](_0x22cd3c(0xee)),_0x173f9b[_0x22cd3c(0xdc)](_0x22cd3c(0xd9));return;}const _0x4270ba=$(_0x22cd3c(0xf1))[_0x22cd3c(0xba)]('')[_0x22cd3c(0xf2)](_0x22cd3c(0xf4));_0x72d76b[_0x22cd3c(0xaf)](_0x4270ba),availableModels[_0x22cd3c(0xde)](_0x332190=>{const _0x14a94c=_0x22cd3c,_0x51a75e=$('<option></option>')[_0x14a94c(0xba)](_0x332190)[_0x14a94c(0xf2)](_0x332190);_0x332190===_0x47cd49&&_0x51a75e['attr'](_0x14a94c(0xcd),_0x14a94c(0xcd)),_0x72d76b[_0x14a94c(0xaf)](_0x51a75e);}),_0x47cd49&&_0x72d76b['val']()===_0x47cd49?_0x173f9b[_0x22cd3c(0xdc)](_0x22cd3c(0xd3)+_0x47cd49+_0x22cd3c(0xda)):_0x173f9b[_0x22cd3c(0xdc)](_0x22cd3c(0xe2)+availableModels[_0x22cd3c(0xbb)]+_0x22cd3c(0xb9));}export function updateUI(){const _0x2f94cc=_0x4dbc;if(!pluginAuthStatus['authorized'])$(_0x2f94cc(0xe6))[_0x2f94cc(0xbc)](),$(_0x2f94cc(0xea))[_0x2f94cc(0xdb)]();else{$(_0x2f94cc(0xe6))[_0x2f94cc(0xdb)](),$('.plugin-features')[_0x2f94cc(0xbc)]();const _0x1752a3=extension_settings[extensionName];if(!_0x1752a3)return;$(_0x2f94cc(0xfc))[_0x2f94cc(0xcb)](_0x2f94cc(0xd4),_0x1752a3['enabled']),$('#amily2_api_url')['val'](_0x1752a3[_0x2f94cc(0xfe)]),$(_0x2f94cc(0xce))[_0x2f94cc(0xba)](_0x1752a3['apiKey']),$(_0x2f94cc(0xed))[_0x2f94cc(0xba)](_0x1752a3['model']),$(_0x2f94cc(0xb3))['val'](_0x1752a3[_0x2f94cc(0xc9)]),$('#amily2_max_tokens_value')[_0x2f94cc(0xf2)](_0x1752a3['maxTokens']),$('#amily2_temperature')[_0x2f94cc(0xba)](_0x1752a3[_0x2f94cc(0xc0)]),$(_0x2f94cc(0xf6))[_0x2f94cc(0xf2)](_0x1752a3[_0x2f94cc(0xc0)]),$(_0x2f94cc(0xcc))['val'](_0x1752a3[_0x2f94cc(0xc2)]),$(_0x2f94cc(0xcf))[_0x2f94cc(0xf2)](_0x1752a3[_0x2f94cc(0xc2)]),$(_0x2f94cc(0xf5))[_0x2f94cc(0xba)](_0x1752a3[_0x2f94cc(0xd8)]),$('input[name=\x22amily2_optimization_mode\x22][value=\x22'+_0x1752a3['optimizationMode']+'\x22]')[_0x2f94cc(0xcb)](_0x2f94cc(0xd4),!![]),$(_0x2f94cc(0xad))[_0x2f94cc(0xcb)](_0x2f94cc(0xd4),_0x1752a3[_0x2f94cc(0xd0)]),$(_0x2f94cc(0xb5))[_0x2f94cc(0xcb)](_0x2f94cc(0xd4),_0x1752a3[_0x2f94cc(0xb4)]),$(_0x2f94cc(0x100))[_0x2f94cc(0xcb)](_0x2f94cc(0xd4),_0x1752a3[_0x2f94cc(0xd7)]),$(_0x2f94cc(0xae))[_0x2f94cc(0xcb)](_0x2f94cc(0xd4),_0x1752a3[_0x2f94cc(0xb0)]),$(_0x2f94cc(0xe3))['val'](_0x1752a3[_0x2f94cc(0xbf)]),$(_0x2f94cc(0xeb))[_0x2f94cc(0xba)](_0x1752a3[_0x2f94cc(0xbe)]),$(_0x2f94cc(0xb2))[_0x2f94cc(0xba)](_0x1752a3[_0x2f94cc(0xc5)]),$(_0x2f94cc(0xc3))[_0x2f94cc(0xba)](_0x1752a3[_0x2f94cc(0xe0)]),$(_0x2f94cc(0xb8))[_0x2f94cc(0xcb)](_0x2f94cc(0xd4),_0x1752a3[_0x2f94cc(0xe5)]),$(_0x2f94cc(0xc7))[_0x2f94cc(0xcb)](_0x2f94cc(0xd4),_0x1752a3[_0x2f94cc(0xab)]),$(_0x2f94cc(0xff)+_0x1752a3['lorebookTarget']+'\x22]')[_0x2f94cc(0xcb)](_0x2f94cc(0xd4),!![]),$(_0x2f94cc(0xd6)+_0x1752a3[_0x2f94cc(0xc1)]+'\x22]')[_0x2f94cc(0xcb)](_0x2f94cc(0xd4),!![]),$('#amily2_auto_hide_enabled')[_0x2f94cc(0xcb)]('checked',_0x1752a3[_0x2f94cc(0xca)]),$(_0x2f94cc(0xfd))[_0x2f94cc(0xba)](_0x1752a3[_0x2f94cc(0xd5)]),$(_0x2f94cc(0xec))[_0x2f94cc(0xf2)](_0x1752a3[_0x2f94cc(0xd5)]),$(_0x2f94cc(0xef))[_0x2f94cc(0xba)](_0x1752a3[_0x2f94cc(0xb1)]),$(_0x2f94cc(0xf7))[_0x2f94cc(0xba)](_0x1752a3[_0x2f94cc(0xe7)]),$(_0x2f94cc(0xc8))[_0x2f94cc(0xba)](_0x1752a3[_0x2f94cc(0xc6)]),_0x1752a3[_0x2f94cc(0xe7)]===_0x2f94cc(0xd2)?$(_0x2f94cc(0xfb))[_0x2f94cc(0xbc)]():$(_0x2f94cc(0xfb))[_0x2f94cc(0xdb)](),_0x1752a3['historiographySmallAutoEnable']!==undefined&&$('#amily2_mhb_small_auto_enabled')[_0x2f94cc(0xcb)](_0x2f94cc(0xd4),_0x1752a3[_0x2f94cc(0xc4)]),_0x1752a3[_0x2f94cc(0xb7)]!==undefined&&$(_0x2f94cc(0xe9))['val'](_0x1752a3[_0x2f94cc(0xb7)]),populateModelDropdown();}}
+import { extension_settings } from "/scripts/extensions.js";
+import { extensionName } from "../utils/settings.js";
+import { pluginAuthStatus } from "../utils/auth.js";
+
+
+
+let availableModels = [];
+let latestUpdateInfo = null;
+let newVersionAvailable = false;
+
+export function setUpdateInfo(isNew, updateInfo) {
+    newVersionAvailable = isNew;
+    latestUpdateInfo = updateInfo;
+}
+
+
+export function applyUpdateIndicator() {
+    if (newVersionAvailable) {
+        $('#amily2_update_indicator').show();
+        $('#amily2_update_button_new').show();
+    } else {
+        $('#amily2_update_indicator').hide();
+        $('#amily2_update_button_new').hide();
+    }
+}
+
+export function getLatestUpdateInfo() {
+    return latestUpdateInfo;
+}
+
+export function setAvailableModels(models) {
+  availableModels = models;
+}
+
+
+export function populateModelDropdown() {
+  const modelSelect = $("#amily2_model");
+  const modelNotes = $("#amily2_model_notes");
+
+  modelSelect.empty();
+  const currentModel = extension_settings[extensionName]?.model || "";
+
+  if (availableModels.length === 0) {
+    modelSelect.append('<option value="">无可用模型，请刷新</option>');
+    modelNotes.html(
+      '<span style="color: #ff9800;">请检查API配置后点击"刷新模型"</span>',
+    );
+    return;
+  }
+
+  const defaultOption = $("<option></option>").val("").text("-- 选择模型 --");
+  modelSelect.append(defaultOption);
+
+  availableModels.forEach((model) => {
+    const option = $("<option></option>").val(model).text(model);
+    if (model === currentModel) {
+      option.attr("selected", "selected");
+    }
+    modelSelect.append(option);
+  });
+
+  if (currentModel && modelSelect.val() === currentModel) {
+    modelNotes.html(`已选择: <strong>${currentModel}</strong>`);
+  } else {
+    modelNotes.html(`已加载 ${availableModels.length} 个可用模型`);
+  }
+}
+
+
+export function updateUI() {
+  if (!pluginAuthStatus.authorized) {
+    $("#auth_panel").show();
+    $(".plugin-features").hide();
+  } else {
+    $("#auth_panel").hide();
+    $(".plugin-features").show();
+
+    const settings = extension_settings[extensionName];
+    if (!settings) return; 
+
+    $("#amily2_enabled").prop("checked", settings.enabled);
+    $("#amily2_api_url").val(settings.apiUrl);
+    $("#amily2_api_key").val(settings.apiKey);
+    $("#amily2_model").val(settings.model);
+
+
+    $("#amily2_max_tokens").val(settings.maxTokens);
+    $("#amily2_max_tokens_value").text(settings.maxTokens);
+    $("#amily2_temperature").val(settings.temperature);
+    $("#amily2_temperature_value").text(settings.temperature);
+    $("#amily2_context_messages").val(settings.contextMessages);
+    $("#amily2_context_messages_value").text(settings.contextMessages);
+	$("#amily2_optimization_target_tag").val(settings.optimizationTargetTag);
+
+
+    $(
+      `input[name="amily2_optimization_mode"][value="${settings.optimizationMode}"]`,
+    ).prop("checked", true);
+    $("#amily2_optimization_enabled").prop(
+      "checked",
+      settings.optimizationEnabled,
+    );
+    $("#amily2_optimization_exclusion_enabled").prop(
+      "checked",
+      settings.optimizationExclusionEnabled,
+    );
+    $("#amily2_show_optimization_toast").prop(
+      "checked",
+      settings.showOptimizationToast,
+    );
+    $("#amily2_suppress_toast").prop("checked", settings.suppressToast);
+
+
+    $("#amily2_system_prompt").val(settings.systemPrompt);
+    $("#amily2_main_prompt").val(settings.mainPrompt);
+    $("#amily2_output_format_prompt").val(settings.outputFormatPrompt);
+    $("#amily2_summarization_prompt").val(settings.summarizationPrompt);
+
+
+    $("#amily2_worldbook_enabled").prop("checked", settings.worldbookEnabled);
+    $("#amily2_summarization_enabled").prop(
+      "checked",
+      settings.summarizationEnabled,
+    );
+    $(
+      `input[name="amily2_lorebook_target"][value="${settings.lorebookTarget}"]`,
+    ).prop("checked", true);
+
+    $(`input[name="amily2_icon_location"][value="${settings.iconLocation}"]`).prop("checked", true);
+    $("#amily2_auto_hide_enabled").prop("checked", settings.autoHideEnabled);
+    $("#amily2_auto_hide_threshold").val(settings.autoHideThreshold);
+    $("#amily2_auto_hide_threshold_value").text(settings.autoHideThreshold);
+        $('#amily2_lore_activation_mode').val(settings.loreActivationMode);
+        $('#amily2_lore_insertion_position').val(settings.loreInsertionPosition);
+        $('#amily2_lore_depth_input').val(settings.loreDepth);
+        if (settings.loreInsertionPosition === 'at_depth') {
+            $('#amily2_lore_depth_container').show();
+        } else {
+            $('#amily2_lore_depth_container').hide(); 
+        }
+    if (settings.historiographySmallAutoEnable !== undefined) {
+        $('#amily2_mhb_small_auto_enabled').prop('checked', settings.historiographySmallAutoEnable);
+    }
+    if (settings.historiographySmallTriggerThreshold !== undefined) {
+        $('#amily2_mhb_small_trigger_count').val(settings.historiographySmallTriggerThreshold);
+    }
+    populateModelDropdown(); 
+  }
+}
