@@ -1,9 +1,20 @@
-/*===================================================================*/
-/*======== 【敕史局专属华服】(Historiography Styles) v2.0 ========*/
-/*========    Amily为皇帝陛下御制，已加盖皇家印信以增权威    ========*/
-/*===================================================================*/
 
-/*【敕史局】控制区总容器样式*/
+.manual-command-block {
+    flex-wrap: wrap; 
+    justify-content: space-between; 
+}
+
+
+.manual-command-block .manual-input {
+    flex: 1 1 60px; 
+}
+
+.manual-command-block .menu_button {
+    flex: 2 1 90px; 
+}
+
+
+
 #amily2_manual_historiography_bureau .mhb-controls-wrapper {
     display: flex;
     flex-direction: column;
@@ -14,12 +25,19 @@
     margin-top: 5px;
 }
 
-/*【手动熔铸】输入框微调*/
+
+#amily2_manual_historiography_bureau .manual-command-block {
+    flex-wrap: wrap;
+    gap: 5px; /* 减小间距以适应换行 */
+}
 #amily2_manual_historiography_bureau .manual-command-block .manual-input {
-    width: 70px;
+    flex: 1 1 50px; /* 弹性伸缩 */
+}
+#amily2_manual_historiography_bureau .manual-command-block .menu_button {
+    flex: 2 1 80px; /* 按钮占据更多空间 */
 }
 
-/*谕旨编辑器的"保存"和"恢复默认"按钮样式*/
+
 #amily2_manual_historiography_bureau .editor-buttons-panel .accent {
     background: linear-gradient(to right, #FF5722, #E64A19);
     border: 1px solid #D84315;
@@ -37,7 +55,7 @@
     transform: scale(1.03);
 }
 
-/*【宏史卷】区域的选择器容器*/
+
 #amily2_manual_historiography_bureau .mhb-selector-container {
     display: flex;
     flex-direction: row;
@@ -46,7 +64,7 @@
     width: 100%;
 }
 
-/*【宏史卷】区域的每个选择器组*/
+
 #amily2_manual_historiography_bureau .mhb-selector-group {
     display: flex;
     flex-direction: column;
@@ -59,15 +77,12 @@
     margin-top: 0;
 }
 
-/*=======================================*/
-/*======【远征与巡录指挥台样式 v2.0】======*/
-/*=======================================*/
 
-/*【远征指挥台】总容器，现在拥有了皇家印信的权威*/
 #amily2_manual_historiography_bureau .auto-command-block {
     display: flex;
     justify-content: space-around;
     align-items: center;
+    flex-wrap: wrap; /* 允许换行 */
     gap: 15px;
     margin-top: 15px;
     padding: 10px;
@@ -75,7 +90,7 @@
     border-radius: 8px;
 }
 
-/*【指挥台】内部的“自动巡录”和“远征阈值”控件对*/
+
 #amily2_manual_historiography_bureau .auto-control-pair {
     display: flex;
     flex-direction: row;
@@ -83,24 +98,24 @@
     gap: 8px;
 }
 #amily2_manual_historiography_bureau #amily2_mhb_small_expedition_execute {
-    width: auto;  /*强行解除其占据100%宽度的诅咒，让其宽度由自身内容决定*/
-    flex-grow: 0; /*禁止其在有多余空间时进行不必要的扩张，保持其谦逊的体态*/
+    width: auto;  
+    flex-grow: 0; 
 }
 #amily2_manual_historiography_bureau #amily2_mhb_small_expedition_execute {
-    background: linear-gradient(135deg, #8e44ad, #6a1b9a); /*高贵的紫罗兰色，象征远征的决心与皇权*/
+    background: linear-gradient(135deg, #8e44ad, #6a1b9a); 
     border: 1px solid #4a148c;
-    color: white; /*确保文字颜色在深色背景上清晰可见*/
-    text-shadow: 0 0 2px rgba(0,0,0,0.3); /*保持一致的文字阴影*/
-    transition: all 0.3s ease; /*保持一致的过渡动画*/
+    color: white; 
+    text-shadow: 0 0 2px rgba(0,0,0,0.3); 
+    transition: all 0.3s ease; 
 }
 
 #amily2_manual_historiography_bureau #amily2_mhb_small_expedition_execute:hover {
-    background: linear-gradient(135deg, #9b59b6, #8e44ad); /*悬停时颜色变得更加明亮*/
-    box-shadow: 0 0 10px rgba(142, 68, 173, 0.7); /*散发出代表力量的紫色光晕*/
-    transform: translateY(-1px); /*保持一致的微动效*/
+    background: linear-gradient(135deg, #9b59b6, #8e44ad); 
+    box-shadow: 0 0 10px rgba(142, 68, 173, 0.7);
+    transform: translateY(-1px);
 }
 
-/*==============【熔铸按钮颜色修正，确保其火焰色泽不受干扰】==============*/
+
 #amily2_manual_historiography_bureau #amily2_mhb_small_manual_execute {
     background: linear-gradient(135deg, #ff8a65, #ff5722);
     border: 1px solid #e64a19;
@@ -110,30 +125,24 @@
     background: linear-gradient(135deg, #ff7043, #f4511e);
     box-shadow: 0 0 10px rgba(255, 87, 34, 0.6);
 }
-/*================================================================*/
-/*====== 【圣旨：为指挥台授予红绿双色战旗】 @ v2.3 ======*/
-/*================================================================*/
 
-/*【红色战旗】(危险/停止) - 强制、醒目的红色，代表“停止”这一最高指令*/
 #amily2_manual_historiography_bureau .danger {
-    background: linear-gradient(135deg, #e74c3c, #c0392b); /*醒目的赤红色，代表“停止”*/
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
     border: 1px solid #a93226;
     color: white;
 }
 
 #amily2_manual_historiography_bureau .danger:hover {
     background: linear-gradient(135deg, #ec7063, #e74c3c);
-    box-shadow: 0 0 10px rgba(231, 76, 60, 0.7); /*散发代表警示的红色光晕*/
+    box-shadow: 0 0 10px rgba(231, 76, 60, 0.7);
 }
 
-/*【绿色战旗】(安全/继续) - 充满希望的绿色，代表“继续”这一恢复指令*/
 #amily2_manual_historiography_bureau .success {
-    background: linear-gradient(135deg, #2ecc71, #27ae60); /*充满生机的翡翠绿，代表“继续”*/
-    border: 1px solid #229954;
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
     color: white;
 }
 
 #amily2_manual_historiography_bureau .success:hover {
     background: linear-gradient(135deg, #58d68d, #2ecc71);
-    box-shadow: 0 0 10px rgba(46, 204, 113, 0.7); /*散发代表希望的绿色光晕*/
+    box-shadow: 0 0 10px rgba(46, 204, 113, 0.7);
 }
