@@ -514,10 +514,37 @@ input:checked + .slider:before {
         display: block;
     }
 
+    /* 【V74.0 核心修正】不再隐藏表头，而是让它也参与到卡片式布局中 */
+    #amily2_memorisation_forms_panel table[id^="amily2-table-"] thead {
+        display: block;
+    }
+
     #amily2_memorisation_forms_panel table[id^="amily2-table-"] thead tr {
-        position: absolute;
-        top: -9999px;
-        left: -9999px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        border: 1px solid var(--am2-header-editable-focus-outline, #79b8ff);
+        border-radius: 8px;
+        padding: 8px;
+        margin-bottom: 10px;
+        background: rgba(0,0,0,0.2);
+    }
+
+    #amily2_memorisation_forms_panel table[id^="amily2-table-"] th {
+        flex-grow: 1;
+        min-width: 120px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background-color: var(--am2-header-editable-bg) !important;
+        border: 1px solid var(--am2-header-editable-focus-outline, #79b8ff);
+        border-radius: 5px;
+        padding: 5px 8px;
+    }
+
+    /* 【V74.0 新增】默认隐藏移动端编辑按钮 */
+    .mobile-edit-handle {
+        display: none;
     }
 
     #amily2_memorisation_forms_panel table[id^="amily2-table-"] tr {
@@ -586,5 +613,11 @@ input:checked + .slider:before {
     
     #amily2_memorisation_forms_panel table[id^="amily2-table-"] tr .delete-row-handle:before {
         content: "×";
+    }
+
+    /* 【V74.0 新增】只在移动端显示编辑按钮 */
+    #amily2_memorisation_forms_panel .mobile-edit-handle {
+        display: inline-block;
+        color: var(--am2-title-icon-color, #9e8aff);
     }
 }
