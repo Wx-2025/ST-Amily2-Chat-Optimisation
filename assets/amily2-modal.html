@@ -15,7 +15,7 @@
         gap: 0px;
     }
     .side-button {
-        writing-mode: vertical-rl;
+        writing-mode: vertical-rl; /* 【V59.0】恢复垂直模式 */
         text-orientation: mixed;
         height: 140px;
         width: 50px;
@@ -68,13 +68,16 @@
     <legend>Amily中枢</legend>
     <div class="amily2-header">
         <!-- 左列 -->
-        <div class="header-column left">
+        <div class="header-column left" style="flex-direction: row; align-items: center; gap: 5px;">
             <button id="amily2_open_rag_palace" class="secret-chamber-button interactable side-button">
                 <i class="fas fa-brain"></i>翰林学院
             </button>
+            <button id="amily2_open_memorisation_forms" class="secret-chamber-button interactable side-button">
+                <i class="fas fa-table"></i>内存储司
+            </button>
         </div>
 
-        <!-- 中间列 -->
+
         <div class="header-column center">
             <div style="position: relative;">
                 <button id="amily2_update_button" class="menu_button small_button interactable" title="查看更新日志">
@@ -94,7 +97,6 @@
             <button id="amily2_update_button_new" class="menu_button small_button interactable" title="查看更新日志">更新</button>
         </div>
 
-        <!-- 右列 -->
         <div class="header-column right">
             <button id="amily2_open_additional_features" class="secret-chamber-button interactable side-button">
                 <i class="fas fa-landmark-dome"></i>内阁密室
@@ -193,12 +195,12 @@
 <div class="amily2_settings_block">
     <label for="amily2_model_selector">模型</label>
     <div class="flex-container" id="amily2_model_selector">
-        <!-- 自动获取模式的容器 -->
+
         <div id="amily2_model_autofetch_wrapper" style="display: flex; flex: 1; gap: 5px;">
             <select id="amily2_model" class="text_pole" style="flex: 1;"></select>
             <button id="amily2_refresh_models" class="menu_button interactable"><i class="fas fa-sync-alt"></i> 刷新</button>
         </div>
-        <!-- 手动输入模式的容器 (默认隐藏) -->
+
         <input id="amily2_manual_model_input" type="text" class="text_pole" style="flex: 1; display: none;" placeholder="请在此手动输入并保存模型ID"/>
     </div>
     <div id="amily2_model_notes" class="notes"></div>

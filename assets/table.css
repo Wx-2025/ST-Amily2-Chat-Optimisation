@@ -1,0 +1,478 @@
+
+#amily2_memorisation_forms_panel {
+
+    --am2-font-size-base: 14px;
+    --am2-gap-main: 10px;
+    --am2-padding-main: 8px 5px;
+    
+    --am2-container-bg: rgba(0,0,0,0.1);
+    --am2-container-border: 1px solid rgba(255, 255, 255, 0.2);
+    --am2-container-border-radius: 12px;
+    --am2-container-padding: 10px;
+    --am2-container-shadow: inset 0 0 15px rgba(0,0,0,0.2);
+
+    --am2-title-font-size: 1.1em;
+    --am2-title-font-weight: bold;
+    --am2-title-text-shadow: 0 0 5px rgba(200, 200, 255, 0.3);
+    --am2-title-gradient-start: #c0bde4;
+    --am2-title-gradient-end: #dfdff0;
+    --am2-title-icon-color: #9e8aff;
+    --am2-title-icon-margin: 10px;
+
+    --am2-table-bg: rgba(0,0,0,0.2);
+    --am2-table-border: 1px solid rgba(255, 255, 255, 0.25);
+    --am2-table-cell-padding: 4px 6px;
+    --am2-table-cell-font-size: 0.95em;
+    
+
+    --am2-header-bg: rgba(255, 255, 255, 0.1);
+    --am2-header-color: #e0e0e0;
+    --am2-header-editable-bg: rgba(172, 216, 255, 0.1);
+    --am2-header-editable-focus-bg: rgba(172, 216, 255, 0.25);
+    --am2-header-editable-focus-outline: 1px solid #79b8ff;
+
+
+    --am2-cell-editable-bg: rgba(255, 255, 172, 0.1);
+    --am2-cell-editable-focus-bg: rgba(255, 255, 172, 0.25);
+    --am2-cell-editable-focus-outline: 1px solid #ffc107;
+
+
+    --am2-index-col-bg: rgba(0, 0, 0, 0.3) !important;
+    --am2-index-col-color: #aaa !important;
+    --am2-index-col-width: 40px;
+    --am2-index-col-padding: 10px 5px !important;
+
+    --am2-controls-gap: 5px;
+    --am2-controls-margin-bottom: 10px;
+}
+
+
+#amily2_memorisation_forms_panel {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--am2-gap-main);
+    padding: var(--am2-padding-main);
+    box-sizing: border-box;
+    font-size: var(--am2-font-size-base);
+}
+
+#amily2_memorisation_forms_panel #all-tables-container {
+    overflow-y: auto;
+    padding: var(--am2-container-padding);
+    border: var(--am2-container-border);
+    border-radius: var(--am2-container-border-radius);
+    background: var(--am2-container-bg);
+    box-shadow: var(--am2-container-shadow);
+}
+
+#amily2_memorisation_forms_panel #all-tables-container h3 {
+    font-size: var(--am2-title-font-size);
+    font-weight: var(--am2-title-font-weight);
+    padding: 0 10px;
+    margin: 0;
+    background: linear-gradient(to right, var(--am2-title-gradient-start), var(--am2-title-gradient-end));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: var(--am2-title-text-shadow);
+}
+
+#amily2_memorisation_forms_panel #all-tables-container h3 > i {
+    margin-right: var(--am2-title-icon-margin);
+    color: var(--am2-title-icon-color); 
+}
+
+#amily2_memorisation_forms_panel .table-controls {
+    display: flex;
+    flex-direction: row; /* Explicitly horizontal */
+    gap: var(--am2-controls-gap);
+    justify-content: flex-end;
+    margin-bottom: var(--am2-controls-margin-bottom);
+}
+
+
+#amily2_memorisation_forms_panel table[id^="amily2-table-"] {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--am2-table-bg);
+}
+
+#amily2_memorisation_forms_panel table[id^="amily2-table-"] th,
+#amily2_memorisation_forms_panel table[id^="amily2-table-"] td {
+    border: var(--am2-table-border);
+    padding: var(--am2-table-cell-padding);
+    text-align: left;
+    font-size: var(--am2-table-cell-font-size);
+}
+
+#amily2_memorisation_forms_panel table[id^="amily2-table-"] th {
+    background-color: var(--am2-header-bg);
+    color: var(--am2-header-color);
+}
+
+#amily2_memorisation_forms_panel .index-col {
+    background-color: var(--am2-index-col-bg);
+    text-align: center !important;
+    font-weight: bold;
+    color: var(--am2-index-col-color);
+    width: var(--am2-index-col-width);
+    padding: var(--am2-index-col-padding);
+}
+
+#amily2_memorisation_forms_panel th[contenteditable="true"] {
+    background-color: var(--am2-header-editable-bg);
+    transition: background-color 0.3s;
+}
+
+#amily2_memorisation_forms_panel th[contenteditable="true"]:focus {
+    background-color: var(--am2-header-editable-focus-bg);
+    outline: var(--am2-header-editable-focus-outline);
+}
+
+#amily2_memorisation_forms_panel td[contenteditable="true"] {
+    background-color: var(--am2-cell-editable-bg);
+    transition: background-color 0.3s;
+}
+
+#amily2_memorisation_forms_panel td[contenteditable="true"]:focus {
+    background-color: var(--am2-cell-editable-focus-bg);
+    outline: var(--am2-cell-editable-focus-outline);
+}
+
+#amily2_memorisation_forms_panel .menu_button {
+    background: var(--am2-button-bg, rgba(255, 255, 255, 0.1));
+    background-image: var(--am2-button-gradient, none);
+    background-size: 200% 100%;
+    background-position: 0% 50%;
+    border: 1px solid var(--am2-button-border-color, rgba(255, 255, 255, 0.2)) !important;
+    color: var(--am2-button-text-color, #fff) !important;
+    padding: 8px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.4s ease-out !important;
+}
+
+#amily2_memorisation_forms_panel .menu_button:hover {
+    background-color: var(--am2-button-hover-bg, rgba(255, 255, 255, 0.2));
+    background-position: 100% 50%;
+    border-color: var(--am2-button-hover-border-color, #fff) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+
+#amily2_memorisation_forms_panel .menu_button.danger {
+    background: var(--am2-button-danger-bg, rgba(255, 82, 82, 0.2)) !important;
+    border-color: var(--am2-button-danger-border-color, rgba(255, 82, 82, 0.5)) !important;
+}
+
+#amily2_memorisation_forms_panel .menu_button.danger:hover {
+    background: var(--am2-button-danger-hover-bg, rgba(255, 82, 82, 0.4)) !important;
+    border-color: var(--am2-button-danger-hover-border-color, #ff5252) !important;
+}
+
+#amily2_memorisation_forms_panel .menu_button.small_button {
+    padding: 5px 12px; /* Adjusted for a more horizontal look */
+    font-size: 0.9em;
+    border-radius: 6px;
+    writing-mode: horizontal-tb !important; /* Override global vertical writing mode */
+    white-space: nowrap; /* Prevent text from wrapping */
+}
+
+/* ================== 起居注 (日志) 样式 ================== */
+#amily2_memorisation_forms_panel .hly-log-display {
+    background: rgba(0,0,0,0.25);
+    border-radius: 8px;
+    padding: 12px;
+    border: 1px solid #444;
+    max-height: 100px; /* 调整为较小的高度 */
+    overflow-y: auto;
+    font-size: 0.9em;
+    color: #ccc;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-bottom: 10px; /* 与下方内容隔开 */
+}
+
+#amily2_memorisation_forms_panel .hly-log-entry {
+    margin: 0;
+    padding: 4px 8px;
+    border-radius: 4px;
+    line-height: 1.5;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+}
+
+#amily2_memorisation_forms_panel .hly-log-entry .fa-solid {
+    margin-right: 8px;
+    width: 16px;
+    text-align: center;
+}
+
+#amily2_memorisation_forms_panel .log-info {
+    color: #a0c4ff;
+    border-left: 3px solid #6b9eff;
+}
+
+#amily2_memorisation_forms_panel .log-success {
+    color: #a8d8b4;
+    border-left: 3px solid #5cb85c;
+}
+
+#amily2_memorisation_forms_panel .log-error {
+    color: #ffadad;
+    border-left: 3px solid #d9534f;
+}
+
+#amily2_memorisation_forms_panel .log-warn {
+    color: #ffd6a5;
+    border-left: 3px solid #f0ad4e;
+}
+
+
+.settings-group {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 12px;
+    margin: 0;
+}
+
+.settings-group > legend {
+    color: #e0e0e0;
+    font-weight: bold;
+    padding: 0 10px;
+    margin-left: 10px;
+    font-size: 1.1em;
+}
+
+.settings-group > legend > i {
+    margin-right: 8px;
+    color: #9e8aff;
+}
+
+.central-control-wrapper {
+    display: flex;
+    flex-direction: row;
+    gap: 15px;
+}
+
+.central-control-wrapper .control-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.central-control-wrapper #ai-template-section .hly-textarea {
+    flex-grow: 1;
+    height: 100%;
+    min-height: 150px;
+}
+
+.central-control-wrapper .vertical-divider {
+    width: 1px;
+    background-color: rgba(255, 255, 255, 0.2);
+    align-self: stretch;
+}
+
+
+.inline-settings-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px 12px;
+    align-items: center;
+}
+
+.inline-settings-grid label {
+    font-weight: bold;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.inline-settings-grid .text_pole {
+    width: 100%;
+}
+
+
+.prompt-editor-area {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.editor-buttons-panel {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+
+#add-table-placeholder {
+    width: 100%;
+    padding: 20px 0;
+    border: 2px dashed rgba(255, 255, 255, 0.3);
+    border-radius: 12px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 20px;
+}
+
+#add-table-placeholder i {
+    font-size: 2em;
+    color: rgba(255, 255, 255, 0.4);
+    transition: all 0.3s ease;
+}
+
+#add-table-placeholder:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.6);
+}
+
+#add-table-placeholder:hover i {
+    color: rgba(255, 255, 255, 0.8);
+    transform: scale(1.1);
+}
+
+
+#amily2-action-center {
+    display: flex !important;
+    flex-direction: row !important;
+    gap: 10px !important;
+}
+
+
+.sinan-navigation-deck {
+    display: flex;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    margin-bottom: 15px;
+}
+
+.sinan-nav-item {
+    padding: 10px 20px;
+    cursor: pointer;
+    border: none;
+    background-color: transparent;
+    color: #ccc;
+    font-size: 1em;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.sinan-nav-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #fff;
+}
+
+.sinan-nav-item.active {
+    color: #9e8aff;
+    border-bottom-color: #9e8aff;
+    font-weight: bold;
+}
+
+.sinan-nav-item i {
+    margin-right: 8px;
+}
+
+.sinan-content-wrapper {
+    padding: 10px;
+}
+
+.sinan-tab-pane {
+    display: none;
+    animation: fadeIn 0.5s;
+}
+
+.sinan-tab-pane.active {
+    display: block;
+}
+
+.action-center-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    justify-content: center;
+}
+
+.action-center-buttons .menu_button {
+    flex-grow: 1;
+    min-width: 180px; /* 保证按钮不会过窄 */
+}
+
+.notes {
+    font-size: 0.9em;
+    color: #aaa;
+    margin-top: 15px;
+    text-align: center;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.control-block-with-switch {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+}
+
+.control-block-with-switch label {
+    font-weight: bold;
+    color: #ddd;
+}
+
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 28px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #555;
+    transition: .4s;
+    border-radius: 28px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: #8a72ff;
+}
+
+input:focus + .slider {
+    box-shadow: 0 0 1px #8a72ff;
+}
+
+input:checked + .slider:before {
+    transform: translateX(22px);
+}
