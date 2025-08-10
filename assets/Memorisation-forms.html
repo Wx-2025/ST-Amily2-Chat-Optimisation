@@ -17,111 +17,118 @@
     </div>
     <hr class="header-divider" style="margin-top: 5px; margin-bottom: 10px;">
 
-    <fieldset class="settings-group" style="padding: 10px; margin-bottom: 10px;">
-        <legend><i class="fas fa-brain"></i> 中枢决策室</legend>
-        
-        <div class="sinan-navigation-deck" style="gap: 5px; margin-bottom: 10px;">
-            <button class="sinan-nav-item active" data-tab="injection-settings"><i class="fas fa-cogs"></i> 注入设置</button>
-            <button class="sinan-nav-item" data-tab="action-center"><i class="fas fa-toolbox"></i> 操作中心</button>
-            <button class="sinan-nav-item" data-tab="ai-template"><i class="fas fa-robot"></i> 指令模板</button>
-        </div>
-
-        <div class="sinan-content-wrapper">
-            <div id="sinan-injection-settings-tab" class="sinan-tab-pane active">
-                <div class="inline-settings-grid">
-                    <label for="table-injection-position">注入位置</label>
-                    <select id="table-injection-position" class="text_pole">
-                        <option value="2">主提示前</option>
-                        <option value="0">主提示后</option>
-                        <option value="1">聊天内</option>
-                    </select>
-                    <label for="table-injection-depth">注入深度</label>
-                    <input type="number" id="table-injection-depth" class="text_pole" value="3">
-                    <label for="table-injection-role">注入角色</label>
-                    <select id="table-injection-role" class="text_pole">
-                        <option value="0">系统</option>
-                        <option value="1">用户</option>
-                        <option value="2">助手</option>
-                    </select>
-                    <label for="batch-filling-threshold">批处理阈值</label>
-                    <input type="number" id="batch-filling-threshold" class="text_pole" value="30">
-                </div>
+    <div id="upper-controls-wrapper">
+        <fieldset class="settings-group" style="padding: 10px; margin-bottom: 10px;">
+            <legend><i class="fas fa-brain"></i> 中枢决策室</legend>
+            
+            <div class="sinan-navigation-deck" style="gap: 5px; margin-bottom: 10px;">
+                <button class="sinan-nav-item active" data-tab="injection-settings"><i class="fas fa-cogs"></i> 注入设置</button>
+                <button class="sinan-nav-item" data-tab="action-center"><i class="fas fa-toolbox"></i> 操作中心</button>
+                <button class="sinan-nav-item" data-tab="ai-template"><i class="fas fa-robot"></i> 指令模板</button>
             </div>
 
-
-            <div id="sinan-action-center-tab" class="sinan-tab-pane">
-                <div class="control-block-with-switch" style="margin-bottom: 10px;">
-                    <label for="table-injection-enabled-toggle">启用表格注入</label>
-                    <label class="toggle-switch">
-                        <input type="checkbox" id="table-injection-enabled" data-setting-key="table_injection_enabled" data-type="boolean">
-                        <span class="slider"></span>
-                    </label> 
+            <div class="sinan-content-wrapper">
+                <div id="sinan-injection-settings-tab" class="sinan-tab-pane active">
+                    <div class="inline-settings-grid">
+                        <label for="table-injection-position">注入位置</label>
+                        <select id="table-injection-position" class="text_pole">
+                            <option value="2">主提示前</option>
+                            <option value="0">主提示后</option>
+                            <option value="1">聊天内</option>
+                        </select>
+                        <label for="table-injection-depth">注入深度</label>
+                        <input type="number" id="table-injection-depth" class="text_pole" value="3">
+                        <label for="table-injection-role">注入角色</label>
+                        <select id="table-injection-role" class="text_pole">
+                            <option value="0">系统</option>
+                            <option value="1">用户</option>
+                            <option value="2">助手</option>
+                        </select>
+                        <label for="batch-filling-threshold">批处理阈值</label>
+                        <input type="number" id="batch-filling-threshold" class="text_pole" value="30">
+                    </div>
                 </div>
-                <div class="action-center-buttons" style="gap: 8px;">
-                    <button id="amily2-export-preset-btn" class="menu_button primary small_button interactable"><i class="fas fa-file-export"></i> 导出预设</button>
-                    <button id="amily2-export-preset-full-btn" class="menu_button primary small_button interactable"><i class="fas fa-file-archive"></i> 导出备份</button>
-                    <button id="amily2-import-preset-btn" class="menu_button secondary small_button interactable"><i class="fas fa-file-upload"></i> 导入预设</button>
-                    <button id="amily2-clear-all-tables-btn" class="menu_button danger small_button interactable"><i class="fas fa-trash-alt"></i> 清空内容</button>
-                </div>
-                <p class="notes" style="margin-top: 8px; margin-bottom: 10px;">说明：可以导出不含剧情的“纯净预设”用于分享，或导出包含剧情的“完整备份”用于存档。</p>
-                
-                <hr class="section-divider" style="margin: 10px 0;">
-                
-                <div class="action-center-buttons" id="theme-action-buttons" style="gap: 8px;">
-                    <button id="amily2-import-theme-btn" class="menu_button small_button interactable"><i class="fas fa-palette"></i> 导入主题</button>
-                    <button id="amily2-export-theme-btn" class="menu_button small_button interactable"><i class="fas fa-paint-brush"></i> 导出主题</button>
-                    <button id="amily2-reset-theme-btn" class="menu_button small_button interactable"><i class="fas fa-undo"></i> 恢复默认</button>
-                </div>
-                <p class="notes" style="margin-top: 8px;">说明：导入下载的主题JSON文件，或将当前的外观导出分享。</p>
-            </div>
 
 
-            <div id="sinan-ai-template-tab" class="sinan-tab-pane">
-                <fieldset class="settings-group" style="border-style: dashed; padding: 8px; margin-bottom: 10px;">
-                    <legend><i class="fas fa-scroll"></i> 规则提示词</legend>
-                    <div class="amily2_settings_block prompt-editor-area">
-                        <textarea id="ai-rule-template-editor" class="text_pole" rows="2"></textarea>
-                        <div class="editor-buttons-panel">
-                            <button id="ai-rule-template-save-btn" class="menu_button accent small_button interactable"><i class="fas fa-save"></i> 保存</button>
-                            <button id="ai-rule-template-restore-btn" class="menu_button secondary small_button interactable"><i class="fas fa-undo"></i> 默认</button>
+                <div id="sinan-action-center-tab" class="sinan-tab-pane">
+                    <div class="control-block-with-switch" style="margin-bottom: 10px;">
+                        <label for="table-injection-enabled-toggle">启用表格注入</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="table-injection-enabled" data-setting-key="table_injection_enabled" data-type="boolean">
+                            <span class="slider"></span>
+                        </label> 
+                    </div>
+                    <div class="control-block-with-switch" style="margin-bottom: 10px;">
+                        <label>填表模式</label>
+                        <div class="radio-group">
+                            <input type="radio" id="main-api-mode" name="filling-mode" value="main-api" checked>
+                            <label for="main-api-mode">原始</label>
+                            <input type="radio" id="secondary-api-mode" name="filling-mode" value="secondary-api">
+                            <label for="secondary-api-mode">分步</label>
+                            <input type="radio" id="optimized-mode" name="filling-mode" value="optimized">
+                            <label for="optimized-mode">兼容优化</label>
                         </div>
                     </div>
-                </fieldset>
+                    <div class="action-center-buttons" style="gap: 8px;">
+                        <button id="amily2-export-preset-btn" class="menu_button primary small_button interactable"><i class="fas fa-file-export"></i> 导出预设</button>
+                        <button id="amily2-export-preset-full-btn" class="menu_button primary small_button interactable"><i class="fas fa-file-archive"></i> 导出备份</button>
+                        <button id="amily2-import-preset-btn" class="menu_button secondary small_button interactable"><i class="fas fa-file-upload"></i> 导入预设</button>
+                        <button id="amily2-clear-all-tables-btn" class="menu_button danger small_button interactable"><i class="fas fa-trash-alt"></i> 清空内容</button>
+                    </div>
+                    <p class="notes" style="margin-top: 8px; margin-bottom: 10px;">说明：可以导出不含剧情的“纯净预设”用于分享，或导出包含剧情的“完整备份”用于存档。</p>
+                    
+                    <hr class="section-divider" style="margin: 10px 0;">
+                    
+                    <div class="action-center-buttons" id="theme-action-buttons" style="gap: 8px;">
+                        <button id="amily2-import-theme-btn" class="menu_button small_button interactable"><i class="fas fa-palette"></i> 导入主题</button>
+                        <button id="amily2-export-theme-btn" class="menu_button small_button interactable"><i class="fas fa-paint-brush"></i> 导出主题</button>
+                        <button id="amily2-reset-theme-btn" class="menu_button small_button interactable"><i class="fas fa-undo"></i> 恢复默认</button>
+                    </div>
+                    <p class="notes" style="margin-top: 8px;">说明：导入下载的主题JSON文件，或将当前的外观导出分享。</p>
+                </div>
 
-                <fieldset class="settings-group" style="border-style: dashed; padding: 8px;">
-                    <legend><i class="fas fa-tasks"></i> 流程提示词</legend>
-                    <div class="amily2_settings_block prompt-editor-area">
-                        <textarea id="ai-flow-template-editor" class="text_pole" rows="2"></textarea>
-                        <div class="editor-buttons-panel">
-                            <button id="ai-flow-template-save-btn" class="menu_button accent small_button interactable"><i class="fas fa-save"></i> 保存</button>
-                            <button id="ai-flow-template-restore-btn" class="menu_button secondary small_button interactable"><i class="fas fa-undo"></i> 默认</button>
+
+                <div id="sinan-ai-template-tab" class="sinan-tab-pane">
+                    <fieldset class="settings-group" style="border-style: dashed; padding: 8px; margin-bottom: 10px;">
+                        <legend><i class="fas fa-scroll"></i> 规则提示词</legend>
+                        <div class="amily2_settings_block prompt-editor-area">
+                            <textarea id="ai-rule-template-editor" class="text_pole" rows="2"></textarea>
+                            <div class="editor-buttons-panel">
+                                <button id="ai-rule-template-save-btn" class="menu_button accent small_button interactable"><i class="fas fa-save"></i> 保存</button>
+                                <button id="ai-rule-template-restore-btn" class="menu_button secondary small_button interactable"><i class="fas fa-undo"></i> 默认</button>
+                            </div>
                         </div>
-                    </div>
-                </fieldset>
-                
-                <hr class="section-divider" style="margin: 10px 0;">
+                    </fieldset>
 
-                <div id="table-filling-controls" style="display: flex; gap: 10px; align-items: center; justify-content: center;">
-                    <div class="radio-group" style="display: flex; gap: 10px;">
-                        <label title="使用主API进行填表"><input type="radio" name="filling-mode" value="main-api" checked> 主API</label>
-                        <label title="使用备用API进行填表"><input type="radio" name="filling-mode" value="secondary-api"> 副API</label>
+                    <fieldset class="settings-group" style="border-style: dashed; padding: 8px;">
+                        <legend><i class="fas fa-tasks"></i> 流程提示词</legend>
+                        <div class="amily2_settings_block prompt-editor-area">
+                            <textarea id="ai-flow-template-editor" class="text_pole" rows="2"></textarea>
+                            <div class="editor-buttons-panel">
+                                <button id="ai-flow-template-save-btn" class="menu_button accent small_button interactable"><i class="fas fa-save"></i> 保存</button>
+                                <button id="ai-flow-template-restore-btn" class="menu_button secondary small_button interactable"><i class="fas fa-undo"></i> 默认</button>
+                            </div>
+                        </div>
+                    </fieldset>
+                    
+                    <hr class="section-divider" style="margin: 10px 0;">
+
+                    <div id="table-filling-controls" style="display: flex; gap: 10px; align-items: center; justify-content: center;">
+                        <button id="fill-table-now-btn" class="menu_button small_button">立即填表</button>
                     </div>
-                    <button id="fill-table-now-btn" class="menu_button small_button">立即填表</button>
                 </div>
             </div>
+        </fieldset>
+
+        <div id="table-log-display" class="hly-log-display" style="margin-top: 10px; margin-bottom: 10px;">
+
         </div>
-    </fieldset>
-
-    <div id="table-log-display" class="hly-log-display" style="margin-top: 10px; margin-bottom: 10px;">
-
     </div>
 
-<div id="table-container-wrapper" class="hly-scroll">
-    <div id="all-tables-container">
+<div id="all-tables-container" class="hly-scroll">
 
-        <div id="add-table-placeholder" title="敕令新表">
-            <i class="fas fa-plus"></i>
-        </div>
+    <div id="add-table-placeholder" title="敕令新表">
+        <i class="fas fa-plus"></i>
     </div>
 </div>
 

@@ -1,13 +1,12 @@
 #amily2_memorisation_forms_panel {
 
-    --am2-font-size-base: 14px;
     --am2-gap-main: 10px;
     --am2-padding-main: 8px 5px;
     
     --am2-container-bg: rgba(0,0,0,0.1);
     --am2-container-border: 1px solid rgba(255, 255, 255, 0.2);
     --am2-container-border-radius: 12px;
-    --am2-container-padding: 10px;
+    --am2-container-padding: 10px 5px;
     --am2-container-shadow: inset 0 0 15px rgba(0,0,0,0.2);
 
     --am2-title-font-size: 1.1em;
@@ -20,8 +19,7 @@
 
     --am2-table-bg: rgba(0,0,0,0.2);
     --am2-table-border: 1px solid rgba(255, 255, 255, 0.25);
-    --am2-table-cell-padding: 6px 8px;
-    --am2-table-cell-font-size: 0.95em;
+    --am2-table-cell-padding: 3px 6px;
     
     --am2-header-bg: rgba(255, 255, 255, 0.1);
     --am2-header-color: #e0e0e0;
@@ -51,7 +49,9 @@
     gap: var(--am2-gap-main);
     padding: var(--am2-padding-main);
     box-sizing: border-box;
-    font-size: var(--am2-font-size-base);
+}
+
+#upper-controls-wrapper {
 }
 
 #amily2_memorisation_forms_panel #all-tables-container {
@@ -88,43 +88,36 @@
     margin-bottom: var(--am2-controls-margin-bottom);
 }
 
-/* ===================================================================== */
-/* ================== 【V65.0】最终布局圣旨 - 智能兼容 ================== */
-/* ===================================================================== */
-
-#amily2_memorisation_forms_panel .table-instance-container {
-    margin-bottom: 20px;
-    /* 【V65.0 核心】为表格容器启用水平滚动，作为最终保险 */
-    overflow-x: auto;
-}
-
 #amily2_memorisation_forms_panel table[id^="amily2-table-"] {
     width: 100%;
     border-collapse: collapse;
     background-color: var(--am2-table-bg);
-    /* 【V65.0 修正】在桌面端，我们依然希望表格能自适应，而不是固定布局 */
-    /* table-layout: fixed; */ 
+    transition: box-shadow 0.5s ease-in-out; 
 }
+
 
 #amily2_memorisation_forms_panel table[id^="amily2-table-"] th,
 #amily2_memorisation_forms_panel table[id^="amily2-table-"] td {
     border: var(--am2-table-border);
     padding: var(--am2-table-cell-padding);
     text-align: left;
-    font-size: var(--am2-table-cell-font-size);
     
-    /* 【V65.0 核心】使用更智能的断词策略 */
     overflow-wrap: break-word;
-    word-wrap: break-word; /* 兼容旧版浏览器 */
-    word-break: break-word; /* 优先在单词边界换行 */
+    word-wrap: break-word; 
+    word-break: break-word; 
+}
+
+#amily2_memorisation_forms_panel table[id^="amily2-table-"] th,
+#amily2_memorisation_forms_panel table[id^="amily2-table-"] td {
+    max-width: 250px; 
 }
 
 #amily2_memorisation_forms_panel table[id^="amily2-table-"] th {
     background-color: var(--am2-header-bg);
     color: var(--am2-header-color);
-    /* 【V65.0 新增】为表头设置一个最小宽度，保证可读性 */
     min-width: 120px;
     font-weight: bold;
+    position: relative; 
 }
 
 #amily2_memorisation_forms_panel .index-col {
@@ -132,11 +125,12 @@
     text-align: center !important;
     font-weight: bold;
     color: var(--am2-index-col-color);
-    /* 【V72.0 谢罪圣旨】直接硬编码最终宽度，不再使用变量 */
     width: 30px !important;
     min-width: 30px !important;
     padding: var(--am2-table-cell-padding); 
     word-break: normal;
+    position: relative; 
+    cursor: pointer; 
 }
 
 #amily2_memorisation_forms_panel th[contenteditable="true"] {
@@ -199,7 +193,6 @@
     white-space: nowrap;
 }
 
-/* ================== 起居注 (日志) 样式 ================== */
 #amily2_memorisation_forms_panel .hly-log-display {
     background: rgba(0,0,0,0.25);
     border-radius: 8px;
@@ -495,129 +488,63 @@ input:checked + .slider:before {
     transform: translateX(22px);
 }
 
-/* ===================================================================== */
-/* ================== 【V65.0】最终布局圣旨 - 移动端优化 ================== */
-/* ===================================================================== */
+.amily2-context-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1001; 
+    flex-direction: column;
+    gap: 0; 
+    padding: 2px; 
+    background-color: rgba(30, 30, 40, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.5); 
+    border-radius: 4px; 
+    box-shadow: none; 
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+.amily2-context-menu.amily2-menu-active {
+    display: flex; 
+}
+
+#amily2_memorisation_forms_panel .amily2-context-menu .menu_button {
+    white-space: nowrap; 
+    border: none !important; 
+    border-radius: 0 !important; 
+    padding: 4px 8px !important; 
+    font-size: 0.85em !important; 
+    background: transparent !important; 
+    transition: background-color 0.2s ease !important;
+    text-align: left !important; 
+    font-weight: normal !important; 
+    transform: none !important; 
+    box-shadow: none !important; 
+    margin: 0 !important; 
+}
+
+#amily2_memorisation_forms_panel .amily2-context-menu .menu_button:hover {
+    background: rgba(255, 255, 255, 0.15) !important; 
+    transform: none !important; 
+    box-shadow: none !important; 
+}
+
+.amily2-row-context-menu {
+    top: 0;
+    left: 100%; 
+}
 
 @media (max-width: 768px) {
-    /* 【V65.0 修正】在移动端，不再需要容器的水平滚动 */
-    #amily2_memorisation_forms_panel .table-instance-container {
-        overflow-x: initial;
+    #amily2_memorisation_forms_panel {
+        padding: 0;
     }
 
-    #amily2_memorisation_forms_panel table[id^="amily2-table-"], 
-    #amily2_memorisation_forms_panel table[id^="amily2-table-"] thead, 
-    #amily2_memorisation_forms_panel table[id^="amily2-table-"] tbody, 
-    #amily2_memorisation_forms_panel table[id^="amily2-table-"] th, 
-    #amily2_memorisation_forms_panel table[id^="amily2-table-"] td, 
-    #amily2_memorisation_forms_panel table[id^="amily2-table-"] tr {
-        display: block;
+    #upper-controls-wrapper {
+        padding: var(--am2-padding-main);
     }
 
-    /* 【V74.0 核心修正】不再隐藏表头，而是让它也参与到卡片式布局中 */
-    #amily2_memorisation_forms_panel table[id^="amily2-table-"] thead {
-        display: block;
-    }
-
-    #amily2_memorisation_forms_panel table[id^="amily2-table-"] thead tr {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 5px;
-        border: 1px solid var(--am2-header-editable-focus-outline, #79b8ff);
-        border-radius: 8px;
-        padding: 8px;
-        margin-bottom: 10px;
-        background: rgba(0,0,0,0.2);
-    }
-
-    #amily2_memorisation_forms_panel table[id^="amily2-table-"] th {
-        flex-grow: 1;
-        min-width: 120px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background-color: var(--am2-header-editable-bg) !important;
-        border: 1px solid var(--am2-header-editable-focus-outline, #79b8ff);
-        border-radius: 5px;
-        padding: 5px 8px;
-    }
-
-    /* 【V74.0 新增】默认隐藏移动端编辑按钮 */
-    .mobile-edit-handle {
-        display: none;
-    }
-
-    #amily2_memorisation_forms_panel table[id^="amily2-table-"] tr {
-        border: 1px solid var(--am2-table-border, #444);
-        border-radius: 8px;
-        margin-bottom: 15px;
-        background: rgba(0,0,0,0.1);
-        position: relative;
-        padding-top: 35px;
-    }
-
-    #amily2_memorisation_forms_panel table[id^="amily2-table-"] td {
-        border: none;
-        border-bottom: 1px dotted rgba(255, 255, 255, 0.15);
-        position: relative;
-        padding-left: 45% !important;
-        text-align: right !important;
-        min-height: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        /* 【V65.0 核心】确保在移动端也能正确断词 */
-        overflow-wrap: break-word;
-        word-wrap: break-word;
-        word-break: break-word;
-    }
-
-    #amily2_memorisation_forms_panel table[id^="amily2-table-"] td:last-child {
-        border-bottom: none;
-    }
-
-    #amily2_memorisation_forms_panel table[id^="amily2-table-"] td:before {
-        content: attr(data-label);
-        position: absolute;
-        left: 10px;
-        width: 40%;
-        padding-right: 10px;
-        white-space: nowrap;
-        text-align: left !important;
-        font-weight: bold;
-        color: var(--am2-header-color, #e0e0e0);
-    }
-
-    #amily2_memorisation_forms_panel table[id^="amily2-table-"] td.index-col {
-        display: none;
-    }
-    
-    #amily2_memorisation_forms_panel table[id^="amily2-table-"] tr .delete-row-handle {
-        display: block;
-        position: absolute;
-        top: 8px;
-        right: 8px;
-        width: 28px;
-        height: 28px;
-        background-color: rgba(255, 82, 82, 0.5) !important;
-        color: white !important;
-        border-radius: 50%;
-        text-align: center;
-        line-height: 28px;
-        font-size: 16px;
-        cursor: pointer;
-        padding: 0 !important;
-        border: none;
-        z-index: 10;
-    }
-    
-    #amily2_memorisation_forms_panel table[id^="amily2-table-"] tr .delete-row-handle:before {
-        content: "×";
-    }
-
-    /* 【V74.0 新增】只在移动端显示编辑按钮 */
-    #amily2_memorisation_forms_panel .mobile-edit-handle {
-        display: inline-block;
-        color: var(--am2-title-icon-color, #9e8aff);
+    #amily2_memorisation_forms_panel #all-tables-container {
+        padding: 10px 2px; 
     }
 }
