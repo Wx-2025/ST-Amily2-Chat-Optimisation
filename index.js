@@ -1,9 +1,9 @@
 import { createDrawer } from "./ui/drawer.js";
-import "./MiZheSi/index.js"; // 【密折司】独立模块
-import "./PreOptimizationViewer/index.js"; // 【优化前文查看器】独立模块
+import "./MiZheSi/index.js"; 
+import "./PreOptimizationViewer/index.js";
 import { registerSlashCommands } from "./core/commands.js";
 import { onMessageReceived, handleTableUpdate } from "./core/events.js";
-import { injectTableData } from "./core/table-system/injector.js"; // 【内存储司】注入器
+import { injectTableData } from "./core/table-system/injector.js"; 
 import { loadTables } from './core/table-system/manager.js';
 import { renderTables } from './ui/table-bindings.js';
 import { log } from './core/table-system/logger.js';
@@ -14,9 +14,6 @@ import { pluginVersion, extensionName, defaultSettings } from './utils/settings.
 import { tableSystemDefaultSettings } from './core/table-system/settings.js';
 import { extension_settings } from '/scripts/extensions.js';
 
-// =====================================================================
-// ======== 【凤凰阁】 - 内联主题管理器 v5.0 (最终裁定版) ========
-// =====================================================================
 const STYLE_SETTINGS_KEY = 'amily2_custom_styles';
 const STYLE_ROOT_SELECTOR = '#amily2_memorisation_forms_panel';
 let styleRoot = null;
@@ -32,7 +29,6 @@ function applyStyles(styleObject) {
     const root = getStyleRoot();
     if (!root || !styleObject) return;
 
-    // 【V35.0 最终修正】在应用样式前，安全地删除评论字段，确保导入不受影响
     delete styleObject._comment;
 
     for (const [key, value] of Object.entries(styleObject)) {
@@ -114,9 +110,20 @@ function importStyles() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
+    input.style.display = 'none';
+
+    const cleanup = () => {
+        if (document.body.contains(input)) {
+            document.body.removeChild(input);
+        }
+    };
+
     input.onchange = e => {
         const file = e.target.files[0];
-        if (!file) return;
+        if (!file) {
+            cleanup();
+            return;
+        }
         const reader = new FileReader();
         reader.onload = event => {
             try {
@@ -129,10 +136,14 @@ function importStyles() {
                 toastr.success('主题已成功导入并应用！');
             } catch (error) {
                 toastr.error(`导入失败：${error.message}`, '错误');
+            } finally {
+                cleanup();
             }
         };
         reader.readAsText(file);
     };
+
+    document.body.appendChild(input);
     input.click();
 }
 
@@ -172,7 +183,6 @@ async function handleMessageBoard() {
         const messageBoard = $('#amily2_message_board');
         const messageContent = $('#amily2_message_content');
         
-        // 使用 .html() 来正确渲染可能包含的 HTML 标签
         messageContent.html(messageData.message); 
         messageBoard.show();
         console.log("【Amily2号-内务府】已成功获取并展示来自陛下的最新圣谕。");
@@ -180,12 +190,10 @@ async function handleMessageBoard() {
 }
 
 
-// 【强化版】皇家制衣官
 function loadPluginStyles() {
-    // 这是一个可复用的内部律法，用于为任何一件华服（CSS文件）赋予生命
     const loadStyleFile = (fileName) => {
-        const styleId = `amily2-style-${fileName.split('.')[0]}`; // 为每件华服创建独一无二的身份标识
-        if (document.getElementById(styleId)) return; // 如果已经穿上，则无需重复
+        const styleId = `amily2-style-${fileName.split('.')[0]}`; 
+        if (document.getElementById(styleId)) return; 
 
         const extensionPath = `scripts/extensions/third-party/${extensionName}/assets/${fileName}?v=${Date.now()}`;
 
@@ -204,7 +212,7 @@ function loadPluginStyles() {
     loadStyleFile("hanlinyuan.css"); // 【第三道圣谕】为翰林院披上其专属华服
     loadStyleFile("table.css"); // 【第四道圣谕】为内存储司披上其专属华服
 }
-
+//请叫我大爹
 
 window.addEventListener("error", (event) => {
   const stackTrace = event.error?.stack || "";
@@ -221,10 +229,7 @@ jQuery(async () => {
   if (!extension_settings[extensionName]) {
     extension_settings[extensionName] = {};
   }
-  // 合并主设置与表格系统的默认设置
   const combinedDefaultSettings = { ...defaultSettings, ...tableSystemDefaultSettings };
-  
-  // 应用最终合并后的设置
   Object.assign(extension_settings[extensionName], {
     ...combinedDefaultSettings,
     ...extension_settings[extensionName],
@@ -251,33 +256,23 @@ jQuery(async () => {
         console.log("[Amily2号-开国大典] 步骤三：开始召唤府邸...");
         createDrawer();
 
-
-
         console.log("[Amily2号-开国大典] 步骤四：部署帝国哨兵网络...");
         if (!window.amily2EventsRegistered) {
-            // 保留旧的事件监听器，用于处理非表格相关的逻辑
             eventSource.on(event_types.MESSAGE_RECEIVED, onMessageReceived);
             eventSource.on(event_types.IMPERSONATE_READY, onMessageReceived);
-
-            // 【V3 重构】为表格系统增补新的、独立的哨兵
             eventSource.on(event_types.MESSAGE_RECEIVED, (chat_id) => handleTableUpdate(chat_id));
             eventSource.on(event_types.MESSAGE_SWIPED, (chat_id) => handleTableUpdate(chat_id));
             eventSource.on(event_types.MESSAGE_EDITED, (mes_id) => handleTableUpdate(mes_id));
 
             eventSource.on(event_types.CHAT_CHANGED, () => {
-                // 当聊天/角色切换时，重新加载并渲染表格
                 setTimeout(() => {
                     log("【监察系统】检测到“朝代更迭”(CHAT_CHANGED)，开始重修史书并刷新宫殿...", 'info');
-                    // 只需加载和渲染，无需执行指令
                     loadTables();
                     renderTables();
                 }, 100);
             });
-
-            // 【V4 最终版】为确保回滚万无一失，增补对删除事件的精确监听
             eventSource.on(event_types.MESSAGE_DELETED, (message, index) => {
                 log(`【监察系统】检测到消息 ${index} 被删除，开始精确回滚UI状态。`, 'warn');
-                // 加载被删除消息之前的状态，并刷新UI
                 loadTables(index);
                 renderTables();
             });
@@ -290,16 +285,12 @@ jQuery(async () => {
         const originalFunction = window[officialFunctionName];
 
         if (typeof originalFunction === 'function') {
-            // 如果翰林院（或其他插件）已在位，则创建代理，和平共存
             window[officialFunctionName] = async function(...args) {
-                // 1. 先由内存储司处理表格注入
                 injectTableData(...args);
-                // 2. 再由原函数（翰林院）处理其逻辑
-                await originalFunction.apply(this, args); // 【V30.8 最终修正】确保 this 上下文正确传递
+                await originalFunction.apply(this, args); 
             };
             console.log(`[Amily2-内存储司] 已成功代理 ${officialFunctionName}，与翰林院协同工作。`);
         } else {
-            // 如果无人占用，则直接接管
             window[officialFunctionName] = injectTableData;
             console.log(`[Amily2-内存储司] 已注册全局函数 ${officialFunctionName}，独立负责注入。`);
         }
@@ -309,7 +300,6 @@ jQuery(async () => {
         handleUpdateCheck();
         handleMessageBoard();
 
-        // 【V33.0 最终裁定】延迟加载并绑定主题功能，确保所有DOM元素都已就位
         setTimeout(() => {
             try {
                 loadAndApplyStyles();
@@ -326,8 +316,7 @@ jQuery(async () => {
             } catch (error) {
                 log(`【凤凰阁】内联主题系统初始化失败: ${error}`, 'error');
             }
-        }, 500); // 延迟500毫秒，给予充分的渲染时间
-
+        }, 500); 
       } catch (error) {
         console.error("!!!【开国大典失败】在执行系列法令时发生严重错误:", error);
       }
