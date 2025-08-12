@@ -1,7 +1,7 @@
 {
     "name": "Amily2号聊天优化助手",
     "display_name": "Amily2号助手",
-    "version": "1.3.1",
+    "version": "1.3.2",
     "author": "Wx-2025",
     "description": "一个拥有独立UI的智能优化引擎，连接世界书，并具备即时总结与自动存档能力，御用档案大师。",
     "minSillyTavernVersion": "1.10.0",
@@ -12,6 +12,7 @@
     "js": "index.js",
     "styles": ["style.css"]
 }
+
 
 
 
