@@ -38,6 +38,8 @@
 
     --am2-controls-gap: 5px;
     --am2-controls-margin-bottom: 10px;
+
+    --am2-cell-highlight-bg: rgba(144, 238, 144, 0.3);
 }
 
 
@@ -547,4 +549,9 @@ input:checked + .slider:before {
     #amily2_memorisation_forms_panel #all-tables-container {
         padding: 10px 2px; 
     }
+}
+
+#amily2_memorisation_forms_panel .cell-highlight {
+    background-color: var(--am2-cell-highlight-bg, rgba(144, 238, 144, 0.3)) !important;
+    transition: background-color 0.3s ease-in-out;
 }
