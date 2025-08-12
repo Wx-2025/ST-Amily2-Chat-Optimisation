@@ -1,10 +1,10 @@
 import { createDrawer } from "./ui/drawer.js";
-import "./MiZheSi/index.js"; 
+import "./MiZheSi/index.js";
 import "./PreOptimizationViewer/index.js";
 import { registerSlashCommands } from "./core/commands.js";
 import { onMessageReceived, handleTableUpdate } from "./core/events.js";
-import { injectTableData } from "./core/table-system/injector.js"; 
-import { loadTables } from './core/table-system/manager.js';
+import { injectTableData } from "./core/table-system/injector.js";
+import { loadTables, clearHighlights } from './core/table-system/manager.js';
 import { renderTables } from './ui/table-bindings.js';
 import { log } from './core/table-system/logger.js';
 import { eventSource, event_types, saveSettingsDebounced } from '/script.js';
@@ -28,7 +28,6 @@ function getStyleRoot() {
 function applyStyles(styleObject) {
     const root = getStyleRoot();
     if (!root || !styleObject) return;
-
     delete styleObject._comment;
 
     for (const [key, value] of Object.entries(styleObject)) {
@@ -81,7 +80,8 @@ function getDefaultCssVars() {
         "--am2-header-editable-focus-outline": "1px solid #79b8ff", "--am2-cell-editable-bg": "rgba(255, 255, 172, 0.1)",
         "--am2-cell-editable-focus-bg": "rgba(255, 255, 172, 0.25)", "--am2-cell-editable-focus-outline": "1px solid #ffc107",
         "--am2-index-col-bg": "rgba(0, 0, 0, 0.3) !important", "--am2-index-col-color": "#aaa !important", "--am2-index-col-width": "40px",
-        "--am2-index-col-padding": "10px 5px !important", "--am2-controls-gap": "5px", "--am2-controls-margin-bottom": "10px"
+        "--am2-index-col-padding": "10px 5px !important", "--am2-controls-gap": "5px", "--am2-controls-margin-bottom": "10px",
+        "--am2-cell-highlight-bg": "rgba(144, 238, 144, 0.3)"
     };
 }
 
@@ -193,7 +193,7 @@ async function handleMessageBoard() {
 function loadPluginStyles() {
     const loadStyleFile = (fileName) => {
         const styleId = `amily2-style-${fileName.split('.')[0]}`; 
-        if (document.getElementById(styleId)) return; 
+        if (document.getElementById(styleId)) return;
 
         const extensionPath = `scripts/extensions/third-party/${extensionName}/assets/${fileName}?v=${Date.now()}`;
 
@@ -206,13 +206,13 @@ function loadPluginStyles() {
         console.log(`[Amily2号-皇家制衣局] 已为帝国披上华服: ${fileName}`);
     };
 
-    // 颁布三道制衣圣谕
+    // 颁布四道制衣圣谕
     loadStyleFile("style.css"); // 【第一道圣谕】为帝国主体宫殿披上通用华服
     loadStyleFile("historiography.css"); // 【第二道圣谕】为敕史局披上其专属华服
     loadStyleFile("hanlinyuan.css"); // 【第三道圣谕】为翰林院披上其专属华服
     loadStyleFile("table.css"); // 【第四道圣谕】为内存储司披上其专属华服
 }
-//请叫我大爹
+
 
 window.addEventListener("error", (event) => {
   const stackTrace = event.error?.stack || "";
@@ -229,7 +229,9 @@ jQuery(async () => {
   if (!extension_settings[extensionName]) {
     extension_settings[extensionName] = {};
   }
+
   const combinedDefaultSettings = { ...defaultSettings, ...tableSystemDefaultSettings };
+
   Object.assign(extension_settings[extensionName], {
     ...combinedDefaultSettings,
     ...extension_settings[extensionName],
@@ -256,23 +258,39 @@ jQuery(async () => {
         console.log("[Amily2号-开国大典] 步骤三：开始召唤府邸...");
         createDrawer();
 
+
+
         console.log("[Amily2号-开国大典] 步骤四：部署帝国哨兵网络...");
         if (!window.amily2EventsRegistered) {
+
             eventSource.on(event_types.MESSAGE_RECEIVED, onMessageReceived);
             eventSource.on(event_types.IMPERSONATE_READY, onMessageReceived);
+
+
             eventSource.on(event_types.MESSAGE_RECEIVED, (chat_id) => handleTableUpdate(chat_id));
-            eventSource.on(event_types.MESSAGE_SWIPED, (chat_id) => handleTableUpdate(chat_id));
+            eventSource.on(event_types.MESSAGE_SWIPED, (chat_id) => {
+
+                clearHighlights();
+                handleTableUpdate(chat_id);
+            });
             eventSource.on(event_types.MESSAGE_EDITED, (mes_id) => handleTableUpdate(mes_id));
 
             eventSource.on(event_types.CHAT_CHANGED, () => {
+
                 setTimeout(() => {
                     log("【监察系统】检测到“朝代更迭”(CHAT_CHANGED)，开始重修史书并刷新宫殿...", 'info');
+
+                    clearHighlights();
                     loadTables();
                     renderTables();
                 }, 100);
             });
+
+
             eventSource.on(event_types.MESSAGE_DELETED, (message, index) => {
                 log(`【监察系统】检测到消息 ${index} 被删除，开始精确回滚UI状态。`, 'warn');
+
+                clearHighlights();
                 loadTables(index);
                 renderTables();
             });
@@ -285,8 +303,11 @@ jQuery(async () => {
         const originalFunction = window[officialFunctionName];
 
         if (typeof originalFunction === 'function') {
+
             window[officialFunctionName] = async function(...args) {
+
                 injectTableData(...args);
+
                 await originalFunction.apply(this, args); 
             };
             console.log(`[Amily2-内存储司] 已成功代理 ${officialFunctionName}，与翰林院协同工作。`);
@@ -317,6 +338,7 @@ jQuery(async () => {
                 log(`【凤凰阁】内联主题系统初始化失败: ${error}`, 'error');
             }
         }, 500); 
+
       } catch (error) {
         console.error("!!!【开国大典失败】在执行系列法令时发生严重错误:", error);
       }
