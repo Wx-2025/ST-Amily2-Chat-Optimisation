@@ -62,18 +62,18 @@
             <fieldset class="hly-settings-group">
                 <legend><i class="fas fa-broadcast-tower"></i> 神力之源 (API)</legend>
                 <div class="hly-control-block">
-                    <label for="hly-api-endpoint">API设定:</label>
-                    <select id="hly-api-endpoint" class="hly-imperial-brush" data-setting-key="retrieval.apiEndpoint" data-type="string">
-                        <option value="openai">未完成请自定义</option>
-                        <option value="azure">未完成请自定义</option>
-                        <option value="custom">自定义</option>
-                    </select>
+                    <label for="hly-api-endpoint">API模式:</label>
+                                <select id="hly-api-endpoint" class="hly-imperial-brush" data-setting-key="retrieval.apiEndpoint" data-type="string">
+                                    <option value="custom">自定义 (OpenAI/Azure 兼容)</option>
+                                    <option value="google_direct">Google 直连</option>
+                                    <option value="local_proxy">本地代理 (LM Studio/Ollama)</option>
+                                </select>
                 </div>
-                <div class="hly-control-block" id="hly-custom-endpoint-docket" style="display: none;">
-                    <label for="hly-custom-api-url">自定义路径:</label>
-                    <input type="text" id="hly-custom-api-url" class="hly-imperial-brush" placeholder="输入神力源泉之精确路径" data-setting-key="retrieval.customApiUrl" data-type="string">
+                <div class="hly-control-block" id="hly-custom-endpoint-docket">
+                    <label for="hly-custom-api-url">API URL:</label>
+                    <input type="text" id="hly-custom-api-url" class="hly-imperial-brush" placeholder="根据所选模式填写" data-setting-key="retrieval.customApiUrl" data-type="string">
                 </div>
-                <div class="hly-control-block">
+                <div class="hly-control-block" id="hly-api-key-group">
                     <label for="hly-api-key">通行令牌 (API Key):</label>
                     <input type="password" id="hly-api-key" class="hly-imperial-brush" placeholder="请在此输入您的通行令牌" data-setting-key="retrieval.apiKey" data-type="string">
                 </div>
@@ -101,10 +101,17 @@
                     </label>
                 </div>
                 <div class="hly-control-block">
-                    <label for="hly-rerank-url">Rerank API 地址:</label>
-                    <input type="text" id="hly-rerank-url" class="hly-imperial-brush" placeholder="例如: https://api.siliconflow.cn/v1/rerank" data-setting-key="rerank.url" data-type="string">
+                    <label for="hly-rerank-api-mode">Rerank API 模式:</label>
+                    <select id="hly-rerank-api-mode" class="hly-imperial-brush" data-setting-key="rerank.apiMode" data-type="string">
+                        <option value="custom">自定义 (兼容API)</option>
+                        <option value="local_proxy">本地代理</option>
+                    </select>
                 </div>
                 <div class="hly-control-block">
+                    <label for="hly-rerank-url">Rerank API 地址:</label>
+                    <input type="text" id="hly-rerank-url" class="hly-imperial-brush" placeholder="根据所选模式填写" data-setting-key="rerank.url" data-type="string">
+                </div>
+                <div class="hly-control-block" id="hly-rerank-api-key-group">
                     <label for="hly-rerank-api-key">Rerank API Key:</label>
                     <input type="password" id="hly-rerank-api-key" class="hly-imperial-brush" placeholder="请输入您的 Rerank API Key" data-setting-key="rerank.apiKey" data-type="string">
                 </div>
