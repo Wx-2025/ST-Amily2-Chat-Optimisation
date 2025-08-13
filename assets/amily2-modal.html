@@ -178,7 +178,7 @@
                     <label for="amily2_api_url">API URL</label>
                     <input id="amily2_api_url" type="text" class="text_pole" placeholder="http://localhost:3000/v1" />
                 </div>
-                <div class="amily2_settings_block">
+                <div class="amily2_settings_block" id="amily2_api_key_wrapper">
                     <label for="amily2_api_key">API Key</label>
                     <input id="amily2_api_key" type="password" class="text_pole" placeholder="sk-..." />
                 </div>
@@ -189,7 +189,7 @@
         <input id="amily2_force_proxy" type="checkbox" />
         <span>强制使用SillyTavern代理 (用于Claw/特殊接口)</span>
     </label>
-    <div class="notes">勾选后将禁用模型刷新，并需要您在下方手动输入模型名称。</div>
+    <div class="notes">勾选后将通过SillyTavern后端获取模型，无需填写API Key。</div>
 </div>
 
 <div class="amily2_settings_block">
