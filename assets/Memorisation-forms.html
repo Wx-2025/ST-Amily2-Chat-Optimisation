@@ -38,12 +38,15 @@
                         </select>
                         <label for="table-injection-depth">注入深度</label>
                         <input type="number" id="table-injection-depth" class="text_pole" value="3">
-                        <label for="table-injection-role">注入角色</label>
-                        <select id="table-injection-role" class="text_pole">
-                            <option value="0">系统</option>
-                            <option value="1">用户</option>
-                            <option value="2">助手</option>
-                        </select>
+                        <label>注入角色</label>
+                        <div class="radio-group">
+                            <input type="radio" id="table-role-system" name="table-injection-role" value="0" data-setting-key="injection.role" data-type="integer">
+                            <label for="table-role-system">系统</label>
+                            <input type="radio" id="table-role-user" name="table-injection-role" value="1" data-setting-key="injection.role" data-type="integer">
+                            <label for="table-role-user">用户</label>
+                            <input type="radio" id="table-role-ai" name="table-injection-role" value="2" data-setting-key="injection.role" data-type="integer">
+                            <label for="table-role-ai">AI</label>
+                        </div>
                         <label for="batch-filling-threshold">批处理阈值</label>
                         <input type="number" id="batch-filling-threshold" class="text_pole" value="30">
                     </div>
@@ -51,6 +54,15 @@
 
 
                 <div id="sinan-action-center-tab" class="sinan-tab-pane">
+                    <div class="control-block-with-switch" style="margin-bottom: 15px; padding: 8px; border: 2px solid #4a9eff; border-radius: 5px; background: rgba(74, 158, 255, 0.1);">
+                        <label for="table-system-master-switch" style="font-weight: bold; color: #4a9eff;">
+                            <i class="fas fa-power-off"></i> 表格系统总开关
+                        </label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="table-system-master-switch" data-setting-key="table_system_enabled" data-type="boolean">
+                            <span class="slider"></span>
+                        </label> 
+                    </div>
                     <div class="control-block-with-switch" style="margin-bottom: 10px;">
                         <label for="table-injection-enabled-toggle">启用表格注入</label>
                         <label class="toggle-switch">
@@ -75,7 +87,7 @@
                         <button id="amily2-import-preset-btn" class="menu_button secondary small_button interactable"><i class="fas fa-file-upload"></i> 导入预设</button>
                         <button id="amily2-clear-all-tables-btn" class="menu_button danger small_button interactable"><i class="fas fa-trash-alt"></i> 清空内容</button>
                     </div>
-                    <p class="notes" style="margin-top: 8px; margin-bottom: 10px;">说明：可以导出不含剧情的“纯净预设”用于分享，或导出包含剧情的“完整备份”用于存档。</p>
+                    <p class="notes" style="margin-top: 8px; margin-bottom: 10px;">说明：可以导出不含剧情的"纯净预设"用于分享，或导出包含剧情的"完整备份"用于存档。</p>
                     
                     <hr class="section-divider" style="margin: 10px 0;">
                     
