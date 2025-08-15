@@ -492,23 +492,49 @@ input:checked + .slider:before {
 
 .amily2-context-menu {
     display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    z-index: 1001; 
+    z-index: 9999;
     flex-direction: column;
-    gap: 0; 
-    padding: 2px; 
+    gap: 0;
+    padding: 4px;
     background-color: rgba(30, 30, 40, 0.98);
-    border: 1px solid rgba(255, 255, 255, 0.5); 
-    border-radius: 4px; 
-    box-shadow: none; 
-    backdrop-filter: blur(5px);
-    -webkit-backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 6px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    width: max-content;
+}
+
+/* 默认情况下，行菜单是绝对定位的 */
+.amily2-row-context-menu {
+    position: absolute;
 }
 
 .amily2-context-menu.amily2-menu-active {
     display: flex; 
+}
+
+/* 【列菜单】网格布局 */
+th .amily2-context-menu {
+    position: static; /* 覆盖默认的 absolute，成为普通文档流的一部分 */
+    display: none; /* 默认隐藏 */
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+    padding: 8px;
+    width: 100%; /* 宽度填充整个 th */
+    box-sizing: border-box;
+    box-shadow: none; /* 内部显示不需要阴影 */
+    border: none; /* 内部显示不需要边框 */
+    background-color: transparent; /* 背景透明 */
+}
+
+/* 当 th 激活时，显示菜单并隐藏文本 */
+th.amily2-menu-open .amily2-context-menu {
+    display: grid;
+}
+
+th.amily2-menu-open .amily2-header-text {
+    display: none;
 }
 
 #amily2_memorisation_forms_panel .amily2-context-menu .menu_button {
@@ -554,4 +580,44 @@ input:checked + .slider:before {
 #amily2_memorisation_forms_panel .cell-highlight {
     background-color: var(--am2-cell-highlight-bg, rgba(144, 238, 144, 0.3)) !important;
     transition: background-color 0.3s ease-in-out;
+}
+
+/* 自定义列名编辑对话框样式 */
+.custom-input-dialog {
+    border: none;
+    border-radius: 12px;
+    background: rgba(30, 30, 40, 0.95);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+    min-width: 320px;
+    max-width: 450px;
+}
+
+.custom-input-dialog .popup-body {
+    background: rgba(40, 45, 60, 0.9);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.custom-input-dialog #column-name-input {
+    transition: all 0.3s ease;
+}
+
+.custom-input-dialog #column-name-input:focus {
+    border-color: rgba(158, 138, 255, 0.8) !important;
+    box-shadow: 0 0 8px rgba(158, 138, 255, 0.3);
+    outline: none;
+}
+
+.custom-input-dialog .popup-button-ok:hover {
+    background: rgba(158, 138, 255, 0.5) !important;
+    border-color: rgba(158, 138, 255, 0.8) !important;
+    transform: translateY(-1px);
+}
+
+.custom-input-dialog .popup-button-cancel:hover {
+    background: rgba(120, 120, 120, 0.4) !important;
+    border-color: rgba(120, 120, 120, 0.6) !important;
+    transform: translateY(-1px);
 }
