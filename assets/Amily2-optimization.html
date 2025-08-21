@@ -106,6 +106,15 @@
     </div>
 
     <div class="amily2_opt_settings_block">
+        <label for="amily2_opt_table_enabled">启用表格</label>
+        <label class="toggle-switch">
+            <input id="amily2_opt_table_enabled" type="checkbox" />
+            <span class="slider"></span>
+        </label>
+        <small class="notes">开启后，会将表格系统的内容作为参考信息发送给API。</small>
+    </div>
+
+    <div class="amily2_opt_settings_block">
         <label for="amily2_opt_context_limit">上下文条数: <span id="amily2_opt_context_limit_value">10</span></label>
         <input type="range" id="amily2_opt_context_limit" min="1" max="50" step="1" value="10">
         <div class="amily2_opt_settings_block_hint" style="color: var(--text_secondary); margin-top: 5px; font-size: 0.8em;">
