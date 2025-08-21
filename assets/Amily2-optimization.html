@@ -1,0 +1,167 @@
+<div class="amily2-header">
+    <div class="additional-features-title">
+        <i class="fas fa-feather-alt"></i> 剧情优化
+    </div>
+    <button id="amily2_back_to_main_from_optimization" class="menu_button secondary small_button interactable">
+        返回主殿 <i class="fas fa-arrow-right"></i>
+    </button>
+</div>
+<hr class="header-divider" style="margin-top: 5px; margin-bottom: 10px;">
+
+<fieldset class="settings-group">
+    <legend><i class="fas fa-cogs"></i> 通用设置</legend>
+    <div class="amily2_opt_settings_block">
+        <label for="amily2_opt_enabled"><strong>插件总开关</strong></label>
+        <label class="toggle-switch">
+            <input id="amily2_opt_enabled" type="checkbox" />
+            <span class="slider"></span>
+        </label>
+    </div>
+    <div class="amily2_opt_settings_block">
+        <div class="notes" style="text-align: center; padding: 15px; background-color: rgba(0,0,0,0.2); border-radius: 8px;">
+            <i class="fas fa-info-circle"></i> <strong>API与模型配置</strong><br>
+            剧情优化功能现在将使用您在 <strong>Amily2号主面板</strong> 中配置的统一API设置。<br>
+            请返回主面板进行API和模型的配置。
+        </div>
+    </div>
+</fieldset>
+
+<fieldset class="settings-group">
+    <legend><i class="fas fa-edit"></i> 提示词指令</legend>
+
+    <div class="amily2_opt_settings_block">
+        <label for="amily2_opt_prompt_preset_select">加载提示词预设</label>
+        <div class="amily2_opt_preset_selector_wrapper">
+            <select id="amily2_opt_prompt_preset_select" class="text_pole">
+                <option value="">-- 选择一个预设 --</option>
+            </select>
+            <button id="amily2_opt_import_prompt_presets" class="menu_button" title="导入预设"><i class="fa-solid fa-upload"></i></button>
+            <button id="amily2_opt_export_prompt_presets" class="menu_button" title="导出所有预设"><i class="fa-solid fa-download"></i></button>
+            <button id="amily2_opt_save_prompt_preset" class="menu_button" title="保存当前提示词为预设"><i class="fa-solid fa-save"></i></button>
+            <button id="amily2_opt_delete_prompt_preset" class="menu_button" title="删除当前选中的预设" style="display: none;"><i class="fa-solid fa-trash-alt"></i></button>
+            <input type="file" id="amily2_opt_preset_file_input" style="display: none;" accept=".json">
+        </div>
+        <small class="notes">导入/导出JSON格式的预设文件。保存当前提示词。加载或删除选中的预设。</small>
+    </div>
+
+    <div class="amily2_opt_settings_block">
+        <div class="amily2_opt_label_with_button_wrapper">
+            <label for="amily2_opt_main_prompt">主系统提示词 (通用)</label>
+            <button id="amily2_opt_reset_main_prompt" class="menu_button amily2_opt_reset_button" title="重置为主提示词"><i class="fa-solid fa-undo"></i></button>
+        </div>
+        <textarea id="amily2_opt_main_prompt" class="text_pole" rows="3"></textarea>
+        <small class="notes">为AI设定一个通用的身份或背景。</small>
+    </div>
+    <div class="amily2_opt_settings_block">
+        <div class="amily2_opt_label_with_button_wrapper">
+            <label for="amily2_opt_system_prompt">拦截任务详细指令</label>
+            <button id="amily2_opt_reset_system_prompt" class="menu_button amily2_opt_reset_button" title="重置为默认拦截任务"><i class="fa-solid fa-undo"></i></button>
+        </div>
+        <textarea id="amily2_opt_system_prompt" class="text_pole" rows="8"></textarea>
+        <small class="notes">告诉API如何具体地处理用户的输入。</small>
+    </div>
+    <div class="amily2_opt_settings_block">
+         <div class="amily2_opt_label_with_button_wrapper">
+            <label for="amily2_opt_final_system_directive">最终注入指令 (Storyteller Directive)</label>
+            <button id="amily2_opt_reset_final_system_directive" class="menu_button amily2_opt_reset_button" title="重置为默认注入指令"><i class="fa-solid fa-undo"></i></button>
+        </div>
+        <textarea id="amily2_opt_final_system_directive" class="text_pole" rows="4"></textarea>
+        <small class="notes">这段指令将与用户的输入和生成的`<plot>`模块组合，最终发送给酒馆AI。</small>
+    </div>
+
+    <fieldset class="settings-group">
+        <legend><i class="fa-solid fa-right-left"></i> 匹配替换</legend>
+        <small class="notes" style="display: block; margin-bottom: 10px;">
+            在发送前，插件会将下方设置的数值替换掉三个提示词指令中的占位符（sulv1, sulv2, sulv3, sulv4）。
+        </small>
+        <div class="amily2_opt_settings_block">
+            <label for="amily2_opt_rate_main">主线剧情推进速率 (sulv1)</label>
+            <input id="amily2_opt_rate_main" type="number" class="text_pole" step="0.05" value="1.0">
+        </div>
+        <div class="amily2_opt_settings_block">
+            <label for="amily2_opt_rate_personal">个人线推进速率 (sulv2)</label>
+            <input id="amily2_opt_rate_personal" type="number" class="text_pole" step="0.05" value="1.0">
+        </div>
+        <div class="amily2_opt_settings_block">
+            <label for="amily2_opt_rate_erotic">色情事件推进速率 (sulv3)</label>
+            <input id="amily2_opt_rate_erotic" type="number" class="text_pole" step="0.05" value="1.0">
+        </div>
+        <div class="amily2_opt_settings_block">
+            <label for="amily2_opt_rate_cuckold">绿帽线推进速率 (sulv4)</label>
+            <input id="amily2_opt_rate_cuckold" type="number" class="text_pole" step="0.05" value="1.0">
+        </div>
+    </fieldset>
+</fieldset>
+
+<fieldset class="settings-group">
+    <legend><i class="fas fa-book-open"></i> 内容与上下文设置</legend>
+
+    <div class="amily2_opt_settings_block">
+        <label for="amily2_opt_worldbook_enabled">启用世界书</label>
+        <label class="toggle-switch">
+            <input id="amily2_opt_worldbook_enabled" type="checkbox" />
+            <span class="slider"></span>
+        </label>
+        <small class="notes">开启后，会将角色绑定的世界书内容作为参考信息发送给API。</small>
+    </div>
+
+    <div class="amily2_opt_settings_block">
+        <label for="amily2_opt_context_limit">上下文条数: <span id="amily2_opt_context_limit_value">10</span></label>
+        <input type="range" id="amily2_opt_context_limit" min="1" max="50" step="1" value="10">
+        <div class="amily2_opt_settings_block_hint" style="color: var(--text_secondary); margin-top: 5px; font-size: 0.8em;">
+            从最近的聊天历史中提取指定数量的条目作为上下文发送。
+        </div>
+    </div>
+
+    <div class="amily2_opt_settings_block">
+        <label for="amily2_opt_worldbook_char_limit">世界书最大字符数: <span id="amily2_opt_worldbook_char_limit_value">60000</span></label>
+        <input type="range" id="amily2_opt_worldbook_char_limit" min="1000" max="200000" step="1000" value="60000">
+        <div class="amily2_opt_settings_block_hint" style="color: var(--text_secondary); margin-top: 5px; font-size: 0.8em;">
+            从上到下对准备发送到上下文中的世界书内容进行一个按照对应字符数量的截断，防止世界书内容过多引起AI不正常回复。
+        </div>
+    </div>
+
+    <hr>
+
+    <div class="amily2_opt_settings_block_radio">
+        <label>世界书来源</label>
+        <div class="amily2_opt_radio_group">
+            <input type="radio" id="amily2_opt_worldbook_source_character" name="amily2_opt_worldbook_source" value="character" checked>
+            <label for="amily2_opt_worldbook_source_character">使用角色卡绑定的世界书 (默认)</label>
+            <input type="radio" id="amily2_opt_worldbook_source_manual" name="amily2_opt_worldbook_source" value="manual">
+            <label for="amily2_opt_worldbook_source_manual">手动选择世界书</label>
+        </div>
+    </div>
+
+    <div id="amily2_opt_worldbook_select_wrapper" style="display: none;">
+        <div class="amily2_opt_settings_block">
+            <div class="amily2_opt_label_with_button_wrapper">
+                <label>选择世界书 (可多选)</label>
+                <button id="amily2_opt_refresh_worldbooks" class="menu_button" title="刷新世界书列表"><i class="fa-solid fa-sync"></i></button>
+            </div>
+            <div id="amily2_opt_worldbook_checkbox_list" class="amily2_opt_worldbook_entry_list" style="max-height: 150px;">
+                <!-- 世界书勾选框将在这里动态生成 -->
+            </div>
+            <small class="notes">勾选需要启用的世界书。插件将只从选定的世界书中读取条目。</small>
+        </div>
+    </div>
+
+    <div class="amily2_opt_settings_block">
+        <div class="amily2_opt_label_with_controls_wrapper">
+            <label>启用的世界书条目</label>
+            <div id="amily2_opt_worldbook_entry_controls">
+                <span id="amily2_opt_worldbook_entry_count"></span>
+                <button id="amily2_opt_worldbook_entry_select_all" class="menu_button">全选</button>
+                <button id="amily2_opt_worldbook_entry_deselect_all" class="menu_button">全不选</button>
+            </div>
+        </div>
+        <div id="amily2_opt_worldbook_entry_list_container" class="amily2_opt_worldbook_entry_list">
+            <!-- 世界书条目将在这里动态生成 -->
+        </div>
+        <small class="notes">下方会列出当前模式（手动或角色卡）下所有可用世界书的条目。请勾选需要启用的条目。</small>
+    </div>
+</fieldset>
+
+<div class="amily2_opt_footer">
+    <small class="notes">所有设置将在关闭此面板时自动保存。</small>
+</div>

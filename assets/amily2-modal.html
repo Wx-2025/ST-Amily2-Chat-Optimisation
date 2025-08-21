@@ -97,9 +97,12 @@
             <button id="amily2_update_button_new" class="menu_button small_button interactable" title="查看更新日志">更新</button>
         </div>
 
-        <div class="header-column right">
+        <div class="header-column right" style="flex-direction: row; align-items: center; gap: 5px;">
             <button id="amily2_open_additional_features" class="secret-chamber-button interactable side-button">
                 <i class="fas fa-landmark-dome"></i>内阁密室
+            </button>
+            <button id="amily2_open_plot_optimization" class="secret-chamber-button interactable side-button">
+                <i class="fas fa-feather-alt"></i>剧情优化
             </button>
         </div>
     </div>
@@ -175,22 +178,34 @@
             <fieldset class="settings-group">
                 <legend><i class="fas fa-network-wired"></i> API与模型配置</legend>
                 <div class="amily2_settings_block">
+                    <label for="amily2_api_provider">API 提供商</label>
+                    <select id="amily2_api_provider" class="text_pole">
+                        <option value="openai">OpenAI 自定义兼容</option>
+                        <option value="google">Google 直连</option>
+                        <option value="sillytavern_backend">SillyTavern 后端</option>
+                        <option value="sillytavern_preset">SillyTavern 预设</option>
+                    </select>
+                </div>
+                
+                <!-- OpenAI兼容：需要API URL和API Key -->
+                <div class="amily2_settings_block" id="amily2_api_url_wrapper">
                     <label for="amily2_api_url">API URL</label>
                     <input id="amily2_api_url" type="text" class="text_pole" placeholder="http://localhost:3000/v1" />
                 </div>
+                
+                <!-- API Key字段（OpenAI兼容和Google直连需要） -->
                 <div class="amily2_settings_block" id="amily2_api_key_wrapper">
                     <label for="amily2_api_key">API Key</label>
                     <input id="amily2_api_key" type="password" class="text_pole" placeholder="sk-..." />
                 </div>
-				
-				
-<div class="amily2_settings_block">
-    <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
-        <input id="amily2_force_proxy" type="checkbox" />
-        <span>强制使用SillyTavern代理 (用于Claw/特殊接口)</span>
-    </label>
-    <div class="notes">勾选后将通过SillyTavern后端获取模型，无需填写API Key。</div>
-</div>
+                
+                <!-- SillyTavern预设选择器 -->
+                <div class="amily2_settings_block" id="amily2_preset_wrapper" style="display: none;">
+                    <label for="amily2_preset_selector">选择预设</label>
+                    <select id="amily2_preset_selector" class="text_pole">
+                        <option value="">请选择预设...</option>
+                    </select>
+                </div>
 
 <div class="amily2_settings_block">
     <label for="amily2_model_selector">模型</label>
