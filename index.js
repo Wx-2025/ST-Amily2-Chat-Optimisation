@@ -1,12 +1,12 @@
 import { createDrawer } from "./ui/drawer.js";
-import "./MiZheSi/index.js"; 
-import "./PreOptimizationViewer/index.js"; 
+import "./MiZheSi/index.js"; // 【密折司】独立模块
+import "./PreOptimizationViewer/index.js"; // 【优化前文查看器】独立模块
 import { registerSlashCommands } from "./core/commands.js";
 import { onMessageReceived, handleTableUpdate } from "./core/events.js";
 import { processPlotOptimization } from "./core/summarizer.js";
 import { getContext } from "/scripts/extensions.js";
 import { characters, this_chid } from '/script.js';
-import { injectTableData } from "./core/table-system/injector.js"; 
+import { injectTableData } from "./core/table-system/injector.js"; // 【内存储司】注入器
 import { loadTables, clearHighlights } from './core/table-system/manager.js';
 import { renderTables } from './ui/table-bindings.js';
 import { log } from './core/table-system/logger.js';
@@ -16,6 +16,8 @@ import { setUpdateInfo, applyUpdateIndicator } from './ui/state.js';
 import { pluginVersion, extensionName, defaultSettings } from './utils/settings.js';
 import { tableSystemDefaultSettings } from './core/table-system/settings.js';
 import { extension_settings } from '/scripts/extensions.js';
+import { manageLorebookEntriesForChat } from './core/lore.js';
+
 
 const STYLE_SETTINGS_KEY = 'amily2_custom_styles';
 const STYLE_ROOT_SELECTOR = '#amily2_memorisation_forms_panel';
@@ -31,6 +33,7 @@ function getStyleRoot() {
 function applyStyles(styleObject) {
     const root = getStyleRoot();
     if (!root || !styleObject) return;
+
     delete styleObject._comment;
 
     for (const [key, value] of Object.entries(styleObject)) {
@@ -197,7 +200,6 @@ function loadPluginStyles() {
     const loadStyleFile = (fileName) => {
         const styleId = `amily2-style-${fileName.split('.')[0]}`; 
         if (document.getElementById(styleId)) return; 
-
         const extensionPath = `scripts/extensions/third-party/${extensionName}/assets/${fileName}?v=${Date.now()}`;
 
         const link = document.createElement("link");
@@ -234,6 +236,7 @@ jQuery(async () => {
     extension_settings[extensionName] = {};
   }
   const combinedDefaultSettings = { ...defaultSettings, ...tableSystemDefaultSettings };
+  
   Object.assign(extension_settings[extensionName], {
     ...combinedDefaultSettings,
     ...extension_settings[extensionName],
@@ -267,7 +270,6 @@ jQuery(async () => {
         let isProcessingPlotOptimization = false;
         async function onPlotGenerationAfterCommands(type, params, dryRun) {
             console.log("[Amily2-剧情优化] Generation after commands triggered", { type, params, dryRun, isProcessing: isProcessingPlotOptimization });
-            
             if (type === 'regenerate' || isProcessingPlotOptimization || dryRun) {
                 console.log("[Amily2-剧情优化] Skipping due to conditions:", { type, isProcessing: isProcessingPlotOptimization, dryRun });
                 return;
@@ -280,7 +282,6 @@ jQuery(async () => {
                 hasApiUrl: !!globalSettings?.apiUrl,
                 plotSettings: globalSettings
             });
-
             console.log("[Amily2-剧情优化] Detailed settings check:", {
                 globalEnabled: globalSettings?.enabled,
                 plotSettingsExists: !!globalSettings,
@@ -288,8 +289,8 @@ jQuery(async () => {
                 plotSettingsApiUrl: globalSettings?.apiUrl,
                 fullPlotSettings: globalSettings
             });
-            
-            const isPlotOptEnabled = globalSettings?.plotOpt_enabled !== false; // 如果未设置，默认启用
+
+            const isPlotOptEnabled = globalSettings?.plotOpt_enabled !== false; 
             if (!isPlotOptEnabled || !globalSettings?.apiUrl) {
                 console.log("[Amily2-剧情优化] Plot optimization disabled or missing API URL", {
                     optimizationEnabled: globalSettings?.plotOpt_enabled,
@@ -359,6 +360,7 @@ jQuery(async () => {
             eventSource.on(event_types.MESSAGE_EDITED, (mes_id) => handleTableUpdate(mes_id));
 
             eventSource.on(event_types.CHAT_CHANGED, () => {
+                manageLorebookEntriesForChat();
                 setTimeout(() => {
                     log("【监察系统】检测到“朝代更迭”(CHAT_CHANGED)，开始重修史书并刷新宫殿...", 'info');
                     clearHighlights();
@@ -366,7 +368,6 @@ jQuery(async () => {
                     renderTables();
                 }, 100);
             });
-
             eventSource.on(event_types.MESSAGE_DELETED, (message, index) => {
                 log(`【监察系统】检测到消息 ${index} 被删除，开始精确回滚UI状态。`, 'warn');
                 clearHighlights();
@@ -396,7 +397,6 @@ jQuery(async () => {
 
         handleUpdateCheck();
         handleMessageBoard();
-
         setTimeout(() => {
             try {
                 loadAndApplyStyles();
@@ -413,7 +413,7 @@ jQuery(async () => {
             } catch (error) {
                 log(`【凤凰阁】内联主题系统初始化失败: ${error}`, 'error');
             }
-        }, 500); // 延迟500毫秒，给予充分的渲染时间
+        }, 500); 
 
       } catch (error) {
         console.error("!!!【开国大典失败】在执行系列法令时发生严重错误:", error);
