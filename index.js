@@ -1,5 +1,6 @@
 import { createDrawer } from "./ui/drawer.js";
 import "./MiZheSi/index.js"; // 【密折司】独立模块
+import "./PresetSettings/index.js"; // 【预设设置】独立模块
 import "./PreOptimizationViewer/index.js"; // 【优化前文查看器】独立模块
 import { registerSlashCommands } from "./core/commands.js";
 import { onMessageReceived, handleTableUpdate } from "./core/events.js";
@@ -18,7 +19,6 @@ import { tableSystemDefaultSettings } from './core/table-system/settings.js';
 import { extension_settings } from '/scripts/extensions.js';
 import { manageLorebookEntriesForChat } from './core/lore.js';
 
-
 const STYLE_SETTINGS_KEY = 'amily2_custom_styles';
 const STYLE_ROOT_SELECTOR = '#amily2_memorisation_forms_panel';
 let styleRoot = null;
@@ -33,7 +33,6 @@ function getStyleRoot() {
 function applyStyles(styleObject) {
     const root = getStyleRoot();
     if (!root || !styleObject) return;
-
     delete styleObject._comment;
 
     for (const [key, value] of Object.entries(styleObject)) {
@@ -189,6 +188,7 @@ async function handleMessageBoard() {
         const messageBoard = $('#amily2_message_board');
         const messageContent = $('#amily2_message_content');
         
+        // 使用 .html() 来正确渲染可能包含的 HTML 标签
         messageContent.html(messageData.message); 
         messageBoard.show();
         console.log("【Amily2号-内务府】已成功获取并展示来自陛下的最新圣谕。");
@@ -200,6 +200,7 @@ function loadPluginStyles() {
     const loadStyleFile = (fileName) => {
         const styleId = `amily2-style-${fileName.split('.')[0]}`; 
         if (document.getElementById(styleId)) return; 
+
         const extensionPath = `scripts/extensions/third-party/${extensionName}/assets/${fileName}?v=${Date.now()}`;
 
         const link = document.createElement("link");
@@ -211,7 +212,7 @@ function loadPluginStyles() {
         console.log(`[Amily2号-皇家制衣局] 已为帝国披上华服: ${fileName}`);
     };
 
-    // 颁布五道制衣圣谕
+    // 颁布三道制衣圣谕
     loadStyleFile("style.css"); // 【第一道圣谕】为帝国主体宫殿披上通用华服
     loadStyleFile("historiography.css"); // 【第二道圣谕】为敕史局披上其专属华服
     loadStyleFile("hanlinyuan.css"); // 【第三道圣谕】为翰林院披上其专属华服
@@ -270,6 +271,7 @@ jQuery(async () => {
         let isProcessingPlotOptimization = false;
         async function onPlotGenerationAfterCommands(type, params, dryRun) {
             console.log("[Amily2-剧情优化] Generation after commands triggered", { type, params, dryRun, isProcessing: isProcessingPlotOptimization });
+
             if (type === 'regenerate' || isProcessingPlotOptimization || dryRun) {
                 console.log("[Amily2-剧情优化] Skipping due to conditions:", { type, isProcessing: isProcessingPlotOptimization, dryRun });
                 return;
@@ -282,6 +284,7 @@ jQuery(async () => {
                 hasApiUrl: !!globalSettings?.apiUrl,
                 plotSettings: globalSettings
             });
+
             console.log("[Amily2-剧情优化] Detailed settings check:", {
                 globalEnabled: globalSettings?.enabled,
                 plotSettingsExists: !!globalSettings,
@@ -289,7 +292,7 @@ jQuery(async () => {
                 plotSettingsApiUrl: globalSettings?.apiUrl,
                 fullPlotSettings: globalSettings
             });
-
+            
             const isPlotOptEnabled = globalSettings?.plotOpt_enabled !== false; 
             if (!isPlotOptEnabled || !globalSettings?.apiUrl) {
                 console.log("[Amily2-剧情优化] Plot optimization disabled or missing API URL", {
@@ -348,10 +351,8 @@ jQuery(async () => {
         }
         if (!window.amily2EventsRegistered) {
             eventSource.on(event_types.GENERATION_AFTER_COMMANDS, onPlotGenerationAfterCommands);
-            
             eventSource.on(event_types.MESSAGE_RECEIVED, onMessageReceived);
             eventSource.on(event_types.IMPERSONATE_READY, onMessageReceived);
-
             eventSource.on(event_types.MESSAGE_RECEIVED, (chat_id) => handleTableUpdate(chat_id));
             eventSource.on(event_types.MESSAGE_SWIPED, (chat_id) => {
                 clearHighlights();
@@ -368,6 +369,7 @@ jQuery(async () => {
                     renderTables();
                 }, 100);
             });
+
             eventSource.on(event_types.MESSAGE_DELETED, (message, index) => {
                 log(`【监察系统】检测到消息 ${index} 被删除，开始精确回滚UI状态。`, 'warn');
                 clearHighlights();
@@ -389,6 +391,7 @@ jQuery(async () => {
             };
             console.log(`[Amily2-内存储司] 已成功代理 ${officialFunctionName}，与翰林院协同工作。`);
         } else {
+
             window[officialFunctionName] = injectTableData;
             console.log(`[Amily2-内存储司] 已注册全局函数 ${officialFunctionName}，独立负责注入。`);
         }
@@ -397,6 +400,7 @@ jQuery(async () => {
 
         handleUpdateCheck();
         handleMessageBoard();
+
         setTimeout(() => {
             try {
                 loadAndApplyStyles();
@@ -414,7 +418,6 @@ jQuery(async () => {
                 log(`【凤凰阁】内联主题系统初始化失败: ${error}`, 'error');
             }
         }, 500); 
-
       } catch (error) {
         console.error("!!!【开国大典失败】在执行系列法令时发生严重错误:", error);
       }
