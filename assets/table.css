@@ -590,8 +590,9 @@ th.amily2-menu-open .amily2-header-text {
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
-    min-width: 320px;
+    width: 90vw;
     max-width: 450px;
+    padding: 0;
 }
 
 .custom-input-dialog .popup-body {
