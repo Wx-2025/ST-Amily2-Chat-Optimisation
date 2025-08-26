@@ -1,1 +1,447 @@
-const _0x576100=_0x42ed;function _0x42ed(_0x32fc62,_0x35341a){const _0xcd4156=_0xcd41();return _0x42ed=function(_0x42ede0,_0x1e2588){_0x42ede0=_0x42ede0-0x1cc;let _0x5180d4=_0xcd4156[_0x42ede0];return _0x5180d4;},_0x42ed(_0x32fc62,_0x35341a);}(function(_0x81c1ca,_0x506975){const _0x554f1b=_0x42ed,_0x34de57=_0x81c1ca();while(!![]){try{const _0x2d46f1=parseInt(_0x554f1b(0x24e))/0x1*(-parseInt(_0x554f1b(0x1f0))/0x2)+-parseInt(_0x554f1b(0x1d0))/0x3*(parseInt(_0x554f1b(0x24c))/0x4)+-parseInt(_0x554f1b(0x1f5))/0x5*(parseInt(_0x554f1b(0x23e))/0x6)+parseInt(_0x554f1b(0x1d3))/0x7+parseInt(_0x554f1b(0x1f7))/0x8*(-parseInt(_0x554f1b(0x20f))/0x9)+parseInt(_0x554f1b(0x1fa))/0xa*(parseInt(_0x554f1b(0x215))/0xb)+parseInt(_0x554f1b(0x241))/0xc;if(_0x2d46f1===_0x506975)break;else _0x34de57['push'](_0x34de57['shift']());}catch(_0x1d922d){_0x34de57['push'](_0x34de57['shift']());}}}(_0xcd41,0xcd537));import{getContext}from'/scripts/extensions.js';import{characters,eventSource,event_types}from'/script.js';import{loadWorldInfo,createNewWorldInfo,createWorldInfoEntry,saveWorldInfo,world_names}from'/scripts/world-info.js';import{compatibleWriteToLorebook,safeLorebooks,safeCharLorebooks,safeLorebookEntries,isTavernHelperAvailable}from'./tavernhelper-compatibility.js';export const LOREBOOK_PREFIX=_0x576100(0x220);export const DEDICATED_LOREBOOK_NAME=_0x576100(0x1fb);export const INTRODUCTORY_TEXT=_0x576100(0x227);function _0xcd41(){const _0x19d81e=['Amily2号-国史馆','上下文错误','data','[剧情优化大师]\x20处理世界书逻辑时出错:','[剧情优化大师]\x20未找到设置面板，世界书功能将回退到使用已保存的设置。','[Amily2号-写入失败]\x20写入流程发生意外错误:','#amily2_opt_worldbook_char_limit','写入世界书失败:\x20','key','[Amily2号-逆时寻踪]\x20裁决:\x20源消息已被修改或删除，遵旨废黜过时总结。','prevent_recursion','[剧情优化大师]\x20世界书内容\x20(','[Amily2号-工部]\x20《','push','#amily2_opt_worldbook_enabled','[Amily2号-工部-v1.3]\x20执行“圣谕广播”式UI更新...','activationMode','\x0a\x0a---\x0a\x0a','warn','#amily2_opt_worldbook_entry_list_container\x20input[type=\x22checkbox\x22]','81xGgARk','warning','target','1.\x20','[Amily2-国史馆]\x20未选择任何角色，跳过世界书管理。','character_main','2156737MqTMID','》已存在于数据模型中，跳过注入。','extensions','comment','[Amily2-国史馆]\x20管理世界书条目状态时发生错误:','exclude_recursion','\x27\x20时发生错误:','\x20chars)\x20超出限制\x20(','map','always','#amily2_opt_selected_worldbooks','Amily2档案-','mes','from','CHARACTER_PAGE_LOADED','length','function','content','【Amily2号自动档案】\x0a此卷宗由Amily2号优化助手自动生成并维护，记录核心事件脉络。\x0a---\x0a','substring','find','time','sort','》更新了\x20','keywords','type','[Amily2-国史馆]\x20户籍管理处在长时间等待后，仍无法确定户籍。','[Amily2-国史馆]\x20接到一份残缺的待办文书，写入任务已中止。','characterId','unknown_chat_timeout','worldbookCharLimit','[Amily2-国史馆]\x20钦差大臣在整合\x20\x27','chat','insertionPosition','[Amily2-国史馆]\x20TavernHelper\x20API\x20未找到，无法管理条目状态。','[Amily2-户籍管理处]\x20等待上下文时发生轻微错误\x20(尝试次数\x20','entries','[Amily2号]\x20致命错误:\x20eventSource\x20或\x20event_types.CHARACTER_PAGE_LOADED\x20未找到。无法广播刷新事件。','收到未知的写入指令:\x20\x22','val','总结写入总耗时','2701710mFsFJN','enabledWorldbookEntries','log','28404432AmUYMp','send_date','char-','[国史馆-兼容性]\x20writeToLorebookWithTavernHelper\x20接收到的选项:','startsWith','replace','[Amily2号-工部]\x20正在广播事件:\x20','character','worldbookSource','constant','worldbookEnabled','4MKUfKU','已创建并写入新档案《','338635dgMFOk','Amily2号无法确定当前聊天身份，世界书功能将受影响。','includes','join','is_user','timeEnd','depth','groupEnd','additional','》文件。','chat_filename','bookName','1525170YFzHNV','settings','message','7269472dbtHvQ','all','#amily2_plot_optimization_panel','manual','error','[Amily2号-工部]\x20已将《','selectedWorldbooks','some','[剧情优化大师]\x20TavernHelper\x20API\x20或\x20context\x20未提供，无法获取世界书内容。',':checked','Amily2号','[Amily2-国史馆]\x20兼容性写入失败:','[Amily2-国史馆]\x20已通过兼容性层将内容成功写入《','sourceAiMessageTimestamp','》注入前端数据模型。','keys','档案整合错误','filter','avatar','\x20chars)，将被截断。','book','[Amily2-国史馆]\x20已为《','emit','summary','values','trim','split','toLowerCase','unknown_chat','8vmZRgG','无标题','world','primary','uid','5nvlVAH','enabled','1443352usyfbB','》的条目\x20\x22','disable','70YiuXjm'];_0xcd41=function(){return _0x19d81e;};return _0xcd41();}export async function getChatIdentifier(){const _0x5beb11=_0x576100;let _0x5ac009=0x0;const _0x44ce08=0x32,_0x3d2e17=0x64;while(_0x5ac009<_0x44ce08){try{const _0x51e08e=getContext();if(_0x51e08e&&_0x51e08e['characterId']){const _0x542ca5=characters[_0x51e08e['characterId']];if(_0x542ca5&&_0x542ca5[_0x5beb11(0x1e5)])return _0x5beb11(0x243)+_0x542ca5[_0x5beb11(0x1e5)][_0x5beb11(0x246)](/\.(png|webp|jpg|jpeg|gif)$/,'');return _0x5beb11(0x243)+_0x51e08e[_0x5beb11(0x231)];}if(_0x51e08e&&_0x51e08e[_0x5beb11(0x1ce)]){const _0x571563=_0x51e08e[_0x5beb11(0x1ce)][_0x5beb11(0x1ed)](/[\\/]/)['pop']();return _0x571563['replace'](/\.jsonl?$/,'');}}catch(_0x345aba){console['warn'](_0x5beb11(0x238)+(_0x5ac009+0x1)+'):',_0x345aba[_0x5beb11(0x1d2)]);}await new Promise(_0x349124=>setTimeout(_0x349124,_0x3d2e17)),_0x5ac009++;}return console[_0x5beb11(0x1d7)](_0x5beb11(0x22f)),toastr[_0x5beb11(0x210)](_0x5beb11(0x24f),_0x5beb11(0x1fc)),_0x5beb11(0x232);}export async function findLatestSummaryLore(_0x14f792,_0x498623){const _0x1edd46=_0x576100;try{const _0x45f4dc=await loadWorldInfo(_0x14f792);if(!_0x45f4dc||!_0x45f4dc[_0x1edd46(0x239)])return null;const _0x59775c=Object[_0x1edd46(0x1eb)](_0x45f4dc[_0x1edd46(0x239)]),_0x367542=''+LOREBOOK_PREFIX+_0x498623;return _0x59775c[_0x1edd46(0x229)](_0x52d4a7=>_0x52d4a7[_0x1edd46(0x218)]===_0x367542&&!_0x52d4a7[_0x1edd46(0x1f9)])||null;}catch(_0x5cebb6){return console[_0x1edd46(0x1d7)]('[Amily2-国史馆]\x20钦差大臣在\x20\x27'+_0x14f792+'\x27\x20检索时发生错误:',_0x5cebb6),null;}}export async function getCombinedWorldbookContent(_0x45e2f4){const _0x12fe10=_0x576100;if(!_0x45e2f4)return'';try{const _0x41e36e=await loadWorldInfo(_0x45e2f4);if(!_0x41e36e||!_0x41e36e['entries'])return'';const _0x15ee9f=Object[_0x12fe10(0x1eb)](_0x41e36e[_0x12fe10(0x239)])[_0x12fe10(0x1e4)](_0x17b592=>!_0x17b592[_0x12fe10(0x1f9)])['map'](_0x4c998e=>'[条目:\x20'+(_0x4c998e[_0x12fe10(0x218)]||_0x12fe10(0x1f1))+']\x0a'+_0x4c998e[_0x12fe10(0x226)]);return _0x15ee9f[_0x12fe10(0x251)]('\x0a\x0a---\x0a\x0a');}catch(_0x1c3c29){return console['error'](_0x12fe10(0x234)+_0x45e2f4+_0x12fe10(0x21b),_0x1c3c29),toastr[_0x12fe10(0x1d7)]('读取世界书\x20\x27'+_0x45e2f4+'\x27\x20失败!',_0x12fe10(0x1e3)),'';}}async function refreshWorldbookListOnly(_0xd0f18c=null){const _0x5c7591=_0x576100;console[_0x5c7591(0x240)](_0x5c7591(0x20a));try{_0xd0f18c&&(Array['isArray'](world_names)&&!world_names[_0x5c7591(0x250)](_0xd0f18c)?(world_names[_0x5c7591(0x208)](_0xd0f18c),world_names[_0x5c7591(0x22b)](),console[_0x5c7591(0x240)](_0x5c7591(0x1d8)+_0xd0f18c+_0x5c7591(0x1e1))):console[_0x5c7591(0x240)](_0x5c7591(0x207)+_0xd0f18c+_0x5c7591(0x216))),eventSource&&typeof eventSource['emit']==='function'&&event_types[_0x5c7591(0x223)]?(console['log'](_0x5c7591(0x247)+event_types[_0x5c7591(0x223)]),eventSource['emit'](event_types[_0x5c7591(0x223)]),console['log']('[Amily2号-工部]\x20“character_page_loaded”事件已广播，UI应已响应刷新。')):(console[_0x5c7591(0x1d7)](_0x5c7591(0x23a)),toastr['error']('Amily2号无法触发UI刷新。','核心事件系统缺失'));}catch(_0x4cd692){console[_0x5c7591(0x1d7)]('[Amily2号-工部]\x20“圣谕广播”式刷新失败:',_0x4cd692);}}export async function writeSummaryToLorebook(_0x37abb3){const _0x38e7a1=_0x576100;if(!_0x37abb3||!_0x37abb3[_0x38e7a1(0x1ea)]||!_0x37abb3['sourceAiMessageTimestamp']||!_0x37abb3[_0x38e7a1(0x1d1)]){console[_0x38e7a1(0x20d)](_0x38e7a1(0x230),_0x37abb3);return;}const _0x1540a6=getContext(),_0x14f7b1=_0x1540a6['chat'];let _0x58ad21=![],_0x218f47=null;for(let _0x2fc787=_0x14f7b1[_0x38e7a1(0x224)]-0x2;_0x2fc787>=0x0;_0x2fc787--){if(!_0x14f7b1[_0x2fc787][_0x38e7a1(0x252)]){_0x218f47=_0x14f7b1[_0x2fc787];break;}}_0x218f47&&_0x218f47[_0x38e7a1(0x242)]===_0x37abb3[_0x38e7a1(0x1e0)]&&(_0x58ad21=!![]);if(!_0x58ad21){console['log'](_0x38e7a1(0x204));return;}const {summary:_0x550508,settings:_0x1a67cd}=_0x37abb3;console['groupCollapsed']('[Amily2号-存档任务-v21.0\x20最终圣旨版]\x20'+new Date()['toLocaleTimeString']()),console[_0x38e7a1(0x22a)](_0x38e7a1(0x23d));try{const _0x32bfae=await getChatIdentifier(),_0x42f883=characters[_0x1540a6[_0x38e7a1(0x231)]];let _0x42c0b1=null,_0x420fad=![];switch(_0x1a67cd[_0x38e7a1(0x211)]){case _0x38e7a1(0x214):_0x42c0b1=_0x42f883?.[_0x38e7a1(0x1fd)]?.[_0x38e7a1(0x217)]?.[_0x38e7a1(0x1f2)];if(!_0x42c0b1){toastr[_0x38e7a1(0x210)]('角色未绑定主世界书，总结写入任务已中止。',_0x38e7a1(0x1dd)),console[_0x38e7a1(0x255)]();return;}break;case'dedicated':_0x42c0b1=DEDICATED_LOREBOOK_NAME+'-'+_0x32bfae;break;default:toastr[_0x38e7a1(0x1d7)](_0x38e7a1(0x23b)+_0x1a67cd[_0x38e7a1(0x211)]+'\x22',_0x38e7a1(0x1dd)),console[_0x38e7a1(0x255)]();return;}!world_names['includes'](_0x42c0b1)&&(await createNewWorldInfo(_0x42c0b1),_0x420fad=!![]);const _0x3ba9bc=''+LOREBOOK_PREFIX+_0x32bfae,_0x5aa037=await loadWorldInfo(_0x42c0b1);if(!_0x5aa037){toastr['error']('无法加载世界书《'+_0x42c0b1+'》','Amily2号'),console['groupEnd']();return;}const _0x213825=Object[_0x38e7a1(0x1eb)](_0x5aa037[_0x38e7a1(0x239)])[_0x38e7a1(0x229)](_0x2ac2e4=>_0x2ac2e4['comment']===_0x3ba9bc&&!_0x2ac2e4[_0x38e7a1(0x1f9)]);if(_0x213825){const _0x204141=_0x213825[_0x38e7a1(0x226)]['replace'](INTRODUCTORY_TEXT,'')[_0x38e7a1(0x1ec)](),_0x55202d=_0x204141?_0x204141[_0x38e7a1(0x1ed)]('\x0a'):[],_0x144bb8=_0x55202d[_0x38e7a1(0x224)]+0x1;_0x213825[_0x38e7a1(0x226)]+='\x0a'+_0x144bb8+'.\x20'+_0x550508;}else{const _0x39644d={'before_char':0x0,'after_char':0x1,'before_an':0x2,'after_an':0x3,'at_depth':0x4},_0x5d1e6b=_0x1a67cd[_0x38e7a1(0x22d)][_0x38e7a1(0x1ed)](',')[_0x38e7a1(0x21d)](_0x5a17ea=>_0x5a17ea['trim']())[_0x38e7a1(0x1e4)](Boolean),_0x5b8fbf=_0x1a67cd[_0x38e7a1(0x20b)]===_0x38e7a1(0x21e),_0x291927=createWorldInfoEntry(_0x42c0b1,_0x5aa037);Object['assign'](_0x291927,{'comment':_0x3ba9bc,'content':INTRODUCTORY_TEXT+_0x38e7a1(0x212)+_0x550508,'key':_0x5d1e6b,'constant':_0x5b8fbf,'position':_0x39644d[_0x1a67cd[_0x38e7a1(0x236)]]??0x4,'depth':_0x1a67cd[_0x38e7a1(0x254)],'disable':![]});}await saveWorldInfo(_0x42c0b1,_0x5aa037,!![]),console['log']('[史官司]\x20总结已遵旨写入《'+_0x42c0b1+_0x38e7a1(0x1cd)),_0x420fad&&(await refreshWorldbookListOnly(_0x42c0b1),toastr['success'](_0x38e7a1(0x24d)+_0x42c0b1+'》！',_0x38e7a1(0x1dd)));}catch(_0x203176){console[_0x38e7a1(0x1d7)](_0x38e7a1(0x200),_0x203176),toastr[_0x38e7a1(0x1d7)]('后台写入总结时发生错误。','Amily2号');}finally{console[_0x38e7a1(0x253)](_0x38e7a1(0x23d)),console[_0x38e7a1(0x255)]();}}export async function getPlotOptimizedWorldbookContent(_0x260c49,_0x1ae038){const _0x10024f=_0x576100,_0x1b6924=$(_0x10024f(0x1d5));let _0xea96a4={};if(_0x1b6924[_0x10024f(0x224)]>0x0){_0xea96a4[_0x10024f(0x24b)]=_0x1b6924[_0x10024f(0x229)](_0x10024f(0x209))['is'](_0x10024f(0x1dc)),_0xea96a4[_0x10024f(0x249)]=_0x1b6924[_0x10024f(0x229)]('input[name=\x22amily2_opt_worldbook_source\x22]:checked')[_0x10024f(0x23c)]()||_0x10024f(0x248),_0xea96a4[_0x10024f(0x1d9)]=_0x1b6924[_0x10024f(0x229)](_0x10024f(0x21f))[_0x10024f(0x23c)]()||[],_0xea96a4[_0x10024f(0x233)]=parseInt(_0x1b6924[_0x10024f(0x229)](_0x10024f(0x201))[_0x10024f(0x23c)](),0xa)||0xea60;let _0x166533={};_0x1b6924[_0x10024f(0x229)](_0x10024f(0x20e))['each'](function(){const _0x487f4b=_0x10024f;if($(this)['is'](_0x487f4b(0x1dc))){const _0x4f2e71=$(this)['data'](_0x487f4b(0x1e7)),_0xe81598=parseInt($(this)[_0x487f4b(0x1fd)]('uid'));!_0x166533[_0x4f2e71]&&(_0x166533[_0x4f2e71]=[]),_0x166533[_0x4f2e71][_0x487f4b(0x208)](_0xe81598);}}),_0xea96a4[_0x10024f(0x23f)]=_0x166533;}else console[_0x10024f(0x20d)](_0x10024f(0x1ff)),_0xea96a4={'worldbookEnabled':_0x1ae038[_0x10024f(0x24b)],'worldbookSource':_0x1ae038[_0x10024f(0x249)],'selectedWorldbooks':_0x1ae038[_0x10024f(0x1d9)],'worldbookCharLimit':_0x1ae038[_0x10024f(0x233)],'enabledWorldbookEntries':_0x1ae038['enabledWorldbookEntries']};if(!_0xea96a4[_0x10024f(0x24b)])return'';if(!isTavernHelperAvailable()||!_0x260c49)return console[_0x10024f(0x20d)](_0x10024f(0x1db)),'';try{let _0x550e49=[];if(_0xea96a4[_0x10024f(0x249)]===_0x10024f(0x1d6)){_0x550e49=_0xea96a4[_0x10024f(0x1d9)];if(_0x550e49[_0x10024f(0x224)]===0x0)return'';}else{const _0x2b071a=await safeCharLorebooks({'type':_0x10024f(0x1d4)});if(_0x2b071a[_0x10024f(0x1f3)])_0x550e49[_0x10024f(0x208)](_0x2b071a[_0x10024f(0x1f3)]);if(_0x2b071a[_0x10024f(0x1cc)]?.[_0x10024f(0x224)])_0x550e49['push'](..._0x2b071a[_0x10024f(0x1cc)]);if(_0x550e49[_0x10024f(0x224)]===0x0)return'';}let _0x10503c=[];for(const _0x10c172 of _0x550e49){if(_0x10c172){const _0x349182=await safeLorebookEntries(_0x10c172);_0x349182?.['length']&&_0x349182['forEach'](_0x427352=>_0x10503c['push']({..._0x427352,'bookName':_0x10c172}));}}if(_0x10503c[_0x10024f(0x224)]===0x0)return'';const _0x35e024=_0xea96a4['enabledWorldbookEntries']||{},_0x36ed84=_0x10503c[_0x10024f(0x1e4)](_0x32f37b=>{const _0x27f0a4=_0x10024f;if(!_0x32f37b[_0x27f0a4(0x1f6)])return![];const _0x465044=_0x35e024[_0x32f37b[_0x27f0a4(0x1cf)]];return _0x465044?_0x465044[_0x27f0a4(0x250)](_0x32f37b[_0x27f0a4(0x1f4)]):![];});if(_0x36ed84[_0x10024f(0x224)]===0x0)return'';const _0x8b58c8=_0x260c49[_0x10024f(0x235)][_0x10024f(0x21d)](_0x3d38eb=>_0x3d38eb[_0x10024f(0x221)])[_0x10024f(0x251)]('\x0a')['toLowerCase'](),_0x293b3c=_0x2151d0=>[...new Set([..._0x2151d0[_0x10024f(0x203)]||[],..._0x2151d0[_0x10024f(0x1e2)]||[]])][_0x10024f(0x21d)](_0x16bab7=>_0x16bab7[_0x10024f(0x1ee)]()),_0x2b8f5e=_0x36ed84[_0x10024f(0x1e4)](_0x367045=>_0x367045[_0x10024f(0x22e)]===_0x10024f(0x24a));let _0x1b9f4a=_0x36ed84[_0x10024f(0x1e4)](_0x359018=>_0x359018['type']!==_0x10024f(0x24a));const _0x73e9c3=new Set([..._0x2b8f5e]);while(!![]){let _0xb7a13c=![];const _0x3012f3=Array[_0x10024f(0x222)](_0x73e9c3)[_0x10024f(0x1e4)](_0x2bb76c=>!_0x2bb76c[_0x10024f(0x205)])[_0x10024f(0x21d)](_0x3b0039=>_0x3b0039[_0x10024f(0x226)])[_0x10024f(0x251)]('\x0a')[_0x10024f(0x1ee)](),_0xe5cef4=_0x8b58c8+'\x0a'+_0x3012f3,_0x2fcc7c=[];for(const _0x24a15d of _0x1b9f4a){const _0x1db73d=_0x293b3c(_0x24a15d);let _0x2b636e=_0x1db73d[_0x10024f(0x224)]>0x0&&_0x1db73d[_0x10024f(0x1da)](_0x21e226=>_0x24a15d[_0x10024f(0x21a)]?_0x8b58c8[_0x10024f(0x250)](_0x21e226):_0xe5cef4[_0x10024f(0x250)](_0x21e226));_0x2b636e?(_0x73e9c3['add'](_0x24a15d),_0xb7a13c=!![]):_0x2fcc7c[_0x10024f(0x208)](_0x24a15d);}if(!_0xb7a13c)break;_0x1b9f4a=_0x2fcc7c;}const _0x35b01f=Array['from'](_0x73e9c3)[_0x10024f(0x21d)](_0x5c7274=>_0x5c7274[_0x10024f(0x226)])[_0x10024f(0x1e4)](Boolean);if(_0x35b01f[_0x10024f(0x224)]===0x0)return'';const _0x527085=_0x35b01f[_0x10024f(0x251)](_0x10024f(0x20c)),_0x26d788=_0xea96a4[_0x10024f(0x233)];if(_0x527085['length']>_0x26d788)return console[_0x10024f(0x240)](_0x10024f(0x206)+_0x527085[_0x10024f(0x224)]+_0x10024f(0x21c)+_0x26d788+_0x10024f(0x1e6)),_0x527085[_0x10024f(0x228)](0x0,_0x26d788);return _0x527085;}catch(_0x8b5d7a){return console[_0x10024f(0x1d7)](_0x10024f(0x1fe),_0x8b5d7a),'';}}export async function writeToLorebookWithTavernHelper(_0x4d4136,_0x4ac469,_0x57a82c,_0xd098={}){const _0xa6a67c=_0x576100;console['log'](_0xa6a67c(0x244),_0xd098);try{const _0x3d495b=await compatibleWriteToLorebook(_0x4d4136,_0x4ac469,_0x57a82c,_0xd098);if(_0x3d495b)return console[_0xa6a67c(0x240)](_0xa6a67c(0x1df)+_0x4d4136+_0xa6a67c(0x1f8)+_0x4ac469+'\x22。'),eventSource&&typeof eventSource[_0xa6a67c(0x1e9)]===_0xa6a67c(0x225)&&event_types[_0xa6a67c(0x223)]&&eventSource[_0xa6a67c(0x1e9)](event_types[_0xa6a67c(0x223)]),!![];else throw new Error('兼容性层写入失败，请检查控制台日志。');}catch(_0x24acc5){return console['error'](_0xa6a67c(0x1de),_0x24acc5),toastr[_0xa6a67c(0x1d7)](_0xa6a67c(0x202)+_0x24acc5['message'],_0xa6a67c(0x1fb)),![];}}export async function manageLorebookEntriesForChat(){const _0xb6e738=_0x576100;if(!isTavernHelperAvailable()){console['warn'](_0xb6e738(0x237));return;}try{const _0x4ff89e=await getChatIdentifier();if(!_0x4ff89e||_0x4ff89e[_0xb6e738(0x245)](_0xb6e738(0x1ef))){console[_0xb6e738(0x1d7)]('[Amily2-国史馆]\x20无法获取有效的聊天标识符，中止条目状态管理。');return;}const _0x486467=getContext();if(!_0x486467||!_0x486467['characterId']){console[_0xb6e738(0x240)](_0xb6e738(0x213));return;}const _0xf75866=await safeCharLorebooks({'type':_0xb6e738(0x1d4)}),_0x5b6564=[];if(_0xf75866[_0xb6e738(0x1f3)])_0x5b6564[_0xb6e738(0x208)](_0xf75866[_0xb6e738(0x1f3)]);if(_0xf75866[_0xb6e738(0x1cc)]?.[_0xb6e738(0x224)])_0x5b6564[_0xb6e738(0x208)](..._0xf75866[_0xb6e738(0x1cc)]);const _0x506a97=DEDICATED_LOREBOOK_NAME+'-'+_0x4ff89e;!_0x5b6564[_0xb6e738(0x250)](_0x506a97)&&_0x5b6564[_0xb6e738(0x208)](_0x506a97);for(const _0xbcf448 of _0x5b6564){if(!world_names['includes'](_0xbcf448))continue;const _0x546cce=await safeLorebookEntries(_0xbcf448),_0x5862d2=[];for(const _0x46f565 of _0x546cce){if(_0x46f565['comment']&&_0x46f565[_0xb6e738(0x218)]['startsWith'](LOREBOOK_PREFIX)){const _0x57a5bf=_0x46f565['comment'][_0xb6e738(0x250)](_0x4ff89e);if(_0x57a5bf&&_0x46f565[_0xb6e738(0x1f9)])_0x5862d2['push']({'uid':_0x46f565[_0xb6e738(0x1f4)],'enabled':!![]});else!_0x57a5bf&&!_0x46f565[_0xb6e738(0x1f9)]&&_0x5862d2[_0xb6e738(0x208)]({'uid':_0x46f565[_0xb6e738(0x1f4)],'enabled':![]});}}if(_0x5862d2[_0xb6e738(0x224)]>0x0){const _0x2e2e8f=await safeUpdateLorebookEntries(_0xbcf448,_0x5862d2);_0x2e2e8f&&console[_0xb6e738(0x240)](_0xb6e738(0x1e8)+_0xbcf448+_0xb6e738(0x22c)+_0x5862d2[_0xb6e738(0x224)]+'\x20个条目的状态以匹配当前聊天:\x20'+_0x4ff89e);}}}catch(_0x38a673){console[_0xb6e738(0x1d7)](_0xb6e738(0x219),_0x38a673);}}
+import { getContext } from "/scripts/extensions.js";
+import { characters, eventSource, event_types } from "/script.js";
+import { loadWorldInfo, createNewWorldInfo, createWorldInfoEntry, saveWorldInfo, world_names } from "/scripts/world-info.js";
+import { compatibleWriteToLorebook, safeLorebooks, safeCharLorebooks, safeLorebookEntries, isTavernHelperAvailable } from "./tavernhelper-compatibility.js";
+
+
+export const LOREBOOK_PREFIX = "Amily2档案-";
+export const DEDICATED_LOREBOOK_NAME = "Amily2号-国史馆";
+export const INTRODUCTORY_TEXT =
+  "【Amily2号自动档案】\n此卷宗由Amily2号优化助手自动生成并维护，记录核心事件脉络。\n---\n";
+
+export async function getChatIdentifier() {
+  let attempts = 0;
+  const maxAttempts = 50;
+  const interval = 100;
+
+  while (attempts < maxAttempts) {
+    try {
+      const context = getContext();
+      if (context && context.characterId) {
+        const character = characters[context.characterId];
+        if (character && character.avatar) {
+          return `char-${character.avatar.replace(/\.(png|webp|jpg|jpeg|gif)$/, "")}`;
+        }
+        return `char-${context.characterId}`;
+      }
+      if (context && context.chat_filename) {
+        const fileName = context.chat_filename.split(/[\\/]/).pop();
+        return fileName.replace(/\.jsonl?$/, "");
+      }
+    } catch (error) {
+      console.warn(
+        `[Amily2-户籍管理处] 等待上下文时发生轻微错误 (尝试次数 ${attempts + 1}):`,
+        error.message,
+      );
+    }
+    await new Promise((resolve) => setTimeout(resolve, interval));
+    attempts++;
+  }
+
+  console.error("[Amily2-国史馆] 户籍管理处在长时间等待后，仍无法确定户籍。");
+  toastr.warning(
+    "Amily2号无法确定当前聊天身份，世界书功能将受影响。",
+    "上下文错误",
+  );
+  return "unknown_chat_timeout";
+}
+
+export async function findLatestSummaryLore(lorebookName, chatIdentifier) {
+  try {
+    const bookData = await loadWorldInfo(lorebookName);
+    if (!bookData || !bookData.entries) {
+      return null;
+    }
+    const entriesArray = Object.values(bookData.entries);
+    const uniqueLoreName = `${LOREBOOK_PREFIX}${chatIdentifier}`;
+    return (
+      entriesArray.find(
+        (entry) => entry.comment === uniqueLoreName && !entry.disable,
+      ) || null
+    );
+  } catch (error) {
+    console.error(
+      `[Amily2-国史馆] 钦差大臣在 '${lorebookName}' 检索时发生错误:`,
+      error,
+    );
+    return null;
+  }
+}
+
+export async function getCombinedWorldbookContent(lorebookName) {
+  if (!lorebookName) return "";
+  try {
+    const bookData = await loadWorldInfo(lorebookName);
+    if (!bookData || !bookData.entries) {
+      return "";
+    }
+    const activeContents = Object.values(bookData.entries)
+      .filter((entry) => !entry.disable)
+      .map((entry) => `[条目: ${entry.comment || "无标题"}]\n${entry.content}`);
+    return activeContents.join("\n\n---\n\n");
+  } catch (error) {
+    console.error(
+      `[Amily2-国史馆] 钦差大臣在整合 '${lorebookName}' 时发生错误:`,
+      error,
+    );
+    toastr.error(`读取世界书 '${lorebookName}' 失败!`, "档案整合错误");
+    return "";
+  }
+}
+
+async function refreshWorldbookListOnly(newBookName = null) {
+  console.log("[Amily2号-工部-v1.3] 执行“圣谕广播”式UI更新...");
+  try {
+    if (newBookName) {
+      if (Array.isArray(world_names) && !world_names.includes(newBookName)) {
+        world_names.push(newBookName);
+        world_names.sort();
+        console.log(`[Amily2号-工部] 已将《${newBookName}》注入前端数据模型。`);
+      } else {
+         console.log(`[Amily2号-工部] 《${newBookName}》已存在于数据模型中，跳过注入。`);
+      }
+    }
+
+    if (
+      eventSource &&
+      typeof eventSource.emit === "function" &&
+      event_types.CHARACTER_PAGE_LOADED
+    ) {
+      console.log(`[Amily2号-工部] 正在广播事件: ${event_types.CHARACTER_PAGE_LOADED}`);
+      eventSource.emit(event_types.CHARACTER_PAGE_LOADED);
+      console.log("[Amily2号-工部] “character_page_loaded”事件已广播，UI应已响应刷新。");
+    } else {
+      console.error("[Amily2号] 致命错误: eventSource 或 event_types.CHARACTER_PAGE_LOADED 未找到。无法广播刷新事件。");
+      toastr.error("Amily2号无法触发UI刷新。", "核心事件系统缺失");
+    }
+  } catch (error) {
+    console.error("[Amily2号-工部] “圣谕广播”式刷新失败:", error);
+  }
+}
+
+export async function writeSummaryToLorebook(pendingData) {
+    if (!pendingData || !pendingData.summary || !pendingData.sourceAiMessageTimestamp || !pendingData.settings) {
+        console.warn("[Amily2-国史馆] 接到一份残缺的待办文书，写入任务已中止。", pendingData);
+        return;
+    }
+
+    const context = getContext();
+    const chat = context.chat;
+    let isSourceMessageValid = false;
+    let sourceMessageCandidate = null;
+    for (let i = chat.length - 2; i >= 0; i--) {
+        if (!chat[i].is_user) { sourceMessageCandidate = chat[i]; break; }
+    }
+    if (sourceMessageCandidate && sourceMessageCandidate.send_date === pendingData.sourceAiMessageTimestamp) {
+        isSourceMessageValid = true;
+    }
+    if (!isSourceMessageValid) {
+        console.log("[Amily2号-逆时寻踪] 裁决: 源消息已被修改或删除，遵旨废黜过时总结。");
+        return;
+    }
+
+    const { summary: summaryToCommit, settings } = pendingData;
+
+    console.groupCollapsed(`[Amily2号-存档任务-v21.0 最终圣旨版] ${new Date().toLocaleTimeString()}`);
+    console.time("总结写入总耗时");
+
+    try {
+        const chatIdentifier = await getChatIdentifier();
+        const character = characters[context.characterId];
+        let targetLorebookName = null;
+        let isNewBook = false;
+        switch (settings.target) {
+            case "character_main":
+                targetLorebookName = character?.data?.extensions?.world;
+                if (!targetLorebookName) {
+                    toastr.warning("角色未绑定主世界书，总结写入任务已中止。", "Amily2号");
+                    console.groupEnd();
+                    return;
+                }
+                break;
+            case "dedicated":
+                targetLorebookName = `${DEDICATED_LOREBOOK_NAME}-${chatIdentifier}`;
+                break;
+            default:
+                toastr.error(`收到未知的写入指令: "${settings.target}"`, "Amily2号");
+                console.groupEnd();
+                return;
+        }
+
+        if (!world_names.includes(targetLorebookName)) {
+            await createNewWorldInfo(targetLorebookName);
+            isNewBook = true;
+        }
+
+        const uniqueLoreName = `${LOREBOOK_PREFIX}${chatIdentifier}`;
+        const bookData = await loadWorldInfo(targetLorebookName);
+        if (!bookData) {
+            toastr.error(`无法加载世界书《${targetLorebookName}》`, "Amily2号");
+            console.groupEnd();
+            return;
+        }
+
+        const existingEntry = Object.values(bookData.entries).find(e => e.comment === uniqueLoreName && !e.disable);
+
+        if (existingEntry) {
+            const existingContent = existingEntry.content.replace(INTRODUCTORY_TEXT, "").trim();
+            const lines = existingContent ? existingContent.split("\n") : [];
+            const nextNumber = lines.length + 1;
+            existingEntry.content += `\n${nextNumber}. ${summaryToCommit}`;
+        } else {
+
+            const positionMap = {
+                'before_char': 0, 'after_char': 1, 'before_an': 2,
+                'after_an': 3, 'at_depth': 4
+            };
+
+            const finalKeywords = settings.keywords.split(',').map(k => k.trim()).filter(Boolean);
+            const isConstant = settings.activationMode === 'always';
+            const newEntry = createWorldInfoEntry(targetLorebookName, bookData);
+            Object.assign(newEntry, {
+                comment: uniqueLoreName,
+                content: `${INTRODUCTORY_TEXT}1. ${summaryToCommit}`,
+                key: finalKeywords,
+                constant: isConstant,
+                position: positionMap[settings.insertionPosition] ?? 4,
+                depth: settings.depth,
+                disable: false,
+            });
+        }
+
+
+        await saveWorldInfo(targetLorebookName, bookData, true);
+        console.log(`[史官司] 总结已遵旨写入《${targetLorebookName}》文件。`);
+
+        if (isNewBook) {
+            await refreshWorldbookListOnly(targetLorebookName);
+            toastr.success(`已创建并写入新档案《${targetLorebookName}》！`, "Amily2号");
+        }
+    } catch (error) {
+        console.error("[Amily2号-写入失败] 写入流程发生意外错误:", error);
+        toastr.error("后台写入总结时发生错误。", "Amily2号");
+    } finally {
+        console.timeEnd("总结写入总耗时");
+        console.groupEnd();
+    }
+}
+
+
+export async function getPlotOptimizedWorldbookContent(context, apiSettings) {
+    const panel = $('#amily2_plot_optimization_panel');
+    let liveSettings = {};
+
+    if (panel.length > 0) {
+        liveSettings.worldbookEnabled = panel.find('#amily2_opt_worldbook_enabled').is(':checked');
+        liveSettings.worldbookSource = panel.find('input[name="amily2_opt_worldbook_source"]:checked').val() || 'character';
+        liveSettings.selectedWorldbooks = panel.find('#amily2_opt_selected_worldbooks').val() || [];
+        liveSettings.worldbookCharLimit = parseInt(panel.find('#amily2_opt_worldbook_char_limit').val(), 10) || 60000;
+
+        let enabledEntries = {};
+        panel.find('#amily2_opt_worldbook_entry_list_container input[type="checkbox"]').each(function() {
+            if ($(this).is(':checked')) {
+                const bookName = $(this).data('book');
+                const uid = parseInt($(this).data('uid'));
+                if (!enabledEntries[bookName]) {
+                    enabledEntries[bookName] = [];
+                }
+                enabledEntries[bookName].push(uid);
+            }
+        });
+        liveSettings.enabledWorldbookEntries = enabledEntries;
+    } else {
+        console.warn('[剧情优化大师] 未找到设置面板，世界书功能将回退到使用已保存的设置。');
+        liveSettings = {
+            worldbookEnabled: apiSettings.worldbookEnabled,
+            worldbookSource: apiSettings.worldbookSource,
+            selectedWorldbooks: apiSettings.selectedWorldbooks,
+            worldbookCharLimit: apiSettings.worldbookCharLimit,
+            enabledWorldbookEntries: apiSettings.enabledWorldbookEntries,
+        };
+    }
+
+    if (!liveSettings.worldbookEnabled) {
+        return '';
+    }
+
+    if (!isTavernHelperAvailable() || !context) {
+        console.warn('[剧情优化大师] TavernHelper API 或 context 未提供，无法获取世界书内容。');
+        return '';
+    }
+
+    try {
+        let bookNames = [];
+        
+        if (liveSettings.worldbookSource === 'manual') {
+            bookNames = liveSettings.selectedWorldbooks;
+            if (bookNames.length === 0) return '';
+        } else {
+            const charLorebooks = await safeCharLorebooks({ type: 'all' });
+            if (charLorebooks.primary) bookNames.push(charLorebooks.primary);
+            if (charLorebooks.additional?.length) bookNames.push(...charLorebooks.additional);
+            if (bookNames.length === 0) return '';
+        }
+
+        let allEntries = [];
+        for (const bookName of bookNames) {
+            if (bookName) {
+                const entries = await safeLorebookEntries(bookName);
+                if (entries?.length) {
+                    entries.forEach(entry => allEntries.push({ ...entry, bookName }));
+                }
+            }
+        }
+
+        if (allEntries.length === 0) return '';
+        
+        const enabledEntriesMap = liveSettings.enabledWorldbookEntries || {};
+        const userEnabledEntries = allEntries.filter(entry => {
+            if (!entry.enabled) return false;
+            const bookConfig = enabledEntriesMap[entry.bookName];
+            return bookConfig ? bookConfig.includes(entry.uid) : false;
+        });
+
+        if (userEnabledEntries.length === 0) return '';
+        
+        const chatHistory = context.chat.map(message => message.mes).join('\n').toLowerCase();
+        const getEntryKeywords = (entry) => [...new Set([...(entry.key || []), ...(entry.keys || [])])].map(k => k.toLowerCase());
+
+        const blueLightEntries = userEnabledEntries.filter(entry => entry.type === 'constant');
+        let pendingGreenLights = userEnabledEntries.filter(entry => entry.type !== 'constant');
+        
+        const triggeredEntries = new Set([...blueLightEntries]);
+
+        while (true) {
+            let hasChangedInThisPass = false;
+            
+            const recursionSourceContent = Array.from(triggeredEntries)
+                .filter(e => !e.prevent_recursion)
+                .map(e => e.content)
+                .join('\n')
+                .toLowerCase();
+            const fullSearchText = `${chatHistory}\n${recursionSourceContent}`;
+
+            const nextPendingGreenLights = [];
+            
+            for (const entry of pendingGreenLights) {
+                const keywords = getEntryKeywords(entry);
+                let isTriggered = keywords.length > 0 && keywords.some(keyword => 
+                    entry.exclude_recursion ? chatHistory.includes(keyword) : fullSearchText.includes(keyword)
+                );
+
+                if (isTriggered) {
+                    triggeredEntries.add(entry);
+                    hasChangedInThisPass = true;
+                } else {
+                    nextPendingGreenLights.push(entry);
+                }
+            }
+            
+            if (!hasChangedInThisPass) break;
+            
+            pendingGreenLights = nextPendingGreenLights;
+        }
+
+        const finalContent = Array.from(triggeredEntries).map(entry => entry.content).filter(Boolean);
+        if (finalContent.length === 0) return '';
+
+        const combinedContent = finalContent.join('\n\n---\n\n');
+        
+        const limit = liveSettings.worldbookCharLimit;
+        if (combinedContent.length > limit) {
+            console.log(`[剧情优化大师] 世界书内容 (${combinedContent.length} chars) 超出限制 (${limit} chars)，将被截断。`);
+            return combinedContent.substring(0, limit);
+        }
+
+        return combinedContent;
+
+    } catch (error) {
+        console.error(`[剧情优化大师] 处理世界书逻辑时出错:`, error);
+        return '';
+    }
+}
+
+
+export async function writeToLorebookWithTavernHelper(targetLorebookName, entryComment, contentUpdateCallback, options = {}) {
+    console.log('[国史馆-兼容性] writeToLorebookWithTavernHelper 接收到的选项:', options);
+
+    try {
+        const success = await compatibleWriteToLorebook(targetLorebookName, entryComment, contentUpdateCallback, options);
+        
+        if (success) {
+            console.log(`[Amily2-国史馆] 已通过兼容性层将内容成功写入《${targetLorebookName}》的条目 "${entryComment}"。`);
+
+            if (eventSource && typeof eventSource.emit === "function" && event_types.CHARACTER_PAGE_LOADED) {
+                eventSource.emit(event_types.CHARACTER_PAGE_LOADED);
+            }
+            
+            return true;
+        } else {
+            throw new Error("兼容性层写入失败，请检查控制台日志。");
+        }
+    } catch (error) {
+        console.error(`[Amily2-国史馆] 兼容性写入失败:`, error);
+        toastr.error(`写入世界书失败: ${error.message}`, "Amily2号-国史馆");
+        return false;
+    }
+}
+
+
+export async function manageLorebookEntriesForChat() {
+    if (!isTavernHelperAvailable()) {
+        console.warn("[Amily2-国史馆] TavernHelper API 未找到，无法管理条目状态。");
+        return;
+    }
+
+    try {
+        const chatIdentifier = await getChatIdentifier();
+        if (!chatIdentifier || chatIdentifier.startsWith("unknown_chat")) {
+            console.error(`[Amily2-国史馆] 无法获取有效的聊天标识符，中止条目状态管理。`);
+            return;
+        }
+
+        const context = getContext();
+        if (!context || !context.characterId) {
+            console.log("[Amily2-国史馆] 未选择任何角色，跳过世界书管理。");
+            return;
+        }
+
+        const charLorebooks = await safeCharLorebooks({ type: 'all' });
+        const bookNames = [];
+        if (charLorebooks.primary) bookNames.push(charLorebooks.primary);
+        if (charLorebooks.additional?.length) bookNames.push(...charLorebooks.additional);
+
+        const dedicatedBookName = `${DEDICATED_LOREBOOK_NAME}-${chatIdentifier}`;
+        if (!bookNames.includes(dedicatedBookName)) {
+            bookNames.push(dedicatedBookName);
+        }
+
+        for (const bookName of bookNames) {
+            if (!world_names.includes(bookName)) continue; 
+
+            const entries = await safeLorebookEntries(bookName);
+            const entriesToUpdate = [];
+
+            for (const entry of entries) {
+                if (entry.comment && entry.comment.startsWith(LOREBOOK_PREFIX)) {
+                    const isForCurrentChat = entry.comment.includes(chatIdentifier);
+                    if (isForCurrentChat && entry.disable) {
+                        entriesToUpdate.push({ uid: entry.uid, enabled: true });
+                    } else if (!isForCurrentChat && !entry.disable) {
+                        entriesToUpdate.push({ uid: entry.uid, enabled: false });
+                    }
+                }
+            }
+
+            if (entriesToUpdate.length > 0) {
+                const success = await safeUpdateLorebookEntries(bookName, entriesToUpdate);
+                if (success) {
+                    console.log(`[Amily2-国史馆] 已为《${bookName}》更新了 ${entriesToUpdate.length} 个条目的状态以匹配当前聊天: ${chatIdentifier}`);
+                }
+            }
+        }
+
+    } catch (error) {
+        console.error("[Amily2-国史馆] 管理世界书条目状态时发生错误:", error);
+    }
+}
