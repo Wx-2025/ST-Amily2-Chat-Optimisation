@@ -1,1 +1,473 @@
-function _0x3ef0(_0x444a94,_0xe39457){const _0x154c8d=_0x154c();return _0x3ef0=function(_0x3ef0e4,_0x5dbcf5){_0x3ef0e4=_0x3ef0e4-0x17f;let _0x298393=_0x154c8d[_0x3ef0e4];return _0x298393;},_0x3ef0(_0x444a94,_0xe39457);}const _0x27e233=_0x3ef0;(function(_0x86b4b4,_0x11cc2d){const _0x2ea385=_0x3ef0,_0x3aac01=_0x86b4b4();while(!![]){try{const _0x209304=parseInt(_0x2ea385(0x1b2))/0x1+parseInt(_0x2ea385(0x192))/0x2+parseInt(_0x2ea385(0x1f1))/0x3*(parseInt(_0x2ea385(0x199))/0x4)+-parseInt(_0x2ea385(0x194))/0x5*(parseInt(_0x2ea385(0x1bc))/0x6)+parseInt(_0x2ea385(0x19b))/0x7*(-parseInt(_0x2ea385(0x183))/0x8)+parseInt(_0x2ea385(0x1b4))/0x9+-parseInt(_0x2ea385(0x1e9))/0xa;if(_0x209304===_0x11cc2d)break;else _0x3aac01['push'](_0x3aac01['shift']());}catch(_0x40e449){_0x3aac01['push'](_0x3aac01['shift']());}}}(_0x154c,0xbcbb7));import{getContext,extension_settings}from'/scripts/extensions.js';import{log}from'./logger.js';import{updateTableFromText}from'./manager.js';import{extensionName}from'../../utils/settings.js';function _0x154c(){const _0x3e6fb9=['任务已在批次\x20','getItem','error','conditional','\x20(楼层\x20','\x20个批次。','historiographyTags','\x20开始前手动暂停。','processing','处理失败','chat','join','[楼层填表]\x20加载混合顺序失败:','groupCollapsed','disabled','trim','coreContent','指定楼层范围内没有有效内容可处理。','223441BjsWCu','规则或流程提示词为空，无法开始填表。','8927226MmkJNY','\x20-\x20收到\x20API\x20原始回复:','停战敕令已下达！将在当前批次完成后暂停。','无法开始','min','点击停止','idle','结束楼层\x20','1164WJItCc','batch_filler','splice','表格系统总开关已关闭，跳过楼层填表。','warning','parse','batch-filling-threshold','正在处理批次\x20','\x20楼】\x20','准备填写当前楼层（第\x20','type','[Amily2\x20楼层填表]\x20楼层\x20','prompt','textContent','\x20失败:\x20','\x20超出了当前聊天记录长度\x20','点击停止\x20(','...','\x20的内容...','filter','replace','表格系统总开关已关闭，跳过批量填表。','表格系统总开关已关闭，无法执行楼层填表。','\x20已达到最大重试次数，任务暂停。','楼层\x20','char','通讯异常','name2','\x20楼）...','从上次暂停处继续处理...','楼层填表失败:\x20','getElementById','[批量填表]\x20加载混合顺序失败:','user','\x20填表处理完成。','聊天记录为空，无需填表。','请确保\x22规则提示词\x22和\x22流程提示词\x22都已填写。','success','system','\x20填表完成！','historiographyTagExtractionEnabled','\x20-\x20即将发送至\x20API\x20的内容','startsWith','stopping','length','25020KUQRVP','value','historiographyExclusionRules','table_system_enabled','正在停止...','fill-table-now-btn','请严格根据以下\x22对话记录\x22中的内容进行填写表格，并按照指定的格式输出，不要添加任何额外信息。\x0a\x0a<对话记录>\x0a',',\x20尝试\x20','459915cRbSZi','{{{Amily2TableData}}}','API返回内容为空。','log','is_user','\x20处理成功。','[Amily2\x20立即远征]\x20批次\x20','\x0a</对话记录>','map','amily2_prompt_presets_v2_mixed_order','8QEfAdV','floor','规则或流程提示词为空，无法开始楼层填表。','slice','所有批次处理完毕！','继续填表','flowTemplate','当前没有聊天记录。','【第\x20','与模型通讯时发生异常:\x20','message','立即填表','批次\x20','content','info','1793128BQUhoG','将在3秒后自动重试批次\x20','28265QgDTbC','warn','author','groupEnd','dir','4hVXPts','push','2750951JpYRnc','继续填表\x20(出错)','\x20多次失败，请检查网络或API设置后手动继续。','\x20填表失败:\x20','paused'];_0x154c=function(){return _0x3e6fb9;};return _0x154c();}import{renderTables}from'../../ui/table-bindings.js';import{getPresetPrompts,getMixedOrder}from'../../PresetSettings/index.js';import{callAI,generateRandomSeed}from'../api.js';import{extractBlocksByTags,applyExclusionRules}from'../utils/rag-tag-extractor.js';import{getBatchFillerRuleTemplate,getBatchFillerFlowTemplate,convertTablesToCsvString}from'./manager.js';let isFilling=![],manualStopRequested=![],currentBatch=0x0,totalBatches=0x0,chatHistoryLength=0x0,threshold=0x1e;const MAX_RETRIES=0x2,fillButton=()=>document[_0x27e233(0x1db)](_0x27e233(0x1ee));function updateButtonState(_0x3d6f13,_0xc4cd87=0x0,_0x258c2b=0x0){const _0x575c15=_0x27e233,_0x30a38a=fillButton();if(!_0x30a38a)return;switch(_0x3d6f13){case _0x575c15(0x1a8):let _0x59e3e7=_0x258c2b>0x0?'\x20(尝试\x20'+(_0x258c2b+0x1)+')':'';_0x30a38a[_0x575c15(0x1c9)]=_0x575c15(0x1cc)+_0xc4cd87+'/'+totalBatches+')'+_0x59e3e7,_0x30a38a[_0x575c15(0x1ae)]=![],isFilling=!![];break;case _0x575c15(0x1e7):_0x30a38a['textContent']=_0x575c15(0x1ed),_0x30a38a['disabled']=!![];break;case _0x575c15(0x19f):_0x30a38a['textContent']=_0x575c15(0x188),_0x30a38a['disabled']=![],isFilling=!![];break;case'error':_0x30a38a[_0x575c15(0x1c9)]=_0x575c15(0x19c),_0x30a38a['disabled']=![],isFilling=!![];break;case _0x575c15(0x1ba):default:_0x30a38a['textContent']=_0x575c15(0x18e),_0x30a38a[_0x575c15(0x1ae)]=![],isFilling=![],currentBatch=0x0,manualStopRequested=![];break;}}async function callTableModel(_0xb6cba1){const _0x2f4f2c=_0x27e233;try{const _0x428962=await callAI(_0xb6cba1);if(!_0x428962)throw new Error(_0x2f4f2c(0x1f3));return _0x428962;}catch(_0x44fdc0){return log(_0x2f4f2c(0x18c)+_0x44fdc0[_0x2f4f2c(0x18d)],_0x2f4f2c(0x1a2)),toastr[_0x2f4f2c(0x1a2)]('与模型通讯时发生异常:\x20'+_0x44fdc0[_0x2f4f2c(0x18d)],_0x2f4f2c(0x1d6)),null;}}function getRawMessagesForSummary(_0xc0321a,_0xd47196){const _0x230853=_0x27e233,_0x4b52ee=getContext(),_0xa953fa=_0x4b52ee[_0x230853(0x1aa)],_0x43e742=extension_settings[extensionName],_0x5f49d3=_0xa953fa[_0x230853(0x186)](_0xc0321a-0x1,_0xd47196);if(_0x5f49d3[_0x230853(0x1e8)]===0x0)return null;const _0x3dfba3=_0x4b52ee['name1']||'用户',_0x2cecc4=_0x4b52ee[_0x230853(0x1d7)]||'角色',_0x4f6dbf=_0x43e742[_0x230853(0x1e4)]??![],_0x457775=_0x4f6dbf?(_0x43e742[_0x230853(0x1a6)]||'')['split'](',')[_0x230853(0x181)](_0xeab8e5=>_0xeab8e5[_0x230853(0x1af)]())[_0x230853(0x1cf)](Boolean):[],_0x46f05e=_0x43e742[_0x230853(0x1eb)]||[],_0x57533a=_0x5f49d3[_0x230853(0x181)]((_0x44390d,_0xceb471)=>{const _0x505277=_0x230853;let _0x2afbe7=_0x44390d['mes'];if(_0x4f6dbf&&_0x457775[_0x505277(0x1e8)]>0x0){const _0x17b180=extractBlocksByTags(_0x2afbe7,_0x457775);_0x17b180['length']>0x0&&(_0x2afbe7=_0x17b180[_0x505277(0x1ab)]('\x0a\x0a'));}_0x2afbe7=applyExclusionRules(_0x2afbe7,_0x46f05e);if(!_0x2afbe7[_0x505277(0x1af)]())return null;return{'floor':_0xc0321a+_0xceb471,'author':_0x44390d[_0x505277(0x1f5)]?_0x3dfba3:_0x2cecc4,'authorType':_0x44390d[_0x505277(0x1f5)]?_0x505277(0x1dd):_0x505277(0x1d5),'content':_0x2afbe7[_0x505277(0x1af)]()};})['filter'](Boolean);return _0x57533a;}async function runBatchAttempt(_0x1127b3,_0x3751f4){const _0x2f61f1=_0x27e233;try{if(manualStopRequested){log(_0x2f61f1(0x1a0)+_0x1127b3+_0x2f61f1(0x1a7),_0x2f61f1(0x195)),updateButtonState(_0x2f61f1(0x19f));return;}updateButtonState('processing',_0x1127b3,_0x3751f4);const _0x5413a4=(_0x1127b3-0x1)*threshold+0x1,_0x47a516=Math[_0x2f61f1(0x1b8)](_0x5413a4+threshold-0x1,chatHistoryLength);log(_0x2f61f1(0x1c3)+_0x1127b3+'/'+totalBatches+_0x2f61f1(0x1a4)+_0x5413a4+'-'+_0x47a516+_0x2f61f1(0x1f0)+(_0x3751f4+0x1)+'/'+(MAX_RETRIES+0x1)+')','info');const _0x142f08=getRawMessagesForSummary(_0x5413a4,_0x47a516);if(!_0x142f08||_0x142f08['length']===0x0)throw new Error('净化后无有效内容可处理。');const _0x37440c=_0x142f08['map'](_0x4476f4=>_0x2f61f1(0x18b)+_0x4476f4[_0x2f61f1(0x184)]+_0x2f61f1(0x1c4)+_0x4476f4[_0x2f61f1(0x196)]+':\x20'+_0x4476f4['content'])[_0x2f61f1(0x1ab)]('\x0a'),_0x5048f0=getBatchFillerRuleTemplate(),_0x5f2c55=getBatchFillerFlowTemplate(),_0xc03a5c=convertTablesToCsvString(),_0x50aeb2=_0x5f2c55['replace'](_0x2f61f1(0x1f2),_0xc03a5c);let _0x88cc2c;try{const _0x1a17eb=localStorage[_0x2f61f1(0x1a1)](_0x2f61f1(0x182));_0x1a17eb&&(_0x88cc2c=JSON[_0x2f61f1(0x1c1)](_0x1a17eb));}catch(_0x27efad){console[_0x2f61f1(0x1a2)](_0x2f61f1(0x1dc),_0x27efad);}const _0x53145a=getMixedOrder(_0x2f61f1(0x1bd))||[],_0x4ccb9f=getPresetPrompts(_0x2f61f1(0x1bd)),_0x172640=[{'role':_0x2f61f1(0x1e2),'content':generateRandomSeed()}];let _0x549788=0x0;for(const _0x5841e6 of _0x53145a){if(_0x5841e6[_0x2f61f1(0x1c6)]===_0x2f61f1(0x1c8))_0x4ccb9f&&_0x4ccb9f[_0x549788]&&(_0x172640[_0x2f61f1(0x19a)](_0x4ccb9f[_0x549788]),_0x549788++);else{if(_0x5841e6[_0x2f61f1(0x1c6)]===_0x2f61f1(0x1a3))switch(_0x5841e6['id']){case'ruleTemplate':_0x172640[_0x2f61f1(0x19a)]({'role':_0x2f61f1(0x1e2),'content':_0x5048f0});break;case _0x2f61f1(0x189):_0x172640['push']({'role':_0x2f61f1(0x1e2),'content':_0x50aeb2});break;case _0x2f61f1(0x1b0):_0x172640['push']({'role':_0x2f61f1(0x1dd),'content':_0x2f61f1(0x1ef)+_0x37440c+_0x2f61f1(0x180)});break;}}}if(!_0x4ccb9f||_0x4ccb9f[_0x2f61f1(0x1e8)]===0x0){const _0x4bc58c=[{'role':_0x2f61f1(0x1e2),'content':generateRandomSeed()}];_0x172640[_0x2f61f1(0x1be)](0x1,0x0,..._0x4bc58c);}console[_0x2f61f1(0x1ad)](_0x2f61f1(0x17f)+_0x1127b3+'/'+totalBatches+'\x20-\x20即将发送至\x20API\x20的内容'),console[_0x2f61f1(0x198)](_0x172640),console[_0x2f61f1(0x197)]();const _0xefaaa6=await callTableModel(_0x172640);console['log']('[Amily2\x20立即远征]\x20批次\x20'+_0x1127b3+'/'+totalBatches+_0x2f61f1(0x1b5),_0xefaaa6);if(!_0xefaaa6)throw new Error('API返回内容为空。');updateTableFromText(_0xefaaa6),renderTables(),log(_0x2f61f1(0x18f)+_0x1127b3+_0x2f61f1(0x1f6),_0x2f61f1(0x1e1)),currentBatch=_0x1127b3,setTimeout(processNextBatch,0x3e8);}catch(_0x5b0016){log('批次\x20'+_0x1127b3+'\x20尝试\x20'+(_0x3751f4+0x1)+_0x2f61f1(0x1ca)+_0x5b0016[_0x2f61f1(0x18d)],_0x2f61f1(0x1a2)),_0x3751f4>=MAX_RETRIES?(log('批次\x20'+_0x1127b3+_0x2f61f1(0x1d3),_0x2f61f1(0x1a2)),toastr[_0x2f61f1(0x1a2)](_0x2f61f1(0x18f)+_0x1127b3+_0x2f61f1(0x19d),'任务暂停'),currentBatch=_0x1127b3-0x1,updateButtonState(_0x2f61f1(0x1a2))):(log(_0x2f61f1(0x193)+_0x1127b3+_0x2f61f1(0x1cd),_0x2f61f1(0x195)),setTimeout(()=>runBatchAttempt(_0x1127b3,_0x3751f4+0x1),0xbb8));}}async function processNextBatch(){const _0x596751=_0x27e233;if(manualStopRequested){log('任务已在批次\x20'+(currentBatch+0x1)+'\x20开始前手动暂停。',_0x596751(0x195)),updateButtonState('paused');return;}if(currentBatch>=totalBatches){log(_0x596751(0x187),'success'),updateButtonState('idle');return;}runBatchAttempt(currentBatch+0x1,0x0);}export function startBatchFilling(){const _0x48de8e=_0x27e233,_0x47137b=fillButton();if(!_0x47137b)return;const _0x546697=extension_settings[extensionName],_0x48aab7=_0x546697['table_system_enabled']!==![];if(!_0x48aab7){log(_0x48de8e(0x1d1),'info'),toastr[_0x48de8e(0x191)]('表格系统总开关已关闭，无法执行批量填表。');return;}if(isFilling){if(_0x47137b[_0x48de8e(0x1c9)]['startsWith'](_0x48de8e(0x1b9)))manualStopRequested=!![],updateButtonState('stopping'),log(_0x48de8e(0x1b6),'warn');else _0x47137b['textContent'][_0x48de8e(0x1e6)](_0x48de8e(0x188))&&(manualStopRequested=![],log(_0x48de8e(0x1d9),_0x48de8e(0x191)),processNextBatch());return;}manualStopRequested=![];const _0x35e4e7=getContext();chatHistoryLength=_0x35e4e7[_0x48de8e(0x1aa)][_0x48de8e(0x1e8)],threshold=parseInt(document[_0x48de8e(0x1db)](_0x48de8e(0x1c2))?.[_0x48de8e(0x1ea)],0xa)||0x1e;const _0x39b401=getBatchFillerRuleTemplate(),_0x23d377=getBatchFillerFlowTemplate();if(!_0x39b401||!_0x23d377){log(_0x48de8e(0x1b3),_0x48de8e(0x1a2)),toastr[_0x48de8e(0x1a2)](_0x48de8e(0x1e0),_0x48de8e(0x1b7));return;}if(chatHistoryLength===0x0){log(_0x48de8e(0x1df),_0x48de8e(0x191));return;}totalBatches=Math['ceil'](chatHistoryLength/threshold),currentBatch=0x0,log('准备开始批量填表任务，共\x20'+totalBatches+_0x48de8e(0x1a5),_0x48de8e(0x191)),processNextBatch();}export async function startFloorRangeFilling(_0x1565e0,_0xbc1023){const _0x35af92=_0x27e233,_0x40b86d=extension_settings[extensionName],_0x2bdab4=_0x40b86d[_0x35af92(0x1ec)]!==![];if(!_0x2bdab4){log(_0x35af92(0x1bf),_0x35af92(0x191)),toastr['info'](_0x35af92(0x1d2));return;}const _0x5cf0df=getContext(),_0x2ec694=_0x5cf0df['chat'][_0x35af92(0x1e8)];if(_0xbc1023>_0x2ec694){toastr[_0x35af92(0x1c0)](_0x35af92(0x1bb)+_0xbc1023+_0x35af92(0x1cb)+_0x2ec694+'。');return;}const _0x39ddbc=getBatchFillerRuleTemplate(),_0x5749a2=getBatchFillerFlowTemplate();if(!_0x39ddbc||!_0x5749a2){log(_0x35af92(0x185),_0x35af92(0x1a2)),toastr['error'](_0x35af92(0x1e0),_0x35af92(0x1b7));return;}try{log('开始处理楼层\x20'+_0x1565e0+'-'+_0xbc1023+_0x35af92(0x1ce),_0x35af92(0x191));const _0x4ff97a=getRawMessagesForSummary(_0x1565e0,_0xbc1023);if(!_0x4ff97a||_0x4ff97a[_0x35af92(0x1e8)]===0x0){toastr[_0x35af92(0x1c0)](_0x35af92(0x1b1));return;}const _0x3df1d0=_0x4ff97a[_0x35af92(0x181)](_0x3e80cd=>_0x35af92(0x18b)+_0x3e80cd['floor']+_0x35af92(0x1c4)+_0x3e80cd[_0x35af92(0x196)]+':\x20'+_0x3e80cd[_0x35af92(0x190)])['join']('\x0a'),_0x12da19=convertTablesToCsvString(),_0x4f7e78=_0x5749a2[_0x35af92(0x1d0)](_0x35af92(0x1f2),_0x12da19);let _0x3a89dc;try{const _0x2f8212=localStorage[_0x35af92(0x1a1)](_0x35af92(0x182));_0x2f8212&&(_0x3a89dc=JSON[_0x35af92(0x1c1)](_0x2f8212));}catch(_0x8120d8){console[_0x35af92(0x1a2)](_0x35af92(0x1ac),_0x8120d8);}const _0x40427c=getMixedOrder(_0x35af92(0x1bd))||[],_0x2d1307=getPresetPrompts(_0x35af92(0x1bd)),_0x2c17bd=[{'role':_0x35af92(0x1e2),'content':generateRandomSeed()}];let _0x112e4c=0x0;for(const _0x40bbcd of _0x40427c){if(_0x40bbcd[_0x35af92(0x1c6)]===_0x35af92(0x1c8))_0x2d1307&&_0x2d1307[_0x112e4c]&&(_0x2c17bd[_0x35af92(0x19a)](_0x2d1307[_0x112e4c]),_0x112e4c++);else{if(_0x40bbcd[_0x35af92(0x1c6)]===_0x35af92(0x1a3))switch(_0x40bbcd['id']){case'ruleTemplate':_0x2c17bd[_0x35af92(0x19a)]({'role':'system','content':_0x39ddbc});break;case'flowTemplate':_0x2c17bd[_0x35af92(0x19a)]({'role':_0x35af92(0x1e2),'content':_0x4f7e78});break;case'coreContent':_0x2c17bd[_0x35af92(0x19a)]({'role':'user','content':_0x35af92(0x1ef)+_0x3df1d0+_0x35af92(0x180)});break;}}}if(!_0x2d1307||_0x2d1307[_0x35af92(0x1e8)]===0x0){const _0x38f567=[{'role':_0x35af92(0x1e2),'content':generateRandomSeed()}];_0x2c17bd[_0x35af92(0x1be)](0x1,0x0,..._0x38f567);}console['groupCollapsed'](_0x35af92(0x1c7)+_0x1565e0+'-'+_0xbc1023+_0x35af92(0x1e5)),console['dir'](_0x2c17bd),console[_0x35af92(0x197)]();const _0x1a306b=await callTableModel(_0x2c17bd);console[_0x35af92(0x1f4)]('[Amily2\x20楼层填表]\x20楼层\x20'+_0x1565e0+'-'+_0xbc1023+_0x35af92(0x1b5),_0x1a306b);if(!_0x1a306b)throw new Error(_0x35af92(0x1f3));updateTableFromText(_0x1a306b),renderTables(),toastr[_0x35af92(0x1e1)](_0x35af92(0x1d4)+_0x1565e0+'-'+_0xbc1023+_0x35af92(0x1e3)),log(_0x35af92(0x1d4)+_0x1565e0+'-'+_0xbc1023+_0x35af92(0x1de),_0x35af92(0x1e1));}catch(_0x65f2df){log(_0x35af92(0x1d4)+_0x1565e0+'-'+_0xbc1023+_0x35af92(0x19e)+_0x65f2df[_0x35af92(0x18d)],'error'),toastr[_0x35af92(0x1a2)](_0x35af92(0x1da)+_0x65f2df['message'],_0x35af92(0x1a9));}}export async function startCurrentFloorFilling(){const _0x116bf2=_0x27e233,_0x57445a=getContext(),_0x1ec430=_0x57445a[_0x116bf2(0x1aa)][_0x116bf2(0x1e8)];if(_0x1ec430===0x0){toastr[_0x116bf2(0x191)](_0x116bf2(0x18a));return;}log(_0x116bf2(0x1c5)+_0x1ec430+_0x116bf2(0x1d8),_0x116bf2(0x191)),await startFloorRangeFilling(_0x1ec430,_0x1ec430);}
+import { getContext, extension_settings } from '/scripts/extensions.js';
+import { characters } from '/script.js';
+import { loadWorldInfo } from '/scripts/world-info.js';
+import { log } from './logger.js';
+import { updateTableFromText } from './manager.js';
+import { extensionName } from '../../utils/settings.js';
+import { renderTables } from '../../ui/table-bindings.js';
+import { getPresetPrompts, getMixedOrder } from '../../PresetSettings/index.js';
+import { callAI, generateRandomSeed } from '../api.js';
+import { extractBlocksByTags, applyExclusionRules } from '../utils/rag-tag-extractor.js';
+
+import { getBatchFillerRuleTemplate, getBatchFillerFlowTemplate, convertTablesToCsvString } from './manager.js';
+
+let isFilling = false;
+let manualStopRequested = false;
+let currentBatch = 0;
+let totalBatches = 0;
+let chatHistoryLength = 0;
+let threshold = 30;
+const MAX_RETRIES = 2; 
+
+
+async function getWorldBookContext() {
+    const settings = extension_settings[extensionName];
+    if (!settings.table_worldbook_enabled) {
+        return '';
+    }
+
+    const context = getContext();
+    let bookNames = [];
+    let content = '';
+
+    if (settings.table_worldbook_source === 'character') {
+        const characterId = context.characterId;
+        const character = characters[characterId];
+        const characterBook = character?.data?.extensions?.world;
+        if (characterBook) {
+            bookNames.push(characterBook);
+        }
+    } else {
+        bookNames = settings.table_selected_worldbooks || [];
+    }
+
+    if (bookNames.length === 0) {
+        return '';
+    }
+
+    const selectedEntriesConfig = settings.table_selected_entries || {};
+
+    for (const bookName of bookNames) {
+        try {
+            const bookData = await loadWorldInfo(bookName);
+            if (!bookData || !bookData.entries) continue;
+
+            const entriesToInclude = settings.table_worldbook_source === 'manual'
+                ? (selectedEntriesConfig[bookName] || []).map(uid => String(uid))
+                : Object.values(bookData.entries).map(entry => String(entry.uid));
+
+            for (const entry of Object.values(bookData.entries)) {
+                if (entriesToInclude.includes(String(entry.uid))) {
+                    content += `[来源：世界书，条目名字：${entry.comment || '无标题条目'}]\n${entry.content}\n\n`;
+                }
+            }
+        } catch (error) {
+            log(`加载世界书 "${bookName}" 失败: ${error.message}`, 'error');
+        }
+    }
+
+    if (content.length > settings.table_worldbook_char_limit) {
+        content = content.substring(0, settings.table_worldbook_char_limit);
+    }
+
+    return content.trim() ? `<世界书>\n${content.trim()}\n</世界书>` : '';
+}
+
+const fillButton = () => document.getElementById('fill-table-now-btn');
+
+function updateButtonState(state, batchNum = 0, attemptNum = 0) {
+    const button = fillButton();
+    if (!button) return;
+
+    switch (state) {
+        case 'processing':
+            let attemptText = attemptNum > 0 ? ` (尝试 ${attemptNum + 1})` : '';
+            button.textContent = `点击停止 (${batchNum}/${totalBatches})${attemptText}`;
+            button.disabled = false;
+            isFilling = true;
+            break;
+        case 'stopping':
+            button.textContent = '正在停止...';
+            button.disabled = true;
+            break;
+        case 'paused':
+            button.textContent = '继续填表';
+            button.disabled = false;
+            isFilling = true;
+            break;
+        case 'error':
+            button.textContent = '继续填表 (出错)';
+            button.disabled = false;
+            isFilling = true;
+            break;
+        case 'idle':
+        default:
+            button.textContent = '立即填表';
+            button.disabled = false;
+            isFilling = false;
+            currentBatch = 0;
+            manualStopRequested = false;
+            break;
+    }
+}
+
+async function callTableModel(messages) {
+    try {
+        const result = await callAI(messages);
+        if (!result) {
+            throw new Error('API返回内容为空。');
+        }
+        return result;
+    } catch (error) {
+        log(`与模型通讯时发生异常: ${error.message}`, "error");
+        toastr.error(`与模型通讯时发生异常: ${error.message}`, "通讯异常");
+        return null;
+    }
+}
+
+function getRawMessagesForSummary(startFloor, endFloor) {
+    const context = getContext();
+    const chat = context.chat;
+    const settings = extension_settings[extensionName];
+
+    const historySlice = chat.slice(startFloor - 1, endFloor);
+    if (historySlice.length === 0) return null;
+
+    const userName = context.name1 || '用户';
+    const characterName = context.name2 || '角色';
+    
+    const useTagExtraction = settings.historiographyTagExtractionEnabled ?? false;
+    const tagsToExtract = useTagExtraction ? (settings.historiographyTags || '').split(',').map(t => t.trim()).filter(Boolean) : [];
+    const exclusionRules = settings.historiographyExclusionRules || [];
+
+    const messages = historySlice.map((msg, index) => {
+        let content = msg.mes;
+
+        if (useTagExtraction && tagsToExtract.length > 0) {
+            const blocks = extractBlocksByTags(content, tagsToExtract);
+            if (blocks.length > 0) {
+                content = blocks.join('\n\n');
+            }
+        }
+
+        content = applyExclusionRules(content, exclusionRules);
+        
+        if (!content.trim()) return null;
+
+        return {
+            floor: startFloor + index,
+            author: msg.is_user ? userName : characterName,
+            authorType: msg.is_user ? 'user' : 'char',
+            content: content.trim()
+        };
+    }).filter(Boolean);
+
+    return messages;
+}
+
+async function runBatchAttempt(batchNum, attemptNum) {
+    try {
+        if (manualStopRequested) {
+            log(`任务已在批次 ${batchNum} 开始前手动暂停。`, 'warn');
+            updateButtonState('paused');
+            return;
+        }
+
+        updateButtonState('processing', batchNum, attemptNum);
+
+        const startFloor = (batchNum - 1) * threshold + 1;
+        const endFloor = Math.min(startFloor + threshold - 1, chatHistoryLength);
+
+        log(`正在处理批次 ${batchNum}/${totalBatches} (楼层 ${startFloor}-${endFloor}, 尝试 ${attemptNum + 1}/${MAX_RETRIES + 1})`, 'info');
+
+        const purifiedMessages = getRawMessagesForSummary(startFloor, endFloor);
+        if (!purifiedMessages || purifiedMessages.length === 0) {
+            throw new Error('净化后无有效内容可处理。');
+        }
+
+        const batchContent = purifiedMessages.map(m => `【第 ${m.floor} 楼】 ${m.author}: ${m.content}`).join('\n');
+        const ruleTemplate = getBatchFillerRuleTemplate();
+        const flowTemplate = getBatchFillerFlowTemplate();
+        const currentTableDataString = convertTablesToCsvString();
+        const finalFlowPrompt = flowTemplate.replace('{{{Amily2TableData}}}', currentTableDataString);
+
+        let mixedOrder;
+        try {
+            const savedOrder = localStorage.getItem('amily2_prompt_presets_v2_mixed_order');
+            if (savedOrder) {
+                mixedOrder = JSON.parse(savedOrder);
+            }
+        } catch (e) {
+            console.error("[批量填表] 加载混合顺序失败:", e);
+        }
+        const order = getMixedOrder('batch_filler') || [];
+
+        const presetPrompts = getPresetPrompts('batch_filler');
+        
+        const worldBookContext = await getWorldBookContext();
+        
+        const messages = [
+            { role: 'system', content: generateRandomSeed() }
+        ];
+
+        let promptCounter = 0; 
+        for (const item of order) {
+            if (item.type === 'prompt') {
+                if (presetPrompts && presetPrompts[promptCounter]) {
+                    messages.push(presetPrompts[promptCounter]);
+                    promptCounter++;
+                }
+            } else if (item.type === 'conditional') {
+                switch (item.id) {
+                    case 'worldbook':
+                        if (worldBookContext) {
+                            messages.push({ role: 'system', content: worldBookContext });
+                        }
+                        break;
+                    case 'ruleTemplate':
+                        messages.push({ role: "system", content: ruleTemplate });
+                        break;
+                    case 'flowTemplate':
+                        messages.push({ role: "system", content: finalFlowPrompt });
+                        break;
+                    case 'coreContent':
+                        messages.push({ role: 'user', content: `请严格根据以下"对话记录"中的内容进行填写表格，并按照指定的格式输出，不要添加任何额外信息。\n\n<对话记录>\n${batchContent}\n</对话记录>` });
+                        break;
+                }
+            }
+        }
+
+        if (!presetPrompts || presetPrompts.length === 0) {
+            const defaultPrompts = [
+                { role: 'system', content: generateRandomSeed() }
+            ];
+            messages.splice(1, 0, ...defaultPrompts);
+        }
+
+        console.groupCollapsed(`[Amily2 立即远征] 批次 ${batchNum}/${totalBatches} - 即将发送至 API 的内容`);
+        console.dir(messages);
+        console.groupEnd();
+
+        const resultText = await callTableModel(messages);
+        console.log(`[Amily2 立即远征] 批次 ${batchNum}/${totalBatches} - 收到 API 原始回复:`, resultText);
+        if (!resultText) {
+            throw new Error('API返回内容为空。');
+        }
+
+        updateTableFromText(resultText);
+        renderTables();
+        log(`批次 ${batchNum} 处理成功。`, 'success');
+        
+        currentBatch = batchNum; 
+        setTimeout(processNextBatch, 1000); 
+
+    } catch (error) {
+        log(`批次 ${batchNum} 尝试 ${attemptNum + 1} 失败: ${error.message}`, 'error');
+        if (attemptNum >= MAX_RETRIES) {
+            log(`批次 ${batchNum} 已达到最大重试次数，任务暂停。`, 'error');
+            toastr.error(`批次 ${batchNum} 多次失败，请检查网络或API设置后手动继续。`, '任务暂停');
+            currentBatch = batchNum - 1;
+            updateButtonState('error');
+        } else {
+            log(`将在3秒后自动重试批次 ${batchNum}...`, 'warn');
+            setTimeout(() => runBatchAttempt(batchNum, attemptNum + 1), 3000);
+        }
+    }
+}
+
+async function processNextBatch() {
+    if (manualStopRequested) {
+        log(`任务已在批次 ${currentBatch + 1} 开始前手动暂停。`, 'warn');
+        updateButtonState('paused');
+        return;
+    }
+
+    if (currentBatch >= totalBatches) {
+        log('所有批次处理完毕！', 'success');
+        updateButtonState('idle');
+        return;
+    }
+
+    runBatchAttempt(currentBatch + 1, 0);
+}
+
+export function startBatchFilling() {
+    const button = fillButton();
+    if (!button) return;
+
+    const settings = extension_settings[extensionName];
+    const tableSystemEnabled = settings.table_system_enabled !== false; 
+    if (!tableSystemEnabled) {
+        log('表格系统总开关已关闭，跳过批量填表。', 'info');
+        toastr.info('表格系统总开关已关闭，无法执行批量填表。');
+        return;
+    }
+
+    if (isFilling) {
+        if (button.textContent.startsWith('点击停止')) {
+            manualStopRequested = true;
+            updateButtonState('stopping');
+            log('停战敕令已下达！将在当前批次完成后暂停。', 'warn');
+        } else if (button.textContent.startsWith('继续填表')) {
+            manualStopRequested = false;
+            log('从上次暂停处继续处理...', 'info');
+            processNextBatch();
+        }
+        return;
+    }
+
+    manualStopRequested = false;
+    const context = getContext();
+    chatHistoryLength = context.chat.length;
+    threshold = parseInt(document.getElementById('batch-filling-threshold')?.value, 10) || 30;
+    
+    const ruleTemplate = getBatchFillerRuleTemplate();
+    const flowTemplate = getBatchFillerFlowTemplate();
+
+    if (!ruleTemplate || !flowTemplate) {
+        log('规则或流程提示词为空，无法开始填表。', 'error');
+        toastr.error('请确保"规则提示词"和"流程提示词"都已填写。', '无法开始');
+        return;
+    }
+
+    if (chatHistoryLength === 0) {
+        log('聊天记录为空，无需填表。', 'info');
+        return;
+    }
+
+    totalBatches = Math.ceil(chatHistoryLength / threshold);
+    currentBatch = 0;
+
+    log(`准备开始批量填表任务，共 ${totalBatches} 个批次。`, 'info');
+    processNextBatch();
+}
+
+
+export async function startFloorRangeFilling(startFloor, endFloor) {
+    const settings = extension_settings[extensionName];
+    const tableSystemEnabled = settings.table_system_enabled !== false;
+    if (!tableSystemEnabled) {
+        log('表格系统总开关已关闭，跳过楼层填表。', 'info');
+        toastr.info('表格系统总开关已关闭，无法执行楼层填表。');
+        return;
+    }
+
+    const context = getContext();
+    const currentChatLength = context.chat.length;
+
+    if (endFloor > currentChatLength) {
+        toastr.warning(`结束楼层 ${endFloor} 超出了当前聊天记录长度 ${currentChatLength}。`);
+        return;
+    }
+
+    const ruleTemplate = getBatchFillerRuleTemplate();
+    const flowTemplate = getBatchFillerFlowTemplate();
+
+    if (!ruleTemplate || !flowTemplate) {
+        log('规则或流程提示词为空，无法开始楼层填表。', 'error');
+        toastr.error('请确保"规则提示词"和"流程提示词"都已填写。', '无法开始');
+        return;
+    }
+
+    try {
+        log(`开始处理楼层 ${startFloor}-${endFloor} 的内容...`, 'info');
+        
+        const purifiedMessages = getRawMessagesForSummary(startFloor, endFloor);
+        if (!purifiedMessages || purifiedMessages.length === 0) {
+            toastr.warning('指定楼层范围内没有有效内容可处理。');
+            return;
+        }
+
+        const batchContent = purifiedMessages.map(m => `【第 ${m.floor} 楼】 ${m.author}: ${m.content}`).join('\n');
+        const currentTableDataString = convertTablesToCsvString();
+        const finalFlowPrompt = flowTemplate.replace('{{{Amily2TableData}}}', currentTableDataString);
+
+        let mixedOrder;
+        try {
+            const savedOrder = localStorage.getItem('amily2_prompt_presets_v2_mixed_order');
+            if (savedOrder) {
+                mixedOrder = JSON.parse(savedOrder);
+            }
+        } catch (e) {
+            console.error("[楼层填表] 加载混合顺序失败:", e);
+        }
+        const order = getMixedOrder('batch_filler') || [];
+
+        const presetPrompts = getPresetPrompts('batch_filler');
+        
+        const worldBookContext = await getWorldBookContext();
+
+        const messages = [
+            { role: 'system', content: generateRandomSeed() }
+        ];
+
+        let promptCounter = 0; 
+        for (const item of order) {
+            if (item.type === 'prompt') {
+                if (presetPrompts && presetPrompts[promptCounter]) {
+                    messages.push(presetPrompts[promptCounter]);
+                    promptCounter++; 
+                }
+            } else if (item.type === 'conditional') {
+                switch (item.id) {
+                    case 'worldbook':
+                        if (worldBookContext) {
+                            messages.push({ role: 'system', content: worldBookContext });
+                        }
+                        break;
+                    case 'ruleTemplate':
+                        messages.push({ role: "system", content: ruleTemplate });
+                        break;
+                    case 'flowTemplate':
+                        messages.push({ role: "system", content: finalFlowPrompt });
+                        break;
+                    case 'coreContent':
+                        messages.push({ role: 'user', content: `请严格根据以下"对话记录"中的内容进行填写表格，并按照指定的格式输出，不要添加任何额外信息。\n\n<对话记录>\n${batchContent}\n</对话记录>` });
+                        break;
+                }
+            }
+        }
+
+        if (!presetPrompts || presetPrompts.length === 0) {
+            const defaultPrompts = [
+                { role: 'system', content: generateRandomSeed() }
+            ];
+            messages.splice(1, 0, ...defaultPrompts);
+        }
+
+        console.groupCollapsed(`[Amily2 楼层填表] 楼层 ${startFloor}-${endFloor} - 即将发送至 API 的内容`);
+        console.dir(messages);
+        console.groupEnd();
+
+        const resultText = await callTableModel(messages);
+        console.log(`[Amily2 楼层填表] 楼层 ${startFloor}-${endFloor} - 收到 API 原始回复:`, resultText);
+        
+        if (!resultText) {
+            throw new Error('API返回内容为空。');
+        }
+
+        updateTableFromText(resultText);
+        renderTables();
+        
+        toastr.success(`楼层 ${startFloor}-${endFloor} 填表完成！`);
+        log(`楼层 ${startFloor}-${endFloor} 填表处理完成。`, 'success');
+        
+    } catch (error) {
+        log(`楼层 ${startFloor}-${endFloor} 填表失败: ${error.message}`, 'error');
+        toastr.error(`楼层填表失败: ${error.message}`, '处理失败');
+    }
+}
+
+
+export async function startCurrentFloorFilling() {
+    const context = getContext();
+    const currentFloor = context.chat.length;
+    
+    if (currentFloor === 0) {
+        toastr.info('当前没有聊天记录。');
+        return;
+    }
+    
+    log(`准备填写当前楼层（第 ${currentFloor} 楼）...`, 'info');
+    await startFloorRangeFilling(currentFloor, currentFloor);
+}
