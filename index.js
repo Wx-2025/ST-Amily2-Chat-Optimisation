@@ -7,7 +7,8 @@ import { onMessageReceived, handleTableUpdate } from "./core/events.js";
 import { processPlotOptimization } from "./core/summarizer.js";
 import { getContext } from "/scripts/extensions.js";
 import { characters, this_chid } from '/script.js';
-import { injectTableData } from "./core/table-system/injector.js"; // 【内存储司】注入器
+import { injectTableData } from "./core/table-system/injector.js"; 
+import { initialize as initializeRagProcessor } from "./core/rag-processor.js"; 
 import { loadTables, clearHighlights } from './core/table-system/manager.js';
 import { renderTables } from './ui/table-bindings.js';
 import { log } from './core/table-system/logger.js';
@@ -187,13 +188,12 @@ async function handleMessageBoard() {
     if (messageData && messageData.message) {
         const messageBoard = $('#amily2_message_board');
         const messageContent = $('#amily2_message_content');
-        
-        // 使用 .html() 来正确渲染可能包含的 HTML 标签
         messageContent.html(messageData.message); 
         messageBoard.show();
         console.log("【Amily2号-内务府】已成功获取并展示来自陛下的最新圣谕。");
     }
 }
+
 
 
 function loadPluginStyles() {
@@ -237,7 +237,6 @@ jQuery(async () => {
     extension_settings[extensionName] = {};
   }
   const combinedDefaultSettings = { ...defaultSettings, ...tableSystemDefaultSettings };
-  
   Object.assign(extension_settings[extensionName], {
     ...combinedDefaultSettings,
     ...extension_settings[extensionName],
@@ -271,7 +270,7 @@ jQuery(async () => {
         let isProcessingPlotOptimization = false;
         async function onPlotGenerationAfterCommands(type, params, dryRun) {
             console.log("[Amily2-剧情优化] Generation after commands triggered", { type, params, dryRun, isProcessing: isProcessingPlotOptimization });
-
+            
             if (type === 'regenerate' || isProcessingPlotOptimization || dryRun) {
                 console.log("[Amily2-剧情优化] Skipping due to conditions:", { type, isProcessing: isProcessingPlotOptimization, dryRun });
                 return;
@@ -284,7 +283,7 @@ jQuery(async () => {
                 hasApiUrl: !!globalSettings?.apiUrl,
                 plotSettings: globalSettings
             });
-
+            
             console.log("[Amily2-剧情优化] Detailed settings check:", {
                 globalEnabled: globalSettings?.enabled,
                 plotSettingsExists: !!globalSettings,
@@ -380,20 +379,41 @@ jQuery(async () => {
             window.amily2EventsRegistered = true;
         }
         
-        console.log("[Amily2号-开国大典] 步骤五：启用内存储司注入核心...");
-        const officialFunctionName = 'vectors_rearrangeChat';
-        const originalFunction = window[officialFunctionName];
+        console.log("[Amily2号-开国大典] 步骤五：初始化RAG处理器...");
 
-        if (typeof originalFunction === 'function') {
-            window[officialFunctionName] = async function(...args) {
+        try {
+            initializeRagProcessor();
+            console.log('[Amily2-翰林院] RAG处理器已成功初始化');
+        } catch (error) {
+            console.error('[Amily2-翰林院] RAG处理器初始化失败:', error);
+        }
+        
+        console.log("[Amily2号-开国大典] 步骤六：智能冲突检测与注入策略...");
+
+        async function executeAmily2Injection(...args) {
+            console.log('[Amily2-核心引擎] 开始执行统一注入 (聊天长度:', args[0]?.length || 0, ')');
+
+            try {
                 injectTableData(...args);
-                await originalFunction.apply(this, args); 
-            };
-            console.log(`[Amily2-内存储司] 已成功代理 ${officialFunctionName}，与翰林院协同工作。`);
-        } else {
+            } catch (error) {
+                console.error('[Amily2-内存储司] 表格注入失败:', error);
+            }
+            
+            if (window.hanlinyuanRagProcessor && typeof window.hanlinyuanRagProcessor.rearrangeChat === 'function') {
+                try {
+                    console.log('[Amily2-核心引擎] 执行内置RAG注入。');
+                    await window.hanlinyuanRagProcessor.rearrangeChat(...args);
+                } catch (error) {
+                    console.error('[Amily2-翰林院] RAG注入失败:', error);
+                }
+            }
+        }
 
-            window[officialFunctionName] = injectTableData;
-            console.log(`[Amily2-内存储司] 已注册全局函数 ${officialFunctionName}，独立负责注入。`);
+        console.log('[Amily2-策略] 采用“完全主导”策略，覆盖 `vectors_rearrangeChat`。');
+        window['vectors_rearrangeChat'] = executeAmily2Injection;
+
+        if (window['amily2HanlinyuanInjector']) {
+            window['amily2HanlinyuanInjector'] = null;
         }
 
         console.log("【Amily2号】帝国秩序已完美建立。Amily2号的府邸已恭候陛下的莅临。");
@@ -418,6 +438,7 @@ jQuery(async () => {
                 log(`【凤凰阁】内联主题系统初始化失败: ${error}`, 'error');
             }
         }, 500); 
+
       } catch (error) {
         console.error("!!!【开国大典失败】在执行系列法令时发生严重错误:", error);
       }
