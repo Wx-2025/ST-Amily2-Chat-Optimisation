@@ -4,6 +4,63 @@
     <meta charset="UTF-8">
     <title>Amily2 表格编辑器</title>
     <link rel="stylesheet" href="table.css">
+    <style>
+        .worldbook-selection-container {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .worldbook-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+        }
+
+        .scrollable-container {
+            border: 1px solid var(--input-border-color, #444);
+            border-radius: 5px;
+            padding: 10px;
+            height: 150px;
+            overflow-y: auto;
+            background-color: var(--input-bg-color, #222);
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
+
+        .scrollable-container .checkbox-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .scrollable-container .checkbox-item input[type="checkbox"] {
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+        
+        .scrollable-container .checkbox-item label {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        select.text_pole {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/><path d='M0 0h24v24H0z' fill='none'/></svg>");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 1.2em;
+            padding-right: 2em !important;
+            border-radius: 5px;
+        }
+    </style>
 </head>
 <body>
 
@@ -25,6 +82,7 @@
                 <button class="sinan-nav-item active" data-tab="injection-settings"><i class="fas fa-cogs"></i> 注入设置</button>
                 <button class="sinan-nav-item" data-tab="action-center"><i class="fas fa-toolbox"></i> 操作中心</button>
                 <button class="sinan-nav-item" data-tab="ai-template"><i class="fas fa-robot"></i> 指令模板</button>
+                <button class="sinan-nav-item" data-tab="world-settings"><i class="fas fa-globe"></i> 世界读取</button>
             </div>
 
             <div class="sinan-content-wrapper">
@@ -52,6 +110,54 @@
                     </div>
                 </div>
 
+                <div id="sinan-world-settings-tab" class="sinan-tab-pane">
+                    <div class="amily2_opt_settings_block">
+                        <label for="table_worldbook_enabled">启用世界书</label>
+                        <label class="toggle-switch">
+                            <input id="table_worldbook_enabled" type="checkbox" />
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="amily2_opt_settings_block">
+                        <label for="table_worldbook_char_limit">世界书最大字符数: <span id="table_worldbook_char_limit_value">60000</span></label>
+                        <input type="range" id="table_worldbook_char_limit" min="1000" max="200000" step="1000" value="60000">
+                    </div>
+
+                    <hr>
+
+                    <div class="amily2_opt_settings_block_radio">
+                        <label>世界书来源</label>
+                        <div class="amily2_opt_radio_group">
+                            <input type="radio" id="table_worldbook_source_character" name="table_worldbook_source" value="character" checked>
+                            <label for="table_worldbook_source_character">角色卡主世界书</label>
+                            <input type="radio" id="table_worldbook_source_manual" name="table_worldbook_source" value="manual">
+                            <label for="table_worldbook_source_manual">手动选择世界书</label>
+                        </div>
+                    </div>
+
+                    <div id="table_worldbook_select_wrapper" style="display: none;">
+                        <div class="worldbook-selection-container">
+                            <div class="worldbook-column">
+                                <div class="amily2_opt_label_with_button_wrapper">
+                                    <label>选择世界书 (可多选)</label>
+                                    <button id="table_refresh_worldbooks" class="menu_button" title="刷新世界书列表"><i class="fa-solid fa-sync"></i></button>
+                                </div>
+                                <div id="table_worldbook_checkbox_list" class="scrollable-container">
+                                    <!-- 世界书勾选框将在这里动态生成 -->
+                                </div>
+                                <small class="notes">勾选需要启用的世界书。</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="worldbook-column" style="margin-top: 10px;">
+                        <label>选择条目 (可多选)</label>
+                        <div id="table_worldbook_entry_list" class="scrollable-container">
+                            <!-- 世界书条目勾选框将在这里动态生成 -->
+                        </div>
+                        <small class="notes">勾选需要注入的条目。</small>
+                    </div>
+                </div>
 
                 <div id="sinan-action-center-tab" class="sinan-tab-pane">
                     <div class="control-block-with-switch" style="margin-bottom: 15px; padding: 8px; border: 2px solid #4a9eff; border-radius: 5px; background: rgba(74, 158, 255, 0.1);">
@@ -80,6 +186,13 @@
                             <input type="radio" id="optimized-mode" name="filling-mode" value="optimized">
                             <label for="optimized-mode">兼容优化</label>
                         </div>
+                    </div>
+                    
+                    <!-- 上下文读取滑块 - 仅在分步模式下显示 -->
+                    <div id="context-reading-slider-container" class="control-block-with-switch" style="margin-bottom: 10px; display: none;">
+                        <label for="context-reading-slider">上下文读取: <span id="context-reading-value">4</span></label>
+                        <input type="range" id="context-reading-slider" min="0" max="10" step="1" value="4" class="text_pole" style="width: 100%; margin-top: 5px;">
+                        <small class="notes" style="margin-top: 5px; display: block;">使用的是微言录小总结的标签提取规则，请自行设置，若为空则不提取或排除。</small>
                     </div>
                     <div class="action-center-buttons" style="gap: 8px;">
                         <button id="amily2-export-preset-btn" class="menu_button primary small_button interactable"><i class="fas fa-file-export"></i> 导出预设</button>
@@ -141,6 +254,7 @@
                             <button id="fill-table-now-btn" class="menu_button small_button">立即填表</button>
                             <button id="fill-selected-floors-btn" class="menu_button accent small_button">选定楼层填表</button>
                             <button id="fill-current-floor-btn" class="menu_button secondary small_button">填当前楼层</button>
+                            <button id="reorganize-table-btn" class="menu_button warning small_button">重新整理</button>
                         </div>
                     </div>
                 </div>
@@ -160,4 +274,5 @@
 </div>
 
 </body>
+</html>
 </html>
