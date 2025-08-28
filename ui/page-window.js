@@ -1,1 +1,158 @@
-(function(_0x2bf7d2,_0x4e516f){const _0x351754=_0x467a,_0x307dd6=_0x2bf7d2();while(!![]){try{const _0x396030=-parseInt(_0x351754(0x1e6))/0x1*(-parseInt(_0x351754(0x1ce))/0x2)+parseInt(_0x351754(0x1be))/0x3*(parseInt(_0x351754(0x1bb))/0x4)+-parseInt(_0x351754(0x1db))/0x5*(-parseInt(_0x351754(0x1c5))/0x6)+parseInt(_0x351754(0x1cd))/0x7+parseInt(_0x351754(0x1d2))/0x8*(parseInt(_0x351754(0x1c8))/0x9)+parseInt(_0x351754(0x1eb))/0xa*(-parseInt(_0x351754(0x1c2))/0xb)+parseInt(_0x351754(0x1b9))/0xc*(-parseInt(_0x351754(0x1d0))/0xd);if(_0x396030===_0x4e516f)break;else _0x307dd6['push'](_0x307dd6['shift']());}catch(_0x284aad){_0x307dd6['push'](_0x307dd6['shift']());}}}(_0x55ac,0x8d656));function _0x467a(_0x312b75,_0x5b6ab0){const _0x55acde=_0x55ac();return _0x467a=function(_0x467a9a,_0x5f207b){_0x467a9a=_0x467a9a-0x1b7;let _0x3939c1=_0x55acde[_0x467a9a];return _0x3939c1;},_0x467a(_0x312b75,_0x5b6ab0);}import{messageFormatting}from'/script.js';function loadShowdown(){return new Promise((_0x122df6,_0x3445d5)=>{const _0x1c4d37=_0x467a;if(window[_0x1c4d37(0x1cc)]){_0x122df6();return;}const _0x3541b5=document['createElement'](_0x1c4d37(0x1c0));_0x3541b5[_0x1c4d37(0x1e9)]='https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js',_0x3541b5[_0x1c4d37(0x1e1)]=_0x122df6,_0x3541b5[_0x1c4d37(0x1d8)]=_0x3445d5,document[_0x1c4d37(0x1d7)][_0x1c4d37(0x1bf)](_0x3541b5);});}export async function showContentModal(_0x1fe00e,_0x5b11d7){const _0x5177d7=_0x467a;try{await loadShowdown();const _0x35c37d=await $[_0x5177d7(0x1e5)](_0x5b11d7),_0x148604=new showdown['Converter']({'tables':!![],'strikethrough':!![],'ghCodeBlocks':!![]}),_0x47ae48=_0x148604[_0x5177d7(0x1e0)](_0x35c37d),_0x4d31ba=_0x5177d7(0x1bc)+_0x1fe00e+_0x5177d7(0x1bd)+_0x47ae48+_0x5177d7(0x1de),_0x2c981c=$(_0x4d31ba)[_0x5177d7(0x1e7)](_0x5177d7(0x1c3)),_0x43ac57=()=>{_0x2c981c[0x0]['close'](),_0x2c981c['remove']();};_0x2c981c[_0x5177d7(0x1b7)]('.popup-button-ok')['on'](_0x5177d7(0x1e2),_0x43ac57),_0x2c981c[0x0][_0x5177d7(0x1d6)]();}catch(_0x514dce){console[_0x5177d7(0x1c7)](_0x5177d7(0x1b8)+_0x1fe00e+']\x20时发生意外:',_0x514dce),toastr['error'](_0x5177d7(0x1c1)+_0x514dce[_0x5177d7(0x1df)],_0x5177d7(0x1d3));}}export function showHtmlModal(_0x5ea5d1,_0x3ac9ae,_0x38418d={}){const _0x2b2d50=_0x467a,{okText:okText='确认',cancelText:cancelText='取消',onOk:_0x109034,onCancel:_0x373e4f,showCancel:showCancel=!![]}=_0x38418d,_0x321722=_0x2b2d50(0x1d1)+(showCancel?_0x2b2d50(0x1ca)+cancelText+'</button>':'')+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22popup-button-ok\x20menu_button\x20menu_button_primary\x20interactable\x22>'+okText+_0x2b2d50(0x1d5),_0x2e4485=_0x2b2d50(0x1e3)+_0x5ea5d1+_0x2b2d50(0x1e8)+_0x3ac9ae+_0x2b2d50(0x1cf)+_0x321722+_0x2b2d50(0x1dc),_0x38f087=$(_0x2e4485)['appendTo'](_0x2b2d50(0x1c3)),_0x8860c9=()=>{const _0x2d378e=_0x2b2d50;_0x38f087[0x0][_0x2d378e(0x1da)](),_0x38f087[_0x2d378e(0x1d9)]();};return _0x38f087[_0x2b2d50(0x1b7)]('.popup-button-ok')['on']('click',()=>{if(_0x109034){const _0x4a7c91=_0x109034(_0x38f087);_0x4a7c91!==![]&&_0x8860c9();}else _0x8860c9();}),showCancel&&_0x38f087[_0x2b2d50(0x1b7)](_0x2b2d50(0x1e4))['on'](_0x2b2d50(0x1e2),()=>{_0x373e4f&&_0x373e4f(),_0x8860c9();}),_0x38f087[0x0][_0x2b2d50(0x1d6)](),_0x38f087;}function _0x55ac(){const _0x5b0958=['20wyEQze','appendTo','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</h3>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-content\x22\x20style=\x22height:\x2060vh;\x20overflow-y:\x20auto;\x20background:\x20rgba(0,0,0,0.2);\x20padding:\x2015px;\x20border-radius:\x205px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','src','</textarea>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20','10tlWqmB','find','[Amily-翰林院]\x20紧急报告：加载教程内容\x20[','252ajrenU','预览与修订','16UkEhyg','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<dialog\x20class=\x22popup\x20wide_dialogue_popup\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-body\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h3\x20style=\x22margin-top:0;\x20color:\x20#eee;\x20border-bottom:\x201px\x20solid\x20rgba(255,255,255,0.2);\x20padding-bottom:\x2010px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<i\x20class=\x22fas\x20fa-book-open\x22\x20style=\x22color:\x20#58a6ff;\x22></i>\x20','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</h3>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-content\x22\x20style=\x22height:\x2060vh;\x20overflow-y:\x20auto;\x20background:\x20rgba(0,0,0,0.2);\x20padding:\x2015px;\x20border-radius:\x205px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22mes_text\x22>','683337IIYYwd','appendChild','script','无法加载教程:\x20','7839480LIHEwK','body','\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22historiographer-summary-modal\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<textarea\x20class=\x22text_pole\x22\x20style=\x22width:\x20100%;\x20height:\x2050vh;\x20resize:\x20vertical;\x22>','6lZUAVL','取消写入','error','4797UsQSel','.popup-controls','<button\x20class=\x22popup-button-cancel\x20menu_button\x20secondary\x20interactable\x22>','<button\x20class=\x22menu_button\x20secondary\x20interactable\x22\x20style=\x22margin-right:\x20auto;\x22>重新生成</button>','showdown','6995576NFYZol','104906DJgQEH','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-controls\x22\x20style=\x22display:\x20flex;\x20justify-content:\x20flex-end;\x20gap:\x2010px;\x22>','2044887xkmgHB','\x0a\x20\x20\x20\x20\x20\x20\x20\x20','15160mSbfGM','翰林院回报','textarea','</button>\x0a\x20\x20\x20\x20','showModal','head','onerror','remove','close','3127690tZLyZH','</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</dialog>','val','</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-controls\x22><div\x20class=\x22popup-button-ok\x20menu_button\x20menu_button_primary\x20interactable\x22>朕已阅</div></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</dialog>','message','makeHtml','onload','click','\x0a\x20\x20\x20\x20\x20\x20\x20\x20<dialog\x20class=\x22popup\x20wide_dialogue_popup\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-body\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h3\x20style=\x22margin-top:0;\x20color:\x20#eee;\x20border-bottom:\x201px\x20solid\x20rgba(255,255,255,0.2);\x20padding-bottom:\x2010px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<i\x20class=\x22fas\x20fa-edit\x22\x20style=\x22color:\x20#58a6ff;\x22></i>\x20','.popup-button-cancel','get'];_0x55ac=function(){return _0x5b0958;};return _0x55ac();}export function showSummaryModal(_0x3eb923,_0x51af34){const _0x5e0fc6=_0x467a,{onConfirm:_0x20d766,onRegenerate:_0x1642be,onCancel:_0x9a86ef}=_0x51af34,_0x23e32f=_0x5e0fc6(0x1c4)+_0x3eb923+_0x5e0fc6(0x1ea),_0x5d0b4a=showHtmlModal(_0x5e0fc6(0x1ba),_0x23e32f,{'okText':'确认写入','cancelText':_0x5e0fc6(0x1c6),'showCancel':!![],'onOk':_0x5257e6=>{const _0x319f60=_0x5e0fc6,_0x468eef=_0x5257e6[_0x319f60(0x1b7)](_0x319f60(0x1d4))[_0x319f60(0x1dd)]();_0x20d766&&_0x20d766(_0x468eef);},'onCancel':()=>{_0x9a86ef&&_0x9a86ef();}}),_0x55cd51=$(_0x5e0fc6(0x1cb));_0x55cd51['on'](_0x5e0fc6(0x1e2),()=>{_0x1642be&&_0x1642be(_0x5d0b4a);}),_0x5d0b4a[_0x5e0fc6(0x1b7)](_0x5e0fc6(0x1c9))['prepend'](_0x55cd51);}
+import { messageFormatting } from '/script.js';
+
+function loadShowdown() {
+    return new Promise((resolve, reject) => {
+        if (window.showdown) {
+            resolve();
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js';
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+}
+
+
+export async function showContentModal(title, contentUrl) {
+    try {
+
+        await loadShowdown();
+
+        const markdownContent = await $.get(contentUrl);
+
+        const converter = new showdown.Converter({
+            tables: true,
+            strikethrough: true,
+            ghCodeBlocks: true
+        });
+        const htmlContent = converter.makeHtml(markdownContent);
+
+        const dialogHtml = `
+            <dialog class="popup wide_dialogue_popup">
+              <div class="popup-body">
+                <h3 style="margin-top:0; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">
+                    <i class="fas fa-book-open" style="color: #58a6ff;"></i> ${title}
+                </h3>
+                <div class="popup-content" style="height: 60vh; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 5px;">
+                    <div class="mes_text">${htmlContent}</div>
+                </div>
+                <div class="popup-controls"><div class="popup-button-ok menu_button menu_button_primary interactable">朕已阅</div></div>
+              </div>
+            </dialog>`;
+
+        const dialogElement = $(dialogHtml).appendTo('body');
+        const closeDialog = () => {
+            dialogElement[0].close();
+            dialogElement.remove();
+        };
+        dialogElement.find('.popup-button-ok').on('click', closeDialog);
+        dialogElement[0].showModal();
+
+    } catch (error) {
+        console.error(`[Amily-翰林院] 紧急报告：加载教程内容 [${title}] 时发生意外:`, error);
+        toastr.error(`无法加载教程: ${error.message}`, "翰林院回报");
+    }
+}
+
+
+export function showHtmlModal(title, htmlContent, options = {}) {
+    const {
+        okText = '确认',
+        cancelText = '取消',
+        onOk,
+        onCancel,
+        onShow,
+        showCancel = true,
+    } = options;
+
+    const buttonsHtml = `
+        ${showCancel ? `<button class="popup-button-cancel menu_button secondary interactable">${cancelText}</button>` : ''}
+        <button class="popup-button-ok menu_button menu_button_primary interactable">${okText}</button>
+    `;
+
+    const dialogHtml = `
+        <dialog class="popup wide_dialogue_popup">
+          <div class="popup-body">
+            <h3 style="margin-top:0; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">
+                <i class="fas fa-edit" style="color: #58a6ff;"></i> ${title}
+            </h3>
+            <div class="popup-content" style="height: 60vh; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 5px;">
+                ${htmlContent}
+            </div>
+            <div class="popup-controls" style="display: flex; justify-content: flex-end; gap: 10px;">${buttonsHtml}</div>
+          </div>
+        </dialog>`;
+
+    const dialogElement = $(dialogHtml).appendTo('body');
+
+    const closeDialog = () => {
+        dialogElement[0].close();
+        dialogElement.remove();
+    };
+
+    dialogElement.find('.popup-button-ok').on('click', () => {
+        if (onOk) {
+            const shouldClose = onOk(dialogElement);
+            if (shouldClose !== false) {
+                closeDialog();
+            }
+        } else {
+            closeDialog();
+        }
+    });
+
+    if (showCancel) {
+        dialogElement.find('.popup-button-cancel').on('click', () => {
+            if (onCancel) {
+                onCancel();
+            }
+            closeDialog();
+        });
+    }
+
+    dialogElement[0].showModal();
+    if (onShow) {
+        onShow(dialogElement);
+    }
+    return dialogElement; 
+}
+
+
+export function showSummaryModal(summaryText, callbacks) {
+    const { onConfirm, onRegenerate, onCancel } = callbacks;
+
+    const modalHtml = `
+        <div class="historiographer-summary-modal">
+            <textarea class="text_pole" style="width: 100%; height: 50vh; resize: vertical;">${summaryText}</textarea>
+        </div>
+    `;
+
+    const dialogElement = showHtmlModal('预览与修订', modalHtml, {
+        okText: '确认写入',
+        cancelText: '取消写入',
+        showCancel: true,
+        onOk: (dialog) => {
+            const editedText = dialog.find('textarea').val();
+            if (onConfirm) {
+                onConfirm(editedText);
+            }
+
+        },
+        onCancel: () => {
+            if (onCancel) {
+                onCancel();
+            }
+        }
+    });
+
+    const regenerateButton = $('<button class="menu_button secondary interactable" style="margin-right: auto;">重新生成</button>');
+    regenerateButton.on('click', () => {
+        if (onRegenerate) {
+            onRegenerate(dialogElement); 
+        }
+    });
+
+    dialogElement.find('.popup-controls').prepend(regenerateButton);
+}
