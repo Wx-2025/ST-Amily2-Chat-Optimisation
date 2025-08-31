@@ -1,1 +1,47 @@
-'use strict';function _0x3a80(_0x40eda3,_0xce8677){const _0x59f2e3=_0x59f2();return _0x3a80=function(_0x3a8069,_0x2f8b20){_0x3a8069=_0x3a8069-0x1f1;let _0xd245c8=_0x59f2e3[_0x3a8069];return _0xd245c8;},_0x3a80(_0x40eda3,_0xce8677);}const _0x5230d7=_0x3a80;(function(_0x52b305,_0x4633b0){const _0x1f7abd=_0x3a80,_0x54625b=_0x52b305();while(!![]){try{const _0xf21a30=-parseInt(_0x1f7abd(0x1ff))/0x1+parseInt(_0x1f7abd(0x1f8))/0x2+parseInt(_0x1f7abd(0x1fb))/0x3*(-parseInt(_0x1f7abd(0x1f2))/0x4)+parseInt(_0x1f7abd(0x1fa))/0x5+parseInt(_0x1f7abd(0x1f5))/0x6*(-parseInt(_0x1f7abd(0x1f7))/0x7)+parseInt(_0x1f7abd(0x1f9))/0x8*(parseInt(_0x1f7abd(0x1f4))/0x9)+parseInt(_0x1f7abd(0x1f1))/0xa*(-parseInt(_0x1f7abd(0x1f6))/0xb);if(_0xf21a30===_0x4633b0)break;else _0x54625b['push'](_0x54625b['shift']());}catch(_0x1a865d){_0x54625b['push'](_0x54625b['shift']());}}}(_0x59f2,0xca440));function _0x59f2(){const _0x3c61b3=['3cSYbbO','翰林院呈报相关忆识：\x0a{{text}}','https://api.siliconflow.cn/v1/rerank','openai','314274MNcbeh','Pro/BAAI/bge-reranker-v2-m3','80qsKuRl','2043148hBSPuo','text-embedding-3-small','870291ndVFUf','6162BxXZeP','224939iHbOmc','2933pbgqYy','1762700rJtUCf','8SgDGzA','6346985wWMaEl'];_0x59f2=function(){return _0x3c61b3;};return _0x59f2();}export const defaultSettings={'retrieval':{'enabled':![],'apiEndpoint':_0x5230d7(0x1fe),'customApiUrl':'','apiKey':'','embeddingModel':_0x5230d7(0x1f3),'notify':!![],'batchSize':0x5},'advanced':{'chunkSize':0x200,'overlap':0x32,'matchThreshold':0.3,'queryMessageCount':0x2,'maxResults':0x5},'injection':{'template':_0x5230d7(0x1fc),'position':0x1,'depth':0x1,'depth_role':0x0},'condensation':{'enabled':!![],'layerStart':0x1,'layerEnd':0xa,'messageTypes':{'user':!![],'ai':!![],'hidden':![]},'tagExtractionEnabled':![],'tags':'摘要','exclusionRules':[]},'rerank':{'enabled':![],'url':_0x5230d7(0x1fd),'apiKey':'','model':_0x5230d7(0x200),'top_n':0x5,'hybrid_alpha':0.7,'notify':!![]}};
+
+'use strict';
+
+export const defaultSettings = {
+    retrieval: {
+        enabled: false, 
+        apiEndpoint: 'openai', 
+        customApiUrl: 'https://api.siliconflow.cn/v1',
+        apiKey: '',
+        embeddingModel: 'text-embedding-3-small',
+        notify: true,
+        batchSize: 50, 
+    },
+    advanced: {
+        chunkSize: 768,
+        overlap: 50,
+        matchThreshold: 0.5,
+        queryMessageCount: 2,
+        maxResults: 10,
+    },
+    injection: {
+        template: '以下内容是翰林院向量化后注入的相关内容，是已经发生过的事情简短总结，但可能顺序会有些错乱，但已经对前后做出了标识，请自行判断顺序：\n<总结内容>\n{text}}\n</总结内容>\n【以上内容是已经发生过的事情，切莫以此作为剧情进展，只是作为提醒发生过的事情】',
+
+        position: 1, 
+        depth: 1,
+        depth_role: 0,
+    },
+    condensation: {
+        enabled: true,
+        layerStart: 1,
+        layerEnd: 10,
+        messageTypes: { user: true, ai: true, hidden: false },
+        tagExtractionEnabled: false,
+        tags: '摘要',
+        exclusionRules: [],
+    },
+    rerank: {
+        enabled: false,
+        url: 'https://api.siliconflow.cn/v1',
+        apiKey: '', 
+        model: 'Pro/BAAI/bge-reranker-v2-m3',
+        top_n: 5,
+        hybrid_alpha: 0.7,
+        notify: true,
+    },
+    knowledgeBases: {},
+};
