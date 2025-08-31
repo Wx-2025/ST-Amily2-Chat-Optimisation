@@ -53,6 +53,7 @@
     <div class="hly-navigation-deck">
         <button class="hly-nav-item active" data-tab="retrieval">忆识检索</button>
         <button class="hly-nav-item" data-tab="historiography">书库编纂</button>
+        <button class="hly-nav-item" data-tab="knowledge-bases">知识管理</button>
         <button class="hly-nav-item" data-tab="rerank">忆识精炼</button>
         <button class="hly-nav-item" data-tab="advanced">高级设定</button>
     </div>
@@ -206,18 +207,18 @@
                 </div>
             </fieldset>
 
-            <!-- ================== 小说/文档导入模块 ================== -->
+
             <fieldset class="hly-settings-group">
                 <legend><i class="fas fa-book-open"></i> 整本录入 (小说/文档)</legend>
                 <div class="hly-control-block">
                     <label for="hanlin_novel_uploader">选择一个 .txt 格式的文本文档：</label>
                     <div id="hanlinyuan-ingest-novel-controls" class="hly-button-group" style="align-items: center;">
-                        <!-- 文件选择按钮 -->
+
                         <div class="file-input-container">
                             <label for="hanlinyuan-ingest-novel-file-input" class="hly-action-button">选择.txt文件</label>
                             <input type="file" id="hanlinyuan-ingest-novel-file-input" accept=".txt" style="display: none;">
                         </div>
-                        <!-- 编码选择 -->
+
                         <div class="file-encoding-container">
                             <select id="hanlinyuan-ingest-novel-encoding" class="hly-imperial-brush" style="padding: 8px; height: auto;" title="选择您原始文件的编码格式，系统将为您转换为标准的UTF-8格式进行处理。">
                                 <option value="UTF-8" selected>UTF-8 (默认)</option>
@@ -225,7 +226,6 @@
                                 <option value="Big5">Big5 → UTF-8</option>
                             </select>
                         </div>
-                        <!-- 开始按钮 -->
                         <button id="hanlinyuan-ingest-novel-start" class="hly-action-button success">开始录入</button>
                     </div>
                      <span id="hanlinyuan-ingest-novel-file-name" class="file-name" style="margin-top: 10px; color: #ccc; display: inline-block;">未选择文件</span>
@@ -252,9 +252,15 @@
                 </div>
                 <div class="hly-control-block">
                     <label for="hly-hist-select-entry">选择条目:</label>
-                    <select id="hly-hist-select-entry" class="hly-imperial-brush" disabled>
-                        <option value="">请先选择书库...</option>
-                    </select>
+                    <div class="hly-multiselect-container">
+                        <button id="hly-hist-entry-multiselect-btn" class="hly-imperial-brush" disabled>
+                            <span>请先选择书库...</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div id="hly-hist-entry-multiselect-options" class="hly-multiselect-options-container" style="display: none;">
+
+                        </div>
+                    </div>
                 </div>
                 <div class="hly-button-group">
                     <button class="hly-action-button success" onclick="startHLYHistoriography()">
@@ -269,13 +275,28 @@
             </fieldset>
         </div>
 
+        <div id="hly-knowledge-bases-tab" class="hly-tab-pane">
+            <fieldset class="hly-settings-group">
+                <legend><i class="fas fa-database"></i> 管理现有知识库</legend>
+                <div id="hly-kb-list-container" class="hly-kb-list">
+
+                    <p id="hly-kb-list-placeholder" style="color: #888;">当前角色没有知识库。通过“书库编纂”中的功能可自动创建。</p>
+                </div>
+                <div class="hly-button-group" style="margin-top: 15px;">
+                    <button id="hly-kb-delete-all-btn" class="hly-action-button danger">
+                        <i class="fas fa-skull-crossbones"></i> 一键删除所有知识库
+                    </button>
+                </div>
+            </fieldset>
+        </div>
+
 
         <div id="hly-advanced-tab" class="hly-tab-pane">
             <fieldset class="hly-settings-group">
                 <legend><i class="fas fa-cogs"></i> 检索微调</legend>
                 <div class="hly-control-block">
                     <label for="hly-chunk-size">书卷尺寸 (Chunk Size):</label>
-                    <input type="number" id="hly-chunk-size" class="hly-imperial-brush" value="512" data-setting-key="advanced.chunkSize" data-type="integer">
+                    <input type="number" id="hly-chunk-size" class="hly-imperial-brush" value="768" data-setting-key="advanced.chunkSize" data-type="integer">
                 </div>
                 <div class="hly-control-block">
                     <label for="hly-overlap-size">上下文关联度 (Overlap):</label>
@@ -283,11 +304,11 @@
                 </div>
                 <div class="hly-control-block">
                     <label for="hly-match-threshold">忆识匹配度 (Threshold):</label>
-                    <input type="number" id="hly-match-threshold" class="hly-imperial-brush" value="0.7" step="0.1" data-setting-key="advanced.matchThreshold" data-type="float">
+                    <input type="number" id="hly-match-threshold" class="hly-imperial-brush" value="0.5" step="0.1" data-setting-key="advanced.matchThreshold" data-type="float">
                 </div>
                 <div class="hly-control-block">
                     <label for="hly-query-message-count">检索参考的消息数量:</label>
-                    <input type="number" id="hly-query-message-count" class="hly-imperial-brush" value="5" data-setting-key="advanced.queryMessageCount" data-type="integer">
+                    <input type="number" id="hly-query-message-count" class="hly-imperial-brush" value="2" data-setting-key="advanced.queryMessageCount" data-type="integer">
                 </div>
                 <div class="hly-control-block">
                     <label for="hly-max-results">单次检索最大结果数:</label>
@@ -295,7 +316,7 @@
                 </div>
                 <div class="hly-control-block">
                     <label for="hly-batch-size">批处理大小 (Batch Size):</label>
-                    <input type="number" id="hly-batch-size" class="hly-imperial-brush" value="5" data-setting-key="retrieval.batchSize" data-type="integer">
+                    <input type="number" id="hly-batch-size" class="hly-imperial-brush" value="50" data-setting-key="retrieval.batchSize" data-type="integer">
                     <small class="hly-notes">每次调用API时处理的文本数量。</small>
                 </div>
             </fieldset>
@@ -367,5 +388,4 @@
     <div class="hly-footer">
     </div>
 </div>
-<!-- 引入强大的文本解码库，确保编码转换万无一失 -->
 <script src="https://cdn.jsdelivr.net/npm/text-encoding@0.7.0/lib/encoding.min.js"></script>
