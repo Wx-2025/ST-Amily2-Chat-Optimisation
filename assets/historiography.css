@@ -1,19 +1,39 @@
-
 .manual-command-block {
     flex-wrap: wrap; 
     justify-content: space-between; 
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
 }
 
 
 .manual-command-block .manual-input {
     flex: 1 1 60px; 
+    width: 80px;
+    padding: 6px;
+    text-align: center;
+    border: 1px solid var(--border_color);
+    background-color: var(--background_secondary);
+    color: var(--text_color);
+    border-radius: 5px;
 }
 
 .manual-command-block .menu_button {
     flex: 2 1 90px; 
+    flex-grow: 1;
+    margin: 0;
 }
 
+.manual-command-block label {
+    flex-shrink: 0;
+    margin-right: 5px;
+}
 
+.manual-command-block .manual-command-divider {
+    font-weight: bold;
+    color: var(--text_color_half);
+}
 
 #amily2_manual_historiography_bureau .mhb-controls-wrapper {
     display: flex;
@@ -145,4 +165,212 @@
 #amily2_manual_historiography_bureau .success:hover {
     background: linear-gradient(135deg, #58d68d, #2ecc71);
     box-shadow: 0 0 10px rgba(46, 204, 113, 0.7);
+}
+
+.prompt-editor-area {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 10px;
+}
+.prompt-editor-area textarea {
+    flex-grow: 1;
+    resize: vertical;
+}
+
+.editor-buttons-panel {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+.editor-buttons-panel .menu_button {
+    margin: 0;
+}
+
+.editor_maximize {
+    color: #ccc;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: background-color 0.2s, color 0.2s;
+}
+.editor_maximize:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.label-with-button {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#amily2_unhide_all_button {
+    width: 42px;
+    height: 42px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    background: linear-gradient(135deg, #28a745, #20c997);
+    border: 1px solid #198754;
+    color: white;
+    font-weight: bold;
+    text-shadow: 0 0 2px rgba(0,0,0,0.3);
+    transition: all 0.3s ease;
+    border-radius: 8px;
+}
+
+#amily2_unhide_all_button:hover {
+    background: linear-gradient(135deg, #20c997, #28a745);
+    box-shadow: 0 0 10px rgba(40, 167, 69, 0.7);
+    transform: translateY(-2px);
+    border-color: #1a9c5c;
+}
+
+#amily2_unhide_all_button {
+    font-size: 13px;
+    line-height: 1.2;
+}
+
+#amily2_unhide_all_button i {
+    font-size: 16px;
+    margin: 0;
+}
+#amily2_unhide_all_button span {
+    font-size: 9px;
+    font-weight: normal;
+}
+
+.amily2-panel-visible {
+    display: flex !important;
+    flex-direction: column;
+    flex-grow: 1;
+    gap: 15px;
+}
+
+.opt-exclusion-rule-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.opt-exclusion-rule-row input[type="text"] {
+    flex-grow: 1;
+}
+
+.delete-rule-btn.danger_button {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    border: 1px solid #a93226;
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    line-height: 1;
+    text-align: center;
+    padding: 0;
+    flex-shrink: 0;
+    transition: all 0.2s ease-in-out;
+}
+
+.delete-rule-btn.danger_button:hover {
+    background: linear-gradient(135deg, #ec7063, #e74c3c);
+    box-shadow: 0 0 8px rgba(231, 76, 60, 0.7);
+    transform: scale(1.05);
+}
+
+.amily2-add-rule-btn {
+    width: auto;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #2ecc71, #27ae60);
+    border: 1px solid #229954;
+    color: white;
+    font-weight: bold;
+}
+
+.amily2-add-rule-btn:hover {
+    background: linear-gradient(135deg, #58d68d, #2ecc71);
+    box-shadow: 0 0 10px rgba(46, 204, 113, 0.7);
+}
+
+/* Styles moved from hanlinyuan.css that are required by the Historiographer panel */
+
+.hly-control-block {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.hly-imperial-brush {
+    width: 100%;
+    box-sizing: border-box;
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid #555;
+    border-radius: 8px;
+    padding: 10px;
+    color: #f0f0f0;
+    transition: all 0.3s ease;
+}
+.hly-imperial-brush:focus {
+    background-color: rgba(0, 0, 0, 0.5);
+    border-color: #7e57c2;
+    box-shadow: 0 0 10px rgba(126, 87, 194, 0.5);
+    outline: none;
+}
+
+/* Combined rule for all toggle switches in this panel */
+.toggle-switch,
+.hly-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+    flex-shrink: 0;
+}
+.toggle-switch input,
+.hly-toggle-switch input { opacity: 0; width: 0; height: 0; }
+
+.toggle-switch .slider,
+.hly-toggle-switch .slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #333; border-radius: 26px; transition: .4s;
+    border: 1px solid #555;
+}
+.toggle-switch .slider:before,
+.hly-toggle-switch .slider:before {
+    position: absolute; content: ""; height: 20px; width: 20px; left: 2px; bottom: 2px;
+    background-color: white; border-radius: 50%; transition: .4s;
+}
+.toggle-switch input:checked + .slider,
+.hly-toggle-switch input:checked + .slider {
+    background: linear-gradient(to right, #7e57c2, #5e35b1);
+    box-shadow: 0 0 8px rgba(126, 87, 194, 0.7);
+}
+.toggle-switch input:checked + .slider:before,
+.hly-toggle-switch input:checked + .slider:before { transform: translateX(24px); }
+
+
+.hly-action-button {
+    padding: 8px 15px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    background-color: #444;
+    color: #eee;
+    border-color: #666;
+}
+.hly-action-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.hly-button-group {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
 }
