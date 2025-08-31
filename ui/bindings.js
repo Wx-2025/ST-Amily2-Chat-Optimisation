@@ -1,1 +1,1401 @@
-const _0x5c9205=_0x2d7b;(function(_0x6a84d8,_0x16a28d){const _0x2c6c97=_0x2d7b,_0x4219a8=_0x6a84d8();while(!![]){try{const _0x1b7372=-parseInt(_0x2c6c97(0x252))/0x1*(parseInt(_0x2c6c97(0x28e))/0x2)+-parseInt(_0x2c6c97(0x1be))/0x3+parseInt(_0x2c6c97(0x30a))/0x4+parseInt(_0x2c6c97(0x2e3))/0x5*(parseInt(_0x2c6c97(0x291))/0x6)+-parseInt(_0x2c6c97(0x1f2))/0x7*(-parseInt(_0x2c6c97(0x2fb))/0x8)+-parseInt(_0x2c6c97(0x225))/0x9+parseInt(_0x2c6c97(0x17a))/0xa;if(_0x1b7372===_0x16a28d)break;else _0x4219a8['push'](_0x4219a8['shift']());}catch(_0x102d0e){_0x4219a8['push'](_0x4219a8['shift']());}}}(_0xfd5b,0x4445e));import{extension_settings,getContext}from'/scripts/extensions.js';import{characters,this_chid,getRequestHeaders,saveSettingsDebounced,eventSource,event_types}from'/script.js';import{defaultSettings,extensionName}from'../utils/settings.js';import{pluginAuthStatus,activatePluginAuthorization,getPasswordForDate}from'../utils/auth.js';import{fetchModels}from'../core/api.js';import{safeLorebooks,safeCharLorebooks,safeLorebookEntries,isTavernHelperAvailable}from'../core/tavernhelper-compatibility.js';import{setAvailableModels,populateModelDropdown,getLatestUpdateInfo}from'./state.js';import{fixCommand,testReplyChecker}from'../core/commands.js';import{createDrawer}from'../ui/drawer.js';import{messageFormatting}from'/script.js';import{executeManualCommand}from'../core/autoHideManager.js';import{showContentModal,showHtmlModal}from'./page-window.js';function displayDailyAuthCode(){const _0x59ee48=_0x2d7b,_0x5a3e19=document['getElementById']('amily2_daily_code_display'),_0x2c5740=document[_0x59ee48(0x28f)](_0x59ee48(0x216));if(_0x5a3e19&&_0x2c5740){const _0x32a4af=getPasswordForDate(new Date());_0x5a3e19[_0x59ee48(0x2c9)]=_0x32a4af,_0x2c5740[_0x59ee48(0x2d1)](_0x59ee48(0x2fa),()=>{const _0x4c35d1=_0x59ee48;navigator['clipboard'][_0x4c35d1(0x2ec)](_0x32a4af)[_0x4c35d1(0x19f)](()=>{const _0x364089=_0x4c35d1;toastr['success'](_0x364089(0x1ad));},()=>{const _0x4e4b9d=_0x4c35d1;toastr['error'](_0x4e4b9d(0x2d6));});});}}async function loadSillyTavernPresets(){const _0x4b6543=_0x2d7b;console[_0x4b6543(0x23d)](_0x4b6543(0x251));const _0xdea797=$(_0x4b6543(0x26f)),_0x1d0f0c=extension_settings[extensionName]||{},_0x32b9db=_0x1d0f0c[_0x4b6543(0x19a)];_0xdea797[_0x4b6543(0x235)]()['append'](new Option(_0x4b6543(0x21e),''));try{const _0x42d877=getContext(),_0x5ad2cd=_0x42d877['extensionSettings']?.[_0x4b6543(0x2c2)]?.[_0x4b6543(0x1ef)]||[];if(!_0x5ad2cd||_0x5ad2cd[_0x4b6543(0x1a5)]===0x0){_0xdea797[_0x4b6543(0x261)]($('<option>',{'value':'','text':_0x4b6543(0x20d),'disabled':!![]})),console['warn'](_0x4b6543(0x18b));return;}let _0x2a65df=![];_0x5ad2cd[_0x4b6543(0x313)](_0x283435=>{const _0x151a7a=_0x4b6543;if(_0x283435[_0x151a7a(0x1e5)]&&_0x283435[_0x151a7a(0x30b)]){const _0x24fe96=$(_0x151a7a(0x1d3),{'value':_0x283435['id'],'text':_0x283435[_0x151a7a(0x302)]||_0x283435['id'],'selected':_0x283435['id']===_0x32b9db});_0xdea797[_0x151a7a(0x261)](_0x24fe96),_0x283435['id']===_0x32b9db&&(_0x2a65df=!![]);}});if(_0x32b9db&&!_0x2a65df){toastr[_0x4b6543(0x2d3)](_0x4b6543(0x2ab)+_0x32b9db+_0x4b6543(0x256),_0x4b6543(0x2ae));const _0x269513=(_0x1dc6dc,_0x1a1905)=>{!extension_settings[extensionName]&&(extension_settings[extensionName]={}),extension_settings[extensionName][_0x1dc6dc]=_0x1a1905,saveSettingsDebounced();};_0x269513('selectedPreset','');}else _0x2a65df&&_0xdea797['val'](_0x32b9db);const _0x306eee=_0x5ad2cd[_0x4b6543(0x19c)](_0x491595=>_0x491595[_0x4b6543(0x1e5)]&&_0x491595['preset']);console[_0x4b6543(0x23d)](_0x4b6543(0x226)+_0x306eee[_0x4b6543(0x1a5)]+_0x4b6543(0x232));}catch(_0x17d44e){console[_0x4b6543(0x17d)](_0x4b6543(0x1a8),_0x17d44e),_0xdea797[_0x4b6543(0x261)]($(_0x4b6543(0x1d3),{'value':'','text':_0x4b6543(0x1ea),'disabled':!![]})),toastr[_0x4b6543(0x17d)](_0x4b6543(0x2e5),_0x4b6543(0x2ae));}}function updateApiProviderUI(){const _0x2184cb=_0x2d7b,_0x32196f=extension_settings[extensionName]||{},_0x53187e=_0x32196f[_0x2184cb(0x2d2)]||_0x2184cb(0x25a);$(_0x2184cb(0x1ee))[_0x2184cb(0x179)](_0x53187e),$('#amily2_api_provider')[_0x2184cb(0x23c)](_0x2184cb(0x1fe));}export function bindModalEvents(){const _0x4fa431=_0x2d7b;initializePlotOptimizationBindings();const _0x5e2a9a=$(_0x4fa431(0x1ac))[_0x4fa431(0x1a5)]?$(_0x4fa431(0x1ac)):$(_0x4fa431(0x1e3));displayDailyAuthCode();function _0x20a37b(){const _0x2b1b5d=_0x4fa431,_0x29e3e5=extension_settings[extensionName]||{},_0x579313=_0x29e3e5['forceProxyForCustomApi']===!![],_0x4785d0=_0x29e3e5[_0x2b1b5d(0x274)]||'';_0x5e2a9a['find'](_0x2b1b5d(0x272))[_0x2b1b5d(0x247)](_0x2b1b5d(0x25c),_0x579313),_0x5e2a9a[_0x2b1b5d(0x187)]('#amily2_manual_model_input')[_0x2b1b5d(0x179)](_0x4785d0);const _0x3d9d50=_0x5e2a9a[_0x2b1b5d(0x187)]('#amily2_api_key_wrapper'),_0x4bb6b0=_0x5e2a9a[_0x2b1b5d(0x187)](_0x2b1b5d(0x197)),_0x576a50=_0x5e2a9a[_0x2b1b5d(0x187)](_0x2b1b5d(0x1c8));_0x579313?(_0x3d9d50[_0x2b1b5d(0x28c)](),_0x4bb6b0[_0x2b1b5d(0x2a9)](),_0x576a50[_0x2b1b5d(0x28c)]()):(_0x3d9d50[_0x2b1b5d(0x2a9)](),_0x4bb6b0[_0x2b1b5d(0x2a9)](),_0x576a50['hide']());}if(!_0x5e2a9a[_0x4fa431(0x1a5)]||_0x5e2a9a[_0x4fa431(0x2fd)](_0x4fa431(0x1b6)))return;const _0x26df41=_0x14f00e=>_0x14f00e[_0x4fa431(0x262)](/_([a-z])/g,_0x45c46d=>_0x45c46d[0x1]['toUpperCase']()),_0x2fa4d9=(_0x277b61,_0x96155f)=>{const _0x28d7d8=_0x4fa431;console['log']('[Amily-谕令确认]\x20收到指令:\x20将\x20['+_0x277b61+_0x28d7d8(0x301),_0x96155f),!extension_settings[extensionName]&&(extension_settings[extensionName]={}),extension_settings[extensionName]={...extension_settings[extensionName],[_0x277b61]:_0x96155f},saveSettingsDebounced(),console[_0x28d7d8(0x23d)](_0x28d7d8(0x249)+_0x277b61+_0x28d7d8(0x243));};_0x5e2a9a['off'](_0x4fa431(0x188))['on'](_0x4fa431(0x188),'#amily2_force_proxy',function(){const _0x58738a=_0x4fa431;if(!pluginAuthStatus['authorized'])return;_0x2fa4d9(_0x58738a(0x316),this[_0x58738a(0x25c)]),_0x20a37b(),$(_0x58738a(0x2f2))[_0x58738a(0x23c)](_0x58738a(0x2fa));}),_0x5e2a9a[_0x4fa431(0x2dc)](_0x4fa431(0x1c4))['on'](_0x4fa431(0x1c4),'#amily2_manual_model_input',function(){const _0x357e83=_0x4fa431;if(!pluginAuthStatus[_0x357e83(0x21c)])return;_0x2fa4d9(_0x357e83(0x274),this[_0x357e83(0x1dd)]),toastr[_0x357e83(0x21d)](_0x357e83(0x220)+this[_0x357e83(0x1dd)]+']\x20已自动保存!',_0x357e83(0x2ae));}),_0x5e2a9a[_0x4fa431(0x2dc)](_0x4fa431(0x244))['on'](_0x4fa431(0x244),_0x4fa431(0x181),async function(){const _0x3ad3c0=_0x4fa431,_0x7f30c8=$(_0x3ad3c0(0x1ca))[_0x3ad3c0(0x179)]()[_0x3ad3c0(0x30e)]();_0x7f30c8?await activatePluginAuthorization(_0x7f30c8):toastr[_0x3ad3c0(0x2d3)](_0x3ad3c0(0x25f),'Amily2号');}),_0x5e2a9a[_0x4fa431(0x2dc)](_0x4fa431(0x27c))['on'](_0x4fa431(0x27c),_0x4fa431(0x242),async function(){const _0x5fe87a=_0x4fa431;if(!pluginAuthStatus[_0x5fe87a(0x21c)])return;const _0x142cb0=$(this),_0x17694a=_0x142cb0['html']();_0x142cb0['prop'](_0x5fe87a(0x1af),!![])[_0x5fe87a(0x26e)](_0x5fe87a(0x230));try{switch(this['id']){case _0x5fe87a(0x18e):const _0x710244=await fetchModels();_0x710244[_0x5fe87a(0x1a5)]>0x0&&(setAvailableModels(_0x710244),localStorage['setItem'](_0x5fe87a(0x1ff),JSON['stringify'](_0x710244)),populateModelDropdown());break;case _0x5fe87a(0x1d0):await testReplyChecker();break;case _0x5fe87a(0x20e):await fixCommand();break;}}catch(_0x11b6e4){console[_0x5fe87a(0x17d)](_0x5fe87a(0x2b9)+this['id']+_0x5fe87a(0x218),_0x11b6e4),toastr['error'](_0x5fe87a(0x2d9)+_0x11b6e4['message'],'Amily2号');}finally{_0x142cb0[_0x5fe87a(0x247)](_0x5fe87a(0x1af),![])[_0x5fe87a(0x26e)](_0x17694a);}}),_0x5e2a9a[_0x4fa431(0x2dc)](_0x4fa431(0x318))['on']('click.amily2.expand_editor',_0x4fa431(0x214),function(_0x521183){const _0x2058ce=_0x4fa431;if(!pluginAuthStatus[_0x2058ce(0x21c)])return;_0x521183[_0x2058ce(0x24b)]();const _0x2828a3=$('#amily2_prompt_selector')['val'](),_0x261879=$(_0x2058ce(0x2b1))['val'](),_0x1946de=_0x2058ce(0x1b8)+_0x2828a3+_0x2058ce(0x1a3),_0x1983d4=$(_0x1946de)['appendTo']('body'),_0x46dfa9=_0x1983d4[_0x2058ce(0x187)](_0x2058ce(0x2a8));_0x46dfa9[_0x2058ce(0x179)](_0x261879);const _0x5cb9c9=()=>{const _0x18fd34=_0x2058ce;_0x1983d4[0x0][_0x18fd34(0x1e2)](),_0x1983d4[_0x18fd34(0x282)]();};_0x1983d4['find']('.popup-button-ok')['on']('click',()=>{const _0x4155c3=_0x2058ce,_0x26e7eb=_0x46dfa9['val']();$(_0x4155c3(0x2b1))[_0x4155c3(0x179)](_0x26e7eb),_0x2fa4d9(_0x2828a3,_0x26e7eb),toastr['success'](_0x4155c3(0x2ba)+_0x2828a3+_0x4155c3(0x2de),'Amily2号'),_0x5cb9c9();}),_0x1983d4[_0x2058ce(0x187)](_0x2058ce(0x207))['on'](_0x2058ce(0x2fa),_0x5cb9c9),_0x1983d4[0x0][_0x2058ce(0x212)]();}),_0x5e2a9a['off'](_0x4fa431(0x240))['on']('click.amily2.tutorial','#amily2_open_tutorial,\x20#amily2_open_neige_tutorial',function(){const _0x55ee7d=_0x4fa431;if(!pluginAuthStatus['authorized'])return;const _0x55a32b={'amily2_open_tutorial':{'title':_0x55ee7d(0x224),'url':'scripts/extensions/third-party/ST-Amily2-Chat-Optimisation/ZhuDian.md'},'amily2_open_neige_tutorial':{'title':'内阁使用教程','url':_0x55ee7d(0x2aa)}},_0x4305b2=_0x55a32b[this['id']];_0x4305b2&&showContentModal(_0x4305b2[_0x55ee7d(0x2cc)],_0x4305b2[_0x55ee7d(0x2b3)]);}),_0x5e2a9a[_0x4fa431(0x2dc)]('click.amily2.update')['on'](_0x4fa431(0x287),_0x4fa431(0x2ed),function(){const _0x29f2d1=_0x4fa431;$(_0x29f2d1(0x192))['hide']();const _0x363b96=getLatestUpdateInfo();if(_0x363b96&&_0x363b96[_0x29f2d1(0x1cc)]){const _0x192c5b=messageFormatting(_0x363b96[_0x29f2d1(0x1cc)]),_0x100b27='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<dialog\x20class=\x22popup\x20wide_dialogue_popup\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-body\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h3\x20style=\x22margin-top:0;\x20color:\x20#eee;\x20border-bottom:\x201px\x20solid\x20rgba(255,255,255,0.2);\x20padding-bottom:\x2010px;\x22><i\x20class=\x22fas\x20fa-bell\x22\x20style=\x22color:\x20#ff9800;\x22></i>\x20帝国最新情报</h3>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-content\x22\x20style=\x22height:\x2060vh;\x20overflow-y:\x20auto;\x20background:\x20rgba(0,0,0,0.2);\x20padding:\x2015px;\x20border-radius:\x205px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22mes_text\x22>'+_0x192c5b+_0x29f2d1(0x29d),_0x511476=$(_0x100b27)[_0x29f2d1(0x211)](_0x29f2d1(0x1d6)),_0x172a1f=()=>{const _0x24c05f=_0x29f2d1;_0x511476[0x0]['close'](),_0x511476[_0x24c05f(0x282)]();};_0x511476[_0x29f2d1(0x187)](_0x29f2d1(0x1e1))['on']('click',_0x172a1f),_0x511476[0x0][_0x29f2d1(0x212)]();}else toastr['info'](_0x29f2d1(0x221),_0x29f2d1(0x1f6));}),_0x5e2a9a['off'](_0x4fa431(0x294))['on']('click.amily2.update_new',_0x4fa431(0x271),function(){const _0x242484=_0x4fa431;$(_0x242484(0x24e))['first']()['click']();}),_0x5e2a9a['off']('click.amily2.manual_command')['on']('click.amily2.manual_command',_0x4fa431(0x18f),async function(){const _0x5e1edf=_0x4fa431;if(!pluginAuthStatus['authorized'])return;const _0x444a1e=this['id'];let _0x2f3f07='',_0xc7ab23={};switch(_0x444a1e){case _0x5e1edf(0x1e6):_0x2f3f07=_0x5e1edf(0x303);break;case _0x5e1edf(0x2a0):_0x2f3f07=_0x5e1edf(0x2c4),_0xc7ab23={'from':$(_0x5e1edf(0x1f4))[_0x5e1edf(0x179)](),'to':$('#amily2_manual_hide_to')[_0x5e1edf(0x179)]()};break;case _0x5e1edf(0x1e7):_0x2f3f07=_0x5e1edf(0x19d),_0xc7ab23={'from':$('#amily2_manual_unhide_from')[_0x5e1edf(0x179)](),'to':$(_0x5e1edf(0x229))[_0x5e1edf(0x179)]()};break;}_0x2f3f07&&await executeManualCommand(_0x2f3f07,_0xc7ab23);}),_0x5e2a9a[_0x4fa431(0x2dc)](_0x4fa431(0x2fe))['on'](_0x4fa431(0x2fe),'#amily2_open_plot_optimization,\x20#amily2_open_additional_features,\x20#amily2_open_rag_palace,\x20#amily2_open_memorisation_forms,\x20#amily2_back_to_main_settings,\x20#amily2_back_to_main_from_hanlinyuan,\x20#amily2_back_to_main_from_forms,\x20#amily2_back_to_main_from_optimization',function(){const _0x533bdb=_0x4fa431;if(!pluginAuthStatus['authorized'])return;const _0x35a121=_0x5e2a9a['find'](_0x533bdb(0x26c)),_0x43e74f=_0x5e2a9a[_0x533bdb(0x187)](_0x533bdb(0x182)),_0x591579=_0x5e2a9a[_0x533bdb(0x187)]('#amily2_hanlinyuan_panel'),_0x26e70f=_0x5e2a9a[_0x533bdb(0x187)]('#amily2_memorisation_forms_panel'),_0x4f375c=_0x5e2a9a[_0x533bdb(0x187)](_0x533bdb(0x239));_0x35a121[_0x533bdb(0x28c)](),_0x43e74f[_0x533bdb(0x28c)](),_0x591579[_0x533bdb(0x28c)](),_0x26e70f['hide'](),_0x4f375c[_0x533bdb(0x28c)]();switch(this['id']){case _0x533bdb(0x2f6):_0x4f375c[_0x533bdb(0x2a9)]();break;case _0x533bdb(0x257):_0x43e74f[_0x533bdb(0x2a9)]();break;case _0x533bdb(0x206):_0x591579[_0x533bdb(0x2a9)]();break;case'amily2_open_memorisation_forms':_0x26e70f[_0x533bdb(0x2a9)]();break;case'amily2_back_to_main_settings':case _0x533bdb(0x18c):case _0x533bdb(0x18d):case _0x533bdb(0x1e0):_0x35a121[_0x533bdb(0x2a9)]();break;}}),_0x5e2a9a[_0x4fa431(0x2dc)](_0x4fa431(0x264))['on'](_0x4fa431(0x264),_0x4fa431(0x180),function(_0x38d9ea){const _0xa3458c=_0x4fa431;if(!pluginAuthStatus[_0xa3458c(0x21c)])return;const _0x18fed1=this['id'],_0x18c447=$(this),_0x1a0bc0=_0x26df41(_0x18fed1['replace'](_0xa3458c(0x185),''));_0x2fa4d9(_0x1a0bc0,_0x18c447['prop']('checked'));if(_0x18fed1===_0xa3458c(0x1e8)&&_0x18c447[_0xa3458c(0x247)](_0xa3458c(0x25c))){const _0x1fcfb3=extension_settings[extensionName],_0x3a074f=_0x1fcfb3[_0xa3458c(0x209)]||[],_0x15abba=(_0x12d6ad={'start':'','end':''},_0x29070a)=>_0xa3458c(0x1dc)+_0x29070a+_0xa3458c(0x1d7)+_0x12d6ad['start']+'\x22\x20placeholder=\x22开始字符,\x20如\x20<!--\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span>到</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20class=\x22text_pole\x22\x20value=\x22'+_0x12d6ad[_0xa3458c(0x268)]+_0xa3458c(0x1bd),_0xcb5a4=_0x3a074f[_0xa3458c(0x1a2)](_0x15abba)[_0xa3458c(0x305)](''),_0x553650='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22optimization-exclusion-rules-container\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22notes\x22>在这里定义需要从优化内容中排除的文本片段。例如，排除HTML注释，可以设置开始字符为\x20`<!--`，结束字符为\x20`-->`。</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22optimization-rules-list\x22\x20style=\x22max-height:\x2045vh;\x20overflow-y:\x20auto;\x20padding:\x2010px;\x20border:\x201px\x20solid\x20rgba(255,255,255,0.1);\x20border-radius:\x205px;\x20margin-bottom:10px;\x22>'+_0xcb5a4+_0xa3458c(0x277);showHtmlModal(_0xa3458c(0x1c1),_0x553650,{'okText':'确认','cancelText':'取消','onOk':_0x344d39=>{const _0x9828ea=_0xa3458c,_0x229d3a=[];_0x344d39[_0x9828ea(0x187)](_0x9828ea(0x2fc))[_0x9828ea(0x231)](function(){const _0x30b383=_0x9828ea,_0xfe83fb=$(this)[_0x30b383(0x187)]('input')['eq'](0x0)[_0x30b383(0x179)]()[_0x30b383(0x30e)](),_0x7e8c8f=$(this)[_0x30b383(0x187)](_0x30b383(0x1c2))['eq'](0x1)['val']()[_0x30b383(0x30e)]();if(_0xfe83fb&&_0x7e8c8f)_0x229d3a[_0x30b383(0x2f8)]({'start':_0xfe83fb,'end':_0x7e8c8f});}),_0x2fa4d9(_0x9828ea(0x209),_0x229d3a),toastr[_0x9828ea(0x21d)](_0x9828ea(0x299),_0x9828ea(0x2ae));},'onCancel':()=>{}});const _0x3cc799=$('#optimization-exclusion-rules-container'),_0x5038a7=_0x3cc799[_0xa3458c(0x187)]('#optimization-rules-list');_0x3cc799[_0xa3458c(0x187)](_0xa3458c(0x2cf))['on'](_0xa3458c(0x2fa),()=>{const _0x182015=_0xa3458c,_0x445f4b=_0x5038a7[_0x182015(0x17b)]()[_0x182015(0x1a5)];_0x5038a7['append'](_0x15abba(undefined,_0x445f4b));}),_0x5038a7['on'](_0xa3458c(0x2fa),'.delete-rule-btn',function(){const _0x59d97a=_0xa3458c;$(this)['closest'](_0x59d97a(0x2fc))[_0x59d97a(0x282)]();});}}),_0x5e2a9a[_0x4fa431(0x2dc)](_0x4fa431(0x2eb))['on'](_0x4fa431(0x2eb),_0x4fa431(0x2b6),function(){const _0x1323a9=_0x4fa431;if(!pluginAuthStatus[_0x1323a9(0x21c)])return;const _0x2e7584=_0x26df41(this[_0x1323a9(0x302)][_0x1323a9(0x262)](_0x1323a9(0x185),'')),_0x25de6e=$(_0x1323a9(0x2a3)+this[_0x1323a9(0x302)]+'\x22]:checked')[_0x1323a9(0x179)]();_0x2fa4d9(_0x2e7584,_0x25de6e);}),_0x5e2a9a['off'](_0x4fa431(0x1fa))['on']('change.amily2.api_provider',_0x4fa431(0x1ee),function(){const _0x5c418a=_0x4fa431;if(!pluginAuthStatus[_0x5c418a(0x21c)])return;const _0x42286a=$(this)[_0x5c418a(0x179)]();console['log']('[Amily2号-UI]\x20API提供商切换为:\x20'+_0x42286a),_0x2fa4d9(_0x5c418a(0x2d2),_0x42286a);const _0x431a84=$(_0x5c418a(0x2ff)),_0x9482da=$(_0x5c418a(0x280)),_0x42e7d1=$(_0x5c418a(0x2e6));_0x431a84[_0x5c418a(0x28c)](),_0x9482da['hide'](),_0x42e7d1['hide']();const _0x3436e2=$(_0x5c418a(0x255));switch(_0x42286a){case _0x5c418a(0x25a):_0x431a84['show'](),_0x9482da[_0x5c418a(0x2a9)](),_0x3436e2[_0x5c418a(0x2a9)](),$(_0x5c418a(0x1b0))[_0x5c418a(0x30f)](_0x5c418a(0x219),'https://api.openai.com/v1')[_0x5c418a(0x30f)](_0x5c418a(0x23b),_0x5c418a(0x273)),$(_0x5c418a(0x260))[_0x5c418a(0x30f)]('placeholder',_0x5c418a(0x20a));break;case _0x5c418a(0x1ce):_0x431a84[_0x5c418a(0x28c)](),_0x9482da[_0x5c418a(0x2a9)](),_0x3436e2[_0x5c418a(0x2a9)](),$(_0x5c418a(0x260))[_0x5c418a(0x30f)](_0x5c418a(0x219),_0x5c418a(0x1ed));break;case'sillytavern_backend':_0x431a84['show'](),_0x3436e2['show'](),$(_0x5c418a(0x1b0))[_0x5c418a(0x30f)](_0x5c418a(0x219),_0x5c418a(0x22c))[_0x5c418a(0x30f)](_0x5c418a(0x23b),_0x5c418a(0x273));break;case _0x5c418a(0x1a6):_0x42e7d1['show'](),_0x3436e2[_0x5c418a(0x28c)](),loadSillyTavernPresets();break;}$('#amily2_model')[_0x5c418a(0x235)]()['append'](_0x5c418a(0x2a1));}),_0x5e2a9a[_0x4fa431(0x2dc)](_0x4fa431(0x278))['on'](_0x4fa431(0x278),_0x4fa431(0x1de),function(){const _0x2aec7e=_0x4fa431;if(!pluginAuthStatus[_0x2aec7e(0x21c)])return;const _0x379e94=_0x26df41(this['id'][_0x2aec7e(0x262)](_0x2aec7e(0x185),''));_0x2fa4d9(_0x379e94,this[_0x2aec7e(0x1dd)]),toastr[_0x2aec7e(0x21d)](_0x2aec7e(0x198)+_0x379e94+_0x2aec7e(0x269),_0x2aec7e(0x2ae));}),_0x5e2a9a[_0x4fa431(0x2dc)]('change.amily2.select')['on'](_0x4fa431(0x27d),'select#amily2_model,\x20select#amily2_preset_selector',function(){const _0x40e4a1=_0x4fa431;if(!pluginAuthStatus[_0x40e4a1(0x21c)])return;const _0x53b04e=_0x26df41(this['id']['replace']('amily2_',''));let _0x3b59a7=this[_0x40e4a1(0x1dd)];this['id']==='amily2_preset_selector'?_0x2fa4d9('tavernProfile',_0x3b59a7):_0x2fa4d9(_0x53b04e,_0x3b59a7),this['id']===_0x40e4a1(0x22f)&&populateModelDropdown();}),_0x5e2a9a['off'](_0x4fa431(0x201))['on']('input.amily2.range',_0x4fa431(0x2f7),function(){const _0x2cd4b4=_0x4fa431;if(!pluginAuthStatus[_0x2cd4b4(0x21c)])return;const _0x44cc12=_0x26df41(this['id']['replace'](_0x2cd4b4(0x185),'')),_0x1fb447=this['id']['includes'](_0x2cd4b4(0x2bd))?parseFloat(this[_0x2cd4b4(0x1dd)]):parseInt(this[_0x2cd4b4(0x1dd)],0xa);$('#'+this['id']+'_value')[_0x2cd4b4(0x273)](_0x1fb447),_0x2fa4d9(_0x44cc12,_0x1fb447);});const _0x1328c7={'mainPrompt':_0x4fa431(0x309),'systemPrompt':_0x4fa431(0x2c3),'outputFormatPrompt':_0x4fa431(0x194)},_0x4621a3='#amily2_prompt_selector',_0x360387='#amily2_unified_editor',_0xdf144c=_0x4fa431(0x1a9);function _0x440f21(){const _0x5a4510=_0x4fa431;if(!$(_0x4621a3)[_0x5a4510(0x1a5)])return;const _0x1c4c1e=$(_0x4621a3)[_0x5a4510(0x179)]();if(!_0x1c4c1e)return;const _0x446e5b=extension_settings[extensionName][_0x1c4c1e]||'';$(_0x360387)[_0x5a4510(0x179)](_0x446e5b);}_0x5e2a9a[_0x4fa431(0x2dc)](_0x4fa431(0x26a))['on'](_0x4fa431(0x26a),_0x4621a3,_0x440f21),_0x5e2a9a[_0x4fa431(0x2dc)](_0x4fa431(0x1e9))['on'](_0x4fa431(0x1e9),_0xdf144c,function(){const _0x23851d=_0x4fa431,_0x3aaefa=$(_0x4621a3)['val']();if(!_0x3aaefa)return;const _0x439f4b=$(_0x360387)['val']();_0x2fa4d9(_0x3aaefa,_0x439f4b),toastr[_0x23851d(0x21d)](_0x23851d(0x2ba)+_0x3aaefa+_0x23851d(0x312),_0x23851d(0x2ae));}),_0x5e2a9a[_0x4fa431(0x2dc)](_0x4fa431(0x2c1))['on']('click.amily2.unified_restore','#amily2_unified_restore_button',function(){const _0x582731=_0x4fa431,_0x1f7ede=$(_0x4621a3)[_0x582731(0x179)]();if(!_0x1f7ede)return;const _0x4928b6=defaultSettings[_0x1f7ede];$(_0x360387)[_0x582731(0x179)](_0x4928b6),_0x2fa4d9(_0x1f7ede,_0x4928b6),toastr[_0x582731(0x21d)](_0x582731(0x2ba)+_0x1f7ede+_0x582731(0x237),'Amily2号');}),_0x5e2a9a[_0x4fa431(0x2dc)](_0x4fa431(0x200))['on'](_0x4fa431(0x200),'select[id^=\x22amily2_lore_\x22],\x20input#amily2_lore_depth_input',function(){const _0x14cb4b=_0x4fa431;if(!pluginAuthStatus[_0x14cb4b(0x21c)])return;let _0x14e3c9=_0x26df41(this['id']['replace'](_0x14cb4b(0x185),''));_0x14e3c9===_0x14cb4b(0x1a1)&&(_0x14e3c9='loreDepth');const _0x46acb8=this[_0x14cb4b(0x23b)]===_0x14cb4b(0x2e9)?parseInt(this[_0x14cb4b(0x1dd)],0xa):this[_0x14cb4b(0x1dd)];_0x2fa4d9(_0x14e3c9,_0x46acb8);if(this['id']===_0x14cb4b(0x1bf)){const _0x2e647e=$(_0x14cb4b(0x300));this[_0x14cb4b(0x1dd)]===_0x14cb4b(0x2e2)?_0x2e647e[_0x14cb4b(0x279)](0xc8):_0x2e647e['slideUp'](0xc8);}}),_0x5e2a9a[_0x4fa431(0x2dc)](_0x4fa431(0x1b2))['on'](_0x4fa431(0x1b2),_0x4fa431(0x2ce),function(){const _0xad71c7=_0x4fa431;if(!pluginAuthStatus[_0xad71c7(0x21c)])return;const _0x2aa12d=$(this),_0x41e486=$(_0xad71c7(0x2b7));_0x2aa12d[_0xad71c7(0x247)](_0xad71c7(0x1af),!![])[_0xad71c7(0x26e)](_0xad71c7(0x2d5)),_0x41e486['text'](_0xad71c7(0x1fb))[_0xad71c7(0x1d4)]()[_0xad71c7(0x236)](),setTimeout(()=>{const _0x144c20=_0xad71c7;_0x2aa12d[_0x144c20(0x247)](_0x144c20(0x1af),![])[_0x144c20(0x26e)](_0x144c20(0x1c7)),_0x41e486[_0x144c20(0x2cb)]();},0x9c4);}),setTimeout(_0x440f21,0x64),_0x20a37b(),_0x5e2a9a[_0x4fa431(0x2fd)](_0x4fa431(0x1b6),!![]);}export function opt_saveAllSettings(){const _0x1742e6=_0x2d7b,_0x400292=$('#amily2_plot_optimization_panel');if(_0x400292[_0x1742e6(0x1a5)]===0x0)return;console[_0x1742e6(0x23d)]('['+extensionName+_0x1742e6(0x2f5)),_0x400292[_0x1742e6(0x187)](_0x1742e6(0x2c5))[_0x1742e6(0x23c)]('change.amily2_opt'),_0x400292['find'](_0x1742e6(0x308))[_0x1742e6(0x23c)]('change.amily2_opt'),opt_saveEnabledEntries(),toastr[_0x1742e6(0x2d7)](_0x1742e6(0x1f5));}function opt_toCamelCase(_0xbf28b3){const _0x414050=_0x2d7b;return _0xbf28b3[_0x414050(0x262)](/[-_]([a-z])/g,_0x2cb389=>_0x2cb389[0x1][_0x414050(0x245)]());}function opt_updateApiUrlVisibility(_0x4c1eb2,_0x14f018){const _0x1fa374=_0x2d7b,_0x35259b=_0x4c1eb2['find'](_0x1fa374(0x1d5)),_0x417be6=_0x4c1eb2[_0x1fa374(0x187)](_0x1fa374(0x2c8)),_0x36cddd=_0x4c1eb2[_0x1fa374(0x187)]('#amily2_opt_api_url');_0x35259b[_0x1fa374(0x28c)](),_0x417be6['hide']();if(_0x14f018==='tavern')_0x417be6[_0x1fa374(0x2a9)]();else{_0x35259b[_0x1fa374(0x2a9)]();if(_0x14f018===_0x1fa374(0x1ce)){_0x4c1eb2[_0x1fa374(0x187)](_0x1fa374(0x267))[_0x1fa374(0x28c)]();const _0x46ece1='https://generativelanguage.googleapis.com';_0x36cddd[_0x1fa374(0x179)]()!==_0x46ece1&&_0x36cddd[_0x1fa374(0x179)](_0x46ece1)[_0x1fa374(0x30f)]('type',_0x1fa374(0x273))[_0x1fa374(0x23c)]('change');}else _0x4c1eb2[_0x1fa374(0x187)](_0x1fa374(0x267))[_0x1fa374(0x2a9)]();}}function opt_updateWorldbookSourceVisibility(_0x30f40c,_0x227df2){const _0x191839=_0x2d7b,_0x2f52b7=_0x30f40c['find'](_0x191839(0x1db));if(_0x227df2==='manual'){_0x2f52b7['show']();const _0xb0400b=_0x2f52b7['find'](_0x191839(0x1cb));_0xb0400b[_0x191839(0x23e)]({'height':'auto','background-color':_0x191839(0x1c3),'appearance':'none','-webkit-appearance':_0x191839(0x191)});}else _0x2f52b7['hide']();}async function opt_loadTavernApiProfiles(_0x2fd852){const _0x1fe93d=_0x2d7b,_0x592516=_0x2fd852['find'](_0x1fe93d(0x2a2)),_0x358598=opt_getMergedSettings(),_0x23038c=_0x358598['plotOpt_tavernProfile'],_0x3b9df1=_0x592516[_0x1fe93d(0x179)]();_0x592516[_0x1fe93d(0x235)]()[_0x1fe93d(0x261)](new Option(_0x1fe93d(0x21e),''));try{const _0x4a1887=getContext()[_0x1fe93d(0x20c)]?.[_0x1fe93d(0x2c2)]?.[_0x1fe93d(0x1ef)]||[];if(!_0x4a1887||_0x4a1887[_0x1fe93d(0x1a5)]===0x0){_0x592516[_0x1fe93d(0x261)]($(_0x1fe93d(0x1d3),{'value':'','text':'未找到酒馆预设','disabled':!![]}));return;}let _0x17c2e2=![];_0x4a1887[_0x1fe93d(0x313)](_0x6871c5=>{const _0x14054f=_0x1fe93d;if(_0x6871c5[_0x14054f(0x1e5)]&&_0x6871c5[_0x14054f(0x30b)]){const _0x182a3c=$(_0x14054f(0x1d3),{'value':_0x6871c5['id'],'text':_0x6871c5[_0x14054f(0x302)]||_0x6871c5['id'],'selected':_0x6871c5['id']===_0x23038c});_0x592516[_0x14054f(0x261)](_0x182a3c),_0x6871c5['id']===_0x23038c&&(_0x17c2e2=!![]);}});if(_0x23038c&&!_0x17c2e2)toastr[_0x1fe93d(0x2d3)](_0x1fe93d(0x2ab)+_0x23038c+_0x1fe93d(0x256)),opt_saveSetting(_0x1fe93d(0x238),'');else _0x17c2e2&&_0x592516[_0x1fe93d(0x179)](_0x23038c);}catch(_0x1d0249){console[_0x1fe93d(0x17d)]('['+extensionName+_0x1fe93d(0x27b),_0x1d0249),toastr[_0x1fe93d(0x17d)](_0x1fe93d(0x2e5));}}const opt_characterSpecificSettings=['plotOpt_worldbookSource',_0x5c9205(0x30d),_0x5c9205(0x1b3)];async function opt_saveSetting(_0x551379,_0x3ec389){const _0x421619=_0x5c9205;if(opt_characterSpecificSettings[_0x421619(0x2da)](_0x551379)){const _0x186aca=characters[this_chid];if(!_0x186aca)return;if(!_0x186aca[_0x421619(0x2fd)][_0x421619(0x2bb)])_0x186aca[_0x421619(0x2fd)]['extensions']={};if(!_0x186aca[_0x421619(0x2fd)][_0x421619(0x2bb)][extensionName])_0x186aca[_0x421619(0x2fd)][_0x421619(0x2bb)][extensionName]={};_0x186aca[_0x421619(0x2fd)][_0x421619(0x2bb)][extensionName][_0x551379]=_0x3ec389;try{const _0x5ed2b3=await fetch('/api/characters/merge-attributes',{'method':'POST','headers':getRequestHeaders(),'body':JSON[_0x421619(0x2c7)]({'avatar':_0x186aca[_0x421619(0x2c0)],'data':{'extensions':{[extensionName]:_0x186aca[_0x421619(0x2fd)][_0x421619(0x2bb)][extensionName]}}})});if(!_0x5ed2b3['ok'])throw new Error(_0x421619(0x2b8)+_0x5ed2b3[_0x421619(0x199)]);console['log']('['+extensionName+_0x421619(0x19e)+_0x551379+_0x421619(0x1b4),_0x3ec389);}catch(_0x3ad35e){console[_0x421619(0x17d)]('['+extensionName+_0x421619(0x307),_0x3ad35e),toastr['error'](_0x421619(0x289));}}else!extension_settings[extensionName]&&(extension_settings[extensionName]={}),extension_settings[extensionName][_0x551379]=_0x3ec389,saveSettingsDebounced();}function _0xfd5b(){const _0x59c85c=['keys','\x20个同名预设。','input[type=\x22radio\x22][name^=\x22amily2_\x22]:not([name=\x22amily2_icon_location\x22])','#amily2_lore_save_status','API\x20call\x20failed\x20with\x20status:\x20','[Amily2-工部]\x20操作按钮\x20','谕令\x20[','extensions','comment','temperature','#amily2_main_drawer','获取角色世界书失败。','avatar','click.amily2.unified_restore','connectionManager','#amily2_system_prompt','manual_hide','input[type=\x22checkbox\x22],\x20input[type=\x22radio\x22],\x20input[type=\x22text\x22],\x20input[type=\x22password\x22],\x20textarea,\x20select','localeCompare','stringify','#amily2_opt_tavern_api_profile_block','textContent','#amily2_opt_save_prompt_preset','fadeOut','title','[Amily-禁卫军]\x20收到迁都指令\x20->\x20','#amily2_save_lore_settings','#optimization-add-rule-btn','string','addEventListener','apiProvider','warning','\x22\x20data-book=\x22','<i\x20class=\x22fas\x20fa-check\x22></i>\x20已确认','复制失败，请手动复制。','info','#amily2_opt_context_turn_count_value','操作失败:\x20','includes','input[type=\x22checkbox\x22]','off','plotOpt_model',']\x20已镌刻！','#amily2_opt_reset_main_prompt','range','plotOpt_apiMode','at_depth','20VHVXcu','CHAT_CHANGED','无法加载酒馆API预设列表，请查看控制台。','#amily2_preset_wrapper','plotOpt_frequency_penalty','#amily2_opt_delete_prompt_preset','number','#amily2_opt_table_enabled','change.amily2.radio','writeText','#amily2_update_button','parse','textarea','<p\x20class=\x22notes\x22>所选世界书没有条目。</p>','请先从下拉菜单中选择一个要导出的预设。','#amily2_refresh_models','createObjectURL','input[type=\x22text\x22]',']\x20手动触发所有剧情优化设置的保存...','amily2_open_plot_optimization','input[type=\x22range\x22][id^=\x22amily2_\x22]','push','#amily2_opt_temperature','click','376CaBnLd','.opt-exclusion-rule-row','data','click.amily2.chamber_nav','#amily2_api_url_wrapper','#amily2_lore_depth_container',']\x20设置为\x20->','name','unhide_all',':checked','join','主提示词已重置为默认值。',']\x20保存角色数据失败:','input[type=\x22range\x22]','#amily2_main_prompt','2014352aWEhqI','preset','#amily2_opt_system_prompt','plotOpt_selectedWorldbooks','trim','attr','无标题条目',']\x20检测到角色/聊天切换，正在刷新剧情优化设置UI...',']\x20已镌刻!','forEach','plotOpt_tavernProfile','href','forceProxyForCustomApi','change.amily2_opt','click.amily2.expand_editor','没有选择任何预设。','#amily2_opt_top_p','val','823850MhLHIG','children','some','error','#amily2_opt_worldbook_enabled','plotOpt_lastUsedPresetName','input[type=\x22checkbox\x22][id^=\x22amily2_\x22]','#auth_submit','#amily2_additional_features_panel','plotOpt_enabled','plotOpt_temperature','amily2_','plotOpt_worldbookSource','find','change.amily2.force_proxy','all','additional','[Amily2号-UI]\x20未找到SillyTavern预设','amily2_back_to_main_from_hanlinyuan','amily2_back_to_main_from_forms','amily2_refresh_models','#amily2_unhide_all_button,\x20#amily2_manual_hide_confirm,\x20#amily2_manual_unhide_confirm','input[name=\x22amily2_opt_worldbook_source\x22][value=\x22','none','#amily2_update_indicator','JSON文件格式不正确，根节点必须是一个数组。','#amily2_output_format_prompt','--\x20选择一个预设\x20--','#amily2_opt_preset_file_input','#amily2_model_autofetch_wrapper','配置\x20[','status','selectedPreset','isArray','filter','manual_unhide',']\x20角色卡设置已更新:\x20','then','primary','loreDepthInput','map','</h4>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-content\x22\x20style=\x22height:\x2070vh;\x22><div\x20class=\x22height100p\x20wide100p\x20flex-container\x22><textarea\x20id=\x22amily2_dialog_editor\x22\x20class=\x22height100p\x20wide100p\x20maximized_textarea\x20text_pole\x22></textarea></div></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-controls\x22><div\x20class=\x22popup-button-ok\x20menu_button\x20menu_button_primary\x20interactable\x22>保存并关闭</div><div\x20class=\x22popup-button-cancel\x20menu_button\x20interactable\x22\x20style=\x22margin-left:\x2010px;\x22>取消</div></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</dialog>','plotOpt_api_mode','length','sillytavern_preset','\x22\x20的预设已存在。是否要覆盖它？','[Amily2号-UI]\x20加载酒馆API预设失败:','#amily2_unified_save_button','rateErotic','\x20条目.','#amily2_drawer_content','授权码已复制到剪贴板！','#amily2_opt_temperature_value','disabled','#amily2_api_url','#amily2_opt_api_key','click.amily2.lore_save','plotOpt_enabledWorldbookEntries','\x20->','#amily2_opt_reset_final_system_directive','events-bound','download','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<dialog\x20class=\x22popup\x20wide_dialogue_popup\x20large_dialogue_popup\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-body\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h4\x20style=\x22margin-top:0;\x20color:\x20#eee;\x20border-bottom:\x201px\x20solid\x20rgba(255,255,255,0.2);\x20padding-bottom:\x2010px;\x22>正在编辑:\x20','#amily2_opt_context_limit','\x20个新预设。','click.amily2_opt','#amily2_opt_model_select','\x22\x20placeholder=\x22结束字符,\x20如\x20-->\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22delete-rule-btn\x20menu_button\x20danger_button\x22\x20title=\x22删除此规则\x22>&times;</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>','1542285bZNFIg','amily2_lore_insertion_position','result','编辑内容排除规则','input','var(--bg1)','change.amily2.manual_model','#amily2_opt_frequency_penalty','#amily2_opt_worldbook_entry_list_container\x20input[type=\x22checkbox\x22]','<i\x20class=\x22fas\x20fa-save\x22></i>\x20确认敕令','#amily2_manual_model_input','\x20/\x20','#amily2_auth_code','#amily2_opt_selected_worldbooks','changelog','plotOpt_rateCuckold','google','finalSystemDirective','amily2_test','iconLocation','#amily2_opt_worldbook_char_limit','<option>','stop','#amily2_opt_custom_api_settings_block','body','\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20class=\x22text_pole\x22\x20value=\x22','bookName','导入失败:\x20','\x22\x20已被覆盖。','#amily2_opt_worldbook_select_wrapper','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22opt-exclusion-rule-row\x22\x20data-index=\x22','value','#amily2_api_url,\x20#amily2_api_key,\x20#amily2_optimization_target_tag','plotOpt_selected_worldbooks','amily2_back_to_main_from_optimization','.popup-button-ok','close','#amily2_chat_optimiser','#amily2_opt_max_tokens','api','amily2_unhide_all_button','amily2_manual_unhide_confirm','amily2_optimization_exclusion_enabled','click.amily2.unified_save','加载预设失败','#amily2_opt_context_turn_count','plotOpt_rateMain','Google\x20API\x20Key','#amily2_api_provider','profiles','plotOpt_promptPresets','systemPrompt','82663rVAznI','findIndex','#amily2_manual_hide_from','剧情优化设置已自动保存。','情报部回报',']\x20加载世界书条目失败:','\x22\x20吗？','#amily2_opt_worldbook_entry_deselect_all','change.amily2.api_provider','圣意已在您每次更改时自动镌刻。','>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20for=\x22','<p\x20class=\x22notes\x22\x20style=\x22color:red;\x22>加载世界书列表失败。</p>','change','cached_models_amily2','change.amily2.lore_settings','input.amily2.range','#amily2_opt_worldbook_entry_select_all','plotOpt_finalSystemDirective','\x0aUID:\x20','</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','amily2_open_rag_palace','.popup-button-cancel',']\x20剧情优化UI事件已成功绑定，自动保存已激活。','optimizationExclusionRules','sk-...','input[type=\x22password\x22]','extensionSettings','未找到酒馆预设','amily2_fix_now','#amily2_opt_export_prompt_presets','plotOpt_systemPrompt','appendTo','showModal','扩展区','#amily2_expand_editor','input.amily2_opt\x20change.amily2_opt','amily2_copy_daily_code','最终注入指令已重置为默认值。','\x20执行失败:','placeholder','message','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22amily2_opt_worldbook_entry_item\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22checkbox\x22\x20id=\x22','authorized','success','--\x20请选择一个酒馆预设\x20--','rateMain','模型ID\x20[','未能获取到云端情报，请稍后再试。','#amily2_opt_worldbook_entry_count',']\x20获取角色世界书失败:','主殿使用教程','2341548MCVVUr','[Amily2号-UI]\x20SillyTavern预设列表加载完成，找到\x20','#amily2_opt_worldbook_checkbox_list\x20input[type=\x22checkbox\x22]','promptPresets','#amily2_manual_unhide_to','\x22\x20title=\x22世界书:\x20','plotOpt_mainPrompt','http://localhost:5000/v1','<p\x20class=\x22notes\x22\x20style=\x22color:red;\x22>加载条目失败。</p>','plotOpt_contextLimit','amily2_model','<i\x20class=\x22fas\x20fa-spinner\x20fa-spin\x22></i>\x20处理中','each','\x20个有效预设','#amily2_opt_rate_main','mousedown.amily2Drawer','empty','fadeIn',']\x20已成功恢复为帝国初始蓝图。','tavernProfile','#amily2_plot_optimization_panel','<p\x20class=\x22notes\x22>请选择一个或多个世界书以查看其条目。</p>','type','trigger','log','css','plotOpt_worldbookEnabled','click.amily2.tutorial','book','#amily2_refresh_models,\x20#amily2_test,\x20#amily2_fix_now',']\x20的新状态已保存。','click.amily2.auth','toUpperCase',']...','prop','plotOpt_presence_penalty','[Amily-谕令镌刻]\x20[','#amily2_opt_final_system_directive','stopPropagation','plotOpt_max_tokens','\x22\x20已保存。','span[data-i18n=\x22Manage\x20extensions\x22]','\x22\x20已成功导出。','。圣意已存档。','[Amily2号-UI]\x20正在加载SillyTavern预设列表','183185sjhhXw','#amily2_opt_worldbook_checkbox_list\x20input:checked','input[type=\x22radio\x22]','#amily2_model_selector','\x22\x20已不存在，请重新选择。','amily2_open_additional_features','<p\x20class=\x22notes\x22>未找到世界书。</p>','拦截任务指令已重置为默认值。','openai','amily2-opt-wb-check-','checked','成功导入\x20','\x22\x20data-uid=\x22','请输入授权码','#amily2_api_key','append','replace','character','change.amily2.checkbox','迁都令','rateCuckold','#amily2_opt_api_url_block','end',']\x20已自动保存!','change.amily2.prompt_selector','正在将帝国徽记迁往\x20[','.plugin-features','<-请先获取模型','html','#amily2_preset_selector','#amily2_opt_presence_penalty','#amily2_update_button_new','#amily2_force_proxy','text','model','预设\x20\x22','成功覆盖\x20','</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22text-align:\x20center;\x20margin-top:\x2010px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20id=\x22optimization-add-rule-btn\x22\x20class=\x22menu_button\x20amily2-add-rule-btn\x22><i\x20class=\x22fas\x20fa-plus\x22></i>\x20添加新规则</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>','change.amily2.text','slideDown','ratePersonal',']\x20加载酒馆API预设失败:','click.amily2.actions','change.amily2.select','sort','plotOpt_ratePersonal','#amily2_api_key_wrapper','checkbox','remove','.json','\x22\x20已被删除。','target','#amily2_opt_model','click.amily2.update','manual','无法保存角色卡设置，请检查控制台。','#amily2_extension_frame','plotOpt_apiKey','hide','amily2_opt_','6VftyWg','getElementById','#amily2_opt_prompt_preset_select','693708nNLUPM','找不到选中的预设，请刷新页面后重试。','#amily2_opt_worldbook_entry_list_container','click.amily2.update_new','#amily2_opt_main_prompt','#amily2_opt_rate_cuckold',']\x20导入预设失败:','#amily2_opt_context_limit_value','排除规则已更新。','plotOpt_apiUrl','#amily2_opt_frequency_penalty_value','mainPrompt','</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-controls\x22><div\x20class=\x22popup-button-ok\x20menu_button\x20menu_button_primary\x20interactable\x22>朕已阅</div></div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</dialog>','onload','plotOpt_top_p','amily2_manual_hide_confirm','<option\x20value=\x22\x22>请刷新模型列表</option>','#amily2_opt_tavern_api_profile_select','input[name=\x22','#amily2_opt_rate_erotic','uid','#amily2_opt_rate_personal','#amily2_opt_worldbook_checkbox_list','#amily2_dialog_editor','show','scripts/extensions/third-party/ST-Amily2-Chat-Optimisation/NeiGe.md','之前选择的酒馆预设\x20\x22','lastUsedPresetName','<p>加载条目中...</p>','Amily2号','#amily2_opt_import_prompt_presets',']\x20加载世界书失败:','#amily2_unified_editor','#amily2_opt_top_p_value','url'];_0xfd5b=function(){return _0x59c85c;};return _0xfd5b();}function opt_getMergedSettings(){const _0x3b9941=_0x5c9205,_0x50995b=characters[this_chid],_0xcbafd9=extension_settings[extensionName]||defaultSettings,_0x1df789=_0x50995b?.['data']?.[_0x3b9941(0x2bb)]?.[extensionName]||{};return{..._0xcbafd9,..._0x1df789};}function opt_bindSlider(_0x4f833b,_0x2412b8,_0x1dfb42){const _0x27b5f9=_0x5c9205,_0x3d1110=_0x4f833b[_0x27b5f9(0x187)](_0x2412b8),_0x14f696=_0x4f833b[_0x27b5f9(0x187)](_0x1dfb42);_0x14f696[_0x27b5f9(0x273)](_0x3d1110[_0x27b5f9(0x179)]()),_0x3d1110['on'](_0x27b5f9(0x1c2),function(){const _0x22cc7a=_0x27b5f9;_0x14f696[_0x22cc7a(0x273)]($(this)[_0x22cc7a(0x179)]());});}async function opt_loadWorldbooks(_0x8fdebf){const _0xb6d0c5=_0x5c9205,_0x37b176=_0x8fdebf['find'](_0xb6d0c5(0x2a7)),_0x1973f2=opt_getMergedSettings(),_0x57c9d9=_0x1973f2['plotOpt_selectedWorldbooks']||[];_0x37b176[_0xb6d0c5(0x235)]();try{const _0x1bd903=await safeLorebooks();if(!_0x1bd903||_0x1bd903[_0xb6d0c5(0x1a5)]===0x0){_0x37b176['html'](_0xb6d0c5(0x258));return;}_0x1bd903[_0xb6d0c5(0x313)](_0xcd9797=>{const _0x856947=_0xb6d0c5,_0x3711ff=_0x856947(0x25b)+_0xcd9797['replace'](/[^a-zA-Z0-9]/g,'-'),_0x30e4d7=_0x57c9d9[_0x856947(0x2da)](_0xcd9797),_0x9f7422=$(_0x856947(0x21b)+_0x3711ff+'\x22\x20value=\x22'+_0xcd9797+'\x22\x20'+(_0x30e4d7?'checked':'')+_0x856947(0x1fc)+_0x3711ff+'\x22>'+_0xcd9797+_0x856947(0x205));_0x37b176[_0x856947(0x261)](_0x9f7422);});}catch(_0x340cb1){console[_0xb6d0c5(0x17d)]('['+extensionName+_0xb6d0c5(0x2b0),_0x340cb1),_0x37b176['html'](_0xb6d0c5(0x1fd)),toastr['error']('无法加载世界书列表，请查看控制台。');}}function _0x2d7b(_0xb90920,_0x44b9ae){const _0xfd5bc4=_0xfd5b();return _0x2d7b=function(_0x2d7bd4,_0x39b5b1){_0x2d7bd4=_0x2d7bd4-0x177;let _0x5a05b5=_0xfd5bc4[_0x2d7bd4];return _0x5a05b5;},_0x2d7b(_0xb90920,_0x44b9ae);}async function opt_loadWorldbookEntries(_0x23817b){const _0x24c948=_0x5c9205,_0x45066d=_0x23817b[_0x24c948(0x187)](_0x24c948(0x293)),_0x5880db=_0x23817b[_0x24c948(0x187)](_0x24c948(0x222));_0x45066d['html'](_0x24c948(0x2ad)),_0x5880db['text']('');const _0x1d5382=opt_getMergedSettings(),_0x472d85=_0x1d5382['plotOpt_worldbookSource']||'character';let _0x232f07=[];if(_0x472d85===_0x24c948(0x288))_0x232f07=_0x1d5382[_0x24c948(0x30d)]||[];else{if(this_chid===-0x1||!characters[this_chid]){_0x45066d[_0x24c948(0x26e)]('<p\x20class=\x22notes\x22>未选择角色。</p>'),_0x5880db['text']('');return;}try{const _0x3ba841=await safeCharLorebooks({'type':_0x24c948(0x189)});if(_0x3ba841[_0x24c948(0x1a0)])_0x232f07[_0x24c948(0x2f8)](_0x3ba841[_0x24c948(0x1a0)]);if(_0x3ba841[_0x24c948(0x18a)]?.[_0x24c948(0x1a5)])_0x232f07[_0x24c948(0x2f8)](..._0x3ba841[_0x24c948(0x18a)]);}catch(_0x3e877c){console[_0x24c948(0x17d)]('['+extensionName+_0x24c948(0x223),_0x3e877c),toastr[_0x24c948(0x17d)](_0x24c948(0x2bf)),_0x45066d[_0x24c948(0x26e)]('<p\x20class=\x22notes\x22\x20style=\x22color:red;\x22>获取角色世界书失败。</p>');return;}}const _0x1374c5=_0x232f07;let _0x385b0f=_0x1d5382[_0x24c948(0x1b3)]||{},_0x5d6b7e=0x0,_0x491f02=0x0;if(_0x1374c5[_0x24c948(0x1a5)]===0x0){_0x45066d[_0x24c948(0x26e)](_0x24c948(0x23a));return;}try{const _0x16eb7c=[];for(const _0x4d37a0 of _0x1374c5){const _0x1d5c6c=await safeLorebookEntries(_0x4d37a0);_0x1d5c6c[_0x24c948(0x313)](_0x141750=>{const _0x2880d2=_0x24c948;_0x16eb7c[_0x2880d2(0x2f8)]({..._0x141750,'bookName':_0x4d37a0});});}_0x45066d[_0x24c948(0x235)](),_0x5d6b7e=_0x16eb7c['length'];if(_0x5d6b7e===0x0){_0x45066d[_0x24c948(0x26e)](_0x24c948(0x2f0)),_0x5880db['text']('0\x20条目.');return;}_0x16eb7c[_0x24c948(0x27e)]((_0x187fff,_0x5e14c4)=>(_0x187fff[_0x24c948(0x2bc)]||'')[_0x24c948(0x2c6)](_0x5e14c4[_0x24c948(0x2bc)]||''))[_0x24c948(0x313)](_0x5165ec=>{const _0x54242f=_0x24c948,_0x1978fb='amily2-opt-entry-'+_0x5165ec['bookName'][_0x54242f(0x262)](/[^a-zA-Z0-9]/g,'-')+'-'+_0x5165ec['uid'],_0x2a9f71=_0x385b0f[_0x5165ec[_0x54242f(0x1d8)]]?.['includes'](_0x5165ec[_0x54242f(0x2a5)])??!![],_0x54b48d=$(_0x54242f(0x21b)+_0x1978fb+_0x54242f(0x2d4)+_0x5165ec[_0x54242f(0x1d8)]+_0x54242f(0x25e)+_0x5165ec[_0x54242f(0x2a5)]+'\x22\x20'+(_0x2a9f71?_0x54242f(0x25c):'')+'>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20for=\x22'+_0x1978fb+_0x54242f(0x22a)+_0x5165ec[_0x54242f(0x1d8)]+_0x54242f(0x204)+_0x5165ec[_0x54242f(0x2a5)]+'\x22>'+(_0x5165ec['comment']||_0x54242f(0x310))+_0x54242f(0x205));_0x45066d['append'](_0x54b48d);}),_0x491f02=_0x45066d['children']()['length'],_0x5880db[_0x24c948(0x273)]('显示\x20'+_0x491f02+_0x24c948(0x1c9)+_0x5d6b7e+_0x24c948(0x1ab));}catch(_0x39aa9b){console['error']('['+extensionName+_0x24c948(0x1f7),_0x39aa9b),_0x45066d['html'](_0x24c948(0x22d));}}function opt_saveEnabledEntries(){const _0x4eeec1=_0x5c9205,_0x38cd6e=$(_0x4eeec1(0x239));let _0x867817={};_0x38cd6e[_0x4eeec1(0x187)](_0x4eeec1(0x1c6))[_0x4eeec1(0x231)](function(){const _0x42ac49=_0x4eeec1,_0x351916=$(this)[_0x42ac49(0x2fd)](_0x42ac49(0x241)),_0x18d863=parseInt($(this)[_0x42ac49(0x2fd)](_0x42ac49(0x2a5)));!_0x867817[_0x351916]&&(_0x867817[_0x351916]=[]),$(this)['is'](_0x42ac49(0x304))&&_0x867817[_0x351916][_0x42ac49(0x2f8)](_0x18d863);});const _0x559603=opt_getMergedSettings();if(_0x559603[_0x4eeec1(0x186)]===_0x4eeec1(0x288)){const _0x358506=_0x559603['plotOpt_selectedWorldbooks']||[];Object[_0x4eeec1(0x2b4)](_0x867817)[_0x4eeec1(0x313)](_0x51f4be=>{const _0x1bb4a8=_0x4eeec1;!_0x358506[_0x1bb4a8(0x2da)](_0x51f4be)&&delete _0x867817[_0x51f4be];});}opt_saveSetting(_0x4eeec1(0x1b3),_0x867817);}function opt_loadPromptPresets(_0xb0f5a){const _0x52069a=_0x5c9205,_0x621d6f=extension_settings[extensionName]?.[_0x52069a(0x228)]||[],_0x3b6342=_0xb0f5a[_0x52069a(0x187)](_0x52069a(0x290)),_0x6c003e=_0x3b6342[_0x52069a(0x179)]();_0x3b6342[_0x52069a(0x235)]()[_0x52069a(0x261)](new Option(_0x52069a(0x195),'')),_0x621d6f[_0x52069a(0x313)](_0x1492a1=>{const _0x460e58=_0x52069a;_0x3b6342[_0x460e58(0x261)](new Option(_0x1492a1[_0x460e58(0x302)],_0x1492a1['name']));}),_0x6c003e&&_0x621d6f[_0x52069a(0x17c)](_0x8d56a2=>_0x8d56a2[_0x52069a(0x302)]===_0x6c003e)&&_0x3b6342[_0x52069a(0x179)](_0x6c003e);}function opt_saveCurrentPromptsAsPreset(_0x3e46a1){const _0x3b7ce5=_0x5c9205,_0x2d16e1=prompt('请输入预设名称：');if(!_0x2d16e1)return;const _0x3de9e0=extension_settings[extensionName]?.[_0x3b7ce5(0x228)]||[],_0x10f371=_0x3de9e0['findIndex'](_0x23810a=>_0x23810a['name']===_0x2d16e1),_0x1b4290={'name':_0x2d16e1,'mainPrompt':_0x3e46a1[_0x3b7ce5(0x187)](_0x3b7ce5(0x295))[_0x3b7ce5(0x179)](),'systemPrompt':_0x3e46a1[_0x3b7ce5(0x187)](_0x3b7ce5(0x30c))['val'](),'finalSystemDirective':_0x3e46a1[_0x3b7ce5(0x187)](_0x3b7ce5(0x24a))['val'](),'rateMain':parseFloat(_0x3e46a1[_0x3b7ce5(0x187)]('#amily2_opt_rate_main')[_0x3b7ce5(0x179)]()),'ratePersonal':parseFloat(_0x3e46a1['find']('#amily2_opt_rate_personal')[_0x3b7ce5(0x179)]()),'rateErotic':parseFloat(_0x3e46a1['find'](_0x3b7ce5(0x2a4))[_0x3b7ce5(0x179)]()),'rateCuckold':parseFloat(_0x3e46a1[_0x3b7ce5(0x187)](_0x3b7ce5(0x296))[_0x3b7ce5(0x179)]())};if(_0x10f371!==-0x1){if(confirm('名为\x20\x22'+_0x2d16e1+_0x3b7ce5(0x1a7)))_0x3de9e0[_0x10f371]=_0x1b4290,toastr[_0x3b7ce5(0x21d)](_0x3b7ce5(0x275)+_0x2d16e1+_0x3b7ce5(0x1da));else{toastr[_0x3b7ce5(0x2d7)]('保存操作已取消。');return;}}else _0x3de9e0[_0x3b7ce5(0x2f8)](_0x1b4290),toastr[_0x3b7ce5(0x21d)]('预设\x20\x22'+_0x2d16e1+_0x3b7ce5(0x24d));opt_saveSetting('promptPresets',_0x3de9e0),opt_loadPromptPresets(_0x3e46a1),setTimeout(()=>{const _0x1ad6c8=_0x3b7ce5;_0x3e46a1[_0x1ad6c8(0x187)]('#amily2_opt_prompt_preset_select')[_0x1ad6c8(0x179)](_0x2d16e1)[_0x1ad6c8(0x23c)](_0x1ad6c8(0x1fe));},0x0);}function opt_deleteSelectedPreset(_0x328577){const _0x517a44=_0x5c9205,_0xcfd0c7=_0x328577['find'](_0x517a44(0x290)),_0x4f698d=_0xcfd0c7['val']();if(!_0x4f698d){toastr[_0x517a44(0x2d3)](_0x517a44(0x177));return;}if(!confirm('确定要删除预设\x20\x22'+_0x4f698d+_0x517a44(0x1f8)))return;const _0x57d90f=extension_settings[extensionName]?.[_0x517a44(0x228)]||[],_0x232693=_0x57d90f['findIndex'](_0x45c0ba=>_0x45c0ba[_0x517a44(0x302)]===_0x4f698d);_0x232693>-0x1?(_0x57d90f['splice'](_0x232693,0x1),opt_saveSetting(_0x517a44(0x228),_0x57d90f),toastr[_0x517a44(0x21d)](_0x517a44(0x275)+_0x4f698d+_0x517a44(0x284))):toastr[_0x517a44(0x17d)]('找不到要删除的预设，操作可能已过期。'),opt_loadPromptPresets(_0x328577),_0xcfd0c7[_0x517a44(0x23c)](_0x517a44(0x1fe));}function opt_exportPromptPresets(){const _0x4c78d5=_0x5c9205,_0x4b088f=$('#amily2_opt_prompt_preset_select'),_0x4887eb=_0x4b088f['val']();if(!_0x4887eb){toastr['info'](_0x4c78d5(0x2f1));return;}const _0x6e4ed2=extension_settings[extensionName]?.[_0x4c78d5(0x228)]||[],_0x18a444=_0x6e4ed2[_0x4c78d5(0x187)](_0x5b920f=>_0x5b920f[_0x4c78d5(0x302)]===_0x4887eb);if(!_0x18a444){toastr['error'](_0x4c78d5(0x292));return;}const _0x1b25cc=[_0x18a444],_0x2f84f3=JSON[_0x4c78d5(0x2c7)](_0x1b25cc,null,0x2),_0x2f9bf0=new Blob([_0x2f84f3],{'type':'application/json'}),_0xc14a7c=URL[_0x4c78d5(0x2f3)](_0x2f9bf0),_0x382b2e=document['createElement']('a');_0x382b2e[_0x4c78d5(0x315)]=_0xc14a7c,_0x382b2e[_0x4c78d5(0x1b7)]='amily2_opt_preset_'+_0x4887eb['replace'](/[^a-z0-9]/gi,'_')+_0x4c78d5(0x283),document[_0x4c78d5(0x1d6)]['appendChild'](_0x382b2e),_0x382b2e['click'](),document[_0x4c78d5(0x1d6)]['removeChild'](_0x382b2e),URL['revokeObjectURL'](_0xc14a7c),toastr['success'](_0x4c78d5(0x275)+_0x4887eb+_0x4c78d5(0x24f));}function opt_importPromptPresets(_0x92e454,_0x50593c){const _0x2c6ed1=_0x5c9205;if(!_0x92e454)return;const _0x3cbc89=new FileReader();_0x3cbc89[_0x2c6ed1(0x29e)]=function(_0x47f4ad){const _0x4265cb=_0x2c6ed1;try{const _0x1a0af7=JSON[_0x4265cb(0x2ee)](_0x47f4ad['target'][_0x4265cb(0x1c0)]);if(!Array[_0x4265cb(0x19b)](_0x1a0af7))throw new Error(_0x4265cb(0x193));let _0xf54646=extension_settings[extensionName]?.[_0x4265cb(0x228)]||[],_0x2da5a6=0x0,_0x3ba550=0x0;_0x1a0af7[_0x4265cb(0x313)](_0x4ad760=>{const _0x4d08d2=_0x4265cb;if(_0x4ad760&&typeof _0x4ad760[_0x4d08d2(0x302)]===_0x4d08d2(0x2d0)&&_0x4ad760['name'][_0x4d08d2(0x1a5)]>0x0){const _0x18d98e={'name':_0x4ad760[_0x4d08d2(0x302)],'mainPrompt':_0x4ad760[_0x4d08d2(0x29c)]||'','systemPrompt':_0x4ad760[_0x4d08d2(0x1f1)]||'','finalSystemDirective':_0x4ad760['finalSystemDirective']||'','rateMain':_0x4ad760[_0x4d08d2(0x21f)]??0x1,'ratePersonal':_0x4ad760[_0x4d08d2(0x27a)]??0x1,'rateErotic':_0x4ad760[_0x4d08d2(0x1aa)]??0x1,'rateCuckold':_0x4ad760[_0x4d08d2(0x266)]??0x1},_0x2b4937=_0xf54646[_0x4d08d2(0x1f3)](_0x374f96=>_0x374f96[_0x4d08d2(0x302)]===_0x4ad760[_0x4d08d2(0x302)]);_0x2b4937!==-0x1?(_0xf54646[_0x2b4937]=_0x18d98e,_0x3ba550++):(_0xf54646[_0x4d08d2(0x2f8)](_0x18d98e),_0x2da5a6++);}});if(_0x2da5a6>0x0||_0x3ba550>0x0){const _0x11d9df=_0x50593c['find'](_0x4265cb(0x290))[_0x4265cb(0x179)]();opt_saveSetting('promptPresets',_0xf54646),opt_loadPromptPresets(_0x50593c),_0x50593c[_0x4265cb(0x187)](_0x4265cb(0x290))[_0x4265cb(0x179)](_0x11d9df),_0x50593c[_0x4265cb(0x187)](_0x4265cb(0x290))['trigger'](_0x4265cb(0x1fe));let _0x411239=[];if(_0x2da5a6>0x0)_0x411239[_0x4265cb(0x2f8)](_0x4265cb(0x25d)+_0x2da5a6+_0x4265cb(0x1ba));if(_0x3ba550>0x0)_0x411239['push'](_0x4265cb(0x276)+_0x3ba550+_0x4265cb(0x2b5));toastr[_0x4265cb(0x21d)](_0x411239[_0x4265cb(0x305)]('\x20'));}else toastr['warning']('未找到可导入的有效预设。');}catch(_0x863d31){console['error']('['+extensionName+_0x4265cb(0x297),_0x863d31),toastr['error'](_0x4265cb(0x1d9)+_0x863d31[_0x4265cb(0x21a)],'错误');}finally{_0x50593c[_0x4265cb(0x187)](_0x4265cb(0x196))[_0x4265cb(0x179)]('');}},_0x3cbc89['readAsText'](_0x92e454);}function opt_loadSettings(_0x4bf68e){const _0x57bee9=_0x5c9205,_0xcbb834=opt_getMergedSettings();_0x4bf68e[_0x57bee9(0x187)]('#amily2_opt_enabled')[_0x57bee9(0x247)]('checked',_0xcbb834[_0x57bee9(0x183)]),_0x4bf68e[_0x57bee9(0x187)](_0x57bee9(0x2ea))['prop']('checked',_0xcbb834['plotOpt_tableEnabled']),_0x4bf68e[_0x57bee9(0x187)]('input[name=\x22amily2_opt_api_mode\x22][value=\x22'+_0xcbb834[_0x57bee9(0x2e1)]+'\x22]')[_0x57bee9(0x247)](_0x57bee9(0x25c),!![]),_0x4bf68e[_0x57bee9(0x187)]('#amily2_opt_tavern_api_profile_select')['val'](_0xcbb834[_0x57bee9(0x314)]),_0x4bf68e[_0x57bee9(0x187)](_0x57bee9(0x190)+(_0xcbb834['plotOpt_worldbookSource']||_0x57bee9(0x263))+'\x22]')['prop'](_0x57bee9(0x25c),!![]),_0x4bf68e[_0x57bee9(0x187)](_0x57bee9(0x17e))[_0x57bee9(0x247)](_0x57bee9(0x25c),_0xcbb834[_0x57bee9(0x23f)]),_0x4bf68e[_0x57bee9(0x187)]('#amily2_opt_api_url')['val'](_0xcbb834[_0x57bee9(0x29a)]),_0x4bf68e['find'](_0x57bee9(0x1b1))['val'](_0xcbb834[_0x57bee9(0x28b)]);const _0x38ac37=_0x4bf68e[_0x57bee9(0x187)](_0x57bee9(0x286)),_0x121331=_0x4bf68e[_0x57bee9(0x187)]('#amily2_opt_model_select');_0x38ac37[_0x57bee9(0x179)](_0xcbb834[_0x57bee9(0x2dd)]),_0x121331[_0x57bee9(0x235)]();_0xcbb834[_0x57bee9(0x2dd)]?_0x121331[_0x57bee9(0x261)](new Option(_0xcbb834[_0x57bee9(0x2dd)],_0xcbb834['plotOpt_model'],!![],!![])):_0x121331[_0x57bee9(0x261)](new Option(_0x57bee9(0x26d),'',!![],!![]));_0x4bf68e['find'](_0x57bee9(0x1e4))[_0x57bee9(0x179)](_0xcbb834[_0x57bee9(0x24c)]),_0x4bf68e[_0x57bee9(0x187)](_0x57bee9(0x2f9))['val'](_0xcbb834[_0x57bee9(0x184)]),_0x4bf68e[_0x57bee9(0x187)](_0x57bee9(0x178))['val'](_0xcbb834['plotOpt_top_p']),_0x4bf68e[_0x57bee9(0x187)](_0x57bee9(0x270))['val'](_0xcbb834[_0x57bee9(0x248)]),_0x4bf68e[_0x57bee9(0x187)](_0x57bee9(0x1c5))[_0x57bee9(0x179)](_0xcbb834[_0x57bee9(0x2e7)]),_0x4bf68e['find']('#amily2_opt_context_turn_count')[_0x57bee9(0x179)](_0xcbb834['plotOpt_contextTurnCount']),_0x4bf68e[_0x57bee9(0x187)](_0x57bee9(0x1d2))[_0x57bee9(0x179)](_0xcbb834['plotOpt_worldbookCharLimit']),_0x4bf68e[_0x57bee9(0x187)]('#amily2_opt_context_limit')['val'](_0xcbb834[_0x57bee9(0x22e)]),_0x4bf68e['find'](_0x57bee9(0x233))['val'](_0xcbb834['plotOpt_rateMain']),_0x4bf68e[_0x57bee9(0x187)](_0x57bee9(0x2a6))[_0x57bee9(0x179)](_0xcbb834[_0x57bee9(0x27f)]),_0x4bf68e[_0x57bee9(0x187)]('#amily2_opt_rate_erotic')['val'](_0xcbb834['plotOpt_rateErotic']),_0x4bf68e[_0x57bee9(0x187)](_0x57bee9(0x296))[_0x57bee9(0x179)](_0xcbb834[_0x57bee9(0x1cd)]),_0x4bf68e[_0x57bee9(0x187)](_0x57bee9(0x295))[_0x57bee9(0x179)](_0xcbb834[_0x57bee9(0x22b)]),_0x4bf68e[_0x57bee9(0x187)]('#amily2_opt_system_prompt')[_0x57bee9(0x179)](_0xcbb834[_0x57bee9(0x210)]),_0x4bf68e[_0x57bee9(0x187)](_0x57bee9(0x24a))['val'](_0xcbb834[_0x57bee9(0x203)]),opt_updateApiUrlVisibility(_0x4bf68e,_0xcbb834[_0x57bee9(0x2e1)]),opt_updateWorldbookSourceVisibility(_0x4bf68e,_0xcbb834[_0x57bee9(0x186)]||'character'),opt_bindSlider(_0x4bf68e,_0x57bee9(0x1e4),'#amily2_opt_max_tokens_value'),opt_bindSlider(_0x4bf68e,_0x57bee9(0x2f9),_0x57bee9(0x1ae)),opt_bindSlider(_0x4bf68e,_0x57bee9(0x178),_0x57bee9(0x2b2)),opt_bindSlider(_0x4bf68e,_0x57bee9(0x270),'#amily2_opt_presence_penalty_value'),opt_bindSlider(_0x4bf68e,_0x57bee9(0x1c5),_0x57bee9(0x29b)),opt_bindSlider(_0x4bf68e,_0x57bee9(0x1eb),_0x57bee9(0x2d8)),opt_bindSlider(_0x4bf68e,'#amily2_opt_worldbook_char_limit','#amily2_opt_worldbook_char_limit_value'),opt_bindSlider(_0x4bf68e,_0x57bee9(0x1b9),_0x57bee9(0x298)),opt_loadPromptPresets(_0x4bf68e);const _0x372377=_0xcbb834[_0x57bee9(0x17f)];_0x372377&&(_0xcbb834[_0x57bee9(0x1f0)]||[])[_0x57bee9(0x17c)](_0x3ec308=>_0x3ec308[_0x57bee9(0x302)]===_0x372377)&&setTimeout(()=>{const _0x15d80c=_0x57bee9;_0x4bf68e[_0x15d80c(0x187)](_0x15d80c(0x290))[_0x15d80c(0x179)](_0x372377)['trigger'](_0x15d80c(0x1fe),{'isAutomatic':!![]});},0x0),opt_loadWorldbooks(_0x4bf68e)[_0x57bee9(0x19f)](()=>{opt_loadWorldbookEntries(_0x4bf68e);}),opt_loadTavernApiProfiles(_0x4bf68e);}export function initializePlotOptimizationBindings(){const _0x181c2d=_0x5c9205,_0xf3d2e3=$('#amily2_plot_optimization_panel');if(_0xf3d2e3[_0x181c2d(0x1a5)]===0x0||_0xf3d2e3[_0x181c2d(0x2fd)](_0x181c2d(0x1b6)))return;opt_loadSettings(_0xf3d2e3),eventSource['on'](event_types[_0x181c2d(0x2e4)],()=>{const _0xd06bb4=_0x181c2d;console[_0xd06bb4(0x23d)]('['+extensionName+_0xd06bb4(0x311)),opt_loadSettings(_0xf3d2e3);});const _0x4c0daa=function(_0x28d07d){const _0x2223c1=_0x181c2d,_0x321210=$(_0x28d07d),_0x3942a1=(_0x28d07d['name']||_0x28d07d['id'])[_0x2223c1(0x262)](_0x2223c1(0x28d),''),_0x5cca67='plotOpt_'+_0x3942a1[_0x2223c1(0x262)](/_([a-z])/g,_0x5b1f7b=>_0x5b1f7b[0x1][_0x2223c1(0x245)]());let _0x52bcf3=_0x28d07d[_0x2223c1(0x23b)]==='checkbox'?_0x28d07d['checked']:_0x321210[_0x2223c1(0x179)]();_0x5cca67===_0x2223c1(0x1df)&&!Array[_0x2223c1(0x19b)](_0x52bcf3)&&(_0x52bcf3=_0x321210[_0x2223c1(0x179)]()||[]);const _0x5e8a6e=[_0x2223c1(0x184),_0x2223c1(0x29f),'plotOpt_presence_penalty',_0x2223c1(0x2e7),_0x2223c1(0x1ec),_0x2223c1(0x27f),'plotOpt_rateErotic',_0x2223c1(0x1cd)];if(_0x5e8a6e[_0x2223c1(0x2da)](_0x5cca67)&&_0x52bcf3!=='')_0x52bcf3=parseFloat(_0x52bcf3);else{if(_0x28d07d[_0x2223c1(0x23b)]===_0x2223c1(0x2e0)||_0x28d07d[_0x2223c1(0x23b)]===_0x2223c1(0x2e9)){if(_0x52bcf3!=='')_0x52bcf3=parseInt(_0x52bcf3,0xa);}}(_0x52bcf3!==''||_0x28d07d['type']===_0x2223c1(0x281))&&opt_saveSetting(_0x5cca67,_0x52bcf3),_0x5cca67===_0x2223c1(0x1a4)&&opt_updateApiUrlVisibility(_0xf3d2e3,_0x52bcf3),_0x28d07d[_0x2223c1(0x302)]==='amily2_opt_worldbook_source'&&(opt_updateWorldbookSourceVisibility(_0xf3d2e3,_0x52bcf3),opt_loadWorldbookEntries(_0xf3d2e3));},_0x39ea7a=[_0x181c2d(0x2db),_0x181c2d(0x254),'select:not(#amily2_opt_model_select)',_0x181c2d(0x2f4),_0x181c2d(0x20b),_0x181c2d(0x2ef),_0x181c2d(0x308),'input[type=\x22number\x22]'][_0x181c2d(0x305)](',\x20');_0xf3d2e3['on'](_0x181c2d(0x215),_0x39ea7a,function(){_0x4c0daa(this);}),_0xf3d2e3['on'](_0x181c2d(0x317),_0x181c2d(0x1bc),function(){const _0x24d2e2=_0x181c2d,_0x12a7d1=$(this)[_0x24d2e2(0x179)]();_0x12a7d1&&_0xf3d2e3['find'](_0x24d2e2(0x286))['val'](_0x12a7d1)[_0x24d2e2(0x23c)]('change');}),_0xf3d2e3['on'](_0x181c2d(0x1bb),'#amily2_opt_refresh_tavern_api_profiles',()=>{opt_loadTavernApiProfiles(_0xf3d2e3);}),_0xf3d2e3['on'](_0x181c2d(0x317),_0x181c2d(0x2a2),function(){const _0x408e69=_0x181c2d,_0x468756=$(this)[_0x408e69(0x179)]();opt_saveSetting('tavernProfile',_0x468756);}),_0xf3d2e3[_0x181c2d(0x187)](_0x181c2d(0x2af))['on'](_0x181c2d(0x2fa),()=>_0xf3d2e3[_0x181c2d(0x187)](_0x181c2d(0x196))['click']()),_0xf3d2e3[_0x181c2d(0x187)](_0x181c2d(0x20f))['on'](_0x181c2d(0x2fa),()=>opt_exportPromptPresets()),_0xf3d2e3[_0x181c2d(0x187)](_0x181c2d(0x2ca))['on'](_0x181c2d(0x2fa),()=>opt_saveCurrentPromptsAsPreset(_0xf3d2e3)),_0xf3d2e3[_0x181c2d(0x187)](_0x181c2d(0x2e8))['on'](_0x181c2d(0x2fa),()=>opt_deleteSelectedPreset(_0xf3d2e3)),_0xf3d2e3['on'](_0x181c2d(0x317),_0x181c2d(0x196),function(_0x1e0bbd){const _0x5c60bc=_0x181c2d;opt_importPromptPresets(_0x1e0bbd[_0x5c60bc(0x285)]['files'][0x0],_0xf3d2e3);}),_0xf3d2e3['on'](_0x181c2d(0x317),_0x181c2d(0x290),function(_0x33fe3f,_0x2bc69e){const _0x597ff9=_0x181c2d,_0x7f150c=$(this)[_0x597ff9(0x179)](),_0x55adfc=_0xf3d2e3[_0x597ff9(0x187)](_0x597ff9(0x2e8)),_0x3e6a01=_0x2bc69e&&_0x2bc69e['isAutomatic'];opt_saveSetting(_0x597ff9(0x2ac),_0x7f150c);if(!_0x7f150c){_0x55adfc['hide'](),opt_saveSetting(_0x597ff9(0x2ac),'');return;}const _0x701e4f=extension_settings[extensionName]?.[_0x597ff9(0x228)]||[],_0x551d35=_0x701e4f[_0x597ff9(0x187)](_0x4520ab=>_0x4520ab['name']===_0x7f150c);_0x551d35?(_0xf3d2e3[_0x597ff9(0x187)](_0x597ff9(0x295))[_0x597ff9(0x179)](_0x551d35[_0x597ff9(0x29c)])[_0x597ff9(0x23c)](_0x597ff9(0x1fe)),_0xf3d2e3[_0x597ff9(0x187)](_0x597ff9(0x30c))['val'](_0x551d35['systemPrompt'])['trigger'](_0x597ff9(0x1fe)),_0xf3d2e3[_0x597ff9(0x187)](_0x597ff9(0x24a))[_0x597ff9(0x179)](_0x551d35[_0x597ff9(0x1cf)])[_0x597ff9(0x23c)](_0x597ff9(0x1fe)),_0xf3d2e3[_0x597ff9(0x187)]('#amily2_opt_rate_main')[_0x597ff9(0x179)](_0x551d35[_0x597ff9(0x21f)]??0x1)[_0x597ff9(0x23c)](_0x597ff9(0x1fe)),_0xf3d2e3[_0x597ff9(0x187)](_0x597ff9(0x2a6))['val'](_0x551d35[_0x597ff9(0x27a)]??0x1)[_0x597ff9(0x23c)](_0x597ff9(0x1fe)),_0xf3d2e3['find'](_0x597ff9(0x2a4))[_0x597ff9(0x179)](_0x551d35[_0x597ff9(0x1aa)]??0x1)[_0x597ff9(0x23c)](_0x597ff9(0x1fe)),_0xf3d2e3[_0x597ff9(0x187)](_0x597ff9(0x296))[_0x597ff9(0x179)](_0x551d35[_0x597ff9(0x266)]??0x1)[_0x597ff9(0x23c)](_0x597ff9(0x1fe)),!_0x3e6a01&&toastr['success']('已加载预设\x20\x22'+_0x7f150c+'\x22。'),_0x55adfc[_0x597ff9(0x2a9)]()):_0x55adfc[_0x597ff9(0x28c)]();}),_0xf3d2e3[_0x181c2d(0x187)](_0x181c2d(0x2df))['on']('click',function(){const _0x371769=_0x181c2d;_0xf3d2e3[_0x371769(0x187)](_0x371769(0x295))[_0x371769(0x179)](defaultSettings[_0x371769(0x22b)])['trigger'](_0x371769(0x1fe)),toastr[_0x371769(0x21d)](_0x371769(0x306));}),_0xf3d2e3[_0x181c2d(0x187)]('#amily2_opt_reset_system_prompt')['on']('click',function(){const _0x4c42b2=_0x181c2d;_0xf3d2e3['find'](_0x4c42b2(0x30c))[_0x4c42b2(0x179)](defaultSettings['plotOpt_systemPrompt'])['trigger'](_0x4c42b2(0x1fe)),toastr[_0x4c42b2(0x21d)](_0x4c42b2(0x259));}),_0xf3d2e3[_0x181c2d(0x187)](_0x181c2d(0x1b5))['on'](_0x181c2d(0x2fa),function(){const _0x1cbaa4=_0x181c2d;_0xf3d2e3[_0x1cbaa4(0x187)](_0x1cbaa4(0x24a))[_0x1cbaa4(0x179)](defaultSettings[_0x1cbaa4(0x203)])['trigger']('change'),toastr[_0x1cbaa4(0x21d)](_0x1cbaa4(0x217));}),_0xf3d2e3['data'](_0x181c2d(0x1b6),!![]),console['log']('['+extensionName+_0x181c2d(0x208)),_0xf3d2e3['on'](_0x181c2d(0x1bb),'#amily2_opt_refresh_worldbooks',()=>{opt_loadWorldbooks(_0xf3d2e3)['then'](()=>{opt_loadWorldbookEntries(_0xf3d2e3);});}),_0xf3d2e3['on']('change.amily2_opt',_0x181c2d(0x227),async function(){const _0x3e6c14=_0x181c2d,_0x5b5453=[];_0xf3d2e3[_0x3e6c14(0x187)](_0x3e6c14(0x253))[_0x3e6c14(0x231)](function(){const _0x441f20=_0x3e6c14;_0x5b5453[_0x441f20(0x2f8)]($(this)[_0x441f20(0x179)]());}),await opt_saveSetting(_0x3e6c14(0x30d),_0x5b5453),await opt_loadWorldbookEntries(_0xf3d2e3);}),_0xf3d2e3['on']('change.amily2_opt',_0x181c2d(0x1c6),()=>{opt_saveEnabledEntries();}),_0xf3d2e3['on'](_0x181c2d(0x1bb),_0x181c2d(0x202),()=>{const _0x444cbf=_0x181c2d;_0xf3d2e3['find']('#amily2_opt_worldbook_entry_list_container\x20input[type=\x22checkbox\x22]')[_0x444cbf(0x247)](_0x444cbf(0x25c),!![]),opt_saveEnabledEntries();}),_0xf3d2e3['on']('click.amily2_opt',_0x181c2d(0x1f9),()=>{const _0x135cc6=_0x181c2d;_0xf3d2e3[_0x135cc6(0x187)]('#amily2_opt_worldbook_entry_list_container\x20input[type=\x22checkbox\x22]')[_0x135cc6(0x247)](_0x135cc6(0x25c),![]),opt_saveEnabledEntries();});}$(document)['on'](_0x5c9205(0x1fe),'input[name=\x22amily2_icon_location\x22]',function(){const _0x4d4630=_0x5c9205;if(!pluginAuthStatus[_0x4d4630(0x21c)])return;const _0x7efca3=$(this)[_0x4d4630(0x179)]();extension_settings[extensionName][_0x4d4630(0x1d1)]=_0x7efca3,saveSettingsDebounced(),console[_0x4d4630(0x23d)](_0x4d4630(0x2cd)+_0x7efca3+_0x4d4630(0x250)),toastr[_0x4d4630(0x2d7)](_0x4d4630(0x26b)+(_0x7efca3==='topbar'?'顶栏':_0x4d4630(0x213))+_0x4d4630(0x246),_0x4d4630(0x265),{'timeOut':0x7d0}),$(_0x4d4630(0x2be))[_0x4d4630(0x282)](),$(document)[_0x4d4630(0x2dc)](_0x4d4630(0x234)),$(_0x4d4630(0x28a))[_0x4d4630(0x282)](),setTimeout(createDrawer,0x32);});
+import { extension_settings, getContext } from "/scripts/extensions.js";
+import { characters, this_chid, getRequestHeaders, saveSettingsDebounced, eventSource, event_types } from "/script.js";
+import { defaultSettings, extensionName } from "../utils/settings.js";
+import { pluginAuthStatus, activatePluginAuthorization, getPasswordForDate } from "../utils/auth.js";
+import { fetchModels } from "../core/api.js";
+import { safeLorebooks, safeCharLorebooks, safeLorebookEntries, isTavernHelperAvailable } from "../core/tavernhelper-compatibility.js";
+
+import { setAvailableModels, populateModelDropdown, getLatestUpdateInfo } from "./state.js";
+import { fixCommand, testReplyChecker } from "../core/commands.js";
+import { createDrawer } from '../ui/drawer.js';
+import { messageFormatting } from '/script.js';
+import { executeManualCommand } from '../core/autoHideManager.js';
+import { showContentModal, showHtmlModal } from './page-window.js';
+
+function displayDailyAuthCode() {
+    const displayEl = document.getElementById('amily2_daily_code_display');
+    const copyBtn = document.getElementById('amily2_copy_daily_code');
+
+    if (displayEl && copyBtn) {
+        const todayCode = getPasswordForDate(new Date());
+        displayEl.textContent = todayCode;
+
+        copyBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(todayCode).then(() => {
+                toastr.success('授权码已复制到剪贴板！');
+            }, () => {
+                toastr.error('复制失败，请手动复制。');
+            });
+        });
+    }
+}
+
+
+async function loadSillyTavernPresets() {
+    console.log('[Amily2号-UI] 正在加载SillyTavern预设列表');
+    
+    const select = $('#amily2_preset_selector');
+    const settings = extension_settings[extensionName] || {};
+    const currentProfileId = settings.selectedPreset;
+
+    select.empty().append(new Option('-- 请选择一个酒馆预设 --', ''));
+
+    try {
+        const context = getContext();
+        const tavernProfiles = context.extensionSettings?.connectionManager?.profiles || [];
+        
+        if (!tavernProfiles || tavernProfiles.length === 0) {
+            select.append($('<option>', { value: '', text: '未找到酒馆预设', disabled: true }));
+            console.warn('[Amily2号-UI] 未找到SillyTavern预设');
+            return;
+        }
+
+        let foundCurrentProfile = false;
+        tavernProfiles.forEach(profile => {
+            if (profile.api && profile.preset) {
+                const option = $('<option>', {
+                    value: profile.id,
+                    text: profile.name || profile.id,
+                    selected: profile.id === currentProfileId
+                });
+                select.append(option);
+                if (profile.id === currentProfileId) {
+                    foundCurrentProfile = true;
+                }
+            }
+        });
+
+        if (currentProfileId && !foundCurrentProfile) {
+            toastr.warning(`之前选择的酒馆预设 "${currentProfileId}" 已不存在，请重新选择。`, "Amily2号");
+            const updateAndSaveSetting = (key, value) => {
+                if (!extension_settings[extensionName]) {
+                    extension_settings[extensionName] = {};
+                }
+                extension_settings[extensionName][key] = value;
+                saveSettingsDebounced();
+            };
+            updateAndSaveSetting('selectedPreset', '');
+        } else if (foundCurrentProfile) {
+            select.val(currentProfileId);
+        }
+
+        const validProfiles = tavernProfiles.filter(p => p.api && p.preset);
+        console.log(`[Amily2号-UI] SillyTavern预设列表加载完成，找到 ${validProfiles.length} 个有效预设`);
+        
+    } catch (error) {
+        console.error(`[Amily2号-UI] 加载酒馆API预设失败:`, error);
+        select.append($('<option>', { value: '', text: '加载预设失败', disabled: true }));
+        toastr.error('无法加载酒馆API预设列表，请查看控制台。', 'Amily2号');
+    }
+}
+
+
+function updateApiProviderUI() {
+    const settings = extension_settings[extensionName] || {};
+    const provider = settings.apiProvider || 'openai';
+
+    $('#amily2_api_provider').val(provider);
+
+    $('#amily2_api_provider').trigger('change');
+}
+
+export function bindModalEvents() {
+
+    initializePlotOptimizationBindings();
+
+    const container = $("#amily2_drawer_content").length ? $("#amily2_drawer_content") : $("#amily2_chat_optimiser");
+    
+    displayDailyAuthCode(); 
+    function updateModelInputView() {
+        const settings = extension_settings[extensionName] || {};
+        const forceProxy = settings.forceProxyForCustomApi === true;
+        const model = settings.model || '';
+
+        container.find('#amily2_force_proxy').prop('checked', forceProxy);
+        container.find('#amily2_manual_model_input').val(model);
+
+        const apiKeyWrapper = container.find('#amily2_api_key_wrapper');
+        const autoFetchWrapper = container.find('#amily2_model_autofetch_wrapper');
+        const manualInput = container.find('#amily2_manual_model_input');
+
+        if (forceProxy) {
+            apiKeyWrapper.hide();
+            autoFetchWrapper.show(); 
+            manualInput.hide();
+        } else {
+            apiKeyWrapper.show();
+            autoFetchWrapper.show();
+            manualInput.hide();
+        }
+    }
+
+    if (!container.length || container.data("events-bound")) return;
+
+    const snakeToCamel = (s) => s.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+    const updateAndSaveSetting = (key, value) => {
+        console.log(`[Amily-谕令确认] 收到指令: 将 [${key}] 设置为 ->`, value);
+        if (!extension_settings[extensionName]) {
+            extension_settings[extensionName] = {};
+        }
+        extension_settings[extensionName] = { ...extension_settings[extensionName], [key]: value };
+        saveSettingsDebounced();
+        console.log(`[Amily-谕令镌刻] [${key}] 的新状态已保存。`);
+    };
+
+    container
+        .off("change.amily2.force_proxy")
+        .on("change.amily2.force_proxy", '#amily2_force_proxy', function () {
+            if (!pluginAuthStatus.authorized) return;
+            updateAndSaveSetting('forceProxyForCustomApi', this.checked);
+            updateModelInputView();
+
+            $('#amily2_refresh_models').trigger('click');
+        });
+    container
+        .off("change.amily2.manual_model")
+        .on("change.amily2.manual_model", '#amily2_manual_model_input', function() {
+            if (!pluginAuthStatus.authorized) return;
+            updateAndSaveSetting('model', this.value);
+            toastr.success(`模型ID [${this.value}] 已自动保存!`, "Amily2号");
+        });
+
+
+    container
+        .off("click.amily2.auth")
+        .on("click.amily2.auth", "#auth_submit", async function () {
+            const authCode = $("#amily2_auth_code").val().trim();
+            if (authCode) {
+                await activatePluginAuthorization(authCode);
+            } else {
+                toastr.warning("请输入授权码", "Amily2号");
+            }
+        });
+
+    container
+        .off("click.amily2.actions")
+        .on(
+            "click.amily2.actions",
+            "#amily2_refresh_models, #amily2_test, #amily2_fix_now",
+            async function () {
+                if (!pluginAuthStatus.authorized) return;
+                const button = $(this);
+                const originalHtml = button.html();
+                button
+                    .prop("disabled", true)
+                    .html('<i class="fas fa-spinner fa-spin"></i> 处理中');
+                try {
+                    switch (this.id) {
+                        case "amily2_refresh_models":
+                            const models = await fetchModels();
+                            if (models.length > 0) {
+                                setAvailableModels(models);
+                localStorage.setItem(
+                  "cached_models_amily2",
+                  JSON.stringify(models),
+                );
+                                populateModelDropdown();
+                            }
+                            break;
+                        case "amily2_test":
+                            await testReplyChecker();
+                            break;
+                        case "amily2_fix_now":
+                            await fixCommand();
+                            break;
+                    }
+                } catch (error) {
+                    console.error(`[Amily2-工部] 操作按钮 ${this.id} 执行失败:`, error);
+                    toastr.error(`操作失败: ${error.message}`, "Amily2号");
+                } finally {
+                    button.prop("disabled", false).html(originalHtml);
+                }
+            },
+        );
+
+    container
+        .off("click.amily2.expand_editor")
+        .on("click.amily2.expand_editor", "#amily2_expand_editor", function (event) {
+            if (!pluginAuthStatus.authorized) return;
+            event.stopPropagation();
+            const selectedKey = $("#amily2_prompt_selector").val();
+            const currentContent = $("#amily2_unified_editor").val();
+            const dialogHtml = `
+                <dialog class="popup wide_dialogue_popup large_dialogue_popup">
+                  <div class="popup-body">
+                    <h4 style="margin-top:0; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">正在编辑: ${selectedKey}</h4>
+                    <div class="popup-content" style="height: 70vh;"><div class="height100p wide100p flex-container"><textarea id="amily2_dialog_editor" class="height100p wide100p maximized_textarea text_pole"></textarea></div></div>
+                    <div class="popup-controls"><div class="popup-button-ok menu_button menu_button_primary interactable">保存并关闭</div><div class="popup-button-cancel menu_button interactable" style="margin-left: 10px;">取消</div></div>
+                  </div>
+                </dialog>`;
+            const dialogElement = $(dialogHtml).appendTo('body');
+            const dialogTextarea = dialogElement.find('#amily2_dialog_editor');
+            dialogTextarea.val(currentContent);
+            const closeDialog = () => { dialogElement[0].close(); dialogElement.remove(); };
+            dialogElement.find('.popup-button-ok').on('click', () => {
+                const newContent = dialogTextarea.val();
+                $("#amily2_unified_editor").val(newContent);
+                updateAndSaveSetting(selectedKey, newContent);
+                toastr.success(`谕令 [${selectedKey}] 已镌刻！`, "Amily2号");
+                closeDialog();
+            });
+            dialogElement.find('.popup-button-cancel').on('click', closeDialog);
+            dialogElement[0].showModal();
+        });
+
+    container
+        .off("click.amily2.tutorial")
+        .on("click.amily2.tutorial", "#amily2_open_tutorial, #amily2_open_neige_tutorial", function() {
+            if (!pluginAuthStatus.authorized) return;
+
+            const tutorials = {
+                "amily2_open_tutorial": {
+                    title: "主殿使用教程",
+                    url: "scripts/extensions/third-party/ST-Amily2-Chat-Optimisation/ZhuDian.md"
+                },
+                "amily2_open_neige_tutorial": {
+                    title: "内阁使用教程",
+                    url: "scripts/extensions/third-party/ST-Amily2-Chat-Optimisation/NeiGe.md"
+                }
+            };
+            
+            const tutorial = tutorials[this.id];
+            if (tutorial) {
+                showContentModal(tutorial.title, tutorial.url);
+            }
+        });
+
+    container
+        .off("click.amily2.update")
+        .on("click.amily2.update", "#amily2_update_button", function() {
+            $("#amily2_update_indicator").hide();
+            const updateInfo = getLatestUpdateInfo();
+            if (updateInfo && updateInfo.changelog) {
+                const formattedChangelog = messageFormatting(updateInfo.changelog);
+
+
+                const dialogHtml = `
+                <dialog class="popup wide_dialogue_popup">
+                  <div class="popup-body">
+                    <h3 style="margin-top:0; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;"><i class="fas fa-bell" style="color: #ff9800;"></i> 帝国最新情报</h3>
+                    <div class="popup-content" style="height: 60vh; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 5px;">
+                        <div class="mes_text">${formattedChangelog}</div>
+                    </div>
+                    <div class="popup-controls"><div class="popup-button-ok menu_button menu_button_primary interactable">朕已阅</div></div>
+                  </dialog>`;
+                const dialogElement = $(dialogHtml).appendTo('body');
+                const closeDialog = () => { dialogElement[0].close(); dialogElement.remove(); };
+                dialogElement.find('.popup-button-ok').on('click', closeDialog);
+                dialogElement[0].showModal();
+            } else {
+                toastr.info("未能获取到云端情报，请稍后再试。", "情报部回报");
+            }
+        });
+
+    container
+        .off("click.amily2.update_new")
+        .on("click.amily2.update_new", "#amily2_update_button_new", function() {
+            $('span[data-i18n="Manage extensions"]').first().click();
+        });
+
+    container
+        .off("click.amily2.manual_command")
+        .on(
+            "click.amily2.manual_command",
+            "#amily2_unhide_all_button, #amily2_manual_hide_confirm, #amily2_manual_unhide_confirm",
+            async function () {
+                if (!pluginAuthStatus.authorized) return;
+
+                const buttonId = this.id;
+                let commandType = '';
+                let params = {};
+
+                switch (buttonId) {
+                    case 'amily2_unhide_all_button':
+                        commandType = 'unhide_all';
+                        break;
+
+                    case 'amily2_manual_hide_confirm':
+                        commandType = 'manual_hide';
+                        params = {
+                            from: $('#amily2_manual_hide_from').val(),
+                            to: $('#amily2_manual_hide_to').val()
+                        };
+                        break;
+
+                    case 'amily2_manual_unhide_confirm':
+                        commandType = 'manual_unhide';
+                        params = {
+                            from: $('#amily2_manual_unhide_from').val(),
+                            to: $('#amily2_manual_unhide_to').val()
+                        };
+                        break;
+                }
+
+                if (commandType) {
+                    await executeManualCommand(commandType, params);
+                }
+            }
+        );	
+		
+container
+    .off("click.amily2.chamber_nav")
+    .on("click.amily2.chamber_nav",
+         "#amily2_open_plot_optimization, #amily2_open_additional_features, #amily2_open_rag_palace, #amily2_open_memorisation_forms, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan, #amily2_back_to_main_from_forms, #amily2_back_to_main_from_optimization", function () {
+        if (!pluginAuthStatus.authorized) return;
+
+        const mainPanel = container.find('.plugin-features');
+        const additionalPanel = container.find('#amily2_additional_features_panel');
+        const hanlinyuanPanel = container.find('#amily2_hanlinyuan_panel');
+        const memorisationFormsPanel = container.find('#amily2_memorisation_forms_panel');
+        const plotOptimizationPanel = container.find('#amily2_plot_optimization_panel');
+
+        mainPanel.hide();
+        additionalPanel.hide();
+        hanlinyuanPanel.hide();
+        memorisationFormsPanel.hide();
+        plotOptimizationPanel.hide();
+
+        switch (this.id) {
+            case 'amily2_open_plot_optimization':
+                plotOptimizationPanel.show();
+                break;
+            case 'amily2_open_additional_features':
+                additionalPanel.show();
+                break;
+            case 'amily2_open_rag_palace':
+                hanlinyuanPanel.show();
+                break;
+            case 'amily2_open_memorisation_forms':
+                memorisationFormsPanel.show();
+                break;
+            case 'amily2_back_to_main_settings':
+            case 'amily2_back_to_main_from_hanlinyuan':
+            case 'amily2_back_to_main_from_forms':
+            case 'amily2_back_to_main_from_optimization':
+                mainPanel.show();
+                break;
+        }
+    });
+
+    container
+        .off("change.amily2.checkbox")
+        .on(
+            "change.amily2.checkbox",
+            'input[type="checkbox"][id^="amily2_"]',
+            function (event) {
+                if (!pluginAuthStatus.authorized) return;
+
+                const elementId = this.id;
+                const mainToggle = $(this);
+                const key = snakeToCamel(elementId.replace("amily2_", ""));
+
+                updateAndSaveSetting(key, mainToggle.prop('checked'));
+
+                if (elementId === 'amily2_optimization_exclusion_enabled' && mainToggle.prop('checked')) {
+                    const settings = extension_settings[extensionName];
+                    const rules = settings.optimizationExclusionRules || [];
+
+                    const createRuleRowHtml = (rule = { start: '', end: '' }, index) => `
+                        <div class="opt-exclusion-rule-row" data-index="${index}">
+                            <input type="text" class="text_pole" value="${rule.start}" placeholder="开始字符, 如 <!--">
+                            <span>到</span>
+                            <input type="text" class="text_pole" value="${rule.end}" placeholder="结束字符, 如 -->">
+                            <button class="delete-rule-btn menu_button danger_button" title="删除此规则">&times;</button>
+                        </div>`;
+
+                    const rulesHtml = rules.map(createRuleRowHtml).join('');
+                    const modalHtml = `
+                        <div id="optimization-exclusion-rules-container">
+                             <p class="notes">在这里定义需要从优化内容中排除的文本片段。例如，排除HTML注释，可以设置开始字符为 \`<!--\`，结束字符为 \`-->\`。</p>
+                             <div id="optimization-rules-list" style="max-height: 45vh; overflow-y: auto; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 5px; margin-bottom:10px;">${rulesHtml}</div>
+                             <div style="text-align: center; margin-top: 10px;">
+                                <button id="optimization-add-rule-btn" class="menu_button amily2-add-rule-btn"><i class="fas fa-plus"></i> 添加新规则</button>
+                             </div>
+                        </div>`;
+
+                    showHtmlModal('编辑内容排除规则', modalHtml, {
+                        okText: '确认',
+                        cancelText: '取消',
+                        onOk: (dialog) => {
+                            const newRules = [];
+                            dialog.find('.opt-exclusion-rule-row').each(function() {
+                                const start = $(this).find('input').eq(0).val().trim();
+                                const end = $(this).find('input').eq(1).val().trim();
+                                if (start && end) newRules.push({ start, end });
+                            });
+                            updateAndSaveSetting('optimizationExclusionRules', newRules);
+                            toastr.success('排除规则已更新。', 'Amily2号');
+                        },
+                        onCancel: () => {
+                        }
+                    });
+                    
+                    const modalContent = $('#optimization-exclusion-rules-container');
+                    const rulesList = modalContent.find('#optimization-rules-list');
+
+                    modalContent.find('#optimization-add-rule-btn').on('click', () => {
+                        const newIndex = rulesList.children().length;
+                        rulesList.append(createRuleRowHtml(undefined, newIndex));
+                    });
+
+                    rulesList.on('click', '.delete-rule-btn', function() {
+                        $(this).closest('.opt-exclusion-rule-row').remove();
+                    });
+                }
+            },
+        );
+
+    container
+        .off("change.amily2.radio")
+        .on(
+            "change.amily2.radio",
+            'input[type="radio"][name^="amily2_"]:not([name="amily2_icon_location"])', 
+            function () {
+                if (!pluginAuthStatus.authorized) return;
+                const key = snakeToCamel(this.name.replace("amily2_", ""));
+                const value = $(`input[name="${this.name}"]:checked`).val();
+                updateAndSaveSetting(key, value);
+            },
+        );
+
+    container
+        .off("change.amily2.api_provider")
+        .on("change.amily2.api_provider", "#amily2_api_provider", function () {
+            if (!pluginAuthStatus.authorized) return;
+            
+            const provider = $(this).val();
+            console.log(`[Amily2号-UI] API提供商切换为: ${provider}`);
+
+            updateAndSaveSetting('apiProvider', provider);
+
+            const $urlWrapper = $('#amily2_api_url_wrapper');
+            const $keyWrapper = $('#amily2_api_key_wrapper');
+            const $presetWrapper = $('#amily2_preset_wrapper');
+
+            $urlWrapper.hide();
+            $keyWrapper.hide();
+            $presetWrapper.hide();
+
+            const $modelWrapper = $('#amily2_model_selector');
+            
+            switch(provider) {
+                case 'openai':
+                    $urlWrapper.show();
+                    $keyWrapper.show();
+                    $modelWrapper.show();
+                    $('#amily2_api_url').attr('placeholder', 'https://api.openai.com/v1').attr('type', 'text');
+                    $('#amily2_api_key').attr('placeholder', 'sk-...');
+                    break;
+                    
+                case 'google':
+
+                    $urlWrapper.hide();
+                    $keyWrapper.show();
+                    $modelWrapper.show();
+                    $('#amily2_api_key').attr('placeholder', 'Google API Key');
+                    break;
+                    
+                case 'sillytavern_backend':
+                    $urlWrapper.show();
+                    $modelWrapper.show();
+                    $('#amily2_api_url').attr('placeholder', 'http://localhost:5000/v1').attr('type', 'text');
+                    break;
+                    
+                case 'sillytavern_preset':
+                    $presetWrapper.show();
+                    $modelWrapper.hide();
+                    loadSillyTavernPresets();
+                    break;
+            }
+
+            $('#amily2_model').empty().append('<option value="">请刷新模型列表</option>');
+        });
+
+    container
+        .off("change.amily2.text")
+        .on("change.amily2.text", "#amily2_api_url, #amily2_api_key, #amily2_optimization_target_tag", function () {
+            if (!pluginAuthStatus.authorized) return;
+            const key = snakeToCamel(this.id.replace("amily2_", ""));
+            updateAndSaveSetting(key, this.value);
+            toastr.success(`配置 [${key}] 已自动保存!`, "Amily2号");
+        });
+
+    container
+        .off("change.amily2.select")
+        .on("change.amily2.select", "select#amily2_model, select#amily2_preset_selector", function () {
+            if (!pluginAuthStatus.authorized) return;
+            const key = snakeToCamel(this.id.replace("amily2_", ""));
+            let valueToSave = this.value;
+
+            if (this.id === 'amily2_preset_selector') {
+                updateAndSaveSetting('tavernProfile', valueToSave);
+            } else {
+                updateAndSaveSetting(key, valueToSave);
+            }
+
+            if (this.id === 'amily2_model') {
+                populateModelDropdown();
+            }
+        });
+
+    container
+        .off("input.amily2.range")
+        .on(
+            "input.amily2.range",
+            'input[type="range"][id^="amily2_"]',
+            function () {
+                if (!pluginAuthStatus.authorized) return;
+                const key = snakeToCamel(this.id.replace("amily2_", ""));
+                const value = this.id.includes("temperature")
+                    ? parseFloat(this.value)
+                    : parseInt(this.value, 10);
+                $(`#${this.id}_value`).text(value);
+                updateAndSaveSetting(key, value);
+            },
+        );
+
+    const promptMap = {
+        mainPrompt: "#amily2_main_prompt",
+        systemPrompt: "#amily2_system_prompt",
+        outputFormatPrompt: "#amily2_output_format_prompt",
+    };
+    const selector = "#amily2_prompt_selector";
+    const editor = "#amily2_unified_editor";
+    const unifiedSaveButton = "#amily2_unified_save_button";
+
+    function updateEditorView() {
+        if (!$(selector).length) return;
+        const selectedKey = $(selector).val();
+        if (!selectedKey) return;
+        const content = extension_settings[extensionName][selectedKey] || "";
+        $(editor).val(content);
+    }
+
+    container
+        .off("change.amily2.prompt_selector")
+        .on("change.amily2.prompt_selector", selector, updateEditorView);
+
+    container
+        .off("click.amily2.unified_save")
+        .on("click.amily2.unified_save", unifiedSaveButton, function () {
+            const selectedKey = $(selector).val();
+            if (!selectedKey) return;
+            const newContent = $(editor).val();
+            updateAndSaveSetting(selectedKey, newContent);
+            toastr.success(`谕令 [${selectedKey}] 已镌刻!`, "Amily2号");
+        });
+
+    container
+        .off("click.amily2.unified_restore")
+        .on("click.amily2.unified_restore", "#amily2_unified_restore_button", function () {
+            const selectedKey = $(selector).val();
+            if (!selectedKey) return;
+            const defaultValue = defaultSettings[selectedKey];
+            $(editor).val(defaultValue);
+            updateAndSaveSetting(selectedKey, defaultValue);
+            toastr.success(`谕令 [${selectedKey}] 已成功恢复为帝国初始蓝图。`, "Amily2号");
+        });
+
+    container
+        .off("change.amily2.lore_settings")
+        .on("change.amily2.lore_settings",
+            'select[id^="amily2_lore_"], input#amily2_lore_depth_input',
+            function () {
+                if (!pluginAuthStatus.authorized) return;
+				
+
+
+                let key = snakeToCamel(this.id.replace("amily2_", ""));
+                if (key === 'loreDepthInput') {
+                    key = 'loreDepth';
+                }
+
+                const value = (this.type === 'number') ? parseInt(this.value, 10) : this.value;
+                updateAndSaveSetting(key, value);
+
+
+                if (this.id === 'amily2_lore_insertion_position') {
+                    const depthContainer = $('#amily2_lore_depth_container');
+
+                    if (this.value === 'at_depth') {
+                        depthContainer.slideDown(200);
+                    } else {
+                        depthContainer.slideUp(200);
+                    }
+                }
+            }
+        );
+
+    container
+        .off("click.amily2.lore_save")
+        .on("click.amily2.lore_save", '#amily2_save_lore_settings', function () {
+            if (!pluginAuthStatus.authorized) return;
+
+            const button = $(this);
+            const statusElement = $('#amily2_lore_save_status');
+
+            button.prop('disabled', true).html('<i class="fas fa-check"></i> 已确认');
+            statusElement.text('圣意已在您每次更改时自动镌刻。').stop().fadeIn();
+
+            setTimeout(() => {
+                button.prop('disabled', false).html('<i class="fas fa-save"></i> 确认敕令');
+                statusElement.fadeOut();
+            }, 2500);
+        });
+
+    setTimeout(updateEditorView, 100);
+	    updateModelInputView();
+
+    container.data("events-bound", true);
+
+
+}
+
+export function opt_saveAllSettings() {
+    const panel = $('#amily2_plot_optimization_panel');
+    if (panel.length === 0) return;
+
+    console.log(`[${extensionName}] 手动触发所有剧情优化设置的保存...`);
+    panel.find('input[type="checkbox"], input[type="radio"], input[type="text"], input[type="password"], textarea, select').trigger('change.amily2_opt');
+
+    panel.find('input[type="range"]').trigger('change.amily2_opt');
+
+    opt_saveEnabledEntries();
+    
+    toastr.info('剧情优化设置已自动保存。');
+}
+
+
+function opt_toCamelCase(str) {
+    return str.replace(/[-_]([a-z])/g, (g) => g[1].toUpperCase());
+}
+
+function opt_updateApiUrlVisibility(panel, apiMode) {
+    const customApiSettings = panel.find('#amily2_opt_custom_api_settings_block');
+    const tavernProfileSettings = panel.find('#amily2_opt_tavern_api_profile_block');
+    const apiUrlInput = panel.find('#amily2_opt_api_url');
+
+    customApiSettings.hide();
+    tavernProfileSettings.hide();
+
+    if (apiMode === 'tavern') {
+        tavernProfileSettings.show();
+    } else {
+        customApiSettings.show();
+        if (apiMode === 'google') {
+            panel.find('#amily2_opt_api_url_block').hide();
+            const googleUrl = 'https://generativelanguage.googleapis.com';
+            if (apiUrlInput.val() !== googleUrl) {
+                apiUrlInput.val(googleUrl).attr('type', 'text').trigger('change');
+            }
+        } else {
+            panel.find('#amily2_opt_api_url_block').show();
+        }
+    }
+}
+
+function opt_updateWorldbookSourceVisibility(panel, source) {
+    const manualSelectionWrapper = panel.find('#amily2_opt_worldbook_select_wrapper');
+    if (source === 'manual') {
+        manualSelectionWrapper.show();
+        const selectBox = manualSelectionWrapper.find('#amily2_opt_selected_worldbooks');
+        selectBox.css({
+            'height': 'auto',
+            'background-color': 'var(--bg1)',
+            'appearance': 'none',
+            '-webkit-appearance': 'none'
+        });
+    } else {
+        manualSelectionWrapper.hide();
+    }
+}
+
+async function opt_loadTavernApiProfiles(panel) {
+    const select = panel.find('#amily2_opt_tavern_api_profile_select');
+    const apiSettings = opt_getMergedSettings();
+    const currentProfileId = apiSettings.plotOpt_tavernProfile;
+
+    const currentValue = select.val();
+    select.empty().append(new Option('-- 请选择一个酒馆预设 --', ''));
+
+    try {
+        const tavernProfiles = getContext().extensionSettings?.connectionManager?.profiles || [];
+        if (!tavernProfiles || tavernProfiles.length === 0) {
+            select.append($('<option>', { value: '', text: '未找到酒馆预设', disabled: true }));
+            return;
+        }
+
+        let foundCurrentProfile = false;
+        tavernProfiles.forEach(profile => {
+            if (profile.api && profile.preset) {
+                const option = $('<option>', {
+                    value: profile.id,
+                    text: profile.name || profile.id,
+                    selected: profile.id === currentProfileId
+                });
+                select.append(option);
+                if (profile.id === currentProfileId) {
+                    foundCurrentProfile = true;
+                }
+            }
+        });
+
+        if (currentProfileId && !foundCurrentProfile) {
+            toastr.warning(`之前选择的酒馆预设 "${currentProfileId}" 已不存在，请重新选择。`);
+            opt_saveSetting('tavernProfile', '');
+        } else if (foundCurrentProfile) {
+             select.val(currentProfileId);
+        }
+
+    } catch (error) {
+        console.error(`[${extensionName}] 加载酒馆API预设失败:`, error);
+        toastr.error('无法加载酒馆API预设列表，请查看控制台。');
+    }
+}
+
+
+const opt_characterSpecificSettings = [
+    'plotOpt_worldbookSource',
+    'plotOpt_selectedWorldbooks',
+    'plotOpt_enabledWorldbookEntries'
+];
+
+
+async function opt_saveSetting(key, value) {
+    if (opt_characterSpecificSettings.includes(key)) {
+        const character = characters[this_chid];
+        if (!character) return;
+
+        if (!character.data.extensions) character.data.extensions = {};
+        if (!character.data.extensions[extensionName]) character.data.extensions[extensionName] = {};
+        
+        character.data.extensions[extensionName][key] = value;
+        
+        try {
+            const response = await fetch('/api/characters/merge-attributes', {
+                method: 'POST',
+                headers: getRequestHeaders(),
+                body: JSON.stringify({
+                    avatar: character.avatar,
+                    data: { extensions: { [extensionName]: character.data.extensions[extensionName] } }
+                })
+            });
+
+            if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
+            console.log(`[${extensionName}] 角色卡设置已更新: ${key} ->`, value);
+        } catch (error) {
+            console.error(`[${extensionName}] 保存角色数据失败:`, error);
+            toastr.error('无法保存角色卡设置，请检查控制台。');
+        }
+    } else {
+        if (!extension_settings[extensionName]) {
+            extension_settings[extensionName] = {};
+        }
+        extension_settings[extensionName][key] = value;
+        saveSettingsDebounced();
+    }
+}
+
+
+function opt_getMergedSettings() {
+    const character = characters[this_chid];
+    const globalSettings = extension_settings[extensionName] || defaultSettings;
+    const characterSettings = character?.data?.extensions?.[extensionName] || {};
+    
+    return { ...globalSettings, ...characterSettings };
+}
+
+
+
+function opt_bindSlider(panel, sliderId, displayId) {
+    const slider = panel.find(sliderId);
+    const display = panel.find(displayId);
+
+    display.text(slider.val());
+
+    slider.on('input', function() {
+        display.text($(this).val());
+    });
+}
+
+async function opt_loadWorldbooks(panel) {
+    const container = panel.find('#amily2_opt_worldbook_checkbox_list');
+    const settings = opt_getMergedSettings();
+    const currentSelection = settings.plotOpt_selectedWorldbooks || [];
+    container.empty();
+
+    try {
+        const lorebooks = await safeLorebooks();
+        if (!lorebooks || lorebooks.length === 0) {
+            container.html('<p class="notes">未找到世界书。</p>');
+            return;
+        }
+
+        lorebooks.forEach(name => {
+            const bookId = `amily2-opt-wb-check-${name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+            const isChecked = currentSelection.includes(name);
+            const item = $(`
+                <div class="amily2_opt_worldbook_entry_item">
+                    <input type="checkbox" id="${bookId}" value="${name}" ${isChecked ? 'checked' : ''}>
+                    <label for="${bookId}">${name}</label>
+                </div>
+            `);
+            container.append(item);
+        });
+    } catch (error) {
+        console.error(`[${extensionName}] 加载世界书失败:`, error);
+        container.html('<p class="notes" style="color:red;">加载世界书列表失败。</p>');
+        toastr.error('无法加载世界书列表，请查看控制台。');
+    }
+}
+
+async function opt_loadWorldbookEntries(panel) {
+    const container = panel.find('#amily2_opt_worldbook_entry_list_container');
+    const countDisplay = panel.find('#amily2_opt_worldbook_entry_count');
+    container.html('<p>加载条目中...</p>');
+    countDisplay.text('');
+
+    const settings = opt_getMergedSettings(); 
+    const currentSource = settings.plotOpt_worldbookSource || 'character';
+    let bookNames = [];
+
+    if (currentSource === 'manual') {
+        bookNames = settings.plotOpt_selectedWorldbooks || [];
+    } else {
+
+        if (this_chid === -1 || !characters[this_chid]) {
+            container.html('<p class="notes">未选择角色。</p>');
+            countDisplay.text('');
+            return;
+        }
+        try {
+            const charLorebooks = await safeCharLorebooks({ type: 'all' });
+            if (charLorebooks.primary) bookNames.push(charLorebooks.primary);
+            if (charLorebooks.additional?.length) bookNames.push(...charLorebooks.additional);
+        } catch (error) {
+
+            console.error(`[${extensionName}] 获取角色世界书失败:`, error);
+            toastr.error('获取角色世界书失败。');
+            container.html('<p class="notes" style="color:red;">获取角色世界书失败。</p>');
+            return;
+        }
+    }
+
+    const selectedBooks = bookNames;
+    let enabledEntries = settings.plotOpt_enabledWorldbookEntries || {};
+    let totalEntries = 0;
+    let visibleEntries = 0;
+
+    if (selectedBooks.length === 0) {
+        container.html('<p class="notes">请选择一个或多个世界书以查看其条目。</p>');
+        return;
+    }
+
+    try {
+        const allEntries = [];
+        for (const bookName of selectedBooks) {
+            const entries = await safeLorebookEntries(bookName);
+            entries.forEach(entry => {
+                allEntries.push({ ...entry, bookName });
+            });
+        }
+
+        container.empty();
+        totalEntries = allEntries.length;
+
+        if (totalEntries === 0) {
+            container.html('<p class="notes">所选世界书没有条目。</p>');
+            countDisplay.text('0 条目.');
+            return;
+        }
+
+        allEntries.sort((a, b) => (a.comment || '').localeCompare(b.comment || '')).forEach(entry => {
+            const entryId = `amily2-opt-entry-${entry.bookName.replace(/[^a-zA-Z0-9]/g, '-')}-${entry.uid}`;
+            const isEnabled = enabledEntries[entry.bookName]?.includes(entry.uid) ?? true;
+
+            const item = $(`
+                <div class="amily2_opt_worldbook_entry_item">
+                    <input type="checkbox" id="${entryId}" data-book="${entry.bookName}" data-uid="${entry.uid}" ${isEnabled ? 'checked' : ''}>
+                    <label for="${entryId}" title="世界书: ${entry.bookName}\nUID: ${entry.uid}">${entry.comment || '无标题条目'}</label>
+                </div>
+            `);
+            container.append(item);
+        });
+        
+        visibleEntries = container.children().length;
+        countDisplay.text(`显示 ${visibleEntries} / ${totalEntries} 条目.`);
+
+    } catch (error) {
+        console.error(`[${extensionName}] 加载世界书条目失败:`, error);
+        container.html('<p class="notes" style="color:red;">加载条目失败。</p>');
+    }
+}
+
+
+function opt_saveEnabledEntries() {
+    const panel = $('#amily2_plot_optimization_panel');
+    let enabledEntries = {};
+
+    panel.find('#amily2_opt_worldbook_entry_list_container input[type="checkbox"]').each(function() {
+        const bookName = $(this).data('book');
+        const uid = parseInt($(this).data('uid'));
+
+        if (!enabledEntries[bookName]) {
+            enabledEntries[bookName] = [];
+        }
+
+        if ($(this).is(':checked')) {
+            enabledEntries[bookName].push(uid);
+        }
+    });
+    
+    const settings = opt_getMergedSettings();
+    
+    if (settings.plotOpt_worldbookSource === 'manual') {
+        const selectedBooks = settings.plotOpt_selectedWorldbooks || [];
+        Object.keys(enabledEntries).forEach(bookName => {
+            if (!selectedBooks.includes(bookName)) {
+                delete enabledEntries[bookName];
+            }
+        });
+    }
+
+    opt_saveSetting('plotOpt_enabledWorldbookEntries', enabledEntries);
+}
+
+
+function opt_loadPromptPresets(panel) {
+    const presets = extension_settings[extensionName]?.promptPresets || [];
+    const select = panel.find('#amily2_opt_prompt_preset_select');
+
+    const currentValue = select.val();
+    select.empty().append(new Option('-- 选择一个预设 --', ''));
+
+    presets.forEach(preset => {
+        select.append(new Option(preset.name, preset.name));
+    });
+
+    if (currentValue && presets.some(p => p.name === currentValue)) {
+        select.val(currentValue);
+    }
+}
+
+
+function opt_saveCurrentPromptsAsPreset(panel) {
+    const presetName = prompt("请输入预设名称：");
+    if (!presetName) return;
+
+    const presets = extension_settings[extensionName]?.promptPresets || [];
+    const existingPresetIndex = presets.findIndex(p => p.name === presetName);
+
+    const newPresetData = {
+        name: presetName,
+        mainPrompt: panel.find('#amily2_opt_main_prompt').val(),
+        systemPrompt: panel.find('#amily2_opt_system_prompt').val(),
+        finalSystemDirective: panel.find('#amily2_opt_final_system_directive').val(),
+        rateMain: parseFloat(panel.find('#amily2_opt_rate_main').val()),
+        ratePersonal: parseFloat(panel.find('#amily2_opt_rate_personal').val()),
+        rateErotic: parseFloat(panel.find('#amily2_opt_rate_erotic').val()),
+        rateCuckold: parseFloat(panel.find('#amily2_opt_rate_cuckold').val())
+    };
+
+    if (existingPresetIndex !== -1) {
+        if (confirm(`名为 "${presetName}" 的预设已存在。是否要覆盖它？`)) {
+            presets[existingPresetIndex] = newPresetData;
+            toastr.success(`预设 "${presetName}" 已被覆盖。`);
+        } else {
+            toastr.info('保存操作已取消。');
+            return;
+        }
+    } else {
+        presets.push(newPresetData);
+        toastr.success(`预设 "${presetName}" 已保存。`);
+    }
+    opt_saveSetting('promptPresets', presets);
+
+    opt_loadPromptPresets(panel);
+    setTimeout(() => {
+        panel.find('#amily2_opt_prompt_preset_select').val(presetName).trigger('change');
+    }, 0);
+}
+
+function opt_deleteSelectedPreset(panel) {
+    const select = panel.find('#amily2_opt_prompt_preset_select');
+    const selectedName = select.val();
+
+    if (!selectedName) {
+        toastr.warning('没有选择任何预设。');
+        return;
+    }
+
+    if (!confirm(`确定要删除预设 "${selectedName}" 吗？`)) {
+        return;
+    }
+
+    const presets = extension_settings[extensionName]?.promptPresets || [];
+    const indexToDelete = presets.findIndex(p => p.name === selectedName);
+
+    if (indexToDelete > -1) {
+        presets.splice(indexToDelete, 1);
+        opt_saveSetting('promptPresets', presets);
+        toastr.success(`预设 "${selectedName}" 已被删除。`);
+    } else {
+        toastr.error('找不到要删除的预设，操作可能已过期。');
+    }
+
+    opt_loadPromptPresets(panel);
+    select.trigger('change');
+}
+
+function opt_exportPromptPresets() {
+    const select = $('#amily2_opt_prompt_preset_select');
+    const selectedName = select.val();
+
+    if (!selectedName) {
+        toastr.info('请先从下拉菜单中选择一个要导出的预设。');
+        return;
+    }
+
+    const presets = extension_settings[extensionName]?.promptPresets || [];
+    const selectedPreset = presets.find(p => p.name === selectedName);
+
+    if (!selectedPreset) {
+        toastr.error('找不到选中的预设，请刷新页面后重试。');
+        return;
+    }
+
+    const dataToExport = [selectedPreset];
+    const dataStr = JSON.stringify(dataToExport, null, 2);
+    const blob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `amily2_opt_preset_${selectedName.replace(/[^a-z0-9]/gi, '_')}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toastr.success(`预设 "${selectedName}" 已成功导出。`);
+}
+
+
+function opt_importPromptPresets(file, panel) {
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const importedPresets = JSON.parse(e.target.result);
+
+            if (!Array.isArray(importedPresets)) {
+                throw new Error('JSON文件格式不正确，根节点必须是一个数组。');
+            }
+
+            let currentPresets = extension_settings[extensionName]?.promptPresets || [];
+            let importedCount = 0;
+            let overwrittenCount = 0;
+
+            importedPresets.forEach(preset => {
+                if (preset && typeof preset.name === 'string' && preset.name.length > 0) {
+                    const presetData = {
+                        name: preset.name,
+                        mainPrompt: preset.mainPrompt || '',
+                        systemPrompt: preset.systemPrompt || '',
+                        finalSystemDirective: preset.finalSystemDirective || '',
+                        rateMain: preset.rateMain ?? 1.0,
+                        ratePersonal: preset.ratePersonal ?? 1.0,
+                        rateErotic: preset.rateErotic ?? 1.0,
+                        rateCuckold: preset.rateCuckold ?? 1.0
+                    };
+
+                    const existingIndex = currentPresets.findIndex(p => p.name === preset.name);
+
+                    if (existingIndex !== -1) {
+                        currentPresets[existingIndex] = presetData;
+                        overwrittenCount++;
+                    } else {
+                        currentPresets.push(presetData);
+                        importedCount++;
+                    }
+                }
+            });
+
+            if (importedCount > 0 || overwrittenCount > 0) {
+                const selectedPresetBeforeImport = panel.find('#amily2_opt_prompt_preset_select').val();
+                
+                opt_saveSetting('promptPresets', currentPresets);
+                opt_loadPromptPresets(panel);
+                panel.find('#amily2_opt_prompt_preset_select').val(selectedPresetBeforeImport);
+                panel.find('#amily2_opt_prompt_preset_select').trigger('change');
+
+                let messages = [];
+                if (importedCount > 0) messages.push(`成功导入 ${importedCount} 个新预设。`);
+                if (overwrittenCount > 0) messages.push(`成功覆盖 ${overwrittenCount} 个同名预设。`);
+                toastr.success(messages.join(' '));
+            } else {
+                toastr.warning('未找到可导入的有效预设。');
+            }
+
+        } catch (error) {
+            console.error(`[${extensionName}] 导入预设失败:`, error);
+            toastr.error(`导入失败: ${error.message}`, '错误');
+        } finally {
+            panel.find('#amily2_opt_preset_file_input').val('');
+        }
+    };
+    reader.readAsText(file);
+}
+
+function opt_loadSettings(panel) {
+    const settings = opt_getMergedSettings();
+
+    panel.find('#amily2_opt_enabled').prop('checked', settings.plotOpt_enabled);
+    panel.find('#amily2_opt_table_enabled').prop('checked', settings.plotOpt_tableEnabled);
+    panel.find(`input[name="amily2_opt_api_mode"][value="${settings.plotOpt_apiMode}"]`).prop('checked', true);
+    panel.find('#amily2_opt_tavern_api_profile_select').val(settings.plotOpt_tavernProfile);
+    panel.find(`input[name="amily2_opt_worldbook_source"][value="${settings.plotOpt_worldbookSource || 'character'}"]`).prop('checked', true);
+    panel.find('#amily2_opt_worldbook_enabled').prop('checked', settings.plotOpt_worldbookEnabled);
+    panel.find('#amily2_opt_api_url').val(settings.plotOpt_apiUrl);
+    panel.find('#amily2_opt_api_key').val(settings.plotOpt_apiKey);
+    
+    const modelInput = panel.find('#amily2_opt_model');
+    const modelSelect = panel.find('#amily2_opt_model_select');
+    
+    modelInput.val(settings.plotOpt_model);
+    modelSelect.empty();
+    if (settings.plotOpt_model) {
+        modelSelect.append(new Option(settings.plotOpt_model, settings.plotOpt_model, true, true));
+    } else {
+        modelSelect.append(new Option('<-请先获取模型', '', true, true));
+    }
+
+    panel.find('#amily2_opt_max_tokens').val(settings.plotOpt_max_tokens);
+    panel.find('#amily2_opt_temperature').val(settings.plotOpt_temperature);
+    panel.find('#amily2_opt_top_p').val(settings.plotOpt_top_p);
+    panel.find('#amily2_opt_presence_penalty').val(settings.plotOpt_presence_penalty);
+    panel.find('#amily2_opt_frequency_penalty').val(settings.plotOpt_frequency_penalty);
+    panel.find('#amily2_opt_context_turn_count').val(settings.plotOpt_contextTurnCount);
+    panel.find('#amily2_opt_worldbook_char_limit').val(settings.plotOpt_worldbookCharLimit);
+    panel.find('#amily2_opt_context_limit').val(settings.plotOpt_contextLimit);
+
+    panel.find('#amily2_opt_rate_main').val(settings.plotOpt_rateMain);
+    panel.find('#amily2_opt_rate_personal').val(settings.plotOpt_ratePersonal);
+    panel.find('#amily2_opt_rate_erotic').val(settings.plotOpt_rateErotic);
+    panel.find('#amily2_opt_rate_cuckold').val(settings.plotOpt_rateCuckold);
+
+    panel.find('#amily2_opt_main_prompt').val(settings.plotOpt_mainPrompt);
+    panel.find('#amily2_opt_system_prompt').val(settings.plotOpt_systemPrompt);
+    panel.find('#amily2_opt_final_system_directive').val(settings.plotOpt_finalSystemDirective);
+
+    opt_updateApiUrlVisibility(panel, settings.plotOpt_apiMode);
+    opt_updateWorldbookSourceVisibility(panel, settings.plotOpt_worldbookSource || 'character');
+    
+    opt_bindSlider(panel, '#amily2_opt_max_tokens', '#amily2_opt_max_tokens_value');
+    opt_bindSlider(panel, '#amily2_opt_temperature', '#amily2_opt_temperature_value');
+    opt_bindSlider(panel, '#amily2_opt_top_p', '#amily2_opt_top_p_value');
+    opt_bindSlider(panel, '#amily2_opt_presence_penalty', '#amily2_opt_presence_penalty_value');
+    opt_bindSlider(panel, '#amily2_opt_frequency_penalty', '#amily2_opt_frequency_penalty_value');
+    opt_bindSlider(panel, '#amily2_opt_context_turn_count', '#amily2_opt_context_turn_count_value');
+    opt_bindSlider(panel, '#amily2_opt_worldbook_char_limit', '#amily2_opt_worldbook_char_limit_value');
+    opt_bindSlider(panel, '#amily2_opt_context_limit', '#amily2_opt_context_limit_value');
+
+    opt_loadPromptPresets(panel);
+
+    const lastUsedPresetName = settings.plotOpt_lastUsedPresetName;
+    if (lastUsedPresetName && (settings.plotOpt_promptPresets || []).some(p => p.name === lastUsedPresetName)) {
+
+        setTimeout(() => {
+            panel.find('#amily2_opt_prompt_preset_select').val(lastUsedPresetName).trigger('change', { isAutomatic: true });
+        }, 0);
+    }
+
+    opt_loadWorldbooks(panel).then(() => {
+        opt_loadWorldbookEntries(panel);
+    });
+
+    opt_loadTavernApiProfiles(panel);
+}
+
+
+export function initializePlotOptimizationBindings() {
+    const panel = $('#amily2_plot_optimization_panel');
+    if (panel.length === 0 || panel.data('events-bound')) {
+        return;
+    }
+    
+    opt_loadSettings(panel);
+
+    eventSource.on(event_types.CHAT_CHANGED, () => {
+        console.log(`[${extensionName}] 检测到角色/聊天切换，正在刷新剧情优化设置UI...`);
+        opt_loadSettings(panel);
+    });
+
+    const handleSettingChange = function(element) {
+        const el = $(element);
+        const key_part = (element.name || element.id).replace('amily2_opt_', '');
+        const key = 'plotOpt_' + key_part.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
+        
+        let value = element.type === 'checkbox' ? element.checked : el.val();
+
+        if (key === 'plotOpt_selected_worldbooks' && !Array.isArray(value)) {
+            value = el.val() || [];
+        }
+        
+        const floatKeys = ['plotOpt_temperature', 'plotOpt_top_p', 'plotOpt_presence_penalty', 'plotOpt_frequency_penalty', 'plotOpt_rateMain', 'plotOpt_ratePersonal', 'plotOpt_rateErotic', 'plotOpt_rateCuckold'];
+        if (floatKeys.includes(key) && value !== '') {
+            value = parseFloat(value);
+        } else if (element.type === 'range' || element.type === 'number') {
+            if (value !== '') value = parseInt(value, 10);
+        }
+        
+        if (value !== '' || element.type === 'checkbox') {
+             opt_saveSetting(key, value);
+        }
+
+        if (key === 'plotOpt_api_mode') {
+            opt_updateApiUrlVisibility(panel, value);
+        }
+        
+        if (element.name === 'amily2_opt_worldbook_source') {
+            opt_updateWorldbookSourceVisibility(panel, value);
+            opt_loadWorldbookEntries(panel);
+        }
+    };
+    const allInputSelectors = [
+        'input[type="checkbox"]', 'input[type="radio"]', 'select:not(#amily2_opt_model_select)',
+        'input[type="text"]', 'input[type="password"]', 'textarea',
+        'input[type="range"]', 'input[type="number"]'
+    ].join(', ');
+
+    panel.on('input.amily2_opt change.amily2_opt', allInputSelectors, function() {
+        handleSettingChange(this);
+    });
+
+    panel.on('change.amily2_opt', '#amily2_opt_model_select', function() {
+        const selectedModel = $(this).val();
+        if (selectedModel) {
+            panel.find('#amily2_opt_model').val(selectedModel).trigger('change');
+        }
+    });
+
+
+    panel.on('click.amily2_opt', '#amily2_opt_refresh_tavern_api_profiles', () => {
+        opt_loadTavernApiProfiles(panel);
+    });
+
+    panel.on('change.amily2_opt', '#amily2_opt_tavern_api_profile_select', function() {
+        const value = $(this).val();
+        opt_saveSetting('tavernProfile', value);
+    });
+
+
+    panel.find('#amily2_opt_import_prompt_presets').on('click', () => panel.find('#amily2_opt_preset_file_input').click());
+    panel.find('#amily2_opt_export_prompt_presets').on('click', () => opt_exportPromptPresets());
+    panel.find('#amily2_opt_save_prompt_preset').on('click', () => opt_saveCurrentPromptsAsPreset(panel));
+    panel.find('#amily2_opt_delete_prompt_preset').on('click', () => opt_deleteSelectedPreset(panel));
+
+    panel.on('change.amily2_opt', '#amily2_opt_preset_file_input', function(e) {
+        opt_importPromptPresets(e.target.files[0], panel);
+    });
+
+    panel.on('change.amily2_opt', '#amily2_opt_prompt_preset_select', function(event, data) {
+        const selectedName = $(this).val();
+        const deleteBtn = panel.find('#amily2_opt_delete_prompt_preset');
+        const isAutomatic = data && data.isAutomatic; 
+
+        opt_saveSetting('lastUsedPresetName', selectedName);
+
+        if (!selectedName) {
+            deleteBtn.hide();
+            opt_saveSetting('lastUsedPresetName', '');
+            return;
+        }
+
+        const presets = extension_settings[extensionName]?.promptPresets || [];
+        const selectedPreset = presets.find(p => p.name === selectedName);
+
+        if (selectedPreset) {
+            panel.find('#amily2_opt_main_prompt').val(selectedPreset.mainPrompt).trigger('change');
+            panel.find('#amily2_opt_system_prompt').val(selectedPreset.systemPrompt).trigger('change');
+            panel.find('#amily2_opt_final_system_directive').val(selectedPreset.finalSystemDirective).trigger('change');
+
+            panel.find('#amily2_opt_rate_main').val(selectedPreset.rateMain ?? 1.0).trigger('change');
+            panel.find('#amily2_opt_rate_personal').val(selectedPreset.ratePersonal ?? 1.0).trigger('change');
+            panel.find('#amily2_opt_rate_erotic').val(selectedPreset.rateErotic ?? 1.0).trigger('change');
+            panel.find('#amily2_opt_rate_cuckold').val(selectedPreset.rateCuckold ?? 1.0).trigger('change');
+
+            if (!isAutomatic) {
+                toastr.success(`已加载预设 "${selectedName}"。`);
+            }
+            deleteBtn.show();
+        } else {
+            deleteBtn.hide();
+        }
+    });
+
+
+    panel.find('#amily2_opt_reset_main_prompt').on('click', function() {
+        panel.find('#amily2_opt_main_prompt').val(defaultSettings.plotOpt_mainPrompt).trigger('change');
+        toastr.success('主提示词已重置为默认值。');
+    });
+
+    panel.find('#amily2_opt_reset_system_prompt').on('click', function() {
+        panel.find('#amily2_opt_system_prompt').val(defaultSettings.plotOpt_systemPrompt).trigger('change');
+        toastr.success('拦截任务指令已重置为默认值。');
+    });
+
+    panel.find('#amily2_opt_reset_final_system_directive').on('click', function() {
+        panel.find('#amily2_opt_final_system_directive').val(defaultSettings.plotOpt_finalSystemDirective).trigger('change');
+        toastr.success('最终注入指令已重置为默认值。');
+    });
+
+    panel.data('events-bound', true);
+    console.log(`[${extensionName}] 剧情优化UI事件已成功绑定，自动保存已激活。`);
+
+    panel.on('click.amily2_opt', '#amily2_opt_refresh_worldbooks', () => {
+        opt_loadWorldbooks(panel).then(() => {
+            opt_loadWorldbookEntries(panel);
+        });
+    });
+
+
+    panel.on('change.amily2_opt', '#amily2_opt_worldbook_checkbox_list input[type="checkbox"]', async function() {
+        const selected = [];
+        panel.find('#amily2_opt_worldbook_checkbox_list input:checked').each(function() {
+            selected.push($(this).val());
+        });
+
+        await opt_saveSetting('plotOpt_selectedWorldbooks', selected);
+        await opt_loadWorldbookEntries(panel);
+    });
+
+    panel.on('change.amily2_opt', '#amily2_opt_worldbook_entry_list_container input[type="checkbox"]', () => {
+        opt_saveEnabledEntries();
+    });
+
+    panel.on('click.amily2_opt', '#amily2_opt_worldbook_entry_select_all', () => {
+        panel.find('#amily2_opt_worldbook_entry_list_container input[type="checkbox"]').prop('checked', true);
+        opt_saveEnabledEntries();
+    });
+
+    panel.on('click.amily2_opt', '#amily2_opt_worldbook_entry_deselect_all', () => {
+        panel.find('#amily2_opt_worldbook_entry_list_container input[type="checkbox"]').prop('checked', false);
+        opt_saveEnabledEntries();
+    });
+}
+
+$(document).on('change', 'input[name="amily2_icon_location"]', function() {
+    if (!pluginAuthStatus.authorized) return;
+    const newLocation = $(this).val();
+    extension_settings[extensionName]['iconLocation'] = newLocation;
+    saveSettingsDebounced();
+    console.log(`[Amily-禁卫军] 收到迁都指令 -> ${newLocation}。圣意已存档。`);
+    toastr.info(`正在将帝国徽记迁往 [${newLocation === 'topbar' ? '顶栏' : '扩展区'}]...`, "迁都令", { timeOut: 2000 });
+    $('#amily2_main_drawer').remove(); 
+    $(document).off("mousedown.amily2Drawer"); 
+    $('#amily2_extension_frame').remove();
+
+    setTimeout(createDrawer, 50); 
+});
