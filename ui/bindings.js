@@ -480,6 +480,7 @@ container
             
             switch(provider) {
                 case 'openai':
+                case 'openai_test':
                     $urlWrapper.show();
                     $keyWrapper.show();
                     $modelWrapper.show();
