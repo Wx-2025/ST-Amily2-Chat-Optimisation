@@ -58,19 +58,47 @@ hr.header-divider { border: none; border-top: 1px solid rgba(255,255,255,0.1); m
 }
 
 .toggle-switch {
-    position: relative; display: inline-block; width: 50px; height: 26px;
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+    flex-shrink: 0;
 }
-.toggle-switch input { opacity: 0; width: 0; height: 0; }
-.slider {
-    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-    background-color: #333; border-radius: 26px; transition: .4s;
+.toggle-switch input { 
+    opacity: 0; 
+    width: 0; 
+    height: 0; 
 }
-.slider:before {
-    position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px;
-    background-color: white; border-radius: 50%; transition: .4s;
+.toggle-switch .slider {
+    position: absolute; 
+    cursor: pointer; 
+    top: 0; 
+    left: 0; 
+    right: 0; 
+    bottom: 0;
+    background-color: #333; 
+    border-radius: 26px; 
+    transition: .4s;
+    border: 1px solid #555;
 }
-input:checked + .slider { background-color: #7e57c2; }
-input:checked + .slider:before { transform: translateX(24px); }
+.toggle-switch .slider:before {
+    position: absolute; 
+    content: ""; 
+    height: 20px; 
+    width: 20px; 
+    left: 2px;
+    bottom: 2px;
+    background-color: white; 
+    border-radius: 50%; 
+    transition: .4s;
+}
+.toggle-switch input:checked + .slider {
+    background: linear-gradient(to right, #7e57c2, #5e35b1);
+    box-shadow: 0 0 8px rgba(126, 87, 194, 0.7);
+}
+.toggle-switch input:checked + .slider:before { 
+    transform: translateX(24px); 
+}
 
 .radio-toggle-group {
     display: flex; border: 1px solid #555; border-radius: 8px; overflow: hidden;
@@ -108,38 +136,6 @@ input:checked + .slider:before { transform: translateX(24px); }
     align-items: center;
 }
 
-.prompt-editor-area {
-    display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 10px;
-}
-.prompt-editor-area textarea {
-    flex-grow: 1;
-    resize: vertical;
-}
-
-
-.editor-buttons-panel {
-    display: flex;
-    flex-direction: row;
-    gap: 10px;
-}
-.editor-buttons-panel .menu_button {
-    margin: 0;
-}
-
-.editor_maximize {
-    color: #ccc;
-    cursor: pointer;
-    padding: 4px;
-    border-radius: 4px;
-    transition: background-color 0.2s, color 0.2s;
-}
-.editor_maximize:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: white;
-}
 
 
 .amily2_lore_config_wrapper {
@@ -313,97 +309,18 @@ hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 0; }
     gap: 15px;
 }
 
-.manual-command-block {
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 8px;
-}
-
-.manual-command-block label {
-    flex-shrink: 0;
-    margin-right: 5px;
-}
-
-.manual-command-block .manual-input {
-    width: 80px;
-    padding: 6px;
-    text-align: center;
-    border: 1px solid var(--border_color);
-    background-color: var(--background_secondary);
-    color: var(--text_color);
-    border-radius: 5px;
-}
-
-.manual-command-block .manual-command-divider {
-    font-weight: bold;
-    color: var(--text_color_half);
-}
-
-
-.manual-command-block .menu_button {
-    flex-grow: 1;
-    margin: 0;
-}
-
-
-#amily2_unhide_all_button {
-    width: 42px;
-    height: 42px;
-    padding: 0;
-
-
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2px;
-
-    background: linear-gradient(135deg, #28a745, #20c997);
-    border: 1px solid #198754;
-    color: white;
-    font-weight: bold;
-    text-shadow: 0 0 2px rgba(0,0,0,0.3);
-    transition: all 0.3s ease;
-    border-radius: 8px;
-}
-
-#amily2_unhide_all_button:hover {
-    background: linear-gradient(135deg, #20c997, #28a745);
-    box-shadow: 0 0 10px rgba(40, 167, 69, 0.7);
-    transform: translateY(-2px);
-    border-color: #1a9c5c;
-}
-
-#amily2_unhide_all_button {
-    font-size: 13px;
-    line-height: 1.2;
-}
-
-#amily2_unhide_all_button i {
-    font-size: 16px;
-    margin: 0;
-}
-#amily2_unhide_all_button span {
-    font-size: 9px;
-    font-weight: normal;
-}
-/* 左侧容器：垂直布局 */
 .header-left-panel {
-    display: flex;          /* 弹性布局 */
-    flex-direction: column; /* 垂直排列 */
-    align-items: flex-start;/* 左对齐 */
-    gap: 10px;              /* 内部元素间距 */
+    display: flex;         
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;             
 }
  
-/* 翰林院入口容器 (简化无背景) */
 .rag-palace-entry-container {
-    width: auto; /* 自适应宽度 */
+    width: auto;
 }
- 
-/* 翰林院按钮 - 与内阁密室一致 */
+
 #amily2_open_rag_palace {
-    /* 完全复用内阁密室的样式 */
     background: none !important;
     border: none !important;
     box-shadow: none !important;
@@ -412,7 +329,7 @@ hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 0; }
     color: var(--SmartThemeBodyColor);
 }
  
-/* 确保所有可切换面板表现一致 */
+
 #rag_palace_panel {
     display: none;
 }
@@ -421,51 +338,4 @@ hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 0; }
     display: flex;
     flex-direction: column;
     flex-grow: 1;
-}
-
-/* === Styles for Content Exclusion Modal === */
-.opt-exclusion-rule-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
-}
-
-.opt-exclusion-rule-row input[type="text"] {
-    flex-grow: 1;
-}
-
-/* Specific styles for the delete button in the exclusion rule modal */
-.delete-rule-btn.danger_button {
-    background: linear-gradient(135deg, #e74c3c, #c0392b);
-    border: 1px solid #a93226;
-    color: white;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    line-height: 1; /* Adjusted for better vertical centering of '×' */
-    text-align: center;
-    padding: 0;
-    flex-shrink: 0;
-    transition: all 0.2s ease-in-out;
-}
-
-.delete-rule-btn.danger_button:hover {
-    background: linear-gradient(135deg, #ec7063, #e74c3c);
-    box-shadow: 0 0 8px rgba(231, 76, 60, 0.7);
-    transform: scale(1.05);
-}
-
-.amily2-add-rule-btn {
-    width: auto;
-    padding: 8px 16px;
-    background: linear-gradient(135deg, #2ecc71, #27ae60);
-    border: 1px solid #229954;
-    color: white;
-    font-weight: bold;
-}
-
-.amily2-add-rule-btn:hover {
-    background: linear-gradient(135deg, #58d68d, #2ecc71);
-    box-shadow: 0 0 10px rgba(46, 204, 113, 0.7);
 }
