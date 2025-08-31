@@ -1,1 +1,176 @@
-'use strict';function _0x3b9f(_0x3d71e2,_0x451e1a){const _0xccfe82=_0xccfe();return _0x3b9f=function(_0x3b9f7b,_0x554482){_0x3b9f7b=_0x3b9f7b-0xf0;let _0x5db7dd=_0xccfe82[_0x3b9f7b];return _0x5db7dd;},_0x3b9f(_0x3d71e2,_0x451e1a);}(function(_0x14a674,_0x6e23c0){const _0x44a741=_0x3b9f,_0xbffa5c=_0x14a674();while(!![]){try{const _0x28b375=-parseInt(_0x44a741(0x113))/0x1+-parseInt(_0x44a741(0x114))/0x2+parseInt(_0x44a741(0xfb))/0x3+parseInt(_0x44a741(0x103))/0x4*(parseInt(_0x44a741(0xf4))/0x5)+parseInt(_0x44a741(0xf7))/0x6+-parseInt(_0x44a741(0xf3))/0x7+-parseInt(_0x44a741(0x10f))/0x8;if(_0x28b375===_0x6e23c0)break;else _0xbffa5c['push'](_0xbffa5c['shift']());}catch(_0x988619){_0xbffa5c['push'](_0xbffa5c['shift']());}}}(_0xccfe,0x8807c));function _0xccfe(){const _0x39b82a=['chat','character_id','<button\x20class=\x22btn\x20btn-secondary\x20btn-sm\x22>我知道了</button>','chatId','char_','[翰林院-典籍库]\x20无法稳定获取当前角色ID。','hashes','characters','翰林院数据迁移提醒','7158496NsGxmv','success','链接已复制到剪贴板','isArray','178304RrRewC','297126vCLKqu','_chat_','getCurrentChatId','getContext','未指定','[翰林院-典籍库]\x20检查集合\x20','stopPropagation','clipboard','未命名角色','error','_global','<button\x20class=\x22btn\x20btn-info\x20btn-sm\x20mr-1\x22>复制教程链接</button>','default_collection','stringify','length','POST','https://docs.google.com/document/d/11E7HIFg59up0afv-lV0cAF5G3jzJXCkZK8cBCOMZ9zo/edit?usp=sharing','name','\x20数据时出错:','609854gKlkJc','142685HUNGpz','add','/api/vector/list','1352820XecYdH','warning','webllm','remove','2267592KfOLsR','after','characterId','undefined','replace','[翰林院-典籍库]\x20无法稳定获取当前聊天ID。','json','has','124HWQrGG','click','append'];_0xccfe=function(){return _0x39b82a;};return _0xccfe();}const migrationNoticeShown=new Set();export function getCharacterId(){const _0x15062f=_0x3b9f,_0x3fcbe4=SillyTavern[_0x15062f(0x117)]();if(!_0x3fcbe4)return null;if(_0x3fcbe4[_0x15062f(0xfd)]!==undefined&&_0x3fcbe4[_0x15062f(0xfd)]!==null)return _0x3fcbe4['characterId'];if(typeof this_chid!==_0x15062f(0xfe)&&this_chid!==null)return this_chid;if(_0x3fcbe4[_0x15062f(0x106)]&&_0x3fcbe4[_0x15062f(0x106)]['length']>0x0){const _0x587ebe=_0x3fcbe4[_0x15062f(0x106)][_0x3fcbe4['chat'][_0x15062f(0x122)]-0x1];if(_0x587ebe&&_0x587ebe[_0x15062f(0x107)]!==undefined)return _0x587ebe[_0x15062f(0x107)];}return console[_0x15062f(0x11d)](_0x15062f(0x10b)),null;}export function getChatId(){const _0x432734=_0x3b9f,_0x34a7c0=SillyTavern[_0x432734(0x117)]();if(!_0x34a7c0)return null;if(typeof _0x34a7c0[_0x432734(0x116)]==='function')return _0x34a7c0[_0x432734(0x116)]();if(_0x34a7c0['chatId'])return _0x34a7c0[_0x432734(0x109)];const _0x5d5916=getCharacterId();if(_0x5d5916!==null&&_0x34a7c0[_0x432734(0x10d)]&&_0x34a7c0['characters'][_0x5d5916])return _0x34a7c0[_0x432734(0x10d)][_0x5d5916]['chat'];return console[_0x432734(0x11d)](_0x432734(0x100)),null;}export function getCharacterName(){const _0x109d0d=_0x3b9f,_0x2d9e06=SillyTavern['getContext']();if(!_0x2d9e06)return'未指定';const _0xf1ab33=getCharacterId();if(_0xf1ab33!==null&&_0x2d9e06['characters']&&_0x2d9e06[_0x109d0d(0x10d)][_0xf1ab33])return _0x2d9e06[_0x109d0d(0x10d)][_0xf1ab33][_0x109d0d(0xf1)]||_0x109d0d(0x11c);return _0x109d0d(0x118);}async function checkCollectionData(_0x2ff4db){const _0x204b43=_0x3b9f;if(!_0x2ff4db)return![];const _0x5243a8=SillyTavern['getContext']();if(!_0x5243a8)return![];try{const _0xa57974=await fetch(_0x204b43(0xf6),{'method':_0x204b43(0x123),'headers':_0x5243a8['getRequestHeaders'](),'body':JSON[_0x204b43(0x121)]({'collectionId':_0x2ff4db,'source':_0x204b43(0xf9),'embeddings':{}})});if(!_0xa57974['ok'])return![];const _0x468ad6=await _0xa57974[_0x204b43(0x101)]();if(Array[_0x204b43(0x112)](_0x468ad6))return _0x468ad6[_0x204b43(0x122)]>0x0;if(_0x468ad6&&_0x468ad6[_0x204b43(0x10c)])return _0x468ad6[_0x204b43(0x10c)][_0x204b43(0x122)]>0x0;return![];}catch(_0x2308d6){return console[_0x204b43(0x11d)](_0x204b43(0x119)+_0x2ff4db+_0x204b43(0xf2),_0x2308d6),![];}}function showMigrationNotification(_0x3ae230){const _0x3be6ca=_0x3b9f;if(migrationNoticeShown[_0x3be6ca(0x102)](_0x3ae230))return;const _0x49e3a2=_0x3be6ca(0xf0),_0x5961b4='\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22toast-message-content\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p>当前使用的是旧版翰林院数据格式，为确保数据稳定，请手动迁移。</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p><strong>如不迁移，后续该角色的向量化操作可能会导致旧数据被清零。</strong></p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p>（请挂魔法后打开此链接查看教程）</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20',_0x3099d9=toastr[_0x3be6ca(0xf8)]('',_0x3be6ca(0x10e),{'timeOut':0x0,'extendedTimeOut':0x0,'closeButton':!![],'tapToDismiss':![],'onclick':null,'onShown':function(){const _0x129871=_0x3be6ca,_0x33c9a5=$(this),_0x2ec093=_0x33c9a5['find']('.toast-title'),_0x1861dd=$(_0x5961b4),_0x1bb577=$('<div\x20class=\x22mt-2\x22></div>'),_0x122883=$(_0x129871(0x11f));_0x122883['on'](_0x129871(0x104),_0x5968ee=>{const _0x299187=_0x129871;_0x5968ee['stopPropagation'](),navigator[_0x299187(0x11b)]['writeText'](_0x49e3a2),toastr[_0x299187(0x110)](_0x299187(0x111));});const _0x6747ac=$(_0x129871(0x108));_0x6747ac['on'](_0x129871(0x104),_0x13ff57=>{const _0x1d22a3=_0x129871;_0x13ff57[_0x1d22a3(0x11a)](),toastr[_0x1d22a3(0xfa)](_0x3099d9),migrationNoticeShown[_0x1d22a3(0xf5)](_0x3ae230);}),_0x1bb577[_0x129871(0x105)](_0x122883)[_0x129871(0x105)](_0x6747ac),_0x2ec093[_0x129871(0x122)]?_0x2ec093[_0x129871(0xfc)](_0x1861dd,_0x1bb577):_0x33c9a5[_0x129871(0x105)](_0x1861dd,_0x1bb577);},'onCloseClick':function(){const _0x3dd142=_0x3be6ca;migrationNoticeShown[_0x3dd142(0xf5)](_0x3ae230);}});migrationNoticeShown['add'](_0x3ae230);}export function getCollectionIdInfo(){const _0x442406=_0x3b9f,_0x1d22ce=getCharacterId(),_0x2ee974=getChatId(),_0x3bab29=getCharacterName(),_0x4cc8a2=_0x1a8946=>String(_0x1a8946)[_0x442406(0xff)](/[^a-zA-Z0-9\u4e00-\u9fff_-]/g,'_');let _0xf56725=null;if(_0x1d22ce!==null&&_0x2ee974)_0xf56725=_0x442406(0x10a)+_0x1d22ce+_0x442406(0x115)+_0x2ee974;else _0x1d22ce!==null&&(_0xf56725=_0x442406(0x10a)+_0x1d22ce+_0x442406(0x11e));const _0x13ac1d=_0xf56725?_0x4cc8a2(_0xf56725):null;let _0x5b3d51=null;if(_0x3bab29!=='未指定'&&_0x3bab29!=='未命名角色'&&_0x2ee974)_0x5b3d51=_0x442406(0x10a)+_0x3bab29+_0x442406(0x115)+_0x2ee974;else _0x3bab29!==_0x442406(0x118)&&_0x3bab29!==_0x442406(0x11c)&&(_0x5b3d51='char_'+_0x3bab29+_0x442406(0x11e));const _0x2f92d3=_0x5b3d51?_0x4cc8a2(_0x5b3d51):null;return{'oldId':_0x13ac1d,'newId':_0x2f92d3||_0x13ac1d||_0x442406(0x120)};}export async function getCollectionId(){const _0x408647=_0x3b9f,{oldId:_0x181b22,newId:_0x222d08}=getCollectionIdInfo();if(_0x181b22===_0x222d08)return _0x222d08||_0x408647(0x120);if(_0x222d08&&await checkCollectionData(_0x222d08))return _0x222d08;if(_0x181b22&&await checkCollectionData(_0x181b22))return showMigrationNotification(_0x181b22),_0x181b22;return _0x222d08||'default_collection';}
+
+'use strict';
+
+const migrationNoticeShown = new Set();
+
+export function getCharacterId() {
+    const context = SillyTavern.getContext();
+    if (!context) return null;
+    if (context.characterId !== undefined && context.characterId !== null) return context.characterId;
+    if (typeof this_chid !== 'undefined' && this_chid !== null) return this_chid;
+    if (context.chat && context.chat.length > 0) {
+        const lastMessage = context.chat[context.chat.length - 1];
+        if (lastMessage && lastMessage.character_id !== undefined) return lastMessage.character_id;
+    }
+    console.error('[翰林院-典籍库] 无法稳定获取当前角色ID。');
+    return null;
+}
+
+
+export function getChatId() {
+    const context = SillyTavern.getContext();
+    if (!context) return null;
+    if (typeof context.getCurrentChatId === 'function') return context.getCurrentChatId();
+    if (context.chatId) return context.chatId;
+    const charId = getCharacterId();
+    if (charId !== null && context.characters && context.characters[charId]) {
+        return context.characters[charId].chat;
+    }
+    console.error('[翰林院-典籍库] 无法稳定获取当前聊天ID。');
+    return null;
+}
+
+export function getCharacterName() {
+    const context = SillyTavern.getContext();
+    if (!context) return '未指定';
+    const charId = getCharacterId();
+    if (charId !== null && context.characters && context.characters[charId]) {
+        return context.characters[charId].name || '未命名角色';
+    }
+    return '未指定';
+}
+
+
+export function getCharacterStableId() {
+    const charName = getCharacterName();
+    const sanitize = (id) => String(id).replace(/[^a-zA-Z0-9\u4e00-\u9fff_-]/g, '_');
+    return sanitize(charName);
+}
+
+
+async function checkCollectionData(collectionId) {
+    if (!collectionId) return false;
+    const context = SillyTavern.getContext();
+    if (!context) return false;
+    try {
+        const response = await fetch('/api/vector/list', {
+            method: 'POST',
+            headers: context.getRequestHeaders(),
+            body: JSON.stringify({ collectionId, source: 'webllm', embeddings: {} }),
+        });
+        if (!response.ok) return false;
+        const result = await response.json();
+        if (Array.isArray(result)) return result.length > 0;
+        if (result && result.hashes) return result.hashes.length > 0;
+        return false;
+    } catch (error) {
+        console.error(`[翰林院-典籍库] 检查集合 ${collectionId} 数据时出错:`, error);
+        return false;
+    }
+}
+
+
+function showMigrationNotification(oldId) {
+    if (migrationNoticeShown.has(oldId)) return;
+
+    const tutorialLink = 'https://docs.google.com/document/d/11E7HIFg59up0afv-lV0cAF5G3jzJXCkZK8cBCOMZ9zo/edit?usp=sharing';
+    
+    const htmlMessage = `
+        <div class="toast-message-content">
+            <p>当前使用的是旧版翰林院数据格式，为确保数据稳定，请手动迁移。</p>
+            <p><strong>如不迁移，后续该角色的向量化操作可能会导致旧数据被清零。</strong></p>
+            <p>（请挂魔法后打开此链接查看教程）</p>
+        </div>
+    `;
+
+    const $toast = toastr.warning('', '翰林院数据迁移提醒', {
+        timeOut: 0,
+        extendedTimeOut: 0,
+        closeButton: true,
+        tapToDismiss: false,
+        onclick: null,
+        onShown: function() {
+            const toastElement = $(this);
+
+            const titleElement = toastElement.find('.toast-title');
+
+            const messageContainer = $(htmlMessage);
+            const buttonContainer = $('<div class="mt-2"></div>');
+            
+            const copyBtn = $('<button class="btn btn-info btn-sm mr-1">复制教程链接</button>');
+            copyBtn.on('click', (e) => {
+                e.stopPropagation();
+                navigator.clipboard.writeText(tutorialLink);
+                toastr.success('链接已复制到剪贴板');
+            });
+
+            const approveBtn = $('<button class="btn btn-secondary btn-sm">我知道了</button>');
+            approveBtn.on('click', (e) => {
+                e.stopPropagation();
+                toastr.remove($toast);
+                migrationNoticeShown.add(oldId);
+            });
+
+            buttonContainer.append(copyBtn).append(approveBtn);
+
+            if (titleElement.length) {
+                titleElement.after(messageContainer, buttonContainer);
+            } else {
+
+                toastElement.append(messageContainer, buttonContainer);
+            }
+        },
+        onCloseClick: function() {
+            migrationNoticeShown.add(oldId);
+        }
+    });
+
+    migrationNoticeShown.add(oldId);
+}
+
+
+
+export function getCollectionIdInfo() {
+    const charId = getCharacterId();
+    const chatId = getChatId();
+    const charName = getCharacterName();
+
+    const sanitize = (id) => String(id).replace(/[^a-zA-Z0-9\u4e00-\u9fff_-]/g, '_');
+    
+    let oldCollectionId = null;
+    if (charId !== null && chatId) {
+        oldCollectionId = `char_${charId}_chat_${chatId}`;
+    } else if (charId !== null) {
+        oldCollectionId = `char_${charId}_global`;
+    }
+    const finalOldId = oldCollectionId ? sanitize(oldCollectionId) : null;
+
+    let newCollectionId = null;
+    if (charName !== '未指定' && charName !== '未命名角色' && chatId) {
+        newCollectionId = `char_${charName}_chat_${chatId}`;
+    } else if (charName !== '未指定' && charName !== '未命名角色') {
+        newCollectionId = `char_${charName}_global`;
+    }
+    const finalNewId = newCollectionId ? sanitize(newCollectionId) : null;
+
+    return { oldId: finalOldId, newId: finalNewId || finalOldId || 'default_collection' };
+}
+
+export async function getCollectionId() {
+    const { oldId, newId } = getCollectionIdInfo();
+
+    if (oldId === newId) {
+        return newId || 'default_collection';
+    }
+
+    if (newId && await checkCollectionData(newId)) {
+        return newId; 
+    }
+
+    if (oldId && await checkCollectionData(oldId)) {
+        showMigrationNotification(oldId);
+        return oldId;
+    }
+
+    return newId || 'default_collection';
+}
