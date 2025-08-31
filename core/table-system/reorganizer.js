@@ -52,54 +52,6 @@ export async function reorganizeTableContent() {
                     case 'flowTemplate':
                         messages.push({ role: "system", content: finalFlowPrompt });
                         break;
-                    case 'thinkingFramework':
-                        messages.push({ role: "system", content: `# 表格内容重新整理思考框架
-## 核心原则
-1. 保持数据完整性：不删除有价值的信息
-2. 优化数据结构：合并重复、统一格式
-3. 提升可读性：逻辑排序、精简表达
-4. 确保准确性：验证信息一致性
-
-## 思考流程 (<thinking></thinking>)
-请严格按此框架思考并在<thinking>标签内输出：
-<thinking>
-1. 【数据概览分析】
-   - 表格总数：当前有多少个表格？
-   - 数据规模：每个表格的行数和列数
-   - 内容类型：识别主要的数据类别
-
-2. 【重复内容检测】
-   - 行级别重复：完全相同的行
-   - 列级别重复：相似或冗余的列
-   - 内容重复：相同信息的不同表述
-
-3. 【格式统一需求】
-   - 时间格式：统一
-   - 地点格式：统一
-   - 状态标记：使用标准词汇(进行中/已完成/已取消)
-
-4. 【逻辑重组方案】
-   - 时间顺序：按事件发生的先后排序
-   - 重要性排序：关键信息优先
-   - 类别分组：相似内容归类
-
-5. 【数据清理策略】
-   - 无效数据：空白、无意义的内容
-   - 过时信息：已被后续信息覆盖的内容
-   - 冗余描述：可以合并的相似描述
-
-6. 【最终验证检查】
-   - 完整性：确保所有重要信息保留
-   - 一致性：检查数据间的逻辑关系
-   - 准确性：验证整理后的内容正确
-</thinking>
-<Amily2Edit>
-<!-- 
-在这里输出你的表格操作指令
- -->
-</Amily2Edit>
-<finsh>The table reorganization work has been completed.</finsh>` });
-                        break;
                 }
             }
         }
