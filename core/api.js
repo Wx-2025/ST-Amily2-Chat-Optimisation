@@ -1,1 +1,752 @@
-const _0x3fcebc=_0x1166;(function(_0x4e122a,_0x3e0869){const _0x4c3200=_0x1166,_0xaf89fc=_0x4e122a();while(!![]){try{const _0x5074a1=parseInt(_0x4c3200(0x11b))/0x1+parseInt(_0x4c3200(0x124))/0x2+-parseInt(_0x4c3200(0xfa))/0x3*(-parseInt(_0x4c3200(0x157))/0x4)+-parseInt(_0x4c3200(0x1a2))/0x5+-parseInt(_0x4c3200(0x120))/0x6*(-parseInt(_0x4c3200(0x16a))/0x7)+-parseInt(_0x4c3200(0x10c))/0x8+-parseInt(_0x4c3200(0x1b2))/0x9*(parseInt(_0x4c3200(0x121))/0xa);if(_0x5074a1===_0x3e0869)break;else _0xaf89fc['push'](_0xaf89fc['shift']());}catch(_0x1e15c7){_0xaf89fc['push'](_0xaf89fc['shift']());}}}(_0x5a45,0xc8a42));import{extension_settings,getContext}from'/scripts/extensions.js';import{characters}from'/script.js';import{world_names}from'/scripts/world-info.js';import{extensionName}from'../utils/settings.js';import{extractContentByTag,replaceContentByTag,extractFullTagBlock}from'../utils/tagProcessor.js';import{getCombinedWorldbookContent,findLatestSummaryLore,DEDICATED_LOREBOOK_NAME,getChatIdentifier}from'./lore.js';function _0x1166(_0x111bef,_0x490b59){const _0x5a455d=_0x5a45();return _0x1166=function(_0x116691,_0x5beb5b){_0x116691=_0x116691-0xf6;let _0x3749da=_0x5a455d[_0x116691];return _0x3749da;},_0x1166(_0x111bef,_0x490b59);}import{isGoogleEndpoint,convertToGoogleRequest,parseGoogleResponse,buildGoogleApiUrl}from'../core/utils/googleAdapter.js';import{intelligentPoll,createGooglePollingTask,progressTracker}from'../core/utils/pollingManager.js';import{buildGoogleEmbeddingRequest,parseGoogleEmbeddingResponse,buildGoogleEmbeddingApiUrl}from'./utils/googleAdapter.js';import{getRequestHeaders}from'/script.js';function _0x5a45(){const _0x226968=['data','\x20个模型','8040321uGHZfq','ChatCompletionService','成功获取\x20','API调用频率超限\x20(429):\x20请稍后重试','append','1806UxhozJ','onAttempt','获取模型列表失败:\x20','获取\x20Google\x20API\x20(','[Amily2号-外交部]\x20已派遣使者前往云端获取最新情报...','all','服务器响应异常:\x20','轮询失败:\x20','SillyTavern预设API调用失败','map','google','replace','warn','success','API连接正常','apiUrl','[Amily2号-统一API调用]\x20','/v1/models','3872656UmwYuq','embed',')\x20获取模型列表:\x20','no-store','GET','extensionSettings','includes','[Amily2号-使节团]\x20OpenAI兼容模式:\x20','[Amily2号-ST预设]\x20当前配置文件:\x20','choices','https://raw.githubusercontent.com/Wx-2025/ST-Amily2-Chat-Optimisation/refs/heads/main/amily2_message_board.json','parse','YourUsername','[Amily2-外交部]\x20未支持的API提供商:\x20','log','1449686kANzUO','HTTP\x20',')\x20模型列表失败:\x20','./summarizer.js','API认证失败\x20(401):\x20请检查API\x20Key配置','1541730zDOtFj','10lboeYB','connectionManager','任务排队中','3055602IdlVpg','API连接失败','[Amily2号-Google]\x20收到异步操作ID，启用轮询机制...','v1beta','#amily2_refresh_models','【请求参数】:','custom','Amily2-外交部','POST','API\x20URL或模型未配置，无法调用AI。','html','400','floor','任务失败','[Google轮询错误]','SillyTavern后端API调用失败','groupCollapsed','warning','gemini-pro','[Amily2号-使节团]\x20使用SillyTavern预设模式','[Amily2号-内务府]\x20获取留言板内容失败:','未收到API响应','Google轮询任务失败:\x20','models','[Amily2号-ST预设]\x20使用SillyTavern预设调用','\x20发送请求','empty','temperature','error','object','maxTokens','generateContent','AMILY2_LOCK_MODEL_FETCHING','[Amily2号-外交部]\x20未能召唤“皇家信使”，部分高级功能（如Claw代理）将受限。请考虑更新SillyTavern版本。','[Amily2-外交部]\x20未能获取AI响应内容，但不视为错误','\x20-\x20',':generateContent?key=','未找到可用模型','Bearer\x20','groupEnd','#amily2_model','[Amily2号-使节团]\x20通过SillyTavern后端获取模型列表','length','[Amily2号-ST预设]\x20恢复原始配置文件:\x20','TavernHelper不可用，无法使用SillyTavern预设模式','[Amily2号-ST预设]\x20恢复配置文件失败:','chat_completion_source','无法获取SillyTavern上下文','【消息内容】:','OpenAI兼容API请求失败:\x20','OpenAI兼容模式需要API\x20URL和API\x20Key','1820tpFIAR','/profile\x20await=true\x20\x22','cors','apiKey','json','API服务器错误\x20(500):\x20请稍后重试','find','profiles','string','SillyTavern后端模式需要API\x20URL','claude-3-sonnet','supportedGenerationMethods','[Amily2号-使节团]\x20正在从\x20Google\x20API\x20(','sendRequest','[Amily2号-外交部]\x20情报已成功获取并解析。','info','API未返回有效的模型列表数组','Google\x20API请求失败:\x20','AMILY2_SYSTEM_PARALYZED','14MwOdlZ','[Amily2号-ST预设]\x20切换配置文件:\x20','429','[Amily2号-使节团]\x20获取模型列表失败:','gpt-4','\x20->\x20','远方服务器响应异常，状态:\x20','sillytavern_preset','ConnectionManagerRequestService','claude-3-haiku','/profile','#amily2_api_key','API调用失败','text','toLowerCase','#amily2_api_url','trim','API请求格式错误\x20(400):\x20请检查消息格式和模型配置','/models/','[Amily2-外交部]\x20API\x20URL或模型未配置，无法调用AI','无法获取模型列表，请检查配置','[Amily2号-ST后端]\x20通过SillyTavern后端调用API','random','403','model','[Amily2号-AI回复]','apiProvider','[Amily2号-ST预设]\x20目标配置文件:\x20','gemini-1.5','stringify','[Amily2号-使节团]\x20获取SillyTavern预设失败，返回默认模型列表:','sillytavern_backend','name','complete','\x20提供商连接正常，找到\x20','#amily2_api_provider','[Amily2号-使节团]\x20使用\x20API\x20提供商:\x20','Invalid\x20JSON\x20response','filter',']\x20API响应JSON解析失败:','https://generativelanguage.googleapis.com','ajax','未支持的API提供商:\x20','prop','<option>','message','TavernHelper','abcdefghijklmnopqrstuvwxyz','[Amily2号-Google直连]\x20API地址:\x20','tavernProfile','/api/backends/chat-completions/status','application/json','response','disabled','[Amily2号-使节团]\x20上次任务尚未完成，本次任务取消。','content','7830150asMKDl','[Amily2号-外交部]\x20任务取消：陛下尚未配置情报来源URL。','[Amily2号-外交部]\x20紧急军情：外交任务失败！','未配置SillyTavern预设ID','sort','/api/backends/chat-completions/generate','triggerSlash','models/','status','val','openai','API访问被拒绝\x20(403):\x20请检查权限设置','done','isArray'];_0x5a45=function(){return _0x226968;};return _0x5a45();}let ChatCompletionService=undefined;try{const module=await import('/scripts/custom-request.js');ChatCompletionService=module[_0x3fcebc(0xf6)],console[_0x3fcebc(0x11a)]('[Amily2号-外交部]\x20已成功召唤“皇家信使”(ChatCompletionService)。');}catch(_0xfc98de){console['warn'](_0x3fcebc(0x145),_0xfc98de);}const UPDATE_CHECK_URL='https://raw.githubusercontent.com/Wx-2025/ST-Amily2-Chat-Optimisation/refs/heads/main/amily2_update_info.json',MESSAGE_BOARD_URL=_0x3fcebc(0x116);export async function fetchMessageBoardContent(){const _0x494ac4=_0x3fcebc;if(!MESSAGE_BOARD_URL)return console[_0x494ac4(0x11a)]('[Amily2号-内务府]\x20任务取消：陛下尚未配置留言板URL。'),null;try{const _0x3f8155=await fetch(MESSAGE_BOARD_URL,{'cache':_0x494ac4(0x10f)});if(!_0x3f8155['ok'])throw new Error(_0x494ac4(0x100)+_0x3f8155[_0x494ac4(0x1aa)]);const _0x111e38=await _0x3f8155[_0x494ac4(0x15b)]();return _0x111e38;}catch(_0x1f7233){return console[_0x494ac4(0x140)](_0x494ac4(0x138),_0x1f7233),null;}}export async function checkForUpdates(){const _0x4651a2=_0x3fcebc;if(!UPDATE_CHECK_URL||UPDATE_CHECK_URL[_0x4651a2(0x112)](_0x4651a2(0x118)))return console[_0x4651a2(0x11a)](_0x4651a2(0x1a3)),null;try{console[_0x4651a2(0x11a)](_0x4651a2(0xfe));const _0x4abbe0=await fetch(UPDATE_CHECK_URL,{'method':_0x4651a2(0x110),'cache':_0x4651a2(0x10f),'mode':_0x4651a2(0x159)});if(!_0x4abbe0['ok'])throw new Error(_0x4651a2(0x170)+_0x4abbe0[_0x4651a2(0x1aa)]);const _0x68daf8=await _0x4abbe0[_0x4651a2(0x15b)]();return console[_0x4651a2(0x11a)](_0x4651a2(0x165)),_0x68daf8;}catch(_0x3a4e9a){return console[_0x4651a2(0x140)](_0x4651a2(0x1a4),_0x3a4e9a),null;}}function normalizeApiResponse(_0x46691b){const _0x503104=_0x3fcebc;let _0xf24f41=_0x46691b;if(typeof _0xf24f41===_0x503104(0x15f))try{_0xf24f41=JSON[_0x503104(0x117)](_0xf24f41);}catch(_0x36a82a){return console[_0x503104(0x140)]('['+extensionName+_0x503104(0x191),_0x36a82a),{'error':{'message':_0x503104(0x18f)}};}_0xf24f41&&typeof _0xf24f41[_0x503104(0x1b0)]===_0x503104(0x141)&&_0xf24f41[_0x503104(0x1b0)]!==null&&!Array['isArray'](_0xf24f41[_0x503104(0x1b0)])&&(Object['hasOwn'](_0xf24f41[_0x503104(0x1b0)],_0x503104(0x1b0))&&(_0xf24f41=_0xf24f41[_0x503104(0x1b0)]));if(_0xf24f41&&_0xf24f41[_0x503104(0x115)]&&_0xf24f41['choices'][0x0])return{'content':_0xf24f41[_0x503104(0x115)][0x0][_0x503104(0x197)]?.[_0x503104(0x1a1)]?.[_0x503104(0x17a)]()};if(_0xf24f41&&_0xf24f41[_0x503104(0x1a1)])return{'content':_0xf24f41[_0x503104(0x1a1)][_0x503104(0x17a)]()};if(_0xf24f41&&_0xf24f41[_0x503104(0x1b0)])return{'data':_0xf24f41[_0x503104(0x1b0)]};if(_0xf24f41&&_0xf24f41['error'])return{'error':_0xf24f41[_0x503104(0x140)]};return _0xf24f41;}export async function fetchModels(){const _0x3b6c5e=_0x3fcebc;if(window[_0x3b6c5e(0x144)])return console[_0x3b6c5e(0x106)](_0x3b6c5e(0x1a0)),toastr[_0x3b6c5e(0x166)]('上次任务尚未完成，请稍后再试。',_0x3b6c5e(0x123)),[];window[_0x3b6c5e(0x144)]=!![];try{const _0x5de6e0=$(_0x3b6c5e(0x18d))[_0x3b6c5e(0x1ab)]()||_0x3b6c5e(0x1ac),_0x5795b4=$(_0x3b6c5e(0x179))[_0x3b6c5e(0x1ab)]()[_0x3b6c5e(0x17a)](),_0x57d9be=$(_0x3b6c5e(0x175))['val']()[_0x3b6c5e(0x17a)](),_0x2882ba=$(_0x3b6c5e(0x128)),_0x331597=$(_0x3b6c5e(0x14c));console[_0x3b6c5e(0x11a)](_0x3b6c5e(0x18e)+_0x5de6e0),_0x2882ba[_0x3b6c5e(0x195)](_0x3b6c5e(0x19f),!![])[_0x3b6c5e(0x12e)]('<i\x20class=\x22fas\x20fa-spinner\x20fa-spin\x22></i>\x20加载中'),_0x331597[_0x3b6c5e(0x13e)]()[_0x3b6c5e(0xf9)]($(_0x3b6c5e(0x196),{'value':'','text':'正在获取模型列表...'}));let _0x65222c=[];switch(_0x5de6e0){case _0x3b6c5e(0x1ac):_0x65222c=await fetchOpenAICompatibleModels(_0x5795b4,_0x57d9be);break;case _0x3b6c5e(0x104):_0x65222c=await fetchGoogleDirectModels(_0x5795b4,_0x57d9be);break;case _0x3b6c5e(0x189):_0x65222c=await fetchSillyTavernBackendModels(_0x5795b4,_0x57d9be);break;case'sillytavern_preset':_0x65222c=await fetchSillyTavernPresetModels();break;default:throw new Error(_0x3b6c5e(0x194)+_0x5de6e0);}return _0x65222c[_0x3b6c5e(0x14e)]>0x0?(toastr[_0x3b6c5e(0x107)](_0x3b6c5e(0xf7)+_0x65222c[_0x3b6c5e(0x14e)]+'\x20个模型','任务成功'),_0x65222c):(toastr[_0x3b6c5e(0x135)](_0x3b6c5e(0x149),'注意'),[]);}catch(_0x542e12){return console['error'](_0x3b6c5e(0x16d),_0x542e12),toastr['error'](_0x3b6c5e(0xfc)+_0x542e12['message'],_0x3b6c5e(0x131)),[];}finally{window[_0x3b6c5e(0x144)]=![];const _0x3cd845=$(_0x3b6c5e(0x128));_0x3cd845['prop'](_0x3b6c5e(0x19f),![])[_0x3b6c5e(0x12e)]('<i\x20class=\x22fas\x20fa-sync-alt\x22></i>\x20刷新模型');}}async function fetchOpenAICompatibleModels(_0x5e6199,_0x188ada){const _0x39d9ff=_0x3fcebc;if(!_0x5e6199||!_0x188ada)throw new Error(_0x39d9ff(0x156));const _0x1c65a8=_0x5e6199[_0x39d9ff(0x105)](/\/$/,'')[_0x39d9ff(0x105)](/\/v1$/,''),_0x2a0f2b=_0x1c65a8+_0x39d9ff(0x10b);console[_0x39d9ff(0x11a)](_0x39d9ff(0x113)+_0x2a0f2b);const _0x32c0ce=await fetch(_0x2a0f2b,{'method':_0x39d9ff(0x110),'headers':{'Authorization':'Bearer\x20'+_0x188ada,'Content-Type':_0x39d9ff(0x19d)}});if(!_0x32c0ce['ok']){const _0x111a5b=await _0x32c0ce[_0x39d9ff(0x177)]();throw new Error(_0x39d9ff(0x11c)+_0x32c0ce[_0x39d9ff(0x1aa)]+':\x20'+_0x111a5b);}const _0x319b2c=await _0x32c0ce[_0x39d9ff(0x15b)](),_0x106176=_0x319b2c[_0x39d9ff(0x1b0)]||_0x319b2c[_0x39d9ff(0x13b)]||[];return _0x106176['map'](_0x10a8ba=>_0x10a8ba['id']||_0x10a8ba[_0x39d9ff(0x182)])['filter'](Boolean)[_0x39d9ff(0x190)](_0xbf39cf=>!_0xbf39cf[_0x39d9ff(0x178)]()[_0x39d9ff(0x112)](_0x39d9ff(0x10d)))[_0x39d9ff(0x1a6)]();}async function fetchGoogleDirectModels(_0x3d7e88,_0x26451a){const _0x2e9cbd=_0x3fcebc;if(!_0x26451a)throw new Error('Google直连模式需要API\x20Key');const _0x605947=_0x2e9cbd(0x192),_0x1ef8f2=async _0x3ea388=>{const _0x12b1a7=_0x2e9cbd,_0x399b85=_0x605947+'/'+_0x3ea388+'/models?key='+_0x26451a;console[_0x12b1a7(0x11a)](_0x12b1a7(0x163)+_0x3ea388+_0x12b1a7(0x10e)+_0x399b85);const _0x4c816e=await fetch(_0x399b85);if(!_0x4c816e['ok'])return console[_0x12b1a7(0x106)](_0x12b1a7(0xfd)+_0x3ea388+_0x12b1a7(0x11d)+_0x4c816e[_0x12b1a7(0x1aa)]),[];const _0x493cbe=await _0x4c816e[_0x12b1a7(0x15b)]();if(!_0x493cbe[_0x12b1a7(0x13b)]||!Array[_0x12b1a7(0x1af)](_0x493cbe[_0x12b1a7(0x13b)]))return[];return _0x493cbe[_0x12b1a7(0x13b)][_0x12b1a7(0x190)](_0x13239e=>_0x13239e[_0x12b1a7(0x162)]?.[_0x12b1a7(0x112)](_0x12b1a7(0x143))||_0x13239e[_0x12b1a7(0x162)]?.[_0x12b1a7(0x112)]('streamGenerateContent'))[_0x12b1a7(0x103)](_0x5892ca=>_0x5892ca[_0x12b1a7(0x18a)][_0x12b1a7(0x105)](_0x12b1a7(0x1a9),''));},[_0x361c84,_0x1ae670]=await Promise[_0x2e9cbd(0xff)]([_0x1ef8f2('v1'),_0x1ef8f2(_0x2e9cbd(0x127))]),_0x263b98=[...new Set([..._0x361c84,..._0x1ae670])][_0x2e9cbd(0x1a6)]();return _0x263b98;}async function fetchSillyTavernBackendModels(_0x41910e,_0x211f31){const _0x445adb=_0x3fcebc;if(!_0x41910e)throw new Error(_0x445adb(0x160));console[_0x445adb(0x11a)](_0x445adb(0x14d));const _0x5b262b=await $['ajax']({'url':_0x445adb(0x19c),'type':_0x445adb(0x12c),'contentType':_0x445adb(0x19d),'data':JSON[_0x445adb(0x187)]({'chat_completion_source':_0x445adb(0x12a),'custom_url':_0x41910e,'api_key':_0x211f31})}),_0x387b23=normalizeApiResponse(_0x5b262b),_0x441cd9=_0x387b23['data']||[];if(_0x387b23['error']||!Array[_0x445adb(0x1af)](_0x441cd9)){const _0x7acfc3=_0x387b23[_0x445adb(0x140)]?.[_0x445adb(0x197)]||_0x445adb(0x167);throw new Error(_0x7acfc3);}return _0x441cd9[_0x445adb(0x103)](_0x42c9ec=>_0x42c9ec['id']||_0x42c9ec['model'])[_0x445adb(0x190)](Boolean)[_0x445adb(0x1a6)]();}async function fetchSillyTavernPresetModels(){const _0x44cfb6=_0x3fcebc;console[_0x44cfb6(0x11a)](_0x44cfb6(0x137));try{const _0x4e70a3=getContext();if(!_0x4e70a3)throw new Error(_0x44cfb6(0x153));const _0x390a26=_0x4e70a3[_0x44cfb6(0x152)],_0x5c2aee=[];_0x390a26&&_0x5c2aee['push'](_0x390a26);const _0x591c89=['gpt-3.5-turbo',_0x44cfb6(0x16e),'claude-3-sonnet',_0x44cfb6(0x173),_0x44cfb6(0x136)],_0x5977a2=[...new Set([..._0x5c2aee,..._0x591c89])][_0x44cfb6(0x1a6)]();return _0x5977a2;}catch(_0x3adad6){return console['warn'](_0x44cfb6(0x188),_0x3adad6),['gpt-3.5-turbo',_0x44cfb6(0x16e),_0x44cfb6(0x161),_0x44cfb6(0x173),'gemini-pro'];}}export function getApiSettings(){const _0x531ac6=_0x3fcebc;return{'apiProvider':$('#amily2_api_provider')[_0x531ac6(0x1ab)]()||'openai','apiUrl':$(_0x531ac6(0x179))['val']()[_0x531ac6(0x17a)](),'apiKey':$(_0x531ac6(0x175))['val']()[_0x531ac6(0x17a)](),'model':$(_0x531ac6(0x14c))[_0x531ac6(0x1ab)](),'maxTokens':extension_settings[extensionName]?.['maxTokens']||0xfa0,'temperature':extension_settings[extensionName]?.[_0x531ac6(0x13f)]||0.7,'tavernProfile':extension_settings[extensionName]?.['tavernProfile']||''};}export async function testApiConnection(){const _0x2a88f0=_0x3fcebc;console['log']('[Amily2号-外交部]\x20开始API连接测试');const _0x37ed2e=$('#amily2_api_provider')[_0x2a88f0(0x1ab)]()||_0x2a88f0(0x1ac),_0x26d262=await fetchModels();return _0x26d262[_0x2a88f0(0x14e)]>0x0?(toastr[_0x2a88f0(0x107)](_0x37ed2e+_0x2a88f0(0x18c)+_0x26d262[_0x2a88f0(0x14e)]+_0x2a88f0(0x1b1),_0x2a88f0(0x108)),!![]):(toastr[_0x2a88f0(0x140)](_0x2a88f0(0x17e),_0x2a88f0(0x125)),![]);}export async function callAI(_0xabfecb,_0x45e813={}){const _0x4eb780=_0x3fcebc;if(window[_0x4eb780(0x169)]===!![])return console['error']('[Amily2-制裁]\x20系统完整性已受损，所有外交活动被无限期中止。'),null;const _0x2beb80=getApiSettings(),_0x4f7b67={'maxTokens':_0x2beb80['maxTokens'],'temperature':_0x2beb80[_0x4eb780(0x13f)],'model':_0x2beb80[_0x4eb780(0x182)],'apiUrl':_0x2beb80[_0x4eb780(0x109)],'apiKey':_0x2beb80[_0x4eb780(0x15a)],'apiProvider':_0x2beb80['apiProvider'],..._0x45e813};if(_0x4f7b67[_0x4eb780(0x184)]!==_0x4eb780(0x171)){if(!_0x4f7b67[_0x4eb780(0x109)]||!_0x4f7b67[_0x4eb780(0x182)])return console[_0x4eb780(0x106)](_0x4eb780(0x17d)),toastr['error'](_0x4eb780(0x12d),_0x4eb780(0x12b)),null;}console[_0x4eb780(0x134)](_0x4eb780(0x10a)+new Date()['toLocaleTimeString']()),console[_0x4eb780(0x11a)](_0x4eb780(0x129),{'provider':_0x4f7b67[_0x4eb780(0x184)],'model':_0x4f7b67['model'],'maxTokens':_0x4f7b67[_0x4eb780(0x142)],'temperature':_0x4f7b67['temperature'],'messagesCount':_0xabfecb[_0x4eb780(0x14e)]}),console[_0x4eb780(0x11a)](_0x4eb780(0x154),_0xabfecb),console[_0x4eb780(0x14b)]();try{let _0x968df4;switch(_0x4f7b67[_0x4eb780(0x184)]){case _0x4eb780(0x1ac):_0x968df4=await callOpenAICompatible(_0xabfecb,_0x4f7b67);break;case _0x4eb780(0x104):_0x968df4=await callGoogleDirect(_0xabfecb,_0x4f7b67);break;case'sillytavern_backend':_0x968df4=await callSillyTavernBackend(_0xabfecb,_0x4f7b67);break;case'sillytavern_preset':_0x968df4=await callSillyTavernPreset(_0xabfecb,_0x4f7b67);break;default:console[_0x4eb780(0x140)](_0x4eb780(0x119)+_0x4f7b67[_0x4eb780(0x184)]);return null;}if(!_0x968df4)return console['warn'](_0x4eb780(0x146)),null;return console[_0x4eb780(0x134)](_0x4eb780(0x183)),console[_0x4eb780(0x11a)](_0x968df4),console[_0x4eb780(0x14b)](),_0x968df4;}catch(_0x48e49e){console[_0x4eb780(0x140)]('[Amily2-外交部]\x20API调用发生错误:',_0x48e49e);if(_0x48e49e[_0x4eb780(0x197)][_0x4eb780(0x112)](_0x4eb780(0x12f)))toastr[_0x4eb780(0x140)](_0x4eb780(0x17b),_0x4eb780(0x176));else{if(_0x48e49e[_0x4eb780(0x197)][_0x4eb780(0x112)]('401'))toastr[_0x4eb780(0x140)](_0x4eb780(0x11f),_0x4eb780(0x176));else{if(_0x48e49e['message']['includes'](_0x4eb780(0x181)))toastr[_0x4eb780(0x140)](_0x4eb780(0x1ad),_0x4eb780(0x176));else{if(_0x48e49e[_0x4eb780(0x197)][_0x4eb780(0x112)](_0x4eb780(0x16c)))toastr[_0x4eb780(0x140)](_0x4eb780(0xf8),'API调用失败');else _0x48e49e['message'][_0x4eb780(0x112)]('500')?toastr[_0x4eb780(0x140)](_0x4eb780(0x15c),'API调用失败'):toastr[_0x4eb780(0x140)]('API调用失败:\x20'+_0x48e49e[_0x4eb780(0x197)],'API调用失败');}}}return null;}}async function callOpenAICompatible(_0x88a9cd,_0x8aeee4){const _0x1d9491=_0x3fcebc,_0x172eb0=_0x8aeee4['apiUrl']['replace'](/\/$/,'')[_0x1d9491(0x105)](/\/v1$/,''),_0x462deb=_0x172eb0+'/v1/chat/completions';console['log']('[Amily2号-OpenAI兼容]\x20API地址:\x20'+_0x462deb);const _0x4a640a=await fetch(_0x462deb,{'method':_0x1d9491(0x12c),'headers':{'Authorization':_0x1d9491(0x14a)+_0x8aeee4[_0x1d9491(0x15a)],'Content-Type':'application/json'},'body':JSON[_0x1d9491(0x187)]({'model':_0x8aeee4[_0x1d9491(0x182)],'messages':_0x88a9cd,'max_tokens':_0x8aeee4[_0x1d9491(0x142)],'temperature':_0x8aeee4[_0x1d9491(0x13f)],'stream':![]})});if(!_0x4a640a['ok']){const _0x1b5f7c=await _0x4a640a[_0x1d9491(0x177)]();throw new Error(_0x1d9491(0x155)+_0x4a640a[_0x1d9491(0x1aa)]+_0x1d9491(0x147)+_0x1b5f7c);}const _0x11058a=await _0x4a640a['json']();return _0x11058a?.[_0x1d9491(0x115)]?.[0x0]?.[_0x1d9491(0x197)]?.[_0x1d9491(0x1a1)];}async function callGoogleDirect(_0x215870,_0x4d0be3){const _0x3f82cb=_0x3fcebc,_0x17a5b6=_0x3f82cb(0x192),_0x26a470=_0x4d0be3[_0x3f82cb(0x182)][_0x3f82cb(0x112)](_0x3f82cb(0x186))?_0x3f82cb(0x127):'v1',_0x348a20=_0x17a5b6+'/'+_0x26a470+_0x3f82cb(0x17c)+_0x4d0be3[_0x3f82cb(0x182)]+_0x3f82cb(0x148)+_0x4d0be3[_0x3f82cb(0x15a)];console[_0x3f82cb(0x11a)](_0x3f82cb(0x19a)+_0x348a20);const _0x1dbc4d={'Content-Type':_0x3f82cb(0x19d)},_0x3ba029=JSON[_0x3f82cb(0x187)](convertToGoogleRequest({'model':_0x4d0be3[_0x3f82cb(0x182)],'messages':_0x215870,'max_tokens':_0x4d0be3[_0x3f82cb(0x142)],'temperature':_0x4d0be3['temperature']})),_0x5a065d=await fetch(_0x348a20,{'method':_0x3f82cb(0x12c),'headers':_0x1dbc4d,'body':_0x3ba029});if(!_0x5a065d['ok']){const _0x24575b=await _0x5a065d['text']();throw new Error(_0x3f82cb(0x168)+_0x5a065d[_0x3f82cb(0x1aa)]+_0x3f82cb(0x147)+_0x24575b);}let _0x2c4a25=await _0x5a065d[_0x3f82cb(0x15b)]();if(_0x2c4a25[_0x3f82cb(0x18a)]&&_0x2c4a25['metadata']){console[_0x3f82cb(0x11a)](_0x3f82cb(0x126));const _0x20b1b1=_0x2c4a25[_0x3f82cb(0x18a)],_0x4072d6=progressTracker(_0x20b1b1,0x6);_0x4072d6['start']();try{const _0x23c5d1=createGooglePollingTask(_0x20b1b1,_0x17a5b6,{'Content-Type':_0x3f82cb(0x19d)}),_0x44d701={'maxAttempts':0x6,'baseDelay':0xbb8,'shouldStop':_0x32ce01=>_0x32ce01[_0x3f82cb(0x1ae)],'onAttempt':(_0x530120,_0x5312a3)=>{const _0x318aa9=_0x3f82cb;_0x4072d6[_0x318aa9(0xfb)](_0x530120,_0x5312a3);},'onError':(_0x291bca,_0x1db45b)=>{const _0x2f1240=_0x3f82cb;_0x4072d6[_0x2f1240(0x140)](_0x291bca[_0x2f1240(0x197)]);}},_0x4d425c=await intelligentPoll(_0x23c5d1,_0x44d701);_0x4072d6[_0x3f82cb(0x18b)]();if(!_0x4d425c[_0x3f82cb(0x19e)])throw new Error('轮询完成但未获得有效响应');_0x2c4a25=_0x4d425c[_0x3f82cb(0x19e)];}catch(_0x283d1b){console[_0x3f82cb(0x140)](_0x3f82cb(0x132),_0x283d1b),_0x4072d6[_0x3f82cb(0x140)](_0x3f82cb(0x101)+_0x283d1b[_0x3f82cb(0x197)]);throw new Error(_0x3f82cb(0x13a)+_0x283d1b[_0x3f82cb(0x197)]);}}return parseGoogleResponse(_0x2c4a25)?.[_0x3f82cb(0x115)]?.[0x0]?.[_0x3f82cb(0x197)]?.['content'];}async function callSillyTavernBackend(_0x5cecf1,_0x326c2e){const _0x30653e=_0x3fcebc;console[_0x30653e(0x11a)](_0x30653e(0x17f));const _0x14a6bd=await $[_0x30653e(0x193)]({'url':_0x30653e(0x1a7),'type':'POST','contentType':_0x30653e(0x19d),'data':JSON[_0x30653e(0x187)]({'chat_completion_source':'custom','custom_url':_0x326c2e[_0x30653e(0x109)],'api_key':_0x326c2e[_0x30653e(0x15a)],'model':_0x326c2e[_0x30653e(0x182)],'messages':_0x5cecf1,'max_tokens':_0x326c2e[_0x30653e(0x142)],'temperature':_0x326c2e[_0x30653e(0x13f)],'stream':![]})}),_0x4d0900=normalizeApiResponse(_0x14a6bd);if(_0x4d0900[_0x30653e(0x140)])throw new Error(_0x4d0900['error'][_0x30653e(0x197)]||_0x30653e(0x133));return _0x4d0900[_0x30653e(0x1a1)];}async function callSillyTavernPreset(_0x36a899,_0x4bcbb1){const _0xc94ab4=_0x3fcebc;console[_0xc94ab4(0x11a)](_0xc94ab4(0x13c));if(!window[_0xc94ab4(0x198)]||!window[_0xc94ab4(0x198)][_0xc94ab4(0x1a8)])throw new Error(_0xc94ab4(0x150));const _0x59d02c=getContext();if(!_0x59d02c)throw new Error('无法获取SillyTavern上下文');const _0x334bba=_0x4bcbb1[_0xc94ab4(0x19b)]||extension_settings[extensionName]?.[_0xc94ab4(0x19b)];if(!_0x334bba)throw new Error(_0xc94ab4(0x1a5));let _0x29b4b7='',_0x5425a9;try{_0x29b4b7=await window[_0xc94ab4(0x198)][_0xc94ab4(0x1a8)](_0xc94ab4(0x174)),console[_0xc94ab4(0x11a)](_0xc94ab4(0x114)+_0x29b4b7);const _0x3b0d21=_0x59d02c[_0xc94ab4(0x111)]?.[_0xc94ab4(0x122)]?.[_0xc94ab4(0x15e)]?.[_0xc94ab4(0x15d)](_0x283d0b=>_0x283d0b['id']===_0x334bba);if(!_0x3b0d21)throw new Error('未找到配置文件ID:\x20'+_0x334bba);const _0x15cbdc=_0x3b0d21[_0xc94ab4(0x18a)];console[_0xc94ab4(0x11a)](_0xc94ab4(0x185)+_0x15cbdc);const _0x4024e0=await window[_0xc94ab4(0x198)][_0xc94ab4(0x1a8)](_0xc94ab4(0x174));if(_0x4024e0!==_0x15cbdc){console[_0xc94ab4(0x11a)](_0xc94ab4(0x16b)+_0x4024e0+_0xc94ab4(0x16f)+_0x15cbdc);const _0x5cdd73=_0x15cbdc[_0xc94ab4(0x105)](/"/g,'\x5c\x22');await window['TavernHelper'][_0xc94ab4(0x1a8)]('/profile\x20await=true\x20\x22'+_0x5cdd73+'\x22');}if(!_0x59d02c[_0xc94ab4(0x172)])throw new Error('ConnectionManagerRequestService不可用');console[_0xc94ab4(0x11a)]('[Amily2号-ST预设]\x20通过配置文件\x20'+_0x15cbdc+_0xc94ab4(0x13d)),_0x5425a9=_0x59d02c['ConnectionManagerRequestService'][_0xc94ab4(0x164)](_0x3b0d21['id'],_0x36a899,_0x4bcbb1[_0xc94ab4(0x142)]||0xfa0);}finally{try{const _0x2d0fe0=await window[_0xc94ab4(0x198)][_0xc94ab4(0x1a8)](_0xc94ab4(0x174));if(_0x29b4b7&&_0x29b4b7!==_0x2d0fe0){console[_0xc94ab4(0x11a)](_0xc94ab4(0x14f)+_0x2d0fe0+'\x20->\x20'+_0x29b4b7);const _0x3af02c=_0x29b4b7[_0xc94ab4(0x105)](/"/g,'\x5c\x22');await window[_0xc94ab4(0x198)]['triggerSlash'](_0xc94ab4(0x158)+_0x3af02c+'\x22');}}catch(_0x540e31){console['error'](_0xc94ab4(0x151),_0x540e31);}}const _0x22df5b=await _0x5425a9;if(!_0x22df5b)throw new Error(_0xc94ab4(0x139));const _0x3f950c=normalizeApiResponse(_0x22df5b);if(_0x3f950c['error'])throw new Error(_0x3f950c[_0xc94ab4(0x140)][_0xc94ab4(0x197)]||_0xc94ab4(0x102));return _0x3f950c[_0xc94ab4(0x1a1)];}export function generateRandomSeed(){const _0x6174db=_0x3fcebc,_0x3d7a21=_0x6174db(0x199),_0x53c763=()=>_0x3d7a21[Math[_0x6174db(0x130)](Math[_0x6174db(0x180)]()*_0x3d7a21[_0x6174db(0x14e)])],_0x4f3dec=_0x361bdc=>Math[_0x6174db(0x130)](Math['random']()*_0x361bdc)+0x1;let _0x1efa7b='';return _0x1efa7b+=_0x53c763(),_0x1efa7b+=_0x4f3dec(0x1d4b4b),_0x1efa7b+=_0x53c763(),_0x1efa7b+=_0x53c763(),_0x1efa7b+=_0x4f3dec(0x1bf52),_0x1efa7b+=_0x53c763(),_0x1efa7b+=_0x53c763(),_0x1efa7b+=_0x4f3dec(0x270f),_0x1efa7b+=_0x4f3dec(0x270f),_0x1efa7b+=_0x53c763(),_0x1efa7b;}export async function checkAndFixWithAPI(_0x4036d6,_0x52c989){const _0x5a6f97=_0x3fcebc,{processOptimization:_0xc7cd7a}=await import(_0x5a6f97(0x11e));return await _0xc7cd7a(_0x4036d6,_0x52c989);}
+import { extension_settings, getContext } from "/scripts/extensions.js";
+import { characters } from "/script.js";
+import { world_names } from "/scripts/world-info.js";
+import { extensionName } from "../utils/settings.js";
+import { extractContentByTag, replaceContentByTag, extractFullTagBlock } from '../utils/tagProcessor.js';
+import {
+  getCombinedWorldbookContent,
+  findLatestSummaryLore,
+  DEDICATED_LOREBOOK_NAME,
+  getChatIdentifier,
+} from "./lore.js";
+
+import {
+  isGoogleEndpoint,
+  convertToGoogleRequest,
+  parseGoogleResponse,
+  buildGoogleApiUrl
+} from '../core/utils/googleAdapter.js';
+ 
+import {
+  intelligentPoll,
+  createGooglePollingTask,
+  progressTracker
+} from '../core/utils/pollingManager.js';
+
+import {
+  buildGoogleEmbeddingRequest,
+  parseGoogleEmbeddingResponse,
+  buildGoogleEmbeddingApiUrl
+} from './utils/googleAdapter.js';
+
+import { getRequestHeaders } from '/script.js';
+
+
+let ChatCompletionService = undefined;
+try {
+    const module = await import('/scripts/custom-request.js');
+    ChatCompletionService = module.ChatCompletionService;
+    console.log('[Amily2号-外交部] 已成功召唤“皇家信使”(ChatCompletionService)。');
+} catch (e) {
+    console.warn("[Amily2号-外交部] 未能召唤“皇家信使”，部分高级功能（如Claw代理）将受限。请考虑更新SillyTavern版本。", e);
+}
+ 
+const UPDATE_CHECK_URL =
+  "https://raw.githubusercontent.com/Wx-2025/ST-Amily2-Chat-Optimisation/refs/heads/main/amily2_update_info.json";
+
+const MESSAGE_BOARD_URL =
+  "https://raw.githubusercontent.com/Wx-2025/ST-Amily2-Chat-Optimisation/refs/heads/main/amily2_message_board.json";
+ 
+export async function fetchMessageBoardContent() {
+    if (!MESSAGE_BOARD_URL) {
+        console.log('[Amily2号-内务府] 任务取消：陛下尚未配置留言板URL。');
+        return null;
+    }
+    try {
+        const response = await fetch(MESSAGE_BOARD_URL, { cache: 'no-store' });
+        if (!response.ok) {
+            throw new Error(`服务器响应异常: ${response.status}`);
+        }
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('[Amily2号-内务府] 获取留言板内容失败:', error);
+        return null;
+    }
+}
+ 
+export async function checkForUpdates() {
+    if (!UPDATE_CHECK_URL || UPDATE_CHECK_URL.includes('YourUsername')) {
+        console.log('[Amily2号-外交部] 任务取消：陛下尚未配置情报来源URL。');
+        return null;
+    }
+ 
+ 
+    try {
+        console.log('[Amily2号-外交部] 已派遣使者前往云端获取最新情报...');
+        const response = await fetch(UPDATE_CHECK_URL, {
+            method: 'GET',
+            cache: 'no-store',
+            mode: 'cors'
+        });
+ 
+ 
+ 
+        if (!response.ok) {
+            throw new Error(`远方服务器响应异常，状态: ${response.status}`);
+        }
+ 
+        const data = await response.json();
+        console.log('[Amily2号-外交部] 情报已成功获取并解析。');
+        return data;
+ 
+    } catch (error) {
+        console.error('[Amily2号-外交部] 紧急军情：外交任务失败！', error);
+        return null;
+    }
+}
+ 
+function normalizeApiResponse(responseData) {
+    let data = responseData;
+    if (typeof data === 'string') {
+        try {
+            data = JSON.parse(data);
+        } catch (e) {
+            console.error(`[${extensionName}] API响应JSON解析失败:`, e);
+            return { error: { message: 'Invalid JSON response' } };
+        }
+    }
+    if (data && typeof data.data === 'object' && data.data !== null && !Array.isArray(data.data)) {
+        if (Object.hasOwn(data.data, 'data')) {
+            data = data.data;
+        }
+    }
+    if (data && data.choices && data.choices[0]) {
+        return { content: data.choices[0].message?.content?.trim() };
+    }
+    if (data && data.content) {
+        return { content: data.content.trim() };
+    }
+    if (data && data.data) { 
+        return { data: data.data };
+    }
+    if (data && data.error) {
+        return { error: data.error };
+    }
+    return data;
+}
+
+
+export async function fetchModels() {
+    if (window.AMILY2_LOCK_MODEL_FETCHING) {
+        console.warn("[Amily2号-使节团] 上次任务尚未完成，本次任务取消。");
+        toastr.info("上次任务尚未完成，请稍后再试。", "任务排队中");
+        return [];
+    }
+
+    window.AMILY2_LOCK_MODEL_FETCHING = true;
+
+    try {
+        const apiProvider = $("#amily2_api_provider").val() || 'openai';
+        const apiUrl = $("#amily2_api_url").val().trim();
+        const apiKey = $("#amily2_api_key").val().trim();
+        const $button = $("#amily2_refresh_models");
+        const $selector = $("#amily2_model");
+
+        console.log(`[Amily2号-使节团] 使用 API 提供商: ${apiProvider}`);
+
+        $button.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> 加载中');
+        $selector.empty().append($('<option>', { value: '', text: '正在获取模型列表...' }));
+
+        let result = [];
+
+        switch (apiProvider) {
+            case 'openai':
+                result = await fetchOpenAICompatibleModels(apiUrl, apiKey);
+                break;
+            case 'openai_test':
+                result = await fetchOpenAITestModels(apiUrl, apiKey);
+                break;
+            case 'google':
+                result = await fetchGoogleDirectModels(apiUrl, apiKey);
+                break;
+            case 'sillytavern_backend':
+                result = await fetchSillyTavernBackendModels(apiUrl, apiKey);
+                break;
+            case 'sillytavern_preset':
+                result = await fetchSillyTavernPresetModels();
+                break;
+            default:
+                throw new Error(`未支持的API提供商: ${apiProvider}`);
+        }
+
+        if (result.length > 0) {
+            toastr.success(`成功获取 ${result.length} 个模型`, "任务成功");
+            return result;
+        } else {
+            toastr.warning("未找到可用模型", "注意");
+            return [];
+        }
+
+    } catch (error) {
+        console.error("[Amily2号-使节团] 获取模型列表失败:", error);
+        toastr.error(`获取模型列表失败: ${error.message}`, "任务失败");
+        return [];
+    } finally {
+        window.AMILY2_LOCK_MODEL_FETCHING = false;
+        const $button = $("#amily2_refresh_models");
+        $button.prop("disabled", false).html('<i class="fas fa-sync-alt"></i> 刷新模型');
+    }
+}
+
+
+async function fetchOpenAICompatibleModels(apiUrl, apiKey) {
+    if (!apiUrl || !apiKey) {
+        throw new Error("OpenAI兼容模式需要API URL和API Key");
+    }
+
+    const baseUrl = apiUrl.replace(/\/$/, '').replace(/\/v1$/, '');
+    const modelsUrl = `${baseUrl}/v1/models`;
+
+    console.log(`[Amily2号-使节团] OpenAI兼容模式: ${modelsUrl}`);
+
+    const response = await fetch(modelsUrl, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+        }
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    const models = data.data || data.models || [];
+    
+    return models
+        .map(m => m.id || m.model)
+        .filter(Boolean)
+        .filter(m => !m.toLowerCase().includes('embed'))
+        .sort();
+}
+
+async function fetchOpenAITestModels(apiUrl, apiKey) {
+    const response = await fetch('/api/backends/chat-completions/status', {
+        method: 'POST',
+        headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            reverse_proxy: apiUrl,
+            proxy_password: apiKey,
+            chat_completion_source: 'openai'
+        })
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    const rawData = await response.json();
+    const result = normalizeApiResponse(rawData);
+    const models = result.data || [];
+
+    if (result.error || !Array.isArray(models)) {
+        const errorMessage = result.error?.message || 'API未返回有效的模型列表数组';
+        throw new Error(errorMessage);
+    }
+    
+    return models
+        .map(m => m.id || m.model)
+        .filter(Boolean)
+        .sort();
+}
+
+
+async function fetchGoogleDirectModels(apiUrl, apiKey) {
+    if (!apiKey) {
+        throw new Error("Google直连模式需要API Key");
+    }
+
+    const GOOGLE_API_BASE_URL = 'https://generativelanguage.googleapis.com';
+    
+    const fetchGoogleModels = async (version) => {
+        const url = `${GOOGLE_API_BASE_URL}/${version}/models?key=${apiKey}`;
+        console.log(`[Amily2号-使节团] 正在从 Google API (${version}) 获取模型列表: ${url}`);
+        
+        const response = await fetch(url);
+        if (!response.ok) {
+            console.warn(`获取 Google API (${version}) 模型列表失败: ${response.status}`);
+            return [];
+        }
+        
+        const json = await response.json();
+        if (!json.models || !Array.isArray(json.models)) {
+            return [];
+        }
+        
+        return json.models
+            .filter(model => 
+                model.supportedGenerationMethods?.includes('generateContent') ||
+                model.supportedGenerationMethods?.includes('streamGenerateContent')
+            )
+            .map(model => model.name.replace('models/', ''));
+    };
+
+    const [v1Models, v1betaModels] = await Promise.all([
+        fetchGoogleModels('v1'),
+        fetchGoogleModels('v1beta')
+    ]);
+
+    const allModels = [...new Set([...v1Models, ...v1betaModels])].sort();
+    return allModels;
+}
+
+async function fetchSillyTavernBackendModels(apiUrl, apiKey) {
+    if (!apiUrl) {
+        throw new Error("SillyTavern后端模式需要API URL");
+    }
+
+    console.log('[Amily2号-使节团] 通过SillyTavern后端获取模型列表');
+
+    const rawResponse = await $.ajax({
+        url: '/api/backends/chat-completions/status',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            chat_completion_source: 'custom',
+            custom_url: apiUrl,
+            api_key: apiKey
+        })
+    });
+
+    const result = normalizeApiResponse(rawResponse);
+    const models = result.data || [];
+
+    if (result.error || !Array.isArray(models)) {
+        const errorMessage = result.error?.message || 'API未返回有效的模型列表数组';
+        throw new Error(errorMessage);
+    }
+
+    return models
+        .map(model => model.id || model.model)
+        .filter(Boolean)
+        .sort();
+}
+
+
+async function fetchSillyTavernPresetModels() {
+    console.log('[Amily2号-使节团] 使用SillyTavern预设模式');
+
+    try {
+        const context = getContext();
+        if (!context) {
+            throw new Error("无法获取SillyTavern上下文");
+        }
+
+        const currentModel = context.chat_completion_source;
+        const models = [];
+
+        if (currentModel) {
+            models.push(currentModel);
+        }
+
+        const defaultModels = [
+            'gpt-3.5-turbo',
+            'gpt-4',
+            'claude-3-sonnet',
+            'claude-3-haiku',
+            'gemini-pro'
+        ];
+
+        const allModels = [...new Set([...models, ...defaultModels])].sort();
+        return allModels;
+
+    } catch (error) {
+        console.warn('[Amily2号-使节团] 获取SillyTavern预设失败，返回默认模型列表:', error);
+        
+
+        return [
+            'gpt-3.5-turbo',
+            'gpt-4',
+            'claude-3-sonnet',
+            'claude-3-haiku',
+            'gemini-pro'
+        ];
+    }
+}
+ 
+
+export function getApiSettings() {
+    return {
+        apiProvider: $("#amily2_api_provider").val() || 'openai',
+        apiUrl: $("#amily2_api_url").val().trim(),
+        apiKey: $("#amily2_api_key").val().trim(),
+        model: $("#amily2_model").val(),
+        maxTokens: extension_settings[extensionName]?.maxTokens || 4000,
+        temperature: extension_settings[extensionName]?.temperature || 0.7,
+        tavernProfile: extension_settings[extensionName]?.tavernProfile || ''
+    };
+}
+
+
+export async function testApiConnection() {
+    console.log('[Amily2号-外交部] 开始API连接测试');
+    
+    const apiProvider = $("#amily2_api_provider").val() || 'openai';
+    const models = await fetchModels();
+    
+    if (models.length > 0) {
+        toastr.success(`${apiProvider} 提供商连接正常，找到 ${models.length} 个模型`, 'API连接正常');
+        return true;
+    } else {
+        toastr.error('无法获取模型列表，请检查配置', 'API连接失败');
+        return false;
+    }
+}
+
+export async function callAI(messages, options = {}) {
+    if (window.AMILY2_SYSTEM_PARALYZED === true) {
+        console.error("[Amily2-制裁] 系统完整性已受损，所有外交活动被无限期中止。");
+        return null;
+    }
+
+    const apiSettings = getApiSettings();
+
+    const finalOptions = {
+        maxTokens: apiSettings.maxTokens,
+        temperature: apiSettings.temperature,
+        model: apiSettings.model,
+        apiUrl: apiSettings.apiUrl,
+        apiKey: apiSettings.apiKey,
+        apiProvider: apiSettings.apiProvider,
+        ...options
+    };
+
+    if (finalOptions.apiProvider !== 'sillytavern_preset') {
+        if (!finalOptions.apiUrl || !finalOptions.model) {
+            console.warn("[Amily2-外交部] API URL或模型未配置，无法调用AI");
+            toastr.error("API URL或模型未配置，无法调用AI。", "Amily2-外交部");
+            return null;
+        }
+    }
+
+    console.groupCollapsed(`[Amily2号-统一API调用] ${new Date().toLocaleTimeString()}`);
+    console.log("【请求参数】:", { 
+        provider: finalOptions.apiProvider,
+        model: finalOptions.model, 
+        maxTokens: finalOptions.maxTokens, 
+        temperature: finalOptions.temperature,
+        messagesCount: messages.length
+    });
+    console.log("【消息内容】:", messages);
+    console.groupEnd();
+
+    try {
+        let responseContent;
+
+        switch (finalOptions.apiProvider) {
+            case 'openai':
+                responseContent = await callOpenAICompatible(messages, finalOptions);
+                break;
+            case 'openai_test':
+                responseContent = await callOpenAITest(messages, finalOptions);
+                break;
+            case 'google':
+                responseContent = await callGoogleDirect(messages, finalOptions);
+                break;
+            case 'sillytavern_backend':
+                responseContent = await callSillyTavernBackend(messages, finalOptions);
+                break;
+            case 'sillytavern_preset':
+                responseContent = await callSillyTavernPreset(messages, finalOptions);
+                break;
+            default:
+                console.error(`[Amily2-外交部] 未支持的API提供商: ${finalOptions.apiProvider}`);
+                return null;
+        }
+
+        if (!responseContent) {
+            console.warn('[Amily2-外交部] 未能获取AI响应内容，但不视为错误');
+            return null;
+        }
+
+        console.groupCollapsed("[Amily2号-AI回复]");
+        console.log(responseContent);
+        console.groupEnd();
+
+        return responseContent;
+
+    } catch (error) {
+        console.error(`[Amily2-外交部] API调用发生错误:`, error);
+
+        if (error.message.includes('400')) {
+            toastr.error(`API请求格式错误 (400): 请检查消息格式和模型配置`, "API调用失败");
+        } else if (error.message.includes('401')) {
+            toastr.error(`API认证失败 (401): 请检查API Key配置`, "API调用失败");
+        } else if (error.message.includes('403')) {
+            toastr.error(`API访问被拒绝 (403): 请检查权限设置`, "API调用失败");
+        } else if (error.message.includes('429')) {
+            toastr.error(`API调用频率超限 (429): 请稍后重试`, "API调用失败");
+        } else if (error.message.includes('500')) {
+            toastr.error(`API服务器错误 (500): 请稍后重试`, "API调用失败");
+        } else {
+            toastr.error(`API调用失败: ${error.message}`, "API调用失败");
+        }
+        
+        return null;
+    }
+}
+
+
+async function callOpenAICompatible(messages, options) {
+    const baseUrl = options.apiUrl.replace(/\/$/, '').replace(/\/v1$/, '');
+    const apiUrl = `${baseUrl}/v1/chat/completions`;
+
+    console.log(`[Amily2号-OpenAI兼容] API地址: ${apiUrl}`);
+
+    const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${options.apiKey}`,
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            model: options.model,
+            messages: messages,
+            max_tokens: options.maxTokens,
+            temperature: options.temperature,
+            stream: false
+        })
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`OpenAI兼容API请求失败: ${response.status} - ${errorText}`);
+    }
+
+    const responseData = await response.json();
+    return responseData?.choices?.[0]?.message?.content;
+}
+
+async function callOpenAITest(messages, options) {
+    const response = await fetch('/api/backends/chat-completions/generate', {
+        method: 'POST',
+        headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            messages: messages,
+            model: options.model,
+            temperature: options.temperature,
+            frequency_penalty: 0,
+            presence_penalty: 0.12,
+            top_p: options.top_p || 1,
+            max_tokens: options.maxTokens,
+            stream: false,
+            chat_completion_source: 'openai',
+            group_names: [],
+            include_reasoning: false,
+            reasoning_effort: 'medium',
+            enable_web_search: false,
+            request_images: false,
+            custom_prompt_post_processing: 'strict',
+            reverse_proxy: options.apiUrl,
+            proxy_password: options.apiKey
+        })
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`OpenAI兼容(测试)API请求失败: ${response.status} - ${errorText}`);
+    }
+
+    const responseData = await response.json();
+    return responseData?.choices?.[0]?.message?.content;
+}
+
+
+async function callGoogleDirect(messages, options) {
+    const GOOGLE_API_BASE_URL = 'https://generativelanguage.googleapis.com';
+
+    const apiVersion = options.model.includes('gemini-1.5') ? 'v1beta' : 'v1';
+    const finalApiUrl = `${GOOGLE_API_BASE_URL}/${apiVersion}/models/${options.model}:generateContent?key=${options.apiKey}`;
+    
+    console.log(`[Amily2号-Google直连] API地址: ${finalApiUrl}`);
+
+    const headers = { 
+        "Content-Type": "application/json"
+    };
+
+    const requestBody = JSON.stringify(convertToGoogleRequest({ 
+        model: options.model, 
+        messages, 
+        max_tokens: options.maxTokens, 
+        temperature: options.temperature 
+    }));
+
+    const response = await fetch(finalApiUrl, { 
+        method: "POST", 
+        headers: headers, 
+        body: requestBody 
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Google API请求失败: ${response.status} - ${errorText}`);
+    }
+
+    let responseData = await response.json();
+
+    if (responseData.name && responseData.metadata) {
+        console.log("[Amily2号-Google] 收到异步操作ID，启用轮询机制...");
+        const operationId = responseData.name;
+        const tracker = progressTracker(operationId, 6);
+        tracker.start();
+        
+        try {
+            const pollingTask = createGooglePollingTask(operationId, GOOGLE_API_BASE_URL, { "Content-Type": "application/json" });
+            const pollingOptions = { 
+                maxAttempts: 6, 
+                baseDelay: 3000, 
+                shouldStop: res => res.done, 
+                onAttempt: (attempt, delay) => { tracker.onAttempt(attempt, delay); }, 
+                onError: (error, attempt) => { tracker.error(error.message); }
+            };
+            const pollingResult = await intelligentPoll(pollingTask, pollingOptions);
+            tracker.complete();
+            
+            if (!pollingResult.response) { 
+                throw new Error("轮询完成但未获得有效响应"); 
+            }
+            responseData = pollingResult.response;
+        } catch (pollingError) {
+            console.error('[Google轮询错误]', pollingError);
+            tracker.error(`轮询失败: ${pollingError.message}`);
+            throw new Error("Google轮询任务失败: " + pollingError.message);
+        }
+    }
+
+    return parseGoogleResponse(responseData)?.choices?.[0]?.message?.content;
+}
+
+async function callSillyTavernBackend(messages, options) {
+    console.log('[Amily2号-ST后端] 通过SillyTavern后端调用API');
+
+    const rawResponse = await $.ajax({
+        url: '/api/backends/chat-completions/generate',
+        type: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            chat_completion_source: 'custom',
+            custom_url: options.apiUrl,
+            api_key: options.apiKey,
+            model: options.model,
+            messages: messages,
+            max_tokens: options.maxTokens,
+            temperature: options.temperature,
+            stream: false
+        })
+    });
+
+    const result = normalizeApiResponse(rawResponse);
+    if (result.error) {
+        throw new Error(result.error.message || 'SillyTavern后端API调用失败');
+    }
+
+    return result.content;
+}
+
+
+async function callSillyTavernPreset(messages, options) {
+    console.log('[Amily2号-ST预设] 使用SillyTavern预设调用');
+
+    if (!window.TavernHelper || !window.TavernHelper.triggerSlash) {
+        throw new Error('TavernHelper不可用，无法使用SillyTavern预设模式');
+    }
+
+    const context = getContext();
+    if (!context) {
+        throw new Error('无法获取SillyTavern上下文');
+    }
+
+    const profileId = options.tavernProfile || extension_settings[extensionName]?.tavernProfile;
+    if (!profileId) {
+        throw new Error('未配置SillyTavern预设ID');
+    }
+
+    let originalProfile = '';
+    let responsePromise;
+
+    try {
+        originalProfile = await window.TavernHelper.triggerSlash('/profile');
+        console.log(`[Amily2号-ST预设] 当前配置文件: ${originalProfile}`);
+
+        const targetProfile = context.extensionSettings?.connectionManager?.profiles?.find(p => p.id === profileId);
+        if (!targetProfile) {
+            throw new Error(`未找到配置文件ID: ${profileId}`);
+        }
+
+        const targetProfileName = targetProfile.name;
+        console.log(`[Amily2号-ST预设] 目标配置文件: ${targetProfileName}`);
+
+        const currentProfile = await window.TavernHelper.triggerSlash('/profile');
+        if (currentProfile !== targetProfileName) {
+            console.log(`[Amily2号-ST预设] 切换配置文件: ${currentProfile} -> ${targetProfileName}`);
+            const escapedProfileName = targetProfileName.replace(/"/g, '\\"');
+            await window.TavernHelper.triggerSlash(`/profile await=true "${escapedProfileName}"`);
+        }
+
+        if (!context.ConnectionManagerRequestService) {
+            throw new Error('ConnectionManagerRequestService不可用');
+        }
+
+        console.log(`[Amily2号-ST预设] 通过配置文件 ${targetProfileName} 发送请求`);
+        responsePromise = context.ConnectionManagerRequestService.sendRequest(
+            targetProfile.id,
+            messages,
+            options.maxTokens || 4000
+        );
+
+    } finally {
+        try {
+            const currentProfileAfterCall = await window.TavernHelper.triggerSlash('/profile');
+            if (originalProfile && originalProfile !== currentProfileAfterCall) {
+                console.log(`[Amily2号-ST预设] 恢复原始配置文件: ${currentProfileAfterCall} -> ${originalProfile}`);
+                const escapedOriginalProfile = originalProfile.replace(/"/g, '\\"');
+                await window.TavernHelper.triggerSlash(`/profile await=true "${escapedOriginalProfile}"`);
+            }
+        } catch (restoreError) {
+            console.error('[Amily2号-ST预设] 恢复配置文件失败:', restoreError);
+        }
+    }
+
+    const result = await responsePromise;
+
+    if (!result) {
+        throw new Error('未收到API响应');
+    }
+
+    const normalizedResult = normalizeApiResponse(result);
+    if (normalizedResult.error) {
+        throw new Error(normalizedResult.error.message || 'SillyTavern预设API调用失败');
+    }
+
+    return normalizedResult.content;
+}
+
+export function generateRandomSeed() {
+    const letters = 'abcdefghijklmnopqrstuvwxyz';
+    const randomLetter = () => letters[Math.floor(Math.random() * letters.length)];
+    const randomRoll = (max) => Math.floor(Math.random() * max) + 1;
+
+    let seed = '';
+    seed += randomLetter();
+    seed += randomRoll(1919819);
+    seed += randomLetter();
+    seed += randomLetter();
+    seed += randomRoll(114514);
+    seed += randomLetter();
+    seed += randomLetter();
+    seed += randomRoll(9999);
+    seed += randomRoll(9999);
+    seed += randomLetter();
+    
+    return seed;
+}
+
+
+export async function checkAndFixWithAPI(latestMessage, previousMessages) {
+    const { processOptimization } = await import('./summarizer.js');
+    return await processOptimization(latestMessage, previousMessages);
+}
