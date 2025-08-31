@@ -1,380 +1,528 @@
-
-
-
+/* ------------------ 整体模态窗口布局 ------------------ */
 #hly-modal-container {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    padding: 10px 5px;
-    box-sizing: border-box;
-}
-
-.hly-scroll {
-    overflow-y: auto;
-    padding-right: 10px;    
-}
-
-
-.hly-settings-group {
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 12px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #E0E0E0;
+    background-color: #2C2C2C;
     padding: 15px;
-    margin: 0 0 20px 0;
-    display: flex;
-    flex-direction: column;
-    gap: 18px;
-    background: rgba(0,0,0,0.1);
-    box-shadow: inset 0 0 15px rgba(0,0,0,0.2);
-}
-
-.hly-settings-group legend {
-    font-size: 1.2em;
-    font-weight: bold;
-    color: #e0e0e0;
-    padding: 0 10px;
-    margin-left: 10px;
-    background: linear-gradient(to right, #c0bde4, #dfdff0);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    text-shadow: 0 0 5px rgba(200, 200, 255, 0.3);
-}
-
-.hly-settings-group legend > i {
-    margin-right: 10px;
-    color: #9e8aff; 
-}
-
-
-.hly-control-block {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.hly-control-block label, .hly-control-block .hly-label {
-    font-weight: bold;
-    color: #d1d1d1;
-    font-size: 1em;
-}
-
-.hly-control-block .hly-notes {
-    font-size: 0.85em;
-    color: #b0b0b0;
-    opacity: 0.9;
-    font-style: italic;
-    padding-left: 5px;
-}
-
-
-.hly-imperial-brush {
-    width: 100%;
-    box-sizing: border-box;
-    background-color: rgba(0, 0, 0, 0.3);
-    border: 1px solid #555;
     border-radius: 8px;
-    padding: 10px;
-    color: #f0f0f0;
-    transition: all 0.3s ease;
-}
-.hly-imperial-brush:focus {
-    background-color: rgba(0, 0, 0, 0.5);
-    border-color: #7e57c2;
-    box-shadow: 0 0 10px rgba(126, 87, 194, 0.5);
-    outline: none;
-}
-
-
-.hly-toggle-switch {
-    position: relative;
-    display: inline-block;
-    width: 50px;
-    height: 26px;
-    flex-shrink: 0;
-}
-.hly-toggle-switch input { opacity: 0; width: 0; height: 0; }
-.hly-toggle-switch .slider {
-    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
-    background-color: #333; border-radius: 26px; transition: .4s;
-    border: 1px solid #555;
-}
-.hly-toggle-switch .slider:before {
-    position: absolute; content: ""; height: 20px; width: 20px; left: 2px; bottom: 2px;
-    background-color: white; border-radius: 50%; transition: .4s;
-}
-.hly-toggle-switch input:checked + .slider {
-    background: linear-gradient(to right, #7e57c2, #5e35b1);
-    box-shadow: 0 0 8px rgba(126, 87, 194, 0.7);
-}
-.hly-toggle-switch input:checked + .slider:before { transform: translateX(24px); }
-
-.hly-checkbox-group {
+    max-width: 90vw;
+    margin: auto;
     display: flex;
+    flex-direction: column;
     gap: 15px;
-    align-items: center;
-}
-.hly-checkbox-group label {
-    display: flex;
-    align-items: center;
-    gap: 8px;
 }
 
-
-.hly-navigation-deck {
-    display: flex;
-    border: 1px solid #555;
-    border-radius: 8px;
-    overflow: hidden;
-    background-color: #2a2a2e;
-}
-.hly-nav-item {
-    flex: 1;
-    text-align: center;
-    padding: 10px 12px;
-    cursor: pointer;
-    background-color: transparent;
-    color: #ccc;
-    transition: all 0.3s ease;
-    border: none;
-    border-left: 1px solid #555;
-    font-size: 1em;
-}
-.hly-nav-item:first-of-type { border-left: none; }
-.hly-nav-item.active, .hly-nav-item:hover {
-    background: linear-gradient(135deg, #7e57c2, #5e35b1);
-    color: white;
-    font-weight: bold;
-    text-shadow: 0 0 5px rgba(0,0,0,0.5);
-    box-shadow: inset 0 0 10px rgba(0,0,0,0.3);
-}
-
-
-.hly-tab-pane { display: none; }
-.hly-tab-pane.active { display: block; }
-
-
-.hly-imperial-edict {
-    background: rgba(0,0,0,0.2);
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 10px;
-    padding: 15px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-.hly-edict-row { display: flex; justify-content: space-between; align-items: center; }
-.hly-edict-item { display: flex; align-items: center; gap: 8px; }
-.hly-edict-label { color: #aaa; }
-.hly-edict-value { color: #e0e0e0; font-weight: bold; }
-.hly-memory-count {
-    font-size: 1.5em;
-    color: #ffc107;
-    text-shadow: 0 0 8px rgba(255, 193, 7, 0.5);
-}
-
-
-.hly-action-button {
-    padding: 8px 15px;
-    border-radius: 8px;
-    border: 1px solid transparent;
-    cursor: pointer;
-    font-weight: bold;
-    transition: all 0.3s ease;
-    background-color: #444;
-    color: #eee;
-    border-color: #666;
-}
-.hly-action-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.3);
-}
-.hly-action-button.accent {
-    background: linear-gradient(135deg, #7e57c2, #5e35b1);
-    border-color: #4527a0;
-    color: white;
-}
-.hly-action-button.accent:hover { box-shadow: 0 0 12px rgba(126, 87, 194, 0.7); }
-.hly-action-button.secondary {
-    background: linear-gradient(135deg, #6c757d, #495057);
-    border-color: #343a40;
-    color: white;
-}
-.hly-action-button.secondary:hover { box-shadow: 0 0 12px rgba(108, 117, 125, 0.7); }
-.hly-action-button.danger {
-    background: linear-gradient(135deg, #d32f2f, #b71c1c);
-    border-color: #8f1717;
-    color: white;
-}
-.hly-action-button.danger:hover { box-shadow: 0 0 12px rgba(211, 47, 47, 0.7); }
-.hly-action-button.success {
-    background: linear-gradient(135deg, #28a745, #1e7e34);
-    border-color: #155d27;
-    color: white;
-}
-.hly-action-button.success:hover { box-shadow: 0 0 12px rgba(40, 167, 69, 0.7); }
-
-.hly-button-group {
-    display: flex;
-    gap: 12px;
-    flex-wrap: wrap;
-}
-
-
-.hly-footer {
-    display: flex;
-    justify-content: flex-end;
-    gap: 15px;
-    padding-top: 15px;
-    border-top: 1px solid rgba(255,255,255,0.1);
-}
-
-.hly-results-display {
-    background: rgba(0,0,0,0.2);
-    border-radius: 8px;
-    padding: 10px;
-    min-height: 50px;
-    font-size: 0.9em;
-    color: #ccc;
-    border: 1px solid #444;
-}
-
-
-.hly-preview-container-v2 {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+/* ------------------ 滚动区域 ------------------ */
+#hly-modal-container .hly-scroll {
     max-height: 60vh;
     overflow-y: auto;
-    padding-right: 5px;
-}
-
-.hly-preview-item-v2 {
+    padding-right: 10px;
     display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    border: 1px solid #444;
-    border-radius: 8px;
-    padding: 10px;
-    background-color: rgba(255, 255, 255, 0.05);
+    flex-direction: column;
+    gap: 15px;
 }
 
-.hly-preview-details {
-    flex-grow: 1;
+/* ------------------ 滚动条美化 ------------------ */
+#hly-modal-container .hly-scroll::-webkit-scrollbar {
+    width: 8px;
+}
+#hly-modal-container .hly-scroll::-webkit-scrollbar-track {
+    background: #333;
+    border-radius: 4px;
+}
+#hly-modal-container .hly-scroll::-webkit-scrollbar-thumb {
+    background-color: #555;
+    border-radius: 4px;
+    border: 2px solid #333;
+}
+#hly-modal-container .hly-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: #777;
 }
 
-.hly-preview-summary {
+/* ------------------ 头部 & 分割线 ------------------ */
+#hly-modal-container .amily2-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+}
+#hly-modal-container .additional-features-title {
+    font-size: 1.5em;
     font-weight: bold;
-    cursor: pointer;
-    padding: 5px;
-    border-radius: 5px;
-    transition: background-color 0.2s ease;
-    list-style: none;   
+    color: #8A2BE2;
+}
+#hly-modal-container .header-divider {
+    border: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, #555, transparent);
+    margin: 0;
 }
 
-.hly-preview-summary::-webkit-details-marker {
-    display: none;  
-}
-
-.hly-preview-summary:before {
-    content: '▶'; 
-    margin-right: 8px;
-    font-size: 0.8em;
-    display: inline-block;
-    transition: transform 0.2s ease;
-}
-
-.hly-preview-details[open] > .hly-preview-summary:before {
-    transform: rotate(90deg);
-}
-
-.hly-preview-summary:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-}
-
-.hly-preview-content {
-    padding-top: 10px;
-}
-
-.hly-preview-textarea {
-    width: 100%;
-    min-height: 100px;
-    box-sizing: border-box;
-    background-color: rgba(0, 0, 0, 0.3);
-    border: 1px solid #555;
-    border-radius: 8px;
-    padding: 10px;
-    color: #f0f0f0;
-    resize: vertical; 
-}
-
-.hly-preview-delete-btn-v2 {
-    flex-shrink: 0;
-    background: transparent;
-    border: 1px solid #888;
-    color: #ccc;
-    width: 30px;
-    height: 30px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 1.2em;
-    line-height: 1;
-    transition: all 0.2s ease;
-}
-
-.hly-preview-delete-btn-v2:hover {
-    background-color: #d32f2f;
-    border-color: #b71c1c;
-    color: white;
-    transform: scale(1.1);
-}
-
-/* ================== 起居注 (日志) 样式 ================== */
-.hly-log-display {
-    background: rgba(0,0,0,0.25);
-    border-radius: 8px;
-    padding: 12px;
+/* ------------------ 状态诏书 (顶部信息面板) ------------------ */
+#hly-modal-container .hly-imperial-edict {
+    background-color: rgba(0, 0, 0, 0.2);
     border: 1px solid #444;
-    max-height: 200px; /* 固定最大高度 */
-    overflow-y: auto;  /* 内容超出时显示滚动条 */
+    border-radius: 6px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+#hly-modal-container .hly-edict-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+#hly-modal-container .hly-edict-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+#hly-modal-container .hly-edict-label {
+    color: #AAA;
     font-size: 0.9em;
-    color: #ccc;
+}
+#hly-modal-container .hly-edict-value {
+    color: #E0E0E0;
+    font-weight: bold;
+    background-color: #383838;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+#hly-modal-container .hly-memory-display .hly-memory-count {
+    color: #4CAF50; /* 绿色 */
+}
+#hly-modal-container .hly-locked-status {
+    color: #8A2BE2 !important; /* 锁定状态用醒目的紫罗兰色 */
+    font-style: italic;
+}
+
+/* ------------------ 司南 (导航栏) ------------------ */
+#hly-modal-container .hly-navigation-deck {
+    display: flex;
+    background-color: #333;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #444;
+}
+#hly-modal-container .hly-nav-item {
+    flex-grow: 1;
+    padding: 10px 15px;
+    text-align: center;
+    cursor: pointer;
+    background-color: transparent;
+    color: #CCC;
+    border: none;
+    border-right: 1px solid #444;
+    transition: background-color 0.3s, color 0.3s;
+}
+#hly-modal-container .hly-nav-item:last-child {
+    border-right: none;
+}
+#hly-modal-container .hly-nav-item:hover {
+    background-color: #454545;
+    color: #FFF;
+}
+#hly-modal-container .hly-nav-item.active {
+    background-color: #8A2BE2;
+    color: #FFFFFF;
+    font-weight: bold;
+}
+
+/* ------------------ 标签页内容 ------------------ */
+#hly-modal-container .hly-tab-pane {
+    display: none;
+    flex-direction: column;
+    gap: 15px;
+}
+#hly-modal-container .hly-tab-pane.active {
+    display: flex;
+}
+
+/* ------------------ 设置组 (Fieldset) ------------------ */
+#hly-modal-container .hly-settings-group {
+    border: 1px solid #4A4A4A;
+    border-radius: 6px;
+    padding: 15px;
+    background-color: rgba(255, 255, 255, 0.03);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+#hly-modal-container .hly-settings-group legend {
+    color: #8A2BE2;
+    font-weight: bold;
+    padding: 0 10px;
+    margin-left: 5px;
+}
+#hly-modal-container .hly-settings-group legend i {
+    margin-right: 8px;
+}
+
+/* ------------------ 通用控件样式 ------------------ */
+#hly-modal-container .hly-control-block {
     display: flex;
     flex-direction: column;
     gap: 5px;
 }
-
-.hly-log-entry {
-    margin: 0;
-    padding: 4px 8px;
+#hly-modal-container .hly-control-block label {
+    color: #CCC;
+    font-size: 0.95em;
+}
+#hly-modal-container .hly-imperial-brush { /* 通用输入框/下拉框样式 */
+    width: 100%;
+    background-color: #252525;
+    color: #E0E0E0;
+    border: 1px solid #555;
     border-radius: 4px;
-    line-height: 1.5;
-    text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    padding: 8px;
+    box-sizing: border-box;
+}
+#hly-modal-container .hly-imperial-brush:focus {
+    outline: none;
+    border-color: #8A2BE2;
+    box-shadow: 0 0 5px rgba(138, 43, 226, 0.5);
+}
+#hly-modal-container .hly-notes {
+    font-size: 0.8em;
+    color: #888;
+    margin-top: 2px;
 }
 
-.hly-log-entry .fa-solid {
+/* ------------------ 按钮组 ------------------ */
+#hly-modal-container .hly-button-group {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+#hly-modal-container .hly-action-button {
+    background-color: #4A4A4A;
+    color: #E0E0E0;
+    border: 1px solid #666;
+    border-radius: 4px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+#hly-modal-container .hly-action-button:hover {
+    background-color: #5A5A5A;
+    border-color: #888;
+}
+#hly-modal-container .hly-action-button.success {
+    background-color: #4CAF50;
+    border-color: #66BB6A;
+}
+#hly-modal-container .hly-action-button.success:hover {
+    background-color: #5CB85C;
+}
+#hly-modal-container .hly-action-button.danger {
+    background-color: #D9534F;
+    border-color: #E57373;
+}
+#hly-modal-container .hly-action-button.danger:hover {
+    background-color: #E57373;
+}
+#hly-modal-container .hly-action-button.active {
+    background-color: #8A2BE2;
+    color: #FFFFFF;
+    border-color: #9370DB;
+}
+
+/* ------------------ 开关 (Toggle Switch) ------------------ */
+#hly-modal-container .hly-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+#hly-modal-container .hly-toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+#hly-modal-container .hly-toggle-switch .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #555;
+    transition: .4s;
+    border-radius: 24px;
+}
+#hly-modal-container .hly-toggle-switch .slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+#hly-modal-container input:checked + .slider {
+    background-color: #4CAF50;
+}
+#hly-modal-container input:checked + .slider:before {
+    transform: translateX(20px);
+}
+
+/* ------------------ 复选框和单选框 ------------------ */
+#hly-modal-container .hly-checkbox-group,
+#hly-modal-container .hly-radio-group-vertical {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+#hly-modal-container .hly-radio-group-vertical {
+    flex-direction: column;
+    gap: 10px;
+}
+#hly-modal-container .hly-checkbox-group label,
+#hly-modal-container .hly-radio-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+/* ------------------ 结果显示区域 ------------------ */
+#hly-modal-container .hly-results-display,
+#hly-modal-container .hly-log-display {
+    background-color: #1E1E1E;
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 10px;
+    min-height: 80px;
+    max-height: 200px;
+    overflow-y: auto;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+#hly-modal-container .hly-record-hint {
+    color: #888;
+    font-style: italic;
+}
+
+/* ------------------ 日志条目样式 ------------------ */
+#hly-modal-container .hly-log-entry {
+    margin: 0 0 5px 0;
+    padding: 2px 5px;
+    border-radius: 3px;
+}
+#hly-modal-container .hly-log-entry i {
     margin-right: 8px;
-    width: 16px; /* 固定图标宽度，使文本对齐 */
+}
+#hly-modal-container .log-info { color: #A6A6A6; }
+#hly-modal-container .log-success { color: #76C7C0; }
+#hly-modal-container .log-error { color: #F47174; }
+#hly-modal-container .log-warn { color: #F9D56E; }
+
+/* ------------------ 文件上传控件 ------------------ */
+#hly-modal-container .file-input-container {
+    position: relative;
+    overflow: hidden;
+    display: inline-block;
+}
+#hly-modal-container .file-input-container input[type=file] {
+    font-size: 100px;
+    position: absolute;
+    left: 0;
+    top: 0;
+    opacity: 0;
+}
+#hly-modal-container .file-name {
+    display: inline-block;
+    margin-left: 10px;
+    color: #ccc;
+    font-style: italic;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+}
+
+/* ------------------ 预览模态框样式 ------------------ */
+#hly-modal-container .hly-preview-container-v2 {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 10px;
+    background: #2a2a2a;
+    border-radius: 5px;
+}
+#hly-modal-container .hly-preview-item-v2 {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: #333;
+    border: 1px solid #444;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    padding: 10px;
+}
+#hly-modal-container .hly-preview-details {
+    flex-grow: 1;
+}
+#hly-modal-container .hly-preview-summary {
+    cursor: pointer;
+    font-weight: bold;
+    color: #8A2BE2;
+}
+#hly-modal-container .hly-preview-content {
+    margin-top: 8px;
+}
+#hly-modal-container .hly-preview-textarea {
+    width: 100%;
+    min-height: 100px;
+    background: #252525;
+    color: #E0E0E0;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 8px;
+    box-sizing: border-box;
+    resize: vertical;
+}
+#hly-modal-container .hly-preview-delete-btn-v2 {
+    background: #c0392b;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 24px;
     text-align: center;
+    padding: 0;
+    flex-shrink: 0;
 }
 
-.log-info {
-    color: #a0c4ff; /* 淡蓝色 */
-    border-left: 3px solid #6b9eff;
+/* ------------------ 知识库管理列表 ------------------ */
+#hly-modal-container .hly-kb-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+#hly-modal-container .hly-kb-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #383838;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid #484848;
+}
+#hly-modal-container .hly-kb-name {
+    font-weight: bold;
+    color: #DDD;
+}
+#hly-modal-container .hly-kb-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+#hly-modal-container .hly-kb-delete-btn {
+    background: none;
+    border: none;
+    color: #aaa;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0 5px;
+    line-height: 1;
+}
+#hly-modal-container .hly-kb-delete-btn:hover {
+    color: #f44336;
 }
 
-.log-success {
-    color: #a8d8b4; /* 淡绿色 */
-    border-left: 3px solid #5cb85c;
+/* 【修复】为知识库管理列表中的开关添加特定样式 */
+#hly-modal-container #hly-kb-list-container .hly-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+}
+#hly-modal-container #hly-kb-list-container .hly-toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+#hly-modal-container #hly-kb-list-container .hly-toggle-switch .hly-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 20px;
+}
+#hly-modal-container #hly-kb-list-container .hly-toggle-switch .hly-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+#hly-modal-container #hly-kb-list-container input:checked + .hly-toggle-slider {
+    background-color: #2196F3;
+}
+#hly-modal-container #hly-kb-list-container input:checked + .hly-toggle-slider:before {
+    transform: translateX(20px);
 }
 
-.log-error {
-    color: #ffadad; /* 淡红色 */
-    border-left: 3px solid #d9534f;
+/* ------------------ 自定义多选下拉框样式 ------------------ */
+#hly-modal-container .hly-multiselect-container {
+    position: relative;
 }
-
-.log-warn {
-    color: #ffd6a5; /* 淡黄色 */
-    border-left: 3px solid #f0ad4e;
+#hly-modal-container .hly-multiselect-options-container {
+    position: absolute;
+    background-color: #333;
+    border: 1px solid #555;
+    border-radius: 4px;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    margin-top: 5px;
+}
+#hly-modal-container .hly-multiselect-option {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+#hly-modal-container .hly-multiselect-option:hover {
+    background-color: #454545;
+}
+#hly-modal-container .hly-multiselect-option input[type="checkbox"] {
+    margin-right: 10px;
+}
+#hly-modal-container #hly-hist-entry-multiselect-btn {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+}
+#hly-modal-container #hly-hist-entry-multiselect-btn i {
+    transition: transform 0.3s;
+}
+#hly-modal-container #hly-hist-entry-multiselect-options[style*="display: block;"] + #hly-hist-entry-multiselect-btn i {
+    transform: rotate(180deg);
 }
