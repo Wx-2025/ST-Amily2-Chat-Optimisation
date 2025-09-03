@@ -1,1 +1,601 @@
-const _0x4b9993=_0x2c1a;(function(_0x4f47a6,_0x237845){const _0x3b8e8b=_0x2c1a,_0x55c295=_0x4f47a6();while(!![]){try{const _0x5df575=-parseInt(_0x3b8e8b(0x2a6))/0x1*(parseInt(_0x3b8e8b(0x31d))/0x2)+-parseInt(_0x3b8e8b(0x35e))/0x3+-parseInt(_0x3b8e8b(0x217))/0x4*(parseInt(_0x3b8e8b(0x203))/0x5)+-parseInt(_0x3b8e8b(0x281))/0x6*(-parseInt(_0x3b8e8b(0x1e2))/0x7)+parseInt(_0x3b8e8b(0x263))/0x8+parseInt(_0x3b8e8b(0x208))/0x9+parseInt(_0x3b8e8b(0x258))/0xa*(parseInt(_0x3b8e8b(0x1f9))/0xb);if(_0x5df575===_0x237845)break;else _0x55c295['push'](_0x55c295['shift']());}catch(_0x3f5fa8){_0x55c295['push'](_0x55c295['shift']());}}}(_0x242e,0x4a788));import{getContext}from'/scripts/extensions.js';import*as _0x753c4 from'../core/rag-processor.js';import*as _0x5408b8 from'../core/historiographer.js';import*as _0x57912b from'../core/utils/context-utils.js';import*as _0x383bc3 from'../core/ingestion-manager.js';import{showContentModal,showHtmlModal}from'./page-window.js';import{extractBlocksByTags,applyExclusionRules}from'../core/utils/rag-tag-extractor.js';_0x4b9993(0x358);function setupGlobalEventHandlers(){const _0x1a20a0=_0x4b9993;window[_0x1a20a0(0x31f)]=()=>saveSettingsFromUI(![]),window[_0x1a20a0(0x1df)]=resetSettingsToUI,window[_0x1a20a0(0x355)]=testApi,window['fetchHLYEmbeddingModels']=fetchHLYEmbeddingModels,window[_0x1a20a0(0x1e9)]=fetchHLYRerankModels,window[_0x1a20a0(0x28f)]=updatePanelStatus,window[_0x1a20a0(0x218)]=purgeStorage,window[_0x1a20a0(0x272)]=startCondensation,window['previewHLYCondensation']=previewCondensation,window[_0x1a20a0(0x257)]=ingestManualText,window[_0x1a20a0(0x276)]=log,window[_0x1a20a0(0x310)]=showStats,window[_0x1a20a0(0x267)]=startHistoriography;}function updateAndSaveSetting(_0x378a68,_0x35faa1){const _0x5e42ba=_0x4b9993,_0x4e5ddc=_0x753c4[_0x5e42ba(0x231)]();if(!_0x4e5ddc)return;const _0x147016=_0x378a68[_0x5e42ba(0x275)]('.');let _0x3e5c83=_0x4e5ddc;for(let _0x54ea4e=0x0;_0x54ea4e<_0x147016[_0x5e42ba(0x273)]-0x1;_0x54ea4e++){_0x3e5c83=_0x3e5c83[_0x147016[_0x54ea4e]]=_0x3e5c83[_0x147016[_0x54ea4e]]||{};}_0x3e5c83[_0x147016[_0x147016['length']-0x1]]=_0x35faa1,_0x753c4[_0x5e42ba(0x30b)](),log(_0x5e42ba(0x28e)+_0x378a68+_0x5e42ba(0x1b9)+JSON[_0x5e42ba(0x219)](_0x35faa1),'success');}function bindAutoSaveEvents(){const _0x490581=_0x4b9993,_0x1fb9c9=document['getElementById'](_0x490581(0x32d));if(!_0x1fb9c9)return;_0x1fb9c9['addEventListener'](_0x490581(0x230),_0xf1b3b4=>{const _0x41b383=_0x490581,_0x23659c=_0xf1b3b4[_0x41b383(0x280)],_0x477c21=_0x23659c['dataset']['settingKey'];if(!_0x477c21)return;let _0x2a2acf;const _0x5bb1a1=_0x23659c['dataset'][_0x41b383(0x279)]||_0x41b383(0x2c1);if(_0x23659c[_0x41b383(0x279)]===_0x41b383(0x266))_0x2a2acf=_0x23659c[_0x41b383(0x27e)];else{if(_0x23659c['type']==='radio'){if(_0x23659c[_0x41b383(0x27e)]){const _0x1b37f3=_0x1fb9c9[_0x41b383(0x2c9)]('input[name=\x22'+_0x23659c['name']+'\x22]'),_0x73f722=Array[_0x41b383(0x2b0)](_0x1b37f3)[_0x41b383(0x336)](_0x210066=>_0x210066['checked']);_0x2a2acf=_0x73f722[_0x41b383(0x20b)];}else return;}else _0x2a2acf=_0x23659c[_0x41b383(0x20b)];}switch(_0x5bb1a1){case _0x41b383(0x1d0):_0x2a2acf=parseInt(_0x2a2acf,0xa);break;case _0x41b383(0x1f6):_0x2a2acf=parseFloat(_0x2a2acf);break;case _0x41b383(0x1ff):typeof _0x2a2acf!==_0x41b383(0x1ff)&&(_0x2a2acf=_0x2a2acf==='true');break;}if(_0x23659c['type']===_0x41b383(0x1f4)&&!_0x23659c[_0x41b383(0x27e)])return;updateAndSaveSetting(_0x477c21,_0x2a2acf);});}export function bindHanlinyuanEvents(){const _0x2c2d27=_0x4b9993,_0x2ae933=getContext();if(!_0x2ae933){console['error'](_0x2c2d27(0x1d8));return;}setupGlobalEventHandlers(),bindPanelToggleEvents(),bindInternalUIEvents(),bindTutorialEvents(),bindAutoSaveEvents(),bindSessionLockEvent();if(_0x753c4[_0x2c2d27(0x1f8)])_0x753c4['initialize']();else{console['error'](_0x2c2d27(0x2c3));return;}loadSettingsToUI(),loadWorldbookList(),log(_0x2c2d27(0x2e3),_0x2c2d27(0x206));const _0x471423=document[_0x2c2d27(0x292)]('hanlinyuan-ingest-novel-file-input'),_0x1dd3e8=document['getElementById'](_0x2c2d27(0x34d)),_0x271739=document['getElementById'](_0x2c2d27(0x24a)),_0x58a82b=document[_0x2c2d27(0x292)]('hanlinyuan-ingest-abort'),_0xfef93b=document[_0x2c2d27(0x292)]('hanlinyuan-ingest-progress-container'),_0x4c2a02=document['getElementById']('hanlinyuan-ingest-progress-bar'),_0x43841c=document[_0x2c2d27(0x292)](_0x2c2d27(0x300)),_0x5b1949=document[_0x2c2d27(0x292)](_0x2c2d27(0x342));let _0x2254d3=null,_0x1b6ca9=null;_0x471423[_0x2c2d27(0x252)](_0x2c2d27(0x230),_0x5e3a7b=>{const _0x53c61f=_0x2c2d27;_0x2254d3=_0x5e3a7b[_0x53c61f(0x280)][_0x53c61f(0x337)][0x0],_0x2254d3?(_0x1dd3e8[_0x53c61f(0x2ce)]=_0x2254d3[_0x53c61f(0x21a)],_0x1dd3e8['title']=_0x2254d3['name']):_0x1dd3e8[_0x53c61f(0x2ce)]=_0x53c61f(0x23a);}),_0x271739[_0x2c2d27(0x252)](_0x2c2d27(0x1be),async()=>{const _0x31e20b=_0x2c2d27;if(!_0x2254d3){toastr['warning'](_0x31e20b(0x343));return;}let _0x1acf17=0x0;const _0x45e7b2=_0x383bc3[_0x31e20b(0x367)](_0x2254d3),_0x542f75=_0x383bc3[_0x31e20b(0x1f7)](_0x45e7b2);if(_0x542f75){const _0x33d2ec=(_0x542f75[_0x31e20b(0x28d)]/_0x542f75[_0x31e20b(0x2a5)]*0x64)['toFixed'](0x1),_0x3684ca=confirm(_0x31e20b(0x1e6)+_0x33d2ec+_0x31e20b(0x23f));_0x3684ca?(_0x1acf17=_0x542f75[_0x31e20b(0x28d)],toastr[_0x31e20b(0x206)]('遵命，将从第\x20'+(_0x1acf17+0x1)+_0x31e20b(0x2d4),_0x31e20b(0x1db)),log(_0x31e20b(0x1f2)+_0x45e7b2+_0x31e20b(0x31e)+_0x1acf17+_0x31e20b(0x27f),_0x31e20b(0x206))):(_0x383bc3[_0x31e20b(0x256)](_0x45e7b2),toastr['info'](_0x31e20b(0x20d),_0x31e20b(0x1db)),log(_0x31e20b(0x23e)+_0x45e7b2+_0x31e20b(0x2b9),_0x31e20b(0x323)));}_0x1b6ca9=new AbortController();const _0x6436d3=_0x1b6ca9[_0x31e20b(0x29f)];_0x5b1949[_0x31e20b(0x1f5)][_0x31e20b(0x328)]=_0x31e20b(0x265),_0xfef93b[_0x31e20b(0x1f5)]['display']='block',_0x43841c[_0x31e20b(0x2ce)]=_0x31e20b(0x1bd),_0x4c2a02['value']=0x0;try{const _0x1b8a36=await _0x2254d3[_0x31e20b(0x331)](),_0xf9e42e=_0x3ef269=>{const _0x547cd1=_0x31e20b;_0x43841c[_0x547cd1(0x2ce)]=_0x547cd1(0x2d9)+_0x3ef269[_0x547cd1(0x216)]+'\x20('+_0x3ef269['processed']+'/'+_0x3ef269[_0x547cd1(0x1fb)]+')',_0x4c2a02['value']=_0x3ef269[_0x547cd1(0x2b6)]/_0x3ef269[_0x547cd1(0x1fb)]*0x64;},_0xb21d63=()=>{const _0x3eec6a=_0x31e20b;updatePanelStatus(),log(_0x3eec6a(0x34b),_0x3eec6a(0x206));},_0x5cba6b=await _0x753c4['ingestTextToHanlinyuan'](_0x1b8a36,_0x31e20b(0x365),{'sourceName':_0x2254d3[_0x31e20b(0x21a)]},_0xf9e42e,_0x6436d3,log,_0xb21d63,_0x45e7b2,_0x1acf17);if(_0x5cba6b[_0x31e20b(0x22b)])toastr[_0x31e20b(0x22b)](_0x31e20b(0x2f9)+_0x5cba6b[_0x31e20b(0x34a)]+_0x31e20b(0x1bf)),_0x43841c[_0x31e20b(0x2ce)]='任务完成！成功录入\x20'+_0x5cba6b['count']+_0x31e20b(0x36f),_0x4c2a02[_0x31e20b(0x20b)]=0x64,updatePanelStatus();else throw new Error(_0x5cba6b[_0x31e20b(0x288)]||_0x31e20b(0x307));}catch(_0x5ce2a1){_0x5ce2a1[_0x31e20b(0x21a)]==='AbortError'?(toastr[_0x31e20b(0x206)](_0x31e20b(0x2d3)),_0x43841c[_0x31e20b(0x2ce)]=_0x31e20b(0x306)):(toastr[_0x31e20b(0x288)](_0x31e20b(0x28a)+_0x5ce2a1[_0x31e20b(0x216)]+_0x31e20b(0x26a)),_0x43841c[_0x31e20b(0x2ce)]=_0x31e20b(0x211)+_0x5ce2a1[_0x31e20b(0x216)]);}finally{setTimeout(()=>{const _0x5485ac=_0x31e20b;_0x5b1949['style'][_0x5485ac(0x328)]='flex',_0xfef93b[_0x5485ac(0x1f5)]['display']=_0x5485ac(0x265),_0x471423[_0x5485ac(0x20b)]='',_0x2254d3=null,_0x1dd3e8[_0x5485ac(0x2ce)]=_0x5485ac(0x23a);},0xbb8);}}),_0x58a82b['addEventListener'](_0x2c2d27(0x1be),()=>{_0x1b6ca9&&_0x1b6ca9['abort']();});}function bindSessionLockEvent(){const _0x43ef8b=_0x4b9993,_0x4ae6c1=document['getElementById']('hly-session-lock-btn');if(!_0x4ae6c1)return;_0x4ae6c1[_0x43ef8b(0x252)](_0x43ef8b(0x1be),async()=>{const _0x31b75a=_0x43ef8b,_0x4762b7=await _0x753c4[_0x31b75a(0x311)]();updateSessionLockUI(_0x4762b7);if(_0x4762b7){const _0x25ea85=_0x753c4['getLockedSessionInfo']();_0x25ea85&&(toastr[_0x31b75a(0x22b)]('会话已锁定到:\x20'+_0x25ea85['id'],'圣旨已下'),log(_0x31b75a(0x34f)+_0x25ea85['id'],'success'));}else toastr['info'](_0x31b75a(0x294),'诏曰'),log(_0x31b75a(0x1c8),_0x31b75a(0x206));updatePanelStatus();}),updateSessionLockUI(_0x753c4[_0x43ef8b(0x1ee)]());}function updateSessionLockUI(_0x28b04f){const _0x5f2441=_0x4b9993,_0x34d706=document[_0x5f2441(0x292)](_0x5f2441(0x2c8));if(!_0x34d706)return;const _0x1b1e7f=_0x34d706[_0x5f2441(0x2eb)]('i'),_0xa3b229=_0x34d706[_0x5f2441(0x2eb)]('span');_0x28b04f?(_0x34d706['classList'][_0x5f2441(0x1ed)]('active'),_0x1b1e7f['className']='fas\x20fa-lock',_0xa3b229[_0x5f2441(0x2ce)]=_0x5f2441(0x2e1),_0x34d706['title']=_0x5f2441(0x2a1)):(_0x34d706['classList'][_0x5f2441(0x24e)](_0x5f2441(0x353)),_0x1b1e7f[_0x5f2441(0x2b8)]=_0x5f2441(0x360),_0xa3b229['textContent']=_0x5f2441(0x25a),_0x34d706[_0x5f2441(0x368)]='点击以锁定，让翰林院固定操作当前角色的宝库');}function bindPanelToggleEvents(){const _0x41ca0c=_0x4b9993,_0x35f0c5=document[_0x41ca0c(0x292)]('amily2_open_rag_palace');if(_0x35f0c5){}}function bindTutorialEvents(){const _0x483de7=_0x4b9993,_0xbdcdc8=document[_0x483de7(0x292)](_0x483de7(0x369));_0xbdcdc8&&_0xbdcdc8[_0x483de7(0x252)](_0x483de7(0x1be),()=>{const _0x16a5fb=_0x483de7;showContentModal(_0x16a5fb(0x296),'scripts/extensions/third-party/ST-Amily2-Chat-Optimisation/HanLin.md');});}function bindInternalUIEvents(){const _0xe137cf=_0x4b9993,_0x1dc5d8=document[_0xe137cf(0x2c9)](_0xe137cf(0x22f));_0x1dc5d8['forEach'](_0x4b0695=>{const _0x5288e8=_0xe137cf;_0x4b0695[_0x5288e8(0x252)](_0x5288e8(0x1be),()=>{const _0x3d7b68=_0x5288e8,_0x5ec302=_0x4b0695[_0x3d7b68(0x329)][_0x3d7b68(0x318)],_0x4e6eea=_0x3d7b68(0x32c)+_0x5ec302+_0x3d7b68(0x2e6);document[_0x3d7b68(0x2c9)](_0x3d7b68(0x2aa))[_0x3d7b68(0x1c6)](_0xa57d64=>{const _0xa93c33=_0x3d7b68;_0xa57d64['classList']['toggle'](_0xa93c33(0x353),_0xa57d64['id']===_0x4e6eea);}),_0x1dc5d8[_0x3d7b68(0x1c6)](_0x50a51d=>_0x50a51d[_0x3d7b68(0x223)][_0x3d7b68(0x33d)]('active',_0x50a51d===_0x4b0695));});});const _0x42b50d=document[_0xe137cf(0x292)]('hly-api-endpoint');_0x42b50d&&_0x42b50d[_0xe137cf(0x252)](_0xe137cf(0x230),handleApiModeChange);const _0x2989d8=document[_0xe137cf(0x2c9)](_0xe137cf(0x2da));_0x2989d8[_0xe137cf(0x1c6)](_0xbb6439=>{const _0x48414f=_0xe137cf;_0xbb6439[_0x48414f(0x252)](_0x48414f(0x230),toggleInjectionDetails);});const _0x4fb9dc=document[_0xe137cf(0x292)](_0xe137cf(0x35f)),_0x50df62=document[_0xe137cf(0x292)](_0xe137cf(0x1dc));_0x4fb9dc&&_0x50df62&&_0x4fb9dc['addEventListener'](_0xe137cf(0x230),()=>{const _0x3844ea=_0xe137cf;_0x50df62['style']['display']=_0x4fb9dc[_0x3844ea(0x27e)]?_0x3844ea(0x253):_0x3844ea(0x265);});const _0x24893f=document['getElementById']('hly-hist-select-library');_0x24893f&&_0x24893f['addEventListener'](_0xe137cf(0x230),handleWorldbookSelectionChange);const _0x49716c=document[_0xe137cf(0x292)]('hly-exclusion-rules-btn');_0x49716c&&_0x49716c[_0xe137cf(0x252)](_0xe137cf(0x1be),showExclusionRulesModal);const _0x517536=document[_0xe137cf(0x292)]('hly-hist-entry-multiselect-btn'),_0x30cd89=document['getElementById'](_0xe137cf(0x207));_0x517536&&_0x30cd89&&(_0x517536[_0xe137cf(0x252)](_0xe137cf(0x1be),_0x56d806=>{const _0xf8717b=_0xe137cf;_0x56d806['stopPropagation']();const _0x305663=_0x30cd89[_0xf8717b(0x1f5)][_0xf8717b(0x328)]===_0xf8717b(0x253);_0x30cd89[_0xf8717b(0x1f5)]['display']=_0x305663?'none':'block';}),_0x30cd89[_0xe137cf(0x252)]('change',_0x59e7d7=>{const _0x319685=_0xe137cf,_0x3cf24d=_0x59e7d7['target'];if(_0x3cf24d['type']!==_0x319685(0x266))return;const _0x58cb02=_0x30cd89[_0x319685(0x2c9)](_0x319685(0x2fe)),_0xddf72f=document[_0x319685(0x292)]('hly-hist-select-all-entries');if(_0x3cf24d['id']===_0x319685(0x209))_0x58cb02[_0x319685(0x1c6)](_0x1c1161=>_0x1c1161[_0x319685(0x27e)]=_0x3cf24d[_0x319685(0x27e)]);else{const _0x109d89=Array[_0x319685(0x2b0)](_0x58cb02)[_0x319685(0x2bc)](_0x151654=>_0x151654[_0x319685(0x27e)]);_0xddf72f[_0x319685(0x27e)]=_0x109d89;}const _0x318ed3=_0x30cd89[_0x319685(0x2c9)]('.hly-hist-entry-checkbox:checked')[_0x319685(0x273)],_0x8a8319=_0x58cb02[_0x319685(0x273)];_0x517536[_0x319685(0x2eb)](_0x319685(0x26c))[_0x319685(0x2ce)]='已选择\x20'+_0x318ed3+'\x20/\x20'+_0x8a8319+_0x319685(0x2fb);}),document['addEventListener'](_0xe137cf(0x1be),_0x57f2e9=>{const _0x593029=_0xe137cf;!_0x517536['contains'](_0x57f2e9[_0x593029(0x280)])&&!_0x30cd89['contains'](_0x57f2e9[_0x593029(0x280)])&&(_0x30cd89[_0x593029(0x1f5)][_0x593029(0x328)]=_0x593029(0x265));}));const _0x3139af=document['getElementById'](_0xe137cf(0x1bc));_0x3139af&&_0x3139af[_0xe137cf(0x252)](_0xe137cf(0x1be),deleteAllKnowledgeBases);}function toggleInjectionDetails(){const _0x5040b1=_0x4b9993,_0xa16bc4=document[_0x5040b1(0x2eb)](_0x5040b1(0x302))[_0x5040b1(0x20b)],_0x2de565=document[_0x5040b1(0x292)](_0x5040b1(0x1d4)),_0x174670=document[_0x5040b1(0x292)](_0x5040b1(0x35d)),_0x374140=_0xa16bc4==='1';_0x2de565[_0x5040b1(0x1fa)]=!_0x374140,_0x174670[_0x5040b1(0x1fa)]=!_0x374140;}function handleApiModeChange(){const _0x5b10a3=_0x4b9993,_0x2c9093=document[_0x5b10a3(0x292)](_0x5b10a3(0x2b5))[_0x5b10a3(0x20b)],_0x3275ce=document['getElementById']('hly-custom-endpoint-docket'),_0x3bd894=document['getElementById']('hly-api-key-group'),_0x10a42c=document['getElementById']('hly-embedding-model'),_0x3e72ae=_0x10a42c[_0x5b10a3(0x35b)];if(!_0x3275ce||!_0x3bd894)return;_0x3275ce[_0x5b10a3(0x1f5)][_0x5b10a3(0x328)]='block',_0x3bd894[_0x5b10a3(0x1f5)]['display']=_0x5b10a3(0x253);switch(_0x2c9093){case _0x5b10a3(0x2c5):_0x3275ce[_0x5b10a3(0x1f5)][_0x5b10a3(0x328)]=_0x5b10a3(0x265),_0x3bd894[_0x5b10a3(0x2eb)](_0x5b10a3(0x1e0))[_0x5b10a3(0x2ce)]=_0x5b10a3(0x242),_0x3bd894[_0x5b10a3(0x2eb)]('input')['placeholder']=_0x5b10a3(0x1d7);break;case'local_proxy':_0x3275ce[_0x5b10a3(0x2eb)](_0x5b10a3(0x1e0))[_0x5b10a3(0x2ce)]=_0x5b10a3(0x2ef),_0x3275ce[_0x5b10a3(0x2eb)](_0x5b10a3(0x2f8))[_0x5b10a3(0x346)]=_0x5b10a3(0x204),_0x3bd894[_0x5b10a3(0x1f5)][_0x5b10a3(0x328)]=_0x5b10a3(0x265);break;case _0x5b10a3(0x1bb):default:_0x3275ce['querySelector'](_0x5b10a3(0x1e0))[_0x5b10a3(0x2ce)]=_0x5b10a3(0x2f6),_0x3275ce['querySelector'](_0x5b10a3(0x2f8))['placeholder']=_0x5b10a3(0x1d6),_0x3bd894[_0x5b10a3(0x2eb)]('label')[_0x5b10a3(0x2ce)]=_0x5b10a3(0x243);break;}}function loadSettingsToUI(){const _0x1d2fd3=_0x4b9993,_0xf59e99=_0x753c4[_0x1d2fd3(0x231)]();if(!_0xf59e99)return;document[_0x1d2fd3(0x292)](_0x1d2fd3(0x291))['checked']=_0xf59e99['retrieval']['enabled'],document[_0x1d2fd3(0x292)]('hly-api-endpoint')[_0x1d2fd3(0x20b)]=_0xf59e99['retrieval'][_0x1d2fd3(0x2f4)],document[_0x1d2fd3(0x292)]('hly-custom-api-url')[_0x1d2fd3(0x20b)]=_0xf59e99['retrieval'][_0x1d2fd3(0x1e8)],document[_0x1d2fd3(0x292)](_0x1d2fd3(0x36c))[_0x1d2fd3(0x20b)]=_0xf59e99[_0x1d2fd3(0x228)]['apiKey'];const _0x32868e=document[_0x1d2fd3(0x292)]('hly-embedding-model');if(_0x32868e['options']['length']===0x0){const _0x2257fe=_0xf59e99[_0x1d2fd3(0x228)][_0x1d2fd3(0x1d3)],_0x439330=new Option(_0x2257fe,_0x2257fe,!![],!![]);_0x32868e['add'](_0x439330);}_0x32868e[_0x1d2fd3(0x20b)]=_0xf59e99[_0x1d2fd3(0x228)][_0x1d2fd3(0x1d3)],document['getElementById'](_0x1d2fd3(0x320))[_0x1d2fd3(0x27e)]=_0xf59e99['retrieval'][_0x1d2fd3(0x371)],document[_0x1d2fd3(0x292)](_0x1d2fd3(0x31a))[_0x1d2fd3(0x20b)]=_0xf59e99[_0x1d2fd3(0x2fc)][_0x1d2fd3(0x2d1)],document[_0x1d2fd3(0x292)](_0x1d2fd3(0x2dd))[_0x1d2fd3(0x20b)]=_0xf59e99[_0x1d2fd3(0x2fc)][_0x1d2fd3(0x333)],document[_0x1d2fd3(0x292)](_0x1d2fd3(0x2ee))['value']=_0xf59e99[_0x1d2fd3(0x2fc)][_0x1d2fd3(0x2f2)],document['getElementById']('hly-query-message-count')[_0x1d2fd3(0x20b)]=_0xf59e99[_0x1d2fd3(0x2fc)][_0x1d2fd3(0x285)],document['getElementById'](_0x1d2fd3(0x201))[_0x1d2fd3(0x20b)]=_0xf59e99[_0x1d2fd3(0x2fc)][_0x1d2fd3(0x248)],document[_0x1d2fd3(0x292)](_0x1d2fd3(0x1cd))[_0x1d2fd3(0x20b)]=_0xf59e99['retrieval'][_0x1d2fd3(0x2e7)],document[_0x1d2fd3(0x292)](_0x1d2fd3(0x30e))['value']=_0xf59e99['injection'][_0x1d2fd3(0x234)];const _0x36670d=document[_0x1d2fd3(0x2eb)](_0x1d2fd3(0x2d8)+_0xf59e99[_0x1d2fd3(0x2e2)][_0x1d2fd3(0x351)]+'\x22]');_0x36670d&&(_0x36670d[_0x1d2fd3(0x27e)]=!![]);document[_0x1d2fd3(0x292)]('hly-injection-depth')[_0x1d2fd3(0x20b)]=_0xf59e99[_0x1d2fd3(0x2e2)]['depth'],document[_0x1d2fd3(0x292)]('hly-injection-role')[_0x1d2fd3(0x20b)]=_0xf59e99[_0x1d2fd3(0x2e2)][_0x1d2fd3(0x205)],toggleInjectionDetails(),handleApiModeChange(),document[_0x1d2fd3(0x292)]('hly-condensation-enabled')[_0x1d2fd3(0x27e)]=_0xf59e99[_0x1d2fd3(0x220)][_0x1d2fd3(0x1f0)],document[_0x1d2fd3(0x292)](_0x1d2fd3(0x36a))[_0x1d2fd3(0x20b)]=_0xf59e99[_0x1d2fd3(0x220)][_0x1d2fd3(0x2ed)],document[_0x1d2fd3(0x292)]('hly-layer-end')['value']=_0xf59e99[_0x1d2fd3(0x220)][_0x1d2fd3(0x1c0)],document[_0x1d2fd3(0x292)](_0x1d2fd3(0x259))[_0x1d2fd3(0x27e)]=_0xf59e99['condensation'][_0x1d2fd3(0x2b1)][_0x1d2fd3(0x239)],document[_0x1d2fd3(0x292)]('hly-include-ai')[_0x1d2fd3(0x27e)]=_0xf59e99[_0x1d2fd3(0x220)][_0x1d2fd3(0x2b1)]['ai'];const _0x564054=document[_0x1d2fd3(0x292)](_0x1d2fd3(0x35f)),_0x29fb91=document[_0x1d2fd3(0x292)]('hly-tag-input'),_0x308c0b=document[_0x1d2fd3(0x292)](_0x1d2fd3(0x1dc));_0x564054[_0x1d2fd3(0x27e)]=_0xf59e99[_0x1d2fd3(0x220)][_0x1d2fd3(0x1e5)],_0x29fb91[_0x1d2fd3(0x20b)]=_0xf59e99[_0x1d2fd3(0x220)][_0x1d2fd3(0x2ae)],_0x308c0b['style'][_0x1d2fd3(0x328)]=_0x564054['checked']?_0x1d2fd3(0x253):'none',document[_0x1d2fd3(0x292)]('hly-rerank-enabled')[_0x1d2fd3(0x27e)]=_0xf59e99[_0x1d2fd3(0x249)]['enabled'],document['getElementById'](_0x1d2fd3(0x1c9))['value']=_0xf59e99['rerank']['url'],document[_0x1d2fd3(0x292)](_0x1d2fd3(0x214))[_0x1d2fd3(0x20b)]=_0xf59e99[_0x1d2fd3(0x249)]['apiKey'];const _0x3d21b8=document[_0x1d2fd3(0x292)](_0x1d2fd3(0x240));if(_0x3d21b8[_0x1d2fd3(0x335)][_0x1d2fd3(0x273)]===0x0){const _0x282a37=_0xf59e99[_0x1d2fd3(0x249)][_0x1d2fd3(0x304)];if(_0x282a37){const _0x226e4a=new Option(_0x282a37,_0x282a37,!![],!![]);_0x3d21b8[_0x1d2fd3(0x1ed)](_0x226e4a);}}_0x3d21b8[_0x1d2fd3(0x20b)]=_0xf59e99[_0x1d2fd3(0x249)][_0x1d2fd3(0x304)],document['getElementById'](_0x1d2fd3(0x2c2))[_0x1d2fd3(0x20b)]=_0xf59e99['rerank'][_0x1d2fd3(0x1da)],document[_0x1d2fd3(0x292)](_0x1d2fd3(0x282))[_0x1d2fd3(0x20b)]=_0xf59e99[_0x1d2fd3(0x249)][_0x1d2fd3(0x232)],document[_0x1d2fd3(0x292)](_0x1d2fd3(0x1dd))['checked']=_0xf59e99[_0x1d2fd3(0x249)]['notify'];}function _0x242e(){const _0x18c636=['position','<p\x20class=\x22hly-notes\x20log-error\x22><i>加载知识库列表失败:\x20','active','hly-locked-status','testHLYApi','开始批量删除\x20','comment','use\x20strict','<option\x20value=\x22\x22>加载失败</option>','正在为《','previousElementSibling','selectedIndex','hly-injection-role','1615557oHUiIj','hly-tag-extraction-toggle','fas\x20fa-lock-open','is_user','closest','圣谕不明','resetSettings','novel','》获取条目列表...','generateJobId','title','amily2_open_hanlin_tutorial','hly-layer-start','each','hly-api-key','\x20楼凝识至第\x20','scrollHeight','\x20个知识块。','[翰林院-枢纽]\x20预览过程发生错误:','notify','\x27\x20已更新为:\x20','未找到符合条件的消息。','custom','hly-kb-delete-all-btn','正在读取文件...','click','\x20个知识块','layerEnd','[翰林院-枢纽]\x20查询宝库状态失败:','[翰林院-枢纽]\x20编纂过程发生严重错误:','保存规则','floor','data','forEach','加载失败','会话已解锁。','hly-rerank-url','<div\x20class=\x22hly-preview-container-v2\x22>','\x20个条目进行批量编纂...','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20class=\x22hly-multiselect-option\x22\x20title=\x22','hly-batch-size','warning','手动录入成功，新增\x20','integer','<option\x20value=\x22\x22>未找到任何书库</option>','查看宝库状态成功：集合ID=','embeddingModel','hly-injection-depth','insertAdjacentHTML','输入兼容OpenAI的embeddings端点','请输入您的Google\x20API\x20Key','[翰林院-枢纽]\x20未能获取SillyTavern上下文，绑定失败。','log-success','top_n','圣旨已达','hly-tag-input-container','hly-rerank-notify','kbId','resetHLYSettings','label','操作完成，但有\x20','589554QerIdd','【手动存档】所有设定已存档封印。','[data-setting-key]','tagExtractionEnabled','启禀大人，发现此书上次录入已完成\x20','收到手动录入请求，文本长度:\x20','customApiUrl','fetchHLYRerankModels','getCollectionId','当前角色没有任何知识库可供删除。','innerHTML','add','isSessionLocked','严重错误','enabled','finalText','[断点续传]\x20用户选择继续任务\x20','\x0a--------------------\x0aAPI端点:\x20','radio','style','float','loadProgress','initialize','1628TdtOjU','disabled','total','预览失败:\x20','加载书库列表失败:\x20','toggleKnowledgeBase','boolean','批量编纂任务已完成。','hly-max-results','includes','40niEtVT','例如\x20http://127.0.0.1:8000/v1','depth_role','info','hly-hist-entry-multiselect-options','1653858eUlLvZ','hly-hist-select-all-entries','beforeend','value','正在获取可用书库列表...','遵命，将从头开始录入此书。','exclusionRules',',\x20失败:\x20','您确定要将所有设定恢复为出厂默认值吗？','错误:\x20','\x20楼到第\x20','宝库状态','hly-rerank-api-key','end','message','299596yEnxLp','purgeHLYStorage','stringify','name','...','map','编辑内容排除规则','<p\x20class=\x22hly-record-hint\x22>可在此预览凝识结果。</p>','未能获取到任何Rerank模型。','condensation','val','准备对《','classList','getCharacterName','send-date','已采集\x20','\x20失败:\x20','retrieval','大功告成','#hly-add-rule-btn','success','.hly-preview-textarea','】吗？此操作无法恢复！','》中的\x20','.hly-nav-item','change','getSettings','hybrid_alpha','hly-log-entry\x20','template','\x22\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20data-send-date=\x22','】已删除。','手动录入','hly-kb-list-item','user','未选择文件','processCondensation','hly-layer-end','join','[断点续传]\x20用户选择放弃旧任务\x20','%。是否从上次中断之处继续？','hly-rerank-model','\x20个条目进行编纂...','Google\x20API\x20Key:','通行令牌\x20(API\x20Key):','删除知识库\x20','chat','》的批量编纂任务已完成。成功:\x20','\x20楼已成功凝识，新增\x20','maxResults','rerank','hanlinyuan-ingest-novel-start','true','.hly-preview-delete-btn-v2','<option>获取失败</option>','remove','未检测到预览文本，按标准流程采集消息...','文书录入失败:\x20','>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22hly-toggle-slider\x22></span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22hly-kb-delete-btn\x22\x20title=\x22删除此知识库\x22>&times;</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','addEventListener','block','\x20条忆识。','.hly-kb-toggle','clearJob','ingestHLYManualText','70840gGhyyt','hly-include-user','锁定会话','宝库已清空。','fa-exclamation-triangle','getChatId','\x20个条目。','\x0a所用模型:\x20','div','hly-current-vector-count','获取Rerank模型失败:\x20','4524224XMxSww','翰林院启奏','none','checkbox','startHLYHistoriography','》的条目失败:','[翰林院-枢纽]\x20加载书库列表失败:','。进度已保存，可稍后重试。','成功加载\x20','span','.hly-hist-entry-checkbox:checked','当前所有操作都将指向这个锁定的宝库：','开始获取模型列表...','根据标签提取或内容排除条件，未找到任何有效内容。','\x22\x20placeholder=\x22开始字符,\x20如\x20<!--\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span>到</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20class=\x22hly-imperial-brush\x22\x20value=\x22','startHLYCondensation','length','您确定要永久删除知识库【','split','hlyLog','正在测试神力连接...','fetchEmbeddingModels','type','内容排除规则已保存。','[翰林院-枢纽]\x20手动录入过程发生错误:','\x0a</pre>\x0a\x20\x20\x20\x20\x20\x20\x20\x20','确认并更新预览','checked','\x20块开始。','target','12oMfLRg','hly-rerank-hybrid-alpha','content','.hly-kb-list-item','queryMessageCount','\x20(Key:\x20','getVectorCount','error','.hly-preview-item-v2','录入失败:\x20','知识库\x20','</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20id=\x22hly-add-rule-btn\x22\x20class=\x22hly-action-button\x22\x20style=\x22margin-top:\x2010px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<i\x20class=\x22fas\x20fa-plus\x22></i>\x20添加新规则\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20<style>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20.hly-exclusion-rule-row\x20{\x20display:\x20flex;\x20align-items:\x20center;\x20gap:\x2010px;\x20margin-bottom:\x2010px;\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20.hly-exclusion-rule-row\x20input\x20{\x20flex-grow:\x201;\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20.hly-delete-rule-btn\x20{\x20background:\x20#c0392b;\x20color:\x20white;\x20border:\x20none;\x20border-radius:\x2050%;\x20width:\x2024px;\x20height:\x2024px;\x20cursor:\x20pointer;\x20font-size:\x2016px;\x20line-height:\x2024px;\x20text-align:\x20center;\x20padding:\x200;\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20</style>\x0a\x20\x20\x20\x20','processedChunks','[自动保存]\x20设置项\x20\x27','updateHLYMemoryCount','executeCompilation','hly-retrieval-enabled','getElementById','清空宝库失败。','会话已解锁，将跟随当前角色。','start','翰林院使用教程','hly-hist-select-library','log-info','加载条目失败:\x20','hly-kb-list-container','entries','[翰林院-枢纽]\x20加载《',',\x20向量:\x20','条)</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22hly-kb-actions\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20class=\x22hly-toggle-switch\x22\x20title=\x22启用/禁用此知识库\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22checkbox\x22\x20class=\x22hly-kb-toggle\x22\x20','signal','\x22\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20data-is-user=\x22','点击以解锁，让翰林院跟随当前角色','\x20个知识库均已成功删除。','mes','createElement','totalChunks','809VBIdqq','神力连接失败:\x20','翰林院设定已重置为初始状态。','filter','.hly-tab-pane',']\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</summary>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22hly-preview-content\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<textarea\x20class=\x22hly-preview-textarea\x22\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20data-floor=\x22','\x22\x20placeholder=\x22结束字符,\x20如\x20-->\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22hly-delete-rule-btn\x22\x20title=\x22删除此规则\x22>&times;</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20','fa-circle-info','tags','hly-current-chat-id','from','messageTypes','预览并编辑凝识内容','\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<details\x20class=\x22hly-preview-details\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<summary\x20class=\x22hly-preview-summary\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20第\x20','<option>未找到模型</option>','hly-api-endpoint','processed','send_date','className','，重新开始。','正在清空宝库...','\x20个知识库删除失败。','every','翰林院设定已存档封印。','\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22hly-exclusion-rule-row\x22\x20data-index=\x22','\x20个Rerank模型。','#hly-rules-list','string','hly-rerank-top-n','[翰林院-枢纽]\x20核心法典未能提供初始化圣旨！','\x20(ID:\x20','google_direct','正在执行焚书坑儒...\x20准备删除\x20','[翰林院-枢纽]\x20渲染知识库列表失败:','hly-session-lock-btn','querySelectorAll','\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20class=\x22hly-imperial-brush\x22\x20value=\x22','聊天记录从第\x20','\x20楼到\x20','fa-check-circle','textContent','神力连接通畅！','\x22\x20title=\x22删除此条\x22>&times;</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20','chunkSize','manual','任务已由用户中止。进度已保存，可随时继续。','\x20块继续录入。','无法获取总数:\x20','根据当前勾选条件，未找到符合的消息可供预览。','condensation.exclusionRules','input[name=\x22hly-injection-position\x22][value=\x22','处理中:\x20','input[name=\x22hly-injection-position\x22]','批量编纂任务已完成，但有部分错误。','removeKnowledgeBase','hly-overlap-size','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22hly-preview-item-v2\x22\x20id=\x22','\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span>','N/A','解锁会话','injection','[翰林院-枢纽]\x20已成功连接各部，政令畅通。','凝识完成！新增\x20','此书库为空','-tab','batchSize','正在准备凝识...','finalMessages','testApiConnection','querySelector','push','layerStart','hly-match-threshold','本地代理地址:','\x20个知识库吗？此操作无法恢复！','hly-manual-text','matchThreshold','\x20楼:\x20[','apiEndpoint','正在加载条目...','自定义路径:','删除失败:\x20','input','成功录入\x20','getMessagesForCondensation','\x20个条目','advanced','log-warn','.hly-hist-entry-checkbox','\x20个书库。','hanlinyuan-ingest-status','fetchRerankModels','input[name=\x22hly-injection-position\x22]:checked','成功获取\x20','model','检测到预览后待处理的消息对象，开始精确凝识...','任务已中止。','未知错误','hly-hist-entry-multiselect-btn','appendChild','获取模型失败:\x20','saveSettings','</div>','keys','hly-injection-template','.hly-kb-delete-btn','showHLYStats','toggleSessionLock','编纂失败:\x20','hly-log-output','<option\x20value=\x22\x22>请选择一个书库...</option>','正在处理您提交的文书...','<p\x20class=\x22hly-notes\x22><i>当前角色还没有专属知识库。</i></p>','未能获取到任何模型。','tab','您确定要永久删除当前角色的全部\x20','hly-chunk-size','scrollTop','.hly-log-placeholder','1294aenOzF','，从第\x20','saveHLYSettings','hly-retrieval-notify','is-user','\x20个模型。','warn','trim',')\x20已被删除','开始获取Rerank模型列表...','凝识失败:\x20','display','dataset','getKnowledgeBases','\x20条消息，开始凝识...','hly-','hly-modal-container','ingestTextToHanlinyuan','log-error','key','text','批量编纂任务已开始...','overlap','hly-historiography-results','options','find','files','\x20楼。</i></p>','getAvailableWorldbooks','condensationHistory',',\x20忆识总数=','hly-condensation-results','toggle','<i\x20class=\x22fa-solid\x20','getLoresForWorldbook','\x0a<pre>\x0a翰林院宝库状态\x0a--------------------\x0a集合ID:\x20','findIndex','hanlinyuan-ingest-novel-controls','请先选择一个\x20.txt\x20文件','正在处理您确认后的文书...','\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22hly-exclusion-rules-container\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<p\x20class=\x22hly-notes\x22>在这里定义需要从提取内容中排除的文本片段。例如，排除HTML注释，可以设置开始字符为\x20`<!--`，结束字符为\x20`-->`。</p>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22hly-rules-list\x22>','placeholder','hly-embedding-model','请先选择一个书库并至少选择一个要编纂的条目。','.hly-exclusion-rule-row','count','[实时刷新]\x20批次完成，忆识总数已更新。','hly-tag-input','hanlinyuan-ingest-novel-file-name','\x20楼的内容（共\x20','会话已锁定到宝库:\x20','hly-current-character-name'];_0x242e=function(){return _0x18c636;};return _0x242e();}function saveSettingsFromUI(_0x53620a=!![]){const _0x372568=_0x4b9993,_0x4b4639=document['getElementById'](_0x372568(0x32d));if(!_0x4b4639)return;const _0x23ca87=_0x4b4639[_0x372568(0x2c9)](_0x372568(0x1e4));_0x23ca87[_0x372568(0x1c6)](_0x40ba53=>{const _0x18cc80=_0x372568,_0x3bfe24=_0x40ba53[_0x18cc80(0x329)]['settingKey'];if(!_0x3bfe24)return;let _0x52a1d0;const _0x38ba72=_0x40ba53[_0x18cc80(0x329)][_0x18cc80(0x279)]||'string';if(_0x40ba53['type']===_0x18cc80(0x266))_0x52a1d0=_0x40ba53[_0x18cc80(0x27e)];else{if(_0x40ba53[_0x18cc80(0x279)]===_0x18cc80(0x1f4)){if(!_0x40ba53[_0x18cc80(0x27e)])return;_0x52a1d0=_0x40ba53[_0x18cc80(0x20b)];}else _0x52a1d0=_0x40ba53['value'];}switch(_0x38ba72){case _0x18cc80(0x1d0):_0x52a1d0=parseInt(_0x52a1d0,0xa);break;case _0x18cc80(0x1f6):_0x52a1d0=parseFloat(_0x52a1d0);break;case _0x18cc80(0x1ff):if(typeof _0x52a1d0!==_0x18cc80(0x1ff))_0x52a1d0=_0x52a1d0===_0x18cc80(0x24b);break;}const _0x545a6c=_0x753c4[_0x18cc80(0x231)](),_0xc788a3=_0x3bfe24['split']('.');let _0x2eda2c=_0x545a6c;for(let _0x1ec80a=0x0;_0x1ec80a<_0xc788a3[_0x18cc80(0x273)]-0x1;_0x1ec80a++){_0x2eda2c=_0x2eda2c[_0xc788a3[_0x1ec80a]]=_0x2eda2c[_0xc788a3[_0x1ec80a]]||{};}_0x2eda2c[_0xc788a3[_0xc788a3[_0x18cc80(0x273)]-0x1]]=_0x52a1d0;}),_0x753c4['saveSettings'](),!_0x53620a&&(log(_0x372568(0x1e3),'success'),toastr['success'](_0x372568(0x2bd),'圣旨已达'));}function resetSettingsToUI(){const _0x3c3dc4=_0x4b9993;confirm(_0x3c3dc4(0x210))&&(_0x753c4[_0x3c3dc4(0x364)](),loadSettingsToUI(),toastr[_0x3c3dc4(0x206)](_0x3c3dc4(0x2a8),'诏曰'));}async function updatePanelStatus(){const _0x88065c=_0x4b9993,_0x201d5d=_0x753c4[_0x88065c(0x1ee)](),_0x1730cf=document[_0x88065c(0x292)](_0x88065c(0x350)),_0x463509=document[_0x88065c(0x292)](_0x88065c(0x2af));if(_0x201d5d){const _0x171ed2=_0x753c4['getLockedSessionInfo']();_0x171ed2&&(_0x1730cf['textContent']='会话已锁定',_0x463509['textContent']=_0x171ed2['id'],_0x463509['title']=_0x88065c(0x26e)+_0x171ed2['id'],_0x1730cf[_0x88065c(0x223)][_0x88065c(0x1ed)](_0x88065c(0x354)),_0x463509[_0x88065c(0x223)][_0x88065c(0x1ed)](_0x88065c(0x354)));}else _0x1730cf[_0x88065c(0x2ce)]=_0x57912b[_0x88065c(0x224)](),_0x463509['textContent']=_0x57912b[_0x88065c(0x25d)]()||'无',_0x463509[_0x88065c(0x368)]='',_0x1730cf[_0x88065c(0x223)]['remove'](_0x88065c(0x354)),_0x463509[_0x88065c(0x223)][_0x88065c(0x24e)](_0x88065c(0x354));const _0x341774=document[_0x88065c(0x292)](_0x88065c(0x261));_0x341774[_0x88065c(0x2ce)]=_0x88065c(0x21b);try{const _0x296c96=await _0x753c4[_0x88065c(0x287)]();_0x341774[_0x88065c(0x2ce)]=_0x296c96;}catch(_0x3341f6){console[_0x88065c(0x288)]('[翰林院-枢纽]\x20更新忆识数量失败:',_0x3341f6),_0x341774['textContent']=_0x88065c(0x2e0),_0x341774[_0x88065c(0x368)]=_0x88065c(0x2d5)+_0x3341f6[_0x88065c(0x216)];}const _0x1b11d1=document['getElementById']('hly-condensation-results');if(_0x1b11d1&&!_0x1b11d1['dataset'][_0x88065c(0x1f1)]){const _0x21d041=_0x753c4[_0x88065c(0x231)](),_0x3e129e=await _0x753c4[_0x88065c(0x1ea)]();if(_0x21d041[_0x88065c(0x33a)]&&_0x21d041[_0x88065c(0x33a)][_0x3e129e]){const _0x54188c=_0x21d041[_0x88065c(0x33a)][_0x3e129e];_0x1b11d1[_0x88065c(0x1ec)]='<p\x20class=\x22hly-record-hint\x22><i>上次已从第\x20'+_0x54188c['start']+_0x88065c(0x36d)+_0x54188c['end']+_0x88065c(0x338);}else _0x1b11d1[_0x88065c(0x1ec)]=_0x88065c(0x21e);}renderKnowledgeBases();}async function deleteAllKnowledgeBases(){const _0x3f91ef=_0x4b9993,_0x33b210=await _0x753c4[_0x3f91ef(0x32a)](),_0x4fe09e=Object[_0x3f91ef(0x30d)](_0x33b210);if(_0x4fe09e['length']===0x0){toastr[_0x3f91ef(0x206)](_0x3f91ef(0x1eb),'圣谕');return;}if(!confirm(_0x3f91ef(0x319)+_0x4fe09e['length']+_0x3f91ef(0x2f0)))return;toastr[_0x3f91ef(0x206)](_0x3f91ef(0x2c6)+_0x4fe09e['length']+'\x20个知识库。','圣旨'),log(_0x3f91ef(0x356)+_0x4fe09e['length']+'\x20个知识库...',_0x3f91ef(0x323));let _0x103faf=0x0,_0x2bdc71=0x0;for(const _0x139939 of _0x4fe09e){try{await _0x753c4[_0x3f91ef(0x2dc)](_0x139939),_0x103faf++;}catch(_0x201521){_0x2bdc71++,log(_0x3f91ef(0x244)+_0x139939+'\x20失败:\x20'+_0x201521[_0x3f91ef(0x216)],'error');}}_0x2bdc71>0x0?toastr[_0x3f91ef(0x288)](_0x3f91ef(0x1e1)+_0x2bdc71+_0x3f91ef(0x2bb),'警报'):toastr[_0x3f91ef(0x22b)]('所有\x20'+_0x103faf+_0x3f91ef(0x2a2),_0x3f91ef(0x229)),log('批量删除完成。成功:\x20'+_0x103faf+_0x3f91ef(0x20f)+_0x2bdc71,_0x3f91ef(0x206)),await updatePanelStatus();}async function renderKnowledgeBases(){const _0x5b1c59=_0x4b9993,_0xd49703=document[_0x5b1c59(0x292)](_0x5b1c59(0x29a));if(!_0xd49703)return;try{const _0x3124e7=await _0x753c4['getKnowledgeBases']();_0xd49703['innerHTML']='';if(Object[_0x5b1c59(0x30d)](_0x3124e7)[_0x5b1c59(0x273)]===0x0){_0xd49703[_0x5b1c59(0x1ec)]=_0x5b1c59(0x316);return;}for(const [_0x279ae7,_0x4ffb70]of Object[_0x5b1c59(0x29b)](_0x3124e7)){const _0x6ada35=document[_0x5b1c59(0x2a4)](_0x5b1c59(0x260));_0x6ada35[_0x5b1c59(0x2b8)]=_0x5b1c59(0x238),_0x6ada35[_0x5b1c59(0x329)]['kbId']=_0x279ae7;const _0x1e5585=await _0x753c4[_0x5b1c59(0x287)](_0x279ae7);_0x6ada35['innerHTML']='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22hly-kb-name\x22\x20title=\x22ID:\x20'+_0x279ae7+'\x22>'+_0x4ffb70['name']+'\x20('+_0x1e5585+_0x5b1c59(0x29e)+(_0x4ffb70[_0x5b1c59(0x1f0)]?_0x5b1c59(0x27e):'')+_0x5b1c59(0x251),_0xd49703[_0x5b1c59(0x309)](_0x6ada35);}_0xd49703[_0x5b1c59(0x2c9)](_0x5b1c59(0x255))[_0x5b1c59(0x1c6)](_0xca85f6=>{const _0x5e0f89=_0x5b1c59;_0xca85f6[_0x5e0f89(0x252)](_0x5e0f89(0x230),async _0x1eede5=>{const _0x3d0ba5=_0x5e0f89,_0x1a52a5=_0x1eede5[_0x3d0ba5(0x280)][_0x3d0ba5(0x362)](_0x3d0ba5(0x284))[_0x3d0ba5(0x329)][_0x3d0ba5(0x1de)],_0x352b67=_0x1eede5[_0x3d0ba5(0x280)][_0x3d0ba5(0x27e)];await _0x753c4[_0x3d0ba5(0x1fe)](_0x1a52a5,_0x352b67),log(_0x3d0ba5(0x28b)+_0x1a52a5+'\x20已'+(_0x352b67?'启用':'禁用'),_0x3d0ba5(0x22b)),updatePanelStatus();});}),_0xd49703['querySelectorAll'](_0x5b1c59(0x30f))[_0x5b1c59(0x1c6)](_0x5e63b2=>{const _0x53bb19=_0x5b1c59;_0x5e63b2[_0x53bb19(0x252)](_0x53bb19(0x1be),async _0x223fdc=>{const _0x26cab4=_0x53bb19,_0x266213=_0x223fdc[_0x26cab4(0x280)][_0x26cab4(0x362)](_0x26cab4(0x284)),_0x3df6ef=_0x266213[_0x26cab4(0x329)][_0x26cab4(0x1de)],_0x219b7b=_0x266213[_0x26cab4(0x2eb)]('.hly-kb-name')[_0x26cab4(0x2ce)][_0x26cab4(0x275)]('\x20(')[0x0];if(confirm(_0x26cab4(0x274)+_0x219b7b+_0x26cab4(0x22d)))try{await _0x753c4[_0x26cab4(0x2dc)](_0x3df6ef),log('知识库\x20'+_0x219b7b+_0x26cab4(0x2c4)+_0x3df6ef+_0x26cab4(0x325),_0x26cab4(0x22b)),toastr['success']('知识库【'+_0x219b7b+_0x26cab4(0x236)),updatePanelStatus();}catch(_0x5afc89){log('删除知识库\x20'+_0x219b7b+_0x26cab4(0x227)+_0x5afc89[_0x26cab4(0x216)],'error'),toastr[_0x26cab4(0x288)](_0x26cab4(0x2f7)+_0x5afc89[_0x26cab4(0x216)]);}});});}catch(_0x26f1f9){console[_0x5b1c59(0x288)](_0x5b1c59(0x2c7),_0x26f1f9),_0xd49703[_0x5b1c59(0x1ec)]=_0x5b1c59(0x352)+_0x26f1f9[_0x5b1c59(0x216)]+'</i></p>';}}async function testApi(){const _0x30f2f6=_0x4b9993;toastr[_0x30f2f6(0x206)](_0x30f2f6(0x277),'圣旨');try{await _0x753c4[_0x30f2f6(0x2ea)](),toastr['success'](_0x30f2f6(0x2cf),'圣意');}catch(_0x1c247e){toastr[_0x30f2f6(0x288)](_0x30f2f6(0x2a7)+_0x1c247e[_0x30f2f6(0x216)],'警报');}}async function fetchHLYEmbeddingModels(){const _0x574995=_0x4b9993,_0x2e666a=document['getElementById'](_0x574995(0x347)),_0x498540=_0x2e666a[_0x574995(0x20b)];_0x2e666a['innerHTML']='<option>正在获取...</option>',_0x2e666a['disabled']=!![];try{log(_0x574995(0x26f),_0x574995(0x206));const _0x508fcb=await _0x753c4[_0x574995(0x278)]();_0x2e666a[_0x574995(0x1ec)]='';if(_0x508fcb[_0x574995(0x273)]===0x0){_0x2e666a['innerHTML']=_0x574995(0x2b4),toastr['warn'](_0x574995(0x317),_0x574995(0x264)),log(_0x574995(0x317),'warn');return;}_0x508fcb[_0x574995(0x1c6)](_0x434778=>{const _0xfc55ca=new Option(_0x434778,_0x434778);_0x2e666a['add'](_0xfc55ca);}),_0x508fcb[_0x574995(0x202)](_0x498540)?_0x2e666a[_0x574995(0x20b)]=_0x498540:_0x2e666a[_0x574995(0x35c)]=0x0,toastr[_0x574995(0x22b)](_0x574995(0x303)+_0x508fcb[_0x574995(0x273)]+_0x574995(0x322),'圣意'),log(_0x574995(0x303)+_0x508fcb[_0x574995(0x273)]+'\x20个模型。',_0x574995(0x22b));}catch(_0x2a9e3c){console[_0x574995(0x288)]('[翰林院-枢纽]\x20获取模型列表失败:',_0x2a9e3c),toastr[_0x574995(0x288)](_0x574995(0x30a)+_0x2a9e3c[_0x574995(0x216)],_0x574995(0x1ef)),log(_0x574995(0x30a)+_0x2a9e3c['message'],_0x574995(0x288)),_0x2e666a[_0x574995(0x1ec)]=_0x574995(0x24d);}finally{_0x2e666a[_0x574995(0x1fa)]=![];}}async function fetchHLYRerankModels(){const _0xcdabcc=_0x4b9993,_0x283706=document[_0xcdabcc(0x292)](_0xcdabcc(0x240)),_0x2a241f=_0x283706[_0xcdabcc(0x20b)];_0x283706['innerHTML']='<option>正在获取...</option>',_0x283706[_0xcdabcc(0x1fa)]=!![];try{log(_0xcdabcc(0x326),_0xcdabcc(0x206));const _0xaa6c23=await _0x753c4[_0xcdabcc(0x301)]();_0x283706[_0xcdabcc(0x1ec)]='';if(_0xaa6c23[_0xcdabcc(0x273)]===0x0){_0x283706[_0xcdabcc(0x1ec)]='<option>未找到模型</option>',toastr[_0xcdabcc(0x323)](_0xcdabcc(0x21f),_0xcdabcc(0x264)),log(_0xcdabcc(0x21f),_0xcdabcc(0x323));return;}_0xaa6c23[_0xcdabcc(0x1c6)](_0x1bfeb6=>{const _0xaa60fb=_0xcdabcc,_0x15249a=new Option(_0x1bfeb6,_0x1bfeb6);_0x283706[_0xaa60fb(0x1ed)](_0x15249a);}),_0xaa6c23[_0xcdabcc(0x202)](_0x2a241f)?_0x283706[_0xcdabcc(0x20b)]=_0x2a241f:_0x283706[_0xcdabcc(0x35c)]=0x0,toastr[_0xcdabcc(0x22b)](_0xcdabcc(0x303)+_0xaa6c23['length']+_0xcdabcc(0x2bf),'圣意'),log(_0xcdabcc(0x303)+_0xaa6c23[_0xcdabcc(0x273)]+_0xcdabcc(0x2bf),_0xcdabcc(0x22b));}catch(_0x529309){console[_0xcdabcc(0x288)]('[翰林院-枢纽]\x20获取Rerank模型列表失败:',_0x529309),toastr[_0xcdabcc(0x288)]('获取Rerank模型失败:\x20'+_0x529309[_0xcdabcc(0x216)],_0xcdabcc(0x1ef)),log(_0xcdabcc(0x262)+_0x529309[_0xcdabcc(0x216)],_0xcdabcc(0x288)),_0x283706[_0xcdabcc(0x1ec)]=_0xcdabcc(0x24d);}finally{_0x283706[_0xcdabcc(0x1fa)]=![];}}async function purgeStorage(){const _0xb1ad7d=_0x4b9993;if(confirm('此操作将彻底清空当前角色的所有忆识（向量），且无法恢复。您确定要继续吗？')){toastr[_0xb1ad7d(0x206)](_0xb1ad7d(0x2ba),'圣旨');const _0x3f48a4=await _0x753c4['purgeStorage']();_0x3f48a4?toastr[_0xb1ad7d(0x22b)](_0xb1ad7d(0x25b),'圣意'):toastr[_0xb1ad7d(0x288)](_0xb1ad7d(0x293),'警报'),await updatePanelStatus();}}async function startCondensation(){const _0x1a947d=_0x4b9993,_0xc7ed0b=document[_0x1a947d(0x292)]('hly-condensation-results'),_0x55dba1=_0xc7ed0b[_0x1a947d(0x329)][_0x1a947d(0x2e9)],_0x446515=document['getElementById']('hly-layer-start')[_0x1a947d(0x20b)],_0x42bc76=document[_0x1a947d(0x292)](_0x1a947d(0x23c))[_0x1a947d(0x20b)],_0x11e1af={'start':parseInt(_0x446515),'end':parseInt(_0x42bc76)};try{let _0x484109;_0x55dba1?(log(_0x1a947d(0x305),'info'),toastr[_0x1a947d(0x206)](_0x1a947d(0x344),'圣旨'),_0x484109=JSON['parse'](_0x55dba1),delete _0xc7ed0b['dataset'][_0x1a947d(0x2e9)]):(log(_0x1a947d(0x24f),'info'),toastr[_0x1a947d(0x206)](_0x1a947d(0x2e8),'圣旨'),_0x484109=_0x753c4[_0x1a947d(0x2fa)]());if(!_0x484109||_0x484109['length']===0x0){toastr[_0x1a947d(0x1ce)]('未找到符合条件的消息可供凝识。','翰林院启奏'),_0xc7ed0b[_0x1a947d(0x2ce)]=_0x1a947d(0x1ba);return;}_0xc7ed0b[_0x1a947d(0x2ce)]='已采集\x20'+_0x484109[_0x1a947d(0x273)]+_0x1a947d(0x32b),toastr[_0x1a947d(0x206)](_0x1a947d(0x226)+_0x484109[_0x1a947d(0x273)]+_0x1a947d(0x32b),_0x1a947d(0x264));const _0x3de712=await _0x753c4[_0x1a947d(0x23b)](_0x484109,log,_0x11e1af);if(_0x3de712['success']){toastr[_0x1a947d(0x22b)](_0x1a947d(0x2e4)+_0x3de712['count']+_0x1a947d(0x254),'大功告成');const _0x22ac0b=_0x11e1af[_0x1a947d(0x215)]===0x0?getContext()[_0x1a947d(0x245)]['length']:_0x11e1af[_0x1a947d(0x215)];_0xc7ed0b[_0x1a947d(0x2ce)]=_0x1a947d(0x2cb)+_0x11e1af[_0x1a947d(0x295)]+_0x1a947d(0x212)+_0x22ac0b+_0x1a947d(0x247)+_0x3de712[_0x1a947d(0x34a)]+_0x1a947d(0x254);}else throw new Error(_0x3de712[_0x1a947d(0x288)]||_0x1a947d(0x307));}catch(_0x135a02){console[_0x1a947d(0x288)]('[翰林院-枢纽]\x20凝识过程发生错误:',_0x135a02),toastr[_0x1a947d(0x288)](_0x1a947d(0x327)+_0x135a02['message'],'严重错误'),_0xc7ed0b[_0x1a947d(0x2ce)]=_0x1a947d(0x327)+_0x135a02[_0x1a947d(0x216)];}finally{await updatePanelStatus();}}function _0x2c1a(_0x3c61eb,_0x384ef6){const _0x242e25=_0x242e();return _0x2c1a=function(_0x2c1ae9,_0x211f22){_0x2c1ae9=_0x2c1ae9-0x1b9;let _0x45a560=_0x242e25[_0x2c1ae9];return _0x45a560;},_0x2c1a(_0x3c61eb,_0x384ef6);}async function loadWorldbookList(){const _0x26a16b=_0x4b9993,_0x400be3=document[_0x26a16b(0x292)](_0x26a16b(0x297));if(!_0x400be3)return;try{log(_0x26a16b(0x20c),_0x26a16b(0x206));const _0x67c573=await _0x5408b8[_0x26a16b(0x339)]();_0x400be3[_0x26a16b(0x1ec)]=_0x26a16b(0x314);if(_0x67c573[_0x26a16b(0x273)]===0x0){_0x400be3[_0x26a16b(0x1ec)]=_0x26a16b(0x1d1);return;}_0x67c573[_0x26a16b(0x1c6)](_0x41bc6b=>{const _0x1aaa83=new Option(_0x41bc6b,_0x41bc6b);_0x400be3['add'](_0x1aaa83);}),log(_0x26a16b(0x26b)+_0x67c573[_0x26a16b(0x273)]+_0x26a16b(0x2ff),_0x26a16b(0x22b));}catch(_0x50710a){console[_0x26a16b(0x288)](_0x26a16b(0x269),_0x50710a),log(_0x26a16b(0x1fd)+_0x50710a['message'],_0x26a16b(0x288)),_0x400be3[_0x26a16b(0x1ec)]=_0x26a16b(0x359);}}async function handleWorldbookSelectionChange(){const _0x44bafe=_0x4b9993,_0x2e4a2d=document[_0x44bafe(0x292)](_0x44bafe(0x297)),_0x3a5277=document[_0x44bafe(0x292)](_0x44bafe(0x308)),_0x4e2bf1=document[_0x44bafe(0x292)](_0x44bafe(0x207)),_0x25deba=_0x2e4a2d[_0x44bafe(0x20b)];_0x3a5277[_0x44bafe(0x1fa)]=!![],_0x3a5277['querySelector'](_0x44bafe(0x26c))[_0x44bafe(0x2ce)]=_0x44bafe(0x2f5),_0x4e2bf1[_0x44bafe(0x1ec)]='',_0x4e2bf1[_0x44bafe(0x1f5)][_0x44bafe(0x328)]='none';if(!_0x25deba){_0x3a5277[_0x44bafe(0x2eb)](_0x44bafe(0x26c))['textContent']='请先选择书库';return;}try{log(_0x44bafe(0x35a)+_0x25deba+_0x44bafe(0x366),_0x44bafe(0x206));const _0x4282b7=await _0x5408b8[_0x44bafe(0x33f)](_0x25deba);if(_0x4282b7['length']===0x0){_0x3a5277[_0x44bafe(0x2eb)](_0x44bafe(0x26c))['textContent']=_0x44bafe(0x2e5);return;}const _0x418689='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20class=\x22hly-multiselect-option\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22checkbox\x22\x20id=\x22hly-hist-select-all-entries\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<strong>全选/全不选</strong>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</label>';_0x4e2bf1[_0x44bafe(0x1d5)]('beforeend',_0x418689),_0x4282b7['forEach'](_0x5cf193=>{const _0x503a2b=_0x44bafe,_0x44c12c=_0x503a2b(0x1cc)+_0x5cf193[_0x503a2b(0x357)]+_0x503a2b(0x286)+_0x5cf193[_0x503a2b(0x330)]+')\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22checkbox\x22\x20class=\x22hly-hist-entry-checkbox\x22\x20value=\x22'+_0x5cf193[_0x503a2b(0x330)]+_0x503a2b(0x2df)+_0x5cf193[_0x503a2b(0x357)]+'</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</label>';_0x4e2bf1[_0x503a2b(0x1d5)]('beforeend',_0x44c12c);}),log(_0x44bafe(0x26b)+_0x4282b7['length']+_0x44bafe(0x25e),_0x44bafe(0x22b)),_0x3a5277[_0x44bafe(0x2eb)](_0x44bafe(0x26c))[_0x44bafe(0x2ce)]='已选择\x200\x20/\x20'+_0x4282b7[_0x44bafe(0x273)]+_0x44bafe(0x2fb);}catch(_0x1d4a32){console[_0x44bafe(0x288)](_0x44bafe(0x29c)+_0x25deba+_0x44bafe(0x268),_0x1d4a32),log(_0x44bafe(0x299)+_0x1d4a32[_0x44bafe(0x216)],_0x44bafe(0x288)),_0x3a5277[_0x44bafe(0x2eb)](_0x44bafe(0x26c))['textContent']=_0x44bafe(0x1c7);}finally{_0x3a5277['disabled']=![];}}async function startHistoriography(){const _0x52d87f=_0x4b9993,_0x277461=document[_0x52d87f(0x292)](_0x52d87f(0x297))[_0x52d87f(0x20b)],_0x2e6f7b=document[_0x52d87f(0x292)](_0x52d87f(0x207)),_0x24da76=document[_0x52d87f(0x292)](_0x52d87f(0x334)),_0x378d0b=Array['from'](_0x2e6f7b[_0x52d87f(0x2c9)](_0x52d87f(0x26d)))[_0x52d87f(0x21c)](_0x423246=>_0x423246[_0x52d87f(0x20b)]);if(!_0x277461||_0x378d0b['length']===0x0){toastr[_0x52d87f(0x1ce)](_0x52d87f(0x348),_0x52d87f(0x363));return;}_0x24da76[_0x52d87f(0x2ce)]=_0x52d87f(0x222)+_0x277461+_0x52d87f(0x22e)+_0x378d0b['length']+_0x52d87f(0x1cb),toastr[_0x52d87f(0x206)](_0x52d87f(0x332),'圣旨'),log('开始对《'+_0x277461+'》中的\x20'+_0x378d0b[_0x52d87f(0x273)]+_0x52d87f(0x241),_0x52d87f(0x206));try{const _0xf4bd25=await _0x5408b8[_0x52d87f(0x290)](_0x277461,_0x378d0b);_0x24da76['textContent']=_0xf4bd25[_0x52d87f(0x283)],_0xf4bd25[_0x52d87f(0x22b)]?toastr[_0x52d87f(0x22b)](_0x52d87f(0x200),_0x52d87f(0x229)):toastr[_0x52d87f(0x1ce)](_0x52d87f(0x2db),'圣谕'),log('对《'+_0x277461+_0x52d87f(0x246)+_0xf4bd25['totalSuccess']+_0x52d87f(0x29d)+_0xf4bd25['totalVectors'],_0x52d87f(0x22b));}catch(_0xe2e1a5){console[_0x52d87f(0x288)](_0x52d87f(0x1c2),_0xe2e1a5),toastr[_0x52d87f(0x288)](_0x52d87f(0x312)+_0xe2e1a5[_0x52d87f(0x216)],'严重错误'),_0x24da76['textContent']=_0x52d87f(0x312)+_0xe2e1a5[_0x52d87f(0x216)];}finally{await updatePanelStatus();}}async function showStats(){const _0x131238=_0x4b9993;try{log('用户请求查看宝库状态。',_0x131238(0x206)),toastr[_0x131238(0x206)]('正在查询宝库状态...','圣旨');const _0x42e4e3=await _0x753c4[_0x131238(0x287)](),_0x53e79f=await _0x753c4[_0x131238(0x1ea)](),_0x448de9=_0x753c4['getSettings'](),_0x46f4b3=_0x131238(0x340)+_0x53e79f+'\x0a忆识总数:\x20'+_0x42e4e3+_0x131238(0x1f3)+_0x448de9[_0x131238(0x228)][_0x131238(0x2f4)]+_0x131238(0x25f)+_0x448de9[_0x131238(0x228)]['embeddingModel']+_0x131238(0x27c);toastr[_0x131238(0x206)](_0x46f4b3,_0x131238(0x213),{'timeOut':0x3a98,'extendedTimeOut':0x1388,'tapToDismiss':!![],'closeButton':!![]}),log(_0x131238(0x1d2)+_0x53e79f+_0x131238(0x33b)+_0x42e4e3,_0x131238(0x22b));}catch(_0x557465){console[_0x131238(0x288)](_0x131238(0x1c1),_0x557465),toastr[_0x131238(0x288)]('查询宝库状态失败:\x20'+_0x557465[_0x131238(0x216)],_0x131238(0x1ef)),log('查询宝库状态失败:\x20'+_0x557465[_0x131238(0x216)],_0x131238(0x288));}}function showExclusionRulesModal(){const _0x3fe3c8=_0x4b9993,_0x3cb188=_0x753c4[_0x3fe3c8(0x231)](),_0x4339a6=_0x3cb188[_0x3fe3c8(0x220)][_0x3fe3c8(0x20e)]||[],_0x2f8621=(_0x3171eb={'start':'','end':''},_0x36497d)=>_0x3fe3c8(0x2be)+_0x36497d+_0x3fe3c8(0x2ca)+_0x3171eb[_0x3fe3c8(0x295)]+_0x3fe3c8(0x271)+_0x3171eb[_0x3fe3c8(0x215)]+_0x3fe3c8(0x2ac),_0x277611=_0x4339a6[_0x3fe3c8(0x21c)](_0x2f8621)['join'](''),_0x35e47d=_0x3fe3c8(0x345)+_0x277611+_0x3fe3c8(0x28c);showHtmlModal(_0x3fe3c8(0x21d),_0x35e47d,{'okText':_0x3fe3c8(0x1c3),'onOk':_0x3ef523=>{const _0x96c686=_0x3fe3c8,_0x4a4ebe=[];_0x3ef523[_0x96c686(0x336)](_0x96c686(0x349))['each'](function(){const _0x3f4df9=_0x96c686,_0x2ff650=$(this)['find']('input')['eq'](0x0)[_0x3f4df9(0x221)]()['trim'](),_0x3c3079=$(this)['find'](_0x3f4df9(0x2f8))['eq'](0x1)['val']()['trim']();_0x2ff650&&_0x3c3079&&_0x4a4ebe[_0x3f4df9(0x2ec)]({'start':_0x2ff650,'end':_0x3c3079});}),updateAndSaveSetting(_0x96c686(0x2d7),_0x4a4ebe),toastr[_0x96c686(0x22b)](_0x96c686(0x27a),'圣旨已达');}});const _0x109df9=document[_0x3fe3c8(0x292)]('hly-exclusion-rules-container'),_0x4fbc1a=_0x109df9['querySelector'](_0x3fe3c8(0x2c0));_0x109df9[_0x3fe3c8(0x2eb)](_0x3fe3c8(0x22a))['addEventListener']('click',()=>{const _0x153066=_0x3fe3c8,_0x331189=_0x4fbc1a['children'][_0x153066(0x273)],_0x266bd2=_0x2f8621({'start':'','end':''},_0x331189);_0x4fbc1a[_0x153066(0x1d5)](_0x153066(0x20a),_0x266bd2);}),_0x4fbc1a['addEventListener'](_0x3fe3c8(0x1be),_0x41a542=>{const _0x52528d=_0x3fe3c8;_0x41a542[_0x52528d(0x280)]['classList']['contains']('hly-delete-rule-btn')&&_0x41a542[_0x52528d(0x280)][_0x52528d(0x362)](_0x52528d(0x349))[_0x52528d(0x24e)]();});}function previewCondensation(){const _0x40756f=_0x4b9993,_0x254a98=document['getElementById'](_0x40756f(0x33c));try{const _0x320842=_0x753c4[_0x40756f(0x231)](),_0x53537b=_0x320842[_0x40756f(0x220)][_0x40756f(0x20e)]||[],_0x23ff07={'user':document[_0x40756f(0x292)](_0x40756f(0x259))[_0x40756f(0x27e)],'ai':document[_0x40756f(0x292)]('hly-include-ai')[_0x40756f(0x27e)]},_0x3d8a71=document[_0x40756f(0x292)](_0x40756f(0x35f))[_0x40756f(0x27e)],_0x4997d6=_0x3d8a71?document[_0x40756f(0x292)](_0x40756f(0x34c))[_0x40756f(0x20b)][_0x40756f(0x275)](',')[_0x40756f(0x21c)](_0x2c8459=>_0x2c8459['trim']())[_0x40756f(0x2a9)](Boolean):[],_0x207c84=_0x753c4[_0x40756f(0x2fa)](_0x23ff07);if(!_0x207c84||_0x207c84[_0x40756f(0x273)]===0x0){_0x254a98[_0x40756f(0x2ce)]=_0x40756f(0x2d6),toastr[_0x40756f(0x1ce)](_0x40756f(0x1ba),_0x40756f(0x264));return;}const _0x5e0d83=getContext()[_0x40756f(0x245)],_0xe03599=_0x207c84[_0x40756f(0x21c)]((_0x1e4171,_0x5c933d)=>{const _0x2e305a=_0x40756f;let _0x139cb0;if(_0x1e4171[_0x2e305a(0x361)])_0x139cb0=_0x1e4171[_0x2e305a(0x2a3)];else{if(_0x3d8a71&&_0x4997d6[_0x2e305a(0x273)]>0x0){const _0x35aa34=extractBlocksByTags(_0x1e4171['mes'],_0x4997d6);_0x139cb0=_0x35aa34['join']('\x0a\x0a');}else _0x139cb0=_0x1e4171['mes'];_0x139cb0=applyExclusionRules(_0x139cb0,_0x53537b);}const _0x1f582a=_0x5e0d83[_0x2e305a(0x341)](_0x41bca5=>_0x41bca5===_0x1e4171),_0x59eb7d=_0x1f582a!==-0x1?_0x1f582a+0x1:-0x1;return{'id':'preview-item-'+_0x5c933d,'name':_0x1e4171[_0x2e305a(0x21a)],'content':_0x139cb0[_0x2e305a(0x324)](),'floor':_0x59eb7d,'is_user':_0x1e4171[_0x2e305a(0x361)],'send_date':_0x1e4171['send_date']};})['filter'](_0x1e27c2=>_0x1e27c2[_0x40756f(0x283)]);if(_0xe03599['length']===0x0){_0x254a98[_0x40756f(0x2ce)]=_0x40756f(0x270),toastr['warning'](_0x40756f(0x270),'翰林院启奏');return;}const _0x5741cd=_0xe03599[_0x40756f(0x21c)]((_0x33bb2a,_0x4a7af8)=>_0x40756f(0x2de)+_0x33bb2a['id']+_0x40756f(0x2b3)+_0x33bb2a[_0x40756f(0x1c4)]+_0x40756f(0x2f3)+_0x33bb2a[_0x40756f(0x21a)]+_0x40756f(0x2ab)+_0x33bb2a['floor']+_0x40756f(0x2a0)+_0x33bb2a[_0x40756f(0x361)]+_0x40756f(0x235)+_0x33bb2a[_0x40756f(0x2b7)]+'\x22>'+_0x33bb2a['content']+'</textarea>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</details>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22hly-preview-delete-btn-v2\x22\x20data-target=\x22'+_0x33bb2a['id']+_0x40756f(0x2d0))[_0x40756f(0x23d)]('');showHtmlModal(_0x40756f(0x2b2),_0x40756f(0x1ca)+_0x5741cd+_0x40756f(0x30c),{'okText':_0x40756f(0x27d),'onOk':_0x2a0c97=>{const _0x43aa12=_0x40756f,_0x3b21eb=[];_0x2a0c97[_0x43aa12(0x336)](_0x43aa12(0x289))[_0x43aa12(0x36b)](function(){const _0x2586a0=_0x43aa12,_0xc4bde2=$(this)[_0x2586a0(0x336)](_0x2586a0(0x22c)),_0x4b1282=_0xc4bde2[_0x2586a0(0x221)]();_0x4b1282['trim']()&&_0x3b21eb[_0x2586a0(0x2ec)]({'mes':_0x4b1282,'is_user':_0xc4bde2[_0x2586a0(0x1c5)](_0x2586a0(0x321)),'send_date':_0xc4bde2['data'](_0x2586a0(0x225)),'floor':_0xc4bde2['data'](_0x2586a0(0x1c4))});}),_0x254a98[_0x43aa12(0x329)][_0x43aa12(0x2e9)]=JSON['stringify'](_0x3b21eb);const _0x46e584=document[_0x43aa12(0x292)](_0x43aa12(0x36a))[_0x43aa12(0x20b)],_0x5aae24=document[_0x43aa12(0x292)](_0x43aa12(0x23c))['value'];_0x254a98['textContent']='已选择\x20'+_0x46e584+_0x43aa12(0x2cc)+_0x5aae24+_0x43aa12(0x34e)+_0x3b21eb[_0x43aa12(0x273)]+'\x20条有效条目），请点击“开始凝识”进入自动向量化流程。',toastr[_0x43aa12(0x22b)]('预览内容已更新，可随时开始凝识。',_0x43aa12(0x1db));}}),$(_0x40756f(0x24c))['on']('click',function(_0x30ebe6){const _0x5970ee=_0x40756f;_0x30ebe6['preventDefault']();const _0x1b3d5c=$(this)['data'](_0x5970ee(0x280));$('#'+_0x1b3d5c)[_0x5970ee(0x24e)]();});}catch(_0x31c117){console['error'](_0x40756f(0x370),_0x31c117),_0x254a98[_0x40756f(0x2ce)]='预览失败:\x20'+_0x31c117[_0x40756f(0x216)],toastr['error'](_0x40756f(0x1fc)+_0x31c117[_0x40756f(0x216)],'严重错误');}}function log(_0x23f300,_0x36f754=_0x4b9993(0x206)){const _0x2a41ad=_0x4b9993,_0x49b1d2=document[_0x2a41ad(0x292)](_0x2a41ad(0x313));if(!_0x49b1d2)return;const _0x25655e=document[_0x2a41ad(0x2a4)]('p'),_0x185c56=new Date()['toLocaleTimeString']();let _0x2ddc55=_0x2a41ad(0x2ad),_0x5cf337=_0x2a41ad(0x298);switch(_0x36f754){case _0x2a41ad(0x22b):_0x2ddc55=_0x2a41ad(0x2cd),_0x5cf337=_0x2a41ad(0x1d9);break;case _0x2a41ad(0x288):_0x2ddc55='fa-times-circle',_0x5cf337=_0x2a41ad(0x32f);break;case _0x2a41ad(0x323):_0x2ddc55=_0x2a41ad(0x25c),_0x5cf337=_0x2a41ad(0x2fd);break;}_0x25655e[_0x2a41ad(0x2b8)]=_0x2a41ad(0x233)+_0x5cf337,_0x25655e[_0x2a41ad(0x1ec)]=_0x2a41ad(0x33e)+_0x2ddc55+'\x22></i>\x20['+_0x185c56+']\x20'+_0x23f300;const _0x28be0a=_0x49b1d2[_0x2a41ad(0x2eb)](_0x2a41ad(0x31c));_0x28be0a&&_0x28be0a[_0x2a41ad(0x24e)](),_0x49b1d2[_0x2a41ad(0x309)](_0x25655e),_0x49b1d2[_0x2a41ad(0x31b)]=_0x49b1d2[_0x2a41ad(0x36e)];}async function ingestManualText(){const _0x370bc5=_0x4b9993,_0x4e4544=document[_0x370bc5(0x292)](_0x370bc5(0x2f1)),_0xbbc4d0=_0x4e4544[_0x370bc5(0x20b)][_0x370bc5(0x324)]();if(!_0xbbc4d0){toastr['warning']('录入内容不能为空。','翰林院启奏'),log('用户尝试录入空文本。',_0x370bc5(0x323));return;}log(_0x370bc5(0x1e7)+_0xbbc4d0[_0x370bc5(0x273)],_0x370bc5(0x206)),toastr[_0x370bc5(0x206)](_0x370bc5(0x315),'圣旨');try{const _0x5681e7=await _0x753c4[_0x370bc5(0x32e)](_0xbbc4d0,_0x370bc5(0x2d2),{'sourceName':_0x370bc5(0x237)});if(_0x5681e7[_0x370bc5(0x22b)])toastr[_0x370bc5(0x22b)]('文书已成功录入宝库，新增\x20'+_0x5681e7[_0x370bc5(0x34a)]+_0x370bc5(0x254),'大功告成'),log(_0x370bc5(0x1cf)+_0x5681e7[_0x370bc5(0x34a)]+_0x370bc5(0x254),'success'),_0x4e4544['value']='';else throw new Error(_0x5681e7[_0x370bc5(0x288)]||_0x370bc5(0x307));}catch(_0x144a9d){console[_0x370bc5(0x288)](_0x370bc5(0x27b),_0x144a9d),toastr['error'](_0x370bc5(0x250)+_0x144a9d['message'],_0x370bc5(0x1ef)),log('手动录入失败:\x20'+_0x144a9d[_0x370bc5(0x216)],_0x370bc5(0x288));}finally{await updatePanelStatus();}}
+import { extension_settings, getContext } from "/scripts/extensions.js";
+import {
+  extensionName,
+  defaultSettings,
+  saveSettings,
+} from "../utils/settings.js";
+import { showHtmlModal } from './page-window.js';
+import { applyExclusionRules, extractBlocksByTags } from '../core/utils/rag-tag-extractor.js';
+
+import {
+  getAvailableWorldbooks, getLoresForWorldbook,
+  executeManualSummary, executeRefinement,
+  executeExpedition, stopExpedition 
+} from "../core/historiographer.js";
+
+import { getNgmsApiSettings, testNgmsApiConnection, fetchNgmsModels } from "../core/api/Ngms_api.js";
+
+
+function setupPromptEditor(type) {
+  const selector = document.getElementById(
+    `amily2_mhb_${type}_prompt_selector`,
+  );
+  const editor = document.getElementById(`amily2_mhb_${type}_editor`);
+  const saveBtn = document.getElementById(`amily2_mhb_${type}_save_button`);
+  const restoreBtn = document.getElementById(
+    `amily2_mhb_${type}_restore_button`,
+  );
+
+  const jailbreakKey =
+    type === "small"
+      ? "historiographySmallJailbreakPrompt"
+      : "historiographyLargeJailbreakPrompt";
+  const mainPromptKey =
+    type === "small"
+      ? "historiographySmallSummaryPrompt"
+      : "historiographyLargeRefinePrompt";
+
+  const updateEditorView = () => {
+    const selected = selector.value;
+    if (selected === "jailbreak") {
+      editor.value = extension_settings[extensionName][jailbreakKey];
+    } else {
+      editor.value = extension_settings[extensionName][mainPromptKey];
+    }
+  };
+
+  selector.addEventListener("change", updateEditorView);
+
+  saveBtn.addEventListener("click", () => {
+    const selected = selector.value;
+    if (selected === "jailbreak") {
+      extension_settings[extensionName][jailbreakKey] = editor.value;
+    } else {
+      extension_settings[extensionName][mainPromptKey] = editor.value;
+    }
+    if (saveSettings()) {
+      toastr.success(
+        `${type === "small" ? "微言录" : "宏史卷"}的${selected === "jailbreak" ? "破限谕旨" : "纲要"}已保存！`,
+      );
+    }
+  });
+
+  restoreBtn.addEventListener("click", () => {
+    const selected = selector.value;
+    if (selected === "jailbreak") {
+      editor.value = defaultSettings[jailbreakKey];
+    } else {
+      editor.value = defaultSettings[mainPromptKey];
+    }
+    toastr.info("已恢复为默认谕旨，请点击“保存当前”以确认。");
+  });
+
+      updateEditorView();
+
+
+    const expandBtn = document.getElementById(`amily2_mhb_${type}_expand_editor`);
+
+    expandBtn.addEventListener('click', () => {
+        const selectedValue = selector.value;
+        const selectedText = selector.options[selector.selectedIndex].text; 
+        const currentContent = editor.value;
+
+        const dialogHtml = `
+            <dialog class="popup wide_dialogue_popup large_dialogue_popup">
+              <div class="popup-body">
+                <h4 style="margin-top:0; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">正在编辑: ${selectedText}</h4>
+                <div class="popup-content" style="height: 70vh;"><div class="height100p wide100p flex-container"><textarea class="height100p wide100p maximized_textarea text_pole"></textarea></div></div>
+                <div class="popup-controls"><div class="popup-button-ok menu_button menu_button_primary interactable">保存并关闭</div><div class="popup-button-cancel menu_button interactable" style="margin-left: 10px;">取消</div></div>
+              </div>
+            </dialog>`;
+
+        const dialogElement = $(dialogHtml).appendTo('body');
+        const dialogTextarea = dialogElement.find('textarea');
+        dialogTextarea.val(currentContent);
+
+        const closeDialog = () => { dialogElement[0].close(); dialogElement.remove(); };
+
+        dialogElement.find('.popup-button-ok').on('click', () => {
+            const newContent = dialogTextarea.val();
+            editor.value = newContent;
+            if (selectedValue === "jailbreak") {
+                extension_settings[extensionName][jailbreakKey] = newContent;
+            } else {
+                extension_settings[extensionName][mainPromptKey] = newContent;
+            }
+            if (saveSettings()) {
+                toastr.success(`${type === 'small' ? '微言录' : '宏史卷'}的${selectedText}已镌刻！`);
+            }
+            closeDialog();
+        });
+
+        dialogElement.find('.popup-button-cancel').on('click', closeDialog);
+        dialogElement[0].showModal();
+    });
+
+}
+
+export function bindHistoriographyEvents() {
+    console.log("[Amily2号-工部] 【敕史局】的专属工匠已就位...");
+
+    setupPromptEditor("small");
+    setupPromptEditor("large");
+    
+    // ========== 🛰️ Ngms API 系统绑定 ==========
+    bindNgmsApiEvents();
+
+    // ========== 📜 微言录 (Small Summary) 绑定 (无改动) ==========
+    const smallStartFloor = document.getElementById("amily2_mhb_small_start_floor");
+    const smallEndFloor = document.getElementById("amily2_mhb_small_end_floor");
+    const smallExecuteBtn = document.getElementById("amily2_mhb_small_manual_execute");
+    const smallAutoEnable = document.getElementById("amily2_mhb_small_auto_enabled");
+    const smallTriggerThreshold = document.getElementById("amily2_mhb_small_trigger_count");
+    const writeToLorebook = document.getElementById("historiography_write_to_lorebook");
+    const ingestToRag = document.getElementById("historiography_ingest_to_rag");
+
+    smallExecuteBtn.addEventListener("click", () => {
+        const start = parseInt(smallStartFloor.value, 10);
+        const end = parseInt(smallEndFloor.value, 10);
+        if (isNaN(start) || isNaN(end) || start <= 0 || end <= 0 || start > end) {
+            toastr.error("请输入有效的起始和结束楼层！", "圣谕有误");
+            return;
+        }
+        executeManualSummary(start, end);
+    });
+
+    smallAutoEnable.addEventListener("change", (event) => {
+        extension_settings[extensionName].historiographySmallAutoEnable = event.target.checked;
+        saveSettings();
+    });
+
+    smallTriggerThreshold.addEventListener("change", (event) => {
+        const value = parseInt(event.target.value, 10);
+        if (isNaN(value) || value < 1) {
+
+            event.target.value = defaultSettings.historiographySmallTriggerThreshold;
+            toastr.warning("远征阈值必须是大于0的数字。已重置。", "圣谕有误");
+            return; 
+        }
+        extension_settings[extensionName].historiographySmallTriggerThreshold = value;
+        saveSettings();
+    });
+
+    writeToLorebook.addEventListener("change", (event) => {
+        extension_settings[extensionName].historiographyWriteToLorebook = event.target.checked;
+        saveSettings();
+    });
+
+    ingestToRag.addEventListener("change", (event) => {
+        extension_settings[extensionName].historiographyIngestToRag = event.target.checked;
+        saveSettings();
+    });
+
+
+    smallAutoEnable.checked = extension_settings[extensionName].historiographySmallAutoEnable ?? false;
+    smallTriggerThreshold.value = extension_settings[extensionName].historiographySmallTriggerThreshold ?? 30;
+    writeToLorebook.checked = extension_settings[extensionName].historiographyWriteToLorebook ?? true;
+    ingestToRag.checked = extension_settings[extensionName].historiographyIngestToRag ?? false;
+
+    const autoSummaryInteractive = document.getElementById("historiography_auto_summary_interactive");
+    autoSummaryInteractive.checked = extension_settings[extensionName].historiographyAutoSummaryInteractive ?? false;
+    autoSummaryInteractive.addEventListener("change", (event) => {
+        extension_settings[extensionName].historiographyAutoSummaryInteractive = event.target.checked;
+        saveSettings();
+    });
+
+    // ========== 🏷️ 标签与排除规则绑定 (新增) ==========
+    const tagExtractionToggle = document.getElementById("historiography-tag-extraction-toggle");
+    const tagInputContainer = document.getElementById("historiography-tag-input-container");
+    const tagInput = document.getElementById("historiography-tag-input");
+    const exclusionRulesBtn = document.getElementById("historiography-exclusion-rules-btn");
+
+    tagExtractionToggle.checked = extension_settings[extensionName].historiographyTagExtractionEnabled ?? false;
+    tagInput.value = extension_settings[extensionName].historiographyTags ?? '';
+    tagInputContainer.style.display = tagExtractionToggle.checked ? 'block' : 'none';
+
+    tagExtractionToggle.addEventListener("change", (event) => {
+        const isEnabled = event.target.checked;
+        extension_settings[extensionName].historiographyTagExtractionEnabled = isEnabled;
+        tagInputContainer.style.display = isEnabled ? 'block' : 'none';
+        saveSettings();
+    });
+
+    tagInput.addEventListener("change", (event) => {
+        extension_settings[extensionName].historiographyTags = event.target.value;
+        saveSettings();
+    });
+    
+    exclusionRulesBtn.addEventListener("click", showHistoriographyExclusionRulesModal);
+
+
+    const expeditionExecuteBtn = document.getElementById("amily2_mhb_small_expedition_execute");
+
+    const updateExpeditionButtonUI = (state) => {
+        expeditionExecuteBtn.dataset.state = state; 
+        switch (state) {
+            case 'running':
+                expeditionExecuteBtn.innerHTML = '<i class="fas fa-stop-circle"></i> 停止远征';
+                expeditionExecuteBtn.className = 'menu_button small_button interactable danger';
+                break;
+            case 'paused':
+                expeditionExecuteBtn.innerHTML = '<i class="fas fa-play-circle"></i> 继续远征';
+                expeditionExecuteBtn.className = 'menu_button small_button interactable success';
+                break;
+            case 'idle':
+            default:
+                expeditionExecuteBtn.innerHTML = '<i class="fas fa-flag-checkered"></i> 开始远征';
+                expeditionExecuteBtn.className = 'menu_button small_button interactable'; 
+                break;
+        }
+    };
+
+    document.addEventListener('amily2-expedition-state-change', (e) => {
+        const { isRunning, manualStop } = e.detail;
+        if (isRunning) {
+            updateExpeditionButtonUI('running');
+        } else if (manualStop) {
+            updateExpeditionButtonUI('paused');
+        } else {
+            updateExpeditionButtonUI('idle');
+        }
+    });
+
+    expeditionExecuteBtn.addEventListener("click", () => {
+        const currentState = expeditionExecuteBtn.dataset.state || 'idle';
+        if (currentState === 'running') {
+            stopExpedition(); 
+        } else {
+            executeExpedition(); 
+        }
+    });
+
+    updateExpeditionButtonUI('idle');
+
+  // ========== 💎 宏史卷 (史册精炼) 绑定 ==========
+  const largeWbSelector = document.getElementById(
+    "amily2_mhb_large_worldbook_selector",
+  );
+  const largeLoreSelector = document.getElementById(
+    "amily2_mhb_large_lore_selector",
+  );
+  const largeRefreshWbBtn = document.getElementById(
+    "amily2_mhb_large_refresh_worldbooks",
+  );
+  const largeRefreshLoresBtn = document.getElementById(
+    "amily2_mhb_large_refresh_lores",
+  );
+  const largeRefineBtn = document.getElementById(
+    "amily2_mhb_large_refine_execute",
+  );
+
+  const updateWorldbookList = async () => {
+    largeWbSelector.innerHTML = '<option value="">正在遍览帝国疆域...</option>';
+    const worldbooks = await getAvailableWorldbooks();
+    largeWbSelector.innerHTML = ""; // 清空
+    if (worldbooks && worldbooks.length > 0) {
+      worldbooks.forEach((wb) => {
+        const option = document.createElement("option");
+        option.value = wb;
+        option.textContent = wb;
+        largeWbSelector.appendChild(option);
+      });
+
+      largeWbSelector.dispatchEvent(new Event("change"));
+    } else {
+      largeWbSelector.innerHTML = '<option value="">未发现任何国史馆</option>';
+    }
+  };
+
+  const updateLoreList = async () => {
+    const selectedWb = largeWbSelector.value;
+    if (!selectedWb) {
+      largeLoreSelector.innerHTML = '<option value="">请先选择国史馆</option>';
+      return;
+    }
+    largeLoreSelector.innerHTML = '<option value="">正在检阅史册...</option>';
+    const lores = await getLoresForWorldbook(selectedWb);
+    largeLoreSelector.innerHTML = ""; // 清空
+    if (lores && lores.length > 0) {
+      lores.forEach((lore) => {
+        const option = document.createElement("option");
+        option.value = lore.key;
+        option.textContent = `[${lore.key}] ${lore.comment}`;
+        largeLoreSelector.appendChild(option);
+      });
+    } else {
+      largeLoreSelector.innerHTML = '<option value="">此国史馆为空</option>';
+    }
+  };
+
+  largeRefreshWbBtn.addEventListener("click", updateWorldbookList);
+  largeWbSelector.addEventListener("change", updateLoreList);
+  largeRefreshLoresBtn.addEventListener("click", updateLoreList);
+
+  largeRefineBtn.addEventListener("click", () => {
+    const worldbook = largeWbSelector.value;
+    const loreKey = largeLoreSelector.value;
+    if (!worldbook || !loreKey) {
+      toastr.error("请先选择一个国史馆及其中的史册条目！", "圣谕不全");
+      return;
+    }
+
+    executeRefinement(worldbook, loreKey);
+  });
+
+
+  const vectorizeSummaryContent = document.getElementById("amily2_vectorize_summary_content");
+  vectorizeSummaryContent.checked = extension_settings[extensionName].historiographyVectorizeSummary ?? false;
+  vectorizeSummaryContent.addEventListener("change", (event) => {
+      extension_settings[extensionName].historiographyVectorizeSummary = event.target.checked;
+      saveSettings();
+  });
+}
+
+
+// ========== Ngms API 事件绑定函数 ==========
+function bindNgmsApiEvents() {
+    console.log("[Amily2号-Ngms工部] 正在绑定Ngms API事件...");
+
+    const updateAndSaveSetting = (key, value) => {
+        console.log(`[Amily2-Ngms令] 收到指令: 将 [${key}] 设置为 ->`, value);
+        if (!extension_settings[extensionName]) {
+            extension_settings[extensionName] = {};
+        }
+        extension_settings[extensionName][key] = value;
+        saveSettings();
+        console.log(`[Amily2-Ngms录] [${key}] 的新状态已保存。`);
+    };
+
+    // Ngms API 开关控制
+    const ngmsToggle = document.getElementById('amily2_ngms_enabled');
+    const ngmsContent = document.getElementById('amily2_ngms_content');
+    
+    if (ngmsToggle && ngmsContent) {
+        ngmsToggle.checked = extension_settings[extensionName].ngmsEnabled ?? false;
+        ngmsContent.style.display = ngmsToggle.checked ? 'block' : 'none';
+
+        ngmsToggle.addEventListener('change', function() {
+            const isEnabled = this.checked;
+            updateAndSaveSetting('ngmsEnabled', isEnabled);
+            ngmsContent.style.display = isEnabled ? 'block' : 'none';
+        });
+    }
+
+    // API模式切换
+    const apiModeSelect = document.getElementById('amily2_ngms_api_mode');
+    const compatibleConfig = document.getElementById('amily2_ngms_compatible_config');
+    const presetConfig = document.getElementById('amily2_ngms_preset_config');
+
+    if (apiModeSelect && compatibleConfig && presetConfig) {
+        apiModeSelect.value = extension_settings[extensionName].ngmsApiMode || 'openai_test';
+        
+        const updateConfigVisibility = (mode) => {
+            if (mode === 'sillytavern_preset') {
+                compatibleConfig.style.display = 'none';
+                presetConfig.style.display = 'block';
+                loadNgmsTavernPresets();
+            } else {
+                compatibleConfig.style.display = 'block';
+                presetConfig.style.display = 'none';
+            }
+        };
+
+        updateConfigVisibility(apiModeSelect.value);
+
+        apiModeSelect.addEventListener('change', function() {
+            updateAndSaveSetting('ngmsApiMode', this.value);
+            updateConfigVisibility(this.value);
+        });
+    }
+
+    // API配置字段绑定
+    const apiFields = [
+        { id: 'amily2_ngms_api_url', key: 'ngmsApiUrl' },
+        { id: 'amily2_ngms_api_key', key: 'ngmsApiKey' },
+        { id: 'amily2_ngms_model', key: 'ngmsModel' }
+    ];
+
+    apiFields.forEach(field => {
+        const element = document.getElementById(field.id);
+        if (element) {
+            element.value = extension_settings[extensionName][field.key] || '';
+            element.addEventListener('change', function() {
+                updateAndSaveSetting(field.key, this.value);
+            });
+        }
+    });
+
+    // 滑块控件绑定
+    const sliderFields = [
+        { id: 'amily2_ngms_max_tokens', key: 'ngmsMaxTokens', defaultValue: 4000 },
+        { id: 'amily2_ngms_temperature', key: 'ngmsTemperature', defaultValue: 0.7 }
+    ];
+
+    sliderFields.forEach(field => {
+        const slider = document.getElementById(field.id);
+        const display = document.getElementById(field.id + '_value');
+        if (slider && display) {
+            const value = extension_settings[extensionName][field.key] || field.defaultValue;
+            slider.value = value;
+            display.textContent = value;
+
+            slider.addEventListener('input', function() {
+                const newValue = parseFloat(this.value);
+                display.textContent = newValue;
+                updateAndSaveSetting(field.key, newValue);
+            });
+        }
+    });
+
+    // SillyTavern预设选择器
+    const tavernProfileSelect = document.getElementById('amily2_ngms_tavern_profile');
+    if (tavernProfileSelect) {
+        tavernProfileSelect.value = extension_settings[extensionName].ngmsTavernProfile || '';
+        tavernProfileSelect.addEventListener('change', function() {
+            updateAndSaveSetting('ngmsTavernProfile', this.value);
+        });
+    }
+
+    // 测试连接按钮
+    const testButton = document.getElementById('amily2_ngms_test_connection');
+    if (testButton) {
+        testButton.addEventListener('click', async function() {
+            const button = $(this);
+            const originalHtml = button.html();
+            button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 测试中');
+            
+            try {
+                await testNgmsApiConnection();
+            } catch (error) {
+                console.error('[Amily2号-Ngms] 测试连接失败:', error);
+            } finally {
+                button.prop('disabled', false).html(originalHtml);
+            }
+        });
+    }
+
+    // 获取模型按钮
+    const fetchModelsButton = document.getElementById('amily2_ngms_fetch_models');
+    const modelSelect = document.getElementById('amily2_ngms_model_select');
+    const modelInput = document.getElementById('amily2_ngms_model');
+    
+    if (fetchModelsButton && modelSelect && modelInput) {
+        fetchModelsButton.addEventListener('click', async function() {
+            const button = $(this);
+            const originalHtml = button.html();
+            button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 获取中');
+            
+            try {
+                const models = await fetchNgmsModels();
+                
+                if (models && models.length > 0) {
+                    // 清空并填充模型下拉框
+                    modelSelect.innerHTML = '<option value="">-- 请选择模型 --</option>';
+                    models.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model.id || model.name || model;
+                        option.textContent = model.name || model.id || model;
+                        modelSelect.appendChild(option);
+                    });
+                    
+                    // 显示下拉框，隐藏输入框
+                    modelSelect.style.display = 'block';
+                    modelInput.style.display = 'none';
+                    
+                    // 绑定模型选择事件
+                    modelSelect.addEventListener('change', function() {
+                        const selectedModel = this.value;
+                        modelInput.value = selectedModel;
+                        updateAndSaveSetting('ngmsModel', selectedModel);
+                        console.log(`[Amily2-Ngms] 已选择模型: ${selectedModel}`);
+                    });
+                    
+                    toastr.success(`成功获取 ${models.length} 个模型`, 'Ngms 模型获取');
+                } else {
+                    toastr.warning('未获取到任何模型', 'Ngms 模型获取');
+                }
+                
+            } catch (error) {
+                console.error('[Amily2号-Ngms] 获取模型列表失败:', error);
+                toastr.error(`获取模型失败: ${error.message}`, 'Ngms 模型获取');
+            } finally {
+                button.prop('disabled', false).html(originalHtml);
+            }
+        });
+    }
+}
+
+// 加载SillyTavern预设列表
+async function loadNgmsTavernPresets() {
+    const select = document.getElementById('amily2_ngms_tavern_profile');
+    if (!select) return;
+
+    const currentValue = select.value;
+    select.innerHTML = '<option value="">-- 加载中 --</option>';
+
+    try {
+        const context = getContext();
+        const tavernProfiles = context.extensionSettings?.connectionManager?.profiles || [];
+        
+        select.innerHTML = '<option value="">-- 请选择预设 --</option>';
+        
+        if (tavernProfiles.length > 0) {
+            tavernProfiles.forEach(profile => {
+                if (profile.api && profile.preset) {
+                    const option = document.createElement('option');
+                    option.value = profile.id;
+                    option.textContent = profile.name || profile.id;
+                    if (profile.id === currentValue) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                }
+            });
+        } else {
+            select.innerHTML = '<option value="">未找到可用预设</option>';
+        }
+    } catch (error) {
+        console.error('[Amily2号-Ngms] 加载SillyTavern预设失败:', error);
+        select.innerHTML = '<option value="">加载失败</option>';
+    }
+}
+
+function showHistoriographyExclusionRulesModal() {
+    const rules = extension_settings[extensionName].historiographyExclusionRules || [];
+
+    const createRuleRowHtml = (rule = { start: '', end: '' }, index) => `
+        <div class="hly-exclusion-rule-row" data-index="${index}">
+            <input type="text" class="hly-imperial-brush" value="${rule.start}" placeholder="开始字符, 如 <!--">
+            <span>到</span>
+            <input type="text" class="hly-imperial-brush" value="${rule.end}" placeholder="结束字符, 如 -->">
+            <button class="hly-delete-rule-btn" title="删除此规则">&times;</button>
+        </div>
+    `;
+
+    const rulesHtml = rules.map(createRuleRowHtml).join('');
+
+    const modalHtml = `
+        <div id="historiography-exclusion-rules-container">
+            <p class="hly-notes">在这里定义需要从提取内容中排除的文本片段。例如，排除HTML注释，可以设置开始字符为 \`<!--\`，结束字符为 \`-->\`。</p>
+            <div id="historiography-rules-list">${rulesHtml}</div>
+            <button id="historiography-add-rule-btn" class="hly-action-button" style="margin-top: 10px;">
+                <i class="fas fa-plus"></i> 添加新规则
+            </button>
+        </div>
+        <style>
+            .hly-exclusion-rule-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+            .hly-exclusion-rule-row input { flex-grow: 1; }
+            .hly-delete-rule-btn { background: #c0392b; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 16px; line-height: 24px; text-align: center; padding: 0; }
+        </style>
+    `;
+
+    showHtmlModal('编辑内容排除规则', modalHtml, {
+        okText: '保存规则',
+        onOk: (dialogElement) => {
+            const newRules = [];
+            dialogElement.find('.hly-exclusion-rule-row').each(function() {
+                const start = $(this).find('input').eq(0).val().trim();
+                const end = $(this).find('input').eq(1).val().trim();
+                if (start && end) {
+                    newRules.push({ start, end });
+                }
+            });
+            extension_settings[extensionName].historiographyExclusionRules = newRules;
+            saveSettings();
+            toastr.success('内容排除规则已保存。', '圣旨已达');
+        },
+        onShow: (dialogElement) => {
+            const rulesList = dialogElement.find('#historiography-rules-list');
+
+            dialogElement.find('#historiography-add-rule-btn').on('click', () => {
+                const newIndex = rulesList.children().length;
+                const newRowHtml = createRuleRowHtml({ start: '', end: '' }, newIndex);
+                rulesList.append(newRowHtml);
+            });
+
+            rulesList.on('click', '.hly-delete-rule-btn', function() {
+                $(this).closest('.hly-exclusion-rule-row').remove();
+            });
+        }
+    });
+}
