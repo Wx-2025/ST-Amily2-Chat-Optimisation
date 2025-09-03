@@ -454,7 +454,7 @@
     height: 0;
 }
 
-.slider {
+#amily2_memorisation_forms_panel .slider {
     position: absolute;
     cursor: pointer;
     top: 0;
@@ -465,8 +465,7 @@
     transition: .4s;
     border-radius: 28px;
 }
-
-.slider:before {
+#amily2_memorisation_forms_panel .slider:before {
     position: absolute;
     content: "";
     height: 20px;
@@ -478,15 +477,15 @@
     border-radius: 50%;
 }
 
-input:checked + .slider {
+#amily2_memorisation_forms_panel input:checked + .slider {
     background-color: #8a72ff;
 }
 
-input:focus + .slider {
+#amily2_memorisation_forms_panel input:focus + .slider {
     box-shadow: 0 0 1px #8a72ff;
 }
 
-input:checked + .slider:before {
+#amily2_memorisation_forms_panel input:checked + .slider:before {
     transform: translateX(22px);
 }
 
