@@ -23,7 +23,7 @@ function updateControlsLockState() {
     const settings = getSettings();
     const isMasterEnabled = settings.cwb_master_enabled;
 
-    const $controlsToToggle = $panel.find('input, textarea, select, button').not('#cwb_master_enabled-checkbox');
+    const $controlsToToggle = $panel.find('input, textarea, select, button').not('#cwb_master_enabled-checkbox, #amily2_back_to_main_from_cwb');
 
     if (isMasterEnabled) {
         $controlsToToggle.prop('disabled', false);
