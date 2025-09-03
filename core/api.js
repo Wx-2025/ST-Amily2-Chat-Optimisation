@@ -526,23 +526,23 @@ async function callOpenAITest(messages, options) {
         method: 'POST',
         headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify({
-            messages: messages,
-            model: options.model,
-            temperature: options.temperature,
-            frequency_penalty: 0,
-            presence_penalty: 0.12,
-            top_p: options.top_p || 1,
-            max_tokens: options.maxTokens,
-            stream: false,
             chat_completion_source: 'openai',
+            custom_prompt_post_processing: 'strict',
+            enable_web_search: false,
+            frequency_penalty: 0,
             group_names: [],
             include_reasoning: false,
+            max_tokens: options.maxTokens || 100000,
+            messages: messages,
+            model: options.model,
+            presence_penalty: 0.12,
+            proxy_password: options.apiKey,
             reasoning_effort: 'medium',
-            enable_web_search: false,
             request_images: false,
-            custom_prompt_post_processing: 'strict',
             reverse_proxy: options.apiUrl,
-            proxy_password: options.apiKey
+            stream: false,
+            temperature: options.temperature || 1,
+            top_p: options.top_p || 1
         })
     });
 
