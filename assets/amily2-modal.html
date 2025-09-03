@@ -15,7 +15,7 @@
         gap: 0px;
     }
     .side-button {
-        writing-mode: vertical-rl;
+        writing-mode: vertical-rl; /* 【V59.0】恢复垂直模式 */
         text-orientation: mixed;
         height: 140px;
         width: 50px;
@@ -39,6 +39,53 @@
     #amily2_update_button_new {
         display: none;
         background-color: #4CAF50 !important;
+    }
+    
+    .version-info-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 12px;
+        background-color: rgba(255, 255, 255, 0.03);
+        border-radius: 5px;
+        font-size: 12px;
+        line-height: 1.3;
+    }
+    
+    .version-info-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        color: #adb6e6;
+    }
+    
+    .version-label {
+        font-size: 10px;
+        opacity: 0.7;
+        margin-bottom: 2px;
+    }
+    
+    .version-number {
+        font-weight: bold;
+        font-family: monospace;
+    }
+    
+    .version-current .version-number {
+        color: #68b7ff;
+    }
+    
+    .version-latest .version-number {
+        color: #4CAF50;
+    }
+    
+    .version-latest.has-update .version-number {
+        color: #ff6b6b;
+        animation: glow 2s ease-in-out infinite alternate;
+    }
+    
+    @keyframes glow {
+        from { text-shadow: 0 0 5px rgba(255, 107, 107, 0.5); }
+        to { text-shadow: 0 0 10px rgba(255, 107, 107, 0.8), 0 0 15px rgba(255, 107, 107, 0.3); }
     }
 </style>
 <div class="flex-container">
@@ -65,27 +112,10 @@
 <div class="plugin-features" style="display: none;">
 
 <fieldset class="settings-group">
-    <legend>Amily中枢</legend>
+    <legend><i class="fas fa-cog"></i> Amily中枢</legend>
     <div class="amily2-header">
-        <!-- 左列 -->
-        <div class="header-column left" style="flex-direction: row; align-items: center; gap: 5px;">
-            <button id="amily2_open_rag_palace" class="secret-chamber-button interactable side-button">
-                <i class="fas fa-brain"></i>翰林学院
-            </button>
-            <button id="amily2_open_memorisation_forms" class="secret-chamber-button interactable side-button">
-                <i class="fas fa-table"></i>内存储司
-            </button>
-        </div>
-
-
-        <div class="header-column center">
-            <div style="position: relative;">
-                <button id="amily2_update_button" class="menu_button small_button interactable" title="查看更新日志">
-                    <i class="fas fa-bell"></i>
-                </button>
-                <div id="amily2_update_indicator" class="update-indicator" style="display: none;"></div>
-            </div>
-            <div class="main-toggle amily2_settings_block">
+        <div class="header-column center" style="width: 100%; flex-direction: row; justify-content: center; gap: 20px;">
+            <div class="main-toggle amily2_settings_block" style="margin: 0;">
                 <label class="toggle-switch">
                     <input id="amily2_enabled" type="checkbox" />
                     <span class="slider"></span>
@@ -94,17 +124,18 @@
             <button id="amily2_open_tutorial" class="menu_button small_button interactable" title="查看使用教程">
                 教程
             </button>
-            <button id="amily2_update_button_new" class="menu_button small_button interactable" title="查看更新日志">更新</button>
         </div>
+    </div>
+</fieldset>
 
-        <div class="header-column right" style="flex-direction: row; align-items: center; gap: 5px;">
-            <button id="amily2_open_additional_features" class="secret-chamber-button interactable side-button">
-                <i class="fas fa-landmark-dome"></i>内阁密室
-            </button>
-            <button id="amily2_open_plot_optimization" class="secret-chamber-button interactable side-button">
-                <i class="fas fa-feather-alt"></i>剧情优化
-            </button>
-        </div>
+<fieldset class="settings-group">
+    <legend><i class="fas fa-plus-circle"></i> 新增扩展</legend>
+    <div class="button-group" style="display: flex; justify-content: space-between; gap: 8px;">
+        <button id="amily2_open_additional_features" class="menu_button wide_button"><i class="fas fa-landmark-dome"></i> 内阁密室</button>
+        <button id="amily2_open_rag_palace" class="menu_button wide_button"><i class="fas fa-brain"></i> 翰林学院</button>
+        <button id="amily2_open_memorisation_forms" class="menu_button wide_button"><i class="fas fa-table"></i> 内存储司</button>
+        <button id="amily2_open_plot_optimization" class="menu_button wide_button"><i class="fas fa-feather-alt"></i> 剧情优化</button>
+        <button id="amily2_open_character_world_book" class="menu_button wide_button"><i class="fa-solid fa-book-atlas"></i> 角色世界</button>
     </div>
 </fieldset>
  
@@ -115,10 +146,33 @@
     </div>
 </fieldset>
 
+<fieldset class="settings-group">
+    <legend><i class="fas fa-code-branch"></i> 版本信息</legend>
+    <div class="version-info-container">
+        <div class="version-info-item version-current">
+            <div class="version-label">当前版本</div>
+            <div id="amily2_current_version" class="version-number">加载中...</div>
+        </div>
+        <div class="version-info-item version-center" style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
+            <div style="position: relative;">
+                <button id="amily2_update_button" class="menu_button small_button interactable" title="查看更新日志">
+                    <i class="fas fa-bell"></i>
+                </button>
+                <div id="amily2_update_indicator" class="update-indicator" style="display: none;"></div>
+            </div>
+            <button id="amily2_update_button_new" class="menu_button small_button interactable" title="查看更新日志">更新</button>
+        </div>
+        <div class="version-info-item version-latest">
+            <div class="version-label">最新版本</div>
+            <div id="amily2_latest_version" class="version-number">检查中...</div>
+        </div>
+    </div>
+</fieldset>
+
 <hr class="header-divider">
 
             <fieldset class="settings-group">
-                <legend><i class="fas fa-cogs"></i> 核心功能</legend>
+                <legend><i class="fas fa-cogs"></i> 正文优化</legend>
 
 
                 <div class="control-pair-container" style="justify-content: space-around;">

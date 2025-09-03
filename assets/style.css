@@ -308,28 +308,22 @@ hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 0; }
     flex-grow: 1;
     gap: 15px;
 }
-
+/* 左侧容器：垂直布局 */
 .header-left-panel {
-    display: flex;         
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 10px;             
+    display: flex;          /* 弹性布局 */
+    flex-direction: column; /* 垂直排列 */
+    align-items: flex-start;/* 左对齐 */
+    gap: 10px;              /* 内部元素间距 */
 }
  
+/* 翰林院入口容器 (简化无背景) */
 .rag-palace-entry-container {
-    width: auto;
-}
-
-#amily2_open_rag_palace {
-    background: none !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0;
-    font-size: 14px;
-    color: var(--SmartThemeBodyColor);
+    width: auto; /* 自适应宽度 */
 }
  
-
+/* 翰林院按钮样式已移至新增扩展区域，使用统一按钮样式 */
+ 
+/* 确保所有可切换面板表现一致 */
 #rag_palace_panel {
     display: none;
 }

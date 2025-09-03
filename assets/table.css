@@ -308,13 +308,13 @@
 }
 
 
-.prompt-editor-area {
+#amily2_memorisation_forms_panel.prompt-editor-area {
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.editor-buttons-panel {
+#amily2_memorisation_forms_panel.editor-buttons-panel {
     display: flex;
     justify-content: flex-end;
     gap: 8px;
@@ -621,4 +621,44 @@ th.amily2-menu-open .amily2-header-text {
     background: rgba(120, 120, 120, 0.4) !important;
     border-color: rgba(120, 120, 120, 0.6) !important;
     transform: translateY(-1px);
+}
+
+/* Nccs API 按钮行样式 */
+.nccs-button-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    margin-top: 15px;
+}
+
+.nccs-button-row .menu_button {
+    min-width: 120px;
+    height: 35px;
+    border-radius: 20px;
+    background: linear-gradient(45deg, rgba(74, 158, 255, 0.6), rgba(138, 114, 255, 0.6));
+    border: 1px solid rgba(74, 158, 255, 0.8) !important;
+    color: #fff !important;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.nccs-button-row .menu_button:hover {
+    background: linear-gradient(45deg, rgba(74, 158, 255, 0.8), rgba(138, 114, 255, 0.8));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(74, 158, 255, 0.4);
+}
+
+.nccs-button-row .menu_button.secondary {
+    background: linear-gradient(45deg, rgba(120, 120, 120, 0.6), rgba(160, 160, 160, 0.6));
+    border: 1px solid rgba(120, 120, 120, 0.8) !important;
+}
+
+.nccs-button-row .menu_button.secondary:hover {
+    background: linear-gradient(45deg, rgba(120, 120, 120, 0.8), rgba(160, 160, 160, 0.8));
+    box-shadow: 0 4px 15px rgba(120, 120, 120, 0.4);
 }

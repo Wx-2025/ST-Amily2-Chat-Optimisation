@@ -15,7 +15,7 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            min-width: 0;
+            min-width: 0; /* Prevents flex items from overflowing */
         }
 
         .scrollable-container {
@@ -138,6 +138,7 @@
 
                     <div id="table_worldbook_select_wrapper" style="display: none;">
                         <div class="worldbook-selection-container">
+                            <!-- World Book List Column -->
                             <div class="worldbook-column">
                                 <div class="amily2_opt_label_with_button_wrapper">
                                     <label>选择世界书 (可多选)</label>
@@ -150,6 +151,8 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- World Book Entry List Column -->
                     <div class="worldbook-column" style="margin-top: 10px;">
                         <label>选择条目 (可多选)</label>
                         <div id="table_worldbook_entry_list" class="scrollable-container">
@@ -203,6 +206,74 @@
                         <button id="amily2-clear-all-tables-btn" class="menu_button danger small_button interactable"><i class="fas fa-trash-alt"></i> 清空内容</button>
                     </div>
                     <p class="notes" style="margin-top: 8px; margin-bottom: 10px;">说明：可以导出不含剧情的"纯净预设"用于分享，或导出包含剧情的"完整备份"用于存档。</p>
+                    
+                    <hr class="section-divider" style="margin: 10px 0;">
+                    
+                    <!-- Nccs API 控制区域 -->
+                    <fieldset class="settings-group" style="border-style: dashed; padding: 8px; margin-bottom: 10px;">
+                        <legend><i class="fas fa-brain"></i> Nccs API 系统</legend>
+                        
+                        <div class="control-block-with-switch" style="margin-bottom: 10px;">
+                            <label for="nccs-api-enabled">启用 Nccs API</label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="nccs-api-enabled" data-setting-key="nccsEnabled" data-type="boolean">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+
+                        <div id="nccs-api-config" style="display: none;">
+                            <div class="amily2_opt_settings_block" style="margin-bottom: 10px;">
+                                <label for="nccs-api-mode">API 模式</label>
+                                <select id="nccs-api-mode" class="text_pole">
+                                    <option value="openai_test">全兼容模式</option>
+                                    <option value="sillytavern_preset">SillyTavern预设模式</option>
+                                </select>
+                            </div>
+
+                            <div class="amily2_opt_settings_block" style="margin-bottom: 10px;">
+                                <label for="nccs-api-url">API URL</label>
+                                <input type="text" id="nccs-api-url" class="text_pole" placeholder="https://api.openai.com/v1">
+                            </div>
+
+                            <div class="amily2_opt_settings_block" style="margin-bottom: 10px;">
+                                <label for="nccs-api-key">API Key</label>
+                                <input type="password" id="nccs-api-key" class="text_pole" placeholder="输入您的API密钥">
+                            </div>
+
+                            <div class="amily2_opt_settings_block" style="margin-bottom: 10px;">
+                                <label for="nccs-api-model">模型</label>
+                                <div style="display: flex; gap: 5px; align-items: center;">
+                                    <input type="text" id="nccs-api-model" class="text_pole" placeholder="选择或输入模型">
+                                </div>
+                            </div>
+
+                            <div class="amily2_opt_settings_block" style="margin-bottom: 10px;">
+                                <label for="nccs-max-tokens">最大Token数: <span id="nccs-max-tokens-value">2000</span></label>
+                                <input type="range" id="nccs-max-tokens" min="100" max="8000" step="100" value="2000">
+                            </div>
+
+                            <div class="amily2_opt_settings_block" style="margin-bottom: 10px;">
+                                <label for="nccs-temperature">Temperature: <span id="nccs-temperature-value">0.7</span></label>
+                                <input type="range" id="nccs-temperature" min="0" max="2" step="0.1" value="0.7">
+                            </div>
+
+                            <div class="amily2_opt_settings_block" style="margin-bottom: 10px;">
+                                <label for="nccs-sillytavern-preset">SillyTavern 预设</label>
+                                <select id="nccs-sillytavern-preset" class="text_pole">
+                                    <option value="">选择预设</option>
+                                </select>
+                            </div>
+
+                            <div class="nccs-button-row" style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                                <button id="nccs-test-connection" class="menu_button primary small_button interactable">
+                                    <i class="fas fa-plug"></i> 测试连接
+                                </button>
+                                <button id="nccs-fetch-models" class="menu_button secondary small_button interactable">
+                                    <i class="fas fa-download"></i> 获取模型
+                                </button>
+                            </div>
+                        </div>
+                    </fieldset>
                     
                     <hr class="section-divider" style="margin: 10px 0;">
                     

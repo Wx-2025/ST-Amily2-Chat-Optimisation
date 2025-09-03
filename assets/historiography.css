@@ -374,3 +374,57 @@
     gap: 12px;
     flex-wrap: wrap;
 }
+
+/* Ngms API 按钮样式 - 水平扁平按钮 */
+.ngms-button-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 15px;
+}
+
+.ngms-button-row .menu_button {
+    min-width: 120px;
+    height: 35px;
+    padding: 8px 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    text-transform: none;
+    letter-spacing: 0.5px;
+}
+
+.ngms-button-row .menu_button.primary {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    border: 1px solid #388e3c;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.ngms-button-row .menu_button.primary:hover {
+    background: linear-gradient(135deg, #5CBF60, #4CAF50);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+    transform: translateY(-1px);
+}
+
+.ngms-button-row .menu_button.secondary {
+    background: linear-gradient(135deg, #2196F3, #1976D2);
+    border: 1px solid #1565C0;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+.ngms-button-row .menu_button.secondary:hover {
+    background: linear-gradient(135deg, #42A5F5, #2196F3);
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+    transform: translateY(-1px);
+}
+
+.ngms-button-row .menu_button i {
+    font-size: 14px;
+}
