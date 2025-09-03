@@ -1,4 +1,4 @@
-import { extension_settings } from "/scripts/extensions.js";
+import { extension_settings, getContext } from "/scripts/extensions.js";
 import {
   extensionName,
   defaultSettings,
@@ -12,6 +12,8 @@ import {
   executeManualSummary, executeRefinement,
   executeExpedition, stopExpedition 
 } from "../core/historiographer.js";
+
+import { getNgmsApiSettings, testNgmsApiConnection, fetchNgmsModels } from "../core/api/Ngms_api.js";
 
 
 function setupPromptEditor(type) {
@@ -118,6 +120,9 @@ export function bindHistoriographyEvents() {
 
     setupPromptEditor("small");
     setupPromptEditor("large");
+    
+    // ========== 🛰️ Ngms API 系统绑定 ==========
+    bindNgmsApiEvents();
 
     // ========== 📜 微言录 (Small Summary) 绑定 (无改动) ==========
     const smallStartFloor = document.getElementById("amily2_mhb_small_start_floor");
@@ -326,6 +331,214 @@ export function bindHistoriographyEvents() {
   });
 }
 
+
+// ========== Ngms API 事件绑定函数 ==========
+function bindNgmsApiEvents() {
+    console.log("[Amily2号-Ngms工部] 正在绑定Ngms API事件...");
+
+    const updateAndSaveSetting = (key, value) => {
+        console.log(`[Amily2-Ngms令] 收到指令: 将 [${key}] 设置为 ->`, value);
+        if (!extension_settings[extensionName]) {
+            extension_settings[extensionName] = {};
+        }
+        extension_settings[extensionName][key] = value;
+        saveSettings();
+        console.log(`[Amily2-Ngms录] [${key}] 的新状态已保存。`);
+    };
+
+    // Ngms API 开关控制
+    const ngmsToggle = document.getElementById('amily2_ngms_enabled');
+    const ngmsContent = document.getElementById('amily2_ngms_content');
+    
+    if (ngmsToggle && ngmsContent) {
+        ngmsToggle.checked = extension_settings[extensionName].ngmsEnabled ?? false;
+        ngmsContent.style.display = ngmsToggle.checked ? 'block' : 'none';
+
+        ngmsToggle.addEventListener('change', function() {
+            const isEnabled = this.checked;
+            updateAndSaveSetting('ngmsEnabled', isEnabled);
+            ngmsContent.style.display = isEnabled ? 'block' : 'none';
+        });
+    }
+
+    // API模式切换
+    const apiModeSelect = document.getElementById('amily2_ngms_api_mode');
+    const compatibleConfig = document.getElementById('amily2_ngms_compatible_config');
+    const presetConfig = document.getElementById('amily2_ngms_preset_config');
+
+    if (apiModeSelect && compatibleConfig && presetConfig) {
+        apiModeSelect.value = extension_settings[extensionName].ngmsApiMode || 'openai_test';
+        
+        const updateConfigVisibility = (mode) => {
+            if (mode === 'sillytavern_preset') {
+                compatibleConfig.style.display = 'none';
+                presetConfig.style.display = 'block';
+                loadNgmsTavernPresets();
+            } else {
+                compatibleConfig.style.display = 'block';
+                presetConfig.style.display = 'none';
+            }
+        };
+
+        updateConfigVisibility(apiModeSelect.value);
+
+        apiModeSelect.addEventListener('change', function() {
+            updateAndSaveSetting('ngmsApiMode', this.value);
+            updateConfigVisibility(this.value);
+        });
+    }
+
+    // API配置字段绑定
+    const apiFields = [
+        { id: 'amily2_ngms_api_url', key: 'ngmsApiUrl' },
+        { id: 'amily2_ngms_api_key', key: 'ngmsApiKey' },
+        { id: 'amily2_ngms_model', key: 'ngmsModel' }
+    ];
+
+    apiFields.forEach(field => {
+        const element = document.getElementById(field.id);
+        if (element) {
+            element.value = extension_settings[extensionName][field.key] || '';
+            element.addEventListener('change', function() {
+                updateAndSaveSetting(field.key, this.value);
+            });
+        }
+    });
+
+    // 滑块控件绑定
+    const sliderFields = [
+        { id: 'amily2_ngms_max_tokens', key: 'ngmsMaxTokens', defaultValue: 4000 },
+        { id: 'amily2_ngms_temperature', key: 'ngmsTemperature', defaultValue: 0.7 }
+    ];
+
+    sliderFields.forEach(field => {
+        const slider = document.getElementById(field.id);
+        const display = document.getElementById(field.id + '_value');
+        if (slider && display) {
+            const value = extension_settings[extensionName][field.key] || field.defaultValue;
+            slider.value = value;
+            display.textContent = value;
+
+            slider.addEventListener('input', function() {
+                const newValue = parseFloat(this.value);
+                display.textContent = newValue;
+                updateAndSaveSetting(field.key, newValue);
+            });
+        }
+    });
+
+    // SillyTavern预设选择器
+    const tavernProfileSelect = document.getElementById('amily2_ngms_tavern_profile');
+    if (tavernProfileSelect) {
+        tavernProfileSelect.value = extension_settings[extensionName].ngmsTavernProfile || '';
+        tavernProfileSelect.addEventListener('change', function() {
+            updateAndSaveSetting('ngmsTavernProfile', this.value);
+        });
+    }
+
+    // 测试连接按钮
+    const testButton = document.getElementById('amily2_ngms_test_connection');
+    if (testButton) {
+        testButton.addEventListener('click', async function() {
+            const button = $(this);
+            const originalHtml = button.html();
+            button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 测试中');
+            
+            try {
+                await testNgmsApiConnection();
+            } catch (error) {
+                console.error('[Amily2号-Ngms] 测试连接失败:', error);
+            } finally {
+                button.prop('disabled', false).html(originalHtml);
+            }
+        });
+    }
+
+    // 获取模型按钮
+    const fetchModelsButton = document.getElementById('amily2_ngms_fetch_models');
+    const modelSelect = document.getElementById('amily2_ngms_model_select');
+    const modelInput = document.getElementById('amily2_ngms_model');
+    
+    if (fetchModelsButton && modelSelect && modelInput) {
+        fetchModelsButton.addEventListener('click', async function() {
+            const button = $(this);
+            const originalHtml = button.html();
+            button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 获取中');
+            
+            try {
+                const models = await fetchNgmsModels();
+                
+                if (models && models.length > 0) {
+                    // 清空并填充模型下拉框
+                    modelSelect.innerHTML = '<option value="">-- 请选择模型 --</option>';
+                    models.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model.id || model.name || model;
+                        option.textContent = model.name || model.id || model;
+                        modelSelect.appendChild(option);
+                    });
+                    
+                    // 显示下拉框，隐藏输入框
+                    modelSelect.style.display = 'block';
+                    modelInput.style.display = 'none';
+                    
+                    // 绑定模型选择事件
+                    modelSelect.addEventListener('change', function() {
+                        const selectedModel = this.value;
+                        modelInput.value = selectedModel;
+                        updateAndSaveSetting('ngmsModel', selectedModel);
+                        console.log(`[Amily2-Ngms] 已选择模型: ${selectedModel}`);
+                    });
+                    
+                    toastr.success(`成功获取 ${models.length} 个模型`, 'Ngms 模型获取');
+                } else {
+                    toastr.warning('未获取到任何模型', 'Ngms 模型获取');
+                }
+                
+            } catch (error) {
+                console.error('[Amily2号-Ngms] 获取模型列表失败:', error);
+                toastr.error(`获取模型失败: ${error.message}`, 'Ngms 模型获取');
+            } finally {
+                button.prop('disabled', false).html(originalHtml);
+            }
+        });
+    }
+}
+
+// 加载SillyTavern预设列表
+async function loadNgmsTavernPresets() {
+    const select = document.getElementById('amily2_ngms_tavern_profile');
+    if (!select) return;
+
+    const currentValue = select.value;
+    select.innerHTML = '<option value="">-- 加载中 --</option>';
+
+    try {
+        const context = getContext();
+        const tavernProfiles = context.extensionSettings?.connectionManager?.profiles || [];
+        
+        select.innerHTML = '<option value="">-- 请选择预设 --</option>';
+        
+        if (tavernProfiles.length > 0) {
+            tavernProfiles.forEach(profile => {
+                if (profile.api && profile.preset) {
+                    const option = document.createElement('option');
+                    option.value = profile.id;
+                    option.textContent = profile.name || profile.id;
+                    if (profile.id === currentValue) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                }
+            });
+        } else {
+            select.innerHTML = '<option value="">未找到可用预设</option>';
+        }
+    } catch (error) {
+        console.error('[Amily2号-Ngms] 加载SillyTavern预设失败:', error);
+        select.innerHTML = '<option value="">加载失败</option>';
+    }
+}
 
 function showHistoriographyExclusionRulesModal() {
     const rules = extension_settings[extensionName].historiographyExclusionRules || [];
