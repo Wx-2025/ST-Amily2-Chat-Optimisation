@@ -1,0 +1,194 @@
+<div class="cwb-settings-container">
+    <div class="cwb-header">
+        <div class="cwb-title">
+            <i class="fa-solid fa-book-atlas"></i> 角色世界书
+        </div>
+        <button id="amily2_back_to_main_from_cwb" class="menu_button secondary small_button interactable">
+            返回主殿 <i class="fas fa-arrow-right"></i>
+        </button>
+    </div>
+    <hr class="header-divider">
+
+    <fieldset class="settings-group master-control-group">
+        <legend><i class="fas fa-power-off"></i> 最高权限</legend>
+        <div class="control-block-with-switch" id="cwb_master_enabled">
+            <label for="cwb_master_enabled-checkbox">CharacterWorldBook 总开关</label>
+            <label class="toggle-switch">
+                <input id="cwb_master_enabled-checkbox" type="checkbox">
+                <span class="slider"></span>
+            </label>
+        </div>
+        <p class="notes" style="text-align: left; margin-top: 5px;">
+            这是最高优先级的总开关。关闭后，CharacterWorldBook的所有功能（包括自动更新、查看器等）都将被禁用。
+        </p>
+    </fieldset>
+
+    <fieldset class="settings-group">
+        <legend><i class="fas fa-brain"></i> 中枢决策室</legend>
+        
+        <div class="sinan-navigation-deck">
+            <button class="sinan-nav-item active" data-tab="api-settings"><i class="fas fa-cogs"></i> API设置</button>
+            <button class="sinan-nav-item" data-tab="prompt-settings"><i class="fas fa-robot"></i> 指令模板</button>
+            <button class="sinan-nav-item" data-tab="feature-settings"><i class="fas fa-toolbox"></i> 功能设置</button>
+        </div>
+
+        <div class="sinan-content-wrapper">
+            <!-- API Settings Tab -->
+            <div id="cwb-api-settings-tab" class="sinan-tab-pane active">
+                <div class="inline-settings-grid">
+                    <label for="cwb-api-mode">API模式</label>
+                    <select id="cwb-api-mode" class="text_pole">
+                        <option value="openai_test">全兼容模式</option>
+                        <option value="sillytavern_preset">预设模式</option>
+                    </select>
+                    
+                    <label for="cwb-api-url">API基础URL</label>
+                    <input type="text" id="cwb-api-url" class="text_pole" placeholder="例如: http://127.0.0.1:8080">
+                    
+                    <label for="cwb-api-key">API密钥</label>
+                    <input type="password" id="cwb-api-key" class="text_pole" placeholder="可选">
+                    
+                    <label for="cwb-api-model">选择模型</label>
+                    <div class="cwb-input-with-button">
+                        <select id="cwb-api-model" class="text_pole"></select>
+                        <button id="cwb-load-models" class="menu_button"><i class="fa-solid fa-cloud-download"></i> 加载</button>
+                    </div>
+                    
+                    <label for="cwb-tavern-profile">SillyTavern预设</label>
+                    <select id="cwb-tavern-profile" class="text_pole" style="display: none;">
+                        <option value="">选择预设</option>
+                    </select>
+                </div>
+                <div id="cwb-api-status" class="notes" style="text-align: left; margin-top: 10px;"></div>
+                <div class="editor-buttons-panel" style="margin-top: 15px;">
+                    <button id="cwb-clear-config" class="menu_button danger small_button"><i class="fa-solid fa-trash-can"></i> 清除</button>
+                    <button id="cwb-save-config" class="menu_button accent small_button"><i class="fa-solid fa-floppy-disk"></i> 保存</button>
+                </div>
+            </div>
+
+            <div id="cwb-prompt-settings-tab" class="sinan-tab-pane">
+                <fieldset class="settings-group" style="border-style: dashed; padding: 8px; margin-bottom: 10px;">
+                    <legend><i class="fas fa-scroll"></i> 破限提示</legend>
+                    <div class="prompt-editor-area">
+                        <textarea id="cwb-break-armor-prompt-textarea" class="text_pole" rows="5"></textarea>
+                        <div class="editor-buttons-panel">
+                            <button id="cwb-reset-break-armor-prompt" class="menu_button secondary small_button"><i class="fas fa-undo"></i> 默认</button>
+                            <button id="cwb-save-break-armor-prompt" class="menu_button accent small_button"><i class="fas fa-save"></i> 保存</button>
+                        </div>
+                    </div>
+                </fieldset>
+                <fieldset class="settings-group" style="border-style: dashed; padding: 8px;">
+                    <legend><i class="fas fa-tasks"></i> 更新预设</legend>
+                    <div class="prompt-editor-area">
+                        <textarea id="cwb-char-card-prompt-textarea" class="text_pole" rows="8"></textarea>
+                        <div class="editor-buttons-panel">
+                            <button id="cwb-reset-char-card-prompt" class="menu_button secondary small_button"><i class="fas fa-undo"></i> 默认</button>
+                            <button id="cwb-save-char-card-prompt" class="menu_button accent small_button"><i class="fas fa-save"></i> 保存</button>
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
+
+            <div id="cwb-feature-settings-tab" class="sinan-tab-pane">
+                <fieldset class="settings-group" style="border-style: solid; padding: 15px; margin-bottom: 15px;">
+                    <legend><i class="fas fa-toggle-on"></i> 基础功能开关</legend>
+                    
+                    <div class="control-block-with-switch" id="cwb-incremental-update-enabled">
+                        <label for="cwb-incremental-update-enabled-checkbox">增量更新模式</label>
+                        <label class="toggle-switch">
+                            <input id="cwb-incremental-update-enabled-checkbox" type="checkbox">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <p class="notes" style="text-align: left; margin-top: 5px; margin-bottom: 15px;">基于已有世界书内容进行增量更新，而非完全覆盖</p>
+
+                    <div class="control-block-with-switch" id="cwb-auto-update-enabled">
+                        <label for="cwb-auto-update-enabled-checkbox">自动更新</label>
+                        <label class="toggle-switch">
+                            <input id="cwb-auto-update-enabled-checkbox" type="checkbox">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <p class="notes" style="text-align: left; margin-top: 5px; margin-bottom: 15px;">达到消息阈值时自动触发AI更新角色卡</p>
+
+                    <div class="inline-settings-grid" style="margin-bottom: 15px;">
+                        <label for="cwb-auto-update-threshold">更新阈值</label>
+                        <div class="cwb-input-with-button">
+                            <input type="number" id="cwb-auto-update-threshold" class="text_pole" min="1" max="100" placeholder="消息数">
+                            <button id="cwb-save-auto-update-threshold" class="menu_button accent small_button">保存</button>
+                        </div>
+                    </div>
+
+                    <div class="control-block-with-switch" id="cwb-viewer-enabled">
+                        <label for="cwb-viewer-enabled-checkbox">查看器浮窗</label>
+                        <label class="toggle-switch">
+                            <input id="cwb-viewer-enabled-checkbox" type="checkbox">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <p class="notes" style="text-align: left; margin-top: 5px;">在主界面显示可拖动的角色卡查看按钮</p>
+                </fieldset>
+
+                <fieldset class="settings-group" style="border-style: solid; padding: 15px; margin-bottom: 15px;">
+                    <legend><i class="fas fa-database"></i> 存储目标</legend>
+                    
+                    <div class="amily2_opt_settings_block_radio">
+                        <div class="amily2_opt_radio_group">
+                            <input type="radio" id="cwb_worldbook_target_primary" name="cwb_worldbook_target" value="primary" checked>
+                            <label for="cwb_worldbook_target_primary">写入主世界书</label>
+                            <input type="radio" id="cwb_worldbook_target_custom" name="cwb_worldbook_target" value="custom">
+                            <label for="cwb_worldbook_target_custom">自定义世界书</label>
+                        </div>
+                    </div>
+
+                    <div id="cwb_worldbook_select_wrapper" style="display: none; margin-top: 15px;">
+                        <div class="cwb-worldbook-selection-container">
+                            <div class="cwb-worldbook-column">
+                                <div class="amily2_opt_label_with_button_wrapper">
+                                    <label>选择世界书</label>
+                                    <button id="cwb_refresh_worldbooks" class="menu_button small_button" title="刷新世界书列表">
+                                        <i class="fa-solid fa-sync"></i> 刷新
+                                    </button>
+                                </div>
+                                <div id="cwb_worldbook_radio_list" class="cwb-scrollable-container">
+                                </div>
+                                <small class="notes">选择一个世界书作为角色卡写入目标</small>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset class="settings-group" style="border-style: solid; padding: 15px; margin-bottom: 15px;">
+                    <legend><i class="fas fa-sync-alt"></i> 更新操作</legend>
+
+                    <div class="inline-settings-grid" style="margin-bottom: 15px;">
+                        <label for="cwb-start-floor">起始楼层</label>
+                        <input type="number" id="cwb-start-floor" class="text_pole" min="1" value="1">
+                        
+                        <label for="cwb-end-floor">结束楼层</label>
+                        <input type="number" id="cwb-end-floor" class="text_pole" min="1" value="1">
+                    </div>
+
+                    <div class="update-buttons-panel" style="margin-bottom: 15px;">
+                        <button id="cwb-floor-range-update" class="menu_button">
+                            <i class="fa-solid fa-layer-group"></i> 楼层范围更新
+                        </button>
+                        <button id="cwb-batch-update-card" class="menu_button accent">
+                            <i class="fa-solid fa-bolt"></i> 全量批量更新
+                        </button>
+                        <button id="cwb-manual-update-card" class="menu_button secondary">
+                            <i class="fa-solid fa-pencil"></i> 快速更新 (最新阈值条)
+                        </button>
+                    </div>
+
+                    <div style="margin-top: 15px;">
+                        <div id="cwb-status-message" class="notes"></div>
+                        <div id="cwb-batch-progress" class="notes" style="display: none;"></div>
+                        <div id="cwb-card-update-status-display" class="notes"></div>
+                        <div id="cwb-total-messages-display" class="notes"></div>
+                    </div>
+                </fieldset>
+            </div>
+        </div>
+    </fieldset>
+</div>
