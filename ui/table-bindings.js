@@ -1431,9 +1431,35 @@ function bindNccsApiEvents() {
             try {
                 const models = await fetchNccsModels();
                 if (models && models.length > 0) {
-                    if (modelInput) {
-                        modelInput.placeholder = `可用模型: ${models.slice(0, 3).join(', ')}...`;
+                    let modelSelect = document.getElementById('nccs-api-model-select');
+                    if (!modelSelect) {
+                        modelSelect = document.createElement('select');
+                        modelSelect.id = 'nccs-api-model-select';
+                        modelSelect.className = 'text_pole';
+                        modelInput.parentNode.insertBefore(modelSelect, modelInput.nextSibling);
                     }
+
+                    modelSelect.innerHTML = '<option value="">-- 请选择模型 --</option>';
+                    models.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model.id || model.name;
+                        option.textContent = model.name || model.id;
+                        if ((model.id || model.name) === settings.nccsModel) {
+                            option.selected = true;
+                        }
+                        modelSelect.appendChild(option);
+                    });
+
+                    modelInput.style.display = 'none';
+                    modelSelect.style.display = 'block';
+
+                    modelSelect.addEventListener('change', () => {
+                        const selectedModel = modelSelect.value;
+                        settings.nccsModel = selectedModel;
+                        modelInput.value = selectedModel;
+                        saveSettingsDebounced();
+                    });
+
                     toastr.success(`成功获取 ${models.length} 个模型`);
                     log(`Nccs API获取到 ${models.length} 个模型`, 'success');
                 } else {
