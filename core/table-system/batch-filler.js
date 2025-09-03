@@ -7,6 +7,7 @@ import { extensionName } from '../../utils/settings.js';
 import { renderTables } from '../../ui/table-bindings.js';
 import { getPresetPrompts, getMixedOrder } from '../../PresetSettings/index.js';
 import { callAI, generateRandomSeed } from '../api.js';
+import { callNccsAI } from '../api/NccsApi.js';
 import { extractBlocksByTags, applyExclusionRules } from '../utils/rag-tag-extractor.js';
 
 import { getBatchFillerRuleTemplate, getBatchFillerFlowTemplate, convertTablesToCsvString } from './manager.js';
@@ -113,11 +114,24 @@ function updateButtonState(state, batchNum = 0, attemptNum = 0) {
 
 async function callTableModel(messages) {
     try {
-        const result = await callAI(messages);
-        if (!result) {
-            throw new Error('API返回内容为空。');
+        const settings = extension_settings[extensionName];
+        
+        // 检查是否启用了Nccs API
+        if (settings.nccsEnabled) {
+            log('使用 Nccs API 进行表格填充...', 'info');
+            const result = await callNccsAI(messages);
+            if (!result) {
+                throw new Error('Nccs API返回内容为空。');
+            }
+            return result;
+        } else {
+            log('使用默认 API 进行表格填充...', 'info');
+            const result = await callAI(messages);
+            if (!result) {
+                throw new Error('API返回内容为空。');
+            }
+            return result;
         }
-        return result;
     } catch (error) {
         log(`与模型通讯时发生异常: ${error.message}`, "error");
         toastr.error(`与模型通讯时发生异常: ${error.message}`, "通讯异常");
