@@ -302,10 +302,9 @@ export async function fetchNccsModels() {
             }
 
             const rawData = await response.json();
-            const result = normalizeApiResponse(rawData);
-            const models = result.data || [];
+            const models = Array.isArray(rawData) ? rawData : (rawData.data || rawData.models || []);
 
-            if (result.error || !Array.isArray(models)) {
+            if (!Array.isArray(models)) {
                 const errorMessage = result.error?.message || 'API未返回有效的模型列表数组';
                 throw new Error(errorMessage);
             }
