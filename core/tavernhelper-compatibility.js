@@ -1,1 +1,199 @@
-(function(_0x3f5f85,_0x3221ae){const _0x21592a=_0x3e41,_0x2f1882=_0x3f5f85();while(!![]){try{const _0x1b9a09=-parseInt(_0x21592a(0x211))/0x1*(-parseInt(_0x21592a(0x214))/0x2)+-parseInt(_0x21592a(0x20e))/0x3+parseInt(_0x21592a(0x1e0))/0x4*(-parseInt(_0x21592a(0x1ef))/0x5)+-parseInt(_0x21592a(0x215))/0x6+-parseInt(_0x21592a(0x1ee))/0x7+parseInt(_0x21592a(0x216))/0x8+parseInt(_0x21592a(0x1f8))/0x9;if(_0x1b9a09===_0x3221ae)break;else _0x2f1882['push'](_0x2f1882['shift']());}catch(_0x433587){_0x2f1882['push'](_0x2f1882['shift']());}}}(_0xa30d,0x8c07e));function _0xa30d(){const _0x2ebcc4=['157170zyHqDy','3635400iDAymG','isArray','warn','[Amily2-兼容性]\x20(混合模式)\x20已创建新世界书:\x20','log','1912eDUSDv','entries','无标题条目','message','[Amily2-兼容性]\x20获取角色世界书失败:','createLorebookEntries','getCharLorebooks','constant','comment','enabled','[Amily2-兼容性]\x20获取世界书列表失败:','extensions','[Amily2-兼容性]\x20(传统模式)\x20成功写入条目\x20\x22','[Amily2-兼容性]\x20(传统模式)\x20写入失败:','4351851UMJzCP','6525nyckLZ','sort','CHARACTER_PAGE_LOADED','disable','error','TavernHelper','triggerSlash','getLorebooks','values','17518320HNGnRE','传统模式写入世界书失败:\x20','includes','[Amily2-兼容性]\x20(混合模式)\x20写入失败:','setLorebookEntries','uid','getLorebookEntries','push','[Amily2-兼容性]\x20获取世界书\x20','[Amily2-兼容性]\x20(混合模式)\x20成功写入条目\x20\x22','data','map','key','[Amily2-兼容性]\x20compatibleWriteToLorebook\x20接收到的选项:','[Amily2-兼容性]\x20更新世界书条目失败:','content','[Amily2-兼容性]\x20(传统模式)\x20已创建新世界书:\x20','position','assign','find','world','emit','2019855UdTuWU','depth','characterId','9802gIPfUw','[Amily2-兼容性]\x20(混合模式)\x20已修正条目激活状态、位置和深度。','function','24PAtyTZ'];_0xa30d=function(){return _0x2ebcc4;};return _0xa30d();}import{loadWorldInfo,createNewWorldInfo,saveWorldInfo,world_names,createWorldInfoEntry}from'/scripts/world-info.js';function _0x3e41(_0x14b38f,_0x37f8a1){const _0xa30db=_0xa30d();return _0x3e41=function(_0x3e4117,_0x293370){_0x3e4117=_0x3e4117-0x1e0;let _0x55809d=_0xa30db[_0x3e4117];return _0x55809d;},_0x3e41(_0x14b38f,_0x37f8a1);}import{characters,eventSource,event_types}from'/script.js';import{getContext}from'/scripts/extensions.js';export function isTavernHelperAvailable(){const _0x2675d5=_0x3e41;return typeof window['TavernHelper']!=='undefined'&&window[_0x2675d5(0x1f4)]!==null&&typeof window[_0x2675d5(0x1f4)]['getLorebooks']==='function';}export async function safeLorebooks(){const _0x3bc0da=_0x3e41;try{if(isTavernHelperAvailable())return await window[_0x3bc0da(0x1f4)][_0x3bc0da(0x1f6)]();return[...world_names];}catch(_0x524a45){return console[_0x3bc0da(0x1f3)](_0x3bc0da(0x1ea),_0x524a45),[...world_names];}}export async function safeCharLorebooks(_0x3dacee={'type':'all'}){const _0x2ac272=_0x3e41;try{if(isTavernHelperAvailable())return await window[_0x2ac272(0x1f4)][_0x2ac272(0x1e6)](_0x3dacee);const _0x19a038=getContext(),_0x2d9f95=characters[_0x19a038['characterId']],_0x1aa5f8=_0x2d9f95?.[_0x2ac272(0x202)]?.['extensions']?.[_0x2ac272(0x20c)];return{'primary':_0x1aa5f8||null,'additional':[]};}catch(_0x41d58c){console['error'](_0x2ac272(0x1e4),_0x41d58c);const _0x230f82=getContext(),_0x2799c4=characters[_0x230f82[_0x2ac272(0x210)]],_0x380bf4=_0x2799c4?.[_0x2ac272(0x202)]?.[_0x2ac272(0x1eb)]?.[_0x2ac272(0x20c)];return{'primary':_0x380bf4||null,'additional':[]};}}export async function safeLorebookEntries(_0x14c35a){const _0x4b8b3c=_0x3e41;try{if(isTavernHelperAvailable())return await window[_0x4b8b3c(0x1f4)][_0x4b8b3c(0x1fe)](_0x14c35a);const _0x569f9d=await loadWorldInfo(_0x14c35a);if(!_0x569f9d||!_0x569f9d[_0x4b8b3c(0x1e1)])return[];return Object['entries'](_0x569f9d[_0x4b8b3c(0x1e1)])[_0x4b8b3c(0x203)](([_0x1b1f5e,_0x2b0319])=>({'uid':parseInt(_0x1b1f5e),'comment':_0x2b0319[_0x4b8b3c(0x1e8)]||_0x4b8b3c(0x1e2),'content':_0x2b0319['content']||'','key':_0x2b0319[_0x4b8b3c(0x204)]||[],'enabled':!_0x2b0319[_0x4b8b3c(0x1f2)],'constant':_0x2b0319['constant']||![],'position':_0x2b0319[_0x4b8b3c(0x209)]||0x4,'depth':_0x2b0319[_0x4b8b3c(0x20f)]||0x3e6}));}catch(_0x2258b6){return console[_0x4b8b3c(0x1f3)](_0x4b8b3c(0x200)+_0x14c35a+'\x20条目失败:',_0x2258b6),[];}}export async function safeUpdateLorebookEntries(_0x597e06,_0x261b15){const _0x1fa710=_0x3e41;try{if(isTavernHelperAvailable())return await window[_0x1fa710(0x1f4)][_0x1fa710(0x1fc)](_0x597e06,_0x261b15),!![];const _0x2f473d=await loadWorldInfo(_0x597e06);if(!_0x2f473d)return![];for(const _0x28ddff of _0x261b15){const _0x2cf64b=_0x2f473d['entries'][_0x28ddff[_0x1fa710(0x1fd)]];if(_0x2cf64b){if(_0x28ddff[_0x1fa710(0x207)]!==undefined)_0x2cf64b[_0x1fa710(0x207)]=_0x28ddff['content'];if(_0x28ddff[_0x1fa710(0x1e9)]!==undefined)_0x2cf64b[_0x1fa710(0x1f2)]=!_0x28ddff['enabled'];}}return await saveWorldInfo(_0x597e06,_0x2f473d,!![]),!![];}catch(_0x5f557c){return console[_0x1fa710(0x1f3)](_0x1fa710(0x206),_0x5f557c),![];}}export async function compatibleWriteToLorebook(_0x38ce55,_0x4f0e9f,_0x19ec16,_0x1507e6={}){const _0x21d549=_0x3e41;console[_0x21d549(0x21a)](_0x21d549(0x205),_0x1507e6);if(isTavernHelperAvailable())try{!world_names[_0x21d549(0x1fa)](_0x38ce55)&&(await createNewWorldInfo(_0x38ce55),Array[_0x21d549(0x217)](world_names)&&!world_names[_0x21d549(0x1fa)](_0x38ce55)&&(world_names[_0x21d549(0x1ff)](_0x38ce55),world_names[_0x21d549(0x1f0)]()),eventSource&&typeof eventSource[_0x21d549(0x20d)]===_0x21d549(0x213)&&event_types[_0x21d549(0x1f1)]&&eventSource['emit'](event_types[_0x21d549(0x1f1)]),console[_0x21d549(0x21a)](_0x21d549(0x219)+_0x38ce55));const _0x581210=await safeLorebookEntries(_0x38ce55),_0x813b14=_0x581210['find'](_0x1853c2=>_0x1853c2[_0x21d549(0x1e8)]===_0x4f0e9f&&!_0x1853c2['disable']);if(_0x813b14){const _0x10e9fd=_0x19ec16(_0x813b14[_0x21d549(0x207)]);await safeUpdateLorebookEntries(_0x38ce55,[{'uid':_0x813b14[_0x21d549(0x1fd)],'content':_0x10e9fd}]);}else{const _0x94e583=_0x19ec16(null),{keys:keys=[],isConstant:isConstant=![],insertion_position:_0x28e590,depth:_0x1edff1}=_0x1507e6,_0x4f7bfc={'before_char':0x0,'after_char':0x1,'before_an':0x2,'after_an':0x3,'at_depth':0x4},_0x406ffe={'comment':_0x4f0e9f,'content':_0x94e583,'key':keys,'constant':isConstant,'position':_0x4f7bfc[_0x28e590]??0x4,'depth':parseInt(_0x1edff1)||0x3e6,'enabled':!![]};await window[_0x21d549(0x1f4)][_0x21d549(0x1e5)](_0x38ce55,[_0x406ffe]);const _0x15cfbd=await loadWorldInfo(_0x38ce55),_0x31fe2b=Object[_0x21d549(0x1f7)](_0x15cfbd[_0x21d549(0x1e1)])['find'](_0x3f6ea8=>_0x3f6ea8[_0x21d549(0x1e8)]===_0x4f0e9f);_0x31fe2b&&(_0x31fe2b[_0x21d549(0x1e7)]=isConstant,_0x31fe2b[_0x21d549(0x209)]=_0x4f7bfc[_0x28e590]??0x4,_0x31fe2b[_0x21d549(0x20f)]=parseInt(_0x1edff1)||0x3e6,await saveWorldInfo(_0x38ce55,_0x15cfbd,!![]),console[_0x21d549(0x21a)](_0x21d549(0x212)));}return console[_0x21d549(0x21a)](_0x21d549(0x201)+_0x4f0e9f+'\x22。'),!![];}catch(_0x110849){return console['error'](_0x21d549(0x1fb),_0x110849),toastr[_0x21d549(0x1f3)]('写入世界书失败:\x20'+_0x110849[_0x21d549(0x1e3)],'Amily2号-兼容性模块'),![];}else{console[_0x21d549(0x218)]('[Amily2-兼容性]\x20TavernHelper\x20不可用，回退到传统写入逻辑。');try{!world_names['includes'](_0x38ce55)&&(await createNewWorldInfo(_0x38ce55),console['log'](_0x21d549(0x208)+_0x38ce55));const _0x1d57db=await loadWorldInfo(_0x38ce55);if(!_0x1d57db)throw new Error('无法加载世界书《'+_0x38ce55+'》');const _0x51c625=Object[_0x21d549(0x1f7)](_0x1d57db[_0x21d549(0x1e1)])[_0x21d549(0x20b)](_0x3ade65=>_0x3ade65[_0x21d549(0x1e8)]===_0x4f0e9f&&!_0x3ade65['disable']);if(_0x51c625)_0x51c625['content']=_0x19ec16(_0x51c625[_0x21d549(0x207)]);else{const _0x92cc84=_0x19ec16(null),{keys:keys=[],isConstant:isConstant=![],insertion_position:_0x18baee,depth:_0x163b7a}=_0x1507e6,_0x46a56e={'before_char':0x0,'after_char':0x1,'before_an':0x2,'after_an':0x3,'at_depth':0x4},_0x457e08=createWorldInfoEntry(_0x38ce55,_0x1d57db);Object[_0x21d549(0x20a)](_0x457e08,{'comment':_0x4f0e9f,'content':_0x92cc84,'key':keys,'constant':isConstant,'position':_0x46a56e[_0x18baee]??0x4,'depth':parseInt(_0x163b7a)||0x3e6,'disable':![]});}return await saveWorldInfo(_0x38ce55,_0x1d57db,!![]),console[_0x21d549(0x21a)](_0x21d549(0x1ec)+_0x4f0e9f+'\x22。'),!![];}catch(_0x580150){return console[_0x21d549(0x1f3)](_0x21d549(0x1ed),_0x580150),toastr['error'](_0x21d549(0x1f9)+_0x580150[_0x21d549(0x1e3)],'Amily2号-兼容性模块'),![];}}}export async function safeTriggerSlash(_0x3591dd){const _0x4fa5cc=_0x3e41;if(isTavernHelperAvailable()&&typeof window[_0x4fa5cc(0x1f4)][_0x4fa5cc(0x1f5)]==='function')try{return await window[_0x4fa5cc(0x1f4)]['triggerSlash'](_0x3591dd);}catch(_0x3594bb){console[_0x4fa5cc(0x1f3)]('[Amily2-兼容性]\x20TavernHelper.triggerSlash\x20执行失败:',_0x3594bb);throw _0x3594bb;}else{const _0x52ce30='TavernHelper\x20或\x20triggerSlash\x20方法不可用';console[_0x4fa5cc(0x1f3)]('[Amily2-兼容性]\x20'+_0x52ce30);throw new Error(_0x52ce30);}}
+import { loadWorldInfo, createNewWorldInfo, saveWorldInfo, world_names, createWorldInfoEntry } from "/scripts/world-info.js";
+import { characters, eventSource, event_types } from "/script.js";
+import { getContext } from "/scripts/extensions.js";
+
+
+export function isTavernHelperAvailable() {
+    return typeof window.TavernHelper !== 'undefined' && 
+           window.TavernHelper !== null &&
+           typeof window.TavernHelper.getLorebooks === 'function';
+}
+
+
+export async function safeLorebooks() {
+    try {
+        if (isTavernHelperAvailable()) {
+            return await window.TavernHelper.getLorebooks();
+        }
+        return [...world_names];
+    } catch (error) {
+        console.error('[Amily2-兼容性] 获取世界书列表失败:', error);
+        return [...world_names];
+    }
+}
+
+
+export async function safeCharLorebooks(options = { type: 'all' }) {
+    try {
+        if (isTavernHelperAvailable()) {
+            return await window.TavernHelper.getCharLorebooks(options);
+        }
+        const context = getContext();
+        const character = characters[context.characterId];
+        const primary = character?.data?.extensions?.world;
+        return { primary: primary || null, additional: [] };
+    } catch (error) {
+        console.error('[Amily2-兼容性] 获取角色世界书失败:', error);
+        const context = getContext();
+        const character = characters[context.characterId];
+        const primary = character?.data?.extensions?.world;
+        return { primary: primary || null, additional: [] };
+    }
+}
+
+export async function safeLorebookEntries(bookName) {
+    try {
+        if (isTavernHelperAvailable()) {
+            return await window.TavernHelper.getLorebookEntries(bookName);
+        }
+        const bookData = await loadWorldInfo(bookName);
+        if (!bookData || !bookData.entries) return [];
+        return Object.entries(bookData.entries).map(([uid, entry]) => ({
+            uid: parseInt(uid),
+            comment: entry.comment || '无标题条目',
+            content: entry.content || '',
+            key: entry.key || [],
+            enabled: !entry.disable,
+            constant: entry.constant || false,
+            position: entry.position || 4,
+            depth: entry.depth || 998,
+        }));
+    } catch (error) {
+        console.error(`[Amily2-兼容性] 获取世界书 ${bookName} 条目失败:`, error);
+        return [];
+    }
+}
+
+
+export async function safeUpdateLorebookEntries(bookName, entries) {
+    try {
+        if (isTavernHelperAvailable()) {
+            await window.TavernHelper.setLorebookEntries(bookName, entries);
+            return true;
+        }
+
+        const bookData = await loadWorldInfo(bookName);
+        if (!bookData) return false;
+        for (const entryUpdate of entries) {
+            const existingEntry = bookData.entries[entryUpdate.uid];
+            if (existingEntry) {
+                if (entryUpdate.content !== undefined) existingEntry.content = entryUpdate.content;
+                if (entryUpdate.enabled !== undefined) existingEntry.disable = !entryUpdate.enabled;
+            }
+        }
+        await saveWorldInfo(bookName, bookData, true);
+        return true;
+    } catch (error) {
+        console.error(`[Amily2-兼容性] 更新世界书条目失败:`, error);
+        return false;
+    }
+}
+
+
+export async function compatibleWriteToLorebook(targetLorebookName, entryComment, contentUpdateCallback, options = {}) {
+    console.log('[Amily2-兼容性] compatibleWriteToLorebook 接收到的选项:', options);
+
+    if (isTavernHelperAvailable()) {
+        try {
+            if (!world_names.includes(targetLorebookName)) {
+                await createNewWorldInfo(targetLorebookName);
+                if (Array.isArray(world_names) && !world_names.includes(targetLorebookName)) {
+                    world_names.push(targetLorebookName);
+                    world_names.sort();
+                }
+                if (eventSource && typeof eventSource.emit === "function" && event_types.CHARACTER_PAGE_LOADED) {
+                    eventSource.emit(event_types.CHARACTER_PAGE_LOADED);
+                }
+                console.log(`[Amily2-兼容性] (混合模式) 已创建新世界书: ${targetLorebookName}`);
+            }
+
+            const entries = await safeLorebookEntries(targetLorebookName);
+            const existingEntry = entries.find((e) => e.comment === entryComment && !e.disable);
+
+            if (existingEntry) {
+                const newContent = contentUpdateCallback(existingEntry.content);
+                await safeUpdateLorebookEntries(targetLorebookName, [{ uid: existingEntry.uid, content: newContent }]);
+            } else {
+                const newContent = contentUpdateCallback(null);
+                const { keys = [], isConstant = false, insertion_position, depth: insertion_depth } = options;
+                const positionMap = { 'before_char': 0, 'after_char': 1, 'before_an': 2, 'after_an': 3, 'at_depth': 4 };
+                
+                const newEntryData = {
+                    comment: entryComment, content: newContent, key: keys,
+                    constant: isConstant, position: positionMap[insertion_position] ?? 4,
+                    depth: parseInt(insertion_depth) || 998, enabled: true,
+                };
+
+                await window.TavernHelper.createLorebookEntries(targetLorebookName, [newEntryData]);
+                
+                const bookData = await loadWorldInfo(targetLorebookName);
+                const createdEntry = Object.values(bookData.entries).find(e => e.comment === entryComment);
+                if (createdEntry) {
+                    createdEntry.constant = isConstant;
+                    createdEntry.position = positionMap[insertion_position] ?? 4;
+                    createdEntry.depth = parseInt(insertion_depth) || 998;
+                    await saveWorldInfo(targetLorebookName, bookData, true);
+                    console.log(`[Amily2-兼容性] (混合模式) 已修正条目激活状态、位置和深度。`);
+                }
+            }
+            console.log(`[Amily2-兼容性] (混合模式) 成功写入条目 "${entryComment}"。`);
+            return true;
+        } catch (error) {
+            console.error(`[Amily2-兼容性] (混合模式) 写入失败:`, error);
+            toastr.error(`写入世界书失败: ${error.message}`, "Amily2号-兼容性模块");
+            return false;
+        }
+    } else {
+        console.warn('[Amily2-兼容性] TavernHelper 不可用，回退到传统写入逻辑。');
+        try {
+            if (!world_names.includes(targetLorebookName)) {
+                await createNewWorldInfo(targetLorebookName);
+                console.log(`[Amily2-兼容性] (传统模式) 已创建新世界书: ${targetLorebookName}`);
+            }
+
+            const bookData = await loadWorldInfo(targetLorebookName);
+            if (!bookData) throw new Error(`无法加载世界书《${targetLorebookName}》`);
+
+            const existingEntry = Object.values(bookData.entries).find(e => e.comment === entryComment && !e.disable);
+
+            if (existingEntry) {
+                existingEntry.content = contentUpdateCallback(existingEntry.content);
+            } else {
+                const newContent = contentUpdateCallback(null);
+                const { keys = [], isConstant = false, insertion_position, depth: insertion_depth } = options;
+                const positionMap = { 'before_char': 0, 'after_char': 1, 'before_an': 2, 'after_an': 3, 'at_depth': 4 };
+                
+                const newEntry = createWorldInfoEntry(targetLorebookName, bookData);
+                Object.assign(newEntry, {
+                    comment: entryComment, content: newContent, key: keys,
+                    constant: isConstant, position: positionMap[insertion_position] ?? 4,
+                    depth: parseInt(insertion_depth) || 998, disable: false,
+                });
+            }
+
+            await saveWorldInfo(targetLorebookName, bookData, true);
+            console.log(`[Amily2-兼容性] (传统模式) 成功写入条目 "${entryComment}"。`);
+            return true;
+        } catch (error) {
+            console.error(`[Amily2-兼容性] (传统模式) 写入失败:`, error);
+            toastr.error(`传统模式写入世界书失败: ${error.message}`, "Amily2号-兼容性模块");
+            return false;
+        }
+    }
+}
+
+
+export async function safeTriggerSlash(command) {
+    if (isTavernHelperAvailable() && typeof window.TavernHelper.triggerSlash === 'function') {
+        try {
+            return await window.TavernHelper.triggerSlash(command);
+        } catch (error) {
+            console.error(`[Amily2-兼容性] TavernHelper.triggerSlash 执行失败:`, error);
+            throw error;
+        }
+    } else {
+        const errorMsg = 'TavernHelper 或 triggerSlash 方法不可用';
+        console.error(`[Amily2-兼容性] ${errorMsg}`);
+        throw new Error(errorMsg);
+    }
+}
