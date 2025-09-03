@@ -19,6 +19,9 @@ import { pluginVersion, extensionName, defaultSettings } from './utils/settings.
 import { tableSystemDefaultSettings } from './core/table-system/settings.js';
 import { extension_settings } from '/scripts/extensions.js';
 import { manageLorebookEntriesForChat } from './core/lore.js';
+import { initializeCharacterWorldBook } from './CharacterWorldBook/cwb_index.js';
+import { cwbDefaultSettings } from './CharacterWorldBook/src/cwb_config.js';
+import './core/amily2-updater.js';
 
 const STYLE_SETTINGS_KEY = 'amily2_custom_styles';
 const STYLE_ROOT_SELECTOR = '#amily2_memorisation_forms_panel';
@@ -218,6 +221,18 @@ function loadPluginStyles() {
     loadStyleFile("hanlinyuan.css"); // 【第三道圣谕】为翰林院披上其专属华服
     loadStyleFile("table.css"); // 【第四道圣谕】为内存储司披上其专属华服
     loadStyleFile("optimization.css"); // 【第五道圣谕】为剧情优化披上其专属华服
+
+    // 【第六道圣谕】为角色世界书披上其专属华服
+    const cwbStyleId = 'cwb-feature-style';
+    if (!document.getElementById(cwbStyleId)) {
+        const cwbLink = document.createElement("link");
+        cwbLink.id = cwbStyleId;
+        cwbLink.rel = "stylesheet";
+        cwbLink.type = "text/css";
+        cwbLink.href = `scripts/extensions/third-party/${extensionName}/CharacterWorldBook/cwb_style.css?v=${Date.now()}`;
+        document.head.appendChild(cwbLink);
+        console.log(`[Amily2号-皇家制衣局] 已为角色世界书披上华服: cwb_style.css`);
+    }
 }
 
 
@@ -236,7 +251,7 @@ jQuery(async () => {
   if (!extension_settings[extensionName]) {
     extension_settings[extensionName] = {};
   }
-  const combinedDefaultSettings = { ...defaultSettings, ...tableSystemDefaultSettings };
+  const combinedDefaultSettings = { ...defaultSettings, ...tableSystemDefaultSettings, ...cwbDefaultSettings };
   Object.assign(extension_settings[extensionName], {
     ...combinedDefaultSettings,
     ...extension_settings[extensionName],
@@ -262,6 +277,37 @@ jQuery(async () => {
 
         console.log("[Amily2号-开国大典] 步骤三：开始召唤府邸...");
         createDrawer();
+
+        // 【开国大典-番外篇章】构建角色世界书
+        // 使用轮询来安全地等待面板被 drawer.js 异步加载
+        function waitForCwbPanelAndInitialize() {
+            let attempts = 0;
+            const maxAttempts = 50; // 等待5秒
+            const interval = 100; // 每100毫秒检查一次
+
+            const checker = setInterval(async () => {
+                const $cwbPanel = $('#amily2_character_world_book_panel');
+
+                if ($cwbPanel.length > 0) {
+                    clearInterval(checker);
+                    try {
+                        console.log("[Amily2号-开国大典] 步骤3.5：侦测到角色世界书停泊位，开始构建...");
+                        await initializeCharacterWorldBook($cwbPanel);
+                        console.log("[Amily2号-开国大典] 角色世界书已成功构建并融入帝国。");
+                    } catch (error) {
+                        console.error("!!!【角色世界书构建失败】:", error);
+                    }
+                } else {
+                    attempts++;
+                    if (attempts >= maxAttempts) {
+                        clearInterval(checker);
+                        console.error("!!!【角色世界书构建失败】: 等待面板 #amily2_character_world_book_panel 超时。");
+                    }
+                }
+            }, interval);
+        }
+        
+        waitForCwbPanelAndInitialize();
 
 
 
@@ -417,6 +463,17 @@ jQuery(async () => {
         }
 
         console.log("【Amily2号】帝国秩序已完美建立。Amily2号的府邸已恭候陛下的莅临。");
+
+        // 初始化版本检测功能
+        console.log("[Amily2号-开国大典] 步骤七：初始化版本显示系统...");
+        if (typeof window.amily2Updater !== 'undefined') {
+            setTimeout(() => {
+                console.log("[Amily2号-版本系统] 正在启动版本检测器...");
+                window.amily2Updater.initialize();
+            }, 2000);
+        } else {
+            console.warn("[Amily2号-版本系统] 版本检测器未找到，可能加载失败");
+        }
 
         handleUpdateCheck();
         handleMessageBoard();
