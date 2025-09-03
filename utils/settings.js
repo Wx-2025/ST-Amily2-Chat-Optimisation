@@ -4,7 +4,7 @@ import { saveSettingsDebounced } from "/script.js";
 import { pluginAuthStatus } from "./auth.js";
 
 export const extensionName = "ST-Amily2-Chat-Optimisation";
-export const pluginVersion = "1.4.0";
+export const pluginVersion = "1.4.1";
 
 
 export const defaultSettings = {
@@ -701,4 +701,11 @@ export function saveSettings() {
 
   saveSettingsDebounced();
   return true;
+}
+
+export function getExtensionSettings() {
+    if (extension_settings && typeof extension_settings === 'object' && extension_settings[extensionName]) {
+        return extension_settings[extensionName];
+    }
+    return null;
 }
