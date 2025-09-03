@@ -19,7 +19,6 @@ export async function initializeCharacterWorldBook($cwbSettingsPanel) {
 
         if (!isCwbEnabled()) {
             console.log('[CWB] Master switch is disabled. Halting core feature initialization.');
-            initializeCharCardViewer();
             return;
         }
 
