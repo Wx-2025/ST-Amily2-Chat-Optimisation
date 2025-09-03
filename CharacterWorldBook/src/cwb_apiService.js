@@ -92,7 +92,7 @@ async function callCwbSillyTavernPreset(messages, options) {
         responsePromise = context.ConnectionManagerRequestService.sendRequest(
             targetProfile.id,
             messages,
-            options.maxTokens || 100000
+            options.maxTokens || 65000
         );
 
     } finally {
@@ -133,7 +133,7 @@ async function callCwbOpenAITest(messages, options) {
             frequency_penalty: 0,
             group_names: [],
             include_reasoning: false,
-            max_tokens: options.maxTokens || 100000,
+            max_tokens: options.maxTokens || 65000,
             messages: messages,
             model: options.model,
             presence_penalty: 0.12,
@@ -160,7 +160,7 @@ export async function callCwbAPI(systemPrompt, userPromptContent, options = {}) 
     const apiSettings = getCwbApiSettings();
     
     const finalOptions = {
-        maxTokens: 100000,
+        maxTokens: 65000,
         temperature: 1,
         model: apiSettings.model,
         apiUrl: apiSettings.apiUrl,
@@ -460,7 +460,7 @@ export async function callCustomOpenAI(systemPrompt, userPromptContent) {
             { role: 'system', content: combinedSystemPrompt },
             { role: 'user', content: userPromptContent },
         ];
-        return await callCwbSillyTavernPreset(messages, { tavernProfile: apiSettings.tavernProfile, maxTokens: 100000 });
+        return await callCwbSillyTavernPreset(messages, { tavernProfile: apiSettings.tavernProfile, maxTokens: 65000 });
     } else {
         if (!state.customApiConfig.url || !state.customApiConfig.model) {
             throw new Error('API URL/Model未配置。');
@@ -478,7 +478,7 @@ export async function callCustomOpenAI(systemPrompt, userPromptContent) {
             frequency_penalty: 0,
             presence_penalty: 0.12,
             top_p: 1,
-            max_tokens: 100000,
+            max_tokens: 65000,
             stream: false,
             chat_completion_source: 'openai',
             group_names: [],
