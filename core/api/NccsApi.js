@@ -149,7 +149,7 @@ async function callNccsOpenAITest(messages, options) {
             frequency_penalty: 0,
             group_names: [],
             include_reasoning: false,
-            max_tokens: options.maxTokens || 100000,
+            max_tokens: options.maxTokens || 65000,
             messages: messages,
             model: options.model,
             presence_penalty: 0.12,
