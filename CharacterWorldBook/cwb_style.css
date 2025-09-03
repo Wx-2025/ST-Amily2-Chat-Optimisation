@@ -470,8 +470,8 @@
 @media (max-width: 768px) {
     .cwb-cyber-popup {
         width: 100vw;
-        height: 100vh;
-        top: 0;
+        height: calc(100vh - 50px);
+        top: 50px;
         left: 0;
         transform: none;
         border-radius: 0;
@@ -558,3 +558,4 @@
     vertical-align: middle;
     display: inline;
 }
+
