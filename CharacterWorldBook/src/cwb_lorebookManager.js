@@ -1,1 +1,302 @@
-(function(_0x1b775a,_0x36ee60){const _0x25b7ef=_0x2150,_0x197ff9=_0x1b775a();while(!![]){try{const _0x37bc9a=parseInt(_0x25b7ef(0xf4))/0x1+parseInt(_0x25b7ef(0xd0))/0x2*(parseInt(_0x25b7ef(0xc6))/0x3)+-parseInt(_0x25b7ef(0xc1))/0x4*(-parseInt(_0x25b7ef(0xdc))/0x5)+-parseInt(_0x25b7ef(0xaf))/0x6*(-parseInt(_0x25b7ef(0xde))/0x7)+-parseInt(_0x25b7ef(0xad))/0x8+-parseInt(_0x25b7ef(0xcd))/0x9+-parseInt(_0x25b7ef(0xb5))/0xa;if(_0x37bc9a===_0x36ee60)break;else _0x197ff9['push'](_0x197ff9['shift']());}catch(_0x1d9ae7){_0x197ff9['push'](_0x197ff9['shift']());}}}(_0x164b,0x44287));function _0x164b(){const _0x1d7284=['2573550CWlsWN','未知聊天','keys','getCurrentCharPrimaryLorebook','custom','isArray','message','setLorebookEntries','unknown_chat','已为聊天:\x20','content','[CWB]\x20无法获取角色名称，使用默认值','4MzTisF','filter','join','order','\x20的描述已保存到世界书。','215511ITovLr','number','\x20管理了\x20','before_character_definition','createLorebookEntries','\x20个世界书条目的状态。','获取主世界书时出错:','3264147BjslyG',':\x20(详细查看绿灯角色条目)]','map','2QASlYO','管理世界书条目时出错:','无效的聊天标识符\x20\x22','reduce','success','uid','replace','startsWith','find','position','\x22\x20的名册。正在触发创建。','add','2410615jqTOiJ','未能确定要写入的世界书。请检查主世界书或自定义世界书设置。','7UoxgJQ','characters','trim','Amily2角色总集','split','】中登场的角色，AI需要根据剧情让以下角色在合适的时机登场：\x0a\x0a','customWorldBook','max','error','depth','未选择角色，无法更新角色名册。','length','-角色总览','push','此为当前角色卡【','未选择角色，跳过世界书管理。','未找到目标世界书。','characterId','角色\x20','getContext','getLorebookEntries','name','318201jxlTzS','selective','comment','forEach','\x22。正在中止世界书管理。','includes','删除世界书条目失败:','sort','当前角色未设置主世界书。','保存世界书失败\x20for\x20','test','currentChatFileIdentifier','[CWB]\x20使用自定义世界书模式，跳过角色总览条目的自动管理','deleteLorebookEntries','未识别到该角色卡名称','3321240lmwRnC','角色总览','2653242jrocBv','\x20到世界书失败。','worldbookTarget','保存角色\x20','删除失败:\x20','at_depth_as_system'];_0x164b=function(){return _0x1d7284;};return _0x164b();}function _0x2150(_0x5b017d,_0x1c0178){const _0x164b17=_0x164b();return _0x2150=function(_0x215013,_0x677bb2){_0x215013=_0x215013-0x9f;let _0x266327=_0x164b17[_0x215013];return _0x266327;},_0x2150(_0x5b017d,_0x1c0178);}import{state}from'./cwb_state.js';import{logError,logDebug,showToastr,parseCustomFormat}from'./cwb_utils.js';const {SillyTavern,TavernHelper}=window;export async function getTargetWorldBook(){const _0x4e3698=_0x2150;logDebug('[CWB-DIAGNOSTIC]\x20getTargetWorldBook\x20called.\x20Current\x20state:',{'target':state[_0x4e3698(0xb1)],'book':state[_0x4e3698(0xe4)]});if(state[_0x4e3698(0xb1)]===_0x4e3698(0xb9)&&state[_0x4e3698(0xe4)])return state[_0x4e3698(0xe4)];try{const _0x54d969=await TavernHelper[_0x4e3698(0xb8)]();if(!_0x54d969)return showToastr(_0x4e3698(0xe6),_0x4e3698(0xa6)),null;return _0x54d969;}catch(_0x911906){return logError(_0x4e3698(0xcc),_0x911906),null;}}export async function deleteLorebookEntries(_0x5b5105){const _0x2cd94f=_0x2150;if(!Array[_0x2cd94f(0xba)](_0x5b5105)||_0x5b5105['length']===0x0)return;try{const _0x253d14=SillyTavern[_0x2cd94f(0xf1)]();if(!_0x253d14||!_0x253d14[_0x2cd94f(0xef)])throw new Error('没有选择角色，无法删除。');const _0x147048=await getTargetWorldBook();if(!_0x147048)throw new Error(_0x2cd94f(0xee));await TavernHelper[_0x2cd94f(0xab)](_0x147048,_0x5b5105[_0x2cd94f(0xcf)](Number));}catch(_0x111551){logError(_0x2cd94f(0xa4),_0x111551),showToastr(_0x2cd94f(0xe6),_0x2cd94f(0xb3)+_0x111551[_0x2cd94f(0xbb)]);}}export async function saveDescriptionToLorebook(_0x4cbc14,_0xc8cc3d,_0x465f4c,_0x118d62){const _0x1fdc9a=_0x2150;if(!_0x4cbc14?.['trim']())return![];try{const _0x5b2412=SillyTavern[_0x1fdc9a(0xf1)]();if(!_0x5b2412||!_0x5b2412[_0x1fdc9a(0xef)])return showToastr(_0x1fdc9a(0xe6),'没有选择角色，无法保存到世界书。'),![];let _0x2f4796=state[_0x1fdc9a(0xa9)]||_0x1fdc9a(0xb6);_0x2f4796=_0x2f4796[_0x1fdc9a(0xd6)](/ imported/g,'');const _0x43460f=_0x4cbc14[_0x1fdc9a(0xd6)](/[^a-zA-Z0-9\u4e00-\u9fa5_-]/g,'_'),_0xfab07=_0x465f4c+0x1+'-'+(_0x118d62+0x1),_0x5e5e58=_0x43460f+'-'+_0x2f4796;let _0x20138e;state[_0x1fdc9a(0xb1)]===_0x1fdc9a(0xb9)&&state['customWorldBook']?_0x20138e=state['customWorldBook']:_0x20138e=await TavernHelper[_0x1fdc9a(0xb8)]();if(!_0x20138e)return showToastr(_0x1fdc9a(0xe6),_0x1fdc9a(0xdd)),![];const _0x12d72c=await TavernHelper[_0x1fdc9a(0xf2)](_0x20138e)||[];let _0x3f6763=_0x12d72c[_0x1fdc9a(0xd8)](_0xe2bf11=>Array[_0x1fdc9a(0xba)](_0xe2bf11[_0x1fdc9a(0xb7)])&&_0xe2bf11[_0x1fdc9a(0xb7)][_0x1fdc9a(0xa3)](_0x2f4796)&&_0xe2bf11['keys'][_0x1fdc9a(0xa3)](_0x43460f)&&!_0xe2bf11[_0x1fdc9a(0xb7)][_0x1fdc9a(0xa3)](_0x1fdc9a(0xe1)));const _0x537490={'comment':_0x5e5e58,'content':_0xc8cc3d,'keys':[_0x2f4796,_0x43460f,_0xfab07],'enabled':!![],'type':_0x1fdc9a(0x9f)};if(_0x3f6763)await TavernHelper[_0x1fdc9a(0xbc)](_0x20138e,[{'uid':_0x3f6763[_0x1fdc9a(0xd5)],..._0x537490}]);else{const _0x511867=_0x12d72c[_0x1fdc9a(0xc2)](_0xf3dbb1=>Array[_0x1fdc9a(0xba)](_0xf3dbb1[_0x1fdc9a(0xb7)])&&_0xf3dbb1[_0x1fdc9a(0xb7)][_0x1fdc9a(0xa3)](_0x2f4796)&&!_0xf3dbb1[_0x1fdc9a(0xb7)][_0x1fdc9a(0xa3)](_0x1fdc9a(0xe1)));let _0x2657c4=0x1b58;_0x511867[_0x1fdc9a(0xa1)](_0x1d19ce=>{const _0x28c960=_0x1fdc9a;_0x1d19ce[_0x28c960(0xd9)]==='at_depth_as_system'&&typeof _0x1d19ce[_0x28c960(0xe7)]===_0x28c960(0xc7)&&(_0x1d19ce[_0x28c960(0xe7)]>=0x1b59&&_0x1d19ce[_0x28c960(0xe7)]>_0x2657c4&&(_0x2657c4=_0x1d19ce['depth']));});const _0x5848ce=_0x2657c4+0x1;let _0x14d2e7=0x1b58;_0x511867['length']>0x0&&(_0x14d2e7=_0x511867[_0x1fdc9a(0xd3)]((_0x45b09e,_0x16e8d8)=>{const _0x43f033=Number(_0x16e8d8['order']);return!isNaN(_0x43f033)&&_0x43f033>_0x45b09e?_0x43f033:_0x45b09e;},0x1b58));const _0x597c3f={..._0x537490,'order':0x64,'position':_0x1fdc9a(0xb4),'depth':_0x5848ce};logDebug('创建新角色条目：'+_0x43460f,{'position':_0x597c3f[_0x1fdc9a(0xd9)],'depth':_0x597c3f['depth'],'order':_0x597c3f[_0x1fdc9a(0xc4)]}),await TavernHelper[_0x1fdc9a(0xca)](_0x20138e,[_0x597c3f]);}return showToastr(_0x1fdc9a(0xd4),_0x1fdc9a(0xf0)+_0x43460f+_0x1fdc9a(0xc5)),!![];}catch(_0x8355c7){return logError(_0x1fdc9a(0xa7)+_0x4cbc14+':',_0x8355c7),showToastr('error',_0x1fdc9a(0xb2)+safeCharName+_0x1fdc9a(0xb0)),![];}}export async function updateCharacterRosterLorebookEntry(_0x2f8527,_0x5e632f,_0x527e38){const _0x5cff08=_0x2150;if(!Array[_0x5cff08(0xba)](_0x2f8527))return!![];try{const _0x1de3d4=SillyTavern['getContext']();if(!_0x1de3d4||!_0x1de3d4[_0x5cff08(0xef)])return logDebug(_0x5cff08(0xe8)),![];let _0x23b093=state['currentChatFileIdentifier']||_0x5cff08(0xb6);if(_0x23b093===_0x5cff08(0xb6))return![];const _0x5a3e73=_0x23b093[_0x5cff08(0xd6)](/ imported/g,''),_0x4337cf='Amily2角色总集-'+_0x5a3e73+_0x5cff08(0xea);let _0x133bd5=_0x5cff08(0xac);try{const _0x187a15=_0x1de3d4[_0x5cff08(0xdf)][_0x1de3d4['characterId']];_0x187a15&&_0x187a15[_0x5cff08(0xf3)]&&(_0x133bd5=_0x187a15['name']['trim']());}catch(_0x1622d8){logDebug(_0x5cff08(0xc0));}const _0x5b322a=_0x5cff08(0xec)+_0x133bd5+_0x5cff08(0xe3);let _0x159cc8;state[_0x5cff08(0xb1)]===_0x5cff08(0xb9)&&state[_0x5cff08(0xe4)]?_0x159cc8=state[_0x5cff08(0xe4)]:_0x159cc8=await TavernHelper['getCurrentCharPrimaryLorebook']();if(!_0x159cc8)return showToastr(_0x5cff08(0xe6),_0x5cff08(0xdd)),![];let _0x3acfe9=await TavernHelper[_0x5cff08(0xf2)](_0x159cc8)||[],_0x1e5151=_0x3acfe9['find'](_0x34ac4c=>_0x34ac4c['comment']===_0x4337cf||_0x34ac4c[_0x5cff08(0xa0)]==='Amily2角色总集-'+_0x23b093+_0x5cff08(0xea)),_0x5461ed=new Set(),_0x1e0e8f=0x1,_0x4a2b82=0x0;if(_0x1e5151){if(_0x1e5151[_0x5cff08(0xbf)]){let _0x49825=_0x1e5151[_0x5cff08(0xbf)]['replace'](_0x5b322a,'');_0x49825[_0x5cff08(0xe2)]('\x0a')[_0x5cff08(0xa1)](_0x27c4bb=>{const _0x5e582a=_0x5cff08;if(_0x27c4bb[_0x5e582a(0xe0)]())_0x5461ed[_0x5e582a(0xdb)](_0x27c4bb[_0x5e582a(0xe0)]()['replace'](/\[|:.*\]/g,''));});}const _0x2d45ca=_0x1e5151['keys']['find'](_0x55984d=>/^\d+-\d+$/[_0x5cff08(0xa8)](_0x55984d));_0x2d45ca&&([_0x1e0e8f,_0x4a2b82]=_0x2d45ca[_0x5cff08(0xe2)]('-')[_0x5cff08(0xcf)](Number));}_0x2f8527[_0x5cff08(0xa1)](_0x407bb1=>_0x5461ed[_0x5cff08(0xdb)](_0x407bb1[_0x5cff08(0xe0)]()));const _0x5eecc9=_0x5b322a+[..._0x5461ed][_0x5cff08(0xa5)]()[_0x5cff08(0xcf)](_0x16962a=>'['+_0x16962a+_0x5cff08(0xce))[_0x5cff08(0xc3)]('\x0a'),_0x575f8a=Math['min'](_0x1e0e8f,_0x5e632f+0x1),_0x650e9=Math[_0x5cff08(0xe5)](_0x4a2b82,_0x527e38+0x1),_0x10f7ed=_0x575f8a+'-'+_0x650e9,_0x5113c0=[_0x5cff08(0xe1),_0x5a3e73,_0x5cff08(0xae)],_0x19ab91=[..._0x5113c0,_0x10f7ed],_0x3e56e3={'content':_0x5eecc9,'keys':_0x19ab91,'type':'constant','position':_0x5cff08(0xc9),'depth':null,'enabled':!![],'order':0x270f,'prevent_recursion':!![]};return _0x1e5151?await TavernHelper[_0x5cff08(0xbc)](_0x159cc8,[{'uid':_0x1e5151['uid'],'comment':_0x4337cf,..._0x3e56e3}]):await TavernHelper[_0x5cff08(0xca)](_0x159cc8,[{'comment':_0x4337cf,..._0x3e56e3}]),!![];}catch(_0x31e3df){return logError('更新角色名册条目时出错:',_0x31e3df),![];}}export async function manageAutoCardUpdateLorebookEntry(){const _0x521889=_0x2150;try{if(state[_0x521889(0xb1)]===_0x521889(0xb9)&&state[_0x521889(0xe4)]){logDebug(_0x521889(0xaa));return;}const _0x26afb8=SillyTavern['getContext']();if(!_0x26afb8||!_0x26afb8['characterId']){logDebug(_0x521889(0xed));return;}const _0x4bf197=await getTargetWorldBook();if(!_0x4bf197)return;const _0x3911ef=await TavernHelper[_0x521889(0xf2)](_0x4bf197)||[],_0x317220=state[_0x521889(0xa9)];if(!_0x317220||_0x317220[_0x521889(0xd7)](_0x521889(0xbd))){logError(_0x521889(0xd2)+_0x317220+_0x521889(0xa2));return;}const _0x4fb633=_0x317220[_0x521889(0xd6)](/ imported/g,'');let _0x1d87a1=![];const _0x1badd5=[];for(const _0x29eadf of _0x3911ef){if(Array[_0x521889(0xba)](_0x29eadf[_0x521889(0xb7)])&&(_0x29eadf['keys'][_0x521889(0xa3)](_0x521889(0xe1))||_0x29eadf[_0x521889(0xb7)]['includes'](_0x4fb633)||_0x29eadf[_0x521889(0xb7)][_0x521889(0xa3)](_0x317220))){const _0x1bf180=_0x29eadf[_0x521889(0xb7)][_0x521889(0xa3)](_0x4fb633)||_0x29eadf[_0x521889(0xb7)][_0x521889(0xa3)](_0x317220);let _0x5f10f2=_0x1bf180;_0x1bf180&&_0x29eadf[_0x521889(0xb7)][_0x521889(0xa3)](_0x521889(0xae))&&(_0x1d87a1=!![]),_0x29eadf['enabled']!==_0x5f10f2&&_0x1badd5[_0x521889(0xeb)]({'uid':_0x29eadf[_0x521889(0xd5)],'enabled':_0x5f10f2});}}_0x1badd5[_0x521889(0xe9)]>0x0&&(await TavernHelper[_0x521889(0xbc)](_0x4bf197,_0x1badd5),logDebug(_0x521889(0xbe)+_0x4fb633+_0x521889(0xc8)+_0x1badd5[_0x521889(0xe9)]+_0x521889(0xcb))),!_0x1d87a1&&(logDebug('未找到聊天\x20\x22'+_0x4fb633+_0x521889(0xda)),await updateCharacterRosterLorebookEntry([]));}catch(_0xd6120d){logError(_0x521889(0xd1),_0xd6120d);}}
+import { state } from './cwb_state.js';
+import { logError, logDebug, showToastr, parseCustomFormat } from './cwb_utils.js';
+
+const { SillyTavern, TavernHelper } = window;
+
+export async function getTargetWorldBook() {
+    logDebug('[CWB-DIAGNOSTIC] getTargetWorldBook called. Current state:', { 
+        target: state.worldbookTarget, 
+        book: state.customWorldBook 
+    });
+    if (state.worldbookTarget === 'custom' && state.customWorldBook) {
+        return state.customWorldBook;
+    }
+    try {
+        const primaryBook = await TavernHelper.getCurrentCharPrimaryLorebook();
+        if (!primaryBook) {
+            showToastr('error', '当前角色未设置主世界书。');
+            return null;
+        }
+        return primaryBook;
+    } catch (error) {
+        logError('获取主世界书时出错:', error);
+        return null;
+    }
+}
+
+export async function deleteLorebookEntries(uids) {
+    if (!Array.isArray(uids) || uids.length === 0) return;
+
+    try {
+        const context = SillyTavern.getContext();
+        if (!context || !context.characterId) {
+            throw new Error('没有选择角色，无法删除。');
+        }
+        const book = await getTargetWorldBook();
+        if (!book) throw new Error('未找到目标世界书。');
+
+        await TavernHelper.deleteLorebookEntries(book, uids.map(Number));
+    } catch (error) {
+        logError('删除世界书条目失败:', error);
+        showToastr('error', `删除失败: ${error.message}`);
+    }
+}
+
+export async function saveDescriptionToLorebook(characterName, newDescription, startFloor, endFloor) {
+    if (!characterName?.trim()) return false;
+
+    try {
+        const context = SillyTavern.getContext();
+        if (!context || !context.characterId) {
+            showToastr('error', '没有选择角色，无法保存到世界书。');
+            return false;
+        }
+        let chatIdentifier = state.currentChatFileIdentifier || '未知聊天';
+        chatIdentifier = chatIdentifier.replace(/ imported/g, '');
+        
+        const safeCharName = characterName.replace(/[^a-zA-Z0-9\u4e00-\u9fa5·""“”_-]/g, ',');
+        const floorRange = `${startFloor + 1}-${endFloor + 1}`;
+
+        const newComment = `${safeCharName}-${chatIdentifier}`;
+
+        let bookName;
+        if (state.worldbookTarget === 'custom' && state.customWorldBook) {
+            bookName = state.customWorldBook;
+        } else {
+            bookName = await TavernHelper.getCurrentCharPrimaryLorebook();
+        }
+
+        if (!bookName) {
+            showToastr('error', '未能确定要写入的世界书。请检查主世界书或自定义世界书设置。');
+            return false;
+        }
+
+        const entries = (await TavernHelper.getLorebookEntries(bookName)) || [];
+        let existing = entries.find(e => 
+            Array.isArray(e.keys) &&
+            e.keys.includes(chatIdentifier) &&
+            e.keys.includes(safeCharName) &&
+            !e.keys.includes('Amily2角色总集')
+        );
+
+        const entryData = {
+            comment: newComment,
+            content: newDescription,
+            keys: [chatIdentifier, safeCharName, floorRange],
+            enabled: true,
+            type: 'selective',
+        };
+
+        if (existing) {
+            await TavernHelper.setLorebookEntries(bookName, [{ uid: existing.uid, ...entryData }]);
+        } else {
+            const cwbEntries = entries.filter(e => 
+                Array.isArray(e.keys) && 
+                e.keys.includes(chatIdentifier) && 
+                !e.keys.includes('Amily2角色总集')
+            );
+            let maxDepth = 7000;
+            cwbEntries.forEach(entry => {
+                if (entry.position === 'at_depth_as_system' && typeof entry.depth === 'number') {
+                    if (entry.depth >= 7001 && entry.depth > maxDepth) {
+                        maxDepth = entry.depth;
+                    }
+                }
+            });
+            
+            const newDepth = maxDepth + 1;
+            let maxOrder = 7000;
+            if (cwbEntries.length > 0) {
+                maxOrder = cwbEntries.reduce((max, entry) => {
+                    const order = Number(entry.order);
+                    return !isNaN(order) && order > max ? order : max;
+                }, 7000);
+            }
+            
+            const newEntryData = {
+                ...entryData,
+                order: 100, 
+                position: 'at_depth_as_system',
+                depth: newDepth,
+            };
+            
+            logDebug(`创建新角色条目：${safeCharName}`, {
+                position: newEntryData.position,
+                depth: newEntryData.depth,
+                order: newEntryData.order
+            });
+            
+            await TavernHelper.createLorebookEntries(bookName, [newEntryData]);
+        }
+        showToastr('success', `角色 ${safeCharName} 的描述已保存到世界书。`);
+        return true;
+    } catch (error) {
+        logError(`保存世界书失败 for ${characterName}:`, error);
+        showToastr('error', `保存角色 ${safeCharName} 到世界书失败。`);
+        return false;
+    }
+}
+
+export async function updateCharacterRosterLorebookEntry(processedCharacterNames, startFloor, endFloor) {
+    if (!Array.isArray(processedCharacterNames)) return true;
+
+    try {
+        const context = SillyTavern.getContext();
+        if (!context || !context.characterId) {
+            logDebug('未选择角色，无法更新角色名册。');
+            return false;
+        }
+        let chatIdentifier = state.currentChatFileIdentifier || '未知聊天';
+        if (chatIdentifier === '未知聊天') return false;
+        
+        const cleanChatId = chatIdentifier.replace(/ imported/g, '');
+        const rosterEntryComment = `Amily2角色总集-${cleanChatId}-角色总览`;
+
+        let characterCardName = '未识别到该角色卡名称';
+        try {
+            const currentChar = context.characters[context.characterId];
+            if (currentChar && currentChar.name) {
+                characterCardName = currentChar.name.trim();
+            }
+        } catch (e) {
+            logDebug('[CWB] 无法获取角色名称，使用默认值');
+        }
+        
+        const initialContentPrefix = `此为当前角色卡【${characterCardName}】中登场的角色，AI需要根据剧情让以下角色在合适的时机登场：\n\n`;
+        
+        let bookName;
+        if (state.worldbookTarget === 'custom' && state.customWorldBook) {
+            bookName = state.customWorldBook;
+        } else {
+            bookName = await TavernHelper.getCurrentCharPrimaryLorebook();
+        }
+
+        if (!bookName) {
+            showToastr('error', '未能确定要写入的世界书。请检查主世界书或自定义世界书设置。');
+            return false;
+        }
+
+        let entries = (await TavernHelper.getLorebookEntries(bookName)) || [];
+        let existingRosterEntry = entries.find(entry => 
+            entry.comment === rosterEntryComment || 
+            entry.comment === `Amily2角色总集-${chatIdentifier}-角色总览`
+        );
+        
+        let existingNames = new Set();
+        let oldStartFloor = 1;
+        let oldEndFloor = 0;
+
+        if (existingRosterEntry) {
+            if (existingRosterEntry.content) {
+                let contentToParse = existingRosterEntry.content.replace(initialContentPrefix, '');
+                contentToParse.split('\n').forEach(name => {
+                    if (name.trim()) existingNames.add(name.trim().replace(/\[|:.*\]/g, ''));
+                });
+            }
+            const floorRangeKey = existingRosterEntry.keys.find(k => /^\d+-\d+$/.test(k));
+            if (floorRangeKey) {
+                [oldStartFloor, oldEndFloor] = floorRangeKey.split('-').map(Number);
+            }
+        }
+
+        processedCharacterNames.forEach(name => existingNames.add(name.trim()));
+
+        const newContent =
+            initialContentPrefix +
+            [...existingNames]
+                .sort()
+                .map(name => `[${name}: (详细查看绿灯角色条目)]`)
+                .join('\n');
+
+        const newStartFloor = Math.min(oldStartFloor, startFloor + 1);
+        const newEndFloor = Math.max(oldEndFloor, endFloor + 1);
+        const newFloorRange = `${newStartFloor}-${newEndFloor}`;
+
+        const baseKeys = [`Amily2角色总集`, cleanChatId, `角色总览`];
+        const newKeys = [...baseKeys, newFloorRange];
+
+        const entryData = {
+            content: newContent,
+            keys: newKeys,
+            type: 'constant',
+            position: 'before_character_definition',
+            depth: null,
+            enabled: true,
+            order: 9999,
+            prevent_recursion: true,
+        };
+
+        if (existingRosterEntry) {
+            await TavernHelper.setLorebookEntries(bookName, [
+                { uid: existingRosterEntry.uid, comment: rosterEntryComment, ...entryData },
+            ]);
+        } else {
+            await TavernHelper.createLorebookEntries(bookName, [
+                { comment: rosterEntryComment, ...entryData },
+            ]);
+        }
+        return true;
+    } catch (error) {
+        logError('更新角色名册条目时出错:', error);
+        return false;
+    }
+}
+
+
+export async function manageAutoCardUpdateLorebookEntry() {
+    try {
+        if (state.worldbookTarget === 'custom' && state.customWorldBook) {
+            logDebug('[CWB] 使用自定义世界书模式，跳过角色总览条目的自动管理');
+            return;
+        }
+
+        const context = SillyTavern.getContext();
+        if (!context || !context.characterId) {
+            logDebug('未选择角色，跳过世界书管理。');
+            return;
+        }
+        const bookName = await getTargetWorldBook();
+        if (!bookName) return;
+
+        const entries = (await TavernHelper.getLorebookEntries(bookName)) || [];
+        
+        const currentChatId = state.currentChatFileIdentifier;
+        if (!currentChatId || currentChatId.startsWith('unknown_chat')) {
+            logError(`无效的聊天标识符 "${currentChatId}"。正在中止世界书管理。`);
+            return;
+        }
+        const cleanChatId = currentChatId.replace(/ imported/g, '');
+
+        let currentChatRosterExists = false;
+        const entriesToUpdate = [];
+
+        for (const entry of entries) {
+            if (Array.isArray(entry.keys) && (entry.keys.includes('Amily2角色总集') || entry.keys.includes(cleanChatId) || entry.keys.includes(currentChatId))) {
+                
+                const isForCurrentChat = entry.keys.includes(cleanChatId) || entry.keys.includes(currentChatId);
+                let shouldBeEnabled = isForCurrentChat;
+
+                if (isForCurrentChat && entry.keys.includes('角色总览')) {
+                    currentChatRosterExists = true;
+                }
+
+                if (entry.enabled !== shouldBeEnabled) {
+                    entriesToUpdate.push({ uid: entry.uid, enabled: shouldBeEnabled });
+                }
+            }
+        }
+
+        if (entriesToUpdate.length > 0) {
+            await TavernHelper.setLorebookEntries(bookName, entriesToUpdate);
+            logDebug(`已为聊天: ${cleanChatId} 管理了 ${entriesToUpdate.length} 个世界书条目的状态。`);
+        }
+
+        if (!currentChatRosterExists) {
+            logDebug(`未找到聊天 "${cleanChatId}" 的名册。正在触发创建。`);
+            await updateCharacterRosterLorebookEntry([]);
+        }
+
+    } catch (error) {
+        logError('管理世界书条目时出错:', error);
+    }
+}
