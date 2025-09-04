@@ -123,37 +123,134 @@ async function callCwbSillyTavernPreset(messages, options) {
 }
 
 async function callCwbOpenAITest(messages, options) {
-    const response = await fetch('/api/backends/chat-completions/generate', {
-        method: 'POST',
-        headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            chat_completion_source: 'openai',
-            custom_prompt_post_processing: 'strict',
-            enable_web_search: false,
-            frequency_penalty: 0,
-            group_names: [],
-            include_reasoning: false,
-            max_tokens: options.maxTokens || 65000,
-            messages: messages,
-            model: options.model,
-            presence_penalty: 0.12,
-            proxy_password: options.apiKey,
-            reasoning_effort: 'medium',
-            request_images: false,
-            reverse_proxy: options.apiUrl,
-            stream: false,
-            temperature: options.temperature || 1,
-            top_p: options.top_p || 1
-        })
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`CWB全兼容API请求失败: ${response.status} - ${errorText}`);
+    // 参数验证
+    if (!Array.isArray(messages) || messages.length === 0) {
+        throw new Error('消息数组不能为空');
+    }
+    
+    if (!options?.apiUrl?.trim()) {
+        throw new Error('API URL 不能为空');
     }
 
-    const responseData = await response.json();
-    return responseData?.choices?.[0]?.message?.content;
+    if (!options?.model?.trim()) {
+        throw new Error('模型名称不能为空');
+    }
+
+    // 确保所有必需的参数都存在且有效
+    const validatedOptions = {
+        maxTokens: Math.max(1, parseInt(options.maxTokens) || 65000),
+        temperature: Math.max(0, Math.min(2, parseFloat(options.temperature) || 1)),
+        top_p: Math.max(0, Math.min(1, parseFloat(options.top_p) || 1)),
+        apiUrl: options.apiUrl.trim(),
+        apiKey: (options.apiKey || '').trim(),
+        model: options.model.trim()
+    };
+
+    // 验证消息格式
+    const validatedMessages = messages.map((msg, index) => {
+        if (!msg || typeof msg !== 'object') {
+            throw new Error(`消息 ${index} 格式无效`);
+        }
+        if (!msg.role || !['system', 'user', 'assistant'].includes(msg.role)) {
+            throw new Error(`消息 ${index} 的角色无效`);
+        }
+        if (!msg.content || typeof msg.content !== 'string') {
+            throw new Error(`消息 ${index} 的内容无效`);
+        }
+        return {
+            role: msg.role,
+            content: msg.content.trim()
+        };
+    });
+
+    const requestBody = {
+        chat_completion_source: 'openai',
+        custom_prompt_post_processing: 'strict',
+        enable_web_search: false,
+        frequency_penalty: 0,
+        group_names: [],
+        include_reasoning: false,
+        max_tokens: validatedOptions.maxTokens,
+        messages: validatedMessages,
+        model: validatedOptions.model,
+        presence_penalty: 0.12,
+        proxy_password: validatedOptions.apiKey,
+        reasoning_effort: 'medium',
+        request_images: false,
+        reverse_proxy: validatedOptions.apiUrl,
+        stream: false,
+        temperature: validatedOptions.temperature,
+        top_p: validatedOptions.top_p
+    };
+
+    try {
+        const response = await fetch('/api/backends/chat-completions/generate', {
+            method: 'POST',
+            headers: { 
+                ...getRequestHeaders(), 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            let errorText;
+            try {
+                errorText = await response.text();
+            } catch (e) {
+                errorText = '无法读取错误响应';
+            }
+            
+            // 根据HTTP状态码提供更具体的错误信息
+            let errorMessage = `CWB OpenAI Test API请求失败 (${response.status})`;
+            if (response.status === 400) {
+                errorMessage += ': 请求格式错误，请检查参数配置';
+            } else if (response.status === 401) {
+                errorMessage += ': 认证失败，请检查API密钥';
+            } else if (response.status === 403) {
+                errorMessage += ': 访问被拒绝，请检查权限设置';
+            } else if (response.status === 429) {
+                errorMessage += ': 请求频率超限，请稍后重试';
+            } else if (response.status >= 500) {
+                errorMessage += ': 服务器错误，请稍后重试';
+            }
+            errorMessage += errorText ? ` - ${errorText}` : '';
+            
+            throw new Error(errorMessage);
+        }
+
+        let responseData;
+        try {
+            responseData = await response.json();
+        } catch (e) {
+            throw new Error('API返回的响应不是有效的JSON格式');
+        }
+
+        // 使用标准化响应处理
+        const normalizedResponse = normalizeApiResponse(responseData);
+        
+        if (normalizedResponse.error) {
+            throw new Error(normalizedResponse.error.message || 'API返回错误响应');
+        }
+
+        if (normalizedResponse.content) {
+            return normalizedResponse.content;
+        }
+
+        // 兼容直接响应格式
+        if (responseData?.choices?.[0]?.message?.content) {
+            return responseData.choices[0].message.content.trim();
+        }
+
+        throw new Error('API响应格式不正确或未包含有效内容');
+
+    } catch (error) {
+        if (error.name === 'TypeError' && error.message.includes('fetch')) {
+            throw new Error('网络连接失败，请检查网络状态');
+        }
+        throw error;
+    }
 }
 
 export async function callCwbAPI(systemPrompt, userPromptContent, options = {}) {
@@ -281,21 +378,24 @@ export async function loadModels($panel) {
             }
 
             const rawData = await response.json();
-            const result = normalizeApiResponse(rawData);
-            const modelList = result.data || [];
+            const modelList = Array.isArray(rawData) ? rawData : (rawData.data || rawData.models || []);
 
-            if (result.error || !Array.isArray(modelList)) {
-                const errorMessage = result.error?.message || 'API未返回有效的模型列表数组';
+            if (!Array.isArray(modelList)) {
+                const errorMessage = 'API未返回有效的模型列表数组';
                 throw new Error(errorMessage);
             }
 
             models = modelList
-                .map(m => ({
-                    id: m.id || m.model || m,
-                    name: m.id || m.model || m
-                }))
+                .map(m => {
+                    const modelIdRaw = m.name || m.id || m.model || m;
+                    const modelName = String(modelIdRaw).replace(/^models\//, '');
+                    return {
+                        id: modelName,
+                        name: modelName
+                    };
+                })
                 .filter(m => m.id)
-                .sort((a, b) => a.name.localeCompare(b.name));
+                .sort((a, b) => String(a.name).localeCompare(String(b.name)));
         }
 
         $modelSelect.empty();
@@ -316,6 +416,86 @@ export async function loadModels($panel) {
     }
 }
 
+async function fetchCwbModels() {
+    console.log('[CWB] 开始获取模型列表');
+    
+    const apiSettings = getCwbApiSettings();
+    
+    try {
+        if (apiSettings.apiMode === 'sillytavern_preset') {
+            const context = getContext();
+            if (!context?.extensionSettings?.connectionManager?.profiles) {
+                throw new Error('无法获取SillyTavern配置文件列表');
+            }
+            
+            const targetProfile = context.extensionSettings.connectionManager.profiles.find(p => p.id === apiSettings.tavernProfile);
+            if (!targetProfile) {
+                throw new Error(`未找到配置文件ID: ${apiSettings.tavernProfile}`);
+            }
+            
+            const models = [];
+            if (targetProfile.openai_model) {
+                models.push({ id: targetProfile.openai_model, name: targetProfile.openai_model });
+            }
+            
+            if (models.length === 0) {
+                throw new Error('当前预设未配置模型');
+            }
+            
+            console.log('[CWB] SillyTavern预设模式获取到模型:', models);
+            return models;
+            
+        } else {
+            if (!apiSettings.apiUrl || !apiSettings.apiKey) {
+                throw new Error('API URL或Key未配置');
+            }
+            
+            const response = await fetch('/api/backends/chat-completions/status', {
+                method: 'POST',
+                headers: {
+                    ...getRequestHeaders(),
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    reverse_proxy: apiSettings.apiUrl,
+                    proxy_password: apiSettings.apiKey,
+                    chat_completion_source: 'openai'
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const rawData = await response.json();
+            const models = Array.isArray(rawData) ? rawData : (rawData.data || rawData.models || []);
+
+            if (!Array.isArray(models)) {
+                const errorMessage = 'API未返回有效的模型列表数组';
+                throw new Error(errorMessage);
+            }
+
+            const formattedModels = models
+                .map(m => {
+                    const modelIdRaw = m.name || m.id || m.model || m;
+                    const modelName = String(modelIdRaw).replace(/^models\//, '');
+                    return {
+                        id: modelName,
+                        name: modelName
+                    };
+                })
+                .filter(m => m.id)
+                .sort((a, b) => String(a.name).localeCompare(String(b.name)));
+
+            console.log('[CWB] 全兼容模式获取到模型:', formattedModels);
+            return formattedModels;
+        }
+    } catch (error) {
+        console.error('[CWB] 获取模型列表失败:', error);
+        throw error;
+    }
+}
+
 export async function fetchModelsAndConnect($panel) {
     const apiSettings = getCwbApiSettings();
     const $modelSelect = $panel.find('#cwb-api-model');
@@ -327,94 +507,36 @@ export async function fetchModelsAndConnect($panel) {
             $apiStatus.text('状态: 请先选择SillyTavern预设').css('color', 'orange');
             return;
         }
-
-        $apiStatus.text('状态: 正在从预设获取模型...').css('color', '#61afef');
-        showToastr('info', '正在从预设获取模型...');
-
-        try {
-            const context = getContext();
-            if (!context?.extensionSettings?.connectionManager?.profiles) {
-                throw new Error('无法获取SillyTavern配置文件列表');
-            }
-            
-            const targetProfile = context.extensionSettings.connectionManager.profiles.find(p => p.id === apiSettings.tavernProfile);
-            if (!targetProfile) {
-                throw new Error(`未找到配置文件ID: ${apiSettings.tavernProfile}`);
-            }
-            
-            $modelSelect.empty();
-            if (targetProfile.openai_model) {
-                $modelSelect.append(jQuery('<option>', { value: targetProfile.openai_model, text: targetProfile.openai_model }));
-                showToastr('success', `从预设获取模型: ${targetProfile.openai_model}`);
-            } else {
-                throw new Error('当前预设未配置模型');
-            }
-            
-        } catch (error) {
-            logError('从预设获取模型时出错:', error);
-            showToastr('error', `从预设获取模型失败: ${error.message}`);
-        } finally {
-            updateApiStatusDisplay($panel);
-        }
     } else {
         const apiUrl = $panel.find('#cwb-api-url').val().trim();
-        const apiKey = $panel.find('#cwb-api-key').val();
-
         if (!apiUrl) {
             showToastr('warning', '请输入API基础URL。');
             $apiStatus.text('状态:请输入API基础URL').css('color', 'orange');
             return;
         }
+    }
 
-        $apiStatus.text('状态: 正在加载模型列表...').css('color', '#61afef');
-        showToastr('info', '正在加载模型列表...');
+    $apiStatus.text('状态: 正在加载模型列表...').css('color', '#61afef');
+    showToastr('info', '正在加载模型列表...');
 
-        try {
-            const response = await fetch('/api/backends/chat-completions/status', {
-                method: 'POST',
-                headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    reverse_proxy: apiUrl,
-                    proxy_password: apiKey,
-                    chat_completion_source: 'openai'
-                })
+    try {
+        const models = await fetchCwbModels();
+        
+        $modelSelect.empty();
+        if (models.length > 0) {
+            models.forEach(model => {
+                $modelSelect.append(jQuery('<option>', { value: model.id, text: model.name }));
             });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`HTTP ${response.status}: ${errorText}`);
-            }
-
-            const rawData = await response.json();
-            const result = normalizeApiResponse(rawData);
-            const models = result.data || [];
-
-            if (result.error || !Array.isArray(models)) {
-                const errorMessage = result.error?.message || 'API未返回有效的模型列表数组';
-                throw new Error(errorMessage);
-            }
-            
-            const modelIds = models
-                .map(m => m.id || m.model)
-                .filter(Boolean)
-                .sort();
-
-            $modelSelect.empty();
-            if (modelIds.length > 0) {
-                modelIds.forEach(modelId => {
-                    $modelSelect.append(jQuery('<option>', { value: modelId, text: modelId }));
-                });
-                showToastr('success', `成功加载 ${modelIds.length} 个模型！`);
-            } else {
-                showToastr('warning', 'API未返回任何可用模型。');
-            }
-
-        } catch (error) {
-            logError('加载模型列表时出错:', error);
-            showToastr('error', `加载模型列表失败: ${error.message}`);
-        } finally {
-            updateApiStatusDisplay($panel);
+            showToastr('success', `成功加载 ${models.length} 个模型！`);
+        } else {
+            showToastr('warning', 'API未返回任何可用模型。');
         }
+
+    } catch (error) {
+        logError('加载模型列表时出错:', error);
+        showToastr('error', `加载模型列表失败: ${error.message}`);
+    } finally {
+        updateApiStatusDisplay($panel);
     }
 }
 
