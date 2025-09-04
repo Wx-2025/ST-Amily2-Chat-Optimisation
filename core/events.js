@@ -1,1 +1,131 @@
-(function(_0x37ffd4,_0x51608f){const _0x54cc6e=_0xb6f7,_0x34916a=_0x37ffd4();while(!![]){try{const _0x14a35b=parseInt(_0x54cc6e(0x16f))/0x1*(-parseInt(_0x54cc6e(0x174))/0x2)+-parseInt(_0x54cc6e(0x184))/0x3+-parseInt(_0x54cc6e(0x185))/0x4*(-parseInt(_0x54cc6e(0x18d))/0x5)+parseInt(_0x54cc6e(0x171))/0x6*(parseInt(_0x54cc6e(0x170))/0x7)+parseInt(_0x54cc6e(0x189))/0x8*(-parseInt(_0x54cc6e(0x16c))/0x9)+-parseInt(_0x54cc6e(0x16e))/0xa*(-parseInt(_0x54cc6e(0x179))/0xb)+parseInt(_0x54cc6e(0x167))/0xc*(parseInt(_0x54cc6e(0x17f))/0xd);if(_0x14a35b===_0x51608f)break;else _0x34916a['push'](_0x34916a['shift']());}catch(_0x441b5a){_0x34916a['push'](_0x34916a['shift']());}}}(_0x5458,0xae27d));import{getContext,extension_settings}from'/scripts/extensions.js';import{saveChatConditional}from'/script.js';import{extensionName}from'../utils/settings.js';function _0xb6f7(_0x4dafd1,_0x54971f){const _0x54580a=_0x5458();return _0xb6f7=function(_0xb6f7e4,_0x2a6bf8){_0xb6f7e4=_0xb6f7e4-0x167;let _0x85326f=_0x54580a[_0xb6f7e4];return _0x85326f;},_0xb6f7(_0x4dafd1,_0x54971f);}import*as _0x4e9594 from'./table-system/manager.js';import*as _0x111e8c from'./table-system/executor.js';import{renderTables}from'../ui/table-bindings.js';function _0x5458(){const _0x23a030=['【监察系统-步骤2】推演完毕。是否有变化:\x20','365724ddlHIy','optimizationEnabled','enabled','log','forEach','9BWWUHS','warn','94070OmIsdD','6HFYqAj','8066849eOeCiM','6xjIeuS','【监察系统-步骤3】检测到变化，已将新状态写入消息\x20','is_user','171764eZSeGB','tableIndex','rowIndex','optimizedContent','[Amily2号-正文优化]\x20检测到消息并非AI对用户的直接回复，已跳过优化。','671dNSuWy','success','\x20是用户消息，无需处理。','table_system_enabled','executeCommands','[分步填表]\x20表格系统总开关已关闭，跳过分步填表处理。','247ZVdDCS','info','chat','【监察系统】接到圣旨，开始处理消息\x20ID:\x20','optimizationMode','3402777qWuYYP','2344IndvWe','...\x22','filling_mode','refresh','1798856BusqsT','error','\x20并保存。','saveStateToMessage','2410eFQQmP','length','main-api','max','slice','secondary-api','addHighlight','contextMessages','\x20加载了基准状态。','【监察系统】错误：未找到消息\x20ID:\x20','mes','【监察系统】检测到\x22分步填表\x22或\x22优化中填表\x22模式已启用，主API填表逻辑已自动禁用。','isWaitingForUserInput'];_0x5458=function(){return _0x23a030;};return _0x5458();}import{log}from'./table-system/logger.js';async function handleTableUpdate(_0x34bad4){const _0x361b89=_0xb6f7,_0x40b5aa=extension_settings[extensionName],_0x2aebeb=_0x40b5aa[_0x361b89(0x17c)]!==![];if(!_0x2aebeb){log('【监察系统】表格系统总开关已关闭，跳过所有表格处理。','info');return;}const _0x2f6c13=_0x40b5aa['filling_mode']||_0x361b89(0x18f);if(_0x2f6c13===_0x361b89(0x192)||_0x2f6c13==='optimized'){log(_0x361b89(0x198),_0x361b89(0x180));return;}log(_0x361b89(0x182)+_0x34bad4,_0x361b89(0x16d));const _0x193366=getContext(),_0x27aff6=_0x193366[_0x361b89(0x181)][_0x34bad4];if(!_0x27aff6){log(_0x361b89(0x196)+_0x34bad4+'，流程中止。','error');return;}if(_0x27aff6[_0x361b89(0x173)]){log('【监察系统】消息\x20ID:\x20'+_0x34bad4+_0x361b89(0x17b),_0x361b89(0x180));return;}log('【监察系统】正在处理的奏折内容:\x20\x22'+_0x27aff6[_0x361b89(0x197)]['substring'](0x0,0x32)+_0x361b89(0x186),_0x361b89(0x180));const _0x46b308=_0x4e9594['loadTables'](_0x34bad4);log('【监察系统-步骤1】为消息\x20'+_0x34bad4+_0x361b89(0x195),_0x361b89(0x180),_0x46b308);const {finalState:_0x25b032,hasChanges:_0x4f472f,changes:_0x338cda}=_0x111e8c[_0x361b89(0x17d)](_0x27aff6['mes'],_0x46b308);log(_0x361b89(0x19a)+_0x4f472f,_0x361b89(0x180),_0x25b032),_0x4f472f?(_0x338cda&&_0x338cda[_0x361b89(0x18e)]>0x0&&_0x338cda[_0x361b89(0x16b)](_0x37c937=>{const _0x321a59=_0x361b89;_0x4e9594[_0x321a59(0x193)](_0x37c937[_0x321a59(0x175)],_0x37c937[_0x321a59(0x176)],_0x37c937['colIndex']);}),_0x4e9594[_0x361b89(0x18c)](_0x25b032,_0x27aff6),_0x4e9594['setMemoryState'](_0x25b032),await saveChatConditional(),log(_0x361b89(0x172)+_0x34bad4+_0x361b89(0x18b),_0x361b89(0x17a))):log('【监察系统-步骤3】未检测到有效指令或变化，无需写入。',_0x361b89(0x180)),_0x4f472f&&renderTables();}import{processOptimization}from'./summarizer.js';import{executeAutoHide}from'./autoHideManager.js';import{checkAndTriggerAutoSummary}from'./historiographer.js';import{fillWithSecondaryApi}from'./table-system/secondary-filler.js';export async function onMessageReceived(_0x488f5c){const _0x1e7416=_0xb6f7,_0x176228=getContext();if(_0x488f5c&&_0x488f5c[_0x1e7416(0x173)]||_0x176228[_0x1e7416(0x199)])return;const _0x278c06=extension_settings[extensionName],_0x5ed7c1=_0x176228[_0x1e7416(0x181)];if(!_0x5ed7c1||_0x5ed7c1[_0x1e7416(0x18e)]===0x0)return;const _0x45507=_0x5ed7c1[_0x5ed7c1['length']-0x1];if(_0x45507['is_user'])return;const _0x1dbdfc=_0x278c06[_0x1e7416(0x17c)]!==![];await executeAutoHide();const _0x2dce5e=_0x278c06[_0x1e7416(0x169)]&&_0x278c06[_0x1e7416(0x168)]&&_0x278c06['apiUrl'];if(_0x2dce5e){if(_0x5ed7c1[_0x1e7416(0x18e)]>=0x2&&_0x5ed7c1[_0x5ed7c1['length']-0x2][_0x1e7416(0x173)]){const _0x5ca0c9=_0x278c06[_0x1e7416(0x194)]||0x2,_0xed3ec=Math[_0x1e7416(0x190)](0x0,_0x5ed7c1[_0x1e7416(0x18e)]-0x1-_0x5ca0c9),_0x25e4e8=_0x5ed7c1[_0x1e7416(0x191)](_0xed3ec,_0x5ed7c1[_0x1e7416(0x18e)]-0x1),_0x40c8ef=await processOptimization(_0x45507,_0x25e4e8);_0x40c8ef&&_0x40c8ef[_0x1e7416(0x177)]&&_0x40c8ef[_0x1e7416(0x177)]!==_0x45507[_0x1e7416(0x197)]&&(_0x45507[_0x1e7416(0x197)]=_0x40c8ef[_0x1e7416(0x177)],await saveChatConditional(),_0x278c06[_0x1e7416(0x183)]===_0x1e7416(0x188)&&await reloadCurrentChat());}else console[_0x1e7416(0x16a)](_0x1e7416(0x178));}if(_0x1dbdfc){const _0x25b885=_0x278c06[_0x1e7416(0x187)]||'main-api';_0x25b885===_0x1e7416(0x192)&&fillWithSecondaryApi(_0x45507);}else log(_0x1e7416(0x17e),_0x1e7416(0x180));((async()=>{const _0x4ddbd5=_0x1e7416;try{await new Promise(_0xd35529=>setTimeout(_0xd35529,0x64)),await checkAndTriggerAutoSummary();}catch(_0x46454a){console[_0x4ddbd5(0x18a)]('[大史官]\x20后台自动总结任务执行时发生错误:',_0x46454a);}})());}export{handleTableUpdate};
+import { getContext, extension_settings } from "/scripts/extensions.js";
+import { saveChatConditional } from "/script.js";
+import { extensionName } from "../utils/settings.js";
+import * as TableManager from './table-system/manager.js';
+import * as Executor from './table-system/executor.js';
+import { renderTables } from '../ui/table-bindings.js';
+import { log } from "./table-system/logger.js";
+
+async function handleTableUpdate(messageId) {
+    const settings = extension_settings[extensionName];
+    
+    const tableSystemEnabled = settings.table_system_enabled !== false;
+    if (!tableSystemEnabled) {
+        log('【监察系统】表格系统总开关已关闭，跳过所有表格处理。', 'info');
+        return;
+    }
+    
+    const fillingMode = settings.filling_mode || 'main-api';
+    if (fillingMode === 'secondary-api' || fillingMode === 'optimized') {
+        log('【监察系统】检测到"分步填表"或"优化中填表"模式已启用，主API填表逻辑已自动禁用。', 'info');
+        return;
+    }
+
+    log(`【监察系统】接到圣旨，开始处理消息 ID: ${messageId}`, 'warn');
+    const context = getContext();
+    const message = context.chat[messageId];
+
+    if (!message) {
+        log(`【监察系统】错误：未找到消息 ID: ${messageId}，流程中止。`, 'error');
+        return;
+    }
+    if (message.is_user) {
+        log(`【监察系统】消息 ID: ${messageId} 是用户消息，无需处理。`, 'info');
+        return;
+    }
+
+    log(`【监察系统】正在处理的奏折内容: "${message.mes.substring(0, 50)}..."`, 'info');
+
+    const initialState = TableManager.loadTables(messageId);
+    log(`【监察系统-步骤1】为消息 ${messageId} 加载了基准状态。`, 'info', initialState);
+
+    const { finalState, hasChanges, changes } = Executor.executeCommands(message.mes, initialState);
+    log(`【监察系统-步骤2】推演完毕。是否有变化: ${hasChanges}`, 'info', finalState);
+
+    if (hasChanges) {
+        if (changes && changes.length > 0) {
+            changes.forEach(change => {
+                TableManager.addHighlight(change.tableIndex, change.rowIndex, change.colIndex);
+            });
+        }
+
+        TableManager.saveStateToMessage(finalState, message);
+        TableManager.setMemoryState(finalState);
+        await saveChatConditional();
+        log(`【监察系统-步骤3】检测到变化，已将新状态写入消息 ${messageId} 并保存。`, 'success');
+    } else {
+        log(`【监察系统-步骤3】未检测到有效指令或变化，无需写入。`, 'info');
+    }
+
+    if (hasChanges) {
+        renderTables();
+    }
+}
+
+import { processOptimization } from "./summarizer.js";
+import { executeAutoHide } from './autoHideManager.js';
+import { checkAndTriggerAutoSummary } from './historiographer.js';
+import { fillWithSecondaryApi } from './table-system/secondary-filler.js';
+
+export async function onMessageReceived(data) {
+    const context = getContext();
+    if ((data && data.is_user) || context.isWaitingForUserInput) { return; }
+
+    const settings = extension_settings[extensionName];
+    const chat = context.chat;
+    if (!chat || chat.length === 0) { return; }
+
+    const latestMessage = chat[chat.length - 1];
+    if (latestMessage.is_user) { return; }
+
+    const tableSystemEnabled = settings.table_system_enabled !== false;
+    
+    await executeAutoHide();
+
+    const isOptimizationEnabled = settings.enabled && settings.optimizationEnabled && settings.apiUrl;
+    if (isOptimizationEnabled) {
+        if (chat.length >= 2 && chat[chat.length - 2].is_user) {
+            const contextCount = settings.contextMessages || 2;
+            const startIndex = Math.max(0, chat.length - 1 - contextCount);
+            const previousMessages = chat.slice(startIndex, chat.length - 1);
+            
+            const result = await processOptimization(latestMessage, previousMessages);
+
+            if (result && result.optimizedContent && result.optimizedContent !== latestMessage.mes) {
+                latestMessage.mes = result.optimizedContent;
+                await saveChatConditional();
+
+                setTimeout(() => {
+                    if (settings.optimizationMode === 'intercept') {
+                        const messageId = chat.length - 1;
+                        eventSource.emit(event_types.MESSAGE_EDITED, messageId, true);
+                    } else if (settings.optimizationMode === 'refresh') {
+                        reloadCurrentChat();
+                    }
+                }, 100);
+            }
+        } else {
+            console.log("[Amily2号-正文优化] 检测到消息并非AI对用户的直接回复，已跳过优化。");
+        }
+    }
+
+    if (tableSystemEnabled) {
+        const fillingMode = settings.filling_mode || 'main-api';
+        if (fillingMode === 'secondary-api') {
+            fillWithSecondaryApi(latestMessage);
+        }
+    } else {
+        log('[分步填表] 表格系统总开关已关闭，跳过分步填表处理。', 'info');
+    }
+
+    (async () => {
+        try {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            await checkAndTriggerAutoSummary();
+        } catch (error) {
+            console.error('[大史官] 后台自动总结任务执行时发生错误:', error);
+        }
+    })();
+}
+
+export { handleTableUpdate };
