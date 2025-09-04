@@ -1,1 +1,306 @@
-(function(_0x1be6b6,_0x39553d){const _0x28b683=_0x895d,_0x4c0656=_0x1be6b6();while(!![]){try{const _0x54efda=parseInt(_0x28b683(0xc7))/0x1*(-parseInt(_0x28b683(0xc5))/0x2)+parseInt(_0x28b683(0xab))/0x3+parseInt(_0x28b683(0xb4))/0x4+-parseInt(_0x28b683(0xaa))/0x5+-parseInt(_0x28b683(0xcb))/0x6*(parseInt(_0x28b683(0x94))/0x7)+parseInt(_0x28b683(0xcd))/0x8*(parseInt(_0x28b683(0xa2))/0x9)+parseInt(_0x28b683(0xa8))/0xa;if(_0x54efda===_0x39553d)break;else _0x4c0656['push'](_0x4c0656['shift']());}catch(_0x57b5f3){_0x4c0656['push'](_0x4c0656['shift']());}}}(_0x578a,0xe0d51));function _0x895d(_0x51a137,_0x5baee3){const _0x578ab9=_0x578a();return _0x895d=function(_0x895d70,_0x3d4aa8){_0x895d70=_0x895d70-0x93;let _0x5646be=_0x578ab9[_0x895d70];return _0x5646be;},_0x895d(_0x51a137,_0x5baee3);}import{getContext,extension_settings}from'/scripts/extensions.js';import{loadWorldInfo}from'/scripts/world-info.js';import{saveChat}from'/script.js';import{renderTables}from'../../ui/table-bindings.js';import{extensionName}from'../../utils/settings.js';import{updateTableFromText,getBatchFillerRuleTemplate,getBatchFillerFlowTemplate,convertTablesToCsvString,saveStateToMessage,getMemoryState}from'./manager.js';import{getPresetPrompts,getMixedOrder}from'../../PresetSettings/index.js';function _0x578a(){const _0x183199=['\x0a</对话记录>','（AI）最新消息，[核心处理内容]：','\x0a[...内容已截断]','thinkingFramework','[Amily2-副API]\x20消息内容为空，跳过填表任务。','entries','groupCollapsed','error','timeEnd','world_book_settings','filling_mode','join','min','请严格根据以下\x22最新消息\x22中的内容进行填写表格，并按照指定的格式输出，不要添加任何额外信息。\x0a\x0a<最新消息>\x0a','includes','amily2_prompt_presets_v2_mixed_order','[副API填表]\x20加载混合顺序失败:','getItem','push','chat','mes','slice','message','dir','AMILY2_SYSTEM_PARALYZED','map','content','prompt','length','[Amily2-副API]\x20使用默认\x20API\x20进行分步填表...','secondary_filler','replace','35mLCPaD','严重错误','context_reading_level','<对话记录>\x0a','【第\x20','char','values','groupEnd','historiographyExclusionRules','user','[Amily2-制裁]\x20系统完整性已受损，所有外交活动被无限期中止。','parse','name','#\x20通用表格转换思考框架\x0a##\x20核心原则\x0a1.\x20将叙事内容转化为结构化数据\x0a2.\x20聚焦关键元素变更\x0a3.\x20保证数据真实性与一致性\x0a##\x20思考流程\x20(<thinking></thinking>)\x0a请严格按此框架思考并在<thinking>标签内输出：\x0a<thinking>\x0a1.\x20【时间地点分析】\x0a\x20\x20\x20-\x20当前时态：现在是什么年份/季节/日期？具体几点几分？\x0a\x20\x20\x20-\x20空间定位：故事发生在什么场景(建筑/自然等)？具体位置？\x0a\x20\x20\x20-\x20变更检测：相比之前，时间地点是否有显著变化？\x0a2.\x20【角色动态分析】\x0a\x20\x20\x20-\x20在场角色：当前场景有哪些角色存在？\x0a\x20\x20\x20-\x20新增角色：是否有首次出现的角色？\x0a\x20\x20\x20-\x20角色变化：\x0a\x20\x20\x20\x20\x20-\x20外貌特征：体型/发型/穿戴着装\x0a\x20\x20\x20\x20\x20-\x20状态变化：受伤/情绪/随身物品\x0a\x20\x20\x20\x20\x20-\x20关系变动：新建立/改变的关系\x0a\x20\x20\x20-\x20角色语录：有否揭示角色背景的关键对话？\x0a3.\x20【任务进展追踪】\x0a\x20\x20\x20-\x20活跃任务：正在进行哪些重要事项？\x0a\x20\x20\x20-\x20新任务：是否产生新的承诺/任务？\x0a\x20\x20\x20-\x20状态更新：任何任务进度变化？\x0a\x20\x20\x20-\x20任务闭环：有无完成或失败的任务？\x0a4.\x20【关键物品识别】\x0a\x20\x20\x20-\x20特殊物品：有无意义重大的物品出现？\x0a\x20\x20\x20-\x20物品变动：\x0a\x20\x20\x20\x20\x20-\x20获取/丢失物品\x0a\x20\x20\x20\x20\x20-\x20使用/损耗情况\x0a\x20\x20\x20\x20\x20-\x20所有权变更\x0a5.\x20【系统指令响应】\x20(仅处理明确指令)\x0a\x20\x20\x20-\x20识别：是否有来自叙事者的指令？(括号标注)\x0a\x20\x20\x20-\x20响应：完全执行/拒绝无效指令\x0a6.\x20【逻辑校验】\x0a\x20\x20\x20-\x20矛盾解决：处理相互冲突的信息\x0a\x20\x20\x20-\x20数据溯源：标注信息提取位置(例：第3段)\x0a\x20\x20\x20-\x20过滤机制：忽略临时/不重要的描写\x0a\x20\x20\x20-\x20必须填表：无论表格是否为新，都需要结合正文与现有表格内容，进行更新。\x0a\x20\x20\x20-\x20必须填充：当内容为\x22未知\x22或者\x22无\x22的表格，必须结合现知内容补全。\x0a##\x20通用输出规范\x0a-\x20时间格式：YYYY-MM-DD\x20HH:MM\x0a-\x20地点格式：[建筑]>[具体位置]\x20(例：城堡>东侧塔楼)\x0a-\x20角色引用：统一使用全名首次出现\x0a-\x20状态标记：使用标准状态词(进行中/已完成/已取消)\x0a</thinking>\x0a<Amily2Edit>\x0a<!--\x0a(这里是你的填表内容)\x0a-->\x0a</Amily2Edit>\x0a<finsh>The\x20form\x20filling\x20work\x20has\x20been\x20completed.</finsh>','1520487LwlhJB','[Amily2-副API]\x20发生严重错误:','author','max_world_book_context_length','\x0a</最新消息>','（用户）最新消息：','23708650cTfzlE','substring','8790005vkuCTZ','4787406YsAGGB','trim','is_user','主API的URL或模型未配置，分步填表功能无法启动。','log','\x0a</世界书>','type','coreContent','historiographyTagExtractionEnabled','3662516tntrhP','[Amily2-副API]\x20未能获取AI响应内容。','books','split','secondary-api','secondaryApiUrlWarned','floor','nccsEnabled','\x20楼】\x20','[Amily2号-副API-原始回复]:','name1','无标题条目','副API填表失败:\x20','[Amily2-副API]\x20使用\x20Nccs\x20API\x20进行分步填表...','name2','system','max','34ERkukW','[来源：世界书，条目名字：','82730EhVLnf','contextHistory','flowTemplate','lastIndexOf','1159098OlqXZu','filter','8dgEnje','Amily2-分步填表','main-api'];_0x578a=function(){return _0x183199;};return _0x578a();}import{callAI,generateRandomSeed}from'../api.js';import{callNccsAI}from'../api/NccsApi.js';import{extractBlocksByTags,applyExclusionRules}from'../utils/rag-tag-extractor.js';async function getWorldBookContext(){const _0x5d912e=_0x895d,_0x46ab03=extension_settings[extensionName],_0x14eef5=_0x46ab03[_0x5d912e(0xd9)]||{},_0x365e41=_0x14eef5[_0x5d912e(0xb6)]||[],_0x1a09d1=_0x14eef5[_0x5d912e(0xd5)]||[];if(_0x365e41[_0x5d912e(0xec)]===0x0||_0x1a09d1[_0x5d912e(0xec)]===0x0)return'';const _0x46ae33=await loadWorldInfo();let _0x540226='';for(const _0x35efbd of _0x46ae33){if(_0x365e41[_0x5d912e(0xde)](_0x35efbd[_0x5d912e(0xa0)])){const _0x51560e=_0x35efbd[_0x5d912e(0xd5)]?_0x35efbd:JSON['parse'](_0x35efbd['content']);for(const _0x4d2625 of Object[_0x5d912e(0x9a)](_0x51560e[_0x5d912e(0xd5)])){_0x1a09d1[_0x5d912e(0xde)](String(_0x4d2625['uid']))&&(_0x540226+=_0x5d912e(0xc6)+(_0x4d2625['comment']||_0x5d912e(0xbf))+']\x0a'+_0x4d2625[_0x5d912e(0xea)]+'\x0a\x0a');}}}const _0xd6927e=_0x46ab03[_0x5d912e(0xa5)]||0x7d0;if(_0x540226['length']>_0xd6927e){_0x540226=_0x540226[_0x5d912e(0xa9)](0x0,_0xd6927e);const _0x5da258=_0x540226[_0x5d912e(0xca)]('\x0a');_0x5da258!==-0x1&&(_0x540226=_0x540226[_0x5d912e(0xa9)](0x0,_0x5da258)),_0x540226+=_0x5d912e(0xd2);}return _0x540226[_0x5d912e(0xac)]()?'<世界书>\x0a'+_0x540226['trim']()+_0x5d912e(0xb0):'';}export async function fillWithSecondaryApi(_0x1807cd){const _0x43bddb=_0x895d,_0x1bfb8c=extension_settings[extensionName],_0x26e87c=_0x1bfb8c['filling_mode']||_0x43bddb(0xcf);if(_0x26e87c!=='secondary-api')return;if(window[_0x43bddb(0xe8)]===!![]){console[_0x43bddb(0xd7)](_0x43bddb(0x9e));return;}const {apiUrl:_0x1c78fa,apiKey:_0x54a659,model:_0x3d6b81,temperature:_0x22df9c,maxTokens:_0x121afc,forceProxyForCustomApi:_0x414c2c}=_0x1bfb8c;if(!_0x1c78fa||!_0x3d6b81){!window['secondaryApiUrlWarned']&&(toastr[_0x43bddb(0xd7)](_0x43bddb(0xae),_0x43bddb(0xce)),window[_0x43bddb(0xb9)]=!![]);return;}try{const _0x550dd8=_0x1807cd['mes'];if(!_0x550dd8||!_0x550dd8[_0x43bddb(0xac)]()){console[_0x43bddb(0xaf)](_0x43bddb(0xd4)),console[_0x43bddb(0xd8)]('副API填表任务总耗时'),console[_0x43bddb(0x9b)]();return;}const _0x5c6214=getContext(),_0x2263a2=_0x5c6214[_0x43bddb(0xbe)]||'用户',_0x2d89de=_0x5c6214['name2']||'角色',_0x891121=_0x5c6214[_0x43bddb(0xe3)],_0x295214=_0x891121[_0x43bddb(0xec)]>0x1&&_0x891121[_0x891121['length']-0x2][_0x43bddb(0xad)]?_0x891121[_0x891121[_0x43bddb(0xec)]-0x2]:null,_0x5bdfe4=_0x295214?_0x2263a2+_0x43bddb(0xa7)+_0x295214[_0x43bddb(0xe4)]+'\x0a'+_0x2d89de+_0x43bddb(0xd1)+_0x550dd8:_0x2d89de+_0x43bddb(0xd1)+_0x550dd8;let _0x5d0d24;try{const _0x49e68d=localStorage[_0x43bddb(0xe1)](_0x43bddb(0xdf));_0x49e68d&&(_0x5d0d24=JSON[_0x43bddb(0x9f)](_0x49e68d));}catch(_0x380e25){console[_0x43bddb(0xd7)](_0x43bddb(0xe0),_0x380e25);}const _0x2e2d86=getMixedOrder(_0x43bddb(0xee))||[],_0x6112dd=getPresetPrompts(_0x43bddb(0xee)),_0xe9bd5c=[{'role':_0x43bddb(0xc3),'content':generateRandomSeed()}],_0x3f9acf=await getWorldBookContext(),_0x162dd3=getBatchFillerRuleTemplate(),_0x23858a=getBatchFillerFlowTemplate(),_0x207116=convertTablesToCsvString(),_0x4f75b9=_0x23858a[_0x43bddb(0x93)]('{{{Amily2TableData}}}',_0x207116);let _0x52b479=0x0;for(const _0x16c6e of _0x2e2d86){if(_0x16c6e[_0x43bddb(0xb1)]===_0x43bddb(0xeb))_0x6112dd&&_0x6112dd[_0x52b479]&&(_0xe9bd5c[_0x43bddb(0xe2)](_0x6112dd[_0x52b479]),_0x52b479++);else{if(_0x16c6e[_0x43bddb(0xb1)]==='conditional')switch(_0x16c6e['id']){case'worldbook':_0x3f9acf&&_0xe9bd5c[_0x43bddb(0xe2)]({'role':_0x43bddb(0xc3),'content':_0x3f9acf});break;case _0x43bddb(0xc8):const _0x38fb3e=_0x1bfb8c[_0x43bddb(0x96)]||0x4;if(_0x38fb3e>0x0){const _0x8e41b7=await getHistoryContext(_0x38fb3e);_0x8e41b7&&_0xe9bd5c[_0x43bddb(0xe2)]({'role':'system','content':_0x8e41b7});}break;case'ruleTemplate':_0xe9bd5c[_0x43bddb(0xe2)]({'role':_0x43bddb(0xc3),'content':_0x162dd3});break;case _0x43bddb(0xc9):_0xe9bd5c['push']({'role':_0x43bddb(0xc3),'content':_0x4f75b9});break;case _0x43bddb(0xb2):_0xe9bd5c['push']({'role':_0x43bddb(0x9d),'content':_0x43bddb(0xdd)+_0x5bdfe4+_0x43bddb(0xa6)});break;case _0x43bddb(0xd3):_0xe9bd5c[_0x43bddb(0xe2)]({'role':'system','content':_0x43bddb(0xa1)});break;}}}const _0x14f93c=_0x1bfb8c[_0x43bddb(0xda)]||_0x43bddb(0xcf);_0x14f93c===_0x43bddb(0xb8)&&(console[_0x43bddb(0xd6)]('[Amily2\x20分步填表]\x20即将发送至\x20API\x20的内容'),console[_0x43bddb(0xe7)](_0xe9bd5c),console[_0x43bddb(0x9b)]());let _0x1abf7;_0x1bfb8c[_0x43bddb(0xbb)]?(console['log'](_0x43bddb(0xc1)),_0x1abf7=await callNccsAI(_0xe9bd5c)):(console[_0x43bddb(0xaf)](_0x43bddb(0xed)),_0x1abf7=await callAI(_0xe9bd5c));if(!_0x1abf7){console[_0x43bddb(0xd7)](_0x43bddb(0xb5));return;}console[_0x43bddb(0xaf)](_0x43bddb(0xbd),_0x1abf7),updateTableFromText(_0x1abf7);const _0x1a208e=getContext();if(_0x1a208e[_0x43bddb(0xe3)]&&_0x1a208e[_0x43bddb(0xe3)][_0x43bddb(0xec)]>0x0){const _0x24ce53=_0x1a208e[_0x43bddb(0xe3)][_0x1a208e[_0x43bddb(0xe3)][_0x43bddb(0xec)]-0x1];if(saveStateToMessage(getMemoryState(),_0x24ce53)){saveChat(),renderTables();return;}}saveChatDebounced();}catch(_0x3bf078){console[_0x43bddb(0xd7)](_0x43bddb(0xa3),_0x3bf078),toastr[_0x43bddb(0xd7)](_0x43bddb(0xc0)+_0x3bf078[_0x43bddb(0xe6)],_0x43bddb(0x95));}}async function getHistoryContext(_0x563768){const _0x398600=_0x895d,_0x4a7e2d=getContext(),_0x17760b=_0x4a7e2d[_0x398600(0xe3)],_0x3b74ea=extension_settings[extensionName];if(!_0x17760b||_0x17760b['length']===0x0||_0x563768<=0x0)return null;const _0x1e16a5=Math[_0x398600(0xdc)](_0x563768*0x2,Math[_0x398600(0xc4)](0x0,_0x17760b[_0x398600(0xec)]-0x2)),_0x3847aa=Math['max'](0x0,_0x17760b[_0x398600(0xec)]-_0x1e16a5-0x2),_0x251be0=Math[_0x398600(0xc4)](0x0,_0x17760b['length']-0x2),_0x152385=_0x17760b[_0x398600(0xe5)](_0x3847aa,_0x251be0),_0x5b1b69=_0x4a7e2d['name1']||'用户',_0x1224fe=_0x4a7e2d[_0x398600(0xc2)]||'角色',_0x1d04ad=_0x3b74ea[_0x398600(0xb3)]??![],_0x2a80c4=_0x1d04ad?(_0x3b74ea['historiographyTags']||'')[_0x398600(0xb7)](',')[_0x398600(0xe9)](_0x30c242=>_0x30c242['trim']())[_0x398600(0xcc)](Boolean):[],_0x49ccd1=_0x3b74ea[_0x398600(0x9c)]||[],_0x1c7d04=_0x152385[_0x398600(0xe9)]((_0x4a8bfa,_0x1efaae)=>{const _0xaeed2b=_0x398600;let _0x37589d=_0x4a8bfa['mes'];if(_0x1d04ad&&_0x2a80c4['length']>0x0){const _0x4b4fdb=extractBlocksByTags(_0x37589d,_0x2a80c4);_0x4b4fdb[_0xaeed2b(0xec)]>0x0&&(_0x37589d=_0x4b4fdb['join']('\x0a\x0a'));}_0x37589d=applyExclusionRules(_0x37589d,_0x49ccd1);if(!_0x37589d[_0xaeed2b(0xac)]())return null;return{'floor':_0x3847aa+_0x1efaae+0x1,'author':_0x4a8bfa['is_user']?_0x5b1b69:_0x1224fe,'authorType':_0x4a8bfa[_0xaeed2b(0xad)]?_0xaeed2b(0x9d):_0xaeed2b(0x99),'content':_0x37589d[_0xaeed2b(0xac)]()};})[_0x398600(0xcc)](Boolean);if(_0x1c7d04[_0x398600(0xec)]===0x0)return null;const _0x5ba44a=_0x1c7d04['map'](_0x7a2fa8=>_0x398600(0x98)+_0x7a2fa8[_0x398600(0xba)]+_0x398600(0xbc)+_0x7a2fa8[_0x398600(0xa4)]+':\x20'+_0x7a2fa8[_0x398600(0xea)])[_0x398600(0xdb)]('\x0a');return _0x398600(0x97)+_0x5ba44a+_0x398600(0xd0);}
+import { getContext, extension_settings } from "/scripts/extensions.js";
+import { loadWorldInfo } from "/scripts/world-info.js";
+import { saveChat } from "/script.js";
+import { renderTables } from '../../ui/table-bindings.js';
+import { extensionName } from "../../utils/settings.js";
+import { updateTableFromText, getBatchFillerRuleTemplate, getBatchFillerFlowTemplate, convertTablesToCsvString, saveStateToMessage, getMemoryState } from './manager.js';
+import { getPresetPrompts, getMixedOrder } from '../../PresetSettings/index.js';
+import { callAI, generateRandomSeed } from '../api.js';
+import { callNccsAI } from '../api/NccsApi.js';
+import { extractBlocksByTags, applyExclusionRules } from '../utils/rag-tag-extractor.js';
+
+
+async function getWorldBookContext() {
+    const settings = extension_settings[extensionName];
+    const worldBookSettings = settings.world_book_settings || {};
+    const booksToInclude = worldBookSettings.books || [];
+    const entriesToInclude = worldBookSettings.entries || [];
+
+    if (booksToInclude.length === 0 || entriesToInclude.length === 0) {
+        return '';
+    }
+
+    const worldBooks = await loadWorldInfo();
+    let content = '';
+
+    for (const book of worldBooks) {
+        if (booksToInclude.includes(book.name)) {
+            const bookData = book.entries ? book : JSON.parse(book.content);
+            for (const entry of Object.values(bookData.entries)) {
+                if (entriesToInclude.includes(String(entry.uid))) {
+                    content += `[来源：世界书，条目名字：${entry.comment || '无标题条目'}]\n${entry.content}\n\n`;
+                }
+            }
+        }
+    }
+    
+    const maxChars = settings.max_world_book_context_length || 2000;
+    if (content.length > maxChars) {
+        content = content.substring(0, maxChars);
+        const lastNewline = content.lastIndexOf('\n');
+        if (lastNewline !== -1) {
+            content = content.substring(0, lastNewline);
+        }
+        content += '\n[...内容已截断]';
+    }
+
+    return content.trim() ? `<世界书>\n${content.trim()}\n</世界书>` : '';
+}
+
+export async function fillWithSecondaryApi(latestMessage) {
+    const context = getContext();
+    if (context.chat.length <= 1) {
+        console.log("[Amily2-副API] 聊天刚开始，跳过本次自动填表。");
+        return;
+    }
+
+    const settings = extension_settings[extensionName];
+
+    const fillingMode = settings.filling_mode || 'main-api';
+    if (fillingMode !== 'secondary-api') {
+        return; 
+    }
+
+    if (window.AMILY2_SYSTEM_PARALYZED === true) {
+        console.error("[Amily2-制裁] 系统完整性已受损，所有外交活动被无限期中止。");
+        return;
+    }
+
+    const { apiUrl, apiKey, model, temperature, maxTokens, forceProxyForCustomApi } = settings;
+    if (!apiUrl || !model) {
+        if (!window.secondaryApiUrlWarned) {
+            toastr.error("主API的URL或模型未配置，分步填表功能无法启动。", "Amily2-分步填表");
+            window.secondaryApiUrlWarned = true;
+        }
+        return;
+    }
+
+    try {
+        const textToProcess = latestMessage.mes;
+        if (!textToProcess || !textToProcess.trim()) {
+            console.log("[Amily2-副API] 消息内容为空，跳过填表任务。");
+            console.timeEnd("副API填表任务总耗时");
+            console.groupEnd();
+            return;
+        }
+
+        const context = getContext();
+        const userName = context.name1 || '用户';
+        const characterName = context.name2 || '角色';
+
+        const chat = context.chat;
+        const lastUserMessage = chat.length > 1 && chat[chat.length - 2].is_user ? chat[chat.length - 2] : null;
+        const currentInteractionContent = lastUserMessage 
+            ? `${userName}（用户）最新消息：${lastUserMessage.mes}\n${characterName}（AI）最新消息，[核心处理内容]：${textToProcess}`
+            : `${characterName}（AI）最新消息，[核心处理内容]：${textToProcess}`;
+
+        let mixedOrder;
+        try {
+            const savedOrder = localStorage.getItem('amily2_prompt_presets_v2_mixed_order');
+            if (savedOrder) {
+                mixedOrder = JSON.parse(savedOrder);
+            }
+        } catch (e) {
+            console.error("[副API填表] 加载混合顺序失败:", e);
+        }
+
+
+        const order = getMixedOrder('secondary_filler') || [];
+
+
+        const presetPrompts = getPresetPrompts('secondary_filler');
+        
+        const messages = [
+            { role: 'system', content: generateRandomSeed() }
+        ];
+
+        const worldBookContext = await getWorldBookContext();
+
+        const ruleTemplate = getBatchFillerRuleTemplate();
+        const flowTemplate = getBatchFillerFlowTemplate();
+        const currentTableDataString = convertTablesToCsvString();
+        const finalFlowPrompt = flowTemplate.replace('{{{Amily2TableData}}}', currentTableDataString);
+
+        let promptCounter = 0; 
+        for (const item of order) {
+            if (item.type === 'prompt') {
+                if (presetPrompts && presetPrompts[promptCounter]) {
+                    messages.push(presetPrompts[promptCounter]);
+                    promptCounter++; 
+                }
+            } else if (item.type === 'conditional') {
+                switch (item.id) {
+                    case 'worldbook':
+                        if (worldBookContext) {
+                            messages.push({ role: "system", content: worldBookContext });
+                        }
+                        break;
+                    case 'contextHistory':
+                        const contextReadingLevel = settings.context_reading_level || 4;
+                        if (contextReadingLevel > 0) {
+                            const historyContext = await getHistoryContext(contextReadingLevel);
+                            if (historyContext) {
+                                messages.push({ role: "system", content: historyContext });
+                            }
+                        }
+                        break;
+                    case 'ruleTemplate':
+                        messages.push({ role: "system", content: ruleTemplate });
+                        break;
+                    case 'flowTemplate':
+                        messages.push({ role: "system", content: finalFlowPrompt });
+                        break;
+                    case 'coreContent':
+                        messages.push({ role: 'user', content: `请严格根据以下"最新消息"中的内容进行填写表格，并按照指定的格式输出，不要添加任何额外信息。\n\n<最新消息>\n${currentInteractionContent}\n</最新消息>` });
+                        break;
+                    case 'thinkingFramework':
+                        messages.push({ role: "system", content: `# 通用表格转换思考框架
+## 核心原则
+1. 将叙事内容转化为结构化数据
+2. 聚焦关键元素变更
+3. 保证数据真实性与一致性
+## 思考流程 (<thinking></thinking>)
+请严格按此框架思考并在<thinking>标签内输出：
+<thinking>
+1. 【时间地点分析】
+   - 当前时态：现在是什么年份/季节/日期？具体几点几分？
+   - 空间定位：故事发生在什么场景(建筑/自然等)？具体位置？
+   - 变更检测：相比之前，时间地点是否有显著变化？
+2. 【角色动态分析】
+   - 在场角色：当前场景有哪些角色存在？
+   - 新增角色：是否有首次出现的角色？
+   - 角色变化：
+     - 外貌特征：体型/发型/穿戴着装
+     - 状态变化：受伤/情绪/随身物品
+     - 关系变动：新建立/改变的关系
+   - 角色语录：有否揭示角色背景的关键对话？
+3. 【任务进展追踪】
+   - 活跃任务：正在进行哪些重要事项？
+   - 新任务：是否产生新的承诺/任务？
+   - 状态更新：任何任务进度变化？
+   - 任务闭环：有无完成或失败的任务？
+4. 【关键物品识别】
+   - 特殊物品：有无意义重大的物品出现？
+   - 物品变动：
+     - 获取/丢失物品
+     - 使用/损耗情况
+     - 所有权变更
+5. 【系统指令响应】 (仅处理明确指令)
+   - 识别：是否有来自叙事者的指令？(括号标注)
+   - 响应：完全执行/拒绝无效指令
+6. 【逻辑校验】
+   - 矛盾解决：处理相互冲突的信息
+   - 数据溯源：标注信息提取位置(例：第3段)
+   - 过滤机制：忽略临时/不重要的描写
+   - 必须填表：无论表格是否为新，都需要结合正文与现有表格内容，进行更新。
+   - 必须填充：当内容为"未知"或者"无"的表格，必须结合现知内容补全。
+## 通用输出规范
+- 时间格式：YYYY-MM-DD HH:MM
+- 地点格式：[建筑]>[具体位置] (例：城堡>东侧塔楼)
+- 角色引用：统一使用全名首次出现
+- 状态标记：使用标准状态词(进行中/已完成/已取消)
+</thinking>
+<Amily2Edit>
+<!--
+(这里是你的填表内容)
+-->
+</Amily2Edit>
+<finsh>The form filling work has been completed.</finsh>` });
+                        break;
+                }
+            }
+        }
+
+        const fillingMode = settings.filling_mode || 'main-api';
+        if (fillingMode === 'secondary-api') {
+            console.groupCollapsed(`[Amily2 分步填表] 即将发送至 API 的内容`);
+            console.dir(messages);
+            console.groupEnd();
+        }
+
+        let rawContent;
+        if (settings.nccsEnabled) {
+            console.log('[Amily2-副API] 使用 Nccs API 进行分步填表...');
+            rawContent = await callNccsAI(messages);
+        } else {
+            console.log('[Amily2-副API] 使用默认 API 进行分步填表...');
+            rawContent = await callAI(messages);
+        }
+
+        if (!rawContent) {
+            console.error('[Amily2-副API] 未能获取AI响应内容。');
+            return;
+        }
+
+        console.log("[Amily2号-副API-原始回复]:", rawContent);
+
+        updateTableFromText(rawContent);
+
+        const currentContext = getContext();
+        if (currentContext.chat && currentContext.chat.length > 0) {
+            const lastMessage = currentContext.chat[currentContext.chat.length - 1];
+            if (saveStateToMessage(getMemoryState(), lastMessage)) {
+                saveChat();
+                renderTables(); 
+                return;
+            }
+        }
+        saveChatDebounced(); 
+
+    } catch (error) {
+        console.error(`[Amily2-副API] 发生严重错误:`, error);
+        toastr.error(`副API填表失败: ${error.message}`, "严重错误");
+    }
+}
+
+async function getHistoryContext(contextLevel) {
+    const context = getContext();
+    const chat = context.chat;
+    const settings = extension_settings[extensionName];
+    
+    if (!chat || chat.length === 0 || contextLevel <= 0) {
+        return null;
+    }
+
+    const messagesToExtract = Math.min(contextLevel * 2, Math.max(0, chat.length - 2));
+    const startIndex = Math.max(0, chat.length - messagesToExtract - 2);
+    const endIndex = Math.max(0, chat.length - 2);
+
+    const historySlice = chat.slice(startIndex, endIndex);
+    const userName = context.name1 || '用户';
+    const characterName = context.name2 || '角色';
+
+    const useTagExtraction = settings.historiographyTagExtractionEnabled ?? false;
+    const tagsToExtract = useTagExtraction ? (settings.historiographyTags || '').split(',').map(t => t.trim()).filter(Boolean) : [];
+    const exclusionRules = settings.historiographyExclusionRules || [];
+    
+    const messages = historySlice.map((msg, index) => {
+        let content = msg.mes;
+
+        if (useTagExtraction && tagsToExtract.length > 0) {
+            const blocks = extractBlocksByTags(content, tagsToExtract);
+            if (blocks.length > 0) {
+                content = blocks.join('\n\n');
+            }
+        }
+        
+        content = applyExclusionRules(content, exclusionRules);
+
+        if (!content.trim()) return null;
+        
+        return {
+            floor: startIndex + index + 1, 
+            author: msg.is_user ? userName : characterName,
+            authorType: msg.is_user ? 'user' : 'char',
+            content: content.trim()
+        };
+    }).filter(Boolean);
+    
+    if (messages.length === 0) {
+        return null;
+    }
+
+    const formattedHistory = messages.map(m => `【第 ${m.floor} 楼】 ${m.author}: ${m.content}`).join('\n');
+
+    return `<对话记录>\n${formattedHistory}\n</对话记录>`;
+}
