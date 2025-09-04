@@ -305,7 +305,7 @@ export async function fetchNccsModels() {
             const models = Array.isArray(rawData) ? rawData : (rawData.data || rawData.models || []);
 
             if (!Array.isArray(models)) {
-                const errorMessage = result.error?.message || 'API未返回有效的模型列表数组';
+                const errorMessage = rawData.error?.message || 'API未返回有效的模型列表数组';
                 throw new Error(errorMessage);
             }
 
