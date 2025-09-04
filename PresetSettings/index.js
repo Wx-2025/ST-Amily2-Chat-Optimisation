@@ -347,7 +347,8 @@ function migrateFromOldVersion() {
             };
             
             toastr.info("旧版本设置已成功迁移！");
-
+            
+            // 迁移后删除旧数据
             localStorage.removeItem(oldSettingsKey);
             localStorage.removeItem(oldSettingsKey + '_mixed_order');
         } catch (e) {
@@ -385,6 +386,7 @@ function loadActivePreset() {
         let isMigrated = false;
         const sectionsToMigrate = ['batch_filler', 'secondary_filler', 'reorganizer'];
 
+        // 检查并补充缺失的 section
         sectionsToMigrate.forEach(sectionKey => {
             if (!currentPresets[sectionKey]) {
                 currentPresets[sectionKey] = JSON.parse(JSON.stringify(defaultPrompts[sectionKey]));
@@ -396,6 +398,7 @@ function loadActivePreset() {
             }
         });
 
+        // 为 reorganizer 添加一次性迁移逻辑
         if (currentMixedOrder.reorganizer && currentMixedOrder.reorganizer.some(item => item.id === 'thinkingFramework')) {
             console.log("Amily2: 检测到旧版 reorganizer 配置，正在执行一次性迁移...");
             currentPresets.reorganizer = JSON.parse(JSON.stringify(defaultPrompts.reorganizer));
@@ -406,7 +409,8 @@ function loadActivePreset() {
         sectionsToMigrate.forEach(sectionKey => {
             const order = currentMixedOrder[sectionKey] || [];
             let sectionMigrated = false;
-
+            
+            // 迁移 worldbook 条件块
             if (!order.some(item => item.type === 'conditional' && item.id === 'worldbook')) {
                 const worldBookBlock = { type: 'conditional', id: 'worldbook' };
                 let ruleTemplateIndex = order.findIndex(item => item.type === 'conditional' && item.id === 'ruleTemplate');
@@ -424,6 +428,7 @@ function loadActivePreset() {
                 sectionMigrated = true;
             }
             
+            // 迁移 contextHistory 条件块（仅secondary_filler）
             if (sectionKey === 'secondary_filler' && !order.some(item => item.type === 'conditional' && item.id === 'contextHistory')) {
                 const contextHistoryBlock = { type: 'conditional', id: 'contextHistory' };
                 let worldbookIndex = order.findIndex(item => item.type === 'conditional' && item.id === 'worldbook');
@@ -1620,7 +1625,7 @@ function bindDragEvents(context) {
             newIndex = Math.max(0, Math.min(newIndex, order.length));
             order.splice(newIndex, 0, draggedElement);
             
-            console.log('Amily2: 拖拽完成 - 自动保存:', { 
+            console.log('Amily2: 拖拽完成:', { 
                 from: draggedOrderIndex, 
                 to: newIndex, 
                 section: draggedSection 
@@ -1633,28 +1638,10 @@ function bindDragEvents(context) {
                     $(this).attr('data-order-index', index);
                 });
             }
-
-            autoSaveDragChanges();
+            toastr.info('顺序已调整，请点击保存按钮以生效。', '', { timeOut: 3000 });
         }
     }
 
-    function autoSaveDragChanges() {
-        try {
-            const activePresetName = presetManager.activePreset;
-            if (presetManager.presets[activePresetName]) {
-                presetManager.presets[activePresetName].prompts = JSON.parse(JSON.stringify(currentPresets));
-                presetManager.presets[activePresetName].mixedOrder = JSON.parse(JSON.stringify(currentMixedOrder));
-            }
-
-            localStorage.setItem(SETTINGS_KEY, JSON.stringify(presetManager));
-            
-            console.log('Amily2: 拖拽排序已自动保存');
-            toastr.success('拖拽排序已自动保存！', '', { timeOut: 2000 });
-        } catch (error) {
-            console.error('Amily2: 自动保存失败:', error);
-            toastr.warning('拖拽完成，请点击保存按钮手动保存');
-        }
-    }
 
     function resetDragState() {
         if (draggedItem) {
@@ -1981,7 +1968,7 @@ function bindDragEventsForItem($item, context) {
             newIndex = Math.max(0, Math.min(newIndex, order.length));
             order.splice(newIndex, 0, draggedElement);
             
-            console.log('Amily2: 新元素拖拽完成 - 自动保存:', { 
+            console.log('Amily2: 新元素拖拽完成:', { 
                 from: draggedOrderIndex, 
                 to: newIndex, 
                 section: draggedSection 
@@ -1994,29 +1981,10 @@ function bindDragEventsForItem($item, context) {
                     $(this).attr('data-order-index', index);
                 });
             }
-
-            autoSaveDragChangesForNewItem();
+            toastr.info('顺序已调整，请点击保存按钮以生效。', '', { timeOut: 3000 });
         }
     }
 
-    function autoSaveDragChangesForNewItem() {
-        try {
-
-            const activePresetName = presetManager.activePreset;
-            if (presetManager.presets[activePresetName]) {
-                presetManager.presets[activePresetName].prompts = JSON.parse(JSON.stringify(currentPresets));
-                presetManager.presets[activePresetName].mixedOrder = JSON.parse(JSON.stringify(currentMixedOrder));
-            }
-
-            localStorage.setItem(SETTINGS_KEY, JSON.stringify(presetManager));
-            
-            console.log('Amily2: 新元素拖拽排序已自动保存');
-            toastr.success('拖拽排序已自动保存！', '', { timeOut: 2000 });
-        } catch (error) {
-            console.error('Amily2: 新元素拖拽自动保存失败:', error);
-            toastr.warning('拖拽完成，请点击保存按钮手动保存');
-        }
-    }
 
     function resetDragStateForNewItem() {
         if (draggedItem) {
