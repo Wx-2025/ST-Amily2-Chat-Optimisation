@@ -865,6 +865,7 @@ export function bindTableEvents() {
     const renderAll = () => {
         renderTables();
         bindInjectionSettings();
+        bindTemplateEditors(); // 【V138.1 修复】确保导入预设后，提示词编辑器也能立即刷新
     };
 
     renderAll();
