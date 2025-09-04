@@ -256,6 +256,7 @@ export async function fetchNgmsModels() {
     
     try {
         if (apiSettings.apiMode === 'sillytavern_preset') {
+            // SillyTavern预设模式：获取当前预设的模型
             const context = getContext();
             if (!context?.extensionSettings?.connectionManager?.profiles) {
                 throw new Error('无法获取SillyTavern配置文件列表');
@@ -301,21 +302,25 @@ export async function fetchNgmsModels() {
             }
 
             const rawData = await response.json();
-            const result = normalizeApiResponse(rawData);
-            const models = result.data || [];
+            const models = Array.isArray(rawData) ? rawData : (rawData.data || rawData.models || []);
 
-            if (result.error || !Array.isArray(models)) {
+            if (!Array.isArray(models)) {
                 const errorMessage = result.error?.message || 'API未返回有效的模型列表数组';
                 throw new Error(errorMessage);
             }
 
             const formattedModels = models
-                .map(m => ({
-                    id: m.id || m.model || m,
-                    name: m.id || m.model || m
-                }))
+                .map(m => {
+                    // 从name字段中提取模型名称，去掉"models/"前缀
+                    const modelIdRaw = m.name || m.id || m.model || m;
+                    const modelName = String(modelIdRaw).replace(/^models\//, '');
+                    return {
+                        id: modelName,
+                        name: modelName
+                    };
+                })
                 .filter(m => m.id)
-                .sort((a, b) => a.name.localeCompare(b.name));
+                .sort((a, b) => String(a.name).localeCompare(String(b.name)));
 
             console.log('[Amily2号-Ngms外交部] 全兼容模式获取到模型:', formattedModels);
             return formattedModels;
