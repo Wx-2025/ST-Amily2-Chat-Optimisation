@@ -310,12 +310,17 @@ export async function fetchNccsModels() {
             }
 
             const formattedModels = models
-                .map(m => ({
-                    id: m.id || m.model || m,
-                    name: m.id || m.model || m
-                }))
+                .map(m => {
+                    // 从name字段中提取模型名称，去掉"models/"前缀
+                    const modelIdRaw = m.name || m.id || m.model || m;
+                    const modelName = String(modelIdRaw).replace(/^models\//, '');
+                    return {
+                        id: modelName,
+                        name: modelName
+                    };
+                })
                 .filter(m => m.id)
-                .sort((a, b) => a.name.localeCompare(b.name));
+                .sort((a, b) => String(a.name).localeCompare(String(b.name)));
 
             console.log('[Amily2号-Nccs外交部] 全兼容模式获取到模型:', formattedModels);
             return formattedModels;
