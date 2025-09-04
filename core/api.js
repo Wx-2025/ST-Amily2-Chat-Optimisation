@@ -240,18 +240,26 @@ async function fetchOpenAITestModels(apiUrl, apiKey) {
     }
 
     const rawData = await response.json();
-    const result = normalizeApiResponse(rawData);
-    const models = result.data || [];
+    const models = Array.isArray(rawData) ? rawData : (rawData.data || rawData.models || []);
 
-    if (result.error || !Array.isArray(models)) {
-        const errorMessage = result.error?.message || 'API未返回有效的模型列表数组';
+    if (!Array.isArray(models)) {
+        const errorMessage = 'API未返回有效的模型列表数组';
         throw new Error(errorMessage);
     }
-    
-    return models
-        .map(m => m.id || m.model)
-        .filter(Boolean)
-        .sort();
+
+    const formattedModels = models
+        .map(m => {
+            const modelName = m.name ? m.name.replace('models/', '') : (m.id || m.model || m);
+            return {
+                id: m.name || m.id || m.model || m,
+                name: modelName
+            };
+        })
+        .filter(m => m.id)
+        .sort((a, b) => String(a.name).localeCompare(String(b.name)));
+
+    console.log('[Amily2号-使节团] 全兼容(测试)模式获取到模型:', formattedModels);
+    return formattedModels.map(m => m.name);
 }
 
 
