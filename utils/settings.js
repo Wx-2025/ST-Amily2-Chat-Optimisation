@@ -4,7 +4,7 @@ import { saveSettingsDebounced } from "/script.js";
 import { pluginAuthStatus } from "./auth.js";
 
 export const extensionName = "ST-Amily2-Chat-Optimisation";
-export const pluginVersion = "1.4.1";
+export const pluginVersion = "1.4.4";
 
 
 export const defaultSettings = {
@@ -654,34 +654,72 @@ export const defaultSettings = {
 };
 
 export function validateSettings() {
-  const settings = extension_settings[extensionName] || {};
-  const errors = [];
-
-  if (!settings.apiUrl) {
-    errors.push("API URL未配置");
-  } else if (!/^https?:\/\//.test(settings.apiUrl)) {
-    errors.push("API URL必须以http://或https://开头");
-  }
-
-  if (settings.apiKey) {
-    if (/(key|secret|password)/i.test(settings.apiKey)) {
-      toastr.warning(
-        '请注意：API Key包含敏感关键词("key", "secret", "password")',
-        "安全提醒",
-        { timeOut: 5000 },
-      );
+    const settings = extension_settings[extensionName] || {};
+    
+    // 如果启用了Ngms或Nccs，则跳过主API验证
+    if (settings.ngmsEnabled || settings.nccsEnabled) {
+        return;
     }
-  }
 
-  if (!settings.model) {
-    errors.push("未选择模型");
-  }
+    const apiProvider = settings.apiProvider || 'openai';
+    const errors = [];
 
-  if (settings.maxTokens < 100 || settings.maxTokens > 100000) {
-    errors.push(`Token数超限 (${settings.maxTokens}) - 必须在100-100000之间`);
-  }
+    // 根据不同的API Provider应用不同的验证规则
+    switch (apiProvider) {
+        case 'openai':
+        case 'openai_test':
+            if (!settings.apiUrl) {
+                errors.push("当前模式需要配置API URL");
+            } else if (!/^https?:\/\//.test(settings.apiUrl)) {
+                errors.push("API URL必须以http://或https://开头");
+            }
+            if (apiProvider === 'openai' && !settings.apiKey) {
+                errors.push("当前模式需要配置API Key");
+            }
+            break;
+        case 'sillytavern_backend':
+            if (!settings.apiUrl) {
+                errors.push("SillyTavern后端模式需要配置API URL");
+            }
+            break;
+        case 'google':
+            if (!settings.apiKey) {
+                errors.push("Google直连模式需要配置API Key");
+            }
+            break;
+        case 'sillytavern_preset':
+            // sillytavern_preset模式不需要URL或Key
+            break;
+        default:
+            // 默认情况下，进行最严格的检查
+            if (!settings.apiUrl) {
+                errors.push("API URL未配置");
+            }
+            if (!settings.apiKey) {
+                errors.push("API Key未配置");
+            }
+            break;
+    }
 
-  return errors.length ? errors : null;
+    if (settings.apiKey) {
+        if (/(key|secret|password)/i.test(settings.apiKey)) {
+            toastr.warning(
+                '请注意：API Key包含敏感关键词("key", "secret", "password")',
+                "安全提醒",
+                { timeOut: 5000 },
+            );
+        }
+    }
+
+    if (!settings.model && apiProvider !== 'sillytavern_preset') {
+        errors.push("未选择模型");
+    }
+
+    if (settings.maxTokens < 100 || settings.maxTokens > 100000) {
+        errors.push(`Token数超限 (${settings.maxTokens}) - 必须在100-100000之间`);
+    }
+
+    return errors.length ? errors : null;
 }
 
 export function saveSettings() {
