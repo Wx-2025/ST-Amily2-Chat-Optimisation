@@ -12,6 +12,7 @@ import { safeCharLorebooks, safeLorebookEntries } from '../core/tavernhelper-com
 import { characters, this_chid, eventSource, event_types } from "/script.js";
 import { fetchNccsModels, testNccsApiConnection } from '../core/api/NccsApi.js';
 
+const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches;
 const getAllTablesContainer = () => document.getElementById('all-tables-container');
 
 
@@ -398,7 +399,6 @@ export function renderTables() {
                     const cell = row.insertCell();
                     cell.textContent = cellData;
 
-                    const isTouchDevice = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0;
                     if (!isTouchDevice()) {
                         cell.setAttribute('contenteditable', 'true');
                     }
@@ -1010,7 +1010,6 @@ export function bindTableEvents() {
             }
         });
 
-        const isTouchDevice = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         if (isTouchDevice()) {
             let lastTap = 0;
             let lastTapTarget = null;
@@ -1036,7 +1035,6 @@ export function bindTableEvents() {
             const target = event.target;
             if (target.tagName !== 'TD' || target.getAttribute('contenteditable') !== 'true') return;
 
-            const isTouchDevice = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0;
             if (isTouchDevice()) {
                 target.setAttribute('contenteditable', 'false');
             }
