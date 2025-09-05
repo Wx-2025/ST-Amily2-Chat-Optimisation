@@ -7,9 +7,8 @@
 
 <div style="padding: 10px; background-color: #d1ecf1; border: 1px solid #bee5eb; border-radius: 5px; color: #0c5460;"> 
 注意：翰林院、内阁密室两个按钮不是摆设，那是其他功能界面的入口。
-重要：以下所有教程都是基于古老版本写出来的，最好去看最新的教程，[点击跳转](https://docs.google.com/document/d/11E7HIFg59up0afv-lV0cAF5G3jzJXCkZK8cBCOMZ9zo/edit?usp=sharing)
 </div>
-
+重要：以下所有教程都是基于古老版本写出来的，最好去看最新的教程，[点击跳转](https://docs.google.com/document/d/11E7HIFg59up0afv-lV0cAF5G3jzJXCkZK8cBCOMZ9zo/edit?usp=sharing)
 
 ---
 
