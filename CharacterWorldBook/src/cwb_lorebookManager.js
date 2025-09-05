@@ -189,27 +189,39 @@ export async function updateCharacterRosterLorebookEntry(processedCharacterNames
         if (existingRosterEntry) {
             if (existingRosterEntry.content) {
                 let contentToParse = existingRosterEntry.content.replace(initialContentPrefix, '');
-                contentToParse.split('\n').forEach(name => {
-                    if (name.trim()) existingNames.add(name.trim().replace(/\[|:.*\]/g, ''));
+                
+                const floorMatch = contentToParse.match(/【前(\d+)楼角色世界书已更新完成】/);
+                if (floorMatch && floorMatch[1]) {
+                    oldEndFloor = parseInt(floorMatch[1], 10);
+                }
+
+                contentToParse.split('\n').forEach(line => {
+                    if (line.trim().startsWith('[')) {
+                        const nameMatch = line.match(/\[(.*?):/);
+                        if (nameMatch && nameMatch[1]) {
+                            existingNames.add(nameMatch[1].trim());
+                        }
+                    }
                 });
             }
             const floorRangeKey = existingRosterEntry.keys.find(k => /^\d+-\d+$/.test(k));
             if (floorRangeKey) {
-                [oldStartFloor, oldEndFloor] = floorRangeKey.split('-').map(Number);
+                [oldStartFloor] = floorRangeKey.split('-').map(Number);
             }
         }
 
         processedCharacterNames.forEach(name => existingNames.add(name.trim()));
+
+        const newStartFloor = Math.min(oldStartFloor, startFloor + 1);
+        const newEndFloor = Math.max(oldEndFloor, endFloor + 1);
 
         const newContent =
             initialContentPrefix +
             [...existingNames]
                 .sort()
                 .map(name => `[${name}: (详细查看绿灯角色条目)]`)
-                .join('\n');
+                .join('\n') + `\n\n{{// 本条勿动，【前${newEndFloor}楼角色世界书已更新完成】否则后续更新无法完成。}}`;
 
-        const newStartFloor = Math.min(oldStartFloor, startFloor + 1);
-        const newEndFloor = Math.max(oldEndFloor, endFloor + 1);
         const newFloorRange = `${newStartFloor}-${newEndFloor}`;
 
         const baseKeys = [`Amily2角色总集`, cleanChatId, `角色总览`];
