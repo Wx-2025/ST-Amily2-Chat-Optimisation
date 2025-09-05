@@ -1,6 +1,6 @@
 import { getContext } from '/scripts/extensions.js';
 import { state, SCRIPT_ID_PREFIX } from './cwb_state.js';
-import { logDebug, logError, showToastr, escapeHtml, cleanChatName, parseCustomFormat } from './cwb_utils.js';
+import { logDebug, logError, showToastr, escapeHtml, cleanChatName, parseCustomFormat, isCwbEnabled } from './cwb_utils.js';
 import { callCustomOpenAI } from './cwb_apiService.js';
 import { saveDescriptionToLorebook, updateCharacterRosterLorebookEntry, manageAutoCardUpdateLorebookEntry, getTargetWorldBook } from './cwb_lorebookManager.js';
 import { extractBlocksByTags, applyExclusionRules } from '../../core/utils/rag-tag-extractor.js';
@@ -317,10 +317,16 @@ async function triggerAutomaticUpdate($panel) {
                 e.keys.includes(cleanChatId)
             );
 
-            if (rosterEntry) {
-                const floorRangeKey = rosterEntry.keys.find(k => /^\d+-\d+$/.test(k));
-                if (floorRangeKey) {
-                    maxEndFloorInLorebook = parseInt(floorRangeKey.split('-')[1], 10);
+            if (rosterEntry && rosterEntry.content) {
+                const floorMatch = rosterEntry.content.match(/【前(\d+)楼角色世界书已更新完成】/);
+                if (floorMatch && floorMatch[1]) {
+                    maxEndFloorInLorebook = parseInt(floorMatch[1], 10);
+                } else {
+                    // Fallback for older entries
+                    const floorRangeKey = rosterEntry.keys.find(k => /^\d+-\d+$/.test(k));
+                    if (floorRangeKey) {
+                        maxEndFloorInLorebook = parseInt(floorRangeKey.split('-')[1], 10);
+                    }
                 }
             }
         }
@@ -359,7 +365,7 @@ export async function getLatestChatName() {
 }
 
 export async function handleMessageReceived($panel) {
-    if (!checkCwbEnabled('消息接收处理')) {
+    if (!isCwbEnabled('消息接收处理')) {
         return;
     }
     
