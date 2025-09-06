@@ -1,1 +1,687 @@
-(function(_0x3d1814,_0x28b7f1){const _0x1e077f=_0x3a48,_0xad3d44=_0x3d1814();while(!![]){try{const _0x3d76b1=-parseInt(_0x1e077f(0x1b9))/0x1+-parseInt(_0x1e077f(0x190))/0x2*(-parseInt(_0x1e077f(0x21f))/0x3)+parseInt(_0x1e077f(0x1a6))/0x4*(parseInt(_0x1e077f(0x200))/0x5)+parseInt(_0x1e077f(0x239))/0x6+-parseInt(_0x1e077f(0x20e))/0x7+parseInt(_0x1e077f(0x1aa))/0x8+-parseInt(_0x1e077f(0x24a))/0x9;if(_0x3d76b1===_0x28b7f1)break;else _0xad3d44['push'](_0xad3d44['shift']());}catch(_0x433421){_0xad3d44['push'](_0xad3d44['shift']());}}}(_0x4ef5,0xc7df1));function _0x4ef5(){const _0xb6b3c6=['加载角色卡数据时出错。','<div\x20class=\x22cwb-cyber-card\x20cwb-cyber-card--nested\x22><h5\x20class=\x22cwb-cyber-card__title\x22>','after_an','custom','each','.cwb-insertion-position','</textarea>','更新完成，正在刷新查看器...','css','4299lefXbQ','#cwb-viewer-delete-all','Amily2角色总集','人物总览','map','核心特质','.cwb-insertion-settings-content','selected','\x22\x20data-uid=\x22','change','closest','hide','error','<div\x20class=\x22cwb-cyber-card\x20cwb-insertion-settings-card\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h4\x20class=\x22cwb-cyber-card__title\x22>注入设置</h4>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22cwb-cyber-card__content\x20cwb-insertion-settings-content\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22cwb-cyber-field\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20class=\x22cwb-cyber-field__label\x22\x20for=\x22cwb-insertion-position-','\x22\x20type=\x22number\x22\x20class=\x22cwb-cyber-field__input\x20cwb-insertion-order\x22\x20value=\x22','<div\x20class=\x22cwb-cyber-popup__header\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h3\x20class=\x22cwb-cyber-popup__title\x22><i\x20class=\x22fa-solid\x20fa-book-atlas\x22></i>\x20角色数据核心</h3>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22cwb-cyber-popup__actions\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20id=\x22cwb-manual-update-btn\x22\x20class=\x22cwb-cyber-button\x22\x20title=\x22手动更新当前角色的描述\x22><i\x20class=\x22fa-solid\x20fa-wand-magic-sparkles\x22></i>\x20更新</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20id=\x22cwb-viewer-refresh\x22\x20class=\x22cwb-cyber-button\x22\x20title=\x22从世界书重新加载所有角色卡\x22><i\x20class=\x22fa-solid\x20fa-arrows-rotate\x22></i>\x20刷新</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20id=\x22cwb-viewer-delete-all\x22\x20class=\x22cwb-cyber-button\x20cwb-cyber-button--danger\x22\x20title=\x22删除当前聊天中的所有角色卡和总览\x22><i\x20class=\x22fa-solid\x20fa-trash-can\x22></i>\x20清除</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22cwb-viewer-popup-close-button\x22>&times;</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>','\x22\x20min=\x220\x22\x20max=\x229999\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22cwb-cyber-field\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20class=\x22cwb-cyber-field__label\x22\x20for=\x22cwb-insertion-order-','\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22cwb-cyber-tab__button\x22\x20data-char-uid=\x22','保存失败:\x20','height','top','replace','social_matrix','left','insertionDepth','getItem','375828LpQiaA','>作者注释之前</option>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<option\x20value=\x22after_an\x22\x20','insertionOrder','.cwb-viewer-popup-close-button','<textarea\x20class=\x22cwb-cyber-field__input\x22\x20data-path=\x22','.cwb-save-button','.cwb-cyber-content-pane','addClass','\x22\x20class=\x22cwb-cyber-popup\x22>','outerHeight','\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<option\x20value=\x22before_char\x22\x20','enabled','includes','parsed','sqrt','<div\x20class=\x22cwb-cyber-field\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20class=\x22cwb-cyber-field__label\x22>','[DEBUG]\x20原始条目数据\x20UID:','2202453tXlFBM','.cwb-cyber-tab__button','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>','object','[DEBUG]\x20界面收集值\x20UID:','\x22\x20data-uid-wrapper=\x22','touches','trim','path','<i\x20class=\x22fas\x20fa-spinner\x20fa-spin\x22></i>\x20更新中...','>作者注释之后</option>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<option\x20value=\x22at_depth\x22\x20','\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20class=\x22cwb-cyber-field__label\x22\x20for=\x22cwb-insertion-depth-','#cwb-char-content-','type','[DEBUG]\x20最终保存数据\x20UID:','内心挣扎','text','\x22\x20class=\x22cwb-cyber-field__input\x20cwb-insertion-position\x22\x20data-uid=\x22','physical_imprint','remove','keys','关键关系','身份原型','</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','社交矩阵','order','disabled','性格详述','438fdVwQE','特质定义','max','viewerEnabled','filter','当前状态','120px','min','.cwb-insertion-depth-container','isRoster','offset','\x20的修改\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>','at_depth','active','comment','<div\x20class=\x22cwb-cyber-content-pane__footer\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22cwb-cyber-button\x20cwb-cyber-button--primary\x20cwb-save-button\x22\x20data-uid=\x22','第一印象','正在刷新角色数据...','touchend.cwbViewer','clientX','info','before_an','8Gawrub','stringify','push','core_identity','11314896IuQnbw','角色总览','<div\x20class=\x22cwb-cyber-card\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h4\x20class=\x22cwb-cyber-card__title\x22>人物总览\x20(只读)</h4>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22cwb-cyber-card__content\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<textarea\x20readonly\x20class=\x22cwb-cyber-field__input\x22\x20style=\x22height:\x20400px;\x22>','concat','touchmove','content','价值观','setLorebookEntries','clientY','grabbing','length','<div\x20class=\x22cwb-cyber-tabs\x22>','STORAGE_KEY_VIEWER_BUTTON_POS','resize.cwbViewer','touchmove.cwbViewer','964131WcRTvM','声音特征','<i\x20class=\x22fas\x20fa-spinner\x20fa-spin\x22></i>\x20保存中...','角色卡已成功保存！','关系人姓名','</textarea>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>','grab','find','char-uid','position','\x22\x20rows=\x22','join','风格总结','[DEBUG]\x20映射结果\x20UID:','\x22\x20min=\x220\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>','innerWidth','他人声望','<div\x20class=\x22cwb-cyber-popup__body\x20cwb-cyber-popup__body--empty\x22><p>数据链路中断...未在当前世界书协议中找到角色数据。请执行一次手动更新以初始化链接。</p></div></div>','当前角色未设置主世界书或自定义世界书。','prop','none','auto','removeClass','forEach','html','>角色定义之后</option>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<option\x20value=\x22before_an\x22\x20','Invalid\x20chat\x20identifier\x20\x22','before_character_definition','mousemove.cwbViewer','entries','after_character_definition','after_author_note','\x22\x20title=\x22查看角色世界书\x22\x20class=\x22fa-solid\x20fa-book-open\x22></div>','split','10px','cwb-cyber-tab\x20active','互动风格','</h5><div\x20class=\x22cwb-cyber-card__content\x22>','touchstart','display:\x20none;','toggle','first','stopPropagation','after_char','\x22>注入顺序</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20id=\x22cwb-insertion-order-','depth','角色\x20','代表性引言','未知实体\x20','.cwb-cyber-tab','#cwb-manual-update-btn','</div>','before_char','click','核心认同','append','before_author_note','psyche_profile','\x22\x20id=\x22cwb-char-content-','无法在世界书中找到原始条目。','getLorebookEntries','未找到目标世界书。','data','outerWidth','.cwb-cyber-tab__delete','<div\x20class=\x22cwb-cyber-card\x22><h4\x20class=\x22cwb-cyber-card__title\x22>','\x22\x20data-is-array=\x22','<div\x20class=\x22cwb-cyber-popup__body\x22>','<div\x20class=\x22cwb-cyber-content-pane\x20','val','message','1625510SxDdHM','物理印记','narrative_essence','name','#cwb-viewer-refresh','无法显示角色卡查看器:','\x22\x20for\x20viewer.','preventDefault','cursor','悬浮窗按钮显示状态更新:','\x22>注入位置</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<select\x20id=\x22cwb-insertion-position-','uid','</h4><div\x20class=\x22cwb-cyber-card__content\x22>','insertionPosition','2894570wOySav','setItem','body','trigger','保存修改','isArray','unknown_chat','worldbookTarget'];_0x4ef5=function(){return _0xb6b3c6;};return _0x4ef5();}import{SCRIPT_ID_PREFIX,CHAR_CARD_VIEWER_BUTTON_ID,CHAR_CARD_VIEWER_POPUP_ID,state}from'./cwb_state.js';import{logDebug,logError,showToastr,escapeHtml,parseCustomFormat,buildCustomFormat,isCwbEnabled}from'./cwb_utils.js';import{deleteLorebookEntries,getTargetWorldBook}from'./cwb_lorebookManager.js';import{manualUpdateLogic}from'./cwb_core.js';const {jQuery:$,SillyTavern,TavernHelper}=window;function createCharCardViewerPopupHtml(_0x42e31d){const _0xe6020c=_0x3a48,_0x4acc26={'narrative_essence.core_traits.name':'特质名称','narrative_essence.key_relationships.name':_0xe6020c(0x1bd)},_0x1b223c={'name':'姓名','archetype':_0xe6020c(0x260),'gender':'性别','age':'年龄','race':'种族','current_status':_0xe6020c(0x195),'first_impression':_0xe6020c(0x1a0),'key_features':'显著特征','attire':'衣着风格','mannerisms':'习惯举止','voice':_0xe6020c(0x1ba),'tags':'性格标签','description':_0xe6020c(0x265),'motivation':'内在驱动','values':_0xe6020c(0x1b0),'inner_conflict':_0xe6020c(0x259),'interaction_style':_0xe6020c(0x1dd),'skills':'技能能力','reputation':_0xe6020c(0x1c9),'core_traits':_0xe6020c(0x224),'verbal_patterns':'语言范式','key_relationships':_0xe6020c(0x25f),'definition':_0xe6020c(0x191),'evidence':'具体事例','style_summary':_0xe6020c(0x1c5),'quotes':_0xe6020c(0x1e8),'summary':'关系概述'},_0x26e377=(_0x544cb7,_0xa1f90b)=>{const _0x46c94d=_0xe6020c,_0xce5776=_0xa1f90b[_0x46c94d(0x234)](/\.\d+\./g,'.');if(_0x4acc26[_0xce5776])return _0x4acc26[_0xce5776];return _0x1b223c[_0x544cb7]||_0x544cb7[_0x46c94d(0x234)](/_/g,'\x20');},_0x2fa129=(_0x4418bd,_0x2af5ca,_0x50e039,_0x15c046=![],_0x49b45f=![])=>{const _0x64b22d=_0xe6020c,_0x1586bc=escapeHtml(_0x4418bd),_0x681971=escapeHtml(_0x49b45f?_0x50e039[_0x64b22d(0x1c4)]('\x0a'):_0x50e039||''),_0xbaf34=_0x50e039&&String(_0x50e039)['length']>0x32||Array[_0x64b22d(0x213)](_0x50e039)&&_0x50e039[_0x64b22d(0x1b4)]>0x1,_0x209d4d=_0x49b45f?Math[_0x64b22d(0x192)](0x3,_0x50e039[_0x64b22d(0x1b4)]):_0xbaf34?0x4:0x2,_0x221dfd=_0x64b22d(0x23d)+_0x2af5ca+_0x64b22d(0x1fb)+_0x49b45f+_0x64b22d(0x1c3)+_0x209d4d+'\x22>'+_0x681971+_0x64b22d(0x21c);return _0x64b22d(0x248)+_0x1586bc+_0x64b22d(0x261)+_0x221dfd+_0x64b22d(0x24c);},_0x2e5e8f=(_0x3ecd3d,_0x4e9179,_0x409004)=>{const _0x182088=_0xe6020c;if(!_0x4e9179||typeof _0x4e9179!==_0x182088(0x24d)||Object['keys'](_0x4e9179)[_0x182088(0x1b4)]===0x0)return'';let _0x44d705=_0x182088(0x1fa)+escapeHtml(_0x3ecd3d)+_0x182088(0x20c);for(const [_0x5d0e40,_0x3b9e5e]of Object[_0x182088(0x1d6)](_0x4e9179)){const _0x434468=_0x409004?_0x409004+'.'+_0x5d0e40:_0x5d0e40,_0x191de8=_0x26e377(_0x5d0e40,_0x434468);if(typeof _0x3b9e5e===_0x182088(0x24d)&&_0x3b9e5e!==null&&!Array['isArray'](_0x3b9e5e))_0x44d705+=_0x2e5e8f(_0x191de8,_0x3b9e5e,_0x434468);else Array[_0x182088(0x213)](_0x3b9e5e)&&_0x3b9e5e[_0x182088(0x1b4)]>0x0&&typeof _0x3b9e5e[0x0]===_0x182088(0x24d)?(_0x44d705+=_0x182088(0x217)+escapeHtml(_0x191de8)+_0x182088(0x1de),_0x3b9e5e[_0x182088(0x1d0)]((_0x22cde0,_0x353db4)=>{const _0x5bf2bc=_0x182088;_0x44d705+='<div\x20class=\x22cwb-cyber-list-item\x22>';for(const [_0x3994cb,_0x316598]of Object[_0x5bf2bc(0x1d6)](_0x22cde0)){const _0x51481d=_0x434468+'.'+_0x353db4+'.'+_0x3994cb;_0x44d705+=_0x2fa129(_0x26e377(_0x3994cb,_0x51481d),_0x51481d,_0x316598,![],Array[_0x5bf2bc(0x213)](_0x316598));}_0x44d705+=_0x5bf2bc(0x1ec);}),_0x44d705+='</div></div>'):_0x44d705+=_0x2fa129(_0x191de8,_0x434468,_0x3b9e5e,![],Array[_0x182088(0x213)](_0x3b9e5e));}return _0x44d705+='</div></div>',_0x44d705;};let _0x4ab4e8='<div\x20id=\x22'+CHAR_CARD_VIEWER_POPUP_ID+_0xe6020c(0x241);_0x4ab4e8+=_0xe6020c(0x22e);if(!_0x42e31d||_0x42e31d['length']===0x0)return _0x4ab4e8+=_0xe6020c(0x1ca),_0x4ab4e8;return _0x4ab4e8+='<div\x20class=\x22cwb-cyber-popup__main-content\x22>',_0x4ab4e8+=_0xe6020c(0x1b5),_0x42e31d['forEach']((_0x197301,_0x39fecd)=>{const _0x449625=_0xe6020c,_0x12dcc2=_0x197301[_0x449625(0x199)]?_0x449625(0x222):_0x197301[_0x449625(0x246)]?.[_0x449625(0x203)]||_0x449625(0x1e9)+(_0x39fecd+0x1),_0x5947a3=_0x39fecd===0x0?_0x449625(0x1dc):'cwb-cyber-tab';_0x4ab4e8+='<div\x20class=\x22'+_0x5947a3+_0x449625(0x24f)+_0x197301[_0x449625(0x20b)]+_0x449625(0x230)+_0x197301[_0x449625(0x20b)]+'\x22>'+escapeHtml(_0x12dcc2)+'</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22cwb-cyber-tab__delete\x22\x20data-char-uid=\x22'+_0x197301[_0x449625(0x20b)]+'\x22\x20title=\x22删除此条目\x22><i\x20class=\x22fa-solid\x20fa-times\x22></i></button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>';}),_0x4ab4e8+=_0xe6020c(0x1ec),_0x4ab4e8+=_0xe6020c(0x1fc),_0x42e31d[_0xe6020c(0x1d0)]((_0x41bcc2,_0x256c08)=>{const _0xc7d08=_0xe6020c;_0x4ab4e8+=_0xc7d08(0x1fd)+(_0x256c08===0x0?'active':'')+_0xc7d08(0x1f3)+_0x41bcc2[_0xc7d08(0x20b)]+_0xc7d08(0x227)+_0x41bcc2[_0xc7d08(0x20b)]+'\x22>';if(_0x41bcc2[_0xc7d08(0x199)])_0x4ab4e8+=_0xc7d08(0x1ac)+escapeHtml(_0x41bcc2[_0xc7d08(0x1af)])+_0xc7d08(0x1be);else{const _0x62a01d=_0x41bcc2[_0xc7d08(0x246)];if(_0x62a01d){const _0x25adee=_0x62a01d['name']||_0xc7d08(0x1e7)+(_0x256c08+0x1);if(_0x62a01d['name'])_0x4ab4e8+=_0x2e5e8f('姓名',{'name':_0x62a01d[_0xc7d08(0x203)]},'');if(_0x62a01d[_0xc7d08(0x1a9)])_0x4ab4e8+=_0x2e5e8f(_0xc7d08(0x1ef),_0x62a01d['core_identity'],_0xc7d08(0x1a9));if(_0x62a01d[_0xc7d08(0x25c)])_0x4ab4e8+=_0x2e5e8f(_0xc7d08(0x201),_0x62a01d[_0xc7d08(0x25c)],_0xc7d08(0x25c));if(_0x62a01d[_0xc7d08(0x1f2)])_0x4ab4e8+=_0x2e5e8f('心智侧写',_0x62a01d[_0xc7d08(0x1f2)],'psyche_profile');if(_0x62a01d['social_matrix'])_0x4ab4e8+=_0x2e5e8f(_0xc7d08(0x262),_0x62a01d['social_matrix'],_0xc7d08(0x235));if(_0x62a01d[_0xc7d08(0x202)])_0x4ab4e8+=_0x2e5e8f('叙事精粹',_0x62a01d['narrative_essence'],'narrative_essence');_0x4ab4e8+=_0xc7d08(0x22c)+_0x41bcc2['uid']+_0xc7d08(0x20a)+_0x41bcc2[_0xc7d08(0x20b)]+_0xc7d08(0x25b)+_0x41bcc2[_0xc7d08(0x20b)]+_0xc7d08(0x243)+(_0x41bcc2[_0xc7d08(0x20d)]==='before_char'?_0xc7d08(0x226):'')+'>角色定义之前</option>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<option\x20value=\x22after_char\x22\x20'+(_0x41bcc2[_0xc7d08(0x20d)]===_0xc7d08(0x1e4)?_0xc7d08(0x226):'')+_0xc7d08(0x1d2)+(_0x41bcc2['insertionPosition']==='before_an'?_0xc7d08(0x226):'')+_0xc7d08(0x23a)+(_0x41bcc2[_0xc7d08(0x20d)]===_0xc7d08(0x218)?'selected':'')+_0xc7d08(0x254)+(_0x41bcc2['insertionPosition']===_0xc7d08(0x19c)?_0xc7d08(0x226):'')+'>@D\x20注入指定深度</option>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</select>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22cwb-cyber-field\x20cwb-insertion-depth-container\x22\x20style=\x22'+(_0x41bcc2[_0xc7d08(0x20d)]===_0xc7d08(0x19c)?'':_0xc7d08(0x1e0))+_0xc7d08(0x255)+_0x41bcc2[_0xc7d08(0x20b)]+'\x22>注入深度</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20id=\x22cwb-insertion-depth-'+_0x41bcc2[_0xc7d08(0x20b)]+'\x22\x20type=\x22number\x22\x20class=\x22cwb-cyber-field__input\x20cwb-insertion-depth\x22\x20value=\x22'+_0x41bcc2[_0xc7d08(0x237)]+_0xc7d08(0x22f)+_0x41bcc2[_0xc7d08(0x20b)]+_0xc7d08(0x1e5)+_0x41bcc2['uid']+_0xc7d08(0x22d)+_0x41bcc2[_0xc7d08(0x23b)]+_0xc7d08(0x1c7),_0x4ab4e8+=_0xc7d08(0x19f)+_0x41bcc2[_0xc7d08(0x20b)]+'\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<i\x20class=\x22fa-solid\x20fa-save\x22></i>\x20保存对\x20'+escapeHtml(_0x25adee)+_0xc7d08(0x19b);}}_0x4ab4e8+=_0xc7d08(0x1ec);}),_0x4ab4e8+='</div></div></div>',_0x4ab4e8;}function bindCharCardViewerPopupEvents(_0x4aa1d0){const _0x44c82c=_0x3a48;_0x4aa1d0['on'](_0x44c82c(0x228),_0x44c82c(0x21b),function(){const _0x1de4c2=_0x44c82c,_0xa47e5a=$(this),_0x1b8b97=_0xa47e5a[_0x1de4c2(0x229)](_0x1de4c2(0x225))[_0x1de4c2(0x1c0)](_0x1de4c2(0x198));_0xa47e5a[_0x1de4c2(0x1fe)]()===_0x1de4c2(0x19c)?_0x1b8b97['show']():_0x1b8b97[_0x1de4c2(0x22a)]();}),_0x4aa1d0['on'](_0x44c82c(0x1ee),_0x44c82c(0x23c),closeCharCardViewerPopup),_0x4aa1d0[_0x44c82c(0x1c0)](_0x44c82c(0x204))['on'](_0x44c82c(0x1ee),()=>{const _0x4b7506=_0x44c82c;showToastr(_0x4b7506(0x1a4),_0x4b7506(0x1a1)),showCharCardViewerPopup();}),_0x4aa1d0['find'](_0x44c82c(0x1eb))['on'](_0x44c82c(0x1ee),async function(){const _0x1a4b0a=_0x44c82c,_0x1c6f63=$(this);_0x1c6f63[_0x1a4b0a(0x1cc)](_0x1a4b0a(0x264),!![])['html'](_0x1a4b0a(0x253)),await manualUpdateLogic(),showToastr(_0x1a4b0a(0x1a4),_0x1a4b0a(0x21d)),showCharCardViewerPopup();}),_0x4aa1d0[_0x44c82c(0x1c0)](_0x44c82c(0x24b))['on'](_0x44c82c(0x1ee),function(){const _0x5f4c6f=_0x44c82c,_0x1bda1d=$(this),_0xcbacb0=_0x1bda1d[_0x5f4c6f(0x1f7)](_0x5f4c6f(0x1c1));_0x4aa1d0['find'](_0x5f4c6f(0x1ea))[_0x5f4c6f(0x1cf)](_0x5f4c6f(0x19d)),_0x1bda1d[_0x5f4c6f(0x229)](_0x5f4c6f(0x1ea))[_0x5f4c6f(0x240)](_0x5f4c6f(0x19d)),_0x4aa1d0[_0x5f4c6f(0x1c0)](_0x5f4c6f(0x23f))[_0x5f4c6f(0x1cf)](_0x5f4c6f(0x19d)),_0x4aa1d0[_0x5f4c6f(0x1c0)](_0x5f4c6f(0x256)+_0xcbacb0)[_0x5f4c6f(0x240)](_0x5f4c6f(0x19d));}),_0x4aa1d0[_0x44c82c(0x1c0)](_0x44c82c(0x1f9))['on'](_0x44c82c(0x1ee),async function(_0x5961b9){const _0x3791f1=_0x44c82c;_0x5961b9[_0x3791f1(0x1e3)]();const _0x26c5d3=$(this)[_0x3791f1(0x1f7)](_0x3791f1(0x1c1));await deleteLorebookEntries([_0x26c5d3]);const _0x26b2ef=$(this)[_0x3791f1(0x229)](_0x3791f1(0x1ea)),_0x58faee=_0x4aa1d0[_0x3791f1(0x1c0)]('#cwb-char-content-'+_0x26c5d3),_0x1e2f36=_0x26b2ef['hasClass'](_0x3791f1(0x19d));_0x26b2ef[_0x3791f1(0x25d)](),_0x58faee[_0x3791f1(0x25d)]();if(_0x1e2f36&&_0x4aa1d0[_0x3791f1(0x1c0)](_0x3791f1(0x1ea))[_0x3791f1(0x1b4)]>0x0)_0x4aa1d0[_0x3791f1(0x1c0)]('.cwb-cyber-tab')[_0x3791f1(0x1e2)]()[_0x3791f1(0x1c0)](_0x3791f1(0x24b))[_0x3791f1(0x211)](_0x3791f1(0x1ee));else _0x4aa1d0[_0x3791f1(0x1c0)]('.cwb-cyber-tab')[_0x3791f1(0x1b4)]===0x0&&showCharCardViewerPopup();}),_0x4aa1d0[_0x44c82c(0x1c0)](_0x44c82c(0x220))['on'](_0x44c82c(0x1ee),async function(){const _0x173980=_0x44c82c,_0x4c3871=_0x4aa1d0[_0x173980(0x1c0)]('.cwb-cyber-tab__button')['map'](function(){const _0x339ec7=_0x173980;return $(this)[_0x339ec7(0x1f7)](_0x339ec7(0x1c1));})['get']();_0x4c3871[_0x173980(0x1b4)]>0x0&&await deleteLorebookEntries(_0x4c3871),showCharCardViewerPopup();}),_0x4aa1d0[_0x44c82c(0x1c0)](_0x44c82c(0x23e))['on']('click',async function(){const _0x6314ad=_0x44c82c,_0x1abda3=$(this),_0x4d8f36=_0x1abda3[_0x6314ad(0x1f7)](_0x6314ad(0x20b));_0x1abda3['prop'](_0x6314ad(0x264),!![])[_0x6314ad(0x1d1)](_0x6314ad(0x1bb));try{const _0x52f79e=await getTargetWorldBook();if(!_0x52f79e)throw new Error(_0x6314ad(0x1f6));const _0x527765=_0x4aa1d0['find'](_0x6314ad(0x256)+_0x4d8f36),_0x52a7b2={},_0x4b626e=(_0x376778,_0x3902fe,_0x3e4f23)=>{const _0x4a61fb=_0x6314ad,_0xb74cc7=_0x3902fe[_0x4a61fb(0x1da)]('.');let _0x4d036d=_0x376778;_0xb74cc7[_0x4a61fb(0x1d0)]((_0x39d8c5,_0x36bf00)=>{const _0xcdb494=_0x4a61fb;if(_0x36bf00===_0xb74cc7[_0xcdb494(0x1b4)]-0x1)_0x4d036d[_0x39d8c5]=_0x3e4f23===''?null:_0x3e4f23;else{const _0x267a6c=/^\d+$/['test'](_0xb74cc7[_0x36bf00+0x1]);!_0x4d036d[_0x39d8c5]&&(_0x4d036d[_0x39d8c5]=_0x267a6c?[]:{}),_0x4d036d=_0x4d036d[_0x39d8c5];}});};_0x527765[_0x6314ad(0x1c0)]('.cwb-cyber-field__input')[_0x6314ad(0x21a)](function(){const _0x5e3f07=_0x6314ad,_0xfef23f=$(this),_0x4430ce=_0xfef23f[_0x5e3f07(0x1f7)](_0x5e3f07(0x252));let _0xf9d476=_0xfef23f[_0x5e3f07(0x1fe)]();_0xfef23f['data']('is-array')&&(_0xf9d476=_0xf9d476[_0x5e3f07(0x1da)]('\x0a')['map'](_0x150188=>_0x150188[_0x5e3f07(0x251)]())[_0x5e3f07(0x194)](Boolean)),_0x4430ce&&_0x4b626e(_0x52a7b2,_0x4430ce,_0xf9d476);});const _0x2ef4dc=buildCustomFormat(_0x52a7b2),_0x3631e1=await TavernHelper[_0x6314ad(0x1f5)](_0x52f79e),_0x5e63e7=_0x3631e1[_0x6314ad(0x1c0)](_0x20e3ff=>_0x20e3ff[_0x6314ad(0x20b)]===_0x4d8f36);if(!_0x5e63e7)throw new Error(_0x6314ad(0x1f4));const _0x492969=_0x527765[_0x6314ad(0x1c0)](_0x6314ad(0x21b))['val'](),_0x8020da=parseInt(_0x527765[_0x6314ad(0x1c0)]('.cwb-insertion-depth')['val'](),0xa),_0x3c31ec=parseInt(_0x527765['find']('.cwb-insertion-order')[_0x6314ad(0x1fe)](),0xa);logDebug(_0x6314ad(0x24e)+_0x4d8f36,{'insertionPosition':_0x492969,'insertionDepth':_0x8020da,'insertionOrder':_0x3c31ec});const _0x41d898={'before_char':_0x6314ad(0x1d4),'after_char':_0x6314ad(0x1d7),'before_an':_0x6314ad(0x1f1),'after_an':_0x6314ad(0x1d8),'at_depth':'at_depth_as_system'},_0x56536c={..._0x5e63e7};_0x56536c[_0x6314ad(0x1af)]=_0x2ef4dc,_0x56536c['uid']=_0x4d8f36;const _0x3ca3b2=_0x41d898[_0x492969];_0x56536c[_0x6314ad(0x1c2)]=_0x3ca3b2||_0x6314ad(0x1d4),_0x492969===_0x6314ad(0x19c)?_0x56536c[_0x6314ad(0x1e6)]=isNaN(_0x8020da)?0x0:_0x8020da:_0x56536c['depth']=null,_0x56536c[_0x6314ad(0x263)]=isNaN(_0x3c31ec)?0x1b59:_0x3c31ec,logDebug(_0x6314ad(0x258)+_0x4d8f36,{'position':_0x56536c['position'],'depth':_0x56536c['depth'],'order':_0x56536c[_0x6314ad(0x263)],'hasDepthField':_0x6314ad(0x1e6)in _0x56536c}),await TavernHelper[_0x6314ad(0x1b1)](_0x52f79e,[_0x56536c]),showToastr('success',_0x6314ad(0x1bc));}catch(_0xe96a9d){logError('保存角色卡失败:',_0xe96a9d),showToastr(_0x6314ad(0x22b),_0x6314ad(0x231)+_0xe96a9d[_0x6314ad(0x1ff)]);}finally{_0x1abda3['prop'](_0x6314ad(0x264),![])[_0x6314ad(0x25a)](_0x6314ad(0x212));}});}function closeCharCardViewerPopup(){const _0x1b4fe1=_0x3a48;$('#'+CHAR_CARD_VIEWER_POPUP_ID)[_0x1b4fe1(0x25d)]();}export async function showCharCardViewerPopup(){const _0x40051f=_0x3a48;if(!isCwbEnabled())return;closeCharCardViewerPopup();try{const _0x1c2440=await getTargetWorldBook();if(!_0x1c2440){showToastr('warning',_0x40051f(0x1cb)),$(_0x40051f(0x210))[_0x40051f(0x1f0)](createCharCardViewerPopupHtml([])),bindCharCardViewerPopupEvents($('#'+CHAR_CARD_VIEWER_POPUP_ID));return;}const _0x2e2ac0=await TavernHelper[_0x40051f(0x1f5)](_0x1c2440);let _0x19005c=state['currentChatFileIdentifier'];if(!_0x19005c||_0x19005c['startsWith'](_0x40051f(0x214))){logError(_0x40051f(0x1d3)+_0x19005c+_0x40051f(0x206)),$(_0x40051f(0x210))[_0x40051f(0x1f0)](createCharCardViewerPopupHtml([])),bindCharCardViewerPopupEvents($('#'+CHAR_CARD_VIEWER_POPUP_ID));return;}const _0x3c004d=_0x19005c['replace'](/ imported/g,'');let _0x2c1dc0=[],_0x56176f;state[_0x40051f(0x215)]===_0x40051f(0x219)&&state['customWorldBook']?_0x56176f=_0x2e2ac0[_0x40051f(0x194)](_0x3ec2a3=>{const _0x561690=_0x40051f;if(!_0x3ec2a3[_0x561690(0x244)]||!Array[_0x561690(0x213)](_0x3ec2a3['keys']))return![];if(_0x3ec2a3[_0x561690(0x25e)][_0x561690(0x245)]('Amily2角色总集')||_0x3ec2a3['keys'][_0x561690(0x245)]('角色总览'))return!![];if(_0x3ec2a3[_0x561690(0x1af)])try{const _0x2e1db8=parseCustomFormat(_0x3ec2a3[_0x561690(0x1af)]);return _0x2e1db8&&Object[_0x561690(0x25e)](_0x2e1db8)[_0x561690(0x1b4)]>0x0;}catch(_0x218554){return![];}return![];}):_0x56176f=_0x2e2ac0[_0x40051f(0x194)](_0xa0a59=>_0xa0a59['enabled']&&Array[_0x40051f(0x213)](_0xa0a59['keys'])&&_0xa0a59['keys'][_0x40051f(0x245)](_0x3c004d));const _0x431896=_0x56176f['filter'](_0x19b702=>_0x19b702['keys']['includes'](_0x40051f(0x221))&&_0x19b702[_0x40051f(0x25e)][_0x40051f(0x245)](_0x40051f(0x1ab)));_0x431896[_0x40051f(0x1d0)]((_0x17b77b,_0x23e01e)=>{const _0x4ff14c=_0x40051f;_0x2c1dc0[_0x4ff14c(0x1a8)]({'uid':_0x17b77b[_0x4ff14c(0x20b)],'isRoster':!![],'comment':_0x17b77b[_0x4ff14c(0x19e)],'content':_0x17b77b[_0x4ff14c(0x1af)],'rosterIndex':_0x23e01e});});const _0x4365be=_0x56176f[_0x40051f(0x194)](_0x1168df=>!_0x1168df[_0x40051f(0x25e)]['includes']('Amily2角色总集'))[_0x40051f(0x223)](_0x5b8707=>{const _0x2ea4a4=_0x40051f;logDebug(_0x2ea4a4(0x249)+_0x5b8707['uid'],{'position':_0x5b8707['position'],'depth':_0x5b8707['depth'],'order':_0x5b8707['order'],'comment':_0x5b8707['comment']});const _0x3793f7={0x0:'before_char',0x1:'after_char',0x2:_0x2ea4a4(0x1a5),0x3:'after_an',0x4:_0x2ea4a4(0x19c),'before_character_definition':_0x2ea4a4(0x1ed),'after_character_definition':'after_char','before_author_note':_0x2ea4a4(0x1a5),'after_author_note':_0x2ea4a4(0x218),'at_depth_as_system':_0x2ea4a4(0x19c)},_0x3d7cc0=_0x5b8707[_0x2ea4a4(0x1c2)],_0x2a7752=_0x3793f7[_0x3d7cc0]||_0x2ea4a4(0x19c),_0xeab6af=_0x3d7cc0===0x4||_0x3d7cc0==='at_depth_as_system'?_0x5b8707['depth']??0x0:0x0;return logDebug(_0x2ea4a4(0x1c6)+_0x5b8707[_0x2ea4a4(0x20b)],{'originalPosition':_0x3d7cc0,'mappedPosition':_0x2a7752,'finalDepth':_0xeab6af}),{'uid':_0x5b8707[_0x2ea4a4(0x20b)],'isRoster':![],'comment':_0x5b8707[_0x2ea4a4(0x19e)],'content':_0x5b8707['content'],'parsed':parseCustomFormat(_0x5b8707[_0x2ea4a4(0x1af)]),'insertionPosition':_0x2a7752,'insertionDepth':_0xeab6af,'insertionOrder':_0x5b8707[_0x2ea4a4(0x263)]??0x1b59};})[_0x40051f(0x194)](_0x31b089=>_0x31b089[_0x40051f(0x246)]&&Object[_0x40051f(0x25e)](_0x31b089['parsed'])[_0x40051f(0x1b4)]>0x0);_0x2c1dc0=_0x2c1dc0[_0x40051f(0x1ad)](_0x4365be);const _0x50b244=createCharCardViewerPopupHtml(_0x2c1dc0);$('body')[_0x40051f(0x1f0)](_0x50b244);const _0x1063b7=$('#'+CHAR_CARD_VIEWER_POPUP_ID);bindCharCardViewerPopupEvents(_0x1063b7);}catch(_0x595c02){logError(_0x40051f(0x205),_0x595c02),showToastr(_0x40051f(0x22b),_0x40051f(0x216));}}function toggleCharCardViewerPopup(){$('#'+CHAR_CARD_VIEWER_POPUP_ID)['length']>0x0?closeCharCardViewerPopup():showCharCardViewerPopup();}function keepButtonInBounds(_0x2d5640,_0x43eb86=![]){const _0x132097=_0x3a48;if(!_0x2d5640||!_0x2d5640[_0x132097(0x1b4)])return;const _0x4a7a60=$(window)['width'](),_0x52389f=$(window)[_0x132097(0x232)](),_0x34faec=_0x2d5640['outerWidth'](),_0x35a3c4=_0x2d5640[_0x132097(0x242)]();let _0x4167b1=_0x2d5640[_0x132097(0x19a)](),_0xde7025=Math[_0x132097(0x192)](0x0,Math[_0x132097(0x197)](_0x4167b1[_0x132097(0x233)],_0x52389f-_0x35a3c4)),_0x4f4cbb=Math[_0x132097(0x192)](0x0,Math['min'](_0x4167b1[_0x132097(0x236)],_0x4a7a60-_0x34faec));_0x2d5640['css']({'top':_0xde7025+'px','left':_0x4f4cbb+'px'}),_0x43eb86&&localStorage[_0x132097(0x20f)](state[_0x132097(0x1b6)],JSON[_0x132097(0x1a7)]({'top':_0x2d5640[_0x132097(0x21e)](_0x132097(0x233)),'left':_0x2d5640[_0x132097(0x21e)](_0x132097(0x236))}));}function _0x3a48(_0x3920df,_0x54b60f){const _0x4ef58f=_0x4ef5();return _0x3a48=function(_0x3a482a,_0x594288){_0x3a482a=_0x3a482a-0x190;let _0x134abc=_0x4ef58f[_0x3a482a];return _0x134abc;},_0x3a48(_0x3920df,_0x54b60f);}function makeButtonDraggable(_0x514358){const _0x1a6287=_0x3a48;let _0x306c46=![],_0x1d94a9=![],_0x1c7f42={'x':0x0,'y':0x0},_0x57ae2b={'x':0x0,'y':0x0};const _0x1792a4=0x5,_0x4fefa7=_0x2cc2b0=>_0x2cc2b0[_0x1a6287(0x250)]&&_0x2cc2b0[_0x1a6287(0x250)][_0x1a6287(0x1b4)]?_0x2cc2b0[_0x1a6287(0x250)][0x0]:_0x2cc2b0,_0x1b214f=function(_0x350a89){const _0x3d2fb7=_0x1a6287;if(_0x350a89[_0x3d2fb7(0x257)]===_0x3d2fb7(0x1df))_0x350a89[_0x3d2fb7(0x207)]();_0x306c46=!![],_0x1d94a9=![];const _0x3d809a=_0x4fefa7(_0x350a89);_0x57ae2b['x']=_0x3d809a[_0x3d2fb7(0x1a3)],_0x57ae2b['y']=_0x3d809a['clientY'],_0x1c7f42['x']=_0x3d809a[_0x3d2fb7(0x1a3)]-_0x514358['offset']()[_0x3d2fb7(0x236)],_0x1c7f42['y']=_0x3d809a[_0x3d2fb7(0x1b2)]-_0x514358[_0x3d2fb7(0x19a)]()[_0x3d2fb7(0x233)],_0x514358['css'](_0x3d2fb7(0x208),_0x3d2fb7(0x1b3)),$('body')[_0x3d2fb7(0x21e)]({'user-select':'none','-webkit-user-select':_0x3d2fb7(0x1cd)});},_0x3b167a=function(_0x2a225f){const _0x19d85b=_0x1a6287;if(!_0x306c46)return;const _0x2c44cc=_0x4fefa7(_0x2a225f),_0x2b6502=_0x2c44cc[_0x19d85b(0x1a3)]-_0x57ae2b['x'],_0x5bf0f7=_0x2c44cc[_0x19d85b(0x1b2)]-_0x57ae2b['y'];!_0x1d94a9&&Math[_0x19d85b(0x247)](_0x2b6502*_0x2b6502+_0x5bf0f7*_0x5bf0f7)>_0x1792a4&&(_0x1d94a9=!![]);if(_0x1d94a9){if(_0x2a225f[_0x19d85b(0x257)]===_0x19d85b(0x1ae))_0x2a225f[_0x19d85b(0x207)]();let _0x305bd0=_0x2c44cc['clientX']-_0x1c7f42['x'],_0x345b99=_0x2c44cc[_0x19d85b(0x1b2)]-_0x1c7f42['y'];_0x305bd0=Math[_0x19d85b(0x192)](0x0,Math[_0x19d85b(0x197)](_0x305bd0,window[_0x19d85b(0x1c8)]-_0x514358[_0x19d85b(0x1f8)]())),_0x345b99=Math['max'](0x0,Math[_0x19d85b(0x197)](_0x345b99,window['innerHeight']-_0x514358['outerHeight']())),_0x514358[_0x19d85b(0x21e)]({'top':_0x345b99+'px','left':_0x305bd0+'px','right':'','bottom':''});}},_0xdc5519=function(_0x2382e0){const _0x2a3448=_0x1a6287;if(!_0x306c46)return;_0x306c46=![],_0x514358[_0x2a3448(0x21e)](_0x2a3448(0x208),_0x2a3448(0x1bf)),$(_0x2a3448(0x210))[_0x2a3448(0x21e)]({'user-select':_0x2a3448(0x1ce),'-webkit-user-select':_0x2a3448(0x1ce)});if(_0x1d94a9)keepButtonInBounds(_0x514358,!![]);else _0x2382e0[_0x2a3448(0x257)]==='touchend'&&(_0x2382e0[_0x2a3448(0x207)](),toggleCharCardViewerPopup());};_0x514358['on']('mousedown',_0x1b214f),$(document)['on'](_0x1a6287(0x1d5),_0x3b167a)['on']('mouseup.cwbViewer',_0xdc5519),_0x514358['on']('touchstart',_0x1b214f),$(document)['on'](_0x1a6287(0x1b8),_0x3b167a)['on'](_0x1a6287(0x1a2),_0xdc5519),_0x514358['on'](_0x1a6287(0x1ee),function(_0x536258){const _0x49d8ea=_0x1a6287;if(_0x1d94a9){_0x536258[_0x49d8ea(0x207)](),_0x536258[_0x49d8ea(0x1e3)]();return;}toggleCharCardViewerPopup();});}export function initializeCharCardViewer(){const _0xe6cc31=_0x3a48;if($('#'+CHAR_CARD_VIEWER_BUTTON_ID)[_0xe6cc31(0x1b4)]>0x0)return;const _0xf74c42='<div\x20id=\x22'+CHAR_CARD_VIEWER_BUTTON_ID+_0xe6cc31(0x1d9);$('body')['append'](_0xf74c42);const _0x3f84dc=$('#'+CHAR_CARD_VIEWER_BUTTON_ID);makeButtonDraggable(_0x3f84dc);const _0xe5f478=JSON['parse'](localStorage[_0xe6cc31(0x238)](state[_0xe6cc31(0x1b6)])||'null');_0xe5f478?_0x3f84dc[_0xe6cc31(0x21e)]({'top':_0xe5f478[_0xe6cc31(0x233)],'left':_0xe5f478[_0xe6cc31(0x236)]}):_0x3f84dc[_0xe6cc31(0x21e)]({'top':_0xe6cc31(0x196),'right':_0xe6cc31(0x1db),'left':_0xe6cc31(0x1ce)});updateViewerButtonVisibility();let _0x2aed45;$(window)['on'](_0xe6cc31(0x1b7),function(){clearTimeout(_0x2aed45),_0x2aed45=setTimeout(()=>keepButtonInBounds($('#'+CHAR_CARD_VIEWER_BUTTON_ID),!![]),0x96);});}export function updateViewerButtonVisibility(){const _0x38c8d0=_0x3a48,_0x4172c3=$('#'+CHAR_CARD_VIEWER_BUTTON_ID);if(_0x4172c3[_0x38c8d0(0x1b4)]===0x0)return;const _0x466750=isCwbEnabled()&&state['viewerEnabled'];_0x4172c3[_0x38c8d0(0x1e1)](_0x466750),logDebug(_0x38c8d0(0x209),{'masterEnabled':isCwbEnabled(),'viewerEnabled':state[_0x38c8d0(0x193)],'shouldShow':_0x466750});}
+import { SCRIPT_ID_PREFIX, CHAR_CARD_VIEWER_BUTTON_ID, CHAR_CARD_VIEWER_POPUP_ID, state } from './cwb_state.js';
+import { logDebug, logError, showToastr, escapeHtml, parseCustomFormat, buildCustomFormat, isCwbEnabled } from './cwb_utils.js';
+import { deleteLorebookEntries, getTargetWorldBook } from './cwb_lorebookManager.js';
+import { manualUpdateLogic } from './cwb_core.js';
+import { testCwbConnection, fetchCwbModels } from './cwb_apiService.js';
+import { extensionName } from '../../utils/settings.js';
+import { extension_settings } from '/scripts/extensions.js';
+import { saveSettingsDebounced } from '/script.js';
+
+const { jQuery: $, SillyTavern, TavernHelper } = window;
+
+function createCharCardViewerPopupHtml(displayItems) {
+    const pathToLabelMap = {
+        'narrative_essence.core_traits.name': '特质名称',
+        'narrative_essence.key_relationships.name': '关系人姓名',
+    };
+    const keyToLabelMap = {
+        'name': '姓名',
+        'archetype': '身份原型',
+        'gender': '性别',
+        'age': '年龄',
+        'race': '种族',
+        'current_status': '当前状态',
+
+        'first_impression': '第一印象',
+        'key_features': '显著特征',
+        'attire': '衣着风格',
+        'mannerisms': '习惯举止',
+        'voice': '声音特征',
+
+        'tags': '性格标签',
+        'description': '性格详述',
+        'motivation': '内在驱动',
+        'values': '价值观',
+        'inner_conflict': '内心挣扎',
+
+        'interaction_style': '互动风格',
+        'skills': '技能能力',
+        'reputation': '他人声望',
+
+        'core_traits': '核心特质',
+        'verbal_patterns': '语言范式',
+        'key_relationships': '关键关系',
+        'definition': '特质定义',
+        'evidence': '具体事例',
+        'style_summary': '风格总结',
+        'quotes': '代表性引言',
+        'summary': '关系概述',
+    };
+    const getLabel = (key, path) => {
+        const pathKey = path.replace(/\.\d+\./g, '.');
+        if (pathToLabelMap[pathKey]) {
+            return pathToLabelMap[pathKey];
+        }
+        return keyToLabelMap[key] || key.replace(/_/g, ' ');
+    };
+
+    const renderField = (label, path, value, isTextarea = false, isArray = false) => {
+        const escapedLabel = escapeHtml(label);
+        const escapedValue = escapeHtml(isArray ? value.join('\n') : value || '');
+
+        const isLongContent = (value && String(value).length > 50) || (Array.isArray(value) && value.length > 1);
+        const rows = isArray ? Math.max(3, value.length) : (isLongContent ? 4 : 2);
+
+        const inputElement = `<textarea class="cwb-cyber-field__input" data-path="${path}" data-is-array="${isArray}" rows="${rows}">${escapedValue}</textarea>`;
+
+        return `<div class="cwb-cyber-field">
+                    <label class="cwb-cyber-field__label">${escapedLabel}</label>
+                    ${inputElement}
+                </div>`;
+    };
+
+    const renderCard = (title, data, pathPrefix) => {
+        if (!data || typeof data !== 'object' || Object.keys(data).length === 0) return '';
+        let cardHtml = `<div class="cwb-cyber-card"><h4 class="cwb-cyber-card__title">${escapeHtml(title)}</h4><div class="cwb-cyber-card__content">`;
+        for (const [key, value] of Object.entries(data)) {
+            const currentPath = pathPrefix ? `${pathPrefix}.${key}` : key;
+            const label = getLabel(key, currentPath);
+            if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+                cardHtml += renderCard(label, value, currentPath); // Recursive call for nested objects
+            } else if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
+                cardHtml += `<div class="cwb-cyber-card cwb-cyber-card--nested"><h5 class="cwb-cyber-card__title">${escapeHtml(label)}</h5><div class="cwb-cyber-card__content">`;
+                value.forEach((item, itemIndex) => {
+                    cardHtml += `<div class="cwb-cyber-list-item">`;
+                    for (const [itemKey, itemValue] of Object.entries(item)) {
+                        const itemPath = `${currentPath}.${itemIndex}.${itemKey}`;
+                        cardHtml += renderField(getLabel(itemKey, itemPath), itemPath, itemValue, false, Array.isArray(itemValue));
+                    }
+                    cardHtml += `</div>`;
+                });
+                cardHtml += `</div></div>`;
+            } else {
+                cardHtml += renderField(label, currentPath, value, false, Array.isArray(value));
+            }
+        }
+        cardHtml += `</div></div>`;
+        return cardHtml;
+    };
+
+    let html = `<div id="${CHAR_CARD_VIEWER_POPUP_ID}" class="cwb-cyber-popup">`;
+    html += `<div class="cwb-cyber-popup__header">
+                <h3 class="cwb-cyber-popup__title"><i class="fa-solid fa-book-atlas"></i> 角色数据核心</h3>
+                <div class="cwb-cyber-popup__actions">
+                    <button id="cwb-manual-update-btn" class="cwb-cyber-button" title="手动更新当前角色的描述"><i class="fa-solid fa-wand-magic-sparkles"></i> 更新</button>
+                    <button id="cwb-viewer-refresh" class="cwb-cyber-button" title="从世界书重新加载所有角色卡"><i class="fa-solid fa-arrows-rotate"></i> 刷新</button>
+                    <button id="cwb-viewer-delete-all" class="cwb-cyber-button cwb-cyber-button--danger" title="删除当前聊天中的所有角色卡和总览"><i class="fa-solid fa-trash-can"></i> 清除</button>
+                    <button class="cwb-viewer-popup-close-button">&times;</button>
+                </div>
+             </div>`;
+
+    if (!displayItems || displayItems.length === 0) {
+        html += `<div class="cwb-cyber-popup__body cwb-cyber-popup__body--empty"><p>数据链路中断...未在当前世界书协议中找到角色数据。请执行一次手动更新以初始化链接。</p></div></div>`;
+        return html;
+    }
+
+    html += `<div class="cwb-cyber-popup__main-content">`;
+    html += `<div class="cwb-cyber-tabs">`;
+    displayItems.forEach((item, index) => {
+        const itemName = item.isRoster ? '人物总览' : (item.parsed?.name || `未知实体 ${index + 1}`);
+        const wrapperClass = index === 0 ? 'cwb-cyber-tab active' : 'cwb-cyber-tab';
+        html += `<div class="${wrapperClass}" data-uid-wrapper="${item.uid}">
+                    <button class="cwb-cyber-tab__button" data-char-uid="${item.uid}">${escapeHtml(itemName)}</button>
+                    <button class="cwb-cyber-tab__delete" data-char-uid="${item.uid}" title="删除此条目"><i class="fa-solid fa-times"></i></button>
+                 </div>`;
+    });
+    html += `</div>`;
+
+    html += `<div class="cwb-cyber-popup__body">`;
+    displayItems.forEach((item, index) => {
+        html += `<div class="cwb-cyber-content-pane ${index === 0 ? 'active' : ''}" id="cwb-char-content-${item.uid}" data-uid="${item.uid}">`;
+        if (item.isRoster) {
+            html += `<div class="cwb-cyber-card">
+                        <h4 class="cwb-cyber-card__title">人物总览 (只读)</h4>
+                        <div class="cwb-cyber-card__content">
+                            <textarea readonly class="cwb-cyber-field__input" style="height: 400px;">${escapeHtml(item.content)}</textarea>
+                        </div>
+                     </div>`;
+        } else {
+            const charData = item.parsed;
+            if (charData) {
+                const charName = charData.name || `角色 ${index + 1}`;
+                if (charData.name) html += renderCard('姓名', { name: charData.name }, '');
+                if (charData.core_identity) html += renderCard('核心认同', charData.core_identity, 'core_identity');
+                if (charData.physical_imprint) html += renderCard('物理印记', charData.physical_imprint, 'physical_imprint');
+                if (charData.psyche_profile) html += renderCard('心智侧写', charData.psyche_profile, 'psyche_profile');
+                if (charData.social_matrix) html += renderCard('社交矩阵', charData.social_matrix, 'social_matrix');
+                if (charData.narrative_essence) html += renderCard('叙事精粹', charData.narrative_essence, 'narrative_essence');
+                
+                html += `<div class="cwb-cyber-card cwb-insertion-settings-card">
+                            <h4 class="cwb-cyber-card__title">注入设置</h4>
+                            <div class="cwb-cyber-card__content cwb-insertion-settings-content">
+                                <div class="cwb-cyber-field">
+                                    <label class="cwb-cyber-field__label" for="cwb-insertion-position-${item.uid}">注入位置</label>
+                                    <select id="cwb-insertion-position-${item.uid}" class="cwb-cyber-field__input cwb-insertion-position" data-uid="${item.uid}">
+                                        <option value="before_char" ${item.insertionPosition === 'before_char' ? 'selected' : ''}>角色定义之前</option>
+                                        <option value="after_char" ${item.insertionPosition === 'after_char' ? 'selected' : ''}>角色定义之后</option>
+                                        <option value="before_an" ${item.insertionPosition === 'before_an' ? 'selected' : ''}>作者注释之前</option>
+                                        <option value="after_an" ${item.insertionPosition === 'after_an' ? 'selected' : ''}>作者注释之后</option>
+                                        <option value="at_depth" ${item.insertionPosition === 'at_depth' ? 'selected' : ''}>@D 注入指定深度</option>
+                                    </select>
+                                </div>
+                                <div class="cwb-cyber-field cwb-insertion-depth-container" style="${item.insertionPosition === 'at_depth' ? '' : 'display: none;'}">
+                                    <label class="cwb-cyber-field__label" for="cwb-insertion-depth-${item.uid}">注入深度</label>
+                                    <input id="cwb-insertion-depth-${item.uid}" type="number" class="cwb-cyber-field__input cwb-insertion-depth" value="${item.insertionDepth}" min="0" max="9999">
+                                </div>
+                                <div class="cwb-cyber-field">
+                                    <label class="cwb-cyber-field__label" for="cwb-insertion-order-${item.uid}">注入顺序</label>
+                                    <input id="cwb-insertion-order-${item.uid}" type="number" class="cwb-cyber-field__input cwb-insertion-order" value="${item.insertionOrder}" min="0">
+                                </div>
+                            </div>
+                         </div>`;
+
+                html += `<div class="cwb-cyber-content-pane__footer">
+                            <button class="cwb-cyber-button cwb-cyber-button--primary cwb-save-button" data-uid="${item.uid}">
+                                <i class="fa-solid fa-save"></i> 保存对 ${escapeHtml(charName)} 的修改
+                            </button>
+                         </div>`;
+            }
+        }
+        html += `</div>`;
+    });
+    html += `</div></div></div>`;
+    return html;
+}
+
+function bindCharCardViewerPopupEvents($popup) {
+    $popup.on('change', '.cwb-insertion-position', function() {
+        const $this = $(this);
+        const $depthContainer = $this.closest('.cwb-insertion-settings-content').find('.cwb-insertion-depth-container');
+        if ($this.val() === 'at_depth') {
+            $depthContainer.show();
+        } else {
+            $depthContainer.hide();
+        }
+    });
+
+    $popup.on('click', '.cwb-viewer-popup-close-button', closeCharCardViewerPopup);
+    $popup.find('#cwb-viewer-refresh').on('click', () => {
+        showToastr('info', '正在刷新角色数据...');
+        showCharCardViewerPopup();
+    });
+
+    $popup.find('#cwb-manual-update-btn').on('click', async function() {
+        const $button = $(this);
+        $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 更新中...');
+        await manualUpdateLogic();
+        showToastr('info', '更新完成，正在刷新查看器...');
+        showCharCardViewerPopup();
+    });
+
+    $popup.find('.cwb-cyber-tab__button').on('click', function () {
+        const $this = $(this);
+        const targetUid = $this.data('char-uid');
+        $popup.find('.cwb-cyber-tab').removeClass('active');
+        $this.closest('.cwb-cyber-tab').addClass('active');
+        $popup.find('.cwb-cyber-content-pane').removeClass('active');
+        $popup.find(`#cwb-char-content-${targetUid}`).addClass('active');
+    });
+
+    $popup.find('.cwb-cyber-tab__delete').on('click', async function(e) {
+        e.stopPropagation();
+        const uidToDelete = $(this).data('char-uid');
+        await deleteLorebookEntries([uidToDelete]);
+        const $wrapper = $(this).closest('.cwb-cyber-tab');
+        const $pane = $popup.find(`#cwb-char-content-${uidToDelete}`);
+        const wasActive = $wrapper.hasClass('active');
+        $wrapper.remove();
+        $pane.remove();
+        if (wasActive && $popup.find('.cwb-cyber-tab').length > 0) {
+            $popup.find('.cwb-cyber-tab').first().find('.cwb-cyber-tab__button').trigger('click');
+        } else if ($popup.find('.cwb-cyber-tab').length === 0) {
+            showCharCardViewerPopup();
+        }
+    });
+
+    $popup.find('#cwb-viewer-delete-all').on('click', async function() {
+        const allUids = $popup.find('.cwb-cyber-tab__button').map(function() {
+            return $(this).data('char-uid');
+        }).get();
+        if (allUids.length > 0) {
+            await deleteLorebookEntries(allUids);
+        }
+        showCharCardViewerPopup();
+    });
+
+    $popup.find('.cwb-save-button').on('click', async function () {
+        const $button = $(this);
+        const targetUid = $button.data('uid');
+        $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 保存中...');
+        try {
+            const book = await getTargetWorldBook();
+            if (!book) throw new Error('未找到目标世界书。');
+            const $activePane = $popup.find(`#cwb-char-content-${targetUid}`);
+            const collectedData = {};
+            const setNestedValue = (obj, path, value) => {
+                const keys = path.split('.');
+                let current = obj;
+                keys.forEach((key, index) => {
+                    if (index === keys.length - 1) {
+                        current[key] = value === '' ? null : value;
+                    } else {
+                        const nextKeyIsNumber = /^\d+$/.test(keys[index + 1]);
+                        if (!current[key]) {
+                            current[key] = nextKeyIsNumber ? [] : {};
+                        }
+                        current = current[key];
+                    }
+                });
+            };
+            $activePane.find('.cwb-cyber-field__input').each(function () {
+                const $field = $(this);
+                const path = $field.data('path');
+                let value = $field.val();
+                if ($field.data('is-array')) {
+                    value = value.split('\n').map(l => l.trim()).filter(Boolean);
+                }
+                if(path){
+                   setNestedValue(collectedData, path, value);
+                }
+            });
+            const finalContentToSave = buildCustomFormat(collectedData);
+            const allEntries = await TavernHelper.getLorebookEntries(book);
+            const entryToUpdate = allEntries.find(e => e.uid === targetUid);
+            if (!entryToUpdate) throw new Error('无法在世界书中找到原始条目。');
+
+            const insertionPosition = $activePane.find('.cwb-insertion-position').val();
+            const insertionDepth = parseInt($activePane.find('.cwb-insertion-depth').val(), 10);
+            const insertionOrder = parseInt($activePane.find('.cwb-insertion-order').val(), 10);
+
+            logDebug(`[DEBUG] 界面收集值 UID:${targetUid}`, {
+                insertionPosition: insertionPosition,
+                insertionDepth: insertionDepth,
+                insertionOrder: insertionOrder
+            });
+
+            const positionMap = {
+                'before_char': 'before_character_definition',
+                'after_char': 'after_character_definition', 
+                'before_an': 'before_author_note',
+                'after_an': 'after_author_note',
+                'at_depth': 'at_depth_as_system'
+            };
+
+            const finalEntryData = { ...entryToUpdate };
+
+            finalEntryData.content = finalContentToSave;
+            finalEntryData.uid = targetUid;
+            
+            const newPosition = positionMap[insertionPosition];
+            finalEntryData.position = newPosition || 'before_character_definition';
+            if (insertionPosition === 'at_depth') {
+                finalEntryData.depth = isNaN(insertionDepth) ? 0 : insertionDepth;
+            } else {
+                finalEntryData.depth = null;
+            }
+            
+            finalEntryData.order = isNaN(insertionOrder) ? 7001 : insertionOrder;
+
+            logDebug(`[DEBUG] 最终保存数据 UID:${targetUid}`, {
+                position: finalEntryData.position,
+                depth: finalEntryData.depth,
+                order: finalEntryData.order,
+                hasDepthField: 'depth' in finalEntryData
+            });
+
+            await TavernHelper.setLorebookEntries(book, [finalEntryData]);
+            showToastr('success', '角色卡已成功保存！');
+        } catch (error) {
+            logError('保存角色卡失败:', error);
+            showToastr('error', `保存失败: ${error.message}`);
+        } finally {
+            $button.prop('disabled', false).text(`保存修改`);
+        }
+    });
+}
+
+function closeCharCardViewerPopup() {
+    $(`#${CHAR_CARD_VIEWER_POPUP_ID}`).remove();
+}
+
+export async function showCharCardViewerPopup() {
+    if (!isCwbEnabled()) return; 
+    closeCharCardViewerPopup();
+    try {
+        const book = await getTargetWorldBook();
+        if (!book) {
+            showToastr('warning', '当前角色未设置主世界书或自定义世界书。');
+            $('body').append(createCharCardViewerPopupHtml([]));
+            bindCharCardViewerPopupEvents($(`#${CHAR_CARD_VIEWER_POPUP_ID}`));
+            return;
+        }
+        const allEntries = await TavernHelper.getLorebookEntries(book);
+        let currentChatId = state.currentChatFileIdentifier;
+
+        if (!currentChatId || currentChatId.startsWith('unknown_chat')) {
+            logError(`Invalid chat identifier "${currentChatId}" for viewer.`);
+            $('body').append(createCharCardViewerPopupHtml([]));
+            bindCharCardViewerPopupEvents($(`#${CHAR_CARD_VIEWER_POPUP_ID}`));
+            return;
+        }
+        
+        const cleanChatId = currentChatId.replace(/ imported/g, '');
+        let displayItems = [];
+
+        let relevantEntries;
+        if (state.worldbookTarget === 'custom' && state.customWorldBook) {
+            relevantEntries = allEntries.filter(entry => {
+                if (!entry.enabled || !Array.isArray(entry.keys)) return false;
+                if (entry.keys.includes('Amily2角色总集') || entry.keys.includes('角色总览')) return true;
+                if (entry.content) {
+                    try {
+                        const parsed = parseCustomFormat(entry.content);
+                        return parsed && Object.keys(parsed).length > 0;
+                    } catch (e) {
+                        return false;
+                    }
+                }
+                
+                return false;
+            });
+        } else {
+            relevantEntries = allEntries.filter(entry => 
+                entry.enabled &&
+                Array.isArray(entry.keys) &&
+                entry.keys.includes(cleanChatId)
+            );
+        }
+
+        const rosterEntries = relevantEntries.filter(entry => 
+            entry.keys.includes('Amily2角色总集') && entry.keys.includes('角色总览')
+        );
+
+        rosterEntries.forEach((entry, index) => {
+            displayItems.push({ 
+                uid: entry.uid, 
+                isRoster: true, 
+                comment: entry.comment, 
+                content: entry.content,
+                rosterIndex: index 
+            });
+        });
+
+        const characterEntries = relevantEntries
+            .filter(entry => !entry.keys.includes('Amily2角色总集'))
+            .map(entry => {
+                logDebug(`[DEBUG] 原始条目数据 UID:${entry.uid}`, {
+                    position: entry.position,
+                    depth: entry.depth,
+                    order: entry.order,
+                    comment: entry.comment
+                });
+
+                const positionStringMap = {
+                    0: 'before_char',
+                    1: 'after_char',
+                    2: 'before_an', 
+                    3: 'after_an',
+                    4: 'at_depth',
+                    'before_character_definition': 'before_char',
+                    'after_character_definition': 'after_char',
+                    'before_author_note': 'before_an',
+                    'after_author_note': 'after_an',
+                    'at_depth_as_system': 'at_depth'
+                };
+
+                const position = entry.position;
+                const mappedPosition = positionStringMap[position] || 'at_depth';
+                const finalDepth = (position === 4 || position === 'at_depth_as_system') ? (entry.depth ?? 0) : 0;
+                logDebug(`[DEBUG] 映射结果 UID:${entry.uid}`, {
+                    originalPosition: position,
+                    mappedPosition: mappedPosition,
+                    finalDepth: finalDepth
+                });
+
+                return {
+                    uid: entry.uid,
+                    isRoster: false,
+                    comment: entry.comment,
+                    content: entry.content,
+                    parsed: parseCustomFormat(entry.content),
+                    insertionPosition: mappedPosition,
+                    insertionDepth: finalDepth,
+                    insertionOrder: entry.order ?? 7001,
+                };
+            })
+            .filter(c => c.parsed && Object.keys(c.parsed).length > 0);
+        
+        displayItems = displayItems.concat(characterEntries);
+
+        const popupHtml = createCharCardViewerPopupHtml(displayItems);
+        $('body').append(popupHtml);
+        const $popup = $(`#${CHAR_CARD_VIEWER_POPUP_ID}`);
+        bindCharCardViewerPopupEvents($popup);
+    } catch (error) {
+        logError('无法显示角色卡查看器:', error);
+        showToastr('error', '加载角色卡数据时出错。');
+    }
+}
+
+function toggleCharCardViewerPopup() {
+    if ($(`#${CHAR_CARD_VIEWER_POPUP_ID}`).length > 0) {
+        closeCharCardViewerPopup();
+    } else {
+        showCharCardViewerPopup();
+    }
+}
+
+function keepButtonInBounds($element, savePosition = false) {
+    if (!$element || !$element.length) return;
+    const windowWidth = $(window).width();
+    const windowHeight = $(window).height();
+    const buttonWidth = $element.outerWidth();
+    const buttonHeight = $element.outerHeight();
+    let currentPos = $element.offset();
+    let newTop = Math.max(0, Math.min(currentPos.top, windowHeight - buttonHeight));
+    let newLeft = Math.max(0, Math.min(currentPos.left, windowWidth - buttonWidth));
+    $element.css({ top: `${newTop}px`, left: `${newLeft}px` });
+    if (savePosition) {
+        localStorage.setItem(state.STORAGE_KEY_VIEWER_BUTTON_POS, JSON.stringify({ top: $element.css('top'), left: $element.css('left') }));
+    }
+}
+
+function makeButtonDraggable($button) {
+    let isDragging = false, wasDragged = false, offset = { x: 0, y: 0 }, startPos = { x: 0, y: 0 };
+    const DRAG_THRESHOLD = 5; // 5 pixels threshold
+
+    const getCoords = (e) => e.touches && e.touches.length ? e.touches[0] : e;
+
+    const dragStart = function (e) {
+        if (e.type === 'touchstart') e.preventDefault();
+        isDragging = true;
+        wasDragged = false;
+        const coords = getCoords(e);
+        startPos.x = coords.clientX;
+        startPos.y = coords.clientY;
+        offset.x = coords.clientX - $button.offset().left;
+        offset.y = coords.clientY - $button.offset().top;
+        $button.css('cursor', 'grabbing');
+        $('body').css({ 'user-select': 'none', '-webkit-user-select': 'none' });
+    };
+
+    const dragMove = function (e) {
+        if (!isDragging) return;
+        const coords = getCoords(e);
+        const dx = coords.clientX - startPos.x;
+        const dy = coords.clientY - startPos.y;
+
+        if (!wasDragged && Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD) {
+            wasDragged = true;
+        }
+
+        if (wasDragged) {
+            if (e.type === 'touchmove') e.preventDefault();
+            let newX = coords.clientX - offset.x;
+            let newY = coords.clientY - offset.y;
+            newX = Math.max(0, Math.min(newX, window.innerWidth - $button.outerWidth()));
+            newY = Math.max(0, Math.min(newY, window.innerHeight - $button.outerHeight()));
+            $button.css({ top: newY + 'px', left: newX + 'px', right: '', bottom: '' });
+        }
+    };
+
+    const dragEnd = function (e) {
+        if (!isDragging) return;
+        isDragging = false;
+        $button.css('cursor', 'grab');
+        $('body').css({ 'user-select': 'auto', '-webkit-user-select': 'auto' });
+        if (wasDragged) {
+            keepButtonInBounds($button, true);
+        } else if (e.type === 'touchend') {
+            e.preventDefault();
+            toggleCharCardViewerPopup();
+        }
+    };
+
+    $button.on('mousedown', dragStart);
+    $(document).on('mousemove.cwbViewer', dragMove).on('mouseup.cwbViewer', dragEnd);
+    $button.on('touchstart', dragStart);
+    $(document).on('touchmove.cwbViewer', dragMove).on('touchend.cwbViewer', dragEnd);
+
+    $button.on('click', function (e) {
+        if (wasDragged) {
+            e.preventDefault();
+            e.stopPropagation();
+            return;
+        }
+        toggleCharCardViewerPopup();
+    });
+}
+
+export function initializeCharCardViewer() {
+    const $existingButton = $(`#${CHAR_CARD_VIEWER_BUTTON_ID}`);
+    
+    if ($existingButton.length > 0) {
+        console.log('[CWB] Char card viewer button already exists');
+        setTimeout(() => {
+            const shouldShow = isCwbEnabled() && state.viewerEnabled;
+            $existingButton.toggle(shouldShow);
+            console.log(`[CWB] Force updated existing button visibility: ${shouldShow}`);
+        }, 100);
+        return;
+    }
+    
+    const buttonHtml = `<div id="${CHAR_CARD_VIEWER_BUTTON_ID}" title="查看角色世界书" class="fa-solid fa-book-open"></div>`;
+    $('body').append(buttonHtml);
+    const $viewerButton = $(`#${CHAR_CARD_VIEWER_BUTTON_ID}`);
+    makeButtonDraggable($viewerButton);
+    
+    const savedPosition = JSON.parse(localStorage.getItem(state.STORAGE_KEY_VIEWER_BUTTON_POS) || 'null');
+    if (savedPosition) {
+        $viewerButton.css({ top: savedPosition.top, left: savedPosition.left });
+    } else {
+        $viewerButton.css({ top: '120px', right: '10px', left: 'auto' });
+    }
+
+    setTimeout(() => {
+        const shouldShow = isCwbEnabled() && state.viewerEnabled;
+        $viewerButton.toggle(shouldShow);
+        console.log(`[CWB] New button created with visibility: ${shouldShow}`);
+    }, 100);
+    
+    console.log('[CWB] Char card viewer button initialized');
+    
+    let resizeTimeout;
+    $(window).on('resize.cwbViewer', function () {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => keepButtonInBounds($(`#${CHAR_CARD_VIEWER_BUTTON_ID}`), true), 150);
+    });
+}
+
+export function updateViewerButtonVisibility() {
+    const $button = $(`#${CHAR_CARD_VIEWER_BUTTON_ID}`);
+    const shouldShow = isCwbEnabled() && state.viewerEnabled;
+    
+    console.log(`[CWB] Updating viewer button visibility: ${shouldShow} (master: ${isCwbEnabled()}, viewer: ${state.viewerEnabled})`);
+    
+    if ($button.length > 0) {
+        $button.toggle(shouldShow);
+        console.log(`[CWB] Viewer button visibility set to: ${shouldShow}`);
+    } else {
+        console.log('[CWB] Viewer button not found, will initialize when DOM is ready');
+        // Try to initialize if button doesn't exist yet
+        setTimeout(() => {
+            initializeCharCardViewer();
+        }, 500);
+    }
+    
+    logDebug('悬浮窗按钮显示状态更新:', {
+        masterEnabled: isCwbEnabled(),
+        viewerEnabled: state.viewerEnabled,
+        shouldShow: shouldShow
+    });
+}
+
+export function bindCwbApiEvents() {
+    console.log('[CWB] Binding API events');
+    
+    $('#cwb-api-url').off('input').on('input', function() {
+        const value = $(this).val();
+        extension_settings[extensionName].cwb_api_url = value;
+        saveSettingsDebounced();
+    });
+
+    $('#cwb-api-key').off('input').on('input', function() {
+        const value = $(this).val();
+        extension_settings[extensionName].cwb_api_key = value;
+        saveSettingsDebounced();
+    });
+
+    $('#cwb-model').off('input').on('input', function() {
+        const value = $(this).val();
+        extension_settings[extensionName].cwb_model = value;
+        saveSettingsDebounced();
+    });
+
+    $('#cwb-temperature').off('input').on('input', function() {
+        const value = parseFloat($(this).val());
+        $('#cwb-temperature-value').text(value);
+        extension_settings[extensionName].cwb_temperature = value;
+        saveSettingsDebounced();
+    });
+
+    $('#cwb-max-tokens').off('input').on('input', function() {
+        const value = parseInt($(this).val());
+        $('#cwb-max-tokens-value').text(value);
+        extension_settings[extensionName].cwb_max_tokens = value;
+        saveSettingsDebounced();
+    });
+
+    $('#cwb-test-connection').off('click').on('click', async function() {
+        const $button = $(this);
+        $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 测试中...');
+        
+        try {
+            await testCwbConnection();
+        } catch (error) {
+            console.error('[CWB] 测试连接失败:', error);
+        } finally {
+            $button.prop('disabled', false).html('<i class="fas fa-plug"></i> 测试连接');
+        }
+    });
+
+    $('#cwb-fetch-models').off('click').on('click', async function() {
+        const $button = $(this);
+        $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 获取中...');
+        
+        try {
+            const models = await fetchCwbModels();
+            const $modelSelect = $('#cwb-model');
+            $modelSelect.empty();
+            
+            if (models && models.length > 0) {
+                models.forEach(model => {
+                    $modelSelect.append(new Option(model.name, model.id));
+                });
+                showToastr('success', `已获取到 ${models.length} 个模型`);
+            } else {
+                $modelSelect.append(new Option('无可用模型', ''));
+                showToastr('warning', '未获取到可用模型');
+            }
+        } catch (error) {
+            console.error('[CWB] 获取模型失败:', error);
+            $('#cwb-model').empty().append(new Option('获取失败', ''));
+        } finally {
+            $button.prop('disabled', false).html('<i class="fas fa-download"></i> 获取模型');
+        }
+    });
+}
