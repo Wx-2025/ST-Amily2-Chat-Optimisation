@@ -1,5 +1,5 @@
 import { loadSettings, bindSettingsEvents } from './src/cwb_settingsManager.js';
-import { initializeCharCardViewer } from './src/cwb_uiManager.js';
+import { initializeCharCardViewer, bindCwbApiEvents } from './src/cwb_uiManager.js';
 import { initializeCore, getLatestChatName, resetScriptStateForNewChat, handleMessageReceived } from './src/cwb_core.js';
 import { checkForUpdates } from './src/cwb_updater.js';
 import { isCwbEnabled } from './src/cwb_utils.js';
@@ -15,6 +15,7 @@ export async function initializeCharacterWorldBook($cwbSettingsPanel) {
         }
 
         bindSettingsEvents($cwbSettingsPanel);
+        bindCwbApiEvents();
         loadSettings();
 
         if (!isCwbEnabled()) {
