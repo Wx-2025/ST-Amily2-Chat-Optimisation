@@ -49,21 +49,30 @@
                     <input type="password" id="cwb-api-key" class="text_pole" placeholder="可选">
                     
                     <label for="cwb-api-model">选择模型</label>
-                    <div class="cwb-input-with-button">
-                        <select id="cwb-api-model" class="text_pole"></select>
-                        <button id="cwb-load-models" class="menu_button"><i class="fa-solid fa-cloud-download"></i> 加载</button>
-                    </div>
+                    <select id="cwb-api-model" class="text_pole"></select>
                     
                     <label for="cwb-tavern-profile">SillyTavern预设</label>
                     <select id="cwb-tavern-profile" class="text_pole" style="display: none;">
                         <option value="">选择预设</option>
                     </select>
+                    
+                    <label for="cwb-temperature">温度</label>
+                    <div class="cwb-input-with-button">
+                        <input type="range" id="cwb-temperature" class="slider_pole" min="0" max="2" step="0.1" value="0.7">
+                        <span id="cwb-temperature-value" class="range-value">0.7</span>
+                    </div>
+                    
+                    <label for="cwb-max-tokens">最大Token数</label>
+                    <div class="cwb-input-with-button">
+                        <input type="range" id="cwb-max-tokens" class="slider_pole" min="1000" max="100000" step="1000" value="65000">
+                        <span id="cwb-max-tokens-value" class="range-value">65000</span>
+                    </div>
+                </div>
+                <div class="jqyh-button-row" style="grid-column: 1 / -1;">
+                    <button id="cwb-load-models" class="menu_button secondary" title="获取模型列表"><i class="fas fa-sync-alt"></i> 获取模型</button>
+                    <button id="cwb-test-connection" class="menu_button primary"><i class="fas fa-plug"></i> 测试连接</button>
                 </div>
                 <div id="cwb-api-status" class="notes" style="text-align: left; margin-top: 10px;"></div>
-                <div class="editor-buttons-panel" style="margin-top: 15px;">
-                    <button id="cwb-clear-config" class="menu_button danger small_button"><i class="fa-solid fa-trash-can"></i> 清除</button>
-                    <button id="cwb-save-config" class="menu_button accent small_button"><i class="fa-solid fa-floppy-disk"></i> 保存</button>
-                </div>
             </div>
 
             <div id="cwb-prompt-settings-tab" class="sinan-tab-pane">
