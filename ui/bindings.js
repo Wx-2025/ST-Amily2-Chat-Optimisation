@@ -1,8 +1,9 @@
 import { extension_settings, getContext } from "/scripts/extensions.js";
 import { characters, this_chid, getRequestHeaders, saveSettingsDebounced, eventSource, event_types } from "/script.js";
-import { defaultSettings, extensionName } from "../utils/settings.js";
+import { defaultSettings, extensionName, saveSettings } from "../utils/settings.js";
 import { pluginAuthStatus, activatePluginAuthorization, getPasswordForDate } from "../utils/auth.js";
 import { fetchModels } from "../core/api.js";
+import { getJqyhApiSettings, testJqyhApiConnection, fetchJqyhModels } from '../core/api/JqyhApi.js';
 import { safeLorebooks, safeCharLorebooks, safeLorebookEntries, isTavernHelperAvailable } from "../core/tavernhelper-compatibility.js";
 
 import { setAvailableModels, populateModelDropdown, getLatestUpdateInfo } from "./state.js";
@@ -36,7 +37,8 @@ async function loadSillyTavernPresets() {
     
     const select = $('#amily2_preset_selector');
     const settings = extension_settings[extensionName] || {};
-    const currentProfileId = settings.selectedPreset;
+    // 统一使用 tavernProfile 作为主要的预设存储键
+    const currentProfileId = settings.tavernProfile || settings.selectedPreset;
 
     select.empty().append(new Option('-- 请选择一个酒馆预设 --', ''));
 
@@ -53,15 +55,12 @@ async function loadSillyTavernPresets() {
         let foundCurrentProfile = false;
         tavernProfiles.forEach(profile => {
             if (profile.api && profile.preset) {
-                const option = $('<option>', {
-                    value: profile.id,
-                    text: profile.name || profile.id,
-                    selected: profile.id === currentProfileId
-                });
-                select.append(option);
+                const option = new Option(profile.name || profile.id, profile.id);
                 if (profile.id === currentProfileId) {
+                    option.selected = true;
                     foundCurrentProfile = true;
                 }
+                select.append(option);
             }
         });
 
@@ -75,8 +74,9 @@ async function loadSillyTavernPresets() {
                 saveSettingsDebounced();
             };
             updateAndSaveSetting('selectedPreset', '');
+            updateAndSaveSetting('tavernProfile', '');
         } else if (foundCurrentProfile) {
-            select.val(currentProfileId);
+            console.log(`[Amily2号-UI] SillyTavern预设已成功恢复：${currentProfileId}`);
         }
 
         const validProfiles = tavernProfiles.filter(p => p.api && p.preset);
@@ -831,6 +831,23 @@ async function opt_loadWorldbooks(panel) {
     const currentSelection = settings.plotOpt_selectedWorldbooks || [];
     container.empty();
 
+    // 移除旧的搜索框以防重复
+    panel.find('#amily2_opt_worldbook_search').remove();
+    const searchBox = $(`<input type="text" id="amily2_opt_worldbook_search" class="text_pole" placeholder="搜索世界书..." style="width: 100%; margin-bottom: 10px;">`);
+    container.before(searchBox);
+
+    searchBox.on('input', function() {
+        const searchTerm = $(this).val().toLowerCase();
+        container.find('.amily2_opt_worldbook_list_item').each(function() {
+            const bookName = $(this).find('label').text().toLowerCase();
+            if (bookName.includes(searchTerm)) {
+                $(this).show();
+            } else {
+                $(this).hide();
+            }
+        });
+    });
+
     try {
         const lorebooks = await safeLorebooks();
         if (!lorebooks || lorebooks.length === 0) {
@@ -842,9 +859,9 @@ async function opt_loadWorldbooks(panel) {
             const bookId = `amily2-opt-wb-check-${name.replace(/[^a-zA-Z0-9]/g, '-')}`;
             const isChecked = currentSelection.includes(name);
             const item = $(`
-                <div class="amily2_opt_worldbook_entry_item">
-                    <input type="checkbox" id="${bookId}" value="${name}" ${isChecked ? 'checked' : ''}>
-                    <label for="${bookId}">${name}</label>
+                <div class="amily2_opt_worldbook_list_item" style="display: flex; align-items: center;">
+                    <input type="checkbox" id="${bookId}" value="${name}" ${isChecked ? 'checked' : ''} style="margin-right: 5px;">
+                    <label for="${bookId}" style="margin-bottom: 0;">${name}</label>
                 </div>
             `);
             container.append(item);
@@ -861,6 +878,27 @@ async function opt_loadWorldbookEntries(panel) {
     const countDisplay = panel.find('#amily2_opt_worldbook_entry_count');
     container.html('<p>加载条目中...</p>');
     countDisplay.text('');
+
+    // 移除旧的搜索框以防重复
+    panel.find('#amily2_opt_worldbook_entry_search').remove();
+    const searchBox = $(`<input type="text" id="amily2_opt_worldbook_entry_search" class="text_pole" placeholder="搜索条目..." style="width: 100%; margin-bottom: 10px;">`);
+    container.before(searchBox);
+
+    searchBox.on('input', function() {
+        const searchTerm = $(this).val().toLowerCase();
+        let visibleCount = 0;
+        container.find('.amily2_opt_worldbook_entry_item').each(function() {
+            const entryName = $(this).find('label').text().toLowerCase();
+            if (entryName.includes(searchTerm)) {
+                $(this).show();
+                visibleCount++;
+            } else {
+                $(this).hide();
+            }
+        });
+        const totalEntries = container.find('.amily2_opt_worldbook_entry_item').length;
+        countDisplay.text(`显示 ${visibleCount} / ${totalEntries} 条目.`);
+    });
 
     const settings = opt_getMergedSettings(); 
     const currentSource = settings.plotOpt_worldbookSource || 'character';
@@ -907,23 +945,31 @@ async function opt_loadWorldbookEntries(panel) {
             });
         }
 
+        // 根据用户要求，只显示默认启用的条目
+        const enabledOnlyEntries = allEntries.filter(entry => entry.enabled);
+
         container.empty();
-        totalEntries = allEntries.length;
+        //totalEntries = allEntries.length;
+
+        totalEntries = enabledOnlyEntries.length;
 
         if (totalEntries === 0) {
-            container.html('<p class="notes">所选世界书没有条目。</p>');
+            //container.html('<p class="notes">所选世界书没有条目。</p>');
+
+            container.html('<p class="notes">所选世界书没有（已启用的）条目。</p>');
             countDisplay.text('0 条目.');
             return;
         }
+        //allEntries.sort((a, b) => (a.comment || '').localeCompare(b.comment || '')).forEach(entry => {
 
-        allEntries.sort((a, b) => (a.comment || '').localeCompare(b.comment || '')).forEach(entry => {
+        enabledOnlyEntries.sort((a, b) => (a.comment || '').localeCompare(b.comment || '')).forEach(entry => {
             const entryId = `amily2-opt-entry-${entry.bookName.replace(/[^a-zA-Z0-9]/g, '-')}-${entry.uid}`;
             const isEnabled = enabledEntries[entry.bookName]?.includes(entry.uid) ?? true;
 
             const item = $(`
-                <div class="amily2_opt_worldbook_entry_item">
-                    <input type="checkbox" id="${entryId}" data-book="${entry.bookName}" data-uid="${entry.uid}" ${isEnabled ? 'checked' : ''}>
-                    <label for="${entryId}" title="世界书: ${entry.bookName}\nUID: ${entry.uid}">${entry.comment || '无标题条目'}</label>
+                <div class="amily2_opt_worldbook_entry_item" style="display: flex; align-items: center;">
+                    <input type="checkbox" id="${entryId}" data-book="${entry.bookName}" data-uid="${entry.uid}" ${isEnabled ? 'checked' : ''} style="margin-right: 5px;">
+                    <label for="${entryId}" title="世界书: ${entry.bookName}\nUID: ${entry.uid}" style="margin-bottom: 0;">${entry.comment || '无标题条目'}</label>
                 </div>
             `);
             container.append(item);
@@ -974,32 +1020,54 @@ function opt_saveEnabledEntries() {
 function opt_loadPromptPresets(panel) {
     const presets = extension_settings[extensionName]?.promptPresets || [];
     const select = panel.find('#amily2_opt_prompt_preset_select');
+    const settings = opt_getMergedSettings();
+    const lastUsedPresetName = settings.plotOpt_lastUsedPresetName;
 
-    const currentValue = select.val();
     select.empty().append(new Option('-- 选择一个预设 --', ''));
 
     presets.forEach(preset => {
-        select.append(new Option(preset.name, preset.name));
+        const option = new Option(preset.name, preset.name);
+        if (preset.name === lastUsedPresetName) {
+            option.selected = true;
+        }
+        select.append(option);
     });
-
-    if (currentValue && presets.some(p => p.name === currentValue)) {
-        select.val(currentValue);
-    }
 }
 
 
 function opt_saveCurrentPromptsAsPreset(panel) {
-    const presetName = prompt("请输入预设名称：");
-    if (!presetName) return;
+    const selectedPresetName = panel.find('#amily2_opt_prompt_preset_select').val();
+    let presetName;
+    let isOverwriting = false;
+
+    if (selectedPresetName) {
+        if (confirm(`您确定要用当前编辑的提示词覆盖预设 "${selectedPresetName}" 吗？`)) {
+            presetName = selectedPresetName;
+            isOverwriting = true;
+        } else {
+            toastr.info('保存操作已取消。');
+            return;
+        }
+    } else {
+        presetName = prompt("您正在创建一个新的预设，请输入预设名称：");
+        if (!presetName) {
+            toastr.info('保存操作已取消。');
+            return;
+        }
+    }
 
     const presets = extension_settings[extensionName]?.promptPresets || [];
     const existingPresetIndex = presets.findIndex(p => p.name === presetName);
 
+    // Ensure the cache is up-to-date before saving
+    const currentEditorPromptKey = panel.find('#amily2_opt_prompt_selector').val();
+    promptCache[currentEditorPromptKey] = panel.find('#amily2_opt_prompt_editor').val();
+
     const newPresetData = {
         name: presetName,
-        mainPrompt: panel.find('#amily2_opt_main_prompt').val(),
-        systemPrompt: panel.find('#amily2_opt_system_prompt').val(),
-        finalSystemDirective: panel.find('#amily2_opt_final_system_directive').val(),
+        mainPrompt: promptCache.main,
+        systemPrompt: promptCache.system,
+        finalSystemDirective: promptCache.final_system,
         rateMain: parseFloat(panel.find('#amily2_opt_rate_main').val()),
         ratePersonal: parseFloat(panel.find('#amily2_opt_rate_personal').val()),
         rateErotic: parseFloat(panel.find('#amily2_opt_rate_erotic').val()),
@@ -1007,22 +1075,17 @@ function opt_saveCurrentPromptsAsPreset(panel) {
     };
 
     if (existingPresetIndex !== -1) {
-        if (confirm(`名为 "${presetName}" 的预设已存在。是否要覆盖它？`)) {
-            presets[existingPresetIndex] = newPresetData;
-            toastr.success(`预设 "${presetName}" 已被覆盖。`);
-        } else {
-            toastr.info('保存操作已取消。');
-            return;
-        }
+        presets[existingPresetIndex] = newPresetData;
+        toastr.success(`预设 "${presetName}" 已成功覆盖。`);
     } else {
         presets.push(newPresetData);
-        toastr.success(`预设 "${presetName}" 已保存。`);
+        toastr.success(`新预设 "${presetName}" 已成功创建。`);
     }
     opt_saveSetting('promptPresets', presets);
 
     opt_loadPromptPresets(panel);
     setTimeout(() => {
-        panel.find('#amily2_opt_prompt_preset_select').val(presetName).trigger('change');
+        panel.find('#amily2_opt_prompt_preset_select').val(presetName).trigger('change', { isAutomatic: false });
     }, 0);
 }
 
@@ -1192,9 +1255,22 @@ function opt_loadSettings(panel) {
     panel.find('#amily2_opt_rate_erotic').val(settings.plotOpt_rateErotic);
     panel.find('#amily2_opt_rate_cuckold').val(settings.plotOpt_rateCuckold);
 
-    panel.find('#amily2_opt_main_prompt').val(settings.plotOpt_mainPrompt);
-    panel.find('#amily2_opt_system_prompt').val(settings.plotOpt_systemPrompt);
-    panel.find('#amily2_opt_final_system_directive').val(settings.plotOpt_finalSystemDirective);
+    opt_loadPromptPresets(panel);
+
+    const lastUsedPresetName = settings.plotOpt_lastUsedPresetName;
+    
+    const initFunc = panel.data('initAmily2PromptEditor');
+    if (initFunc) {
+        initFunc();
+    }
+
+    // After loading presets and initializing the editor, trigger a "light" change event
+    // to update UI elements like the delete button, without reloading all the data.
+    if (lastUsedPresetName && panel.find('#amily2_opt_prompt_preset_select').val() === lastUsedPresetName) {
+        setTimeout(() => {
+            panel.find('#amily2_opt_prompt_preset_select').trigger('change', { isAutomatic: true, noLoad: true });
+        }, 0);
+    }
 
     opt_updateApiUrlVisibility(panel, settings.plotOpt_apiMode);
     opt_updateWorldbookSourceVisibility(panel, settings.plotOpt_worldbookSource || 'character');
@@ -1208,16 +1284,6 @@ function opt_loadSettings(panel) {
     opt_bindSlider(panel, '#amily2_opt_worldbook_char_limit', '#amily2_opt_worldbook_char_limit_value');
     opt_bindSlider(panel, '#amily2_opt_context_limit', '#amily2_opt_context_limit_value');
 
-    opt_loadPromptPresets(panel);
-
-    const lastUsedPresetName = settings.plotOpt_lastUsedPresetName;
-    if (lastUsedPresetName && (settings.plotOpt_promptPresets || []).some(p => p.name === lastUsedPresetName)) {
-
-        setTimeout(() => {
-            panel.find('#amily2_opt_prompt_preset_select').val(lastUsedPresetName).trigger('change', { isAutomatic: true });
-        }, 0);
-    }
-
     opt_loadWorldbooks(panel).then(() => {
         opt_loadWorldbookEntries(panel);
     });
@@ -1226,13 +1292,121 @@ function opt_loadSettings(panel) {
 }
 
 
+const promptCache = {
+    main: '',
+    system: '',
+    final_system: ''
+};
+
 export function initializePlotOptimizationBindings() {
     const panel = $('#amily2_plot_optimization_panel');
     if (panel.length === 0 || panel.data('events-bound')) {
         return;
     }
+
+    // Tab switching logic
+    panel.find('.sinan-navigation-deck').on('click', '.sinan-nav-item', function() {
+        const tabButton = $(this);
+        const tabName = tabButton.data('tab');
+        const contentWrapper = panel.find('.sinan-content-wrapper');
+
+        // Deactivate all tabs and panes
+        panel.find('.sinan-nav-item').removeClass('active');
+        contentWrapper.find('.sinan-tab-pane').removeClass('active');
+
+        // Activate the clicked tab and corresponding pane
+        tabButton.addClass('active');
+        contentWrapper.find(`#sinan-${tabName}-tab`).addClass('active');
+    });
+
+    // Unified prompt editor logic
+    function updateEditorFromCache() {
+        const selectedPrompt = panel.find('#amily2_opt_prompt_selector').val();
+        if (selectedPrompt) {
+            panel.find('#amily2_opt_prompt_editor').val(promptCache[selectedPrompt]);
+        }
+    }
+
+    // Make it available for opt_loadSettings
+    panel.data('initAmily2PromptEditor', function() {
+        const settings = opt_getMergedSettings();
+        const lastUsedPresetName = settings.plotOpt_lastUsedPresetName;
+        const presets = settings.promptPresets || [];
+        const lastUsedPreset = presets.find(p => p.name === lastUsedPresetName);
+
+        if (lastUsedPreset) {
+            // If a valid preset was last used, load its data into the cache
+            promptCache.main = lastUsedPreset.mainPrompt || defaultSettings.plotOpt_mainPrompt;
+            promptCache.system = lastUsedPreset.systemPrompt || defaultSettings.plotOpt_systemPrompt;
+            promptCache.final_system = lastUsedPreset.finalSystemDirective || defaultSettings.plotOpt_finalSystemDirective;
+        } else {
+            // Otherwise, load from the base settings (non-preset values)
+            promptCache.main = settings.plotOpt_mainPrompt || defaultSettings.plotOpt_mainPrompt;
+            promptCache.system = settings.plotOpt_systemPrompt || defaultSettings.plotOpt_systemPrompt;
+            promptCache.final_system = settings.plotOpt_finalSystemDirective || defaultSettings.plotOpt_finalSystemDirective;
+        }
+        
+        updateEditorFromCache();
+        panel.find('#amily2_opt_prompt_editor').data('current-prompt', panel.find('#amily2_opt_prompt_selector').val());
+    });
+
+    panel.on('change', '#amily2_opt_prompt_selector', function() {
+        const previousPromptKey = panel.find('#amily2_opt_prompt_editor').data('current-prompt');
+        if (previousPromptKey) {
+            const previousValue = panel.find('#amily2_opt_prompt_editor').val();
+            promptCache[previousPromptKey] = previousValue;
+            const keyMap = {
+                main: 'plotOpt_mainPrompt',
+                system: 'plotOpt_systemPrompt',
+                final_system: 'plotOpt_finalSystemDirective'
+            };
+            opt_saveSetting(keyMap[previousPromptKey], previousValue);
+        }
+        
+        const selectedPrompt = $(this).val();
+        panel.find('#amily2_opt_prompt_editor').val(promptCache[selectedPrompt]);
+        panel.find('#amily2_opt_prompt_editor').data('current-prompt', selectedPrompt);
+    });
+
+    panel.on('input', '#amily2_opt_prompt_editor', function() {
+        const currentPrompt = panel.find('#amily2_opt_prompt_selector').val();
+        const currentValue = $(this).val();
+        promptCache[currentPrompt] = currentValue;
+        
+        const keyMap = {
+            main: 'plotOpt_mainPrompt',
+            system: 'plotOpt_systemPrompt',
+            final_system: 'plotOpt_finalSystemDirective'
+        };
+        opt_saveSetting(keyMap[currentPrompt], currentValue);
+    });
+
+    panel.on('click', '#amily2_opt_reset_main_prompt', function() {
+        const defaultValue = defaultSettings.plotOpt_mainPrompt;
+        promptCache.main = defaultValue;
+        updateEditorFromCache();
+        opt_saveSetting('plotOpt_mainPrompt', defaultValue);
+        toastr.info('主提示词已恢复为默认值。');
+    });
+
+    panel.on('click', '#amily2_opt_reset_system_prompt', function() {
+        const defaultValue = defaultSettings.plotOpt_systemPrompt;
+        promptCache.system = defaultValue;
+        updateEditorFromCache();
+        opt_saveSetting('plotOpt_systemPrompt', defaultValue);
+        toastr.info('拦截任务指令已恢复为默认值。');
+    });
+
+    panel.on('click', '#amily2_opt_reset_final_system_directive', function() {
+        const defaultValue = defaultSettings.plotOpt_finalSystemDirective;
+        promptCache.final_system = defaultValue;
+        updateEditorFromCache();
+        opt_saveSetting('plotOpt_finalSystemDirective', defaultValue);
+        toastr.info('最终注入指令已恢复为默认值。');
+    });
     
     opt_loadSettings(panel);
+    bindJqyhApiEvents();
 
     eventSource.on(event_types.CHAT_CHANGED, () => {
         console.log(`[${extensionName}] 检测到角色/聊天切换，正在刷新剧情优化设置UI...`);
@@ -1310,9 +1484,19 @@ export function initializePlotOptimizationBindings() {
     panel.on('change.amily2_opt', '#amily2_opt_prompt_preset_select', function(event, data) {
         const selectedName = $(this).val();
         const deleteBtn = panel.find('#amily2_opt_delete_prompt_preset');
-        const isAutomatic = data && data.isAutomatic; 
+        const isAutomatic = data && data.isAutomatic;
+        const noLoad = data && data.noLoad;
 
-        opt_saveSetting('lastUsedPresetName', selectedName);
+        console.log('[Amily2-Debug] Preset select changed:', selectedName, 'isAutomatic:', isAutomatic, 'noLoad:', noLoad);
+        opt_saveSetting('plotOpt_lastUsedPresetName', selectedName);
+        console.log('[Amily2-Debug] After saving, extension_settings contains:', extension_settings[extensionName]?.plotOpt_lastUsedPresetName);
+
+        // On initial load, we might not need to reload all the data, just update the UI state.
+        if (noLoad) {
+            if (selectedName) deleteBtn.show();
+            else deleteBtn.hide();
+            return;
+        }
 
         if (!selectedName) {
             deleteBtn.hide();
@@ -1324,9 +1508,21 @@ export function initializePlotOptimizationBindings() {
         const selectedPreset = presets.find(p => p.name === selectedName);
 
         if (selectedPreset) {
-            panel.find('#amily2_opt_main_prompt').val(selectedPreset.mainPrompt).trigger('change');
-            panel.find('#amily2_opt_system_prompt').val(selectedPreset.systemPrompt).trigger('change');
-            panel.find('#amily2_opt_final_system_directive').val(selectedPreset.finalSystemDirective).trigger('change');
+            // Update cache with preset values
+            promptCache.main = selectedPreset.mainPrompt || defaultSettings.plotOpt_mainPrompt;
+            promptCache.system = selectedPreset.systemPrompt || defaultSettings.plotOpt_systemPrompt;
+            promptCache.final_system = selectedPreset.finalSystemDirective || defaultSettings.plotOpt_finalSystemDirective;
+            
+            // Update the editor to show the content of the currently selected prompt type
+            const initFunc = panel.data('initAmily2PromptEditor');
+            if (initFunc) {
+                initFunc();
+            }
+
+            // Save the new prompt values to the main settings
+            opt_saveSetting('plotOpt_mainPrompt', promptCache.main);
+            opt_saveSetting('plotOpt_systemPrompt', promptCache.system);
+            opt_saveSetting('plotOpt_finalSystemDirective', promptCache.final_system);
 
             panel.find('#amily2_opt_rate_main').val(selectedPreset.rateMain ?? 1.0).trigger('change');
             panel.find('#amily2_opt_rate_personal').val(selectedPreset.ratePersonal ?? 1.0).trigger('change');
@@ -1340,22 +1536,6 @@ export function initializePlotOptimizationBindings() {
         } else {
             deleteBtn.hide();
         }
-    });
-
-
-    panel.find('#amily2_opt_reset_main_prompt').on('click', function() {
-        panel.find('#amily2_opt_main_prompt').val(defaultSettings.plotOpt_mainPrompt).trigger('change');
-        toastr.success('主提示词已重置为默认值。');
-    });
-
-    panel.find('#amily2_opt_reset_system_prompt').on('click', function() {
-        panel.find('#amily2_opt_system_prompt').val(defaultSettings.plotOpt_systemPrompt).trigger('change');
-        toastr.success('拦截任务指令已重置为默认值。');
-    });
-
-    panel.find('#amily2_opt_reset_final_system_directive').on('click', function() {
-        panel.find('#amily2_opt_final_system_directive').val(defaultSettings.plotOpt_finalSystemDirective).trigger('change');
-        toastr.success('最终注入指令已重置为默认值。');
     });
 
     panel.data('events-bound', true);
@@ -1391,6 +1571,214 @@ export function initializePlotOptimizationBindings() {
         panel.find('#amily2_opt_worldbook_entry_list_container input[type="checkbox"]').prop('checked', false);
         opt_saveEnabledEntries();
     });
+}
+
+// ========== Jqyh API 事件绑定函数 ==========
+function bindJqyhApiEvents() {
+    console.log("[Amily2号-Jqyh工部] 正在绑定Jqyh API事件...");
+
+    const updateAndSaveSetting = (key, value) => {
+        console.log(`[Amily2-Jqyh令] 收到指令: 将 [${key}] 设置为 ->`, value);
+        if (!extension_settings[extensionName]) {
+            extension_settings[extensionName] = {};
+        }
+        extension_settings[extensionName][key] = value;
+        saveSettingsDebounced();
+        console.log(`[Amily2-Jqyh录] [${key}] 的新状态已保存。`);
+    };
+
+    // Jqyh API 开关控制
+    const jqyhToggle = document.getElementById('amily2_jqyh_enabled');
+    const jqyhContent = document.getElementById('amily2_jqyh_content');
+    
+    if (jqyhToggle && jqyhContent) {
+        jqyhToggle.checked = extension_settings[extensionName].jqyhEnabled ?? false;
+        jqyhContent.style.display = jqyhToggle.checked ? 'block' : 'none';
+
+        jqyhToggle.addEventListener('change', function() {
+            const isEnabled = this.checked;
+            updateAndSaveSetting('jqyhEnabled', isEnabled);
+            jqyhContent.style.display = isEnabled ? 'block' : 'none';
+        });
+    }
+
+    // API模式切换
+    const apiModeSelect = document.getElementById('amily2_jqyh_api_mode');
+    const compatibleConfig = document.getElementById('amily2_jqyh_compatible_config');
+    const presetConfig = document.getElementById('amily2_jqyh_preset_config');
+
+    if (apiModeSelect && compatibleConfig && presetConfig) {
+        apiModeSelect.value = extension_settings[extensionName].jqyhApiMode || 'openai_test';
+        
+        const updateConfigVisibility = (mode) => {
+            if (mode === 'sillytavern_preset') {
+                compatibleConfig.style.display = 'none';
+                presetConfig.style.display = 'block';
+                loadJqyhTavernPresets();
+            } else {
+                compatibleConfig.style.display = 'block';
+                presetConfig.style.display = 'none';
+            }
+        };
+
+        updateConfigVisibility(apiModeSelect.value);
+
+        apiModeSelect.addEventListener('change', function() {
+            updateAndSaveSetting('jqyhApiMode', this.value);
+            updateConfigVisibility(this.value);
+        });
+    }
+
+    // API配置字段绑定
+    const apiFields = [
+        { id: 'amily2_jqyh_api_url', key: 'jqyhApiUrl' },
+        { id: 'amily2_jqyh_api_key', key: 'jqyhApiKey' },
+        { id: 'amily2_jqyh_model', key: 'jqyhModel' }
+    ];
+
+    apiFields.forEach(field => {
+        const element = document.getElementById(field.id);
+        if (element) {
+            element.value = extension_settings[extensionName][field.key] || '';
+            element.addEventListener('change', function() {
+                updateAndSaveSetting(field.key, this.value);
+            });
+        }
+    });
+
+    // 滑块控件绑定
+    const sliderFields = [
+        { id: 'amily2_jqyh_max_tokens', key: 'jqyhMaxTokens', defaultValue: 4000 },
+        { id: 'amily2_jqyh_temperature', key: 'jqyhTemperature', defaultValue: 0.7 }
+    ];
+
+    sliderFields.forEach(field => {
+        const slider = document.getElementById(field.id);
+        const display = document.getElementById(field.id + '_value');
+        if (slider && display) {
+            const value = extension_settings[extensionName][field.key] || field.defaultValue;
+            slider.value = value;
+            display.textContent = value;
+
+            slider.addEventListener('input', function() {
+                const newValue = parseFloat(this.value);
+                display.textContent = newValue;
+                updateAndSaveSetting(field.key, newValue);
+            });
+        }
+    });
+
+    // SillyTavern预设选择器
+    const tavernProfileSelect = document.getElementById('amily2_jqyh_tavern_profile');
+    if (tavernProfileSelect) {
+        tavernProfileSelect.value = extension_settings[extensionName].jqyhTavernProfile || '';
+        tavernProfileSelect.addEventListener('change', function() {
+            updateAndSaveSetting('jqyhTavernProfile', this.value);
+        });
+    }
+
+    // 测试连接按钮
+    const testButton = document.getElementById('amily2_jqyh_test_connection');
+    if (testButton) {
+        testButton.addEventListener('click', async function() {
+            const button = $(this);
+            const originalHtml = button.html();
+            button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 测试中');
+            
+            try {
+                await testJqyhApiConnection();
+            } catch (error) {
+                console.error('[Amily2号-Jqyh] 测试连接失败:', error);
+            } finally {
+                button.prop('disabled', false).html(originalHtml);
+            }
+        });
+    }
+
+    // 获取模型按钮
+    const fetchModelsButton = document.getElementById('amily2_jqyh_fetch_models');
+    const modelSelect = document.getElementById('amily2_jqyh_model_select');
+    const modelInput = document.getElementById('amily2_jqyh_model');
+    
+    if (fetchModelsButton && modelSelect && modelInput) {
+        fetchModelsButton.addEventListener('click', async function() {
+            const button = $(this);
+            const originalHtml = button.html();
+            button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 获取中');
+            
+            try {
+                const models = await fetchJqyhModels();
+                
+                if (models && models.length > 0) {
+                    // 清空并填充模型下拉框
+                    modelSelect.innerHTML = '<option value="">-- 请选择模型 --</option>';
+                    models.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model.id || model.name || model;
+                        option.textContent = model.name || model.id || model;
+                        modelSelect.appendChild(option);
+                    });
+                    
+                    // 显示下拉框，隐藏输入框
+                    modelSelect.style.display = 'block';
+                    modelInput.style.display = 'none';
+                    
+                    // 绑定模型选择事件
+                    modelSelect.addEventListener('change', function() {
+                        const selectedModel = this.value;
+                        modelInput.value = selectedModel;
+                        updateAndSaveSetting('jqyhModel', selectedModel);
+                        console.log(`[Amily2-Jqyh] 已选择模型: ${selectedModel}`);
+                    });
+                    
+                    toastr.success(`成功获取 ${models.length} 个模型`, 'Jqyh 模型获取');
+                } else {
+                    toastr.warning('未获取到任何模型', 'Jqyh 模型获取');
+                }
+                
+            } catch (error) {
+                console.error('[Amily2号-Jqyh] 获取模型列表失败:', error);
+                toastr.error(`获取模型失败: ${error.message}`, 'Jqyh 模型获取');
+            } finally {
+                button.prop('disabled', false).html(originalHtml);
+            }
+        });
+    }
+}
+
+// 加载SillyTavern预设列表
+async function loadJqyhTavernPresets() {
+    const select = document.getElementById('amily2_jqyh_tavern_profile');
+    if (!select) return;
+
+    const currentValue = select.value;
+    select.innerHTML = '<option value="">-- 加载中 --</option>';
+
+    try {
+        const context = getContext();
+        const tavernProfiles = context.extensionSettings?.connectionManager?.profiles || [];
+        
+        select.innerHTML = '<option value="">-- 请选择预设 --</option>';
+        
+        if (tavernProfiles.length > 0) {
+            tavernProfiles.forEach(profile => {
+                if (profile.api && profile.preset) {
+                    const option = document.createElement('option');
+                    option.value = profile.id;
+                    option.textContent = profile.name || profile.id;
+                    if (profile.id === currentValue) {
+                        option.selected = true;
+                    }
+                    select.appendChild(option);
+                }
+            });
+        } else {
+            select.innerHTML = '<option value="">未找到可用预设</option>';
+        }
+    } catch (error) {
+        console.error('[Amily2号-Jqyh] 加载SillyTavern预设失败:', error);
+        select.innerHTML = '<option value="">加载失败</option>';
+    }
 }
 
 $(document).on('change', 'input[name="amily2_icon_location"]', function() {
