@@ -1,1 +1,293 @@
-const _0x4e3bdf=_0x3a3a;(function(_0x20c271,_0x45a632){const _0x30f376=_0x3a3a,_0x49070e=_0x20c271();while(!![]){try{const _0x554a42=parseInt(_0x30f376(0x1f1))/0x1*(parseInt(_0x30f376(0x1c6))/0x2)+parseInt(_0x30f376(0x1dc))/0x3*(-parseInt(_0x30f376(0x1fc))/0x4)+-parseInt(_0x30f376(0x1d0))/0x5+-parseInt(_0x30f376(0x1ff))/0x6*(-parseInt(_0x30f376(0x1e5))/0x7)+-parseInt(_0x30f376(0x203))/0x8*(parseInt(_0x30f376(0x1d9))/0x9)+parseInt(_0x30f376(0x1e6))/0xa*(-parseInt(_0x30f376(0x1c5))/0xb)+-parseInt(_0x30f376(0x1f8))/0xc*(-parseInt(_0x30f376(0x20d))/0xd);if(_0x554a42===_0x45a632)break;else _0x49070e['push'](_0x49070e['shift']());}catch(_0xe6bf9){_0x49070e['push'](_0x49070e['shift']());}}}(_0x2f76,0x30d09));function _0x3a3a(_0x48845e,_0x5c6fd2){const _0x2f760e=_0x2f76();return _0x3a3a=function(_0x3a3a29,_0xa657d4){_0x3a3a29=_0x3a3a29-0x1be;let _0xe4bace=_0x2f760e[_0x3a3a29];return _0xe4bace;},_0x3a3a(_0x48845e,_0x5c6fd2);}import{eventSource,event_types,main_api,stopGeneration}from'/script.js';import{renderExtensionTemplateAsync}from'/scripts/extensions.js';import{POPUP_RESULT,POPUP_TYPE,Popup}from'/scripts/popup.js';import{t}from'/scripts/i18n.js';import{extensionName}from'../utils/settings.js';import{getTokenCountAsync}from'/scripts/tokenizers.js';window['MiZheSi_Global']={'isEnabled':()=>inspectEnabled};const miZheSiPath=_0x4e3bdf(0x21c)+extensionName+'/MiZheSi',STORAGE_KEY=_0x4e3bdf(0x1bf);if(!('GENERATE_AFTER_COMBINE_PROMPTS'in event_types)||!('CHAT_COMPLETION_PROMPT_READY'in event_types)){toastr[_0x4e3bdf(0x217)]('【密折司】错误：您的SillyTavern版本过旧，缺少必要的事件支持。请更新至最新版本。');throw new Error(_0x4e3bdf(0x1e3));}let inspectEnabled=![];function _0x2f76(){const _0xc09526=['openai','getElementById','error','dryRun','replace','className','<textarea\x20id=\x22mizhesi-plain-text-editor\x22\x20style=\x22width:\x20100%;\x20height:\x20100%;\x20box-sizing:\x20border-box;\x22></textarea>','third-party/','\x20字)','add','appendChild','splice','append','createElement','setItem','textarea','fast','amily2_miZheSiEnabled','stringify','【密折司】解析修改后的JSON奏章失败:','val','flexGap5','切换【密折司】状态','319TUMPAm','126782bhQzjg','length','prompt','find','template','flex-container','.mizhesi-line-char-count,\x20.mizhesi-injection-icons,\x20.mizhesi-injection-icons\x20*','CHAT_COMPLETION_PROMPT_READY','info','isArray','708425gzgIYP','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22mizhesi-message-block\x22\x20data-role=\x22','div','GENERATE_AFTER_COMBINE_PROMPTS','开启Amliy2号密折司','textContent','content','.mizhesi-message-content','target','27hSUUtZ','closest','【密折司】解析JSON失败，本次修改未生效。','186ropQYi','stopPropagation','classList','【密折司】已','CANCELLED','title','show','【密折司】缺少必要的事件支持。','(总\x20','7NqOqnU','4140pEdqhu','extensionsMenu','#mizhesi-plain-text-editor','<i\x20class=\x22fa-solid\x20fa-brain\x22\x20title=\x22翰林院\x20RAG\x20注入\x22\x20style=\x22color:\x20#66ccff;\x22></i>','\x20Tokens\x20/\x20','list-group-item','toggle','toggleClass','slideToggle','.mizhesi-injection-icons','.mizhesi-message-header','6gnObhM','includes','.mizhesi-message-block','click','interactable','role','expanded','3576QfynsS','empty','complete','active','16696dCdmrg','%%AMILY2_TABLE_INJECTION%%','addEventListener','502602yjpTbE','.mizhesi-line-char-count','确认修改','<i\x20class=\x22fa-solid\x20fa-table-cells\x22\x20title=\x22表格系统注入\x22\x20style=\x22color:\x20#99cc33;\x22></i>','431752SxYWpu','取消生成','Input\x20is\x20not\x20a\x20chat\x20array.','text','siblings','input','.mizhesi-header\x20h3','放弃修改','each','miZheSiLaunchButton','13533NBIPOv','<span\x20id=\x22mizhesi-char-count\x22\x20style=\x22font-size:\x2014px;\x20color:\x20#FFD700;\x20margin-left:\x2015px;\x20font-weight:\x20normal;\x22></span>','parse','chat','【密折司】无法找到左下角扩展菜单\x20(extensionsMenu)。','\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22mizhesi-message-header\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22mizhesi-injection-icons\x22\x20style=\x22display:\x20inline-flex;\x20gap:\x205px;\x20margin-right:\x2010px;\x20align-items:\x20center;\x22></span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22mizhesi-line-char-count\x22\x20style=\x22font-weight:\x20normal;\x20color:\x20#FFD700;\x20margin-right:\x2010px;\x22></span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span\x20class=\x22mizhesi-role\x22>','.mizhesi-message-textarea','tabIndex'];_0x2f76=function(){return _0xc09526;};return _0x2f76();}function addLaunchButton(){const _0x58cde0=_0x4e3bdf,_0x95625b='关闭Amliy2号密折司',_0x32da99=_0x58cde0(0x1d4),_0x515a08='fa-solid\x20fa-scroll',_0x2f13cb=()=>inspectEnabled?_0x95625b:_0x32da99,_0xdc02b5=document['createElement'](_0x58cde0(0x1d2));_0xdc02b5['id']=_0x58cde0(0x20c),_0xdc02b5[_0x58cde0(0x1de)][_0x58cde0(0x21e)](_0x58cde0(0x1eb),_0x58cde0(0x1cb),_0x58cde0(0x1c3),_0x58cde0(0x1f5)),_0xdc02b5[_0x58cde0(0x214)]=0x0,_0xdc02b5[_0x58cde0(0x1e1)]=_0x58cde0(0x1c4);const _0x204742=document[_0x58cde0(0x222)]('i');_0x204742[_0x58cde0(0x21a)]=_0x515a08,_0xdc02b5[_0x58cde0(0x21f)](_0x204742);const _0xd2b486=document[_0x58cde0(0x222)]('span');_0xd2b486[_0x58cde0(0x1d5)]=_0x2f13cb(),_0xdc02b5[_0x58cde0(0x21f)](_0xd2b486);const _0x5e79e8=document['getElementById'](_0x58cde0(0x1e7));if(!_0x5e79e8){console[_0x58cde0(0x217)](_0x58cde0(0x211));return;}if(document[_0x58cde0(0x216)](_0xdc02b5['id']))return;_0x5e79e8['appendChild'](_0xdc02b5),_0xdc02b5[_0x58cde0(0x1fe)]('click',()=>{const _0x5ec06b=_0x58cde0;toggleInspectNext(),_0xd2b486[_0x5ec06b(0x1d5)]=_0x2f13cb(),_0xdc02b5['classList'][_0x5ec06b(0x1ec)](_0x5ec06b(0x1fb),inspectEnabled);}),_0xdc02b5[_0x58cde0(0x1de)][_0x58cde0(0x1ec)]('active',inspectEnabled);}function toggleInspectNext(){const _0x4ba811=_0x4e3bdf;inspectEnabled=!inspectEnabled,toastr[_0x4ba811(0x1ce)](_0x4ba811(0x1df)+(inspectEnabled?'开启':'关闭')),localStorage[_0x4ba811(0x223)](STORAGE_KEY,String(inspectEnabled));}async function showPromptInspector(_0x339b86){const _0x5f0e6a=_0x4e3bdf,_0x11fbc8=$(await renderExtensionTemplateAsync(miZheSiPath,_0x5f0e6a(0x1ca))),_0x3401ce=_0x11fbc8[_0x5f0e6a(0x1c9)]('#mizhesi-editor-container');let _0x154fe5=![];const _0x50cef1=_0x11fbc8['find'](_0x5f0e6a(0x209)),_0x435aec=$(_0x5f0e6a(0x20e));_0x50cef1['append'](_0x435aec);const _0x2aa3be=async()=>{const _0xd75945=_0x5f0e6a;let _0x13457c=0x0,_0x594083=0x0;if(_0x154fe5){const _0x1b29dd=_0x11fbc8[_0xd75945(0x1c9)](_0xd75945(0x213));for(const _0x1fd1f4 of _0x1b29dd){const _0xed7882=$(_0x1fd1f4)[_0xd75945(0x1c2)]();_0x13457c+=await getTokenCountAsync(_0xed7882),_0x594083+=_0xed7882[_0xd75945(0x1c7)];}}else{const _0x163a54=_0x11fbc8[_0xd75945(0x1c9)](_0xd75945(0x1e8))[_0xd75945(0x1c2)]();_0x13457c=await getTokenCountAsync(_0x163a54),_0x594083=_0x163a54[_0xd75945(0x1c7)];}_0x435aec[_0xd75945(0x206)](_0xd75945(0x1e4)+_0x13457c+_0xd75945(0x1ea)+_0x594083+_0xd75945(0x21d));};try{const _0x3c19ee=JSON[_0x5f0e6a(0x20f)](_0x339b86);if(Array[_0x5f0e6a(0x1cf)](_0x3c19ee)){_0x154fe5=!![],_0x3401ce[_0x5f0e6a(0x1f9)]();for(const _0x50eb26 of _0x3c19ee){const _0x10285b=$(_0x5f0e6a(0x1d1)+_0x50eb26['role']+_0x5f0e6a(0x212)+_0x50eb26[_0x5f0e6a(0x1f6)]+'</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22mizhesi-message-content\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<textarea\x20class=\x22mizhesi-message-textarea\x22></textarea>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20');let _0x4937fc=_0x50eb26[_0x5f0e6a(0x1d6)];const _0x5ad80c=_0x10285b['find'](_0x5f0e6a(0x1ef));_0x4937fc[_0x5f0e6a(0x1f2)]('%%HANLINYUAN_RAG_INJECTION%%')&&(_0x4937fc=_0x4937fc[_0x5f0e6a(0x219)]('%%HANLINYUAN_RAG_INJECTION%%',''),_0x5ad80c[_0x5f0e6a(0x221)](_0x5f0e6a(0x1e9)));_0x4937fc[_0x5f0e6a(0x1f2)](_0x5f0e6a(0x1fd))&&(_0x4937fc=_0x4937fc['replace'](_0x5f0e6a(0x1fd),''),_0x5ad80c['append'](_0x5f0e6a(0x202)));const _0x2079f6=_0x10285b[_0x5f0e6a(0x1c9)]('textarea');_0x2079f6[_0x5f0e6a(0x1c2)](_0x4937fc),_0x3401ce[_0x5f0e6a(0x221)](_0x10285b);const _0x38527f=_0x10285b[_0x5f0e6a(0x1c9)](_0x5f0e6a(0x200)),_0x272797=async()=>{const _0x2c5aa1=_0x5f0e6a,_0xe7d062=_0x2079f6[_0x2c5aa1(0x1c2)](),_0x865fc3=await getTokenCountAsync(_0xe7d062),_0x4f3667=_0xe7d062[_0x2c5aa1(0x1c7)];_0x38527f[_0x2c5aa1(0x206)]('('+_0x865fc3+'\x20Tokens\x20/\x20'+_0x4f3667+_0x2c5aa1(0x21d));};await _0x272797(),_0x2079f6['on']('input',async()=>{await _0x272797(),await _0x2aa3be();}),_0x10285b['find'](_0x5f0e6a(0x1f0))['on'](_0x5f0e6a(0x1f4),function(_0x471ab5){const _0x5cee8d=_0x5f0e6a;if($(_0x471ab5[_0x5cee8d(0x1d8)])['is'](_0x5cee8d(0x1cc))){_0x471ab5[_0x5cee8d(0x1dd)]();return;}const _0x19177f=$(this)[_0x5cee8d(0x207)](_0x5cee8d(0x1d7)),_0x2993b2=$(this)[_0x5cee8d(0x1da)](_0x5cee8d(0x1f3));_0x2993b2[_0x5cee8d(0x1ed)](_0x5cee8d(0x1f7)),_0x19177f[_0x5cee8d(0x1ee)](_0x5cee8d(0x1be));});}}else throw new Error(_0x5f0e6a(0x205));}catch(_0x29e007){_0x154fe5=![];const _0x9decbd=$(_0x5f0e6a(0x21b));_0x9decbd['val'](_0x339b86),_0x3401ce[_0x5f0e6a(0x1f9)]()[_0x5f0e6a(0x221)](_0x9decbd),_0x9decbd['on'](_0x5f0e6a(0x208),async()=>await _0x2aa3be());}await _0x2aa3be();const _0x4e9e9e={'text':_0x5f0e6a(0x204),'result':POPUP_RESULT['CANCELLED'],'appendAtEnd':!![],'action':async()=>{const _0x2cd943=_0x5f0e6a;await stopGeneration(),await _0x21268d[_0x2cd943(0x1fa)](POPUP_RESULT[_0x2cd943(0x1e0)]);}},_0x21268d=new Popup(_0x11fbc8,POPUP_TYPE['CONFIRM'],'',{'wide':!![],'large':!![],'okButton':_0x5f0e6a(0x201),'cancelButton':_0x5f0e6a(0x20a),'customButtons':[_0x4e9e9e]}),_0x1d6a15=await _0x21268d[_0x5f0e6a(0x1e2)]();if(!_0x1d6a15)return _0x339b86;if(_0x154fe5){const _0x37bca9=[];return _0x11fbc8[_0x5f0e6a(0x1c9)](_0x5f0e6a(0x1f3))[_0x5f0e6a(0x20b)](function(){const _0x1fb6ce=_0x5f0e6a,_0x40ca3c=$(this)['data'](_0x1fb6ce(0x1f6)),_0x2c1e37=$(this)[_0x1fb6ce(0x1c9)](_0x1fb6ce(0x224))['val']();_0x37bca9['push']({'role':_0x40ca3c,'content':_0x2c1e37});}),JSON[_0x5f0e6a(0x1c0)](_0x37bca9,null,0x4);}else return _0x11fbc8['find'](_0x5f0e6a(0x1e8))['val']();}function isChatCompletion(){const _0x236fa0=_0x4e3bdf;return main_api===_0x236fa0(0x215);}eventSource['on'](event_types[_0x4e3bdf(0x1d3)],async _0x24500c=>{const _0x4c5ed3=_0x4e3bdf;if(!inspectEnabled||_0x24500c[_0x4c5ed3(0x218)]||isChatCompletion())return;if(typeof _0x24500c['prompt']!=='string')return;const _0x1f2973=await showPromptInspector(_0x24500c[_0x4c5ed3(0x1c8)]);_0x1f2973!==_0x24500c['prompt']&&(_0x24500c[_0x4c5ed3(0x1c8)]=_0x1f2973,console['log']('【密折司】奏章已按御笔修改\x20(Text\x20Gen)。'));}),eventSource['on'](event_types[_0x4e3bdf(0x1cd)],async _0x599e25=>{const _0x4f2ae7=_0x4e3bdf;if(!inspectEnabled||_0x599e25[_0x4f2ae7(0x218)]||!isChatCompletion())return;if(!Array[_0x4f2ae7(0x1cf)](_0x599e25[_0x4f2ae7(0x210)]))return;const _0x5d8c08=JSON[_0x4f2ae7(0x1c0)](_0x599e25['chat'],null,0x4),_0x6f7968=await showPromptInspector(_0x5d8c08);if(_0x6f7968===_0x5d8c08)return;try{const _0x151d67=JSON[_0x4f2ae7(0x20f)](_0x6f7968);_0x599e25[_0x4f2ae7(0x210)][_0x4f2ae7(0x220)](0x0,_0x599e25[_0x4f2ae7(0x210)]['length'],..._0x151d67),console['log']('【密折司】奏章已按御笔修改\x20(Chat\x20Completion)。');}catch(_0x52a64c){console[_0x4f2ae7(0x217)](_0x4f2ae7(0x1c1),_0x52a64c),toastr[_0x4f2ae7(0x217)](_0x4f2ae7(0x1db));}}),addLaunchButton();
+import { eventSource, event_types, main_api, stopGeneration } from '/script.js';
+import { renderExtensionTemplateAsync } from '/scripts/extensions.js';
+import { POPUP_RESULT, POPUP_TYPE, Popup } from '/scripts/popup.js';
+import { t } from '/scripts/i18n.js';
+import { extensionName } from '../utils/settings.js';
+import { getTokenCountAsync } from '/scripts/tokenizers.js';
+
+window.MiZheSi_Global = {
+    isEnabled: () => inspectEnabled,
+};
+
+const miZheSiPath = `third-party/${extensionName}/MiZheSi`;
+const STORAGE_KEY = 'amily2_miZheSiEnabled';
+
+if (!('GENERATE_AFTER_COMBINE_PROMPTS' in event_types) || !('CHAT_COMPLETION_PROMPT_READY' in event_types)) {
+    toastr.error('【密折司】错误：您的SillyTavern版本过旧，缺少必要的事件支持。请更新至最新版本。');
+    throw new Error('【密折司】缺少必要的事件支持。');
+}
+
+let inspectEnabled = false;
+
+function addLaunchButton() {
+    const enabledText = '关闭Amliy2号密折司';
+    const disabledText = '开启Amliy2号密折司';
+    const iconClass = 'fa-solid fa-scroll';
+
+    const getText = () => inspectEnabled ? enabledText : disabledText;
+
+    const launchButton = document.createElement('div');
+    launchButton.id = 'miZheSiLaunchButton';
+    launchButton.classList.add('list-group-item', 'flex-container', 'flexGap5', 'interactable');
+    launchButton.tabIndex = 0;
+    launchButton.title = '切换【密折司】状态';
+    
+    const icon = document.createElement('i');
+    icon.className = iconClass;
+    launchButton.appendChild(icon);
+
+    const textSpan = document.createElement('span');
+    textSpan.textContent = getText();
+    launchButton.appendChild(textSpan);
+
+    const extensionsMenu = document.getElementById('extensionsMenu');
+    if (!extensionsMenu) {
+        console.error('【密折司】无法找到左下角扩展菜单 (extensionsMenu)。');
+        return;
+    }
+
+    if (document.getElementById(launchButton.id)) {
+        return;
+    }
+
+    extensionsMenu.appendChild(launchButton);
+    launchButton.addEventListener('click', () => {
+        toggleInspectNext();
+        textSpan.textContent = getText();
+        launchButton.classList.toggle('active', inspectEnabled);
+    });
+
+    launchButton.classList.toggle('active', inspectEnabled);
+}
+
+function toggleInspectNext() {
+    inspectEnabled = !inspectEnabled;
+    toastr.info(`【密折司】已${inspectEnabled ? '开启' : '关闭'}`);
+    localStorage.setItem(STORAGE_KEY, String(inspectEnabled));
+}
+
+async function showPromptInspector(input) {
+    const template = $(await renderExtensionTemplateAsync(miZheSiPath, 'template'));
+    const container = template.find('#mizhesi-editor-container');
+    let isJsonMode = false;
+
+    const titleHeader = template.find('.mizhesi-header h3');
+    const charCountDisplay = $('<span id="mizhesi-char-count" style="font-size: 14px; color: #FFD700; margin-left: 15px; font-weight: normal;"></span>');
+    titleHeader.append(charCountDisplay);
+
+    const updateTotalCharCount = async () => {
+        let totalTokens = 0;
+        let totalChars = 0;
+        if (isJsonMode) {
+            const textareas = template.find('.mizhesi-message-textarea');
+            for (const textarea of textareas) {
+                const text = $(textarea).val();
+                totalTokens += await getTokenCountAsync(text);
+                totalChars += text.length;
+            }
+        } else {
+            const text = template.find('#mizhesi-plain-text-editor').val();
+            totalTokens = await getTokenCountAsync(text);
+            totalChars = text.length;
+        }
+        charCountDisplay.text(`(总 ${totalTokens} Tokens / ${totalChars} 字)`);
+    };
+
+    try {
+        const chat = JSON.parse(input);
+        if (Array.isArray(chat)) {
+            isJsonMode = true;
+            container.empty(); // 清空容器
+            for (const message of chat) {
+                const block = $(`
+                    <div class="mizhesi-message-block" data-role="${message.role}">
+                        <div class="mizhesi-message-header">
+                            <span class="mizhesi-injection-icons" style="display: inline-flex; gap: 5px; margin-right: 10px; align-items: center;"></span>
+                            <span class="mizhesi-line-char-count" style="font-weight: normal; color: #FFD700; margin-right: 10px;"></span>
+                            <span class="mizhesi-role">${message.role}</span>
+                        </div>
+                        <div class="mizhesi-message-content">
+                            <textarea class="mizhesi-message-textarea"></textarea>
+                        </div>
+                    </div>
+                `);
+
+                let content = message.content;
+                const iconsContainer = block.find('.mizhesi-injection-icons');
+
+                if (content.includes('%%HANLINYUAN_RAG_INJECTION%%')) {
+                    content = content.replace('%%HANLINYUAN_RAG_INJECTION%%', '');
+                    iconsContainer.append('<i class="fa-solid fa-brain" title="翰林院 RAG 注入" style="color: #66ccff;"></i>');
+                }
+
+                if (content.includes('%%AMILY2_TABLE_INJECTION%%')) {
+                    content = content.replace('%%AMILY2_TABLE_INJECTION%%', '');
+                    iconsContainer.append('<i class="fa-solid fa-table-cells" title="表格系统注入" style="color: #99cc33;"></i>');
+                }
+
+                const textarea = block.find('textarea');
+                textarea.val(content);
+                container.append(block);
+
+                const lineCharCountDisplay = block.find('.mizhesi-line-char-count');
+                const updateLineCharCount = async () => {
+                    const text = textarea.val();
+                    const lineTokens = await getTokenCountAsync(text);
+                    const lineChars = text.length;
+                    lineCharCountDisplay.text(`(${lineTokens} Tokens / ${lineChars} 字)`);
+                };
+
+                await updateLineCharCount(); // 初始化行字数
+                textarea.on('input', async () => {
+                    await updateLineCharCount();
+                    await updateTotalCharCount();
+                });
+
+                block.find('.mizhesi-message-header').on('click', function(e) {
+                    if ($(e.target).is('.mizhesi-line-char-count, .mizhesi-injection-icons, .mizhesi-injection-icons *')) {
+                        e.stopPropagation(); // 防止点击字数或图标时折叠
+                        return;
+                    }
+                    const content = $(this).siblings('.mizhesi-message-content');
+                    const parentBlock = $(this).closest('.mizhesi-message-block');
+                    parentBlock.toggleClass('expanded');
+                    content.slideToggle('fast');
+                });
+            }
+        } else {
+            throw new Error("Input is not a chat array.");
+        }
+    } catch (e) {
+        isJsonMode = false;
+        const textArea = $('<textarea id="mizhesi-plain-text-editor" style="width: 100%; height: 100%; box-sizing: border-box;"></textarea>');
+        textArea.val(input);
+        container.empty().append(textArea);
+        textArea.on('input', async () => await updateTotalCharCount());
+    }
+
+    await updateTotalCharCount(); // 初始化总字数
+
+    const searchInput = template.find('#mizhesi-search-input');
+    const searchButton = template.find('#mizhesi-search-button');
+    const clearButton = template.find('#mizhesi-clear-button');
+
+    const performSearch = () => {
+        const searchTerm = searchInput.val().trim();
+        if (!searchTerm) return;
+
+        clearHighlights();
+
+        let firstMatch = null;
+        const textareas = template.find('.mizhesi-message-textarea, #mizhesi-plain-text-editor');
+
+        textareas.each(function() {
+            const textarea = $(this);
+            const content = textarea.val();
+            const regex = new RegExp(searchTerm.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
+            
+            if (regex.test(content)) {
+                textarea.addClass('mizhesi-highlight-border');
+                if (!firstMatch) {
+                    firstMatch = textarea;
+                }
+
+                const block = textarea.closest('.mizhesi-message-block');
+                if (block.length && !block.hasClass('expanded')) {
+                    block.addClass('expanded');
+                    block.find('.mizhesi-message-content').slideDown('fast');
+                }
+            }
+        });
+
+        if (firstMatch) {
+            firstMatch[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+            toastr.info('【密折司】未找到匹配项。');
+        }
+    };
+
+    const clearHighlights = () => {
+        template.find('.mizhesi-highlight-border').removeClass('mizhesi-highlight-border');
+    };
+
+    searchButton.on('click', performSearch);
+    searchInput.on('keypress', (e) => {
+        if (e.which === 13) { // Enter key
+            performSearch();
+        }
+    });
+    clearButton.on('click', clearHighlights);
+
+
+    const customButton = {
+        text: '取消生成',
+        result: POPUP_RESULT.CANCELLED,
+        appendAtEnd: true,
+        action: async () => {
+            await stopGeneration();
+            await popup.complete(POPUP_RESULT.CANCELLED);
+        },
+    };
+
+    const popup = new Popup(template, POPUP_TYPE.CONFIRM, '', { 
+        wide: true, 
+        large: true, 
+        okButton: '确认修改', 
+        cancelButton: '放弃修改', 
+        customButtons: [customButton] 
+    });
+
+    const result = await popup.show();
+
+    if (!result) {
+        return input; // 用户取消，返回原始输入
+    }
+
+    if (isJsonMode) {
+        const newChat = [];
+        template.find('.mizhesi-message-block').each(function() {
+            const role = $(this).data('role');
+            const content = $(this).find('textarea').val();
+            newChat.push({ role, content });
+        });
+        return JSON.stringify(newChat, null, 4);
+    } else {
+        return template.find('#mizhesi-plain-text-editor').val();
+    }
+}
+
+function isChatCompletion() {
+    return main_api === 'openai';
+}
+
+eventSource.on(event_types.GENERATE_AFTER_COMBINE_PROMPTS, async (data) => {
+    if (!inspectEnabled || data.dryRun || isChatCompletion()) return;
+    if (typeof data.prompt !== 'string') return;
+
+    const result = await showPromptInspector(data.prompt);
+    if (result !== data.prompt) {
+        data.prompt = result;
+        console.log('【密折司】奏章已按御笔修改 (Text Gen)。');
+    }
+});
+
+eventSource.on(event_types.CHAT_COMPLETION_PROMPT_READY, async (data) => {
+    if (!inspectEnabled || data.dryRun || !isChatCompletion()) return;
+    if (!Array.isArray(data.chat)) return;
+
+    const originalJson = JSON.stringify(data.chat, null, 4);
+    const resultJson = await showPromptInspector(originalJson);
+
+    if (resultJson === originalJson) return;
+
+    try {
+        const modifiedChat = JSON.parse(resultJson);
+        data.chat.splice(0, data.chat.length, ...modifiedChat);
+        console.log('【密折司】奏章已按御笔修改 (Chat Completion)。');
+    } catch (e) {
+        console.error('【密折司】解析修改后的JSON奏章失败:', e);
+        toastr.error('【密折司】解析JSON失败，本次修改未生效。');
+    }
+});
+
+addLaunchButton();
