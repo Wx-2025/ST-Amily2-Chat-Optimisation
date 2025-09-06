@@ -278,12 +278,10 @@ jQuery(async () => {
         console.log("[Amily2号-开国大典] 步骤三：开始召唤府邸...");
         createDrawer();
 
-        // 【开国大典-番外篇章】构建角色世界书
-        // 使用轮询来安全地等待面板被 drawer.js 异步加载
         function waitForCwbPanelAndInitialize() {
             let attempts = 0;
-            const maxAttempts = 50; // 等待5秒
-            const interval = 100; // 每100毫秒检查一次
+            const maxAttempts = 50; 
+            const interval = 100; 
 
             const checker = setInterval(async () => {
                 const $cwbPanel = $('#amily2_character_world_book_panel');
@@ -314,84 +312,109 @@ jQuery(async () => {
         console.log("[Amily2号-开国大典] 步骤四：部署帝国哨兵网络...");
 
         let isProcessingPlotOptimization = false;
+
         async function onPlotGenerationAfterCommands(type, params, dryRun) {
             console.log("[Amily2-剧情优化] Generation after commands triggered", { type, params, dryRun, isProcessing: isProcessingPlotOptimization });
-            
+
             if (type === 'regenerate' || isProcessingPlotOptimization || dryRun) {
                 console.log("[Amily2-剧情优化] Skipping due to conditions:", { type, isProcessing: isProcessingPlotOptimization, dryRun });
                 return;
             }
         
             const globalSettings = extension_settings[extensionName];
-            
-            console.log("[Amily2-剧情优化] Checking plot optimization settings", { 
-                enabled: globalSettings?.plotOpt_enabled, 
-                hasApiUrl: !!globalSettings?.apiUrl,
-                plotSettings: globalSettings
-            });
-            
-            console.log("[Amily2-剧情优化] Detailed settings check:", {
-                globalEnabled: globalSettings?.enabled,
-                plotSettingsExists: !!globalSettings,
-                plotSettingsEnabled: globalSettings?.plotOpt_enabled,
-                plotSettingsApiUrl: globalSettings?.apiUrl,
-                fullPlotSettings: globalSettings
-            });
-            
-            const isPlotOptEnabled = globalSettings?.plotOpt_enabled !== false; 
-            if (!isPlotOptEnabled || !globalSettings?.apiUrl) {
-                console.log("[Amily2-剧情优化] Plot optimization disabled or missing API URL", {
-                    optimizationEnabled: globalSettings?.plotOpt_enabled,
-                    apiUrl: globalSettings?.apiUrl
-                });
+            if (globalSettings?.plotOpt_enabled === false) {
+                return;
+            }
+
+            const isJqyhEnabled = globalSettings?.jqyhEnabled === true;
+            const isMainApiConfigured = !!globalSettings?.apiUrl || !!globalSettings?.tavernProfile;
+
+            if (!isJqyhEnabled && !isMainApiConfigured) {
+                console.log("[Amily2-剧情优化] 优化已启用，但Jqyh API已禁用且主页API未配置。");
                 return;
             }
         
             isProcessingPlotOptimization = true;
-            let $toast = toastr.info('正在进行剧情优化...', '剧情优化', { timeOut: 0, extendedTimeOut: 0 });
-        
+            let plotOptimizationToast = null;
+            const cancellationState = { isCancelled: false };
+
             try {
-                console.log("[Amily2-剧情优化] Event parameters:", { type, params, dryRun });
                 const userMessage = $('#send_textarea').val();
-                
                 if (!userMessage) {
-                    console.log("[Amily2-剧情优化] No user message found in textarea");
-                    if ($toast) toastr.clear($toast);
-                    return;
+                    isProcessingPlotOptimization = false;
+                    return false; 
                 }
-        
-                console.log("[Amily2-剧情优化] Processing plot optimization for message:", userMessage);
-        
+
+                const toastMessage = `
+                    <div>
+                        正在进行剧情优化...
+                        <button id="amily2-cancel-optimization-btn" class="menu_button danger_button" style="margin-left: 10px; padding: 2px 8px; font-size: 0.8em;">中止</button>
+                    </div>
+                `;
+                
+                let cancellationReject;
+                const cancellationPromise = new Promise((_, reject) => {
+                    cancellationReject = reject;
+                });
+
+                plotOptimizationToast = toastr.info(toastMessage, '剧情优化', {
+                    timeOut: 0,
+                    extendedTimeOut: 0,
+                    tapToDismiss: false,
+                    onclick: null,
+                    escapeHtml: false,
+                    onShown: function() {
+                       $('#amily2-cancel-optimization-btn').one('click', function(event) {
+                           event.stopPropagation();
+                           
+                           if (plotOptimizationToast) {
+                               plotOptimizationToast.remove(); 
+                               plotOptimizationToast = null;
+                           }
+                           
+                           cancellationState.isCancelled = true;
+                           cancellationReject(new Error("Optimization cancelled by user"));
+                       });
+                    }
+                });
+
                 const context = getContext();
                 const contextTurnCount = globalSettings.plotOpt_contextLimit || 10;
                 let slicedContext = [];
                 if (contextTurnCount > 0) {
                     slicedContext = context.chat.slice(-contextTurnCount);
                 }
-        
-                const result = await processPlotOptimization({ mes: userMessage }, slicedContext);
-        
+                
+                const optimizationPromise = processPlotOptimization({ mes: userMessage }, slicedContext, cancellationState);
+
+                const result = await Promise.race([optimizationPromise, cancellationPromise]);
+
                 if (result && result.contentToAppend) {
                     const currentUserInput = $('#send_textarea').val();
                     const finalMessage = currentUserInput + '\n' + result.contentToAppend;
-                    
-                    $('#send_textarea').val(finalMessage);
-                    $('#send_textarea').trigger('input');
-                    
-                    if ($toast) toastr.clear($toast);
+                    $('#send_textarea').val(finalMessage).trigger('input');
                     toastr.success('剧情优化已完成并注入。', '操作成功');
-                    console.log("[Amily2-剧情优化] Plot optimization completed and appended successfully.");
                 } else {
-                    if ($toast) toastr.clear($toast);
-                    console.log("[Amily2-剧情优化] Plot optimization returned no result to append.");
+                    console.log("[Amily2-剧情优化] Plot optimization returned no result. Sending original message.");
                 }
-        
+                
+                return false;
+
             } catch (error) {
-                console.error(`[Amily2-剧情优化] 处理发送前事件时出错:`, error);
-                if ($toast) toastr.clear($toast);
-                toastr.error('剧情优化处理失败。', '错误');
+                if (error.message === "Optimization cancelled by user") {
+                    console.log("[Amily2-剧情优化] 优化流程已被用户中止。发送原始消息。");
+                    toastr.warning('剧情优化任务已中止...', '操作取消', { timeOut: 2000 });
+                } else {
+                    console.error(`[Amily2-剧情优化] 处理发送前事件时出错:`, error);
+                    toastr.error('剧情优化处理失败。', '错误');
+                }
+                return false;
             } finally {
                 isProcessingPlotOptimization = false;
+                if (plotOptimizationToast) {
+                    toastr.clear(plotOptimizationToast);
+                    plotOptimizationToast = null;
+                }
             }
         }
         if (!window.amily2EventsRegistered) {
