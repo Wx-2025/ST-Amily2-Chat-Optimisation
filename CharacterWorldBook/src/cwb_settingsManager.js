@@ -209,20 +209,54 @@ export function bindSettingsEvents($settingsPanel) {
     });
     $panel.on('change', '#cwb-api-mode', function() {
         const selectedMode = $(this).val();
+
+        getSettings().cwb_api_mode = selectedMode;
+        saveSettingsDebounced();
+        
         updateApiModeUI(selectedMode);
         if (selectedMode === 'sillytavern_preset') {
-            loadSillyTavernPresets();
+            loadSillyTavernPresets(true);
         }
+        
+        showToastr('success', `API模式已切换为: ${selectedMode === 'sillytavern_preset' ? 'SillyTavern预设' : '全兼容'}`);
     });
     $panel.on('change', '#cwb-tavern-profile', function() {
         const selectedProfile = $(this).val();
+
+        getSettings().cwb_tavern_profile = selectedProfile;
+        saveSettingsDebounced();
+        
         if (selectedProfile) {
             console.log(`[CWB] 选择了预设: ${selectedProfile}`);
+            showToastr('success', `SillyTavern预设已选择: ${selectedProfile}`);
+        }
+        
+        updateApiStatusDisplay($panel);
+    });
+    $panel.on('input', '#cwb-api-url', function() {
+        const apiUrl = $(this).val().trim();
+        getSettings().cwb_api_url = apiUrl;
+        saveSettingsDebounced();
+        updateApiStatusDisplay($panel);
+    });
+    
+    $panel.on('input', '#cwb-api-key', function() {
+        const apiKey = $(this).val();
+        getSettings().cwb_api_key = apiKey;
+        saveSettingsDebounced();
+    });
+    
+    $panel.on('change', '#cwb-api-model', function() {
+        const model = $(this).val();
+        getSettings().cwb_api_model = model;
+        saveSettingsDebounced();
+        updateApiStatusDisplay($panel);
+        if (model) {
+            showToastr('success', `模型已选择: ${model}`);
         }
     });
+
     $panel.on('click', '#cwb-load-models', () => fetchModelsAndConnect($panel));
-    $panel.on('click', '#cwb-save-config', saveApiConfig);
-    $panel.on('click', '#cwb-clear-config', clearApiConfig);
 
     $panel.on('click', '#cwb-save-break-armor-prompt', saveBreakArmorPrompt);
     $panel.on('click', '#cwb-reset-break-armor-prompt', resetBreakArmorPrompt);
@@ -326,45 +360,34 @@ export function bindSettingsEvents($settingsPanel) {
 }
 
 function updateApiModeUI(mode) {
-    const $apiUrlLabel = $panel.find('label[for="cwb-api-url"]');
-    const $apiUrlField = $panel.find('#cwb-api-url');
-    const $apiKeyLabel = $panel.find('label[for="cwb-api-key"]');
-    const $apiKeyField = $panel.find('#cwb-api-key');
-    const $apiModelLabel = $panel.find('label[for="cwb-api-model"]');
-    const $apiModelWrapper = $panel.find('#cwb-api-model').parent();
-    const $loadModelsButton = $panel.find('#cwb-load-models');
-    
-    const $tavernProfileLabel = $panel.find('label[for="cwb-tavern-profile"]');
-    const $tavernProfileField = $panel.find('#cwb-tavern-profile');
-    
+    const fields = {
+        openai: [
+            'label[for="cwb-api-url"]',
+            '#cwb-api-url',
+            'label[for="cwb-api-key"]',
+            '#cwb-api-key',
+            'label[for="cwb-api-model"]',
+            '#cwb-api-model',
+            '#cwb-load-models'
+        ],
+        sillytavern: [
+            'label[for="cwb-tavern-profile"]',
+            '#cwb-tavern-profile'
+        ]
+    };
+
     if (mode === 'sillytavern_preset') {
-        $apiUrlLabel.hide();
-        $apiUrlField.hide();
-        $apiKeyLabel.hide();
-        $apiKeyField.hide();
-        $apiModelLabel.hide();
-        $apiModelWrapper.hide();
-        $loadModelsButton.hide();
-        
-        $tavernProfileLabel.show();
-        $tavernProfileField.show();
+        fields.openai.forEach(selector => $panel.find(selector).hide());
+        fields.sillytavern.forEach(selector => $panel.find(selector).show());
     } else {
-        $apiUrlLabel.show();
-        $apiUrlField.show();
-        $apiKeyLabel.show();
-        $apiKeyField.show();
-        $apiModelLabel.show();
-        $apiModelWrapper.show();
-        $loadModelsButton.show();
-        
-        $tavernProfileLabel.hide();
-        $tavernProfileField.hide();
+        fields.sillytavern.forEach(selector => $panel.find(selector).hide());
+        fields.openai.forEach(selector => $panel.find(selector).show());
     }
 
     updateApiStatusDisplay($panel);
 }
 
-function loadSillyTavernPresets() {
+function loadSillyTavernPresets(showNotification = false) {
     const $profileSelect = $panel.find('#cwb-tavern-profile');
     
     try {
@@ -387,7 +410,9 @@ function loadSillyTavernPresets() {
             $profileSelect.val(currentProfile);
         }
         
-        showToastr('success', `已加载 ${profiles.length} 个SillyTavern预设`);
+        if (showNotification) {
+            showToastr('success', `已加载 ${profiles.length} 个SillyTavern预设`);
+        }
         
     } catch (error) {
         logError('加载SillyTavern预设失败:', error);
@@ -423,6 +448,11 @@ function updateUiWithSettings() {
     $panel.find('#cwb-break-armor-prompt-textarea').val(settings.cwb_break_armor_prompt);
     $panel.find('#cwb-char-card-prompt-textarea').val(settings.cwb_char_card_prompt);
 
+    $panel.find('#cwb-temperature').val(settings.cwb_temperature);
+    $panel.find('#cwb-temperature-value').text(settings.cwb_temperature);
+    $panel.find('#cwb-max-tokens').val(settings.cwb_max_tokens);
+    $panel.find('#cwb-max-tokens-value').text(settings.cwb_max_tokens);
+
     $panel.find('#cwb-auto-update-threshold').val(settings.cwb_auto_update_threshold);
     $panel.find('#cwb_master_enabled-checkbox').prop('checked', settings.cwb_master_enabled);
     $panel.find('#cwb-auto-update-enabled-checkbox').prop('checked', settings.cwb_auto_update_enabled);
@@ -447,62 +477,72 @@ function updateUiWithSettings() {
 }
 
 export function loadSettings() {
-    if (!$panel) {
-        logError('Settings panel is not yet available for loading settings.');
-        return;
-    }
-
+    console.log('[CWB] Loading settings...');
+    
     const settings = getSettings();
     if (!settings) {
-        logError('CWB settings not found in extension_settings.');
-        return;
+        extension_settings[extensionName] = { ...cwbCompleteDefaultSettings };
+        console.log('[CWB] Initialized default settings');
+    } else {
+        Object.keys(cwbCompleteDefaultSettings).forEach(key => {
+            if (settings[key] === undefined || settings[key] === null) {
+                settings[key] = cwbCompleteDefaultSettings[key];
+            }
+        });
     }
 
-    Object.keys(cwbCompleteDefaultSettings).forEach(key => {
-        if (settings[key] === undefined || settings[key] === null) {
-            settings[key] = cwbCompleteDefaultSettings[key];
-        }
-    });
+    const finalSettings = getSettings();
 
     const overrides = JSON.parse(localStorage.getItem(CWB_BOOLEAN_SETTINGS_OVERRIDE_KEY) || '{}');
     if (overrides.cwb_master_enabled !== undefined) {
-        settings.cwb_master_enabled = overrides.cwb_master_enabled;
+        finalSettings.cwb_master_enabled = overrides.cwb_master_enabled;
     }
     if (overrides.cwb_auto_update_enabled !== undefined) {
-        settings.cwb_auto_update_enabled = overrides.cwb_auto_update_enabled;
+        finalSettings.cwb_auto_update_enabled = overrides.cwb_auto_update_enabled;
     }
     if (overrides.cwb_viewer_enabled !== undefined) {
-        settings.cwb_viewer_enabled = overrides.cwb_viewer_enabled;
+        finalSettings.cwb_viewer_enabled = overrides.cwb_viewer_enabled;
     }
     if (overrides.cwb_incremental_update_enabled !== undefined) {
-        settings.cwb_incremental_update_enabled = overrides.cwb_incremental_update_enabled;
+        finalSettings.cwb_incremental_update_enabled = overrides.cwb_incremental_update_enabled;
     }
 
-    state.masterEnabled = settings.cwb_master_enabled;
-    state.customApiConfig.url = settings.cwb_api_url;
-    state.customApiConfig.apiKey = settings.cwb_api_key;
-    state.customApiConfig.model = settings.cwb_api_model;
-    state.currentBreakArmorPrompt = settings.cwb_break_armor_prompt;
-    state.currentCharCardPrompt = settings.cwb_char_card_prompt;
-    state.currentIncrementalCharCardPrompt = settings.cwb_incremental_char_card_prompt;
+    state.masterEnabled = finalSettings.cwb_master_enabled;
+    state.viewerEnabled = finalSettings.cwb_viewer_enabled;
+    state.autoUpdateEnabled = finalSettings.cwb_auto_update_enabled;
+    state.isIncrementalUpdateEnabled = finalSettings.cwb_incremental_update_enabled;
+    
+    state.customApiConfig.url = finalSettings.cwb_api_url || '';
+    state.customApiConfig.apiKey = finalSettings.cwb_api_key || '';
+    state.customApiConfig.model = finalSettings.cwb_api_model || '';
+    
+    state.currentBreakArmorPrompt = finalSettings.cwb_break_armor_prompt;
+    state.currentCharCardPrompt = finalSettings.cwb_char_card_prompt;
+    state.currentIncrementalCharCardPrompt = finalSettings.cwb_incremental_char_card_prompt;
+    
+    state.autoUpdateThreshold = finalSettings.cwb_auto_update_threshold;
+    state.worldbookTarget = finalSettings.cwb_worldbook_target;
+    state.customWorldBook = finalSettings.cwb_custom_worldbook;
 
-    state.currentBreakArmorPrompt = settings.cwb_break_armor_prompt;
-    state.currentCharCardPrompt = settings.cwb_char_card_prompt;
-    state.currentIncrementalCharCardPrompt = settings.cwb_incremental_char_card_prompt;
-
-    state.autoUpdateThreshold = settings.cwb_auto_update_threshold;
-    state.autoUpdateEnabled = settings.cwb_auto_update_enabled;
-    state.viewerEnabled = settings.cwb_viewer_enabled;
-    state.isIncrementalUpdateEnabled = settings.cwb_incremental_update_enabled;
-
-    state.worldbookTarget = settings.cwb_worldbook_target;
-    state.customWorldBook = settings.cwb_custom_worldbook;
+    console.log('[CWB] State updated:', {
+        masterEnabled: state.masterEnabled,
+        viewerEnabled: state.viewerEnabled,
+        autoUpdateEnabled: state.autoUpdateEnabled
+    });
 
     if ($panel) {
         updateUiWithSettings();
     }
 
     updateControlsLockState();
+    setTimeout(() => {
+        const $viewerButton = $(`#${CHAR_CARD_VIEWER_BUTTON_ID}`);
+        if ($viewerButton.length > 0) {
+            const shouldShow = isCwbEnabled() && state.viewerEnabled;
+            $viewerButton.toggle(shouldShow);
+            console.log('[CWB] Viewer button visibility updated:', shouldShow);
+        }
+    }, 100);
 
     saveSettingsDebounced();
 }
