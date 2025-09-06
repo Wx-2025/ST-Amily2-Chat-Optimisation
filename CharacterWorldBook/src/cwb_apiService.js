@@ -36,12 +36,15 @@ function normalizeApiResponse(responseData) {
 
 
 function getCwbApiSettings() {
+    const settings = extension_settings[extensionName] || {};
     return {
-        apiMode: extension_settings[extensionName]?.cwb_api_mode || 'openai_test',
-        apiUrl: extension_settings[extensionName]?.cwb_api_url?.trim() || '',
-        apiKey: extension_settings[extensionName]?.cwb_api_key?.trim() || '',
-        model: extension_settings[extensionName]?.cwb_api_model || '',
-        tavernProfile: extension_settings[extensionName]?.cwb_tavern_profile || ''
+        apiMode: settings.cwb_api_mode || 'openai_test',
+        apiUrl: settings.cwb_api_url?.trim() || '',
+        apiKey: settings.cwb_api_key?.trim() || '',
+        model: settings.cwb_api_model || '',
+        tavernProfile: settings.cwb_tavern_profile || '',
+        temperature: settings.cwb_temperature ?? 0.7,
+        maxTokens: settings.cwb_max_tokens ?? 65000
     };
 }
 
@@ -123,6 +126,7 @@ async function callCwbSillyTavernPreset(messages, options) {
 }
 
 async function callCwbOpenAITest(messages, options) {
+    // 参数验证
     if (!Array.isArray(messages) || messages.length === 0) {
         throw new Error('消息数组不能为空');
     }
@@ -135,15 +139,17 @@ async function callCwbOpenAITest(messages, options) {
         throw new Error('模型名称不能为空');
     }
 
+    // 确保所有必需的参数都存在且有效
     const validatedOptions = {
-        maxTokens: Math.max(1, parseInt(options.maxTokens) || 65000),
-        temperature: Math.max(0, Math.min(2, parseFloat(options.temperature) || 1)),
-        top_p: Math.max(0, Math.min(1, parseFloat(options.top_p) || 1)),
+        maxTokens: Math.max(1, parseInt(options.maxTokens ?? 65000)),
+        temperature: Math.max(0, Math.min(2, parseFloat(options.temperature ?? 1))),
+        top_p: Math.max(0, Math.min(1, parseFloat(options.top_p ?? 1))),
         apiUrl: options.apiUrl.trim(),
         apiKey: (options.apiKey || '').trim(),
         model: options.model.trim()
     };
 
+    // 验证消息格式
     const validatedMessages = messages.map((msg, index) => {
         if (!msg || typeof msg !== 'object') {
             throw new Error(`消息 ${index} 格式无效`);
@@ -198,7 +204,8 @@ async function callCwbOpenAITest(messages, options) {
             } catch (e) {
                 errorText = '无法读取错误响应';
             }
-
+            
+            // 根据HTTP状态码提供更具体的错误信息
             let errorMessage = `CWB OpenAI Test API请求失败 (${response.status})`;
             if (response.status === 400) {
                 errorMessage += ': 请求格式错误，请检查参数配置';
@@ -234,6 +241,7 @@ async function callCwbOpenAITest(messages, options) {
             return normalizedResponse.content;
         }
 
+        // 兼容直接响应格式
         if (responseData?.choices?.[0]?.message?.content) {
             return responseData.choices[0].message.content.trim();
         }
@@ -252,8 +260,8 @@ export async function callCwbAPI(systemPrompt, userPromptContent, options = {}) 
     const apiSettings = getCwbApiSettings();
     
     const finalOptions = {
-        maxTokens: 65000,
-        temperature: 1,
+        maxTokens: apiSettings.maxTokens,
+        temperature: apiSettings.temperature,
         model: apiSettings.model,
         apiUrl: apiSettings.apiUrl,
         apiKey: apiSettings.apiKey,
@@ -411,7 +419,7 @@ export async function loadModels($panel) {
     }
 }
 
-async function fetchCwbModels() {
+export async function fetchCwbModels() {
     console.log('[CWB] 开始获取模型列表');
     
     const apiSettings = getCwbApiSettings();
@@ -488,6 +496,37 @@ async function fetchCwbModels() {
     } catch (error) {
         console.error('[CWB] 获取模型列表失败:', error);
         throw error;
+    }
+}
+
+// 简单的测试连接函数 - 基于 JqyhApi.js 模式
+export async function testCwbConnection() {
+    console.log('[CWB] 开始API连接测试');
+    
+    const apiSettings = getCwbApiSettings();
+    
+    if (!apiSettings.apiUrl || !apiSettings.apiKey || !apiSettings.model) {
+        showToastr('error', 'API配置不完整，请检查URL、Key和模型', 'CWB API连接测试失败');
+        return false;
+    }
+
+    try {
+        showToastr('info', '正在发送测试消息"你好！"...', 'CWB API连接测试');
+        
+        const response = await callCwbAPI('你是一个有用的AI助手。', '你好！');
+        
+        if (response && response.trim()) {
+            console.log('[CWB] 测试消息响应:', response);
+            showToastr('success', `连接测试成功！AI回复: "${response.substring(0, 50)}${response.length > 50 ? '...' : ''}"`, 'CWB API连接测试成功');
+            return true;
+        } else {
+            throw new Error('API未返回有效响应');
+        }
+        
+    } catch (error) {
+        console.error('[CWB] 连接测试失败:', error);
+        showToastr('error', `连接测试失败: ${error.message}`, 'CWB API连接测试失败');
+        return false;
     }
 }
 
