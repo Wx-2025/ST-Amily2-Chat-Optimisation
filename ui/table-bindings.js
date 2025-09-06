@@ -865,15 +865,15 @@ export function bindTableEvents() {
     const renderAll = () => {
         renderTables();
         bindInjectionSettings();
-        bindTemplateEditors(); // 【V138.1 修复】确保导入预设后，提示词编辑器也能立即刷新
+        bindTemplateEditors(); 
     };
 
     renderAll();
     bindWorldBookSettings();
-    bindBatchFillButton(); // 【V36.0】绑定批量填表按钮
+    bindBatchFillButton(); // 【新增】绑定批量填表按钮
     bindFloorFillButtons(); // 【新增】绑定楼层填表按钮
     bindReorganizeButton(); // 【新增】绑定重新整理按钮
-    bindTemplateEditors(); // 【V55.1】为新的指令模板编辑器绑定事件
+    bindTemplateEditors(); // 【新增】为新的指令模板编辑器绑定事件
     bindNccsApiEvents(); // 【新增】绑定Nccs API系统事件
 
     const navDeck = document.querySelector('#amily2_memorisation_forms_panel .sinan-navigation-deck');
@@ -1053,7 +1053,7 @@ export function bindTableEvents() {
 
             renderAll();
 
-        }, true); // Use capture phase
+        }, true); 
     }
     
     panel.dataset.eventsBound = 'true';
@@ -1484,13 +1484,16 @@ function bindNccsApiEvents() {
             }
             
             const profiles = context.extensionSettings.connectionManager.profiles;
+
+            const currentProfileId = settings.nccsTavernProfile;
+
+            presetSelect.innerHTML = '';
+            presetSelect.appendChild(new Option('选择预设', '', false, false));
             
-            presetSelect.innerHTML = '<option value="">选择预设</option>';
             if (profiles && profiles.length > 0) {
                 profiles.forEach(profile => {
-                    const option = document.createElement('option');
-                    option.value = profile.id;
-                    option.textContent = profile.name;
+                    const isSelected = profile.id === currentProfileId;
+                    const option = new Option(profile.name, profile.id, isSelected, isSelected);
                     presetSelect.appendChild(option);
                 });
                 log(`成功加载 ${profiles.length} 个SillyTavern配置文件`, 'success');
