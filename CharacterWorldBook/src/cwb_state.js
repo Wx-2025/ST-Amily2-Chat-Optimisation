@@ -9,6 +9,7 @@ export const POLLING_INTERVAL_STEP = 10000;
 
 export const state = {
     masterEnabled: false, 
+    STORAGE_KEY_VIEWER_BUTTON_POS: 'cwb_viewer_button_position',
 
     customApiConfig: { url: '', apiKey: '', model: '' },
 
