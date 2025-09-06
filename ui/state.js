@@ -1,1 +1,214 @@
-(function(_0x4f598d,_0x18ee0e){const _0x1de62f=_0x545f,_0x44e696=_0x4f598d();while(!![]){try{const _0x2acc4b=parseInt(_0x1de62f(0x16b))/0x1*(-parseInt(_0x1de62f(0x1be))/0x2)+-parseInt(_0x1de62f(0x1a8))/0x3*(parseInt(_0x1de62f(0x180))/0x4)+parseInt(_0x1de62f(0x1c1))/0x5+parseInt(_0x1de62f(0x151))/0x6+-parseInt(_0x1de62f(0x197))/0x7*(parseInt(_0x1de62f(0x18e))/0x8)+parseInt(_0x1de62f(0x1bd))/0x9+-parseInt(_0x1de62f(0x16d))/0xa*(-parseInt(_0x1de62f(0x177))/0xb);if(_0x2acc4b===_0x18ee0e)break;else _0x44e696['push'](_0x44e696['shift']());}catch(_0x3f6fb4){_0x44e696['push'](_0x44e696['shift']());}}}(_0x1f40,0x85335));import{extension_settings}from'/scripts/extensions.js';function _0x545f(_0x28fb39,_0x4ae6cd){const _0x1f408b=_0x1f40();return _0x545f=function(_0x545fb9,_0x29e91c){_0x545fb9=_0x545fb9-0x14e;let _0x53d716=_0x1f408b[_0x545fb9];return _0x53d716;},_0x545f(_0x28fb39,_0x4ae6cd);}import{characters,this_chid}from'/script.js';import{extensionName,defaultSettings}from'../utils/settings.js';import{pluginAuthStatus}from'../utils/auth.js';let availableModels=[],latestUpdateInfo=null,newVersionAvailable=![];export function setUpdateInfo(_0x5cf9e6,_0x10ff15){newVersionAvailable=_0x5cf9e6,latestUpdateInfo=_0x10ff15;}export function applyUpdateIndicator(){const _0x17f3e3=_0x545f;newVersionAvailable?($('#amily2_update_indicator')[_0x17f3e3(0x1c5)](),$('#amily2_update_button_new')['show']()):($(_0x17f3e3(0x14e))[_0x17f3e3(0x1bf)](),$(_0x17f3e3(0x17d))[_0x17f3e3(0x1bf)]());}function _0x1f40(){const _0x762864=['tavernProfile','#amily2_auto_hide_threshold_value','input[name=\x22amily2_opt_worldbook_source\x22][value=\x22','trigger','change','lorebookTarget','mainPrompt','at_depth','optimizationEnabled','showOptimizationToast','historiographySmallTriggerThreshold','#amily2_summarization_prompt','#amily2_opt_worldbook_enabled','892035yogwgD','52906jJltbR','hide','#amily2_worldbook_enabled','2564405HrGgrC','plotOpt_systemPrompt','plotOpt_tableEnabled','#amily2_model_notes','show','#amily2_main_prompt','#amily2_context_messages','historiographySmallAutoEnable','#amily2_summarization_enabled','#amily2_update_indicator','<option\x20value=\x22\x22>无可用模型，请刷新</option>','selected','3347616kbIIBX','#auth_panel','attr','#amily2_lore_depth_container','loreActivationMode','_value','loreInsertionPosition','#amily2_preset_selector','#amily2_opt_main_prompt','#amily2_context_messages_value','#amily2_lore_activation_mode','extensions','text','loreDepth','temperature','#amily2_output_format_prompt','plotOpt_rateMain','enabled','plotOpt_finalSystemDirective','input[name=\x22amily2_optimization_mode\x22][value=\x22','summarizationEnabled','plotOpt_worldbookSource','<option></option>','maxTokens','#amily2_temperature_value','openai','21NlcIfd','apiKey','392920VGgohb','\x20个可用模型','contextMessages','plotOpt_worldbookCharLimit','length','已加载\x20','empty','#amily2_mhb_small_auto_enabled','iconLocation','#amily2_api_provider','319DlujGT','optimizationExclusionEnabled',']\x20(state.js)\x20剧情优化UI已根据合并设置更新。','#amily2_api_url','</strong>','checked','#amily2_update_button_new','append','data','595124KGKEVp','apiProvider','#amily2_opt_rate_personal','autoHideThreshold','prop','.plugin-features','#amily2_optimization_exclusion_enabled','input[name=\x22amily2_lorebook_target\x22][value=\x22','#amily2_system_prompt','authorized','#amily2_show_optimization_toast','systemPrompt','#amily2_opt_table_enabled','#amily2_enabled','1334648VRuAOL','log','undefined','<span\x20style=\x22color:\x20#ff9800;\x22>请检查API配置后点击\x22刷新模型\x22</span>','#amily2_auto_hide_threshold','html','type','summarizationPrompt','autoHideEnabled','7yFKMRm','suppressToast','outputFormatPrompt','#amily2_lore_depth_input','forEach','optimizationMode','plotOpt_rateCuckold','val','#amily2_optimization_target_tag','#amily2_auto_hide_enabled','#amily2_max_tokens','#amily2_opt_final_system_directive','--\x20选择模型\x20--','plotOpt_contextLimit','#amily2_suppress_toast','#amily2_opt_rate_cuckold','plotOpt_ratePersonal','21xLfGdE','#amily2_opt_system_prompt','model','#amily2_model','plotOpt_rateErotic','#amily2_mhb_small_trigger_count','plotOpt_mainPrompt','#amily2_optimization_enabled'];_0x1f40=function(){return _0x762864;};return _0x1f40();}export function getLatestUpdateInfo(){return latestUpdateInfo;}export function setAvailableModels(_0x5ec215){availableModels=_0x5ec215;}export function populateModelDropdown(){const _0x288c8b=_0x545f,_0x162541=$(_0x288c8b(0x1ab)),_0xec2fa0=$(_0x288c8b(0x1c4));_0x162541[_0x288c8b(0x173)]();const _0xedfd3=extension_settings[extensionName]?.['model']||'';if(availableModels[_0x288c8b(0x171)]===0x0){_0x162541[_0x288c8b(0x17e)](_0x288c8b(0x14f)),_0xec2fa0[_0x288c8b(0x193)](_0x288c8b(0x191));return;}const _0x355067=$(_0x288c8b(0x167))[_0x288c8b(0x19e)]('')[_0x288c8b(0x15d)](_0x288c8b(0x1a3));_0x162541[_0x288c8b(0x17e)](_0x355067),availableModels[_0x288c8b(0x19b)](_0x526d06=>{const _0x425315=_0x288c8b,_0x1bd211=$(_0x425315(0x167))['val'](_0x526d06)['text'](_0x526d06);_0x526d06===_0xedfd3&&_0x1bd211[_0x425315(0x153)](_0x425315(0x150),_0x425315(0x150)),_0x162541['append'](_0x1bd211);}),_0xedfd3&&_0x162541[_0x288c8b(0x19e)]()===_0xedfd3?_0xec2fa0[_0x288c8b(0x193)]('已选择:\x20<strong>'+_0xedfd3+_0x288c8b(0x17b)):_0xec2fa0[_0x288c8b(0x193)](_0x288c8b(0x172)+availableModels[_0x288c8b(0x171)]+_0x288c8b(0x16e));}export function updateUI(){const _0x1f27f8=_0x545f;if(!pluginAuthStatus[_0x1f27f8(0x189)])$(_0x1f27f8(0x152))[_0x1f27f8(0x1c5)](),$('.plugin-features')[_0x1f27f8(0x1bf)]();else{$('#auth_panel')['hide'](),$(_0x1f27f8(0x185))['show']();const _0xbbd72a=extension_settings[extensionName];if(!_0xbbd72a)return;$(_0x1f27f8(0x18d))[_0x1f27f8(0x184)](_0x1f27f8(0x17c),_0xbbd72a[_0x1f27f8(0x162)]),$(_0x1f27f8(0x176))[_0x1f27f8(0x19e)](_0xbbd72a[_0x1f27f8(0x181)]||_0x1f27f8(0x16a)),$('#amily2_api_url')['val'](_0xbbd72a['apiUrl']),$(_0x1f27f8(0x17a))[_0x1f27f8(0x153)](_0x1f27f8(0x194),'text'),$('#amily2_api_key')[_0x1f27f8(0x19e)](_0xbbd72a[_0x1f27f8(0x16c)]),$(_0x1f27f8(0x1ab))['val'](_0xbbd72a[_0x1f27f8(0x1aa)]),$(_0x1f27f8(0x158))[_0x1f27f8(0x19e)](_0xbbd72a[_0x1f27f8(0x1b0)]),$(_0x1f27f8(0x176))[_0x1f27f8(0x1b3)](_0x1f27f8(0x1b4)),$(_0x1f27f8(0x1a1))[_0x1f27f8(0x19e)](_0xbbd72a[_0x1f27f8(0x168)]),$('#amily2_max_tokens_value')[_0x1f27f8(0x15d)](_0xbbd72a[_0x1f27f8(0x168)]),$('#amily2_temperature')[_0x1f27f8(0x19e)](_0xbbd72a[_0x1f27f8(0x15f)]),$(_0x1f27f8(0x169))['text'](_0xbbd72a[_0x1f27f8(0x15f)]),$(_0x1f27f8(0x1c7))[_0x1f27f8(0x19e)](_0xbbd72a[_0x1f27f8(0x16f)]),$(_0x1f27f8(0x15a))[_0x1f27f8(0x15d)](_0xbbd72a[_0x1f27f8(0x16f)]),$(_0x1f27f8(0x19f))['val'](_0xbbd72a['optimizationTargetTag']),$(_0x1f27f8(0x164)+_0xbbd72a[_0x1f27f8(0x19c)]+'\x22]')['prop'](_0x1f27f8(0x17c),!![]),$(_0x1f27f8(0x1af))['prop'](_0x1f27f8(0x17c),_0xbbd72a[_0x1f27f8(0x1b8)]),$(_0x1f27f8(0x186))['prop'](_0x1f27f8(0x17c),_0xbbd72a[_0x1f27f8(0x178)]),$(_0x1f27f8(0x18a))[_0x1f27f8(0x184)](_0x1f27f8(0x17c),_0xbbd72a[_0x1f27f8(0x1b9)]),$(_0x1f27f8(0x1a5))[_0x1f27f8(0x184)](_0x1f27f8(0x17c),_0xbbd72a[_0x1f27f8(0x198)]),$(_0x1f27f8(0x188))[_0x1f27f8(0x19e)](_0xbbd72a[_0x1f27f8(0x18b)]),$(_0x1f27f8(0x1c6))[_0x1f27f8(0x19e)](_0xbbd72a[_0x1f27f8(0x1b6)]),$(_0x1f27f8(0x160))['val'](_0xbbd72a[_0x1f27f8(0x199)]),$(_0x1f27f8(0x1bb))['val'](_0xbbd72a[_0x1f27f8(0x195)]),$(_0x1f27f8(0x1c0))[_0x1f27f8(0x184)](_0x1f27f8(0x17c),_0xbbd72a['worldbookEnabled']),$(_0x1f27f8(0x1c9))[_0x1f27f8(0x184)](_0x1f27f8(0x17c),_0xbbd72a[_0x1f27f8(0x165)]),$(_0x1f27f8(0x187)+_0xbbd72a[_0x1f27f8(0x1b5)]+'\x22]')[_0x1f27f8(0x184)](_0x1f27f8(0x17c),!![]),$('input[name=\x22amily2_icon_location\x22][value=\x22'+_0xbbd72a[_0x1f27f8(0x175)]+'\x22]')[_0x1f27f8(0x184)](_0x1f27f8(0x17c),!![]),$(_0x1f27f8(0x1a0))[_0x1f27f8(0x184)](_0x1f27f8(0x17c),_0xbbd72a[_0x1f27f8(0x196)]),$(_0x1f27f8(0x192))[_0x1f27f8(0x19e)](_0xbbd72a[_0x1f27f8(0x183)]),$(_0x1f27f8(0x1b1))[_0x1f27f8(0x15d)](_0xbbd72a[_0x1f27f8(0x183)]),$(_0x1f27f8(0x15b))[_0x1f27f8(0x19e)](_0xbbd72a[_0x1f27f8(0x155)]),$('#amily2_lore_insertion_position')[_0x1f27f8(0x19e)](_0xbbd72a['loreInsertionPosition']),$(_0x1f27f8(0x19a))['val'](_0xbbd72a[_0x1f27f8(0x15e)]),_0xbbd72a[_0x1f27f8(0x157)]===_0x1f27f8(0x1b7)?$('#amily2_lore_depth_container')[_0x1f27f8(0x1c5)]():$(_0x1f27f8(0x154))['hide'](),_0xbbd72a[_0x1f27f8(0x1c8)]!==undefined&&$(_0x1f27f8(0x174))['prop'](_0x1f27f8(0x17c),_0xbbd72a[_0x1f27f8(0x1c8)]),_0xbbd72a[_0x1f27f8(0x1ba)]!==undefined&&$(_0x1f27f8(0x1ad))['val'](_0xbbd72a[_0x1f27f8(0x1ba)]),populateModelDropdown(),updatePlotOptimizationUI();}}function getMergedPlotOptSettings(){const _0x11d7a0=_0x545f,_0x3cd9b3=characters&&typeof this_chid!==_0x11d7a0(0x190)&&characters[this_chid]?characters[this_chid]:null,_0x55902d=extension_settings[extensionName]||defaultSettings,_0x2e860b=_0x3cd9b3?.[_0x11d7a0(0x17f)]?.[_0x11d7a0(0x15c)]?.[extensionName]||{};return{..._0x55902d,..._0x2e860b};}export function updatePlotOptimizationUI(){const _0xe5ec6f=_0x545f,_0x2df89a=getMergedPlotOptSettings();if(!_0x2df89a)return;$('#amily2_opt_enabled')[_0xe5ec6f(0x184)](_0xe5ec6f(0x17c),_0x2df89a['plotOpt_enabled']),$(_0xe5ec6f(0x1bc))['prop'](_0xe5ec6f(0x17c),_0x2df89a['plotOpt_worldbook_enabled']),$(_0xe5ec6f(0x18c))[_0xe5ec6f(0x184)](_0xe5ec6f(0x17c),_0x2df89a[_0xe5ec6f(0x1c3)]),$(_0xe5ec6f(0x159))[_0xe5ec6f(0x19e)](_0x2df89a[_0xe5ec6f(0x1ae)]),$(_0xe5ec6f(0x1a9))[_0xe5ec6f(0x19e)](_0x2df89a[_0xe5ec6f(0x1c2)]),$(_0xe5ec6f(0x1a2))[_0xe5ec6f(0x19e)](_0x2df89a[_0xe5ec6f(0x163)]),$('#amily2_opt_rate_main')[_0xe5ec6f(0x19e)](_0x2df89a[_0xe5ec6f(0x161)]),$(_0xe5ec6f(0x182))['val'](_0x2df89a[_0xe5ec6f(0x1a7)]),$('#amily2_opt_rate_erotic')[_0xe5ec6f(0x19e)](_0x2df89a[_0xe5ec6f(0x1ac)]),$(_0xe5ec6f(0x1a6))['val'](_0x2df89a[_0xe5ec6f(0x19d)]);const _0x541619={'#amily2_opt_context_limit':_0xe5ec6f(0x1a4),'#amily2_opt_worldbook_char_limit':_0xe5ec6f(0x170)};for(const _0x64f4ec in _0x541619){const _0x5b8d0e=_0x541619[_0x64f4ec],_0x2a023c=_0x2df89a[_0x5b8d0e],_0x4d3381=_0x64f4ec+_0xe5ec6f(0x156);_0x2a023c!==undefined&&($(_0x64f4ec)[_0xe5ec6f(0x19e)](_0x2a023c),$(_0x4d3381)[_0xe5ec6f(0x15d)](_0x2a023c));}const _0x327e5e=_0x2df89a[_0xe5ec6f(0x166)]||'character';$(_0xe5ec6f(0x1b2)+_0x327e5e+'\x22]')[_0xe5ec6f(0x184)]('checked',!![]),console[_0xe5ec6f(0x18f)]('['+extensionName+_0xe5ec6f(0x179));}
+import { extension_settings } from "/scripts/extensions.js";
+import { characters, this_chid } from '/script.js';
+import { extensionName, defaultSettings } from "../utils/settings.js";
+import { pluginAuthStatus } from "../utils/auth.js";
+
+
+
+let availableModels = [];
+let latestUpdateInfo = null;
+let newVersionAvailable = false;
+
+export function setUpdateInfo(isNew, updateInfo) {
+    newVersionAvailable = isNew;
+    latestUpdateInfo = updateInfo;
+}
+
+
+export function applyUpdateIndicator() {
+    if (newVersionAvailable) {
+        $('#amily2_update_indicator').show();
+        $('#amily2_update_button_new').show();
+    } else {
+        $('#amily2_update_indicator').hide();
+        $('#amily2_update_button_new').hide();
+    }
+}
+
+export function getLatestUpdateInfo() {
+    return latestUpdateInfo;
+}
+
+export function setAvailableModels(models) {
+  availableModels = models;
+}
+
+
+export function populateModelDropdown() {
+  const modelSelect = $("#amily2_model");
+  const modelNotes = $("#amily2_model_notes");
+
+  modelSelect.empty();
+  const currentModel = extension_settings[extensionName]?.model || "";
+
+  if (availableModels.length === 0) {
+    modelSelect.append('<option value="">无可用模型，请刷新</option>');
+    modelNotes.html(
+      '<span style="color: #ff9800;">请检查API配置后点击"刷新模型"</span>',
+    );
+    return;
+  }
+
+  const defaultOption = $("<option></option>").val("").text("-- 选择模型 --");
+  modelSelect.append(defaultOption);
+
+  availableModels.forEach((model) => {
+    const option = $("<option></option>").val(model).text(model);
+    if (model === currentModel) {
+      option.attr("selected", "selected");
+    }
+    modelSelect.append(option);
+  });
+
+  if (currentModel && modelSelect.val() === currentModel) {
+    modelNotes.html(`已选择: <strong>${currentModel}</strong>`);
+  } else {
+    modelNotes.html(`已加载 ${availableModels.length} 个可用模型`);
+  }
+}
+
+
+export function updateUI() {
+  if (!pluginAuthStatus.authorized) {
+    $("#auth_panel").show();
+    $(".plugin-features").hide();
+  } else {
+    $("#auth_panel").hide();
+    $(".plugin-features").show();
+
+    const settings = extension_settings[extensionName];
+    if (!settings) return; 
+
+    $("#amily2_enabled").prop("checked", settings.enabled);
+    $("#amily2_api_provider").val(settings.apiProvider || 'openai');
+    $("#amily2_api_url").val(settings.apiUrl);
+    $("#amily2_api_url").attr('type', 'text');
+    $("#amily2_api_key").val(settings.apiKey);
+    $("#amily2_model").val(settings.model);
+    $("#amily2_preset_selector").val(settings.tavernProfile);
+
+    $("#amily2_api_provider").trigger('change');
+
+
+    $("#amily2_max_tokens").val(settings.maxTokens);
+    $("#amily2_max_tokens_value").text(settings.maxTokens);
+    $("#amily2_temperature").val(settings.temperature);
+    $("#amily2_temperature_value").text(settings.temperature);
+    $("#amily2_context_messages").val(settings.contextMessages);
+    $("#amily2_context_messages_value").text(settings.contextMessages);
+	$("#amily2_optimization_target_tag").val(settings.optimizationTargetTag);
+
+
+    $(
+      `input[name="amily2_optimization_mode"][value="${settings.optimizationMode}"]`,
+    ).prop("checked", true);
+    $("#amily2_optimization_enabled").prop(
+      "checked",
+      settings.optimizationEnabled,
+    );
+    $("#amily2_optimization_exclusion_enabled").prop(
+      "checked",
+      settings.optimizationExclusionEnabled,
+    );
+    $("#amily2_show_optimization_toast").prop(
+      "checked",
+      settings.showOptimizationToast,
+    );
+    $("#amily2_suppress_toast").prop("checked", settings.suppressToast);
+
+
+    $("#amily2_system_prompt").val(settings.systemPrompt);
+    $("#amily2_main_prompt").val(settings.mainPrompt);
+    $("#amily2_output_format_prompt").val(settings.outputFormatPrompt);
+    $("#amily2_summarization_prompt").val(settings.summarizationPrompt);
+
+
+    $("#amily2_worldbook_enabled").prop("checked", settings.worldbookEnabled);
+    $("#amily2_summarization_enabled").prop(
+      "checked",
+      settings.summarizationEnabled,
+    );
+    $(
+      `input[name="amily2_lorebook_target"][value="${settings.lorebookTarget}"]`,
+    ).prop("checked", true);
+
+    $(`input[name="amily2_icon_location"][value="${settings.iconLocation}"]`).prop("checked", true);
+    $("#amily2_auto_hide_enabled").prop("checked", settings.autoHideEnabled);
+    $("#amily2_auto_hide_threshold").val(settings.autoHideThreshold);
+    $("#amily2_auto_hide_threshold_value").text(settings.autoHideThreshold);
+        $('#amily2_lore_activation_mode').val(settings.loreActivationMode);
+        $('#amily2_lore_insertion_position').val(settings.loreInsertionPosition);
+        $('#amily2_lore_depth_input').val(settings.loreDepth);
+        if (settings.loreInsertionPosition === 'at_depth') {
+            $('#amily2_lore_depth_container').show();
+        } else {
+            $('#amily2_lore_depth_container').hide(); 
+        }
+    if (settings.historiographySmallAutoEnable !== undefined) {
+        $('#amily2_mhb_small_auto_enabled').prop('checked', settings.historiographySmallAutoEnable);
+    }
+    if (settings.historiographySmallTriggerThreshold !== undefined) {
+        $('#amily2_mhb_small_trigger_count').val(settings.historiographySmallTriggerThreshold);
+    }
+    populateModelDropdown();
+    updatePlotOptimizationUI(); 
+  }
+}
+
+
+// =====================================================================
+// ======== 【剧情优化】 - UI状态管理 ========
+// =====================================================================
+
+function getMergedPlotOptSettings() {
+    const character = (characters && typeof this_chid !== 'undefined' && characters[this_chid]) ? characters[this_chid] : null;
+    const globalSettings = extension_settings[extensionName] || defaultSettings;
+    const characterSettings = character?.data?.extensions?.[extensionName] || {};
+    
+    return { ...globalSettings, ...characterSettings };
+}
+
+
+export function updatePlotOptimizationUI() {
+    const settings = getMergedPlotOptSettings();
+    if (!settings) return;
+
+    $('#amily2_opt_enabled').prop('checked', settings.plotOpt_enabled);
+    $('#amily2_opt_worldbook_enabled').prop('checked', settings.plotOpt_worldbook_enabled);
+    $('#amily2_opt_table_enabled').prop('checked', settings.plotOpt_tableEnabled);
+
+    $('#amily2_opt_main_prompt').val(settings.plotOpt_mainPrompt);
+    $('#amily2_opt_system_prompt').val(settings.plotOpt_systemPrompt);
+    $('#amily2_opt_final_system_directive').val(settings.plotOpt_finalSystemDirective);
+
+    $('#amily2_opt_rate_main').val(settings.plotOpt_rateMain);
+    $('#amily2_opt_rate_personal').val(settings.plotOpt_ratePersonal);
+    $('#amily2_opt_rate_erotic').val(settings.plotOpt_rateErotic);
+    $('#amily2_opt_rate_cuckold').val(settings.plotOpt_rateCuckold);
+
+    const sliders = {
+        '#amily2_opt_context_limit': 'plotOpt_contextLimit',
+        '#amily2_opt_worldbook_char_limit': 'plotOpt_worldbookCharLimit',
+    };
+
+    for (const sliderId in sliders) {
+        const key = sliders[sliderId];
+        const value = settings[key];
+        const valueDisplayId = `${sliderId}_value`;
+
+        if (value !== undefined) {
+            $(sliderId).val(value);
+            $(valueDisplayId).text(value);
+        }
+    }
+
+    const worldbookSource = settings.plotOpt_worldbookSource || 'character';
+    $(`input[name="amily2_opt_worldbook_source"][value="${worldbookSource}"]`).prop('checked', true);
+
+    const lastUsedPresetName = settings.plotOpt_lastUsedPresetName;
+    if (lastUsedPresetName && $('#amily2_opt_prompt_preset_select option[value="' + lastUsedPresetName + '"]').length > 0) {
+        $('#amily2_opt_prompt_preset_select').val(lastUsedPresetName);
+    }
+    
+    console.log(`[${extensionName}] (state.js) 剧情优化UI已根据合并设置更新。`);
+}
