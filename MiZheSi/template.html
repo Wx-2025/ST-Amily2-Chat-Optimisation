@@ -3,6 +3,11 @@
         <i class="fas fa-scroll"></i>
         <h3>密折司奏报</h3>
     </div>
+    <div class="mizhesi-search-container">
+        <input type="text" id="mizhesi-search-input" placeholder="搜索内容...">
+        <button id="mizhesi-search-button" class="menu_button" title="搜索"><i class="fa-solid fa-magnifying-glass"></i></button>
+        <button id="mizhesi-clear-button" class="menu_button" title="清除高亮"><i class="fa-solid fa-xmark"></i></button>
+    </div>
     <div id="mizhesi-editor-container" class="mizhesi-editor-container">
 
     </div>
@@ -82,17 +87,37 @@
         resize: vertical;
     }
 
-    /* Role-specific colors */
     .mizhesi-message-block[data-role="system"] .mizhesi-message-header {
-        background-color: #5865f2; /* Discord Blurple */
+        background-color: #5865f2; 
         color: white;
     }
     .mizhesi-message-block[data-role="user"] .mizhesi-message-header {
-        background-color: #57f287; /* Discord Green */
+        background-color: #57f287; 
         color: #060607;
     }
     .mizhesi-message-block[data-role="assistant"] .mizhesi-message-header {
-        background-color: #f25757; /* Discord Red */
+        background-color: #f25757; 
         color: white;
+    }
+    .mizhesi-highlight {
+        background-color: rgb(235, 7, 185);
+        color: black;
+    }
+    .mizhesi-search-container {
+        display: flex;
+        margin-bottom: 10px;
+    }
+    .mizhesi-search-container input {
+        flex-grow: 1;
+        background-color: #202225;
+        border: 1px solid #555;
+        color: #ccc;
+        border-radius: 4px;
+        padding: 4px 8px;
+        margin-right: 5px;
+    }
+    .mizhesi-highlight-border {
+        border: 2px solid #ff00dd !important;
+        box-shadow: 0 0 10px #ff00c8;
     }
 </style>
