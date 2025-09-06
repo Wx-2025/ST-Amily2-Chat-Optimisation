@@ -123,7 +123,6 @@ async function callCwbSillyTavernPreset(messages, options) {
 }
 
 async function callCwbOpenAITest(messages, options) {
-    // 参数验证
     if (!Array.isArray(messages) || messages.length === 0) {
         throw new Error('消息数组不能为空');
     }
@@ -136,7 +135,6 @@ async function callCwbOpenAITest(messages, options) {
         throw new Error('模型名称不能为空');
     }
 
-    // 确保所有必需的参数都存在且有效
     const validatedOptions = {
         maxTokens: Math.max(1, parseInt(options.maxTokens) || 65000),
         temperature: Math.max(0, Math.min(2, parseFloat(options.temperature) || 1)),
@@ -146,7 +144,6 @@ async function callCwbOpenAITest(messages, options) {
         model: options.model.trim()
     };
 
-    // 验证消息格式
     const validatedMessages = messages.map((msg, index) => {
         if (!msg || typeof msg !== 'object') {
             throw new Error(`消息 ${index} 格式无效`);
@@ -201,8 +198,7 @@ async function callCwbOpenAITest(messages, options) {
             } catch (e) {
                 errorText = '无法读取错误响应';
             }
-            
-            // 根据HTTP状态码提供更具体的错误信息
+
             let errorMessage = `CWB OpenAI Test API请求失败 (${response.status})`;
             if (response.status === 400) {
                 errorMessage += ': 请求格式错误，请检查参数配置';
@@ -238,7 +234,6 @@ async function callCwbOpenAITest(messages, options) {
             return normalizedResponse.content;
         }
 
-        // 兼容直接响应格式
         if (responseData?.choices?.[0]?.message?.content) {
             return responseData.choices[0].message.content.trim();
         }
