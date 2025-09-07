@@ -209,7 +209,8 @@ export function bindSettingsEvents($settingsPanel) {
     });
     $panel.on('change', '#cwb-api-mode', function() {
         const selectedMode = $(this).val();
-
+        
+        // 自动保存API模式设置
         getSettings().cwb_api_mode = selectedMode;
         saveSettingsDebounced();
         
@@ -222,7 +223,8 @@ export function bindSettingsEvents($settingsPanel) {
     });
     $panel.on('change', '#cwb-tavern-profile', function() {
         const selectedProfile = $(this).val();
-
+        
+        // 自动保存SillyTavern预设选择
         getSettings().cwb_tavern_profile = selectedProfile;
         saveSettingsDebounced();
         
@@ -233,24 +235,44 @@ export function bindSettingsEvents($settingsPanel) {
         
         updateApiStatusDisplay($panel);
     });
+    // 添加API字段的实时保存
     $panel.on('input', '#cwb-api-url', function() {
         const apiUrl = $(this).val().trim();
+        
+        // 同时更新设置和状态
         getSettings().cwb_api_url = apiUrl;
+        state.customApiConfig.url = apiUrl;
+        
         saveSettingsDebounced();
         updateApiStatusDisplay($panel);
+        
+        console.log('[CWB] API URL已更新 - 设置:', getSettings().cwb_api_url, ', 状态:', state.customApiConfig.url);
     });
     
     $panel.on('input', '#cwb-api-key', function() {
         const apiKey = $(this).val();
+        
+        // 同时更新设置和状态
         getSettings().cwb_api_key = apiKey;
+        state.customApiConfig.apiKey = apiKey;
+        
         saveSettingsDebounced();
+        
+        console.log('[CWB] API Key已更新 - 设置长度:', getSettings().cwb_api_key?.length || 0, ', 状态长度:', state.customApiConfig.apiKey?.length || 0);
     });
     
     $panel.on('change', '#cwb-api-model', function() {
         const model = $(this).val();
+        
+        // 同时更新设置和状态
         getSettings().cwb_api_model = model;
+        state.customApiConfig.model = model;
+        
         saveSettingsDebounced();
         updateApiStatusDisplay($panel);
+        
+        console.log('[CWB] 模型已更新 - 设置:', getSettings().cwb_api_model, ', 状态:', state.customApiConfig.model);
+        
         if (model) {
             showToastr('success', `模型已选择: ${model}`);
         }
@@ -480,10 +502,13 @@ export function loadSettings() {
     console.log('[CWB] Loading settings...');
     
     const settings = getSettings();
+    
+    // Initialize settings with defaults if not present
     if (!settings) {
         extension_settings[extensionName] = { ...cwbCompleteDefaultSettings };
         console.log('[CWB] Initialized default settings');
     } else {
+        // Ensure all default settings exist
         Object.keys(cwbCompleteDefaultSettings).forEach(key => {
             if (settings[key] === undefined || settings[key] === null) {
                 settings[key] = cwbCompleteDefaultSettings[key];
@@ -492,7 +517,8 @@ export function loadSettings() {
     }
 
     const finalSettings = getSettings();
-
+    
+    // Apply localStorage overrides
     const overrides = JSON.parse(localStorage.getItem(CWB_BOOLEAN_SETTINGS_OVERRIDE_KEY) || '{}');
     if (overrides.cwb_master_enabled !== undefined) {
         finalSettings.cwb_master_enabled = overrides.cwb_master_enabled;
@@ -507,6 +533,7 @@ export function loadSettings() {
         finalSettings.cwb_incremental_update_enabled = overrides.cwb_incremental_update_enabled;
     }
 
+    // Update state object with current settings
     state.masterEnabled = finalSettings.cwb_master_enabled;
     state.viewerEnabled = finalSettings.cwb_viewer_enabled;
     state.autoUpdateEnabled = finalSettings.cwb_auto_update_enabled;
@@ -530,11 +557,14 @@ export function loadSettings() {
         autoUpdateEnabled: state.autoUpdateEnabled
     });
 
+    // Update UI if panel exists
     if ($panel) {
         updateUiWithSettings();
     }
 
     updateControlsLockState();
+
+    // Update viewer button visibility after state is loaded
     setTimeout(() => {
         const $viewerButton = $(`#${CHAR_CARD_VIEWER_BUTTON_ID}`);
         if ($viewerButton.length > 0) {
