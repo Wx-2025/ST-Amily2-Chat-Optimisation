@@ -607,28 +607,18 @@ export function updateApiStatusDisplay($panel) {
     }
 }
 
-export async function callCustomOpenAI(systemPrompt, userPromptContent) {
+export async function callCustomOpenAI(messages) {
     const apiSettings = getCwbApiSettings();
 
     if (apiSettings.apiMode === 'sillytavern_preset') {
-        const combinedSystemPrompt = `${state.currentBreakArmorPrompt}\n\n${systemPrompt}`;
-        const messages = [
-            { role: 'system', content: combinedSystemPrompt },
-            { role: 'user', content: userPromptContent },
-        ];
         return await callCwbSillyTavernPreset(messages, { tavernProfile: apiSettings.tavernProfile, maxTokens: 65000 });
     } else {
         if (!state.customApiConfig.url || !state.customApiConfig.model) {
             throw new Error('API URL/Model未配置。');
         }
 
-        const combinedSystemPrompt = `${state.currentBreakArmorPrompt}\n\n${systemPrompt}`;
-
         const requestBody = {
-            messages: [
-                { role: 'system', content: combinedSystemPrompt },
-                { role: 'user', content: userPromptContent },
-            ],
+            messages: messages,
             model: state.customApiConfig.model,
             temperature: 1,
             frequency_penalty: 0,
