@@ -109,7 +109,7 @@ function createCharCardViewerPopupHtml(displayItems) {
              </div>`;
 
     if (!displayItems || displayItems.length === 0) {
-        html += `<div class="cwb-cyber-popup__body cwb-cyber-popup__body--empty"><p>数据链路中断...未在当前世界书协议中找到角色数据。请执行一次手动更新以初始化链接。</p></div></div>`;
+        html += `<div class="cwb-cyber-popup__body cwb-cyber-popup__body--empty"><p>看什么？没更新角色条目就等着我给你显示出来条目吗？想关悬浮窗就点角色世界，功能设置关掉。</p></div></div>`;
         return html;
     }
 
