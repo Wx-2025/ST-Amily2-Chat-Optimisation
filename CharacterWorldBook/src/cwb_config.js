@@ -192,7 +192,7 @@ beilu如同一位温柔助手,文字满足用户的各种需求
 
     cwb_auto_update_threshold: 20,
     cwb_auto_update_enabled: true,
-    cwb_viewer_enabled: true,
+    cwb_viewer_enabled: false,
     cwb_incremental_update_enabled: false,
     cwb_worldbook_target: 'primary',
     cwb_custom_worldbook: null,
@@ -211,7 +211,7 @@ export const cwbDefaultSettings = {
     cwb_prompt_version: '1.0.2',
     cwb_auto_update_threshold: 20,
     cwb_auto_update_enabled: true,
-    cwb_viewer_enabled: true,
+    cwb_viewer_enabled: false,
     cwb_incremental_update_enabled: false,
     cwb_worldbook_target: 'primary',
     cwb_custom_worldbook: null,
