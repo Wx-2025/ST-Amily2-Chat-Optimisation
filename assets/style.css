@@ -300,7 +300,55 @@ hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 0; }
     color: var(--primary_color);
 }
 
+/* 新增扩展按钮组响应式布局 */
+.button-group {
+    display: flex;
+    gap: 8px;
+}
 
+/* 移动端：5个按钮水平排列，文字正常显示 */
+@media (max-width: 768px) {
+    .button-group {
+        flex-direction: row;
+        justify-content: space-between;
+        gap: 3px;
+        align-items: stretch;
+    }
+    
+    .button-group .menu_button.wide_button {
+        flex: 1;
+        height: 50px;
+        padding: 2px;
+        text-align: center;
+        line-height: 1.1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        font-size: clamp(8px, 2.5vw, 14px);
+    }
+    
+    .button-group .menu_button.wide_button i {
+        display: block;
+        margin-bottom: 2px;
+    }
+}
+
+/* PC端：横排布局，按钮水平排列 */
+@media (min-width: 769px) {
+    .button-group {
+        flex-direction: row;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+    
+    .button-group .menu_button.wide_button {
+        flex: 1;
+        min-width: 0;
+    }
+}
 
 .amily2-panel-visible {
     display: flex !important;
@@ -316,14 +364,10 @@ hr { border: none; border-top: 1px solid rgba(255,255,255,0.1); margin: 0; }
     gap: 10px;              /* 内部元素间距 */
 }
  
-/* 翰林院入口容器 (简化无背景) */
 .rag-palace-entry-container {
     width: auto; /* 自适应宽度 */
 }
- 
-/* 翰林院按钮样式已移至新增扩展区域，使用统一按钮样式 */
- 
-/* 确保所有可切换面板表现一致 */
+
 #rag_palace_panel {
     display: none;
 }
