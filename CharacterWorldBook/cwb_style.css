@@ -202,6 +202,9 @@
 }
 
 /* --- 世界书选择列表容器样式 --- */
+/* ST核心脚本 `dynamic-styles.js` 可能会尝试为此处的滚动条规则动态添加 `:focus-visible` 伪类，
+ * 但 `::-webkit-scrollbar-thumb` 伪元素不支持 `:focus-visible`，从而导致控制台出现CSS解析错误。
+ * 这是一个已知的上游问题，需要等待ST方面修复。此问题不影响功能，仅为日志错误。*/
 .cwb-scrollable-container {
     max-height: 250px;
     overflow-y: auto;
@@ -258,8 +261,8 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 90vw;
-    max-width: 1200px;
+    width: 75vw;
+    max-width: 1100px;
     height: 85vh;
     background: var(--cwb-cyber-bg);
     border: 2px solid var(--cwb-cyber-primary);
@@ -469,12 +472,12 @@
 }
 @media (max-width: 768px) {
     .cwb-cyber-popup {
-        width: 100vw;
-        height: 100vh;
-        top: 0;
-        left: 0;
-        transform: none;
-        border-radius: 0;
+        width: 90vw;
+        height: 85vh;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        border-radius: 8px;
     }
     .cwb-cyber-popup__main-content {
         flex-direction: column;
