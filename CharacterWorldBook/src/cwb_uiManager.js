@@ -219,28 +219,32 @@ function bindCharCardViewerPopupEvents($popup) {
 
     $popup.find('.cwb-cyber-tab__delete').on('click', async function(e) {
         e.stopPropagation();
-        const uidToDelete = $(this).data('char-uid');
-        await deleteLorebookEntries([uidToDelete]);
-        const $wrapper = $(this).closest('.cwb-cyber-tab');
-        const $pane = $popup.find(`#cwb-char-content-${uidToDelete}`);
-        const wasActive = $wrapper.hasClass('active');
-        $wrapper.remove();
-        $pane.remove();
-        if (wasActive && $popup.find('.cwb-cyber-tab').length > 0) {
-            $popup.find('.cwb-cyber-tab').first().find('.cwb-cyber-tab__button').trigger('click');
-        } else if ($popup.find('.cwb-cyber-tab').length === 0) {
-            showCharCardViewerPopup();
+        if (confirm('您确定要删除这个角色条目吗？此操作不可撤销。')) {
+            const uidToDelete = $(this).data('char-uid');
+            await deleteLorebookEntries([uidToDelete]);
+            const $wrapper = $(this).closest('.cwb-cyber-tab');
+            const $pane = $popup.find(`#cwb-char-content-${uidToDelete}`);
+            const wasActive = $wrapper.hasClass('active');
+            $wrapper.remove();
+            $pane.remove();
+            if (wasActive && $popup.find('.cwb-cyber-tab').length > 0) {
+                $popup.find('.cwb-cyber-tab').first().find('.cwb-cyber-tab__button').trigger('click');
+            } else if ($popup.find('.cwb-cyber-tab').length === 0) {
+                showCharCardViewerPopup();
+            }
         }
     });
 
     $popup.find('#cwb-viewer-delete-all').on('click', async function() {
-        const allUids = $popup.find('.cwb-cyber-tab__button').map(function() {
-            return $(this).data('char-uid');
-        }).get();
-        if (allUids.length > 0) {
-            await deleteLorebookEntries(allUids);
+        if (confirm('您确定要清除当前聊天中的所有角色卡和总览吗？此操作将删除所有相关条目，且不可撤销。')) {
+            const allUids = $popup.find('.cwb-cyber-tab__button').map(function() {
+                return $(this).data('char-uid');
+            }).get();
+            if (allUids.length > 0) {
+                await deleteLorebookEntries(allUids);
+            }
+            showCharCardViewerPopup();
         }
-        showCharCardViewerPopup();
     });
 
     $popup.find('.cwb-save-button').on('click', async function () {
