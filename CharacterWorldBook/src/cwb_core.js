@@ -5,6 +5,8 @@ import { callCustomOpenAI } from './cwb_apiService.js';
 import { saveDescriptionToLorebook, updateCharacterRosterLorebookEntry, manageAutoCardUpdateLorebookEntry, getTargetWorldBook } from './cwb_lorebookManager.js';
 import { extractBlocksByTags, applyExclusionRules } from '../../core/utils/rag-tag-extractor.js';
 import { getExtensionSettings } from '../../utils/settings.js';
+import { getPresetPrompts, getMixedOrder } from '../../PresetSettings/index.js';
+import { generateRandomSeed } from '../../core/api.js';
 
 const { SillyTavern, TavernHelper, jQuery } = window;
 
@@ -156,40 +158,6 @@ function processChatMessages(messages) {
     }
 }
 
-function prepareAIInput(messages) {
-    let chatHistoryText = '最近的聊天记录摘要:\n';
-    const processedText = processChatMessages(messages);
-    
-    if (processedText) {
-        chatHistoryText += processedText;
-    } else {
-        chatHistoryText += '(无有效聊天记录)';
-    }
-    
-    return `${chatHistoryText}\n\n请根据以上聊天记录更新角色描述：`;
-}
-
-function prepareUserPromptForIncremental(messages, existingData) {
-    let userPrompt = "【旧档案】\n";
-    if (Object.keys(existingData).length > 0) {
-        for (const charName in existingData) {
-            userPrompt += `${existingData[charName]}\n`;
-        }
-    } else {
-        userPrompt += "无\n";
-    }
-
-    userPrompt += "\n【新对话】\n";
-    const processedText = processChatMessages(messages);
-
-    if (processedText) {
-        userPrompt += processedText;
-    } else {
-        userPrompt += "(无有效对话内容)";
-    }
-    
-    return userPrompt;
-}
 
 async function proceedWithCardUpdate($panel, messagesToUse) {
     const statusUpdater = text => {
@@ -200,12 +168,18 @@ async function proceedWithCardUpdate($panel, messagesToUse) {
     statusUpdater('正在生成角色卡描述...');
 
     try {
-        let systemPrompt;
-        let userPrompt;
+        const mode = state.isIncrementalUpdateEnabled ? 'cwb_summarizer_incremental' : 'cwb_summarizer';
+        const presetPrompts = getPresetPrompts(mode);
+        const order = getMixedOrder(mode) || [];
+        
+        const messages = [
+            { role: 'system', content: generateRandomSeed() }
+        ];
+        let promptCounter = 0;
+        let existingData = {};
 
         if (state.isIncrementalUpdateEnabled) {
             statusUpdater('增量更新模式：正在获取现有角色数据...');
-            let existingData = {};
             try {
                 const bookName = await getTargetWorldBook();
                 if (bookName) {
@@ -236,15 +210,70 @@ async function proceedWithCardUpdate($panel, messagesToUse) {
                 logError('在增量更新中获取现有角色数据时出错:', e);
                 showToastr('error', '获取旧档案失败，请检查控制台。');
             }
-            systemPrompt = state.currentIncrementalCharCardPrompt;
-            userPrompt = prepareUserPromptForIncremental(messagesToUse, existingData);
-        } else {
-            systemPrompt = state.currentCharCardPrompt;
-            userPrompt = prepareAIInput(messagesToUse);
+        }
+
+        for (const item of order) {
+            if (item.type === 'prompt') {
+                if (presetPrompts && presetPrompts[promptCounter]) {
+                    messages.push(presetPrompts[promptCounter]);
+                    promptCounter++;
+                }
+            } else if (item.type === 'conditional') {
+                switch (item.id) {
+                    case 'cwb_break_armor_prompt':
+                        if (state.currentBreakArmorPrompt) {
+                            messages.push({ role: "system", content: state.currentBreakArmorPrompt });
+                        }
+                        break;
+                    case 'cwb_char_card_prompt':
+                        if (state.currentCharCardPrompt) {
+                            messages.push({ role: "system", content: state.currentCharCardPrompt });
+                        }
+                        break;
+                    case 'cwb_incremental_char_card_prompt':
+                        if (state.isIncrementalUpdateEnabled && state.currentIncrementalCharCardPrompt) {
+                            messages.push({ role: "system", content: state.currentIncrementalCharCardPrompt });
+                        }
+                        break;
+                    case 'oldFiles':
+                        if (state.isIncrementalUpdateEnabled) {
+                            let oldFilesContent = "【旧档案】\n";
+                            if (Object.keys(existingData).length > 0) {
+                                for (const charName in existingData) {
+                                    oldFilesContent += `${existingData[charName]}\n`;
+                                }
+                            } else {
+                                oldFilesContent += "无\n";
+                            }
+                            messages.push({ role: 'user', content: oldFilesContent });
+                        }
+                        break;
+                    case 'newContext':
+                        const processedText = processChatMessages(messagesToUse);
+                        let newContextContent = "";
+                        if (state.isIncrementalUpdateEnabled) {
+                            newContextContent = "【新对话】\n";
+                        } else {
+                            newContextContent = "最近的聊天记录摘要:\n";
+                        }
+
+                        if (processedText) {
+                            newContextContent += processedText;
+                        } else {
+                            newContextContent += "(无有效对话内容)";
+                        }
+
+                        if (!state.isIncrementalUpdateEnabled) {
+                            newContextContent += "\n\n请根据以上聊天记录更新角色描述：";
+                        }
+                        messages.push({ role: 'user', content: newContextContent });
+                        break;
+                }
+            }
         }
 
         statusUpdater('正在调用AI生成角色卡...');
-        const aiResponse = await callCustomOpenAI(systemPrompt, userPrompt);
+        const aiResponse = await callCustomOpenAI(messages);
         if (!aiResponse) throw new Error('AI未能生成有效描述。');
 
         const endFloor_0idx = state.allChatMessages.length - 1;
