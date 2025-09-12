@@ -655,7 +655,91 @@ container
 
     container.data("events-bound", true);
 
+    // 【V60.0】新增：颜色定制UI事件绑定
+    const colorContainer = $("#amily2_drawer_content").length ? $("#amily2_drawer_content") : $("#amily2_chat_optimiser");
+    if (colorContainer.length && !colorContainer.data("color-events-bound")) {
+        loadAndApplyCustomColors(colorContainer);
 
+        colorContainer.on('input', '#amily2_bg_color, #amily2_button_color, #amily2_text_color', function() {
+            applyAndSaveColors(colorContainer);
+        });
+
+        // 新增：背景透明度滑块事件
+        colorContainer.on('input', '#amily2_bg_opacity', function() {
+            const opacityValue = $(this).val();
+            $('#amily2_bg_opacity_value').text(opacityValue);
+            document.documentElement.style.setProperty('--amily2-bg-opacity', opacityValue);
+            
+            if (!extension_settings[extensionName]) {
+                extension_settings[extensionName] = {};
+            }
+            extension_settings[extensionName]['bgOpacity'] = opacityValue;
+            saveSettingsDebounced();
+        });
+
+        colorContainer.on('click', '#amily2_restore_colors', function() {
+            const defaultColors = {
+                '--amily2-bg-color': '#1e1e1e',
+                '--amily2-button-color': '#4a4a4a',
+                '--amily2-text-color': '#ffffff'
+            };
+            
+            colorContainer.find('#amily2_bg_color').val(defaultColors['--amily2-bg-color']);
+            colorContainer.find('#amily2_button_color').val(defaultColors['--amily2-button-color']);
+            colorContainer.find('#amily2_text_color').val(defaultColors['--amily2-text-color']);
+            
+            applyAndSaveColors(colorContainer);
+
+            // 恢复默认透明度
+            const defaultOpacity = 0.85;
+            $('#amily2_bg_opacity').val(defaultOpacity);
+            $('#amily2_bg_opacity_value').text(defaultOpacity);
+            document.documentElement.style.setProperty('--amily2-bg-opacity', defaultOpacity);
+            if (extension_settings[extensionName]) {
+                extension_settings[extensionName]['bgOpacity'] = defaultOpacity;
+                saveSettingsDebounced();
+            }
+
+            toastr.success('界面颜色与透明度已恢复为默认设置。');
+        });
+
+        // 新增：自定义背景图事件绑定
+        colorContainer.on('change', '#amily2_custom_bg_image', function(event) {
+            const file = event.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const imageDataUrl = e.target.result;
+                    // 检查大小
+                    if (imageDataUrl.length > 5 * 1024 * 1024) { // 5MB 限制
+                        toastr.error('图片文件过大，请选择小于5MB的图片。');
+                        return;
+                    }
+                    document.documentElement.style.setProperty('--amily2-bg-image', `url("${imageDataUrl}")`);
+                    
+                    if (!extension_settings[extensionName]) {
+                        extension_settings[extensionName] = {};
+                    }
+                    extension_settings[extensionName]['customBgImage'] = imageDataUrl;
+                    saveSettingsDebounced();
+                    toastr.success('自定义背景图已应用。');
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        colorContainer.on('click', '#amily2_restore_bg_image', function() {
+            document.documentElement.style.setProperty('--amily2-bg-image', `url("${DEFAULT_BG_IMAGE_URL}")`);
+            if (extension_settings[extensionName]) {
+                delete extension_settings[extensionName]['customBgImage'];
+                saveSettingsDebounced();
+            }
+            $('#amily2_custom_bg_image').val(''); // 清空文件选择框
+            toastr.success('背景图已恢复为默认。');
+        });
+
+        colorContainer.data("color-events-bound", true);
+    }
 }
 
 export function opt_saveAllSettings() {
@@ -1695,7 +1779,6 @@ function bindJqyhApiEvents() {
         });
     }
 
-    // 获取模型按钮
     const fetchModelsButton = document.getElementById('amily2_jqyh_fetch_models');
     const modelSelect = document.getElementById('amily2_jqyh_model_select');
     const modelInput = document.getElementById('amily2_jqyh_model');
@@ -1710,7 +1793,6 @@ function bindJqyhApiEvents() {
                 const models = await fetchJqyhModels();
                 
                 if (models && models.length > 0) {
-                    // 清空并填充模型下拉框
                     modelSelect.innerHTML = '<option value="">-- 请选择模型 --</option>';
                     models.forEach(model => {
                         const option = document.createElement('option');
@@ -1718,12 +1800,9 @@ function bindJqyhApiEvents() {
                         option.textContent = model.name || model.id || model;
                         modelSelect.appendChild(option);
                     });
-                    
-                    // 显示下拉框，隐藏输入框
                     modelSelect.style.display = 'block';
                     modelInput.style.display = 'none';
                     
-                    // 绑定模型选择事件
                     modelSelect.addEventListener('change', function() {
                         const selectedModel = this.value;
                         modelInput.value = selectedModel;
@@ -1746,7 +1825,6 @@ function bindJqyhApiEvents() {
     }
 }
 
-// 加载SillyTavern预设列表
 async function loadJqyhTavernPresets() {
     const select = document.getElementById('amily2_jqyh_tavern_profile');
     if (!select) return;
@@ -1794,3 +1872,49 @@ $(document).on('change', 'input[name="amily2_icon_location"]', function() {
 
     setTimeout(createDrawer, 50); 
 });
+
+
+const DEFAULT_BG_IMAGE_URL = "https://cdn.jsdelivr.net/gh/Wx-2025/ST-Amily2-images@main/img/Amily-2.png";
+
+function applyAndSaveColors(container) {
+    const bgColor = container.find('#amily2_bg_color').val();
+    const btnColor = container.find('#amily2_button_color').val();
+    const textColor = container.find('#amily2_text_color').val();
+
+    const colors = {
+        '--amily2-bg-color': bgColor,
+        '--amily2-button-color': btnColor,
+        '--amily2-text-color': textColor
+    };
+
+    Object.entries(colors).forEach(([key, value]) => {
+        document.documentElement.style.setProperty(key, value, 'important');
+    });
+
+    if (!extension_settings[extensionName]) {
+        extension_settings[extensionName] = {};
+    }
+    extension_settings[extensionName]['customColors'] = colors;
+    saveSettingsDebounced();
+}
+
+function loadAndApplyCustomColors(container) {
+    const savedColors = extension_settings[extensionName]?.customColors;
+    if (savedColors) {
+        container.find('#amily2_bg_color').val(savedColors['--amily2-bg-color']);
+        container.find('#amily2_button_color').val(savedColors['--amily2-button-color']);
+        container.find('#amily2_text_color').val(savedColors['--amily2-text-color']);
+        applyAndSaveColors(container);
+    }
+
+    const savedOpacity = extension_settings[extensionName]?.bgOpacity;
+    if (savedOpacity !== undefined) {
+        $('#amily2_bg_opacity').val(savedOpacity);
+        $('#amily2_bg_opacity_value').text(savedOpacity);
+        document.documentElement.style.setProperty('--amily2-bg-opacity', savedOpacity);
+    }
+
+    const savedBgImage = extension_settings[extensionName]?.customBgImage;
+    const imageUrl = savedBgImage ? `url("${savedBgImage}")` : `url("${DEFAULT_BG_IMAGE_URL}")`;
+    document.documentElement.style.setProperty('--amily2-bg-image', imageUrl);
+}
