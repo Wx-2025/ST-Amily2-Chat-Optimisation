@@ -1,3 +1,9 @@
+:root {
+    --amily2-bg-color: #2C2C2C;
+    --amily2-button-color: #4A4A4A;
+    --amily2-text-color: #E0E0E0;
+}
+
 .manual-command-block {
     flex-wrap: wrap; 
     justify-content: space-between; 
@@ -14,8 +20,8 @@
     padding: 6px;
     text-align: center;
     border: 1px solid var(--border_color);
-    background-color: var(--background_secondary);
-    color: var(--text_color);
+    background-color: var(--amily2-bg-color);
+    color: var(--amily2-text-color);
     border-radius: 5px;
 }
 
@@ -32,7 +38,7 @@
 
 .manual-command-block .manual-command-divider {
     font-weight: bold;
-    color: var(--text_color_half);
+    color: var(--amily2-text-color);
 }
 
 #amily2_manual_historiography_bureau .mhb-controls-wrapper {
@@ -360,8 +366,8 @@
     cursor: pointer;
     font-weight: bold;
     transition: all 0.3s ease;
-    background-color: #444;
-    color: #eee;
+    background-color: var(--amily2-button-color);
+    color: var(--amily2-text-color);
     border-color: #666;
 }
 .hly-action-button:hover {
