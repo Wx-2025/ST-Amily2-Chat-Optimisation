@@ -1,4 +1,5 @@
 import { SETTINGS_KEY, defaultPrompts, defaultMixedOrder } from './config.js';
+import { safeTriggerSlash } from '../core/tavernhelper-compatibility.js';
 
 let presetManager = {
     activePreset: '默认预设',
@@ -225,10 +226,10 @@ export function savePresets() {
     toastr.success(`预设 "${presetManager.activePreset}" 已保存！`);
 }
 
-export function getPresetPrompts(sectionKey) {
+export async function getPresetPrompts(sectionKey) {
     const presets = currentPresets[sectionKey];
     const order = currentMixedOrder[sectionKey];
-    
+
     if (!presets || presets.length === 0 || !order) {
         console.warn(`Amily2: getPresetPrompts - 没有找到 ${sectionKey} 的数据`);
         return null;
@@ -237,14 +238,40 @@ export function getPresetPrompts(sectionKey) {
     const orderedPrompts = [];
     
     console.log(`Amily2: getPresetPrompts - ${sectionKey} 顺序:`, order);
-    
-    order.forEach((item, index) => {
-        if (item.type === 'prompt' && presets[item.index] !== undefined) {
-            const prompt = JSON.parse(JSON.stringify(presets[item.index]));
-            orderedPrompts.push(prompt);
-            console.log(`Amily2: 添加提示词 ${index}:`, { role: prompt.role, content: prompt.content.substring(0, 50) + '...' });
+
+    const originalToastr = window.toastr;
+    const dummyToastr = {
+        success: () => {},
+        info: () => {},
+        warning: () => {},
+        error: () => {},
+        clear: () => {}
+    };
+
+    try {
+        window.toastr = dummyToastr;
+
+        for (const [index, item] of order.entries()) {
+            if (item.type === 'prompt' && presets[item.index] !== undefined) {
+                const prompt = JSON.parse(JSON.stringify(presets[item.index]));
+                
+                if (prompt.content) {
+                    try {
+                        const command = `/echo ${prompt.content}`;
+                        const replacedContent = await safeTriggerSlash(command);
+                        prompt.content = replacedContent;
+                    } catch (error) {
+                        console.error(`[Amily2] 宏替换失败 for prompt at index ${index}:`, error);
+                    }
+                }
+                
+                orderedPrompts.push(prompt);
+                console.log(`Amily2: 添加提示词 ${index}:`, { role: prompt.role, content: prompt.content.substring(0, 50) + '...' });
+            }
         }
-    });
+    } finally {
+        window.toastr = originalToastr;
+    }
     
     console.log(`Amily2: getPresetPrompts - ${sectionKey} 返回 ${orderedPrompts.length} 个提示词`);
     return orderedPrompts.length > 0 ? orderedPrompts : null;
