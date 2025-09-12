@@ -1,1 +1,806 @@
-const _0x326bc9=_0x469a;(function(_0x15b6ee,_0x3380b1){const _0x585271=_0x469a,_0x293750=_0x15b6ee();while(!![]){try{const _0x660d01=parseInt(_0x585271(0x1cf))/0x1*(-parseInt(_0x585271(0x1f3))/0x2)+parseInt(_0x585271(0x239))/0x3+-parseInt(_0x585271(0x25f))/0x4+-parseInt(_0x585271(0x189))/0x5*(-parseInt(_0x585271(0x1e6))/0x6)+-parseInt(_0x585271(0x223))/0x7+-parseInt(_0x585271(0x19c))/0x8*(-parseInt(_0x585271(0x1cb))/0x9)+parseInt(_0x585271(0x18f))/0xa;if(_0x660d01===_0x3380b1)break;else _0x293750['push'](_0x293750['shift']());}catch(_0x455181){_0x293750['push'](_0x293750['shift']());}}}(_0x2d7d,0xdd06e));import{getContext,extension_settings}from'/scripts/extensions.js';import{characters}from'/script.js';import{extractBlocksByTags,applyExclusionRules}from'./utils/rag-tag-extractor.js';import{world_names,loadWorldInfo,createNewWorldInfo,createWorldInfoEntry,saveWorldInfo}from'/scripts/world-info.js';import{extensionName}from'../utils/settings.js';import{getChatIdentifier,writeToLorebookWithTavernHelper}from'./lore.js';import{ingestTextToHanlinyuan}from'./rag-processor.js';import{showSummaryModal,showHtmlModal}from'../ui/page-window.js';import{getPresetPrompts,getMixedOrder}from'../PresetSettings/index.js';import{callAI,generateRandomSeed}from'./api.js';import{callNgmsAI}from'./api/Ngms_api.js';function _0x469a(_0x8797f0,_0x22709d){const _0x2d7dc4=_0x2d7d();return _0x469a=function(_0x469af6,_0x192b96){_0x469af6=_0x469af6-0x182;let _0x2743f1=_0x2d7dc4[_0x469af6];return _0x2743f1;},_0x469a(_0x8797f0,_0x22709d);}let isExpeditionRunning=![],manualStopRequested=![];const RUNNING_LOG_COMMENT=_0x326bc9(0x1d8),PROGRESS_SEAL_REGEX=/本条勿动【前(\d+)楼总结已完成】否则后续总结无法进行。$/;async function readGoldenLedgerProgress(_0x717f0c){const _0x4447b2=_0x326bc9;if(!_0x717f0c)return 0x0;try{const _0x4d3d90=await loadWorldInfo(_0x717f0c);if(!_0x4d3d90||!_0x4d3d90[_0x4447b2(0x227)])return 0x0;const _0x3416b1=Object[_0x4447b2(0x248)](_0x4d3d90['entries'])[_0x4447b2(0x205)](_0x30ef3c=>_0x30ef3c[_0x4447b2(0x1e7)]===RUNNING_LOG_COMMENT&&!_0x30ef3c[_0x4447b2(0x1f6)]);if(!_0x3416b1)return 0x0;const _0x38ccce=_0x3416b1[_0x4447b2(0x1b5)][_0x4447b2(0x258)](PROGRESS_SEAL_REGEX);return _0x38ccce?parseInt(_0x38ccce[0x1],0xa):0x0;}catch(_0x2ea41f){return console[_0x4447b2(0x242)](_0x4447b2(0x254)+_0x717f0c+_0x4447b2(0x19a),_0x2ea41f),0x0;}}export async function checkAndTriggerAutoSummary(){const _0x5bfce9=_0x326bc9;if(isExpeditionRunning)return;const _0x4761d1=extension_settings[extensionName];if(!_0x4761d1[_0x5bfce9(0x1a6)])return;const _0x149b69=getContext();let _0xa2608=null;switch(_0x4761d1['lorebookTarget']){case _0x5bfce9(0x21e):_0xa2608=characters[_0x149b69[_0x5bfce9(0x184)]]?.['data']?.['extensions']?.[_0x5bfce9(0x1dc)];break;case _0x5bfce9(0x247):const _0x303d37=await getChatIdentifier();_0xa2608='Amily2-Lore-'+_0x303d37;break;default:return;}if(!_0xa2608)return;const _0x3bdef6=await readGoldenLedgerProgress(_0xa2608),_0x16a279=_0x149b69[_0x5bfce9(0x22c)][_0x5bfce9(0x1d4)],_0x87f61=_0x16a279-_0x3bdef6;if(_0x87f61>=_0x4761d1[_0x5bfce9(0x260)]+0x2){const _0x236b60=_0x4761d1[_0x5bfce9(0x260)],_0x901289=_0x3bdef6+0x1,_0x3e2f33=Math[_0x5bfce9(0x24b)](_0x3bdef6+_0x236b60,_0x16a279);console['log'](_0x5bfce9(0x1ed)+_0x901289+_0x5bfce9(0x1c8)+_0x3e2f33+'\x20楼。');const _0x3c3eee=_0x4761d1['historiographyAutoSummaryInteractive']??![];await executeManualSummary(_0x901289,_0x3e2f33,!_0x3c3eee);}}export async function getAvailableWorldbooks(){return[...world_names];}export async function getLoresForWorldbook(_0x710953){const _0x5426e7=_0x326bc9;if(!_0x710953)return[];try{const _0x2d4643=await loadWorldInfo(_0x710953);if(!_0x2d4643||!_0x2d4643[_0x5426e7(0x227)])return[];return Object[_0x5426e7(0x227)](_0x2d4643['entries'])['filter'](([,_0x38ae4f])=>!_0x38ae4f[_0x5426e7(0x1f6)])[_0x5426e7(0x234)](([_0x24a5bc,_0xc6aabc])=>({'key':_0x24a5bc,'comment':_0xc6aabc[_0x5426e7(0x1e7)]||_0x5426e7(0x251)}));}catch(_0x3ecea1){return console['error'](_0x5426e7(0x1d3)+_0x710953+_0x5426e7(0x23e),_0x3ecea1),[];}}export async function executeManualSummary(_0x4a2c27,_0x58ec0c,_0x495e3c=![]){return new Promise(async _0x589ea4=>{const _0x4220b4=_0x469a,_0x3539ae=_0x495e3c?_0x4220b4(0x22f):'微言录\x20(手动)',_0x39bd7e=getContext();if(_0x495e3c){const _0xc1bac2=getRawMessagesForSummary(_0x4a2c27,_0x58ec0c);if(!_0xc1bac2||_0xc1bac2[_0x4220b4(0x1d4)]===0x0)return toastr[_0x4220b4(0x232)]('自动巡录：未找到符合条件的消息。',_0x3539ae),_0x589ea4(![]);const _0x4471f1=_0xc1bac2[_0x4220b4(0x234)](_0x45a330=>_0x4220b4(0x1ea)+_0x45a330['floor']+_0x4220b4(0x1f4)+_0x45a330['author']+':\x20'+_0x45a330[_0x4220b4(0x1b5)])[_0x4220b4(0x219)]('\x0a'),_0x3fa78a=await getSummary(_0x4471f1,_0x3539ae);_0x3fa78a?showSummaryModal(_0x3fa78a,{'onConfirm':async _0x60c14f=>{const _0x2e12de=await writeSummary(_0x60c14f,_0x4a2c27,_0x58ec0c,_0x3539ae);_0x589ea4(_0x2e12de);},'onRegenerate':async _0xe4363a=>{const _0x5ade83=_0x4220b4;_0xe4363a[_0x5ade83(0x205)](_0x5ade83(0x24f))[_0x5ade83(0x20d)](_0x5ade83(0x1e0),!![])[_0x5ade83(0x1d9)](_0x5ade83(0x250));const _0x2a2712=await getSummary(_0x4471f1,_0x3539ae);_0x2a2712?_0xe4363a['find'](_0x5ade83(0x24f))[_0x5ade83(0x20d)]('disabled',![])[_0x5ade83(0x1d9)](_0x2a2712):(_0xe4363a[_0x5ade83(0x205)]('textarea')['prop'](_0x5ade83(0x1e0),![])[_0x5ade83(0x1d9)](_0x3fa78a),toastr[_0x5ade83(0x242)]('重新生成失败，已恢复原始内容。','模型召唤失败'));},'onCancel':()=>{const _0x30dedd=_0x4220b4;toastr[_0x30dedd(0x262)]('本批次总结已取消。',_0x3539ae),_0x589ea4(![]);}}):_0x589ea4(![]);return;}const _0x18fb29=getRawMessagesForSummary(_0x4a2c27,_0x58ec0c);if(!_0x18fb29||_0x18fb29[_0x4220b4(0x1d4)]===0x0)return toastr[_0x4220b4(0x232)](_0x4220b4(0x1e3),'圣谕有误'),_0x589ea4(![]);const _0xbd5599=_0x255d8b=>{const _0x1ac2c4=_0x4220b4,_0x9404dd=_0x255d8b[_0x1ac2c4(0x234)](_0x677753=>_0x1ac2c4(0x1db)+_0x677753[_0x1ac2c4(0x237)]+_0x1ac2c4(0x261)+_0x677753['floor']+_0x1ac2c4(0x1f4)+_0x677753[_0x1ac2c4(0x1a4)]+_0x1ac2c4(0x217)+_0x677753[_0x1ac2c4(0x1b0)]+'\x22>'+_0x677753[_0x1ac2c4(0x1b5)]+'</textarea>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</details>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20')[_0x1ac2c4(0x219)]('');return _0x1ac2c4(0x204)+(_0x39bd7e[_0x1ac2c4(0x1c4)]||'用户')+_0x1ac2c4(0x23f)+(_0x39bd7e[_0x1ac2c4(0x1ee)]||'角色')+_0x1ac2c4(0x1e4)+_0x9404dd+_0x1ac2c4(0x1bc);},_0x2f38f9=_0xbd5599(_0x18fb29);showHtmlModal(_0x4220b4(0x22d),_0x2f38f9,{'okText':_0x4220b4(0x21a),'cancelText':'取消','onOpen':_0x12a377=>{const _0x2a9deb=_0x4220b4,_0x3758a1=_0x12a377[_0x2a9deb(0x205)](_0x2a9deb(0x245)),_0x1f4f6c=_0x12a377[_0x2a9deb(0x205)](_0x2a9deb(0x1b3)),_0x2cf016=_0x12a377['find'](_0x2a9deb(0x194)),_0x5e8b5b=()=>{const _0x24916b=_0x2a9deb,_0x507e48=_0x3758a1['is'](_0x24916b(0x1ba)),_0x5c21d2=_0x1f4f6c['is'](_0x24916b(0x1ba));_0x2cf016['find'](_0x24916b(0x1ab))[_0x24916b(0x1f7)](function(){const _0x84c018=_0x24916b,_0x2b2c50=$(this),_0x4720e8=_0x2b2c50[_0x84c018(0x229)]('author-type');_0x4720e8===_0x84c018(0x201)&&!_0x507e48||_0x4720e8===_0x84c018(0x1a8)&&!_0x5c21d2?_0x2b2c50[_0x84c018(0x20d)](_0x84c018(0x1a9),!![]):_0x2b2c50[_0x84c018(0x20d)](_0x84c018(0x1a9),![]);});};_0x3758a1['on'](_0x2a9deb(0x214),_0x5e8b5b),_0x1f4f6c['on'](_0x2a9deb(0x214),_0x5e8b5b);},'onOk':async _0x3ffc68=>{const _0x12aba2=_0x4220b4,_0x5e936e=_0x3ffc68[_0x12aba2(0x205)](_0x12aba2(0x1cd))[_0x12aba2(0x234)](function(){const _0x1a57df=_0x12aba2,_0x1e5dcb=$(this)['data']('floor'),_0x517a52=$(this)[_0x1a57df(0x1ac)]('.historiography-message-item')[_0x1a57df(0x205)](_0x1a57df(0x190))[_0x1a57df(0x1fa)]()[_0x1a57df(0x238)](_0x1a57df(0x1ea)+_0x1e5dcb+_0x1a57df(0x1f4),'');return _0x1a57df(0x1ea)+_0x1e5dcb+_0x1a57df(0x1f4)+_0x517a52+':\x20'+$(this)[_0x1a57df(0x1d9)]();})['get']()[_0x12aba2(0x219)]('\x0a');if(!_0x5e936e[_0x12aba2(0x188)]()){toastr['error'](_0x12aba2(0x1f5),'圣谕有误');return;}const _0x5ef5c7=_0x3ffc68[0x0];_0x5ef5c7&&typeof _0x5ef5c7['close']===_0x12aba2(0x20f)&&_0x5ef5c7[_0x12aba2(0x1cc)]();_0x3ffc68[_0x12aba2(0x256)]();const _0x822179=await getSummary(_0x5e936e,_0x3539ae);_0x822179?showSummaryModal(_0x822179,{'onConfirm':async _0x48987e=>{const _0x431902=await writeSummary(_0x48987e,_0x4a2c27,_0x58ec0c,_0x3539ae);_0x589ea4(_0x431902);},'onRegenerate':async _0x371453=>{const _0x6efa07=_0x12aba2;_0x371453[_0x6efa07(0x205)]('textarea')[_0x6efa07(0x20d)](_0x6efa07(0x1e0),!![])[_0x6efa07(0x1d9)](_0x6efa07(0x250));const _0x5738bb=await getSummary(_0x5e936e,_0x3539ae);_0x5738bb?_0x371453[_0x6efa07(0x205)](_0x6efa07(0x24f))['prop']('disabled',![])['val'](_0x5738bb):(_0x371453[_0x6efa07(0x205)](_0x6efa07(0x24f))[_0x6efa07(0x20d)](_0x6efa07(0x1e0),![])[_0x6efa07(0x1d9)](_0x822179),toastr[_0x6efa07(0x242)](_0x6efa07(0x187),_0x6efa07(0x221)));},'onCancel':()=>{const _0x2a0d08=_0x12aba2;toastr[_0x2a0d08(0x262)](_0x2a0d08(0x259),_0x2a0d08(0x1c5)),_0x589ea4(![]);}}):_0x589ea4(![]);},'onCancel':()=>{const _0xf0d35f=_0x4220b4;toastr[_0xf0d35f(0x262)](_0xf0d35f(0x222),_0x3539ae),_0x589ea4(![]);}});});}function getRawMessagesForSummary(_0x2e040e,_0x2268b5){const _0x48c923=_0x326bc9,_0x167ef5=getContext(),_0xb4f706=_0x167ef5[_0x48c923(0x22c)],_0x551158=extension_settings[extensionName],_0x14ac0e=_0xb4f706[_0x48c923(0x23b)](_0x2e040e-0x1,_0x2268b5);if(_0x14ac0e[_0x48c923(0x1d4)]===0x0)return null;const _0x22609c=_0x167ef5[_0x48c923(0x1c4)]||'用户',_0x41fc5b=_0x167ef5[_0x48c923(0x1ee)]||'角色',_0x4b6dfe=_0x551158['historiographyTagExtractionEnabled']??![],_0x288589=_0x4b6dfe?(_0x551158[_0x48c923(0x18d)]||'')[_0x48c923(0x1f0)](',')[_0x48c923(0x234)](_0x38d005=>_0x38d005['trim']())[_0x48c923(0x1f2)](Boolean):[],_0x38788d=_0x551158[_0x48c923(0x24e)]||[],_0x58cd04=_0x14ac0e['map']((_0x52839a,_0xbbfda3)=>{const _0x2986bb=_0x48c923;let _0x149341=_0x52839a[_0x2986bb(0x21f)];if(_0x4b6dfe&&_0x288589['length']>0x0){const _0x29a165=extractBlocksByTags(_0x149341,_0x288589);_0x29a165[_0x2986bb(0x1d4)]>0x0&&(_0x149341=_0x29a165[_0x2986bb(0x219)]('\x0a\x0a'));}_0x149341=applyExclusionRules(_0x149341,_0x38788d);if(!_0x149341[_0x2986bb(0x188)]())return null;return{'floor':_0x2e040e+_0xbbfda3,'author':_0x52839a[_0x2986bb(0x19f)]?_0x22609c:_0x41fc5b,'authorType':_0x52839a[_0x2986bb(0x19f)]?_0x2986bb(0x201):_0x2986bb(0x1a8),'content':_0x149341['trim']()};})[_0x48c923(0x1f2)](Boolean);return _0x58cd04;}async function getSummary(_0x458188,_0x4f9f4f){const _0x2283f6=_0x326bc9;toastr[_0x2283f6(0x262)]('正在为您熔铸对话历史...',_0x4f9f4f);const _0x4e68a7=extension_settings[extensionName],_0x1f4e5a=getPresetPrompts(_0x2283f6(0x18c));let _0x291b38;try{const _0x508406=localStorage[_0x2283f6(0x249)](_0x2283f6(0x198));_0x508406&&(_0x291b38=JSON[_0x2283f6(0x24d)](_0x508406));}catch(_0x2a15b7){console[_0x2283f6(0x242)](_0x2283f6(0x210),_0x2a15b7);}const _0x3065de=getMixedOrder('small_summary')||[],_0x5d021b=[{'role':_0x2283f6(0x1da),'content':generateRandomSeed()}];let _0x481130=0x0;for(const _0x43e549 of _0x3065de){if(_0x43e549[_0x2283f6(0x231)]==='prompt')_0x1f4e5a&&_0x1f4e5a[_0x481130]&&(_0x5d021b[_0x2283f6(0x1aa)](_0x1f4e5a[_0x481130]),_0x481130++);else{if(_0x43e549['type']===_0x2283f6(0x1c1))switch(_0x43e549['id']){case _0x2283f6(0x19d):_0x4e68a7[_0x2283f6(0x1ad)]&&_0x5d021b[_0x2283f6(0x1aa)]({'role':'system','content':_0x4e68a7[_0x2283f6(0x1ad)]});break;case'summaryPrompt':_0x4e68a7[_0x2283f6(0x1b6)]&&_0x5d021b[_0x2283f6(0x1aa)]({'role':_0x2283f6(0x1da),'content':_0x4e68a7[_0x2283f6(0x1b6)]});break;case _0x2283f6(0x208):_0x5d021b['push']({'role':_0x2283f6(0x201),'content':_0x2283f6(0x1b1)+_0x458188+'\x0a</对话记录>'});break;}}}const _0x1f4a65=_0x4e68a7[_0x2283f6(0x21c)]?await callNgmsAI(_0x5d021b):await callAI(_0x5d021b);return console[_0x2283f6(0x243)](_0x2283f6(0x1b7),_0x1f4a65),_0x1f4a65;}async function writeSummary(_0x163f2f,_0xee366a,_0x3849d5,_0x47752){const _0x22e314=_0x326bc9,_0x1d7243=extension_settings[extensionName],_0xeb1dfa=getContext(),_0xc7ecb7=_0x1d7243[_0x22e314(0x192)]??!![],_0x118443=_0x1d7243[_0x22e314(0x253)]??![];if(!_0xc7ecb7&&!_0x118443)return toastr[_0x22e314(0x232)](_0x22e314(0x20b),_0x47752),!![];if(_0x118443)try{let _0x23636f;switch(_0x1d7243[_0x22e314(0x212)]){case _0x22e314(0x21e):_0x23636f=characters[_0xeb1dfa[_0x22e314(0x184)]]?.[_0x22e314(0x229)]?.[_0x22e314(0x235)]?.[_0x22e314(0x1dc)];if(!_0x23636f)throw new Error(_0x22e314(0x230));break;case'dedicated':const _0x598078=await getChatIdentifier();_0x23636f='Amily2-Lore-'+_0x598078;break;default:throw new Error(_0x22e314(0x1eb));}toastr[_0x22e314(0x262)](_0x22e314(0x1ff),_0x22e314(0x1c2));const _0x1ed422={'bookName':_0x23636f,'entryName':_0x22e314(0x1bf)+_0xee366a+'-'+_0x3849d5+'楼'},_0x263050=await ingestTextToHanlinyuan(_0x163f2f,_0x22e314(0x1ae),_0x1ed422);if(_0x263050[_0x22e314(0x1df)])toastr[_0x22e314(0x1df)](_0x22e314(0x23a),'翰林院');else throw new Error(_0x263050[_0x22e314(0x242)]);}catch(_0x2f0d79){console[_0x22e314(0x242)](_0x22e314(0x1f8),_0x2f0d79),toastr[_0x22e314(0x242)](_0x22e314(0x182)+_0x2f0d79[_0x22e314(0x1a3)],_0x22e314(0x1c2));}if(_0xc7ecb7)try{let _0x1ee2f5;switch(_0x1d7243['lorebookTarget']){case _0x22e314(0x21e):_0x1ee2f5=characters[_0xeb1dfa[_0x22e314(0x184)]]?.[_0x22e314(0x229)]?.[_0x22e314(0x235)]?.['world'];if(!_0x1ee2f5)throw new Error(_0x22e314(0x1b8));break;case _0x22e314(0x247):const _0x1204b8=await getChatIdentifier();_0x1ee2f5=_0x22e314(0x200)+_0x1204b8;break;default:throw new Error(_0x22e314(0x228));}const _0x31b7e6=_0x30adc0=>{const _0x26b849=_0x22e314,_0x35b737='\x0a\x0a本条勿动【前'+_0x3849d5+'楼总结已完成】否则后续总结无法进行。',_0x39ca92='\x0a\x0a---\x0a\x0a【'+_0xee366a+'楼至'+_0x3849d5+_0x26b849(0x226)+_0x163f2f;if(_0x30adc0){const _0x84c7d5=_0x30adc0[_0x26b849(0x238)](PROGRESS_SEAL_REGEX,'')[_0x26b849(0x188)]();return _0x84c7d5+_0x39ca92+_0x35b737;}else{const _0xf71292='以下是依照顺序已发生剧情'+_0x39ca92;return _0xf71292+_0x35b737;}};console['log']('[大史官-调试]\x20读取到的原始设置:',{'loreActivationMode':_0x1d7243[_0x22e314(0x1fb)],'loreInsertionPosition':_0x1d7243['loreInsertionPosition'],'loreDepth':_0x1d7243[_0x22e314(0x21b)],'loreKeywords':_0x1d7243[_0x22e314(0x18e)]});const _0x14132f={'keys':_0x1d7243['loreKeywords']['split'](',')[_0x22e314(0x234)](_0x5374eb=>_0x5374eb[_0x22e314(0x188)]())[_0x22e314(0x1f2)](Boolean),'isConstant':_0x1d7243[_0x22e314(0x1fb)]!=='keyed','insertion_position':_0x1d7243[_0x22e314(0x195)],'depth':_0x1d7243['loreDepth']};console[_0x22e314(0x243)](_0x22e314(0x240),_0x14132f);const _0xd662ae=await writeToLorebookWithTavernHelper(_0x1ee2f5,RUNNING_LOG_COMMENT,_0x31b7e6,_0x14132f);if(_0xd662ae)return toastr[_0x22e314(0x1df)](_0x22e314(0x255),_0x47752+_0x22e314(0x1ef)),!![];else throw new Error('使用\x20TavernHelper\x20写入失败，请检查控制台日志。');}catch(_0x9c6f95){return console[_0x22e314(0x242)]('[大史官]\x20'+_0x47752+_0x22e314(0x220),_0x9c6f95),toastr[_0x22e314(0x242)](_0x22e314(0x22e)+_0x9c6f95['message'],_0x22e314(0x18b)),![];}return!![];}const CHAPTER_SEAL_REGEX=/【前(\d+)楼篇章编撰已完成】/;export async function executeRefinement(_0x3a4ef2,_0x39398c){const _0x4cad41=_0x326bc9;toastr[_0x4cad41(0x262)](_0x4cad41(0x1ec)+_0x3a4ef2+_0x4cad41(0x206),_0x4cad41(0x22a));try{const _0x36dd5d=await loadWorldInfo(_0x3a4ef2),_0x104b0e=_0x36dd5d?.[_0x4cad41(0x227)][_0x39398c];if(!_0x104b0e){toastr[_0x4cad41(0x242)](_0x4cad41(0x21d),_0x4cad41(0x199));return;}const _0x33324e=_0x104b0e[_0x4cad41(0x1b5)],_0x502ee6=extension_settings[extensionName],_0x3fbb6c=_0x33324e[_0x4cad41(0x258)](PROGRESS_SEAL_REGEX);if(!_0x3fbb6c){toastr[_0x4cad41(0x242)](_0x4cad41(0x18a),_0x4cad41(0x213));return;}const _0x31b11a=_0x3fbb6c[0x0],_0x281fcf=parseInt(_0x3fbb6c[0x1],0xa),_0x166ef0=_0x33324e[_0x4cad41(0x258)](CHAPTER_SEAL_REGEX);let _0x3db77f='',_0x1d67d2='',_0x3921a3=0x0;if(_0x166ef0){const _0x4cd19c=_0x166ef0[0x0];_0x3921a3=parseInt(_0x166ef0[0x1],0xa);const _0x4952ee=_0x33324e[_0x4cad41(0x1f0)](_0x4cd19c);_0x3db77f=_0x4952ee[0x0]['trim'](),_0x1d67d2=_0x4952ee[0x1]['replace'](PROGRESS_SEAL_REGEX,'')[_0x4cad41(0x188)]();}else _0x1d67d2=_0x33324e[_0x4cad41(0x238)](PROGRESS_SEAL_REGEX,'')[_0x4cad41(0x188)]();if(!_0x1d67d2[_0x4cad41(0x188)]()){toastr[_0x4cad41(0x232)]('史册条目中没有新的内容可供重铸。',_0x4cad41(0x20c));return;}const _0x1d2bc0=getPresetPrompts(_0x4cad41(0x1e2));let _0x2e7521;try{const _0x3a9206=localStorage[_0x4cad41(0x249)](_0x4cad41(0x198));_0x3a9206&&(_0x2e7521=JSON[_0x4cad41(0x24d)](_0x3a9206));}catch(_0x3db6a0){console[_0x4cad41(0x242)](_0x4cad41(0x210),_0x3db6a0);}const _0x39041a=getMixedOrder(_0x4cad41(0x1e2))||[],_0x4f7d91=[{'role':'system','content':generateRandomSeed()}];let _0x46e102=0x0;for(const _0x571a6d of _0x39041a){if(_0x571a6d[_0x4cad41(0x231)]===_0x4cad41(0x1b4))_0x1d2bc0&&_0x1d2bc0[_0x46e102]&&(_0x4f7d91[_0x4cad41(0x1aa)](_0x1d2bc0[_0x46e102]),_0x46e102++);else{if(_0x571a6d['type']==='conditional')switch(_0x571a6d['id']){case _0x4cad41(0x19d):_0x502ee6[_0x4cad41(0x1de)]&&_0x4f7d91[_0x4cad41(0x1aa)]({'role':_0x4cad41(0x1da),'content':_0x502ee6[_0x4cad41(0x1de)]});break;case'summaryPrompt':_0x502ee6[_0x4cad41(0x209)]&&_0x4f7d91[_0x4cad41(0x1aa)]({'role':_0x4cad41(0x1da),'content':_0x502ee6['historiographyLargeRefinePrompt']});break;case _0x4cad41(0x208):_0x4f7d91['push']({'role':'user','content':_0x4cad41(0x202)+_0x1d67d2});break;}}}const _0x51cff8=async()=>{const _0x4f4a17=_0x4cad41;return toastr[_0x4f4a17(0x262)](_0x4f4a17(0x1bb),_0x4f4a17(0x22a)),await callAI(_0x4f7d91);},_0x194222=await _0x51cff8();if(!_0x194222){toastr[_0x4cad41(0x242)](_0x4cad41(0x1ce),_0x4cad41(0x218));return;}const _0x55c231=async _0x11e1aa=>{showSummaryModal(_0x11e1aa,{'onConfirm':async _0x83bda=>{const _0x3a29bc=_0x469a;let _0x423c85;const _0x19283b=_0x3a29bc(0x257)+_0x281fcf+_0x3a29bc(0x191),_0x3410d4=document['getElementById'](_0x3a29bc(0x1a5))?.[_0x3a29bc(0x207)]??![];if(_0x3410d4&&_0x166ef0)try{toastr['info'](_0x3a29bc(0x23c)+_0x3921a3+_0x3a29bc(0x1dd),_0x3a29bc(0x1c2));const _0x44171a={'bookName':_0x3a4ef2,'entryName':'宏史卷总结:\x201-'+_0x3921a3+'楼'},_0x1f9963=await ingestTextToHanlinyuan(_0x3db77f,_0x3a29bc(0x1ae),_0x44171a);if(!_0x1f9963[_0x3a29bc(0x1df)])throw new Error(_0x1f9963['error']||_0x3a29bc(0x1af));toastr[_0x3a29bc(0x1df)]('翰林院已成功接收旧“宏史卷”记忆！新增\x20'+_0x1f9963[_0x3a29bc(0x224)]+_0x3a29bc(0x1e8),_0x3a29bc(0x1c2));const _0xde99c5=_0x3a29bc(0x1c7)+_0x3921a3+_0x3a29bc(0x1d5)+_0x3921a3+_0x3a29bc(0x22b);_0x423c85=_0xde99c5+_0x3a29bc(0x1a2)+_0x83bda+_0x19283b+'\x0a\x0a'+_0x31b11a;}catch(_0x30284a){console[_0x3a29bc(0x242)]('[大史官-宏史卷向量化]\x20失败:',_0x30284a),toastr[_0x3a29bc(0x242)](_0x3a29bc(0x186)+_0x30284a['message']+_0x3a29bc(0x24a),'翰林院');const _0x32f1ad=_0x3a29bc(0x183)+_0x3921a3+_0x3a29bc(0x23d);_0x423c85=''+_0x3db77f+_0x32f1ad+_0x83bda+_0x19283b+'\x0a\x0a'+_0x31b11a;}else{if(_0x166ef0){const _0x47b79b=_0x3a29bc(0x183)+_0x3921a3+_0x3a29bc(0x23d);_0x423c85=''+_0x3db77f+_0x47b79b+_0x83bda+_0x19283b+'\x0a\x0a'+_0x31b11a;}else{const _0x433ff6=_0x3a29bc(0x211)+_0x281fcf+_0x3a29bc(0x216);_0x423c85=''+_0x433ff6+_0x83bda+_0x19283b+'\x0a\x0a'+_0x31b11a;}}_0x104b0e[_0x3a29bc(0x1b5)]=_0x423c85,await saveWorldInfo(_0x3a4ef2,_0x36dd5d,!![]),toastr[_0x3a29bc(0x1df)](_0x3a29bc(0x25a)+_0x3a4ef2+'》！',_0x3a29bc(0x1c0));},'onRegenerate':async _0x34a887=>{const _0x50d2c9=_0x469a;_0x34a887[_0x50d2c9(0x205)](_0x50d2c9(0x24f))[_0x50d2c9(0x20d)](_0x50d2c9(0x1e0),!![])[_0x50d2c9(0x1d9)](_0x50d2c9(0x250));const _0x2a9c4b=await _0x51cff8();_0x2a9c4b?_0x34a887[_0x50d2c9(0x205)](_0x50d2c9(0x24f))[_0x50d2c9(0x20d)](_0x50d2c9(0x1e0),![])[_0x50d2c9(0x1d9)](_0x2a9c4b):(_0x34a887[_0x50d2c9(0x205)](_0x50d2c9(0x24f))['prop'](_0x50d2c9(0x1e0),![])['val'](_0x11e1aa),toastr[_0x50d2c9(0x242)]('重新生成失败，已恢复原始内容。','模型召唤失败'));},'onCancel':()=>{const _0x4fb2c0=_0x469a;toastr[_0x4fb2c0(0x262)](_0x4fb2c0(0x252),_0x4fb2c0(0x1c5));}});};await _0x55c231(_0x194222);}catch(_0x374c1d){console['error'](_0x4cad41(0x236),_0x374c1d),toastr[_0x4cad41(0x242)](_0x4cad41(0x20e)+_0x374c1d['message'],_0x4cad41(0x18b));}}function _0x2d7d(){const _0x1a0144=['log','远征军已开拔！目标：','#hist-include-user','\x20/\x20','dedicated','values','getItem','，将执行标准保存。','min','\x20批次任务失败而中止。','parse','historiographyExclusionRules','textarea','正在重新生成，请稍候...','无标题条目','宏史卷重铸操作已取消。','historiographyIngestToRag','[大史官]\x20阅览《','编年史已成功更新！','remove','\x0a\x0a【前','match','本批次总结已取消。','史册已成功重铸，并保存于《','dispatchEvent','[大史官-远征失败]','远征已遵从您的敕令暂停！随时可以【继续远征】。','warn','1291460eSiraQ','historiographySmallTriggerThreshold','\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<summary>【第\x20','info','送往翰林院的文书处理失败:\x20','\x0a\x0a===【截止至第','characterId','批量编纂大功告成！新增\x20','宏史卷向量化失败:\x20','重新生成失败，已恢复原始内容。','trim','9980miZqDD','史册缺少【流水金印】，无法执行重铸。','国史馆','small_summary','historiographyTags','loreKeywords','18660880NOmJeU','summary','楼篇章编撰已完成】','historiographyWriteToLorebook','远征失败','#historiography-preview-container','loreInsertionPosition','】内容为空。','amily2-expedition-state-change','amily2_prompt_presets_v2_mixed_order','圣谕有误','》天机时出错:','国史已是最新，远征军无需出动。','536ySJAFA','jailbreakPrompt','批量编纂期间发生部分错误，详情请查看控制台。','is_user','\x20批次战役准备中...\x20(','】处理时发生严重错误:\x20','\x0a\x0a---\x0a\x0a','message','author','amily2_vectorize_summary_content','historiographySmallAutoEnable','\x20个条目进行批量编纂...','char','hidden','push','.historiography-message-item','closest','historiographySmallJailbreakPrompt','lorebook','未知错误','floor','请严格根据以下\x22对话记录\x22中的内容进行总结，不要添加任何额外信息。\x0a\x0a<对话记录>\x0a','\x20层历史，分\x20','#hist-include-char','prompt','content','historiographySmallSummaryPrompt','[大史官-微言录]\x20AI回复的全部内容:','当前角色未绑定主世界书。','[翰林院]\x20批量编纂错误详情:',':checked','正在召唤模型进行内容精炼...','</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<style>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20#historiography-preview-controls\x20{\x20margin-bottom:\x2010px;\x20display:\x20flex;\x20gap:\x2015px;\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20#historiography-preview-container\x20{\x20height:\x2065vh;\x20overflow-y:\x20auto;\x20border:\x201px\x20solid\x20#444;\x20padding:\x205px;\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20.historiography-message-item\x20{\x20margin-bottom:\x205px;\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20.historiography-message-item[hidden]\x20{\x20display:\x20none;\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20.historiography-message-item\x20summary\x20{\x20cursor:\x20pointer;\x20padding:\x205px;\x20background-color:\x20#333;\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20.historiography-editor-container\x20{\x20padding:\x2010px;\x20border:\x201px\x20solid\x20#444;\x20border-top:\x20none;\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20.historiography-editor-container\x20textarea\x20{\x20height:\x20150px;\x20resize:\x20vertical;\x20}\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</style>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','\x20个条目，共新增\x20','远征因第\x20','微言录总结:\x20','宏史卷重铸完毕','conditional','翰林院','秒后接敌)','name1','操作已取消','圣谕传达','AI你好，以上内容为rag向量化后注入的相关剧情，以下内容是已发生的剧情回顾。\x0a\x0a（前','\x20至\x20','条目【','\x0a-\x20','228222iMeWkI','close','.historiography-message-item:not([hidden])\x20textarea','模型未能返回有效的精炼内容。','113LQuFTb','远征军已在途中，无需重复下令。','未选择任何条目进行编纂。','无法加载书库《','[大史官]\x20检阅《','length','楼聊天记录总结已由翰林院向量化注入。）\x0a\x0a【以下内容为','远征战役\x20(','鸣金收兵','【敕史局】对话流水总帐','val','system','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<details\x20class=\x22historiography-message-item\x22\x20data-author-type=\x22','world','\x20楼的“宏史卷”内容送往翰林院...','historiographyLargeJailbreakPrompt','success','disabled','远征已在准备阶段遵令暂停！','large_summary','选定的楼层范围内无有效对话或内容被规则排除。','</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22historiography-preview-container\x22>','》的数据。','6LaDbQK','comment','\x20条。','\x20条忆识。','【第\x20','未知的史册写入指令，无法为翰林院确定目标。','遵旨！正在为您重铸《','[大史官]\x20自动微言录已触发，处理\x20','name2','\x20-\x20国史馆','split','圣谕不明','filter','31814dTxOgr','\x20楼】\x20','请至少选择一条消息进行总结！','disable','each','[翰林院]\x20向量化处理失败:','\x20批次征服！','text','loreActivationMode','[翰林院]\x20批量条目入库失败:','遵旨！开始对《','isArray','正在将此份“微言录”送往翰林院...','Amily2-Lore-','user','请将以下多个零散的\x22详细总结记录\x22提炼并融合成一段连贯的章节历史。原文如下：\x0a\x0a','\x0a\x0a发生以下错误:\x0a-\x20','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22historiography-preview-controls\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label><input\x20type=\x22checkbox\x22\x20id=\x22hist-include-user\x22\x20checked>\x20','find','》中的【微言录合集】...','checked','coreContent','historiographyLargeRefinePrompt','翰林院入库','“写入史册”和“存入翰林院”均未启用，总结任务已完成但未保存。','国库无新事','prop','重铸史册时发生严重错误:\x20','function','[大史官]\x20加载混合顺序失败:','以下内容是【1楼-','lorebookTarget','结构异常','change','ceil','楼】已发生的剧情回顾。\x0a\x0a---\x0a\x0a','</summary>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22historiography-editor-container\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<textarea\x20class=\x22text_pole\x22\x20data-floor=\x22','宏史卷重铸失败','join','确认原文并总结','loreDepth','ngmsEnabled','找不到指定的史册条目，重铸任务中止。','character_main','mes','写入国史馆失败:','模型召唤失败','操作已取消。','5597935TchzCk','count','批量编纂完成！\x0a成功处理\x20','楼详细总结记录】\x0a','entries','未知的史册写入指令。','data','宏史卷重铸','楼以后的总结内容】','chat','原文预览与编辑','写入国史馆时发生错误:\x20','微言录\x20(自动)','当前角色未绑定主世界书，无法为翰林院确定目标。','type','warning','远征途中遭遇重大挫折，任务中止！您可以随时【继续远征】。','map','extensions','[大史官]\x20重铸任务失败:','authorType','replace','774951nUXNwD','翰林院已成功接收记忆碎片！','slice','正在将前\x20','楼的宏史卷】===\x0a\x0a','》时出错:','</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label><input\x20type=\x22checkbox\x22\x20id=\x22hist-include-char\x22\x20checked>\x20','[大史官-调试]\x20构建并传递的选项:','远征开始','error'];_0x2d7d=function(){return _0x1a0144;};return _0x2d7d();}export async function executeExpedition(){const _0x5079c9=_0x326bc9;if(isExpeditionRunning){toastr[_0x5079c9(0x262)](_0x5079c9(0x1d0),'圣谕悉知');return;}isExpeditionRunning=!![],manualStopRequested=![],document[_0x5079c9(0x25b)](new CustomEvent(_0x5079c9(0x197),{'detail':{'isRunning':!![]}}));try{const _0x181601=extension_settings[extensionName],_0x28ce90=getContext();let _0x176707=null;switch(_0x181601['lorebookTarget']){case _0x5079c9(0x21e):_0x176707=characters[_0x28ce90[_0x5079c9(0x184)]]?.[_0x5079c9(0x229)]?.[_0x5079c9(0x235)]?.[_0x5079c9(0x1dc)];if(!_0x176707){toastr[_0x5079c9(0x242)]('当前角色未绑定主世界书，远征军无法开拔！','圣谕不明'),isExpeditionRunning=![],document[_0x5079c9(0x25b)](new CustomEvent(_0x5079c9(0x197),{'detail':{'isRunning':![],'manualStop':![]}}));return;}break;case'dedicated':const _0x3cd9ff=await getChatIdentifier();_0x176707=_0x5079c9(0x200)+_0x3cd9ff;break;default:toastr['error']('未知的史册写入目标，远征军无法开拔！','圣谕不明'),isExpeditionRunning=![],document[_0x5079c9(0x25b)](new CustomEvent('amily2-expedition-state-change',{'detail':{'isRunning':![],'manualStop':![]}}));return;}const _0x307148=await readGoldenLedgerProgress(_0x176707),_0x530461=_0x28ce90['chat'][_0x5079c9(0x1d4)],_0x4a549b=_0x530461-_0x307148;if(_0x4a549b<=0x0){toastr[_0x5079c9(0x262)](_0x5079c9(0x19b),'凯旋'),isExpeditionRunning=![],document[_0x5079c9(0x25b)](new CustomEvent(_0x5079c9(0x197),{'detail':{'isRunning':![],'manualStop':![]}}));return;}const _0x1ffe7d=_0x181601['historiographySmallTriggerThreshold'],_0x44ccdb=Math[_0x5079c9(0x215)](_0x4a549b/_0x1ffe7d);toastr[_0x5079c9(0x262)](_0x5079c9(0x244)+_0x4a549b+_0x5079c9(0x1b2)+_0x44ccdb+_0x5079c9(0x1f9),_0x5079c9(0x241));let _0x199390=_0x307148;for(let _0x3908b6=0x0;_0x3908b6<_0x44ccdb;_0x3908b6++){if(manualStopRequested){toastr[_0x5079c9(0x232)](_0x5079c9(0x25d),_0x5079c9(0x1d7));break;}const _0x26a90a=_0x199390+0x1,_0x8fa5c7=Math[_0x5079c9(0x24b)](_0x199390+_0x1ffe7d,_0x530461),_0x2844f8=_0x5079c9(0x1d6)+(_0x3908b6+0x1)+'/'+_0x44ccdb+')',_0x114b5a=0x7d0;_0x3908b6>0x0&&(toastr[_0x5079c9(0x262)]('第\x20'+(_0x3908b6+0x1)+_0x5079c9(0x1a0)+_0x114b5a/0x3e8+_0x5079c9(0x1c3),_0x2844f8),await new Promise(_0x38613f=>setTimeout(_0x38613f,_0x114b5a)));if(manualStopRequested){toastr[_0x5079c9(0x232)](_0x5079c9(0x1e1),_0x5079c9(0x1d7));break;}const _0x453bff=await executeManualSummary(_0x26a90a,_0x8fa5c7,![]);if(_0x453bff)_0x199390=_0x8fa5c7;else{toastr[_0x5079c9(0x232)](_0x5079c9(0x1be)+(_0x3908b6+0x1)+_0x5079c9(0x24c),'远征中止'),manualStopRequested=!![];break;}}!manualStopRequested&&toastr['success']('凯旋！远征大捷！所有未载之史均已化为帝国永恒的记忆！','远征完毕');}catch(_0x1033cc){console[_0x5079c9(0x242)](_0x5079c9(0x25c),_0x1033cc),toastr[_0x5079c9(0x242)](_0x5079c9(0x233),_0x5079c9(0x193));}finally{isExpeditionRunning=![],document[_0x5079c9(0x25b)](new CustomEvent(_0x5079c9(0x197),{'detail':{'isRunning':![],'manualStop':manualStopRequested}}));}}export function stopExpedition(){const _0x4f53b5=_0x326bc9;isExpeditionRunning?(manualStopRequested=!![],toastr['info']('停战敕令已下达！远征军将在完成当前批次的任务后休整。',_0x4f53b5(0x1c6))):toastr[_0x4f53b5(0x232)]('远征军已在营中，无需下达停战敕令。','圣谕悉知');}export async function executeCompilation(_0x315a36,_0x23fdd4){const _0x5514a4=_0x326bc9;if(!Array[_0x5514a4(0x1fe)](_0x23fdd4)||_0x23fdd4['length']===0x0)return toastr[_0x5514a4(0x232)](_0x5514a4(0x1d1),_0x5514a4(0x1f1)),{'success':![],'error':'No\x20lore\x20keys\x20provided.'};toastr[_0x5514a4(0x262)](_0x5514a4(0x1fd)+_0x315a36+'》中的\x20'+_0x23fdd4[_0x5514a4(0x1d4)]+_0x5514a4(0x1a7),_0x5514a4(0x20a));let _0x250cb4=0x0,_0x5d080b=0x0,_0x1a3871=[];try{const _0x383dac=await loadWorldInfo(_0x315a36);if(!_0x383dac||!_0x383dac[_0x5514a4(0x227)])throw new Error(_0x5514a4(0x1d2)+_0x315a36+_0x5514a4(0x1e5));for(const _0x10c2dd of _0x23fdd4){const _0x5f4801=_0x383dac[_0x5514a4(0x227)][_0x10c2dd];if(!_0x5f4801){_0x1a3871[_0x5514a4(0x1aa)]('条目【'+_0x10c2dd+'】未找到。');continue;}const _0x68a1a0=_0x5f4801[_0x5514a4(0x1b5)];if(!_0x68a1a0['trim']()){_0x1a3871[_0x5514a4(0x1aa)](_0x5514a4(0x1c9)+(_0x5f4801['comment']||_0x10c2dd)+_0x5514a4(0x196));continue;}const _0x1aa515={'bookName':_0x315a36,'entryName':_0x5f4801[_0x5514a4(0x1e7)]||_0x10c2dd};try{const _0x5aff75=await ingestTextToHanlinyuan(_0x68a1a0,_0x5514a4(0x1ae),_0x1aa515);_0x5aff75['success']?(_0x250cb4++,_0x5d080b+=_0x5aff75[_0x5514a4(0x224)]):_0x1a3871[_0x5514a4(0x1aa)](_0x5514a4(0x1c9)+(_0x5f4801[_0x5514a4(0x1e7)]||_0x10c2dd)+'】处理失败:\x20'+_0x5aff75[_0x5514a4(0x242)]);}catch(_0x15112a){_0x1a3871[_0x5514a4(0x1aa)]('条目【'+(_0x5f4801['comment']||_0x10c2dd)+_0x5514a4(0x1a1)+_0x15112a[_0x5514a4(0x1a3)]);}}let _0x3bc317=_0x5514a4(0x225)+_0x250cb4+_0x5514a4(0x246)+_0x23fdd4[_0x5514a4(0x1d4)]+_0x5514a4(0x1bd)+_0x5d080b+_0x5514a4(0x1e9);return _0x1a3871[_0x5514a4(0x1d4)]>0x0?(_0x3bc317+=_0x5514a4(0x203)+_0x1a3871[_0x5514a4(0x219)](_0x5514a4(0x1ca)),toastr[_0x5514a4(0x232)](_0x5514a4(0x19e),_0x5514a4(0x1c2)),console[_0x5514a4(0x25e)](_0x5514a4(0x1b9),_0x1a3871)):toastr[_0x5514a4(0x1df)](_0x5514a4(0x185)+_0x5d080b+_0x5514a4(0x1e9),_0x5514a4(0x1c2)),{'success':_0x1a3871['length']===0x0,'content':_0x3bc317,'totalSuccess':_0x250cb4,'totalVectors':_0x5d080b,'errors':_0x1a3871};}catch(_0x2fbbdb){return console[_0x5514a4(0x242)](_0x5514a4(0x1fc),_0x2fbbdb),toastr[_0x5514a4(0x242)]('批量入库失败:\x20'+_0x2fbbdb[_0x5514a4(0x1a3)],_0x5514a4(0x1c2)),{'success':![],'error':_0x2fbbdb[_0x5514a4(0x1a3)]};}}
+import { getContext, extension_settings } from "/scripts/extensions.js";
+import { characters } from "/script.js";
+import { extractBlocksByTags, applyExclusionRules } from './utils/rag-tag-extractor.js';
+import {
+  world_names,
+  loadWorldInfo,
+  createNewWorldInfo,
+  createWorldInfoEntry,
+  saveWorldInfo,
+} from "/scripts/world-info.js";
+import { extensionName } from "../utils/settings.js";
+import { getChatIdentifier, writeToLorebookWithTavernHelper } from "./lore.js";
+import { ingestTextToHanlinyuan } from "./rag-processor.js";
+import { showSummaryModal, showHtmlModal } from "../ui/page-window.js";
+import { getPresetPrompts, getMixedOrder } from '../PresetSettings/index.js';
+import { callAI, generateRandomSeed } from "./api.js";
+import { callNgmsAI } from "./api/Ngms_api.js";
+
+let isExpeditionRunning = false; 
+let manualStopRequested = false; 
+
+const RUNNING_LOG_COMMENT = "【敕史局】对话流水总帐";
+const PROGRESS_SEAL_REGEX =
+  /本条勿动【前(\d+)楼总结已完成】否则后续总结无法进行。$/;
+
+async function readGoldenLedgerProgress(targetLorebookName) {
+  if (!targetLorebookName) return 0;
+  try {
+    const bookData = await loadWorldInfo(targetLorebookName);
+    if (!bookData || !bookData.entries) return 0;
+    const ledgerEntry = Object.values(bookData.entries).find(
+      (e) => e.comment === RUNNING_LOG_COMMENT && !e.disable,
+    );
+    if (!ledgerEntry) return 0;
+    const match = ledgerEntry.content.match(PROGRESS_SEAL_REGEX);
+    return match ? parseInt(match[1], 10) : 0;
+  } catch (error) {
+    console.error(`[大史官] 阅览《${targetLorebookName}》天机时出错:`, error);
+    return 0;
+  }
+}
+
+export async function checkAndTriggerAutoSummary() {
+  if (isExpeditionRunning) {
+    return;
+  }
+
+  const settings = extension_settings[extensionName];
+  if (!settings.historiographySmallAutoEnable) return;
+
+  const context = getContext();
+  let targetLorebookName = null;
+  switch (settings.lorebookTarget) {
+    case "character_main":
+      targetLorebookName =
+        characters[context.characterId]?.data?.extensions?.world;
+      break;
+    case "dedicated":
+      const chatIdentifier = await getChatIdentifier();
+      targetLorebookName = `Amily2-Lore-${chatIdentifier}`;
+      break;
+    default:
+      return;
+  }
+
+  if (!targetLorebookName) return;
+
+  const characterCount = await readGoldenLedgerProgress(targetLorebookName);
+  const currentChatLength = context.chat.length;
+  const unsummarizedCount = currentChatLength - characterCount;
+
+  if (unsummarizedCount >= settings.historiographySmallTriggerThreshold + 2) {
+    const batchSize = settings.historiographySmallTriggerThreshold;
+    const startFloor = characterCount + 1;
+    const endFloor = Math.min(characterCount + batchSize, currentChatLength);
+    
+    console.log(`[大史官] 自动微言录已触发，处理 ${startFloor} 至 ${endFloor} 楼。`);
+    const isInteractive = settings.historiographyAutoSummaryInteractive ?? false;
+    await executeManualSummary(startFloor, endFloor, !isInteractive);
+  }
+}
+
+export async function getAvailableWorldbooks() {
+  return [...world_names];
+}
+
+export async function getLoresForWorldbook(bookName) {
+  if (!bookName) return [];
+  try {
+    const bookData = await loadWorldInfo(bookName);
+    if (!bookData || !bookData.entries) return [];
+    return Object.entries(bookData.entries)
+      .filter(([, entry]) => !entry.disable)
+      .map(([key, entry]) => ({
+        key: key,
+        comment: entry.comment || "无标题条目",
+      }));
+  } catch (error) {
+    console.error(`[大史官] 检阅《${bookName}》时出错:`, error);
+    return [];
+  }
+}
+
+export async function executeManualSummary(startFloor, endFloor, isAuto = false) {
+    return new Promise(async (resolve) => {
+        const toastTitle = isAuto ? "微言录 (自动)" : "微言录 (手动)";
+        const context = getContext();
+        
+        if (isAuto) {
+            const messages = getRawMessagesForSummary(startFloor, endFloor);
+            if (!messages || messages.length === 0) {
+                toastr.warning("自动巡录：未找到符合条件的消息。", toastTitle);
+                return resolve(false);
+            }
+            const textToSummarize = messages.map(m => `【第 ${m.floor} 楼】 ${m.author}: ${m.content}`).join('\n');
+            const summary = await getSummary(textToSummarize, toastTitle);
+            
+            if (summary) {
+                showSummaryModal(summary, {
+                    onConfirm: async (finalSummary) => {
+                        const success = await writeSummary(finalSummary, startFloor, endFloor, toastTitle);
+                        resolve(success);
+                    },
+                    onRegenerate: async (summaryDialog) => {
+                        summaryDialog.find('textarea').prop('disabled', true).val('正在重新生成，请稍候...');
+                        const newSummary = await getSummary(textToSummarize, toastTitle);
+                        if (newSummary) {
+                            summaryDialog.find('textarea').prop('disabled', false).val(newSummary);
+                        } else {
+                            summaryDialog.find('textarea').prop('disabled', false).val(summary);
+                            toastr.error("重新生成失败，已恢复原始内容。", "模型召唤失败");
+                        }
+                    },
+                    onCancel: () => {
+                        toastr.info("本批次总结已取消。", toastTitle);
+                        resolve(false);
+                    },
+                });
+            } else {
+                resolve(false);
+            }
+            return;
+        }
+
+        const messages = getRawMessagesForSummary(startFloor, endFloor);
+        if (!messages || messages.length === 0) {
+            toastr.warning("选定的楼层范围内无有效对话或内容被规则排除。", "圣谕有误");
+            return resolve(false);
+        }
+
+        const generateModalHtml = (msgList) => {
+            const messageHtml = msgList.map(msg => `
+                <details class="historiography-message-item" data-author-type="${msg.authorType}">
+                    <summary>【第 ${msg.floor} 楼】 ${msg.author}</summary>
+                    <div class="historiography-editor-container">
+                        <textarea class="text_pole" data-floor="${msg.floor}">${msg.content}</textarea>
+                    </div>
+                </details>
+            `).join('');
+
+            return `
+                <div id="historiography-preview-controls">
+                    <label><input type="checkbox" id="hist-include-user" checked> ${context.name1 || '用户'}</label>
+                    <label><input type="checkbox" id="hist-include-char" checked> ${context.name2 || '角色'}</label>
+                </div>
+                <div id="historiography-preview-container">${messageHtml}</div>
+                <style>
+                    #historiography-preview-controls { margin-bottom: 10px; display: flex; gap: 15px; }
+                    #historiography-preview-container { height: 65vh; overflow-y: auto; border: 1px solid #444; padding: 5px; }
+                    .historiography-message-item { margin-bottom: 5px; }
+                    .historiography-message-item[hidden] { display: none; }
+                    .historiography-message-item summary { cursor: pointer; padding: 5px; background-color: #333; }
+                    .historiography-editor-container { padding: 10px; border: 1px solid #444; border-top: none; }
+                    .historiography-editor-container textarea { height: 150px; resize: vertical; }
+                </style>
+            `;
+        };
+
+        const modalHtml = generateModalHtml(messages);
+
+        showHtmlModal('原文预览与编辑', modalHtml, {
+            okText: '确认原文并总结',
+            cancelText: '取消',
+            onOpen: (dialog) => {
+                const userCheckbox = dialog.find('#hist-include-user');
+                const charCheckbox = dialog.find('#hist-include-char');
+                const container = dialog.find('#historiography-preview-container');
+
+                const updateVisibility = () => {
+                    const includeUser = userCheckbox.is(':checked');
+                    const includeChar = charCheckbox.is(':checked');
+                    container.find('.historiography-message-item').each(function() {
+                        const item = $(this);
+                        const authorType = item.data('author-type');
+                        if ((authorType === 'user' && !includeUser) || (authorType === 'char' && !includeChar)) {
+                            item.prop('hidden', true);
+                        } else {
+                            item.prop('hidden', false);
+                        }
+                    });
+                };
+
+                userCheckbox.on('change', updateVisibility);
+                charCheckbox.on('change', updateVisibility);
+            },
+            onOk: async (dialog) => {
+                const textToSummarize = dialog.find('.historiography-message-item:not([hidden]) textarea')
+                    .map(function() {
+                        const floor = $(this).data('floor');
+                        const author = $(this).closest('.historiography-message-item').find('summary').text().replace(`【第 ${floor} 楼】 `, '');
+                        return `【第 ${floor} 楼】 ${author}: ${$(this).val()}`;
+                    }).get().join('\n');
+
+                if (!textToSummarize.trim()) {
+                    toastr.error("请至少选择一条消息进行总结！", "圣谕有误");
+                    return;
+                }
+                
+                const dialogElement = dialog[0];
+                if (dialogElement && typeof dialogElement.close === 'function') {
+                    dialogElement.close();
+                }
+                dialog.remove();
+                
+                const summary = await getSummary(textToSummarize, toastTitle);
+                if (summary) {
+                    showSummaryModal(summary, {
+                        onConfirm: async (finalSummary) => {
+                            const success = await writeSummary(finalSummary, startFloor, endFloor, toastTitle);
+                            resolve(success);
+                        },
+                        onRegenerate: async (summaryDialog) => {
+                            summaryDialog.find('textarea').prop('disabled', true).val('正在重新生成，请稍候...');
+                            const newSummary = await getSummary(textToSummarize, toastTitle);
+                            if (newSummary) {
+                                summaryDialog.find('textarea').prop('disabled', false).val(newSummary);
+                            } else {
+                                summaryDialog.find('textarea').prop('disabled', false).val(summary);
+                                toastr.error("重新生成失败，已恢复原始内容。", "模型召唤失败");
+                            }
+                        },
+                        onCancel: () => {
+                            toastr.info("本批次总结已取消。", "操作已取消");
+                            resolve(false);
+                        },
+                    });
+                } else {
+                    resolve(false);
+                }
+            },
+            onCancel: () => {
+                toastr.info("操作已取消。", toastTitle);
+                resolve(false);
+            }
+        });
+    });
+}
+
+function getRawMessagesForSummary(startFloor, endFloor) {
+    const context = getContext();
+    const chat = context.chat;
+    const settings = extension_settings[extensionName];
+
+    const historySlice = chat.slice(startFloor - 1, endFloor);
+    if (historySlice.length === 0) return null;
+
+    const userName = context.name1 || '用户';
+    const characterName = context.name2 || '角色';
+    
+    const useTagExtraction = settings.historiographyTagExtractionEnabled ?? false;
+    const tagsToExtract = useTagExtraction ? (settings.historiographyTags || '').split(',').map(t => t.trim()).filter(Boolean) : [];
+    const exclusionRules = settings.historiographyExclusionRules || [];
+
+    const messages = historySlice.map((msg, index) => {
+        let content = msg.mes;
+
+        if (useTagExtraction && tagsToExtract.length > 0) {
+            const blocks = extractBlocksByTags(content, tagsToExtract);
+            if (blocks.length > 0) {
+                content = blocks.join('\n\n');
+            }
+        }
+
+        content = applyExclusionRules(content, exclusionRules);
+        
+        if (!content.trim()) return null;
+
+        return {
+            floor: startFloor + index,
+            author: msg.is_user ? userName : characterName,
+            authorType: msg.is_user ? 'user' : 'char',
+            content: content.trim()
+        };
+    }).filter(Boolean);
+
+    return messages;
+}
+
+async function getSummary(formattedHistory, toastTitle) {
+    toastr.info(`正在为您熔铸对话历史...`, toastTitle);
+    const settings = extension_settings[extensionName];
+    const presetPrompts = await getPresetPrompts('small_summary');
+    
+    // 获取混合排序
+    let mixedOrder;
+    try {
+        const savedOrder = localStorage.getItem('amily2_prompt_presets_v2_mixed_order');
+        if (savedOrder) {
+            mixedOrder = JSON.parse(savedOrder);
+        }
+    } catch (e) {
+        console.error("[大史官] 加载混合顺序失败:", e);
+    }
+    const order = getMixedOrder('small_summary') || [];
+
+    const messages = [
+        { role: 'system', content: generateRandomSeed() }
+    ];
+    
+    // 根据混合排序添加提示词
+    let promptCounter = 0; // 用于跟踪已处理的提示词数量
+    
+    for (const item of order) {
+        if (item.type === 'prompt') {
+            // 处理普通提示词 - getPresetPrompts已经按照mixedOrder排序，直接按顺序使用
+            if (presetPrompts && presetPrompts[promptCounter]) {
+                messages.push(presetPrompts[promptCounter]);
+                promptCounter++; // 递增计数器
+            }
+        } else if (item.type === 'conditional') {
+            // 处理条件块
+            switch (item.id) {
+                case 'jailbreakPrompt':
+                    if (settings.historiographySmallJailbreakPrompt) {
+                        messages.push({ role: "system", content: settings.historiographySmallJailbreakPrompt });
+                    }
+                    break;
+                case 'summaryPrompt':
+                    if (settings.historiographySmallSummaryPrompt) {
+                        messages.push({ role: "system", content: settings.historiographySmallSummaryPrompt });
+                    }
+                    break;
+                case 'coreContent':
+                    messages.push({ role: 'user', content: `请严格根据以下"对话记录"中的内容进行总结，不要添加任何额外信息。\n\n<对话记录>\n${formattedHistory}\n</对话记录>` });
+                    break;
+            }
+        }
+    }
+
+    const summary = settings.ngmsEnabled ? await callNgmsAI(messages) : await callAI(messages);
+    console.log('[大史官-微言录] AI回复的全部内容:', summary);
+    return summary;
+}
+
+async function writeSummary(summary, startFloor, endFloor, toastTitle) {
+    const settings = extension_settings[extensionName];
+    const context = getContext();
+    const shouldWriteToLorebook = settings.historiographyWriteToLorebook ?? true;
+    const shouldIngestToRag = settings.historiographyIngestToRag ?? false;
+
+    if (!shouldWriteToLorebook && !shouldIngestToRag) {
+        toastr.warning("“写入史册”和“存入翰林院”均未启用，总结任务已完成但未保存。", toastTitle);
+        return true;
+    }
+
+    if (shouldIngestToRag) {
+        try {
+            let targetLorebookName;
+            switch (settings.lorebookTarget) {
+                case "character_main":
+                    targetLorebookName = characters[context.characterId]?.data?.extensions?.world;
+                    if (!targetLorebookName) throw new Error("当前角色未绑定主世界书，无法为翰林院确定目标。");
+                    break;
+                case "dedicated":
+                    const chatIdentifier = await getChatIdentifier();
+                    targetLorebookName = `Amily2-Lore-${chatIdentifier}`;
+                    break;
+                default: throw new Error("未知的史册写入指令，无法为翰林院确定目标。");
+            }
+
+            toastr.info('正在将此份“微言录”送往翰林院...', '翰林院');
+            const metadata = {
+                bookName: targetLorebookName,
+                entryName: `微言录总结: ${startFloor}-${endFloor}楼`
+            };
+            const result = await ingestTextToHanlinyuan(summary, 'lorebook', metadata);
+            if (result.success) toastr.success(`翰林院已成功接收记忆碎片！`, '翰林院');
+            else throw new Error(result.error);
+        } catch (ragError) {
+            console.error('[翰林院] 向量化处理失败:', ragError);
+            toastr.error(`送往翰林院的文书处理失败: ${ragError.message}`, '翰林院');
+        }
+    }
+
+    if (shouldWriteToLorebook) {
+        try {
+            let targetLorebookName;
+            switch (settings.lorebookTarget) {
+                case "character_main":
+                    targetLorebookName = characters[context.characterId]?.data?.extensions?.world;
+                    if (!targetLorebookName) throw new Error("当前角色未绑定主世界书。");
+                    break;
+                case "dedicated":
+                    const chatIdentifier = await getChatIdentifier();
+                    targetLorebookName = `Amily2-Lore-${chatIdentifier}`;
+                    break;
+                default: throw new Error("未知的史册写入指令。");
+            }
+
+            const contentUpdateCallback = (oldContent) => {
+                const newSeal = `\n\n本条勿动【前${endFloor}楼总结已完成】否则后续总结无法进行。`;
+                const newChapter = `\n\n---\n\n【${startFloor}楼至${endFloor}楼详细总结记录】\n${summary}`;
+                if (oldContent) {
+                    const contentWithoutSeal = oldContent.replace(PROGRESS_SEAL_REGEX, "").trim();
+                    return contentWithoutSeal + newChapter + newSeal;
+                } else {
+                    const firstChapter = `以下是依照顺序已发生剧情` + newChapter;
+                    return firstChapter + newSeal;
+                }
+            };
+
+            console.log('[大史官-调试] 读取到的原始设置:', {
+                loreActivationMode: settings.loreActivationMode,
+                loreInsertionPosition: settings.loreInsertionPosition,
+                loreDepth: settings.loreDepth,
+                loreKeywords: settings.loreKeywords
+            });
+
+            const optionsForNewEntry = {
+                keys: (settings.loreKeywords.split(",").map(k => k.trim()).filter(Boolean)),
+                isConstant: settings.loreActivationMode !== 'keyed', 
+                insertion_position: settings.loreInsertionPosition,
+                depth: settings.loreDepth,
+            };
+
+            console.log('[大史官-调试] 构建并传递的选项:', optionsForNewEntry);
+
+            const success = await writeToLorebookWithTavernHelper(
+                targetLorebookName,
+                RUNNING_LOG_COMMENT,
+                contentUpdateCallback,
+                optionsForNewEntry
+            );
+
+            if (success) {
+                toastr.success(`编年史已成功更新！`, `${toastTitle} - 国史馆`);
+                return true;
+            } else {
+                throw new Error("使用 TavernHelper 写入失败，请检查控制台日志。");
+            }
+
+        } catch (error) {
+            console.error(`[大史官] ${toastTitle}写入国史馆失败:`, error);
+            toastr.error(`写入国史馆时发生错误: ${error.message}`, "国史馆");
+            return false;
+        }
+    }
+    return true;
+}
+
+const CHAPTER_SEAL_REGEX = /【前(\d+)楼篇章编撰已完成】/;
+
+export async function executeRefinement(worldbook, loreKey) {
+    toastr.info(`遵旨！正在为您重铸《${worldbook}》中的【微言录合集】...`, "宏史卷重铸");
+
+    try {
+        const bookData = await loadWorldInfo(worldbook);
+        const entry = bookData?.entries[loreKey];
+        if (!entry) {
+            toastr.error("找不到指定的史册条目，重铸任务中止。", "圣谕有误");
+            return;
+        }
+
+        const originalContent = entry.content;
+        const settings = extension_settings[extensionName];
+
+        const progressSealMatch = originalContent.match(PROGRESS_SEAL_REGEX);
+        if (!progressSealMatch) {
+            toastr.error("史册缺少【流水金印】，无法执行重铸。", "结构异常");
+            return;
+        }
+        const progressSeal = progressSealMatch[0];
+        const totalFloors = parseInt(progressSealMatch[1], 10);
+
+        const chapterSealMatch = originalContent.match(CHAPTER_SEAL_REGEX);
+        let lockedContent = "";
+        let contentToRefine = "";
+        let oldChapterFloor = 0;
+
+        if (chapterSealMatch) {
+            const chapterSealText = chapterSealMatch[0];
+            oldChapterFloor = parseInt(chapterSealMatch[1], 10);
+            const contentParts = originalContent.split(chapterSealText);
+            lockedContent = contentParts[0].trim();
+            contentToRefine = contentParts[1].replace(PROGRESS_SEAL_REGEX, '').trim();
+        } else {
+            contentToRefine = originalContent.replace(PROGRESS_SEAL_REGEX, '').trim();
+        }
+
+        if (!contentToRefine.trim()) {
+            toastr.warning("史册条目中没有新的内容可供重铸。", "国库无新事");
+            return;
+        }
+
+        const presetPrompts = await getPresetPrompts('large_summary');
+
+        let mixedOrder;
+        try {
+            const savedOrder = localStorage.getItem('amily2_prompt_presets_v2_mixed_order');
+            if (savedOrder) {
+                mixedOrder = JSON.parse(savedOrder);
+            }
+        } catch (e) {
+            console.error("[大史官] 加载混合顺序失败:", e);
+        }
+        const order = getMixedOrder('large_summary') || [];
+
+        
+        const messages = [
+            { role: 'system', content: generateRandomSeed() }
+        ];
+ 
+        let promptCounter = 0; 
+        
+        for (const item of order) {
+            if (item.type === 'prompt') {
+                if (presetPrompts && presetPrompts[promptCounter]) {
+                    messages.push(presetPrompts[promptCounter]);
+                    promptCounter++; 
+                }
+            } else if (item.type === 'conditional') {
+                switch (item.id) {
+                    case 'jailbreakPrompt':
+                        if (settings.historiographyLargeJailbreakPrompt) {
+                            messages.push({ role: "system", content: settings.historiographyLargeJailbreakPrompt });
+                        }
+                        break;
+                    case 'summaryPrompt':
+                        if (settings.historiographyLargeRefinePrompt) {
+                            messages.push({ role: "system", content: settings.historiographyLargeRefinePrompt });
+                        }
+                        break;
+                    case 'coreContent':
+                        messages.push({ role: "user", content: `请将以下多个零散的"详细总结记录"提炼并融合成一段连贯的章节历史。原文如下：\n\n${contentToRefine}` });
+                        break;
+                }
+            }
+        }
+
+        const getRefinedContent = async () => {
+            toastr.info("正在召唤模型进行内容精炼...", "宏史卷重铸");
+            return await callAI(messages);
+        };
+
+        const initialRefinedContent = await getRefinedContent();
+        if (!initialRefinedContent) {
+            toastr.error("模型未能返回有效的精炼内容。", "宏史卷重铸失败");
+            return;
+        }
+
+        const processLoop = async (currentRefinedContent) => {
+            showSummaryModal(currentRefinedContent, {
+                onConfirm: async (editedText) => {
+                    let finalContent;
+                    const newChapterSeal = `\n\n【前${totalFloors}楼篇章编撰已完成】`;
+
+                    const shouldVectorize = document.getElementById('amily2_vectorize_summary_content')?.checked ?? false;
+
+                    if (shouldVectorize && chapterSealMatch) {
+                        try {
+                            toastr.info(`正在将前 ${oldChapterFloor} 楼的“宏史卷”内容送往翰林院...`, '翰林院');
+                            
+                            const metadata = {
+                                bookName: worldbook,
+                                entryName: `宏史卷总结: 1-${oldChapterFloor}楼`
+                            };
+                            const ingestResult = await ingestTextToHanlinyuan(lockedContent, 'lorebook', metadata);
+                            if (!ingestResult.success) {
+                                throw new Error(ingestResult.error || "未知错误");
+                            }
+                            toastr.success(`翰林院已成功接收旧“宏史卷”记忆！新增 ${ingestResult.count} 条。`, '翰林院');
+
+                            const replacementText = `AI你好，以上内容为rag向量化后注入的相关剧情，以下内容是已发生的剧情回顾。\n\n（前${oldChapterFloor}楼聊天记录总结已由翰林院向量化注入。）\n\n【以下内容为${oldChapterFloor}楼以后的总结内容】`;
+                            
+                            finalContent = `${replacementText}\n\n---\n\n${editedText}${newChapterSeal}\n\n${progressSeal}`;
+
+                        } catch (error) {
+                            console.error('[大史官-宏史卷向量化] 失败:', error);
+                            toastr.error(`宏史卷向量化失败: ${error.message}，将执行标准保存。`, '翰林院');
+                            const divider = `\n\n===【截止至第${oldChapterFloor}楼的宏史卷】===\n\n`;
+                            finalContent = `${lockedContent}${divider}${editedText}${newChapterSeal}\n\n${progressSeal}`;
+                        }
+                    } else {
+                        if (chapterSealMatch) {
+                            const divider = `\n\n===【截止至第${oldChapterFloor}楼的宏史卷】===\n\n`;
+                            finalContent = `${lockedContent}${divider}${editedText}${newChapterSeal}\n\n${progressSeal}`;
+                        } else {
+                            const header = `以下内容是【1楼-${totalFloors}楼】已发生的剧情回顾。\n\n---\n\n`;
+                            finalContent = `${header}${editedText}${newChapterSeal}\n\n${progressSeal}`;
+                        }
+                    }
+
+                    entry.content = finalContent;
+                    await saveWorldInfo(worldbook, bookData, true);
+                    toastr.success(`史册已成功重铸，并保存于《${worldbook}》！`, "宏史卷重铸完毕");
+                },
+                onRegenerate: async (dialog) => {
+                    dialog.find('textarea').prop('disabled', true).val('正在重新生成，请稍候...');
+                    const newContent = await getRefinedContent();
+                    if (newContent) {
+                        dialog.find('textarea').prop('disabled', false).val(newContent);
+                    } else {
+                        dialog.find('textarea').prop('disabled', false).val(currentRefinedContent);
+                        toastr.error("重新生成失败，已恢复原始内容。", "模型召唤失败");
+                    }
+                },
+                onCancel: () => {
+                    toastr.info("宏史卷重铸操作已取消。", "操作已取消");
+                },
+            });
+        };
+
+        await processLoop(initialRefinedContent);
+
+    } catch (error) {
+        console.error("[大史官] 重铸任务失败:", error);
+        toastr.error(`重铸史册时发生严重错误: ${error.message}`, "国史馆");
+    }
+}
+
+export async function executeExpedition() {
+    if (isExpeditionRunning) {
+        toastr.info("远征军已在途中，无需重复下令。", "圣谕悉知");
+        return;
+    }
+
+    isExpeditionRunning = true;
+    manualStopRequested = false;
+    document.dispatchEvent(new CustomEvent('amily2-expedition-state-change', { detail: { isRunning: true } }));
+
+    try {
+        const settings = extension_settings[extensionName];
+        const context = getContext();
+
+        let targetLorebookName = null;
+        switch (settings.lorebookTarget) {
+            case "character_main":
+                targetLorebookName = characters[context.characterId]?.data?.extensions?.world;
+                if (!targetLorebookName) {
+                    toastr.error("当前角色未绑定主世界书，远征军无法开拔！", "圣谕不明");
+                    isExpeditionRunning = false;
+                    document.dispatchEvent(new CustomEvent('amily2-expedition-state-change', { detail: { isRunning: false, manualStop: false } }));
+                    return;
+                }
+                break;
+            case "dedicated":
+                const chatIdentifier = await getChatIdentifier();
+                targetLorebookName = `Amily2-Lore-${chatIdentifier}`;
+                break;
+            default:
+                toastr.error("未知的史册写入目标，远征军无法开拔！", "圣谕不明");
+                isExpeditionRunning = false;
+                document.dispatchEvent(new CustomEvent('amily2-expedition-state-change', { detail: { isRunning: false, manualStop: false } }));
+                return;
+        }
+
+        const summarizedCount = await readGoldenLedgerProgress(targetLorebookName);
+        const totalHistory = context.chat.length;
+        const remainingHistory = totalHistory - summarizedCount;
+
+        if (remainingHistory <= 0) {
+            toastr.info("国史已是最新，远征军无需出动。", "凯旋");
+            isExpeditionRunning = false;
+            document.dispatchEvent(new CustomEvent('amily2-expedition-state-change', { detail: { isRunning: false, manualStop: false } }));
+            return;
+        }
+
+        const batchSize = settings.historiographySmallTriggerThreshold;
+        const totalBatches = Math.ceil(remainingHistory / batchSize);
+        toastr.info(`远征军已开拔！目标：${remainingHistory} 层历史，分 ${totalBatches} 批次征服！`, "远征开始");
+        let currentProgress = summarizedCount;
+
+        for (let i = 0; i < totalBatches; i++) {
+            if (manualStopRequested) {
+                toastr.warning("远征已遵从您的敕令暂停！随时可以【继续远征】。", "鸣金收兵");
+                break;
+            }
+
+            const startFloor = currentProgress + 1;
+            const endFloor = Math.min(currentProgress + batchSize, totalHistory);
+            const toastTitle = `远征战役 (${i + 1}/${totalBatches})`;
+
+            const delay = 2000;
+            if (i > 0) {
+                toastr.info(`第 ${i + 1} 批次战役准备中... (${delay / 1000}秒后接敌)`, toastTitle);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+
+            if (manualStopRequested) {
+                toastr.warning("远征已在准备阶段遵令暂停！", "鸣金收兵");
+                break;
+            }
+
+            const success = await executeManualSummary(startFloor, endFloor, false);
+            if (success) {
+                currentProgress = endFloor;
+            } else {
+                toastr.warning(`远征因第 ${i + 1} 批次任务失败而中止。`, "远征中止");
+                manualStopRequested = true;
+                break;
+            }
+        }
+
+        if(!manualStopRequested) {
+             toastr.success("凯旋！远征大捷！所有未载之史均已化为帝国永恒的记忆！", "远征完毕");
+        }
+
+    } catch (error) {
+        console.error("[大史官-远征失败]", error);
+        toastr.error("远征途中遭遇重大挫折，任务中止！您可以随时【继续远征】。", "远征失败");
+    } finally {
+        isExpeditionRunning = false;
+        document.dispatchEvent(new CustomEvent('amily2-expedition-state-change', { detail: { isRunning: false, manualStop: manualStopRequested } }));
+    }
+}
+
+export function stopExpedition() {
+    if (isExpeditionRunning) {
+        manualStopRequested = true;
+        toastr.info("停战敕令已下达！远征军将在完成当前批次的任务后休整。", "圣谕传达");
+    } else {
+        toastr.warning("远征军已在营中，无需下达停战敕令。", "圣谕悉知");
+    }
+}
+
+export async function executeCompilation(worldbook, loreKeys) {
+    if (!Array.isArray(loreKeys) || loreKeys.length === 0) {
+        toastr.warning("未选择任何条目进行编纂。", "圣谕不明");
+        return { success: false, error: "No lore keys provided." };
+    }
+
+    toastr.info(`遵旨！开始对《${worldbook}》中的 ${loreKeys.length} 个条目进行批量编纂...`, "翰林院入库");
+    let totalSuccessCount = 0;
+    let totalVectorCount = 0;
+    let errors = [];
+
+    try {
+        const bookData = await loadWorldInfo(worldbook);
+        if (!bookData || !bookData.entries) {
+            throw new Error(`无法加载书库《${worldbook}》的数据。`);
+        }
+
+        for (const loreKey of loreKeys) {
+            const entry = bookData.entries[loreKey];
+            if (!entry) {
+                errors.push(`条目【${loreKey}】未找到。`);
+                continue;
+            }
+
+            const contentToIngest = entry.content;
+            if (!contentToIngest.trim()) {
+                errors.push(`条目【${entry.comment || loreKey}】内容为空。`);
+                continue;
+            }
+
+            const metadata = {
+                bookName: worldbook,
+                entryName: entry.comment || loreKey
+            };
+
+            try {
+                const ingestResult = await ingestTextToHanlinyuan(contentToIngest, 'lorebook', metadata);
+                if (ingestResult.success) {
+                    totalSuccessCount++;
+                    totalVectorCount += ingestResult.count;
+                } else {
+                    errors.push(`条目【${entry.comment || loreKey}】处理失败: ${ingestResult.error}`);
+                }
+            } catch (ingestError) {
+                errors.push(`条目【${entry.comment || loreKey}】处理时发生严重错误: ${ingestError.message}`);
+            }
+        }
+
+        let finalMessage = `批量编纂完成！\n成功处理 ${totalSuccessCount} / ${loreKeys.length} 个条目，共新增 ${totalVectorCount} 条忆识。`;
+        if (errors.length > 0) {
+            finalMessage += `\n\n发生以下错误:\n- ${errors.join('\n- ')}`;
+            toastr.warning("批量编纂期间发生部分错误，详情请查看控制台。", "翰林院");
+            console.warn("[翰林院] 批量编纂错误详情:", errors);
+        } else {
+            toastr.success(`批量编纂大功告成！新增 ${totalVectorCount} 条忆识。`, '翰林院');
+        }
+
+        return { 
+            success: errors.length === 0, 
+            content: finalMessage,
+            totalSuccess: totalSuccessCount,
+            totalVectors: totalVectorCount,
+            errors: errors
+        };
+
+    } catch (error) {
+        console.error("[翰林院] 批量条目入库失败:", error);
+        toastr.error(`批量入库失败: ${error.message}`, "翰林院");
+        return { success: false, error: error.message };
+    }
+}
