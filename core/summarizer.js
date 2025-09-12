@@ -1,1 +1,401 @@
-(function(_0x2f3d5d,_0x1723ba){const _0x5a4f58=_0x18e0,_0x203c7c=_0x2f3d5d();while(!![]){try{const _0x4bba3e=-parseInt(_0x5a4f58(0x18e))/0x1*(parseInt(_0x5a4f58(0x19b))/0x2)+parseInt(_0x5a4f58(0x1e8))/0x3+parseInt(_0x5a4f58(0x1fd))/0x4+-parseInt(_0x5a4f58(0x1b3))/0x5*(parseInt(_0x5a4f58(0x1ec))/0x6)+-parseInt(_0x5a4f58(0x1c0))/0x7*(parseInt(_0x5a4f58(0x202))/0x8)+-parseInt(_0x5a4f58(0x1fe))/0x9+parseInt(_0x5a4f58(0x19e))/0xa;if(_0x4bba3e===_0x1723ba)break;else _0x203c7c['push'](_0x203c7c['shift']());}catch(_0x38c13a){_0x203c7c['push'](_0x203c7c['shift']());}}}(_0x5a58,0x2d398));import{extension_settings,getContext}from'/scripts/extensions.js';import{characters}from'/script.js';import{world_info}from'/scripts/world-info.js';function _0x18e0(_0x53f90b,_0x2c46e4){const _0x5a5863=_0x5a58();return _0x18e0=function(_0x18e039,_0x3e3e37){_0x18e039=_0x18e039-0x18e;let _0x507735=_0x5a5863[_0x18e039];return _0x507735;},_0x18e0(_0x53f90b,_0x2c46e4);}import{extensionName}from'../utils/settings.js';import{extractContentByTag,replaceContentByTag,extractFullTagBlock}from'../utils/tagProcessor.js';import{isGoogleEndpoint,convertToGoogleRequest,parseGoogleResponse,buildGoogleApiUrl,buildPlotOptimizationGoogleRequest,parsePlotOptimizationGoogleResponse}from'./utils/googleAdapter.js';import{applyExclusionRules}from'./utils/rag-tag-extractor.js';import{getCombinedWorldbookContent,getPlotOptimizedWorldbookContent}from'./lore.js';import{getBatchFillerFlowTemplate,convertTablesToCsvString,updateTableFromText,saveStateToMessage,getMemoryState}from'./table-system/manager.js';import{saveChat}from'/script.js';function _0x5a58(){const _0xae13cd=['plotOpt_rateErotic',']\x20优化任务在API调用后被中止。','[Amily2-外交部]\x20AI的回复中未找到有效的目标标签\x20<','is_user','toLocaleTimeString','system','error','[核心处理内容]:\x0a','plotOpt_rateCuckold','tableEnabled','##以下内容是故事发生的剧情中提取出的内容，已经转化为表格形式呈现给你，请将以下内容作为后续剧情的一部分参考：<表格内容>\x0a{{{Amily2TableDataContent}}}</表格内容>','jqyhEnabled','（AI）最新消息，[核心处理内容]：','严重错误','optimizationExclusionRules','mes','push','<plot>','15vypqHl','join','[Amily2-内容排除]\x20正文优化内容排除规则已生效，文本长度从\x20','warn','optimizationExclusionEnabled','plotOpt_contextLimit','plotOpt_ratePersonal','mainPrompt','[Amily2-优化中填表]\x20流程已全部完成，并已强制保存和刷新UI。',']\x20优化任务在尝试前被中止。','optimizationTargetTag','plotOpt_enabled','<Additional\x20instructionsv>Start\x20and\x20end\x20labels\x20correctly.<Additional\x20instructions>','10262KJkctl','plot_optimization',']\x20发送给AI的最终请求内容','[Amily2-制裁]\x20系统完整性已受损，所有外交活动被无限期中止。','optimized',']\x20从AI收到的原始回复','[Amily2-外交部]\x20发生严重错误:','message','[Amily2-外交部]\x20目标标签\x20<','优化失败','world','\x20次尝试获取响应失败，AI返回为空。','[目标内容]:\x0a','<!--','worldbookEnabled','<前文内容>\x0a','trim','filling_mode','[Amily2号-原始回复]','log','plotOpt_mainPrompt','slice','contextLimit','assistant','请你在优化完成后，在正文标签外结合最新消息中的剧情、当前的表格内容进行填表任务：\x0a\x0a','conditional','isCancelled','plotOpt_tableEnabled','[上下文参考]:\x0a','systemPrompt','剧情优化任务失败:\x20','content','history','user','main-api','>，将保留原始消息。','worldbook','</世界书内容>','prompt','剧情优化任务总耗时','300057LVjsNQ','[世界书档案]:\x0a','name1','plotTag','586572wXaiyA','filter','optimization','{{{Amily2TableData}}}',']\x20第\x20','\x0a\x0a<Amily2Edit>\x0a<!--\x0a（这里是你的填表内容）\x0a-->\x0a</Amily2Edit><Additional\x20instructionsv>Optimisation\x20and\x20form\x20filling\x20have\x20been\x20completed.<Additional\x20instructions>',')\x20且未获得符合要求的回复，优化任务中止。','plotOpt_finalSystemDirective','name2','\x20次尝试后失败。','groupEnd','Amily2号任务失败:\x20','>\x20未找到或为空，或内容已被完全排除，优化任务已跳过。','\x5c$&','time','dispatchEvent','type','569744BjLHhX','2184525gNGepf','[Amily2-外交部]\x20未能获取AI响应内容','plotOpt_rateMain','coreContent','184lLdYpz','map','length','groupCollapsed','\x0a</前文内容>','2630hgIXwi','lastPreOptimizationText','timeEnd',']\x20剧情优化任务启动...\x20','optimizationEnabled','剧情优化在\x20','<世界书内容>\x0a','plot','replace',']\x20剧情优化任务发生严重错误:',')\x20符合要求。','extensions','（用户）最新消息：','6XVAaWW','优化任务总耗时','data','5204040BntXLK','，小于100字符。','plotOpt_systemPrompt'];_0x5a58=function(){return _0xae13cd;};return _0x5a58();}import{renderTables}from'../ui/table-bindings.js';import{getPresetPrompts,getMixedOrder}from'../PresetSettings/index.js';import{callAI,generateRandomSeed}from'./api.js';import{callJqyhAI}from'./api/JqyhApi.js';export async function processOptimization(_0x272e8a,_0x1e9e80){const _0x327338=_0x18e0;if(window['AMILY2_SYSTEM_PARALYZED']===!![])return console[_0x327338(0x1a7)](_0x327338(0x1c3)),null;const _0x402ece=extension_settings[extensionName],_0x1652c3=_0x402ece[_0x327338(0x192)];if(!_0x1652c3)return null;console['groupCollapsed']('[Amily2号-正文优化任务]\x20'+new Date()['toLocaleTimeString']()),console[_0x327338(0x1fa)](_0x327338(0x19c));try{const _0x214fda=_0x272e8a['mes'];let _0x5bc433=_0x214fda;if(_0x402ece[_0x327338(0x1b7)]&&_0x402ece[_0x327338(0x1af)]?.[_0x327338(0x204)]>0x0){const _0x592cb6=_0x5bc433[_0x327338(0x204)];_0x5bc433=applyExclusionRules(_0x5bc433,_0x402ece[_0x327338(0x1af)]);const _0x251c3d=_0x5bc433[_0x327338(0x204)];_0x592cb6!==_0x251c3d&&console[_0x327338(0x1d3)](_0x327338(0x1b5)+_0x592cb6+'\x20变为\x20'+_0x251c3d+'。');}const _0x1f6f6f=_0x402ece[_0x327338(0x1bd)]||_0x327338(0x1df),_0x51f664=extractFullTagBlock(_0x5bc433,_0x1f6f6f);if(!_0x51f664||extractContentByTag(_0x51f664,_0x1f6f6f)?.['trim']()==='')return console[_0x327338(0x1d3)](_0x327338(0x1c8)+_0x1f6f6f+_0x327338(0x1f8)),console[_0x327338(0x190)]('优化任务总耗时'),console[_0x327338(0x1f6)](),null;_0x5bc433=_0x51f664;const _0x59290e=getContext(),_0x3d3a69=_0x59290e[_0x327338(0x1ea)]||'用户',_0x36ef0d=_0x59290e[_0x327338(0x1f4)]||'角色',_0x28d86d=_0x1e9e80['length']>0x0&&_0x1e9e80[_0x1e9e80[_0x327338(0x204)]-0x1][_0x327338(0x1a4)]?_0x1e9e80[_0x1e9e80[_0x327338(0x204)]-0x1]:null,_0x1029fd=_0x28d86d?_0x1e9e80[_0x327338(0x1d5)](0x0,-0x1):_0x1e9e80,_0x4c6c38=_0x1029fd['map'](_0x54eabe=>_0x54eabe['mes']&&_0x54eabe[_0x327338(0x1b0)][_0x327338(0x1d0)]()?(_0x54eabe[_0x327338(0x1a4)]?_0x3d3a69:_0x36ef0d)+':\x20'+_0x54eabe[_0x327338(0x1b0)][_0x327338(0x1d0)]():null)[_0x327338(0x1ed)](Boolean)[_0x327338(0x1b4)]('\x0a');let _0x4e8d2f='';if(_0x402ece[_0x327338(0x1ce)]){const _0x276744=characters[_0x59290e['characterId']];_0x276744?.[_0x327338(0x19d)]?.[_0x327338(0x199)]?.[_0x327338(0x1ca)]&&(_0x4e8d2f=await getCombinedWorldbookContent(_0x276744['data'][_0x327338(0x199)]['world']));}const _0x2d7370=getPresetPrompts(_0x327338(0x1ee)),_0x373c2d=[{'role':_0x327338(0x1a6),'content':generateRandomSeed()}];let _0xf1fe05=_0x28d86d?_0x3d3a69+_0x327338(0x19a)+_0x28d86d[_0x327338(0x1b0)]+'\x0a'+_0x36ef0d+_0x327338(0x1ad)+_0x5bc433:_0x36ef0d+_0x327338(0x1ad)+_0x5bc433;const _0x6ddf33=_0x402ece[_0x327338(0x1d1)]||_0x327338(0x1e2);window[_0x327338(0x18f)]=_0xf1fe05,document['dispatchEvent'](new CustomEvent('preOptimizationTextUpdated'));const _0x42abfd=getMixedOrder(_0x327338(0x1ee))||[];let _0x254582=0x0;for(const _0x52c52c of _0x42abfd){if(_0x52c52c['type']===_0x327338(0x1e6))_0x2d7370&&_0x2d7370[_0x254582]&&(_0x373c2d['push'](_0x2d7370[_0x254582]),_0x254582++);else{if(_0x52c52c['type']===_0x327338(0x1d9))switch(_0x52c52c['id']){case'mainPrompt':_0x402ece[_0x327338(0x1ba)]?.[_0x327338(0x1d0)]()&&_0x373c2d[_0x327338(0x1b1)]({'role':_0x327338(0x1a6),'content':_0x402ece[_0x327338(0x1ba)][_0x327338(0x1d0)]()});break;case _0x327338(0x1dd):_0x402ece[_0x327338(0x1dd)]?.[_0x327338(0x1d0)]()&&_0x373c2d[_0x327338(0x1b1)]({'role':'system','content':_0x402ece[_0x327338(0x1dd)][_0x327338(0x1d0)]()});break;case _0x327338(0x1e4):_0x4e8d2f&&_0x373c2d['push']({'role':'user','content':_0x327338(0x1e9)+_0x4e8d2f});break;case _0x327338(0x1e0):_0x4c6c38&&_0x373c2d[_0x327338(0x1b1)]({'role':_0x327338(0x1e1),'content':_0x327338(0x1dc)+_0x4c6c38});break;case'fillingMode':if(_0x1652c3&&_0x6ddf33===_0x327338(0x1c4)){const _0x16c264=getBatchFillerFlowTemplate(),_0x19392f=convertTablesToCsvString(),_0x45aa09=_0x16c264[_0x327338(0x196)](_0x327338(0x1ef),_0x19392f);_0x373c2d['push']({'role':'user','content':_0xf1fe05}),_0x373c2d[_0x327338(0x1b1)]({'role':_0x327338(0x1a6),'content':_0x327338(0x1d8)+_0x45aa09+_0x327338(0x1f1)});}else _0x373c2d[_0x327338(0x1b1)]({'role':'user','content':_0x327338(0x1cc)+_0xf1fe05+_0x327338(0x1bf)});break;}}}window['lastPreOptimizationText']=_0xf1fe05,document[_0x327338(0x1fb)](new CustomEvent('preOptimizationTextUpdated')),console[_0x327338(0x205)]('[Amily2号-最终国书内容\x20(发往AI)]'),console['dir'](_0x373c2d),console[_0x327338(0x1f6)]();const _0xcb03e8=await callAI(_0x373c2d);if(!_0xcb03e8)return console[_0x327338(0x1a7)](_0x327338(0x1ff)),null;console['groupCollapsed'](_0x327338(0x1d2)),console['log'](_0xcb03e8),console[_0x327338(0x1f6)]();let _0x5ec73f=_0x214fda;const _0x5c1d3e=extractContentByTag(_0xcb03e8,_0x1f6f6f);_0x5c1d3e?.[_0x327338(0x1d0)]()?_0x5ec73f=replaceContentByTag(_0x214fda,_0x1f6f6f,_0x5c1d3e):console['warn'](_0x327338(0x1a3)+_0x1f6f6f+_0x327338(0x1e3));if(_0x1652c3&&_0x6ddf33===_0x327338(0x1c4)){await updateTableFromText(_0xcb03e8);const _0x5437ec=getContext();if(_0x5437ec['chat']&&_0x5437ec['chat']['length']>0x0){const _0x13bd4d=_0x5437ec['chat'][_0x5437ec['chat'][_0x327338(0x204)]-0x1];saveStateToMessage(getMemoryState(),_0x13bd4d)&&(await saveChat(),renderTables(),console[_0x327338(0x1d3)](_0x327338(0x1bb)));}}const _0x577f94={'optimizedContent':_0x5ec73f};return console['timeEnd']('优化任务总耗时'),console[_0x327338(0x1f6)](),_0x577f94;}catch(_0x951e2a){return console[_0x327338(0x1a7)](_0x327338(0x1c6),_0x951e2a),toastr['error'](_0x327338(0x1f7)+_0x951e2a[_0x327338(0x1c7)],_0x327338(0x1ae)),console['timeEnd'](_0x327338(0x19c)),console[_0x327338(0x1f6)](),null;}}export async function processPlotOptimization(_0x15ce15,_0x420234,_0xb56f7={'isCancelled':![]}){const _0x41f752=_0x18e0,_0x19fac2=extension_settings[extensionName];if(_0x19fac2[_0x41f752(0x1be)]===![])return null;console[_0x41f752(0x205)]('['+extensionName+_0x41f752(0x191)+new Date()[_0x41f752(0x1a5)]()),console[_0x41f752(0x1fa)](_0x41f752(0x1e7));try{const _0x3de6a5=_0x15ce15[_0x41f752(0x1b0)];if(!_0x3de6a5||_0x3de6a5[_0x41f752(0x1d0)]()==='')return console['log']('['+extensionName+']\x20用户输入为空，跳过优化。'),null;const _0xd952fa=getContext(),_0x248807=_0xd952fa[_0x41f752(0x1ea)]||'用户',_0x191f6c=_0xd952fa[_0x41f752(0x1f4)]||'角色',_0xe6386e=getPresetPrompts(_0x41f752(0x1c1)),_0x16d903=[{'role':_0x41f752(0x1a6),'content':generateRandomSeed()}],_0x1c7db9={'sulv1':_0x19fac2[_0x41f752(0x200)]??0x1,'sulv2':_0x19fac2[_0x41f752(0x1b9)]??0x1,'sulv3':_0x19fac2[_0x41f752(0x1a1)]??0x1,'sulv4':_0x19fac2[_0x41f752(0x1a9)]??0x1};let _0x14e489=_0x19fac2[_0x41f752(0x1d4)]||'',_0x261a15=_0x19fac2[_0x41f752(0x1a0)]||'';for(const _0x331c9e in _0x1c7db9){const _0x3f71a2=_0x1c7db9[_0x331c9e],_0x2ad2fe=new RegExp(_0x331c9e[_0x41f752(0x196)](/[-\/\\^$*+?.()|[\]{}]/g,_0x41f752(0x1f9)),'g');_0x14e489=_0x14e489[_0x41f752(0x196)](_0x2ad2fe,_0x3f71a2),_0x261a15=_0x261a15[_0x41f752(0x196)](_0x2ad2fe,_0x3f71a2);}const _0x147668=await getPlotOptimizedWorldbookContent(_0xd952fa,_0x19fac2);let _0x176ba2='';if(_0x19fac2[_0x41f752(0x1db)])try{const {convertTablesToCsvStringForContentOnly:_0x51397d}=await import('./table-system/manager.js'),_0x548663=_0x41f752(0x1ab),_0x5718fc=_0x51397d();_0x5718fc['trim']()&&(_0x176ba2=_0x548663['replace']('{{{Amily2TableDataContent}}}',_0x5718fc));}catch(_0x493eb0){console[_0x41f752(0x1a7)]('[Amily2-表格系统]\x20注入表格内容时出错:',_0x493eb0);}let _0x196c65='';const _0x29a546=_0x19fac2[_0x41f752(0x1b8)]||0x0;if(_0x29a546>0x0&&_0x420234['length']>0x0){const _0x5eb8ae=_0x420234['slice'](-_0x29a546);_0x196c65=_0x5eb8ae[_0x41f752(0x203)](_0x12520d=>{const _0x1f9cb7=_0x41f752;if(_0x12520d['mes']&&_0x12520d[_0x1f9cb7(0x1b0)][_0x1f9cb7(0x1d0)]()){const _0x7ab654=[{'start':_0x1f9cb7(0x1cd),'end':'-->'}],_0xce9165=applyExclusionRules(_0x12520d['mes'][_0x1f9cb7(0x1d0)](),_0x7ab654);return _0xce9165?(_0x12520d[_0x1f9cb7(0x1a4)]?_0x248807:_0x191f6c)+':\x20'+_0xce9165:null;}return null;})['filter'](Boolean)[_0x41f752(0x1b4)]('\x0a');}const _0x1061e9=getMixedOrder('plot_optimization')||[];let _0x5ced23=0x0;for(const _0x1d42ae of _0x1061e9){if(_0x1d42ae['type']===_0x41f752(0x1e6))_0xe6386e&&_0xe6386e[_0x5ced23]&&(_0x16d903['push'](_0xe6386e[_0x5ced23]),_0x5ced23++);else{if(_0x1d42ae[_0x41f752(0x1fc)]==='conditional')switch(_0x1d42ae['id']){case _0x41f752(0x1ba):_0x14e489['trim']()&&_0x16d903[_0x41f752(0x1b1)]({'role':_0x41f752(0x1a6),'content':_0x14e489[_0x41f752(0x1d0)]()});break;case _0x41f752(0x1dd):_0x261a15['trim']()&&_0x16d903[_0x41f752(0x1b1)]({'role':_0x41f752(0x1a6),'content':_0x261a15[_0x41f752(0x1d0)]()});break;case _0x41f752(0x1e4):_0x147668[_0x41f752(0x1d0)]()&&_0x16d903[_0x41f752(0x1b1)]({'role':_0x41f752(0x1e1),'content':_0x41f752(0x194)+_0x147668['trim']()+_0x41f752(0x1e5)});break;case _0x41f752(0x1aa):_0x176ba2&&_0x16d903['push']({'role':_0x41f752(0x1e1),'content':_0x176ba2});break;case _0x41f752(0x1d6):_0x196c65&&_0x16d903[_0x41f752(0x1b1)]({'role':_0x41f752(0x1e1),'content':_0x41f752(0x1cf)+_0x196c65+_0x41f752(0x206)});break;case _0x41f752(0x201):_0x16d903[_0x41f752(0x1b1)]({'role':_0x41f752(0x1e1),'content':_0x41f752(0x1a8)+_0x3de6a5});break;case _0x41f752(0x1eb):_0x16d903[_0x41f752(0x1b1)]({'role':_0x41f752(0x1d7),'content':_0x41f752(0x1b2)});break;}}}console[_0x41f752(0x205)]('['+extensionName+_0x41f752(0x1c2)),console['dir'](_0x16d903),console[_0x41f752(0x1f6)]();let _0x4cace0='',_0x5433c8=0x0;const _0xc7bb43=0x3;let _0x3ba5ae=![];while(_0x5433c8<_0xc7bb43&&!_0x3ba5ae){if(_0xb56f7[_0x41f752(0x1da)])return console[_0x41f752(0x1d3)]('['+extensionName+_0x41f752(0x1bc)),null;_0x5433c8++,console[_0x41f752(0x1d3)]('['+extensionName+']\x20剧情优化第\x20'+_0x5433c8+'\x20次尝试...');const _0x28ba81=_0x19fac2[_0x41f752(0x1ac)]?await callJqyhAI(_0x16d903):await callAI(_0x16d903,_0x41f752(0x1c1));if(_0xb56f7[_0x41f752(0x1da)])return console[_0x41f752(0x1d3)]('['+extensionName+_0x41f752(0x1a2)),null;if(!_0x28ba81){console[_0x41f752(0x1b6)]('['+extensionName+_0x41f752(0x1f0)+_0x5433c8+_0x41f752(0x1cb));continue;}const _0x71f6a1=extractContentByTag(_0x28ba81,'plot'),_0x7302f4=_0x71f6a1?.[_0x41f752(0x1d0)]()?_0x71f6a1[_0x41f752(0x1d0)]():_0x28ba81[_0x41f752(0x1d0)]();_0x7302f4['length']>=0x64?(_0x4cace0=_0x28ba81,_0x3ba5ae=!![],console[_0x41f752(0x1d3)]('['+extensionName+_0x41f752(0x1f0)+_0x5433c8+'\x20次尝试成功，内容长度\x20('+_0x7302f4[_0x41f752(0x204)]+_0x41f752(0x198))):console[_0x41f752(0x1b6)]('['+extensionName+_0x41f752(0x1f0)+_0x5433c8+'\x20次尝试失败，回复内容长度为\x20'+_0x7302f4[_0x41f752(0x204)]+_0x41f752(0x19f));}if(!_0x3ba5ae)return console[_0x41f752(0x1a7)]('['+extensionName+']\x20已达到最大重试次数\x20('+_0xc7bb43+_0x41f752(0x1f2)),toastr[_0x41f752(0x1a7)](_0x41f752(0x193)+_0xc7bb43+_0x41f752(0x1f5),_0x41f752(0x1c9)),null;console[_0x41f752(0x205)]('['+extensionName+_0x41f752(0x1c5)),console[_0x41f752(0x1d3)](_0x4cace0),console[_0x41f752(0x1f6)]();const _0x1765d5=extractContentByTag(_0x4cace0,_0x41f752(0x195)),_0x5d58b3=_0x1765d5?.['trim']()?_0x1765d5[_0x41f752(0x1d0)]():_0x4cace0[_0x41f752(0x1d0)]();if(_0x5d58b3){let _0x5781a8='',_0x1c0ee6=_0x19fac2[_0x41f752(0x1f3)]?.[_0x41f752(0x1d0)]()||'';const _0x251fd0={'sulv1':_0x19fac2['plotOpt_rateMain']??0x1,'sulv2':_0x19fac2[_0x41f752(0x1b9)]??0x1,'sulv3':_0x19fac2[_0x41f752(0x1a1)]??0x1,'sulv4':_0x19fac2[_0x41f752(0x1a9)]??0x1};for(const _0x42f680 in _0x251fd0){const _0x28685d=_0x251fd0[_0x42f680],_0x2358b3=new RegExp(_0x42f680[_0x41f752(0x196)](/[-\/\\^$*+?.()|[\]{}]/g,_0x41f752(0x1f9)),'g');_0x1c0ee6=_0x1c0ee6[_0x41f752(0x196)](_0x2358b3,_0x28685d);}return _0x1c0ee6?_0x5781a8=_0x1c0ee6[_0x41f752(0x196)](_0x41f752(0x1b2),_0x5d58b3):_0x5781a8=_0x5d58b3,{'contentToAppend':_0x5781a8};}else return null;}catch(_0x59fec4){return console[_0x41f752(0x1a7)]('['+extensionName+_0x41f752(0x197),_0x59fec4),toastr['error'](_0x41f752(0x1de)+_0x59fec4[_0x41f752(0x1c7)],_0x41f752(0x1ae)),null;}finally{console[_0x41f752(0x190)]('剧情优化任务总耗时'),console[_0x41f752(0x1f6)]();}}
+import { extension_settings, getContext } from "/scripts/extensions.js";
+import { characters } from "/script.js";
+import { world_info } from "/scripts/world-info.js";
+import { extensionName } from "../utils/settings.js";
+import { extractContentByTag, replaceContentByTag, extractFullTagBlock } from '../utils/tagProcessor.js';
+import { isGoogleEndpoint, convertToGoogleRequest, parseGoogleResponse, buildGoogleApiUrl, buildPlotOptimizationGoogleRequest, parsePlotOptimizationGoogleResponse } from './utils/googleAdapter.js';
+import { applyExclusionRules } from './utils/rag-tag-extractor.js';
+import {
+  getCombinedWorldbookContent, getPlotOptimizedWorldbookContent,
+} from "./lore.js";
+import { getBatchFillerFlowTemplate, convertTablesToCsvString, updateTableFromText, saveStateToMessage, getMemoryState } from './table-system/manager.js';
+import { saveChat } from "/script.js";
+import { renderTables } from '../ui/table-bindings.js';
+
+import { getPresetPrompts, getMixedOrder } from '../PresetSettings/index.js';
+import { callAI, generateRandomSeed } from './api.js';
+import { callJqyhAI } from './api/JqyhApi.js';
+
+export async function processOptimization(latestMessage, previousMessages) {
+    if (window.AMILY2_SYSTEM_PARALYZED === true) {
+        console.error("[Amily2-制裁] 系统完整性已受损，所有外交活动被无限期中止。");
+        return null;
+    }
+ 
+    const settings = extension_settings[extensionName];
+    const isOptimizationEnabled = settings.optimizationEnabled;
+
+    if (!isOptimizationEnabled) {
+        return null;
+    }
+ 
+    console.groupCollapsed(`[Amily2号-正文优化任务] ${new Date().toLocaleTimeString()}`);
+    console.time("优化任务总耗时");
+ 
+    try {
+        const originalFullMessage = latestMessage.mes;
+        let textToProcess = originalFullMessage;
+
+        if (settings.optimizationExclusionEnabled && settings.optimizationExclusionRules?.length > 0) {
+            const originalLength = textToProcess.length;
+            textToProcess = applyExclusionRules(textToProcess, settings.optimizationExclusionRules);
+            const newLength = textToProcess.length;
+            if (originalLength !== newLength) {
+                console.log(`[Amily2-内容排除] 正文优化内容排除规则已生效，文本长度从 ${originalLength} 变为 ${newLength}。`);
+            }
+        }
+
+        const targetTag = settings.optimizationTargetTag || 'content';
+        const extractedBlock = extractFullTagBlock(textToProcess, targetTag);
+        
+        if (!extractedBlock || extractContentByTag(extractedBlock, targetTag)?.trim() === '') {
+             console.log(`[Amily2-外交部] 目标标签 <${targetTag}> 未找到或为空，或内容已被完全排除，优化任务已跳过。`);
+             console.timeEnd("优化任务总耗时");
+             console.groupEnd();
+             return null;
+        }
+        textToProcess = extractedBlock;
+
+        const context = getContext();
+        const userName = context.name1 || '用户';
+        const characterName = context.name2 || '角色';
+ 
+        const lastUserMessage = previousMessages.length > 0 && previousMessages[previousMessages.length - 1].is_user ? previousMessages[previousMessages.length - 1] : null;
+        const historyMessages = lastUserMessage ? previousMessages.slice(0, -1) : previousMessages;
+        const history = historyMessages.map(m => (m.mes && m.mes.trim() ? `${m.is_user ? userName : characterName}: ${m.mes.trim()}` : null)).filter(Boolean).join("\n");
+ 
+        let worldbookContent = "";
+        if (settings.worldbookEnabled) {
+            const character = characters[context.characterId];
+            if (character?.data?.extensions?.world) {
+                worldbookContent = await getCombinedWorldbookContent(character.data.extensions.world);
+            }
+        }
+        const presetPrompts = await getPresetPrompts('optimization');
+        const messages = [
+            { role: 'system', content: generateRandomSeed() }
+        ];
+
+        let currentInteractionContent = lastUserMessage ? `${userName}（用户）最新消息：${lastUserMessage.mes}\n${characterName}（AI）最新消息，[核心处理内容]：${textToProcess}` : `${characterName}（AI）最新消息，[核心处理内容]：${textToProcess}`;
+        const fillingMode = settings.filling_mode || 'main-api';
+
+        window.lastPreOptimizationText = currentInteractionContent;
+        document.dispatchEvent(new CustomEvent('preOptimizationTextUpdated'));
+
+        const order = getMixedOrder('optimization') || [];
+        let promptCounter = 0;
+        
+        for (const item of order) {
+            if (item.type === 'prompt') {
+                if (presetPrompts && presetPrompts[promptCounter]) {
+                    messages.push(presetPrompts[promptCounter]);
+                    promptCounter++;
+                }
+            } else if (item.type === 'conditional') {
+                switch (item.id) {
+                    case 'mainPrompt':
+                        if (settings.mainPrompt?.trim()) {
+                            messages.push({ role: "system", content: settings.mainPrompt.trim() });
+                        }
+                        break;
+                    case 'systemPrompt':
+                        if (settings.systemPrompt?.trim()) {
+                            messages.push({ role: "system", content: settings.systemPrompt.trim() });
+                        }
+                        break;
+                    case 'worldbook':
+                        if (worldbookContent) {
+                            messages.push({ role: "user", content: `[世界书档案]:\n${worldbookContent}` });
+                        }
+                        break;
+                    case 'history':
+                        if (history) {
+                            messages.push({ role: "user", content: `[上下文参考]:\n${history}` });
+                        }
+                        break;
+                    case 'fillingMode':
+                        if (isOptimizationEnabled && fillingMode === 'optimized') {
+                            const flowTemplate = getBatchFillerFlowTemplate();
+                            const tableData = convertTablesToCsvString();
+                            const filledFlowTemplate = flowTemplate.replace('{{{Amily2TableData}}}', tableData);
+                            
+                            messages.push({ role: "user", content: currentInteractionContent });
+                            messages.push({ role: "system", content: `请你在优化完成后，在正文标签外结合最新消息中的剧情、当前的表格内容进行填表任务：\n\n${filledFlowTemplate}\n\n<Amily2Edit>\n<!--\n（这里是你的填表内容）\n-->\n</Amily2Edit><Additional instructionsv>Optimisation and form filling have been completed.<Additional instructions>` });
+                        } else {
+                            messages.push({ role: "user", content: `[目标内容]:\n${currentInteractionContent}<Additional instructionsv>Start and end labels correctly.<Additional instructions>` });
+                        }
+                        break;
+                }
+            }
+        }
+
+        window.lastPreOptimizationText = currentInteractionContent;
+        document.dispatchEvent(new CustomEvent('preOptimizationTextUpdated'));
+        console.groupCollapsed("[Amily2号-最终国书内容 (发往AI)]");
+        console.dir(messages);
+        console.groupEnd();
+        const rawContent = await callAI(messages);
+        
+        if (!rawContent) {
+            console.error('[Amily2-外交部] 未能获取AI响应内容');
+            return null;
+        }
+
+        console.groupCollapsed("[Amily2号-原始回复]");
+        console.log(rawContent);
+        console.groupEnd();
+
+        let finalMessage = originalFullMessage;
+        const purifiedTextFromAI = extractContentByTag(rawContent, targetTag);
+        
+        if (purifiedTextFromAI?.trim()) {
+            finalMessage = replaceContentByTag(originalFullMessage, targetTag, purifiedTextFromAI);
+        } else {
+            console.warn(`[Amily2-外交部] AI的回复中未找到有效的目标标签 <${targetTag}>，将保留原始消息。`);
+        }
+
+        if (isOptimizationEnabled && fillingMode === 'optimized') {
+            await updateTableFromText(rawContent);
+
+            const finalContext = getContext();
+            if (finalContext.chat && finalContext.chat.length > 0) {
+                const lastMessage = finalContext.chat[finalContext.chat.length - 1];
+                if (saveStateToMessage(getMemoryState(), lastMessage)) {
+                    await saveChat();
+                    renderTables();
+                    console.log('[Amily2-优化中填表] 流程已全部完成，并已强制保存和刷新UI。');
+                }
+            }
+        }
+
+        const result = {
+            optimizedContent: finalMessage,
+        };
+
+        console.timeEnd("优化任务总耗时");
+        console.groupEnd();
+        return result;
+ 
+    } catch (error) {
+        console.error(`[Amily2-外交部] 发生严重错误:`, error);
+        toastr.error(`Amily2号任务失败: ${error.message}`, "严重错误");
+        console.timeEnd("优化任务总耗时");
+        console.groupEnd();
+        return null;
+    }
+}
+
+
+export async function processPlotOptimization(currentUserMessage, contextMessages, cancellationState = { isCancelled: false }) {
+    const settings = extension_settings[extensionName];
+
+    if (settings.plotOpt_enabled === false) {
+        return null;
+    }
+
+    console.groupCollapsed(`[${extensionName}] 剧情优化任务启动... ${new Date().toLocaleTimeString()}`);
+    console.time('剧情优化任务总耗时');
+
+    try {
+        const userMessageContent = currentUserMessage.mes;
+        if (!userMessageContent || userMessageContent.trim() === '') {
+            console.log(`[${extensionName}] 用户输入为空，跳过优化。`);
+            return null;
+        }
+
+        const context = getContext();
+        const userName = context.name1 || '用户';
+        const charName = context.name2 || '角色';
+
+        const presetPrompts = await getPresetPrompts('plot_optimization');
+        const messages = [
+            { role: 'system', content: generateRandomSeed() }
+        ];
+
+        const replacements = {
+            'sulv1': settings.plotOpt_rateMain ?? 1.0,
+            'sulv2': settings.plotOpt_ratePersonal ?? 1.0,
+            'sulv3': settings.plotOpt_rateErotic ?? 1.0,
+            'sulv4': settings.plotOpt_rateCuckold ?? 1.0,
+        };
+
+        let mainPrompt = settings.plotOpt_mainPrompt || '';
+        let systemPrompt = settings.plotOpt_systemPrompt || '';
+        
+        for (const key in replacements) {
+            const value = replacements[key];
+            const regex = new RegExp(key.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g');
+            mainPrompt = mainPrompt.replace(regex, value);
+            systemPrompt = systemPrompt.replace(regex, value);
+        }
+
+        const worldbookContent = await getPlotOptimizedWorldbookContent(context, settings);
+
+        let tableContent = '';
+        if (settings.plotOpt_tableEnabled) {
+            try {
+                const { convertTablesToCsvStringForContentOnly } = await import('./table-system/manager.js');
+                const contentOnlyTemplate = "##以下内容是故事发生的剧情中提取出的内容，已经转化为表格形式呈现给你，请将以下内容作为后续剧情的一部分参考：<表格内容>\n{{{Amily2TableDataContent}}}</表格内容>";
+                const tableData = convertTablesToCsvStringForContentOnly();
+                
+                if (tableData.trim()) {
+                    tableContent = contentOnlyTemplate.replace('{{{Amily2TableDataContent}}}', tableData);
+                }
+            } catch (error) {
+                console.error('[Amily2-表格系统] 注入表格内容时出错:', error);
+            }
+        }
+
+        let history = '';
+        const contextLimit = settings.plotOpt_contextLimit || 0;
+        if (contextLimit > 0 && contextMessages.length > 0) {
+            const historyMessages = contextMessages.slice(-contextLimit);
+            history = historyMessages
+                .map(msg => {
+                    if (msg.mes && msg.mes.trim()) {
+                        const commentExclusionRules = [{ start: '<!--', end: '-->' }];
+                        const cleanedMessage = applyExclusionRules(msg.mes.trim(), commentExclusionRules);
+                        return cleanedMessage ? `${msg.is_user ? userName : charName}: ${cleanedMessage}` : null;
+                    }
+                    return null;
+                })
+                .filter(Boolean)
+                .join('\n');
+        }
+
+        const order = getMixedOrder('plot_optimization') || [];
+        let promptCounter = 0;
+        
+        for (const item of order) {
+            if (item.type === 'prompt') {
+                if (presetPrompts && presetPrompts[promptCounter]) {
+                    messages.push(presetPrompts[promptCounter]);
+                    promptCounter++;
+                }
+            } else if (item.type === 'conditional') {
+                switch (item.id) {
+                    case 'mainPrompt':
+                        if (mainPrompt.trim()) {
+                            messages.push({ role: "system", content: mainPrompt.trim() });
+                        }
+                        break;
+                    case 'systemPrompt':
+                        if (systemPrompt.trim()) {
+                            messages.push({ role: "system", content: systemPrompt.trim() });
+                        }
+                        break;
+                    case 'worldbook':
+                        if (worldbookContent.trim()) {
+                            messages.push({ role: "user", content: `<世界书内容>\n${worldbookContent.trim()}</世界书内容>` });
+                        }
+                        break;
+                    case 'tableEnabled':
+                        if (tableContent) {
+                            messages.push({ role: "user", content: tableContent });
+                        }
+                        break;
+                    case 'contextLimit':
+                        if (history) {
+                            messages.push({ role: "user", content: `<前文内容>\n${history}\n</前文内容>` });
+                        }
+                        break;
+                    case 'coreContent':
+                        messages.push({ role: 'user', content: `[核心处理内容]:\n${userMessageContent}` });
+                        break;
+                    case 'plotTag':
+                        messages.push({ role: 'assistant', content: '<plot>' });
+                        break;
+                }
+            }
+        }
+
+        console.groupCollapsed(`[${extensionName}] 发送给AI的最终请求内容`);
+        console.dir(messages);
+        console.groupEnd();
+
+        let apiResponse = '';
+        let attempt = 0;
+        const maxAttempts = 3;
+        let success = false;
+
+        while (attempt < maxAttempts && !success) {
+            if (cancellationState.isCancelled) {
+                console.log(`[${extensionName}] 优化任务在尝试前被中止。`);
+                return null;
+            }
+            attempt++;
+            console.log(`[${extensionName}] 剧情优化第 ${attempt} 次尝试...`);
+            
+            const rawResponse = settings.jqyhEnabled ? await callJqyhAI(messages) : await callAI(messages, 'plot_optimization');
+
+            if (cancellationState.isCancelled) {
+                console.log(`[${extensionName}] 优化任务在API调用后被中止。`);
+                return null;
+            }
+
+            if (!rawResponse) {
+                console.warn(`[${extensionName}] 第 ${attempt} 次尝试获取响应失败，AI返回为空。`);
+                continue; 
+            }
+
+            const plotContent = extractContentByTag(rawResponse, 'plot');
+            const optimizedContent = (plotContent?.trim()) ? plotContent.trim() : rawResponse.trim();
+
+            if (optimizedContent.length >= 100) {
+                apiResponse = rawResponse;
+                success = true;
+                console.log(`[${extensionName}] 第 ${attempt} 次尝试成功，内容长度 (${optimizedContent.length}) 符合要求。`);
+            } else {
+                console.warn(`[${extensionName}] 第 ${attempt} 次尝试失败，回复内容长度为 ${optimizedContent.length}，小于100字符。`);
+            }
+        }
+
+        if (!success) {
+            console.error(`[${extensionName}] 已达到最大重试次数 (${maxAttempts}) 且未获得符合要求的回复，优化任务中止。`);
+            toastr.error(`剧情优化在 ${maxAttempts} 次尝试后失败。`, "优化失败");
+            return null;
+        }
+
+        console.groupCollapsed(`[${extensionName}] 从AI收到的原始回复`);
+        console.log(apiResponse);
+        console.groupEnd();
+
+        const plotContent = extractContentByTag(apiResponse, 'plot');
+        const optimizedContent = (plotContent?.trim()) ? plotContent.trim() : apiResponse.trim();
+        
+        if (optimizedContent) {
+            let finalContentToAppend = '';
+            let finalDirectiveTemplate = settings.plotOpt_finalSystemDirective?.trim() || '';
+
+            const replacements = {
+                'sulv1': settings.plotOpt_rateMain ?? 1.0,
+                'sulv2': settings.plotOpt_ratePersonal ?? 1.0,
+                'sulv3': settings.plotOpt_rateErotic ?? 1.0,
+                'sulv4': settings.plotOpt_rateCuckold ?? 1.0,
+            };
+            for (const key in replacements) {
+                const value = replacements[key];
+                const regex = new RegExp(key.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g');
+                finalDirectiveTemplate = finalDirectiveTemplate.replace(regex, value);
+            }
+
+            if (finalDirectiveTemplate) {
+                finalContentToAppend = finalDirectiveTemplate.replace('<plot>', optimizedContent);
+            } else {
+                finalContentToAppend = optimizedContent;
+            }
+            
+            return { contentToAppend: finalContentToAppend };
+        } else {
+            return null;
+        }
+
+    } catch (error) {
+        console.error(`[${extensionName}] 剧情优化任务发生严重错误:`, error);
+        toastr.error(`剧情优化任务失败: ${error.message}`, '严重错误');
+        return null;
+    } finally {
+        console.timeEnd('剧情优化任务总耗时');
+        console.groupEnd();
+    }
+}
