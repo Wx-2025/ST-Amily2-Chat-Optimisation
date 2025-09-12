@@ -389,6 +389,38 @@
                     </div>
                     <small class="notes">为解决部分移动端UI溢出问题。更改后将立即生效。</small>
                 </div>
+                <div class="amily2_settings_block color-controls-container">
+                    <div class="color-picker-group">
+                        <div class="color-picker-item">
+                            <label for="amily2_bg_color">背景色:</label>
+                            <input type="color" id="amily2_bg_color" value="#1e1e1e">
+                        </div>
+                        <div class="color-picker-item">
+                            <label for="amily2_button_color">按钮色:</label>
+                            <input type="color" id="amily2_button_color" value="#4a4a4a">
+                        </div>
+                        <div class="color-picker-item">
+                            <label for="amily2_text_color">文字颜色:</label>
+                            <input type="color" id="amily2_text_color" value="#ffffff">
+                        </div>
+                    </div>
+                    <button id="amily2_restore_colors" class="menu_button small_button">默认</button>
+                </div>
+                <div class="amily2_settings_block">
+                    <label for="amily2_bg_opacity">背景透明度: <span id="amily2_bg_opacity_value">0</span></label>
+                    <input type="range" id="amily2_bg_opacity" min="0" max="1" step="0.01" value="0">
+                </div>
+                <div class="amily2_settings_block">
+                    <label>自定义背景图:</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <label for="amily2_custom_bg_image" class="menu_button wide_button" style="cursor: pointer; text-align: center; flex-grow: 1;">
+                            <i class="fas fa-upload"></i> 上传图片
+                        </label>
+                        <input type="file" id="amily2_custom_bg_image" accept="image/*" style="display: none;">
+                        <button id="amily2_restore_bg_image" class="menu_button small_button">默认</button>
+                    </div>
+                    <small class="notes">选择一张图片作为背景。推荐使用小于5MB的图片。</small>
+                </div>
             </fieldset>
 			
                 <legend><i class="fas fa-tools"></i> 诊断与操作</legend>
