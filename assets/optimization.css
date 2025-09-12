@@ -5,8 +5,14 @@
     margin-bottom: 15px;
 }
 
+:root {
+    --amily2-bg-color: #2C2C2C;
+    --amily2-button-color: #4A4A4A;
+    --amily2-text-color: #E0E0E0;
+}
+
 #amily2_plot_optimization_panel .settings-group > legend {
-    color: #e0e0e0;
+    color: var(--amily2-text-color);
     font-weight: bold;
     padding: 0 10px;
     margin-left: 10px;
@@ -29,7 +35,7 @@
     cursor: pointer;
     border: none;
     background-color: transparent;
-    color: #ccc;
+    color: var(--amily2-text-color);
     font-size: 1em;
     border-bottom: 3px solid transparent;
     transition: all 0.3s ease;
@@ -37,7 +43,7 @@
 
 #amily2_plot_optimization_panel .sinan-nav-item:hover {
     background-color: rgba(255, 255, 255, 0.05);
-    color: #fff;
+    color: var(--amily2-text-color);
 }
 
 #amily2_plot_optimization_panel .sinan-nav-item.active {
@@ -75,7 +81,7 @@
 
 #amily2_plot_optimization_panel .control-block-with-switch label {
     font-weight: bold;
-    color: #ddd;
+    color: var(--amily2-text-color);
 }
 
 #amily2_plot_optimization_panel .inline-settings-grid {
@@ -89,7 +95,7 @@
     font-weight: bold;
     text-align: right;
     white-space: nowrap;
-    color: #ddd;
+    color: var(--amily2-text-color);
 }
 
 #amily2_plot_optimization_panel .inline-settings-grid .text_pole,
@@ -106,7 +112,7 @@
 
 #amily2_plot_optimization_panel .prompt-editor-area > label {
     font-weight: bold;
-    color: #ddd;
+    color: var(--amily2-text-color);
     margin-bottom: -5px;
 }
 
@@ -130,7 +136,7 @@
     padding: 10px;
     height: 150px;
     overflow-y: auto;
-    background-color: #222;
+    background-color: var(--amily2-bg-color);
     margin-top: 5px;
 }
 
@@ -161,8 +167,8 @@
     text-align: center;
     padding: 8px 10px;
     cursor: pointer;
-    background-color: #333;
-    color: #ccc;
+    background-color: var(--amily2-bg-color);
+    color: var(--amily2-text-color);
     transition: all 0.3s ease;
     border-left: 1px solid #555;
     margin: 0 !important;
@@ -180,6 +186,7 @@
     to { opacity: 1; }
 }
 
+/* Horizontal wrapping for button groups */
 #amily2_plot_optimization_panel .amily2_opt_preset_selector_wrapper,
 #amily2_plot_optimization_panel #amily2_opt_worldbook_entry_controls {
     display: flex;
@@ -189,10 +196,10 @@
 }
 
 #amily2_plot_optimization_panel .amily2_opt_preset_selector_wrapper > .text_pole {
-    flex-grow: 1; 
+    flex-grow: 1; /* Allow select to take available space */
 }
 
-
+/* Jqyh API button styles */
 #amily2_plot_optimization_panel .jqyh-button-row {
     display: flex;
     gap: 10px;
@@ -246,6 +253,7 @@
     font-size: 14px;
 }
 
+/* Unified Prompt Editor Styles */
 #amily2_plot_optimization_panel .unified-prompt-editor {
     display: flex;
     flex-direction: column;
