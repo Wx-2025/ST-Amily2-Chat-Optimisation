@@ -216,7 +216,7 @@ async function runBatchAttempt(batchNum, attemptNum) {
         }
         const order = getMixedOrder('batch_filler') || [];
 
-        const presetPrompts = getPresetPrompts('batch_filler');
+        const presetPrompts = await getPresetPrompts('batch_filler');
         
         const worldBookContext = await getWorldBookContext();
         
@@ -407,7 +407,7 @@ export async function startFloorRangeFilling(startFloor, endFloor) {
         }
         const order = getMixedOrder('batch_filler') || [];
 
-        const presetPrompts = getPresetPrompts('batch_filler');
+        const presetPrompts = await getPresetPrompts('batch_filler');
         
         const worldBookContext = await getWorldBookContext();
 
