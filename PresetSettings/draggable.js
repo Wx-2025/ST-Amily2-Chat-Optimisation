@@ -1,1 +1,158 @@
-function _0x3615(_0x332892,_0x10ceb8){const _0x4cfe7a=_0x4cfe();return _0x3615=function(_0x361585,_0x31d4ab){_0x361585=_0x361585-0x12e;let _0x47bd95=_0x4cfe7a[_0x361585];return _0x47bd95;},_0x3615(_0x332892,_0x10ceb8);}(function(_0x3f286d,_0x2c0e19){const _0x512c0d=_0x3615,_0x51c2cc=_0x3f286d();while(!![]){try{const _0x3c13f9=-parseInt(_0x512c0d(0x149))/0x1*(parseInt(_0x512c0d(0x137))/0x2)+parseInt(_0x512c0d(0x142))/0x3+-parseInt(_0x512c0d(0x13d))/0x4*(-parseInt(_0x512c0d(0x143))/0x5)+parseInt(_0x512c0d(0x154))/0x6*(parseInt(_0x512c0d(0x145))/0x7)+parseInt(_0x512c0d(0x13f))/0x8*(parseInt(_0x512c0d(0x13c))/0x9)+-parseInt(_0x512c0d(0x144))/0xa+parseInt(_0x512c0d(0x147))/0xb*(-parseInt(_0x512c0d(0x141))/0xc);if(_0x3c13f9===_0x2c0e19)break;else _0x51c2cc['push'](_0x51c2cc['shift']());}catch(_0x5050cb){_0x51c2cc['push'](_0x51c2cc['shift']());}}}(_0x4cfe,0x597c2));function _0x4cfe(){const _0x178ae5=['auto','height','originalEvent','left','grabbing','min','6JPLQoD','outerHeight','clientX','mouseup','hidden','none','mousedown','parse','max','now','length','touchend','offset','clientY','touches','stopPropagation','body','outerWidth','268niOMZz','type','stringify','preventDefault','changedTouches','6219WTfKFE','2620DdTAKW','grab','496MFTXZY','css','5379468MCntbL','879075rVbVvT','4650dlfiOC','66290YLtYoy','3158099UhdxqY','resize','11bgNpVC','click','4289wlkEsr','width','mousemove','top','off'];_0x4cfe=function(){return _0x178ae5;};return _0x4cfe();}export function makeDraggable(_0x282ac1,_0x5a927d,_0x4ca8a6){const _0x4a7cb1=_0x3615;let _0x3dc046=![],_0x524d0d=![],_0x48625c={'x':0x0,'y':0x0},_0x8846bb={'x':0x0,'y':0x0};const _0x5dfcb4=_0x24baa7=>{const _0x13e56e=_0x3615;if(_0x24baa7['touches']&&_0x24baa7[_0x13e56e(0x133)]['length']>0x0)return{'x':_0x24baa7['touches'][0x0][_0x13e56e(0x156)],'y':_0x24baa7[_0x13e56e(0x133)][0x0][_0x13e56e(0x132)]};else{if(_0x24baa7[_0x13e56e(0x13b)]&&_0x24baa7[_0x13e56e(0x13b)]['length']>0x0)return{'x':_0x24baa7[_0x13e56e(0x13b)][0x0]['clientX'],'y':_0x24baa7[_0x13e56e(0x13b)][0x0][_0x13e56e(0x132)]};}return{'x':_0x24baa7[_0x13e56e(0x156)],'y':_0x24baa7[_0x13e56e(0x132)]};},_0x305097=_0x3b0ea2=>{const _0xb48982=_0x3615,_0x3f56e7=$(window)['width'](),_0x48ca66=$(window)[_0xb48982(0x14f)](),_0x3bfef9=_0x3b0ea2['outerWidth'](),_0x380b3b=_0x3b0ea2['outerHeight']();let _0x59b00a=_0x3b0ea2[_0xb48982(0x131)](),_0x36f901=Math[_0xb48982(0x15c)](0x0,Math[_0xb48982(0x153)](_0x59b00a[_0xb48982(0x151)],_0x3f56e7-_0x3bfef9)),_0x11c508=Math[_0xb48982(0x15c)](0x0,Math[_0xb48982(0x153)](_0x59b00a[_0xb48982(0x14c)],_0x48ca66-_0x380b3b));_0x3b0ea2[_0xb48982(0x140)]({'left':_0x36f901+'px','top':_0x11c508+'px','transform':_0xb48982(0x159)}),_0x4ca8a6&&localStorage['setItem'](_0x4ca8a6,JSON[_0xb48982(0x139)]({'left':_0x36f901+'px','top':_0x11c508+'px'}));},_0x37f36a=_0x1e457f=>{const _0x44ec8a=_0x3615;_0x1e457f[_0x44ec8a(0x13a)](),_0x3dc046=!![],_0x524d0d=![];const _0x11a5c8=_0x5dfcb4(_0x1e457f['originalEvent']||_0x1e457f);_0x48625c={'x':_0x11a5c8['x'],'y':_0x11a5c8['y']};const _0xb9923b=_0x282ac1[_0x44ec8a(0x131)]();_0x8846bb={'x':_0xb9923b[_0x44ec8a(0x151)],'y':_0xb9923b[_0x44ec8a(0x14c)]},_0x282ac1[_0x44ec8a(0x140)]({'cursor':_0x44ec8a(0x152),'transition':_0x44ec8a(0x159)}),$(_0x44ec8a(0x135))['css']({'user-select':_0x44ec8a(0x159),'-webkit-user-select':_0x44ec8a(0x159),'overflow':_0x44ec8a(0x158)});},_0x365bd5=_0x412900=>{const _0x40257f=_0x3615;if(!_0x3dc046)return;_0x412900[_0x40257f(0x13a)](),_0x524d0d=!![];const _0x332815=_0x5dfcb4(_0x412900[_0x40257f(0x150)]||_0x412900),_0x42f911=_0x332815['x']-_0x48625c['x'],_0x71cb77=_0x332815['y']-_0x48625c['y'];let _0x5804e3=_0x8846bb['x']+_0x42f911,_0x191455=_0x8846bb['y']+_0x71cb77;const _0x73966e=$(window)[_0x40257f(0x14a)](),_0x356164=$(window)[_0x40257f(0x14f)](),_0x47dccb=_0x282ac1[_0x40257f(0x136)](),_0x421aad=_0x282ac1[_0x40257f(0x155)]();_0x5804e3=Math[_0x40257f(0x15c)](0x0,Math[_0x40257f(0x153)](_0x5804e3,_0x73966e-_0x47dccb)),_0x191455=Math[_0x40257f(0x15c)](0x0,Math['min'](_0x191455,_0x356164-_0x421aad)),_0x282ac1[_0x40257f(0x140)]({'left':_0x5804e3+'px','top':_0x191455+'px','transform':'none'});},_0x2c3cd6=_0x2b4c2c=>{const _0x3e96a2=_0x3615;if(!_0x3dc046)return;_0x3dc046=![],_0x282ac1[_0x3e96a2(0x140)]({'cursor':_0x3e96a2(0x13e),'transition':'transform\x200.2s\x20ease,\x20box-shadow\x200.2s\x20ease'}),$(_0x3e96a2(0x135))[_0x3e96a2(0x140)]({'user-select':_0x3e96a2(0x14e),'-webkit-user-select':_0x3e96a2(0x14e),'overflow':_0x3e96a2(0x14e)}),_0x305097(_0x282ac1),!_0x524d0d&&_0x5a927d&&(_0x2b4c2c[_0x3e96a2(0x138)]===_0x3e96a2(0x130)?(_0x2b4c2c['preventDefault'](),setTimeout(_0x5a927d,0xa)):_0x5a927d());};_0x282ac1['on'](_0x4a7cb1(0x15a),_0x37f36a),_0x282ac1['on']('touchstart',_0x37f36a);const _0x15b4b5='.draggable'+Date[_0x4a7cb1(0x12e)]();$(document)['on'](_0x4a7cb1(0x14b)+_0x15b4b5,_0x365bd5),$(document)['on']('touchmove'+_0x15b4b5,_0x365bd5),$(document)['on'](_0x4a7cb1(0x157)+_0x15b4b5,_0x2c3cd6),$(document)['on'](_0x4a7cb1(0x130)+_0x15b4b5,_0x2c3cd6),_0x282ac1['on'](_0x4a7cb1(0x148),_0xef446d=>{const _0x2cef6f=_0x4a7cb1;_0x524d0d&&(_0xef446d[_0x2cef6f(0x13a)](),_0xef446d[_0x2cef6f(0x134)]());}),$(window)['on'](_0x4a7cb1(0x146)+_0x15b4b5,()=>{const _0x9a98bf=_0x4a7cb1;_0x282ac1[_0x9a98bf(0x12f)]&&_0x305097(_0x282ac1);}),_0x282ac1['css']({'cursor':'grab','user-select':_0x4a7cb1(0x159),'-webkit-user-select':_0x4a7cb1(0x159)});if(_0x4ca8a6){const _0x78579=localStorage['getItem'](_0x4ca8a6);_0x78579&&(_0x282ac1[_0x4a7cb1(0x140)](JSON[_0x4a7cb1(0x15b)](_0x78579)),setTimeout(()=>_0x305097(_0x282ac1),0x0));}return()=>{const _0x1f02c4=_0x4a7cb1;_0x282ac1[_0x1f02c4(0x14d)]('mousedown\x20touchstart\x20click'),$(document)[_0x1f02c4(0x14d)](_0x15b4b5),$(window)['off'](_0x15b4b5);};}
+export function makeDraggable($element, onClick, storageKey) {
+    let isDragging = false;
+    let hasDragged = false;
+    let startPos = { x: 0, y: 0 };
+    let elementStartPos = { x: 0, y: 0 };
+
+    const getEventCoords = (e) => {
+        if (e.touches && e.touches.length > 0) {
+            return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        } else if (e.changedTouches && e.changedTouches.length > 0) {
+            return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+        }
+        return { x: e.clientX, y: e.clientY };
+    };
+
+    const keepInBounds = ($elem) => {
+        const windowWidth = $(window).width();
+        const windowHeight = $(window).height();
+        const elemWidth = $elem.outerWidth();
+        const elemHeight = $elem.outerHeight();
+        
+        let currentPos = $elem.offset();
+        let newLeft = Math.max(0, Math.min(currentPos.left, windowWidth - elemWidth));
+        let newTop = Math.max(0, Math.min(currentPos.top, windowHeight - elemHeight));
+        
+        $elem.css({
+            left: newLeft + 'px',
+            top: newTop + 'px',
+            transform: 'none'
+        });
+
+        if (storageKey) {
+            localStorage.setItem(storageKey, JSON.stringify({
+                left: newLeft + 'px',
+                top: newTop + 'px'
+            }));
+        }
+    };
+
+    const dragStart = (e) => {
+        e.preventDefault();
+        isDragging = true;
+        hasDragged = false;
+        
+        const coords = getEventCoords(e.originalEvent || e);
+        startPos = { x: coords.x, y: coords.y };
+        
+        const offset = $element.offset();
+        elementStartPos = { x: offset.left, y: offset.top };
+        
+        $element.css({
+            'cursor': 'grabbing',
+            'transition': 'none'
+        });
+        
+        $('body').css({
+            'user-select': 'none',
+            '-webkit-user-select': 'none',
+            'overflow': 'hidden'
+        });
+    };
+
+    const dragMove = (e) => {
+        if (!isDragging) return;
+        e.preventDefault();
+        hasDragged = true;
+        
+        const coords = getEventCoords(e.originalEvent || e);
+        const deltaX = coords.x - startPos.x;
+        const deltaY = coords.y - startPos.y;
+        
+        let newLeft = elementStartPos.x + deltaX;
+        let newTop = elementStartPos.y + deltaY;
+        
+        const windowWidth = $(window).width();
+        const windowHeight = $(window).height();
+        const elemWidth = $element.outerWidth();
+        const elemHeight = $element.outerHeight();
+        
+        newLeft = Math.max(0, Math.min(newLeft, windowWidth - elemWidth));
+        newTop = Math.max(0, Math.min(newTop, windowHeight - elemHeight));
+        
+        $element.css({
+            left: newLeft + 'px',
+            top: newTop + 'px',
+            transform: 'none'
+        });
+    };
+
+    const dragEnd = (e) => {
+        if (!isDragging) return;
+        isDragging = false;
+        
+        $element.css({
+            'cursor': 'grab',
+            'transition': 'transform 0.2s ease, box-shadow 0.2s ease'
+        });
+        
+        $('body').css({
+            'user-select': 'auto',
+            '-webkit-user-select': 'auto',
+            'overflow': 'auto'
+        });
+        
+        keepInBounds($element);
+        
+        if (!hasDragged && onClick) {
+            if (e.type === 'touchend') {
+                e.preventDefault();
+                setTimeout(onClick, 10);
+            } else {
+                onClick();
+            }
+        }
+    };
+
+    $element.on('mousedown', dragStart);
+    $element.on('touchstart', dragStart);
+    
+    const namespace = '.draggable' + Date.now();
+    $(document).on(`mousemove${namespace}`, dragMove);
+    $(document).on(`touchmove${namespace}`, dragMove);
+    $(document).on(`mouseup${namespace}`, dragEnd);
+    $(document).on(`touchend${namespace}`, dragEnd);
+    
+    $element.on('click', (e) => {
+        if (hasDragged) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    });
+    
+    $(window).on(`resize${namespace}`, () => {
+        if ($element.length) {
+            keepInBounds($element);
+        }
+    });
+
+    $element.css({
+        'cursor': 'grab',
+        'user-select': 'none',
+        '-webkit-user-select': 'none'
+    });
+
+    if (storageKey) {
+        const savedPos = localStorage.getItem(storageKey);
+        if (savedPos) {
+            $element.css(JSON.parse(savedPos));
+            setTimeout(() => keepInBounds($element), 0);
+        }
+    }
+
+    return () => {
+        $element.off('mousedown touchstart click');
+        $(document).off(namespace);
+        $(window).off(namespace);
+    };
+}
