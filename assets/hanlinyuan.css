@@ -4,6 +4,11 @@
     --amily2-text-color: #E0E0E0;
 }
 
+/* =====================================================================
+ * =========== 【翰林院】御用样式 - 确保界面威严 v4.0 ===========
+ * ===========        Amily 奉旨重铸，确保观感统一       =============
+ * ===================================================================== */
+
 /* ------------------ 整体模态窗口布局 ------------------ */
 #hly-modal-container {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -29,6 +34,9 @@
 }
 
 /* ------------------ 滚动条美化 ------------------ */
+/* ST核心脚本 `dynamic-styles.js` 可能会尝试为此处的滚动条规则动态添加 `:focus-visible` 伪类，
+ * 但 `::-webkit-scrollbar-thumb` 伪元素不支持 `:focus-visible`，从而导致控制台出现CSS解析错误。
+ * 这是一个已知的上游问题，需要等待ST方面修复。此问题不影响功能，仅为日志错误。*/
 #hly-modal-container .hly-scroll::-webkit-scrollbar {
     width: 8px;
 }
@@ -468,18 +476,18 @@
 }
 
 /* 【修复】为知识库管理列表中的开关添加特定样式 */
-#hly-modal-container #hly-kb-list-container .hly-toggle-switch {
+#hly-modal-container .hly-kb-list .hly-toggle-switch {
     position: relative;
     display: inline-block;
     width: 40px;
     height: 20px;
 }
-#hly-modal-container #hly-kb-list-container .hly-toggle-switch input {
+#hly-modal-container .hly-kb-list .hly-toggle-switch input {
     opacity: 0;
     width: 0;
     height: 0;
 }
-#hly-modal-container #hly-kb-list-container .hly-toggle-switch .hly-toggle-slider {
+#hly-modal-container .hly-kb-list .hly-toggle-switch .hly-toggle-slider {
     position: absolute;
     cursor: pointer;
     top: 0;
@@ -490,7 +498,7 @@
     transition: .4s;
     border-radius: 20px;
 }
-#hly-modal-container #hly-kb-list-container .hly-toggle-switch .hly-toggle-slider:before {
+#hly-modal-container .hly-kb-list .hly-toggle-switch .hly-toggle-slider:before {
     position: absolute;
     content: "";
     height: 16px;
@@ -501,10 +509,10 @@
     transition: .4s;
     border-radius: 50%;
 }
-#hly-modal-container #hly-kb-list-container input:checked + .hly-toggle-slider {
+#hly-modal-container .hly-kb-list input:checked + .hly-toggle-slider {
     background-color: #2196F3;
 }
-#hly-modal-container #hly-kb-list-container input:checked + .hly-toggle-slider:before {
+#hly-modal-container .hly-kb-list input:checked + .hly-toggle-slider:before {
     transform: translateX(20px);
 }
 
@@ -548,4 +556,3 @@
 #hly-modal-container #hly-hist-entry-multiselect-options[style*="display: block;"] + #hly-hist-entry-multiselect-btn i {
     transform: rotate(180deg);
 }
-
