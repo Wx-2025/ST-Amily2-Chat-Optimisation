@@ -108,7 +108,7 @@ export async function fillWithSecondaryApi(latestMessage) {
         const order = getMixedOrder('secondary_filler') || [];
 
 
-        const presetPrompts = getPresetPrompts('secondary_filler');
+        const presetPrompts = await getPresetPrompts('secondary_filler');
         
         const messages = [
             { role: 'system', content: generateRandomSeed() }
