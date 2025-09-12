@@ -1,9 +1,15 @@
+:root {
+    --amily2-bg-color: #2C2C2C;
+    --amily2-button-color: #4A4A4A;
+    --amily2-text-color: #E0E0E0;
+}
+
 #amily2_memorisation_forms_panel {
 
     --am2-gap-main: 10px;
     --am2-padding-main: 8px 5px;
     
-    --am2-container-bg: rgba(0,0,0,0.1);
+    --am2-container-bg: var(--amily2-bg-color);
     --am2-container-border: 1px solid rgba(255, 255, 255, 0.2);
     --am2-container-border-radius: 12px;
     --am2-container-padding: 10px 5px;
@@ -21,8 +27,8 @@
     --am2-table-border: 1px solid rgba(255, 255, 255, 0.25);
     --am2-table-cell-padding: 3px 6px;
     
-    --am2-header-bg: rgba(255, 255, 255, 0.1);
-    --am2-header-color: #e0e0e0;
+    --am2-header-bg: var(--amily2-button-color);
+    --am2-header-color: var(--amily2-text-color);
     --am2-header-editable-bg: rgba(172, 216, 255, 0.1);
     --am2-header-editable-focus-bg: rgba(172, 216, 255, 0.25);
     --am2-header-editable-focus-outline: 1px solid #79b8ff;
@@ -31,8 +37,8 @@
     --am2-cell-editable-focus-bg: rgba(255, 255, 172, 0.25);
     --am2-cell-editable-focus-outline: 1px solid #ffc107;
 
-    --am2-index-col-bg: rgba(0, 0, 0, 0.3) !important;
-    --am2-index-col-color: #aaa !important;
+    --am2-index-col-bg: var(--amily2-bg-color) !important;
+    --am2-index-col-color: var(--amily2-text-color) !important;
     --am2-index-col-width: 40px;
     --am2-index-col-padding: 10px 5px !important;
 
@@ -61,7 +67,7 @@
     padding: var(--am2-container-padding);
     border: var(--am2-container-border);
     border-radius: var(--am2-container-border-radius);
-    background: var(--am2-container-bg);
+    background: transparent;
     box-shadow: var(--am2-container-shadow);
 }
 
@@ -93,7 +99,7 @@
 #amily2_memorisation_forms_panel table[id^="amily2-table-"] {
     width: 100%;
     border-collapse: collapse;
-    background-color: var(--am2-table-bg);
+    background-color: transparent;
     transition: box-shadow 0.5s ease-in-out; 
 }
 
@@ -115,7 +121,7 @@
 }
 
 #amily2_memorisation_forms_panel table[id^="amily2-table-"] th {
-    background-color: var(--am2-header-bg);
+    background-color: transparent;
     color: var(--am2-header-color);
     min-width: 120px;
     font-weight: bold;
@@ -123,7 +129,7 @@
 }
 
 #amily2_memorisation_forms_panel .index-col {
-    background-color: var(--am2-index-col-bg);
+    background-color: transparent;
     text-align: center !important;
     font-weight: bold;
     color: var(--am2-index-col-color);
@@ -156,12 +162,12 @@
 }
 
 #amily2_memorisation_forms_panel .menu_button {
-    background: var(--am2-button-bg, rgba(255, 255, 255, 0.1));
+    background: var(--am2-button-bg, var(--amily2-button-color));
     background-image: var(--am2-button-gradient, none);
     background-size: 200% 100%;
     background-position: 0% 50%;
     border: 1px solid var(--am2-button-border-color, rgba(255, 255, 255, 0.2)) !important;
-    color: var(--am2-button-text-color, #fff) !important;
+    color: var(--am2-button-text-color, var(--amily2-text-color)) !important;
     padding: 8px 15px;
     border-radius: 8px;
     cursor: pointer;
@@ -196,14 +202,14 @@
 }
 
 #amily2_memorisation_forms_panel .hly-log-display {
-    background: rgba(0,0,0,0.25);
+    background: transparent;
     border-radius: 8px;
     padding: 12px;
     border: 1px solid #444;
     max-height: 100px;
     overflow-y: auto;
     font-size: 0.9em;
-    color: #ccc;
+    color: var(--amily2-text-color);
     display: flex;
     flex-direction: column;
     gap: 5px;
@@ -253,7 +259,7 @@
 }
 
 .settings-group > legend {
-    color: #e0e0e0;
+    color: var(--amily2-text-color);
     font-weight: bold;
     padding: 0 10px;
     margin-left: 10px;
@@ -369,7 +375,7 @@
     cursor: pointer;
     border: none;
     background-color: transparent;
-    color: #ccc;
+    color: var(--amily2-text-color);
     font-size: 1em;
     border-bottom: 3px solid transparent;
     transition: all 0.3s ease;
@@ -377,7 +383,7 @@
 
 .sinan-nav-item:hover {
     background-color: rgba(255, 255, 255, 0.05);
-    color: #fff;
+    color: var(--amily2-text-color);
 }
 
 .sinan-nav-item.active {
@@ -417,7 +423,7 @@
 
 .notes {
     font-size: 0.9em;
-    color: #aaa;
+    color: var(--amily2-text-color);
     margin-top: 15px;
     text-align: center;
 }
@@ -438,7 +444,7 @@
 
 .control-block-with-switch label {
     font-weight: bold;
-    color: #ddd;
+    color: var(--amily2-text-color);
 }
 
 .toggle-switch {
@@ -472,7 +478,7 @@
     width: 20px;
     left: 4px;
     bottom: 4px;
-    background-color: white;
+    background-color: var(--amily2-text-color);
     transition: .4s;
     border-radius: 50%;
 }
@@ -504,7 +510,6 @@
     width: max-content;
 }
 
-/* 默认情况下，行菜单是绝对定位的 */
 .amily2-row-context-menu {
     position: absolute;
 }
@@ -513,21 +518,19 @@
     display: flex; 
 }
 
-/* 【列菜单】网格布局 */
 th .amily2-context-menu {
-    position: static; /* 覆盖默认的 absolute，成为普通文档流的一部分 */
-    display: none; /* 默认隐藏 */
+    position: static; 
+    display: none; 
     grid-template-columns: repeat(2, 1fr);
     gap: 4px;
     padding: 8px;
-    width: 100%; /* 宽度填充整个 th */
+    width: 100%; 
     box-sizing: border-box;
-    box-shadow: none; /* 内部显示不需要阴影 */
-    border: none; /* 内部显示不需要边框 */
-    background-color: transparent; /* 背景透明 */
+    box-shadow: none;
+    border: none; 
+    background-color: transparent; 
 }
 
-/* 当 th 激活时，显示菜单并隐藏文本 */
 th.amily2-menu-open .amily2-context-menu {
     display: grid;
 }
