@@ -207,18 +207,18 @@
                 </div>
             </fieldset>
 
-
+            <!-- ================== 小说/文档导入模块 ================== -->
             <fieldset class="hly-settings-group">
                 <legend><i class="fas fa-book-open"></i> 整本录入 (小说/文档)</legend>
                 <div class="hly-control-block">
                     <label for="hanlin_novel_uploader">选择一个 .txt 格式的文本文档：</label>
                     <div id="hanlinyuan-ingest-novel-controls" class="hly-button-group" style="align-items: center;">
-
+                        <!-- 文件选择按钮 -->
                         <div class="file-input-container">
                             <label for="hanlinyuan-ingest-novel-file-input" class="hly-action-button">选择.txt文件</label>
                             <input type="file" id="hanlinyuan-ingest-novel-file-input" accept=".txt" style="display: none;">
                         </div>
-
+                        <!-- 编码选择 -->
                         <div class="file-encoding-container">
                             <select id="hanlinyuan-ingest-novel-encoding" class="hly-imperial-brush" style="padding: 8px; height: auto;" title="选择您原始文件的编码格式，系统将为您转换为标准的UTF-8格式进行处理。">
                                 <option value="UTF-8" selected>UTF-8 (默认)</option>
@@ -226,6 +226,7 @@
                                 <option value="Big5">Big5 → UTF-8</option>
                             </select>
                         </div>
+                        <!-- 开始按钮 -->
                         <button id="hanlinyuan-ingest-novel-start" class="hly-action-button success">开始录入</button>
                     </div>
                      <span id="hanlinyuan-ingest-novel-file-name" class="file-name" style="margin-top: 10px; color: #ccc; display: inline-block;">未选择文件</span>
@@ -258,7 +259,7 @@
                             <i class="fas fa-chevron-down"></i>
                         </button>
                         <div id="hly-hist-entry-multiselect-options" class="hly-multiselect-options-container" style="display: none;">
-
+                            <!-- Options will be populated by JS -->
                         </div>
                     </div>
                 </div>
@@ -275,16 +276,26 @@
             </fieldset>
         </div>
 
+
+        <!-- ================== Knowledge Base Management Tab ================== -->
         <div id="hly-knowledge-bases-tab" class="hly-tab-pane">
             <fieldset class="hly-settings-group">
-                <legend><i class="fas fa-database"></i> 管理现有知识库</legend>
-                <div id="hly-kb-list-container" class="hly-kb-list">
+                <legend><i class="fas fa-globe"></i> 全局知识库 (全角色通用)</legend>
+                <div id="hly-kb-list-global" class="hly-kb-list">
+                    <p id="hly-kb-list-global-placeholder" style="color: #888;">尚无全局知识库。</p>
+                    <!-- Global KBs will be populated here -->
+                </div>
+            </fieldset>
 
-                    <p id="hly-kb-list-placeholder" style="color: #888;">当前角色没有知识库。通过“书库编纂”中的功能可自动创建。</p>
+            <fieldset class="hly-settings-group">
+                <legend><i class="fas fa-user"></i> <span id="hly-local-kb-char-name">当前角色</span>的局部知识库</legend>
+                <div id="hly-kb-list-local" class="hly-kb-list">
+                    <p id="hly-kb-list-local-placeholder" style="color: #888;">当前角色没有知识库。通过“书库编纂”中的功能可自动创建。</p>
+                    <!-- Local KBs will be populated here -->
                 </div>
                 <div class="hly-button-group" style="margin-top: 15px;">
-                    <button id="hly-kb-delete-all-btn" class="hly-action-button danger">
-                        <i class="fas fa-skull-crossbones"></i> 一键删除所有知识库
+                    <button id="hly-kb-delete-local-btn" class="hly-action-button danger">
+                        <i class="fas fa-skull-crossbones"></i> 删除该角色所有局部知识库
                     </button>
                 </div>
             </fieldset>
@@ -388,4 +399,5 @@
     <div class="hly-footer">
     </div>
 </div>
+<!-- 引入强大的文本解码库，确保编码转换万无一失 -->
 <script src="https://cdn.jsdelivr.net/npm/text-encoding@0.7.0/lib/encoding.min.js"></script>
