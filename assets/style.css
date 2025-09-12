@@ -34,7 +34,7 @@
     pointer-events: none; 
 }
 
-#auth_panel {
+#amily2_chat_optimiser #auth_panel {
     position: relative;
     background: transparent !important;
     z-index: 0;
@@ -72,7 +72,7 @@
 .auth-status.valid { background-color: rgba(76, 175, 80, 0.2); border: 1px solid #4CAF50; }
 .auth-status.expired { background-color: rgba(244, 67, 54, 0.2); border: 1px solid #f44336; }
 
-.amily2_settings_block {
+#amily2_chat_optimiser .amily2_settings_block {
     position: relative;
     background: transparent !important;
     z-index: 0;
@@ -110,10 +110,10 @@
     border-color: rgba(255, 255, 255, 0.4) !important;
 }
 
-.main-toggle { margin: 0; }
-.main-toggle label { font-size: 1.2em; color: var(--amily2-text-color) !important; }
+#amily2_chat_optimiser .main-toggle { margin: 0; }
+#amily2_chat_optimiser .main-toggle label { font-size: 1.2em; color: var(--amily2-text-color) !important; }
 
-.update-section {
+#amily2_chat_optimiser .update-section {
     position: relative;
     display: flex;
     align-items: center;
@@ -141,7 +141,7 @@ hr.header-divider {
     margin: 0 0 10px 0; 
 }
 
-.settings-group {
+#amily2_chat_optimiser .settings-group {
     position: relative;
     background: transparent !important;
     z-index: 0;
@@ -173,7 +173,7 @@ hr.header-divider {
 }
 
 
-.color-controls-container {
+#amily2_chat_optimiser .color-controls-container {
     flex-direction: row !important;
     align-items: center !important;
     justify-content: space-between !important;
@@ -181,7 +181,7 @@ hr.header-divider {
     flex-wrap: wrap;
 }
 
-.color-picker-group {
+#amily2_chat_optimiser .color-picker-group {
     display: flex;
     align-items: center;
     gap: 15px;
@@ -189,19 +189,19 @@ hr.header-divider {
     flex-wrap: wrap;
 }
 
-.color-picker-item {
+#amily2_chat_optimiser .color-picker-item {
     display: flex;
     align-items: center;
     gap: 5px;
 }
 
 /* === 可变透明度容器背景 === */
-.settings-group::before,
-.amily2_settings_block::before,
-#auth_panel::before,
-.extension_block::before,
-.plugin-features::before,
-.amily2_extension_frame::before {
+#amily2_chat_optimiser .settings-group::before,
+#amily2_chat_optimiser .amily2_settings_block::before,
+#amily2_chat_optimiser #auth_panel::before,
+#amily2_chat_optimiser .extension_block::before,
+#amily2_chat_optimiser .plugin-features::before,
+#amily2_chat_optimiser .amily2_extension_frame::before {
     content: '';
     position: absolute;
     top: 0;
@@ -214,15 +214,15 @@ hr.header-divider {
     pointer-events: none;
 }
 
-.settings-group::before,
-.amily2_settings_block::before,
-.extension_block::before,
-.plugin-features::before,
-.amily2_extension_frame::before {
+#amily2_chat_optimiser .settings-group::before,
+#amily2_chat_optimiser .amily2_settings_block::before,
+#amily2_chat_optimiser .extension_block::before,
+#amily2_chat_optimiser .plugin-features::before,
+#amily2_chat_optimiser .amily2_extension_frame::before {
     border-radius: 8px;
 }
 
-#auth_panel::before {
+#amily2_chat_optimiser #auth_panel::before {
     border-radius: 12px;
 }
 
@@ -235,15 +235,15 @@ hr.header-divider {
 }
 
 /* === 扩展卡片和面板样式 === */
-.extension_settings {
+#amily2_chat_optimiser .extension_settings {
     background: var(--amily2-bg-color) !important;
     color: var(--amily2-text-color) !important;
 }
 
-#extensions_settings2, 
-.extension_block,
-.plugin-features,
-.amily2_extension_frame {
+#amily2_chat_optimiser #extensions_settings2, 
+#amily2_chat_optimiser .extension_block,
+#amily2_chat_optimiser .plugin-features,
+#amily2_chat_optimiser .amily2_extension_frame {
     position: relative;
     background: transparent !important;
     z-index: 0;
@@ -251,28 +251,28 @@ hr.header-divider {
 }
 
 /* === 按钮统一样式 (已限定作用域) === */
-.amily2_extension_frame .menu_button,
-.extension_block .menu_button,
-#amily2_drawer_content .menu_button {
+#amily2_chat_optimiser .amily2_extension_frame .menu_button,
+#amily2_chat_optimiser .extension_block .menu_button,
+#amily2_chat_optimiser #amily2_drawer_content .menu_button {
     background: var(--amily2-button-color) !important;
     color: var(--amily2-text-color) !important;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
 }
 
-.amily2_extension_frame .menu_button:hover,
-.extension_block .menu_button:hover,
-#amily2_drawer_content .menu_button:hover {
+#amily2_chat_optimiser .amily2_extension_frame .menu_button:hover,
+#amily2_chat_optimiser .extension_block .menu_button:hover,
+#amily2_chat_optimiser #amily2_drawer_content .menu_button:hover {
     background: rgba(74, 74, 74, 0.8) !important;
     border-color: rgba(255, 255, 255, 0.4) !important;
 }
 
 /* === 输入框样式 (已限定作用域) === */
-.amily2_extension_frame input,
-.amily2_extension_frame textarea,
-.amily2_extension_frame select,
-#amily2_drawer_content input,
-#amily2_drawer_content textarea,
-#amily2_drawer_content select {
+#amily2_chat_optimiser .amily2_extension_frame input,
+#amily2_chat_optimiser .amily2_extension_frame textarea,
+#amily2_chat_optimiser .amily2_extension_frame select,
+#amily2_chat_optimiser #amily2_drawer_content input,
+#amily2_chat_optimiser #amily2_drawer_content textarea,
+#amily2_chat_optimiser #amily2_drawer_content select {
     background: rgba(74, 74, 74, 0.6) !important;
     color: var(--amily2-text-color) !important;
     border: 1px solid rgba(255, 255, 255, 0.2) !important;
@@ -292,7 +292,7 @@ hr.header-divider {
 }
 
 /* === 开关样式 === */
-.toggle-switch {
+#amily2_chat_optimiser .toggle-switch {
     position: relative;
     display: inline-block;
     width: 50px;
@@ -336,7 +336,7 @@ hr.header-divider {
 }
 
 /* === 单选按钮组样式 === */
-.radio-toggle-group {
+#amily2_chat_optimiser .radio-toggle-group {
     display: flex; 
     border: 1px solid #555; 
     border-radius: 8px; 
@@ -366,7 +366,7 @@ hr.header-divider {
 }
 
 /* === 控制对容器样式 === */
-.control-pair-container {
+#amily2_chat_optimiser .control-pair-container {
     display: flex; 
     justify-content: space-around; 
     align-items: center; 
@@ -384,7 +384,7 @@ hr.header-divider {
     margin-bottom: 0; 
 }
 
-.amily2_settings_block { display: flex; flex-direction: column; gap: 8px; }
+#amily2_chat_optimiser .amily2_settings_block { display: flex; flex-direction: column; gap: 8px; }
 .amily2_settings_block label { 
     font-weight: bold; 
     color: var(--amily2-text-color) !important; 
@@ -407,7 +407,7 @@ hr.header-divider {
 }
 
 /* === Lore配置样式 === */
-.amily2_lore_config_wrapper {
+#amily2_chat_optimiser .amily2_lore_config_wrapper {
     display: flex;
     gap: 15px;
 }
@@ -445,17 +445,17 @@ hr.header-divider {
 }
 
 /* === 通用样式 === */
-hr { 
+#amily2_chat_optimiser hr { 
     border: none; 
     border-top: 1px solid rgba(255,255,255,0.1); 
     margin: 0; 
 }
-.text_pole, select { 
+#amily2_chat_optimiser .text_pole, #amily2_chat_optimiser select { 
     width: 100%; 
     box-sizing: border-box; 
 }
 
-.button-pair { 
+#amily2_chat_optimiser .button-pair { 
     flex-direction: row; 
     justify-content: space-between; 
     gap: 15px; 
@@ -463,10 +463,10 @@ hr {
 .button-pair .menu_button { 
     flex-grow: 1; 
 }
-.flex-container .primary { 
+#amily2_chat_optimiser .flex-container .primary { 
     background-color: #2196F3 !important; 
 }
-.flex-container .accent { 
+#amily2_chat_optimiser .flex-container .accent { 
     background-color: #FF5722 !important; 
 }
 
@@ -557,7 +557,7 @@ hr {
 }
 
 /* === 头部动作组 === */
-.header-actions-group {
+#amily2_chat_optimiser .header-actions-group {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
@@ -565,7 +565,7 @@ hr {
 }
 
 /* === 密室按钮 === */
-.secret-chamber-button {
+#amily2_chat_optimiser .secret-chamber-button {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -592,7 +592,7 @@ hr {
 }
 
 /* === 响应式按钮组 === */
-.button-group {
+#amily2_chat_optimiser .button-group {
     display: flex;
     gap: 8px;
 }
@@ -640,29 +640,29 @@ hr {
 }
 
 /* === 面板可见性 === */
-.amily2-panel-visible {
+#amily2_chat_optimiser .amily2-panel-visible {
     display: flex !important;
     flex-direction: column;
     flex-grow: 1;
     gap: 15px;
 }
 
-.header-left-panel {
+#amily2_chat_optimiser .header-left-panel {
     display: flex;
     flex-direction: column;
     align-items: flex-start;
     gap: 10px;
 }
  
-.rag-palace-entry-container {
+#amily2_chat_optimiser .rag-palace-entry-container {
     width: auto;
 }
 
-#rag_palace_panel {
+#amily2_chat_optimiser #rag_palace_panel {
     display: none;
 }
  
-.amily2-panel-visible {
+#amily2_chat_optimiser .amily2-panel-visible {
     display: flex;
     flex-direction: column;
     flex-grow: 1;
