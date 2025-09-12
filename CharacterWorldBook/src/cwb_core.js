@@ -169,7 +169,7 @@ async function proceedWithCardUpdate($panel, messagesToUse) {
 
     try {
         const mode = state.isIncrementalUpdateEnabled ? 'cwb_summarizer_incremental' : 'cwb_summarizer';
-        const presetPrompts = getPresetPrompts(mode);
+        const presetPrompts = await getPresetPrompts(mode);
         const order = getMixedOrder(mode) || [];
         
         const messages = [
