@@ -178,6 +178,7 @@ hr.header-divider {
     align-items: center !important;
     justify-content: space-between !important;
     gap: 15px !important;
+    flex-wrap: wrap;
 }
 
 .color-picker-group {
@@ -185,6 +186,7 @@ hr.header-divider {
     align-items: center;
     gap: 15px;
     flex-grow: 1;
+    flex-wrap: wrap;
 }
 
 .color-picker-item {
