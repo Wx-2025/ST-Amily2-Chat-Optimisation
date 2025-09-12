@@ -1,11 +1,22 @@
+:root {
+    --amily2-bg-color: #2C2C2C;
+    --amily2-button-color: #4A4A4A;
+    --amily2-text-color: #E0E0E0;
+}
+
+/* =====================================================================
+ * =========== 【翰林院】御用样式 - 确保界面威严 v4.0 ===========
+ * ===========        Amily 奉旨重铸，确保观感统一       =============
+ * ===================================================================== */
+
 /* ------------------ 整体模态窗口布局 ------------------ */
 #hly-modal-container {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: #E0E0E0;
-    background-color: #2C2C2C;
+    color: var(--amily2-text-color);
+    background-color: transparent;
     padding: 15px;
     border-radius: 8px;
-    max-width: 90vw;
+    max-width: 90vw; /* 限制最大宽度 */
     margin: auto;
     display: flex;
     flex-direction: column;
@@ -14,15 +25,18 @@
 
 /* ------------------ 滚动区域 ------------------ */
 #hly-modal-container .hly-scroll {
-    max-height: 60vh;
+    max-height: 60vh; /* 限制最大高度 */
     overflow-y: auto;
-    padding-right: 10px;
+    padding-right: 10px; /* 为滚动条留出空间 */
     display: flex;
     flex-direction: column;
     gap: 15px;
 }
 
 /* ------------------ 滚动条美化 ------------------ */
+/* ST核心脚本 `dynamic-styles.js` 可能会尝试为此处的滚动条规则动态添加 `:focus-visible` 伪类，
+ * 但 `::-webkit-scrollbar-thumb` 伪元素不支持 `:focus-visible`，从而导致控制台出现CSS解析错误。
+ * 这是一个已知的上游问题，需要等待ST方面修复。此问题不影响功能，仅为日志错误。*/
 #hly-modal-container .hly-scroll::-webkit-scrollbar {
     width: 8px;
 }
@@ -49,7 +63,7 @@
 #hly-modal-container .additional-features-title {
     font-size: 1.5em;
     font-weight: bold;
-    color: #8A2BE2;
+    color: #8A2BE2; /* 紫罗兰色 */
 }
 #hly-modal-container .header-divider {
     border: 0;
@@ -60,7 +74,7 @@
 
 /* ------------------ 状态诏书 (顶部信息面板) ------------------ */
 #hly-modal-container .hly-imperial-edict {
-    background-color: rgba(0, 0, 0, 0.2);
+    background-color: transparent;
     border: 1px solid #444;
     border-radius: 6px;
     padding: 10px;
@@ -102,7 +116,7 @@
 /* ------------------ 司南 (导航栏) ------------------ */
 #hly-modal-container .hly-navigation-deck {
     display: flex;
-    background-color: #333;
+    background-color: transparent;
     border-radius: 6px;
     overflow: hidden;
     border: 1px solid #444;
@@ -146,7 +160,7 @@
     border: 1px solid #4A4A4A;
     border-radius: 6px;
     padding: 15px;
-    background-color: rgba(255, 255, 255, 0.03);
+    background-color: transparent;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -173,7 +187,7 @@
 }
 #hly-modal-container .hly-imperial-brush { /* 通用输入框/下拉框样式 */
     width: 100%;
-    background-color: #252525;
+    background-color: transparent;
     color: #E0E0E0;
     border: 1px solid #555;
     border-radius: 4px;
@@ -200,8 +214,8 @@
     flex-wrap: wrap;
 }
 #hly-modal-container .hly-action-button {
-    background-color: #4A4A4A;
-    color: #E0E0E0;
+    background-color: var(--amily2-button-color);
+    color: var(--amily2-text-color);
     border: 1px solid #666;
     border-radius: 4px;
     padding: 8px 12px;
@@ -295,7 +309,7 @@
 /* ------------------ 结果显示区域 ------------------ */
 #hly-modal-container .hly-results-display,
 #hly-modal-container .hly-log-display {
-    background-color: #1E1E1E;
+    background-color: transparent;
     border: 1px solid #444;
     border-radius: 4px;
     padding: 10px;
@@ -432,17 +446,33 @@
     align-items: center;
     gap: 15px;
 }
-#hly-modal-container .hly-kb-delete-btn {
-    background: none;
-    border: none;
-    color: #aaa;
-    font-size: 20px;
+#hly-modal-container .hly-kb-actions .hly-kb-move-btn,
+#hly-modal-container .hly-kb-actions .hly-kb-delete-btn {
+    background-color: var(--amily2-button-color);
+    color: var(--amily2-text-color);
+    border: 1px solid #666;
+    border-radius: 4px;
+    padding: 4px 8px;
     cursor: pointer;
-    padding: 0 5px;
+    transition: background-color 0.2s, border-color 0.2s;
+    font-size: 1em;
     line-height: 1;
 }
-#hly-modal-container .hly-kb-delete-btn:hover {
-    color: #f44336;
+
+#hly-modal-container .hly-kb-actions .hly-kb-move-btn:hover {
+    background-color: #5A5A5A;
+    border-color: #888;
+}
+
+#hly-modal-container .hly-kb-actions .hly-kb-delete-btn {
+    background-color: #c94a4a;
+    font-size: 1.2em;
+    padding: 2px 8px;
+}
+
+#hly-modal-container .hly-kb-actions .hly-kb-delete-btn:hover {
+    background-color: #e04f4f;
+    color: white;
 }
 
 /* 【修复】为知识库管理列表中的开关添加特定样式 */
@@ -502,8 +532,8 @@
     margin-top: 5px;
 }
 #hly-modal-container .hly-multiselect-option {
-    display: flex;
-    align-items: center;
+    display: flex; /* 关键：使内部元素水平排列 */
+    align-items: center; /* 关键：垂直居中对齐 */
     padding: 8px 12px;
     cursor: pointer;
     transition: background-color 0.2s;
@@ -512,7 +542,7 @@
     background-color: #454545;
 }
 #hly-modal-container .hly-multiselect-option input[type="checkbox"] {
-    margin-right: 10px;
+    margin-right: 10px; /* 在复选框和文本之间添加间距 */
 }
 #hly-modal-container #hly-hist-entry-multiselect-btn {
     display: flex;
