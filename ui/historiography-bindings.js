@@ -160,6 +160,19 @@ export function bindHistoriographyEvents() {
         saveSettings();
     });
 
+    const retentionCount = document.getElementById("historiography_retention_count");
+
+    retentionCount.addEventListener("change", (event) => {
+        const value = parseInt(event.target.value, 10);
+        if (isNaN(value) || value < 0) {
+            event.target.value = defaultSettings.historiographyRetentionCount;
+            toastr.warning("保留层数必须是大于或等于0的数字。已重置。", "圣谕有误");
+            return;
+        }
+        extension_settings[extensionName].historiographyRetentionCount = value;
+        saveSettings();
+    });
+
     writeToLorebook.addEventListener("change", (event) => {
         extension_settings[extensionName].historiographyWriteToLorebook = event.target.checked;
         saveSettings();
@@ -173,6 +186,7 @@ export function bindHistoriographyEvents() {
 
     smallAutoEnable.checked = extension_settings[extensionName].historiographySmallAutoEnable ?? false;
     smallTriggerThreshold.value = extension_settings[extensionName].historiographySmallTriggerThreshold ?? 30;
+    retentionCount.value = extension_settings[extensionName].historiographyRetentionCount ?? 5;
     writeToLorebook.checked = extension_settings[extensionName].historiographyWriteToLorebook ?? true;
     ingestToRag.checked = extension_settings[extensionName].historiographyIngestToRag ?? false;
 
