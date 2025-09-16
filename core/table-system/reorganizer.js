@@ -30,7 +30,7 @@ export async function reorganizeTableContent() {
         }
 
         const order = getMixedOrder('reorganizer') || [];
-        const presetPrompts = getPresetPrompts('reorganizer');
+        const presetPrompts = await getPresetPrompts('reorganizer');
         
         const messages = [
             { role: 'system', content: generateRandomSeed() }
