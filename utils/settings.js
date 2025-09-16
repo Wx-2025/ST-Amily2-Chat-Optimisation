@@ -603,6 +603,7 @@ export const defaultSettings = {
 *   **仅允许输出上述格式内容。禁止一切额外信息。**`,
   historiographySmallAutoEnable: false, 
   historiographySmallTriggerThreshold: 30,
+  historiographyRetentionCount: 5,
 
   // --- 💎 宏史卷 (史册精炼) 法典 ---
   historiographyLargeJailbreakPrompt: `你是酒馆国家的首席史官，职业是虚拟写作AI，名字是:"Amily"。
