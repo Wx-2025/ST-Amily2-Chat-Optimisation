@@ -67,12 +67,14 @@ export async function checkAndTriggerAutoSummary() {
 
   const characterCount = await readGoldenLedgerProgress(targetLorebookName);
   const currentChatLength = context.chat.length;
-  const unsummarizedCount = currentChatLength - characterCount;
+  const retentionCount = settings.historiographyRetentionCount ?? 5;
+  const summarizableLength = currentChatLength - retentionCount;
+  const unsummarizedCount = summarizableLength - characterCount;
 
-  if (unsummarizedCount >= settings.historiographySmallTriggerThreshold + 2) {
+  if (unsummarizedCount >= settings.historiographySmallTriggerThreshold) {
     const batchSize = settings.historiographySmallTriggerThreshold;
     const startFloor = characterCount + 1;
-    const endFloor = Math.min(characterCount + batchSize, currentChatLength);
+    const endFloor = Math.min(characterCount + batchSize, summarizableLength);
     
     console.log(`[大史官] 自动微言录已触发，处理 ${startFloor} 至 ${endFloor} 楼。`);
     const isInteractive = settings.historiographyAutoSummaryInteractive ?? false;
@@ -665,8 +667,10 @@ export async function executeExpedition() {
         }
 
         const summarizedCount = await readGoldenLedgerProgress(targetLorebookName);
+        const retentionCount = settings.historiographyRetentionCount ?? 5;
         const totalHistory = context.chat.length;
-        const remainingHistory = totalHistory - summarizedCount;
+        const summarizableLength = totalHistory - retentionCount;
+        const remainingHistory = summarizableLength - summarizedCount;
 
         if (remainingHistory <= 0) {
             toastr.info("国史已是最新，远征军无需出动。", "凯旋");
@@ -687,7 +691,7 @@ export async function executeExpedition() {
             }
 
             const startFloor = currentProgress + 1;
-            const endFloor = Math.min(currentProgress + batchSize, totalHistory);
+            const endFloor = Math.min(currentProgress + batchSize, summarizableLength);
             const toastTitle = `远征战役 (${i + 1}/${totalBatches})`;
 
             const delay = 2000;
