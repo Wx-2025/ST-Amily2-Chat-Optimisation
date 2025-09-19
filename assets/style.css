@@ -667,3 +667,18 @@ hr.header-divider {
     flex-direction: column;
     flex-grow: 1;
 }
+
+/* === 统一提示词编辑器按钮布局 === */
+#amily2_chat_optimiser .prompt-editor-area {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+#amily2_chat_optimiser .prompt-editor-area textarea {
+    flex: 1;
+}
+
+
+
