@@ -1351,24 +1351,33 @@ function bindNccsApiEvents() {
     }
 
     if (urlInput) {
-        urlInput.addEventListener('blur', () => {
+        const saveUrl = () => {
             settings.nccsApiUrl = urlInput.value;
             saveSettingsDebounced();
-        });
+        };
+        
+        urlInput.addEventListener('blur', saveUrl);
+        urlInput.addEventListener('input', saveUrl);
     }
 
     if (keyInput) {
-        keyInput.addEventListener('blur', () => {
+        const saveKey = () => {
             settings.nccsApiKey = keyInput.value;
             saveSettingsDebounced();
-        });
+        };
+        
+        keyInput.addEventListener('blur', saveKey);
+        keyInput.addEventListener('input', saveKey);
     }
 
     if (modelInput) {
-        modelInput.addEventListener('blur', () => {
+        const saveModel = () => {
             settings.nccsModel = modelInput.value;
             saveSettingsDebounced();
-        });
+        };
+        
+        modelInput.addEventListener('blur', saveModel);
+        modelInput.addEventListener('input', saveModel);
     }
 
     if (maxTokensSlider && maxTokensValue) {
