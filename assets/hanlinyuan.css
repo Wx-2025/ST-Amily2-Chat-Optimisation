@@ -3,12 +3,6 @@
     --amily2-button-color: #4A4A4A;
     --amily2-text-color: #E0E0E0;
 }
-
-/* =====================================================================
- * =========== 【翰林院】御用样式 - 确保界面威严 v4.0 ===========
- * ===========        Amily 奉旨重铸，确保观感统一       =============
- * ===================================================================== */
-
 /* ------------------ 整体模态窗口布局 ------------------ */
 #hly-modal-container {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -555,4 +549,92 @@
 }
 #hly-modal-container #hly-hist-entry-multiselect-options[style*="display: block;"] + #hly-hist-entry-multiselect-btn i {
     transform: rotate(180deg);
+}
+
+/* ------------------ 搜索框样式 ------------------ */
+#hly-modal-container .hly-search-wrapper,
+#hly-modal-container .hly-entry-search-wrapper {
+    position: relative;
+    margin-bottom: 8px;
+}
+
+#hly-modal-container .hly-search-input {
+    width: 100%;
+    padding: 8px 32px 8px 12px;
+    border: 1px solid #555;
+    border-radius: 4px;
+    font-size: 14px;
+    background: transparent;
+    color: var(--amily2-text-color);
+    box-sizing: border-box;
+}
+
+#hly-modal-container .hly-search-icon {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #888;
+    pointer-events: none;
+}
+
+#hly-modal-container .hly-search-input:focus {
+    outline: none;
+    border-color: #8A2BE2;
+    box-shadow: 0 0 5px rgba(138, 43, 226, 0.5);
+}
+
+#hly-modal-container .hly-search-input::placeholder {
+    color: #888;
+    opacity: 1;
+}
+
+/* 搜索高亮样式 */
+#hly-modal-container .search-highlight {
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 1px 2px;
+    border-radius: 2px;
+}
+
+/* 条目容器样式 */
+#hly-modal-container .hly-entries-container {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+#hly-modal-container .hly-multiselect-option {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #444;
+    margin: 0;
+    transition: background-color 0.2s;
+}
+
+#hly-modal-container .hly-multiselect-option:hover {
+    background-color: #454545;
+}
+
+#hly-modal-container .hly-multiselect-option input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+/* 无结果提示 */
+#hly-modal-container .hly-no-results {
+    padding: 12px;
+    text-align: center;
+    color: #888;
+    font-style: italic;
+}
+
+/* 增强选择器样式 */
+#hly-modal-container .hly-enhanced-selector {
+    position: relative;
+}
+
+#hly-modal-container .hly-search-container {
+    position: relative;
+    margin-bottom: 8px;
 }
