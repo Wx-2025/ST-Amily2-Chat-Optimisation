@@ -247,6 +247,10 @@
                 <legend><i class="fas fa-list-alt"></i> 按条目编纂</legend>
                 <div class="hly-control-block">
                     <label for="hly-hist-select-library">选择书库:</label>
+                    <div class="hly-search-wrapper">
+                        <input type="text" id="hly-worldbook-search" class="hly-search-input" placeholder="搜索世界书名称...">
+                        <i class="fas fa-search hly-search-icon"></i>
+                    </div>
                     <select id="hly-hist-select-library" class="hly-imperial-brush">
                         <option value="">请选择书库...</option>
                     </select>
@@ -254,6 +258,10 @@
                 <div class="hly-control-block">
                     <label for="hly-hist-select-entry">选择条目:</label>
                     <div class="hly-multiselect-container">
+                        <div class="hly-entry-search-wrapper">
+                            <input type="text" id="hly-entry-search" class="hly-search-input" placeholder="搜索条目名称、关键词...">
+                            <i class="fas fa-search hly-search-icon"></i>
+                        </div>
                         <button id="hly-hist-entry-multiselect-btn" class="hly-imperial-brush" disabled>
                             <span>请先选择书库...</span>
                             <i class="fas fa-chevron-down"></i>
