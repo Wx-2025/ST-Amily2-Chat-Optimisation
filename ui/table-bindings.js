@@ -83,6 +83,41 @@ function toggleColumnContextMenu(event) {
 }
 
 
+function toggleHeaderIndexContextMenu(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const targetTh = event.target.closest('th.index-col');
+    if (!targetTh) return;
+
+    const menu = targetTh.querySelector('.amily2-context-menu');
+    if (!menu) return;
+
+    const isActive = menu.classList.contains('amily2-menu-active');
+
+    document.querySelectorAll('.amily2-context-menu.amily2-menu-active').forEach(activeMenu => {
+        activeMenu.classList.remove('amily2-menu-active');
+    });
+
+    if (!isActive) {
+        menu.classList.add('amily2-menu-active');
+    }
+
+    const closeMenu = (e) => {
+        if (!menu.contains(e.target)) {
+            menu.classList.remove('amily2-menu-active');
+            document.removeEventListener('click', closeMenu, true);
+        }
+    };
+
+    setTimeout(() => {
+        if (menu.classList.contains('amily2-menu-active')) {
+            document.addEventListener('click', closeMenu, true);
+        }
+    }, 0);
+}
+
+
 function showInputDialog({ title, label, currentValue, placeholder, onSave }) {
     const dialogHtml = `
         <dialog class="popup custom-input-dialog">
@@ -274,6 +309,40 @@ export function renderTables() {
         const indexTh = document.createElement('th');
         indexTh.className = 'index-col';
         indexTh.textContent = '#';
+        indexTh.style.cursor = 'pointer';
+        indexTh.title = '点击添加第一行';
+        
+        // 为表头的 # 号添加特殊的上下文菜单（仅在表格为空时显示）
+        if (!tableData.rows || tableData.rows.length === 0) {
+            const headerMenu = document.createElement('div');
+            headerMenu.className = 'amily2-context-menu amily2-header-menu';
+            headerMenu.style.display = 'none';  // 默认隐藏
+            
+            const addRowButton = document.createElement('button');
+            addRowButton.innerHTML = '<i class="fas fa-plus-circle"></i> 创建第一行';
+            addRowButton.className = 'menu_button small_button';
+            addRowButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                TableManager.addRow(tableIndex);
+                renderTables();
+            });
+            
+            headerMenu.appendChild(addRowButton);
+            indexTh.appendChild(headerMenu);
+            
+            // 为表头添加直接的点击事件监听器
+            indexTh.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Header # clicked for table', tableIndex);
+                
+                // 直接执行添加行操作
+                TableManager.addRow(tableIndex);
+                renderTables();
+                toastr.success('已添加第一行');
+            });
+        }
+        
         headerRow.appendChild(indexTh);
 
         tableData.headers.forEach((headerText, colIndex) => {
@@ -963,6 +1032,11 @@ export function bindTableEvents() {
     if (allTablesContainer) {
         allTablesContainer.addEventListener('click', (event) => {
             const th = event.target.closest('th');
+            if (th && th.classList.contains('index-col')) {
+                // 处理表头 # 号的点击（用于空表格添加首行）
+                toggleHeaderIndexContextMenu(event);
+                return;
+            }
             if (th && !th.classList.contains('index-col')) {
                 toggleColumnContextMenu(event);
                 return;
