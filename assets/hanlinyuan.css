@@ -1,440 +1,672 @@
+:root {
+    --amily2-bg-color: #2C2C2C;
+    --amily2-button-color: #4A4A4A;
+    --amily2-text-color: #E0E0E0;
+}
 
-<div class="amily2-header">
-    <div id="amily2_open_hanlin_tutorial" class="additional-features-title interactable" title="查看翰林院使用教程" style="cursor: pointer;">
-        <i class="fas fa-landmark-dome"></i> 翰林院 · 忆识核心
-    </div>
-    <button id="amily2_back_to_main_from_hanlinyuan" class="menu_button secondary small_button interactable">
-        返回主殿 <i class="fas fa-arrow-right"></i>
-    </button>
-</div>
-<hr class="header-divider">
+/* =====================================================================
+ * =========== 【翰林院】御用样式 - 确保界面威严 v4.0 ===========
+ * ===========        Amily 奉旨重铸，确保观感统一       =============
+ * ===================================================================== */
 
-<div id="hly-modal-container">
-    <!-- 状态诏书 -->
-    <div class="hly-imperial-edict">
-        <fieldset class="hly-settings-group" style="margin-bottom: 10px;">
-            <legend><i class="fas fa-power-off"></i> 总开关</legend>
-            <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
-                <label for="hly-retrieval-enabled-toggle">开启忆识检索之权</label>
-                <label class="hly-toggle-switch">
-                    <input type="checkbox" id="hly-retrieval-enabled" data-setting-key="retrieval.enabled" data-type="boolean">
-                    <span class="slider"></span>
-                </label>
-            </div>
-        </fieldset>
-        <div class="hly-edict-row">
-            <div class="hly-edict-item">
-                <span class="hly-edict-label">当前会话:</span>
-                <span id="hly-current-chat-id" class="hly-edict-value">未开启</span>
-            </div>
-            <div class="hly-edict-item">
-                <span class="hly-edict-label">当前辅佐:</span>
-                <span id="hly-current-character-name" class="hly-edict-value">待命中...</span>
-            </div>
-        </div>
-        <div class="hly-edict-row">
-            <div class="hly-edict-item hly-memory-display">
-                <span class="hly-edict-label">忆识总数:</span>
-                <span id="hly-current-vector-count" class="hly-memory-count">0</span>
-                <button class="hly-action-button" onclick="updateHLYMemoryCount()" title="刷新忆识总数" style="padding: 4px 8px; font-size: 12px;">
-                    🔄
-                </button>
-            </div>
-            <div class="hly-button-group" style="margin-left: auto;">
-                <button class="hly-action-button" onclick="purgeHLYStorage()" style="padding: 4px 8px; font-size: 12px;">清空宝库</button>
-                <button id="hly-session-lock-btn" class="hly-action-button" style="padding: 4px 8px; font-size: 12px;">
-                    <i class="fas fa-lock"></i> <span>锁定会话</span>
-                </button>
-            </div>
-        </div>
-    </div>
+/* ------------------ 整体模态窗口布局 ------------------ */
+#hly-modal-container {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--amily2-text-color);
+    background-color: transparent;
+    padding: 15px;
+    border-radius: 8px;
+    max-width: 90vw; /* 限制最大宽度 */
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
 
-    <!-- 司南 -->
-    <div class="hly-navigation-deck">
-        <button class="hly-nav-item active" data-tab="retrieval">忆识检索</button>
-        <button class="hly-nav-item" data-tab="historiography">书库编纂</button>
-        <button class="hly-nav-item" data-tab="knowledge-bases">知识管理</button>
-        <button class="hly-nav-item" data-tab="rerank">忆识精炼</button>
-        <button class="hly-nav-item" data-tab="advanced">高级设定</button>
-    </div>
+/* ------------------ 滚动区域 ------------------ */
+#hly-modal-container .hly-scroll {
+    max-height: 60vh; /* 限制最大高度 */
+    overflow-y: auto;
+    padding-right: 10px; /* 为滚动条留出空间 */
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
 
-    <div class="hly-scroll">
-        <div id="hly-retrieval-tab" class="hly-tab-pane active">
-            <fieldset class="hly-settings-group">
-                <legend><i class="fas fa-broadcast-tower"></i> 神力之源 (API)</legend>
-                <div class="hly-control-block">
-                    <label for="hly-api-endpoint">API模式:</label>
-                                <select id="hly-api-endpoint" class="hly-imperial-brush" data-setting-key="retrieval.apiEndpoint" data-type="string">
-                                    <option value="custom">自定义 (OpenAI/Azure 兼容)</option>
-                                    <option value="google_direct">Google 直连</option>
-                                    <option value="local_proxy">本地代理 (LM Studio/Ollama)</option>
-                                </select>
-                </div>
-                <div class="hly-control-block" id="hly-custom-endpoint-docket">
-                    <label for="hly-custom-api-url">API URL:</label>
-                    <input type="text" id="hly-custom-api-url" class="hly-imperial-brush" placeholder="根据所选模式填写" data-setting-key="retrieval.customApiUrl" data-type="string">
-                </div>
-                <div class="hly-control-block" id="hly-api-key-group">
-                    <label for="hly-api-key">通行令牌 (API Key):</label>
-                    <input type="password" id="hly-api-key" class="hly-imperial-brush" placeholder="请在此输入您的通行令牌" data-setting-key="retrieval.apiKey" data-type="string">
-                </div>
-                <div class="hly-control-block">
-                    <label for="hly-embedding-model">嵌入模型:</label>
-                    <select id="hly-embedding-model" class="hly-imperial-brush" data-setting-key="retrieval.embeddingModel" data-type="string"></select>
-                </div>
-                 <div class="hly-button-group">
-                    <button class="hly-action-button" onclick="testHLYApi()">测试神力</button>
-                    <button class="hly-action-button" onclick="fetchHLYEmbeddingModels()">获取模型</button>
-                    <button class="hly-action-button danger" onclick="resetHLYSettings()">重置为初</button>
-                </div>
-            </fieldset>
-        </div>
+/* ------------------ 滚动条美化 ------------------ */
+/* ST核心脚本 `dynamic-styles.js` 可能会尝试为此处的滚动条规则动态添加 `:focus-visible` 伪类，
+ * 但 `::-webkit-scrollbar-thumb` 伪元素不支持 `:focus-visible`，从而导致控制台出现CSS解析错误。
+ * 这是一个已知的上游问题，需要等待ST方面修复。此问题不影响功能，仅为日志错误。*/
+#hly-modal-container .hly-scroll::-webkit-scrollbar {
+    width: 8px;
+}
+#hly-modal-container .hly-scroll::-webkit-scrollbar-track {
+    background: #333;
+    border-radius: 4px;
+}
+#hly-modal-container .hly-scroll::-webkit-scrollbar-thumb {
+    background-color: #555;
+    border-radius: 4px;
+    border: 2px solid #333;
+}
+#hly-modal-container .hly-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: #777;
+}
 
+/* ------------------ 头部 & 分割线 ------------------ */
+#hly-modal-container .amily2-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+}
+#hly-modal-container .additional-features-title {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #8A2BE2; /* 紫罗兰色 */
+}
+#hly-modal-container .header-divider {
+    border: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, #555, transparent);
+    margin: 0;
+}
 
-        <div id="hly-rerank-tab" class="hly-tab-pane">
-            <fieldset class="hly-settings-group">
-                <legend><i class="fas fa-wand-magic-sparkles"></i> Rerank 精炼</legend>
-                <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
-                    <label for="hly-rerank-enabled-toggle">启用 Rerank</label>
-                    <label class="hly-toggle-switch">
-                        <input type="checkbox" id="hly-rerank-enabled" data-setting-key="rerank.enabled" data-type="boolean">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div class="hly-control-block">
-                    <label for="hly-rerank-api-mode">Rerank API 模式:</label>
-                    <select id="hly-rerank-api-mode" class="hly-imperial-brush" data-setting-key="rerank.apiMode" data-type="string">
-                        <option value="custom">自定义 (兼容API)</option>
-                        <option value="local_proxy">本地代理</option>
-                    </select>
-                </div>
-                <div class="hly-control-block">
-                    <label for="hly-rerank-url">Rerank API 地址:</label>
-                    <input type="text" id="hly-rerank-url" class="hly-imperial-brush" placeholder="根据所选模式填写" data-setting-key="rerank.url" data-type="string">
-                </div>
-                <div class="hly-control-block" id="hly-rerank-api-key-group">
-                    <label for="hly-rerank-api-key">Rerank API Key:</label>
-                    <input type="password" id="hly-rerank-api-key" class="hly-imperial-brush" placeholder="请输入您的 Rerank API Key" data-setting-key="rerank.apiKey" data-type="string">
-                </div>
-                <div class="hly-control-block">
-                    <label for="hly-rerank-model">Rerank 模型:</label>
-                    <div style="display: flex; width: 100%;">
-                        <select id="hly-rerank-model" class="hly-imperial-brush" data-setting-key="rerank.model" data-type="string" style="flex-grow: 1;"></select>
-                        <button class="hly-action-button" onclick="fetchHLYRerankModels()" style="margin-left: 10px; flex-shrink: 0;">获取模型</button>
-                    </div>
-                </div>
-                <div class="hly-control-block">
-                    <label for="hly-rerank-top-n">返回结果数 (top_n):</label>
-                    <input type="number" id="hly-rerank-top-n" class="hly-imperial-brush" value="5" data-setting-key="rerank.top_n" data-type="integer">
-                </div>
-                <div class="hly-control-block">
-                    <label for="hly-rerank-hybrid-alpha">混合分数权重 (Alpha):</label>
-                    <input type="number" id="hly-rerank-hybrid-alpha" class="hly-imperial-brush" value="0.7" step="0.1" min="0" max="1" data-setting-key="rerank.hybrid_alpha" data-type="float">
-                    <small class="hly-notes">Rerank分数权重。1.0表示只用Rerank分数，0.0表示只用原始相似度分数。</small>
-                </div>
-                <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
-                    <label for="hly-rerank-notify-toggle">Rerank 时上奏</label>
-                    <label class="hly-toggle-switch">
-                        <input type="checkbox" id="hly-rerank-notify" data-setting-key="rerank.notify" data-type="boolean">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-            </fieldset>
-        </div>
+/* ------------------ 状态诏书 (顶部信息面板) ------------------ */
+#hly-modal-container .hly-imperial-edict {
+    background-color: transparent;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+#hly-modal-container .hly-edict-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+#hly-modal-container .hly-edict-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+#hly-modal-container .hly-edict-label {
+    color: #AAA;
+    font-size: 0.9em;
+}
+#hly-modal-container .hly-edict-value {
+    color: #E0E0E0;
+    font-weight: bold;
+    background-color: #383838;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+#hly-modal-container .hly-memory-display .hly-memory-count {
+    color: #4CAF50; /* 绿色 */
+}
+#hly-modal-container .hly-locked-status {
+    color: #8A2BE2 !important; /* 锁定状态用醒目的紫罗兰色 */
+    font-style: italic;
+}
 
-        <div id="hly-historiography-tab" class="hly-tab-pane">
+/* ------------------ 司南 (导航栏) ------------------ */
+#hly-modal-container .hly-navigation-deck {
+    display: flex;
+    background-color: transparent;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #444;
+}
+#hly-modal-container .hly-nav-item {
+    flex-grow: 1;
+    padding: 10px 15px;
+    text-align: center;
+    cursor: pointer;
+    background-color: transparent;
+    color: #CCC;
+    border: none;
+    border-right: 1px solid #444;
+    transition: background-color 0.3s, color 0.3s;
+}
+#hly-modal-container .hly-nav-item:last-child {
+    border-right: none;
+}
+#hly-modal-container .hly-nav-item:hover {
+    background-color: #454545;
+    color: #FFF;
+}
+#hly-modal-container .hly-nav-item.active {
+    background-color: #8A2BE2;
+    color: #FFFFFF;
+    font-weight: bold;
+}
 
-            <fieldset class="hly-settings-group">
-                <legend><i class="fas fa-book-medical"></i> 凝识法则</legend>
-                 <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
-                    <label for="hly-condensation-enabled-toggle">准许凝识</label>
-                    <label class="hly-toggle-switch">
-                        <input type="checkbox" id="hly-condensation-enabled" data-setting-key="condensation.enabled" data-type="boolean">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div class="hly-control-block">
-                    <label>凝识范围 (聊天楼层):</label>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <input type="number" id="hly-layer-start" class="hly-imperial-brush" value="1" data-setting-key="condensation.layerStart" data-type="integer">
-                        <span>-</span>
-                        <input type="number" id="hly-layer-end" class="hly-imperial-brush" value="10" data-setting-key="condensation.layerEnd" data-type="integer">
-                    </div>
-                </div>
-                <div class="hly-control-block">
-                    <label class="hly-label">消息来源:</label>
-                    <div class="hly-checkbox-group">
-                        <label><input type="checkbox" id="hly-include-user" data-setting-key="condensation.messageTypes.user" data-type="boolean"> 用户</label>
-                        <label><input type="checkbox" id="hly-include-ai" data-setting-key="condensation.messageTypes.ai" data-type="boolean"> AI</label>
-                    </div>
-                </div>
+/* ------------------ 标签页内容 ------------------ */
+#hly-modal-container .hly-tab-pane {
+    display: none;
+    flex-direction: column;
+    gap: 15px;
+}
+#hly-modal-container .hly-tab-pane.active {
+    display: flex;
+}
 
-                <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
-                    <label for="hly-tag-extraction-toggle">标签提取</label>
-                    <label class="hly-toggle-switch">
-                        <input type="checkbox" id="hly-tag-extraction-toggle" data-setting-key="condensation.tagExtractionEnabled" data-type="boolean">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-                <div id="hly-tag-input-container" class="hly-control-block" style="display: none;">
-                    <label for="hly-tag-input">输入标签 (以逗号分隔):</label>
-                    <textarea id="hly-tag-input" class="hly-imperial-brush" rows="2" placeholder="例如: content,details,摘要" data-setting-key="condensation.tags" data-type="string"></textarea>
-                </div>
-                <div class="hly-button-group" style="justify-content: flex-start;">
-                    <button id="hly-exclusion-rules-btn" class="hly-action-button">内容排除</button>
-                </div>
-                <div class="hly-button-group">
-                    <button class="hly-action-button success" onclick="startHLYCondensation()"> 开始凝识</button>
-                    <button class="hly-action-button" onclick="previewHLYCondensation()"> 预览内容</button>
-                </div>
-                <div class="hly-control-block">
-                    <label>凝识结果预览:</label>
-                    <div id="hly-condensation-results" class="hly-results-display"></div>
-                </div>
-            </fieldset>
-
-            <fieldset class="hly-settings-group">
-                <legend><i class="fas fa-book"></i> 手动录入</legend>
-                <div class="hly-control-block">
-                    <label for="hly-manual-text">在此处粘贴您要录入的知识文书：</label>
-                    <textarea id="hly-manual-text" class="hly-imperial-brush" rows="8" placeholder="例如，您可以粘贴角色设定、世界观、背景故事等..."></textarea>
-                    <small class="hly-notes">录入的文本将被分块、向量化并存入当前角色的忆识宝库中。</small>
-                </div>
-                <div class="hly-button-group">
-                    <button class="hly-action-button success" onclick="ingestHLYManualText()">
-                        <i class="fas fa-file-import"></i> 开始录入
-                    </button>
-                </div>
-            </fieldset>
-
-            <!-- ================== 小说/文档导入模块 ================== -->
-            <fieldset class="hly-settings-group">
-                <legend><i class="fas fa-book-open"></i> 整本录入 (小说/文档)</legend>
-                <div class="hly-control-block">
-                    <label for="hanlin_novel_uploader">选择一个 .txt 格式的文本文档：</label>
-                    <div id="hanlinyuan-ingest-novel-controls" class="hly-button-group" style="align-items: center;">
-                        <!-- 文件选择按钮 -->
-                        <div class="file-input-container">
-                            <label for="hanlinyuan-ingest-novel-file-input" class="hly-action-button">选择.txt文件</label>
-                            <input type="file" id="hanlinyuan-ingest-novel-file-input" accept=".txt" style="display: none;">
-                        </div>
-                        <!-- 编码选择 -->
-                        <div class="file-encoding-container">
-                            <select id="hanlinyuan-ingest-novel-encoding" class="hly-imperial-brush" style="padding: 8px; height: auto;" title="选择您原始文件的编码格式，系统将为您转换为标准的UTF-8格式进行处理。">
-                                <option value="UTF-8" selected>UTF-8 (默认)</option>
-                                <option value="GBK">GBK/GB2312 → UTF-8</option>
-                                <option value="Big5">Big5 → UTF-8</option>
-                            </select>
-                        </div>
-                        <!-- 开始按钮 -->
-                        <button id="hanlinyuan-ingest-novel-start" class="hly-action-button success">开始录入</button>
-                    </div>
-                     <span id="hanlinyuan-ingest-novel-file-name" class="file-name" style="margin-top: 10px; color: #ccc; display: inline-block;">未选择文件</span>
-
-                    <div id="hanlinyuan-ingest-progress-container" style="display: none; margin-top: 10px;">
-                        <div id="hanlinyuan-ingest-status" style="margin-bottom: 5px;">正在准备...</div>
-                        <div style="display: flex; align-items: center;">
-                            <progress id="hanlinyuan-ingest-progress-bar" value="0" max="100" style="width: 100%;"></progress>
-                            <button id="hanlinyuan-ingest-abort" class="hly-action-button danger" style="margin-left: 10px;">中止</button>
-                        </div>
-                    </div>
-                    <small class="hly-notes" style="margin-top: 10px;">上传 .txt 文件，系统会自动分块并存入忆识核心。处理大文件时请耐心等待。</small>
-                </div>
-            </fieldset>
+/* 【V11.4 废弃】注入面板的显示/隐藏逻辑已完全由 hanlinyuan-bindings.js 通过直接修改style属性来控制。*/
 
 
-            <fieldset class="hly-settings-group">
-                <legend><i class="fas fa-list-alt"></i> 按条目编纂</legend>
-                <div class="hly-control-block">
-                    <label for="hly-hist-select-library">选择书库:</label>
-                    <div class="hly-search-wrapper">
-                        <input type="text" id="hly-worldbook-search" class="hly-search-input" placeholder="搜索世界书名称...">
-                        <i class="fas fa-search hly-search-icon"></i>
-                    </div>
-                    <select id="hly-hist-select-library" class="hly-imperial-brush">
-                        <option value="">请选择书库...</option>
-                    </select>
-                </div>
-                <div class="hly-control-block">
-                    <label for="hly-hist-select-entry">选择条目:</label>
-                    <div class="hly-multiselect-container">
-                        <div class="hly-entry-search-wrapper">
-                            <input type="text" id="hly-entry-search" class="hly-search-input" placeholder="搜索条目名称、关键词...">
-                            <i class="fas fa-search hly-search-icon"></i>
-                        </div>
-                        <button id="hly-hist-entry-multiselect-btn" class="hly-imperial-brush" disabled>
-                            <span>请先选择书库...</span>
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div id="hly-hist-entry-multiselect-options" class="hly-multiselect-options-container" style="display: none;">
-                            <!-- Options will be populated by JS -->
-                        </div>
-                    </div>
-                </div>
-                <div class="hly-button-group">
-                    <button class="hly-action-button success" onclick="startHLYHistoriography()">
-                        <i class="fas fa-file-import"></i> 开始编纂
-                    </button>
-                </div>
+/* ------------------ 设置组 (Fieldset) ------------------ */
+#hly-modal-container .hly-settings-group {
+    border: 1px solid #4A4A4A;
+    border-radius: 6px;
+    padding: 15px;
+    background-color: transparent;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+#hly-modal-container .hly-settings-group legend {
+    color: #8A2BE2;
+    font-weight: bold;
+    padding: 0 10px;
+    margin-left: 5px;
+}
+#hly-modal-container .hly-settings-group legend i {
+    margin-right: 8px;
+}
 
-                <div class="hly-control-block">
-                    <label>编纂结果预览:</label>
-                    <div id="hly-historiography-results" class="hly-results-display"></div>
-                </div>
-            </fieldset>
-        </div>
+/* ------------------ 通用控件样式 ------------------ */
+#hly-modal-container .hly-control-block {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+#hly-modal-container .hly-control-block label {
+    color: #CCC;
+    font-size: 0.95em;
+}
+#hly-modal-container .hly-imperial-brush { /* 通用输入框/下拉框样式 */
+    width: 100%;
+    background-color: transparent;
+    color: #E0E0E0;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 8px;
+    box-sizing: border-box;
+}
+#hly-modal-container .hly-imperial-brush:focus {
+    outline: none;
+    border-color: #8A2BE2;
+    box-shadow: 0 0 5px rgba(138, 43, 226, 0.5);
+}
+#hly-modal-container .hly-notes {
+    font-size: 0.8em;
+    color: #888;
+    margin-top: 2px;
+}
 
+/* ------------------ 按钮组 ------------------ */
+#hly-modal-container .hly-button-group {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+#hly-modal-container .hly-action-button {
+    background-color: var(--amily2-button-color);
+    color: var(--amily2-text-color);
+    border: 1px solid #666;
+    border-radius: 4px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+#hly-modal-container .hly-action-button:hover {
+    background-color: #5A5A5A;
+    border-color: #888;
+}
+#hly-modal-container .hly-action-button.success {
+    background-color: #4CAF50;
+    border-color: #66BB6A;
+}
+#hly-modal-container .hly-action-button.success:hover {
+    background-color: #5CB85C;
+}
+#hly-modal-container .hly-action-button.danger {
+    background-color: #D9534F;
+    border-color: #E57373;
+}
+#hly-modal-container .hly-action-button.danger:hover {
+    background-color: #E57373;
+}
+#hly-modal-container .hly-action-button.active {
+    background-color: #8A2BE2;
+    color: #FFFFFF;
+    border-color: #9370DB;
+}
 
-        <!-- ================== Knowledge Base Management Tab ================== -->
-        <div id="hly-knowledge-bases-tab" class="hly-tab-pane">
-            <fieldset class="hly-settings-group">
-                <legend><i class="fas fa-globe"></i> 全局知识库 (全角色通用)</legend>
-                <div class="hly-kb-toolbar">
-                    <label><input type="checkbox" id="hly-kb-select-all-global"> 全选</label>
-                    <div id="hly-kb-bulk-actions-global" class="hly-kb-bulk-actions" style="display: none;">
-                        <button class="hly-action-button" data-action="toggle">切换状态</button>
-                        <button class="hly-action-button" data-action="move">移至局部</button>
-                        <button class="hly-action-button danger" data-action="delete">删除</button>
-                    </div>
-                </div>
-                <div id="hly-kb-list-global" class="hly-kb-list">
-                    <p id="hly-kb-list-global-placeholder" style="color: #888;">尚无全局知识库。</p>
-                    <!-- Global KBs will be populated here -->
-                </div>
-            </fieldset>
+/* ------------------ 开关 (Toggle Switch) ------------------ */
+#hly-modal-container .hly-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+#hly-modal-container .hly-toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+#hly-modal-container .hly-toggle-switch .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #555;
+    transition: .4s;
+    border-radius: 24px;
+}
+#hly-modal-container .hly-toggle-switch .slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+#hly-modal-container input:checked + .slider {
+    background-color: #4CAF50;
+}
+#hly-modal-container input:checked + .slider:before {
+    transform: translateX(20px);
+}
 
-            <div class="hly-kb-transfer-controls">
-                <button id="hly-kb-move-all-to-local" class="hly-action-button" title="将所有全局知识库移动到当前角色的局部列表">
-                    <i class="fas fa-angles-down"></i> 全局移至局部
-                </button>
-                <button id="hly-kb-move-all-to-global" class="hly-action-button" title="将当前角色的所有局部知识库移动到全局列表">
-                    <i class="fas fa-angles-up"></i> 局部移至全局
-                </button>
-            </div>
+/* ------------------ 复选框和单选框 ------------------ */
+#hly-modal-container .hly-checkbox-group,
+#hly-modal-container .hly-radio-group-vertical {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+#hly-modal-container .hly-radio-group-vertical {
+    flex-direction: column;
+    gap: 10px;
+}
+#hly-modal-container .hly-checkbox-group label,
+#hly-modal-container .hly-radio-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
 
-            <fieldset class="hly-settings-group">
-                <legend><i class="fas fa-user"></i> <span id="hly-local-kb-char-name">当前角色</span>的局部知识库</legend>
-                <div class="hly-kb-toolbar">
-                    <label><input type="checkbox" id="hly-kb-select-all-local"> 全选</label>
-                    <div id="hly-kb-bulk-actions-local" class="hly-kb-bulk-actions" style="display: none;">
-                        <button class="hly-action-button" data-action="toggle">切换状态</button>
-                        <button class="hly-action-button" data-action="move">移至全局</button>
-                        <button class="hly-action-button danger" data-action="delete">删除</button>
-                    </div>
-                </div>
-                <div id="hly-kb-list-local" class="hly-kb-list">
-                    <p id="hly-kb-list-local-placeholder" style="color: #888;">当前角色没有知识库。通过“书库编纂”中的功能可自动创建。</p>
-                    <!-- Local KBs will be populated here -->
-                </div>
-                <div class="hly-button-group" style="margin-top: 15px;">
-                    <button id="hly-kb-delete-local-btn" class="hly-action-button danger">
-                        <i class="fas fa-skull-crossbones"></i> 删除该角色所有局部知识库
-                    </button>
-                </div>
-            </fieldset>
-        </div>
+/* ------------------ 结果显示区域 ------------------ */
+#hly-modal-container .hly-results-display,
+#hly-modal-container .hly-log-display {
+    background-color: transparent;
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 10px;
+    min-height: 80px;
+    max-height: 200px;
+    overflow-y: auto;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+#hly-modal-container .hly-record-hint {
+    color: #888;
+    font-style: italic;
+}
 
+/* ------------------ 日志条目样式 ------------------ */
+#hly-modal-container .hly-log-entry {
+    margin: 0 0 5px 0;
+    padding: 2px 5px;
+    border-radius: 3px;
+}
+#hly-modal-container .hly-log-entry i {
+    margin-right: 8px;
+}
+#hly-modal-container .log-info { color: #A6A6A6; }
+#hly-modal-container .log-success { color: #76C7C0; }
+#hly-modal-container .log-error { color: #F47174; }
+#hly-modal-container .log-warn { color: #F9D56E; }
 
-        <div id="hly-advanced-tab" class="hly-tab-pane">
-            <fieldset class="hly-settings-group">
-                <legend><i class="fas fa-cogs"></i> 检索微调</legend>
-                <div class="hly-control-block">
-                    <label for="hly-chunk-size">书卷尺寸 (Chunk Size):</label>
-                    <input type="number" id="hly-chunk-size" class="hly-imperial-brush" value="768" data-setting-key="advanced.chunkSize" data-type="integer">
-                </div>
-                <div class="hly-control-block">
-                    <label for="hly-overlap-size">上下文关联度 (Overlap):</label>
-                    <input type="number" id="hly-overlap-size" class="hly-imperial-brush" value="50" data-setting-key="advanced.overlap" data-type="integer">
-                </div>
-                <div class="hly-control-block">
-                    <label for="hly-match-threshold">忆识匹配度 (Threshold):</label>
-                    <input type="number" id="hly-match-threshold" class="hly-imperial-brush" value="0.5" step="0.1" data-setting-key="advanced.matchThreshold" data-type="float">
-                </div>
-                <div class="hly-control-block">
-                    <label for="hly-query-message-count">检索参考的消息数量:</label>
-                    <input type="number" id="hly-query-message-count" class="hly-imperial-brush" value="2" data-setting-key="advanced.queryMessageCount" data-type="integer">
-                </div>
-                <div class="hly-control-block">
-                    <label for="hly-max-results">单次检索最大结果数:</label>
-                    <input type="number" id="hly-max-results" class="hly-imperial-brush" value="10" data-setting-key="advanced.maxResults" data-type="integer">
-                </div>
-                <div class="hly-control-block">
-                    <label for="hly-batch-size">批处理大小 (Batch Size):</label>
-                    <input type="number" id="hly-batch-size" class="hly-imperial-brush" value="50" data-setting-key="retrieval.batchSize" data-type="integer">
-                    <small class="hly-notes">每次调用API时处理的文本数量。</small>
-                </div>
-            </fieldset>
-            <fieldset class="hly-settings-group">
-                <legend><i class="fas fa-wand-magic-sparkles"></i> 圣言注入 (按来源)</legend>
-                <div style="text-align: center; margin-bottom: 10px;">
-                    <small style="font-style: italic; color: #05c3f3;">感谢功能友情提供：Silence_Lurker潜默</small>
-                </div>
-                <!-- 【V12.0 重构】统一注入编辑器 -->
-                <div class="hly-control-block">
-                    <label for="hly-injection-source-selector">选择要配置的注入来源:</label>
-                    <select id="hly-injection-source-selector" class="hly-imperial-brush">
-                        <option value="novel">小说</option>
-                        <option value="chat">聊天记录</option>
-                        <option value="lorebook">世界书</option>
-                        <option value="manual">手动录入</option>
-                    </select>
-                </div>
+/* ------------------ 文件上传控件 ------------------ */
+#hly-modal-container .file-input-container {
+    position: relative;
+    overflow: hidden;
+    display: inline-block;
+}
+#hly-modal-container .file-input-container input[type=file] {
+    font-size: 100px;
+    position: absolute;
+    left: 0;
+    top: 0;
+    opacity: 0;
+}
+#hly-modal-container .file-name {
+    display: inline-block;
+    margin-left: 10px;
+    color: #ccc;
+    font-style: italic;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+}
 
-                <div id="hly-unified-injection-editor">
-                    <div class="hly-control-block">
-                        <label for="hly-unified-template-editor">圣言模板:</label>
-                        <textarea id="hly-unified-template-editor" class="hly-imperial-brush" rows="3"></textarea>
-                        <small id="hly-unified-template-notes" class="hly-notes">以 {{placeholder}} 为占位符。</small>
-                    </div>
-                    <div class="hly-control-block">
-                        <label>注入位置:</label>
-                        <div class="hly-radio-group-vertical">
-                            <label class="hly-radio-label">
-                                <input type="radio" name="hly-unified-injection-position" value="2" /> <span>主提示前</span>
-                            </label>
-                            <label class="hly-radio-label">
-                                <input type="radio" name="hly-unified-injection-position" value="0" /> <span>主提示后</span>
-                            </label>
-                            <label class="hly-radio-label">
-                                <input type="radio" name="hly-unified-injection-position" value="1" />
-                                <span>聊天内 @ 深度</span>
-                                <input id="hly-unified-injection-depth" class="hly-imperial-brush" type="number" min="0" max="999" style="width: 60px; margin-left: 10px;" />
-                                <span style="margin-left: 10px;">作为</span>
-                                <select id="hly-unified-injection-role" class="hly-imperial-brush" style="width: auto; margin-left: 10px;">
-                                    <option value="0">系统</option>
-                                    <option value="1">用户</option>
-                                    <option value="2">助手</option>
-                                </select>
-                            </label>
-                        </div>
-                    </div>
-                </fieldset>
-            </fieldset>
-            <fieldset class="hly-settings-group">
-                <legend><i class="fas fa-bell"></i> 上奏设定</legend>
-                <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
-                    <label for="hly-retrieval-notify-toggle">检索成功时上奏</label>
-                    <label class="hly-toggle-switch">
-                        <input type="checkbox" id="hly-retrieval-notify" data-setting-key="retrieval.notify" data-type="boolean">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-            </fieldset>
-        </div>
-    </div>
+/* ------------------ 预览模态框样式 ------------------ */
+#hly-modal-container .hly-preview-container-v2 {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 10px;
+    background: #2a2a2a;
+    border-radius: 5px;
+}
+#hly-modal-container .hly-preview-item-v2 {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: #333;
+    border: 1px solid #444;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    padding: 10px;
+}
+#hly-modal-container .hly-preview-details {
+    flex-grow: 1;
+}
+#hly-modal-container .hly-preview-summary {
+    cursor: pointer;
+    font-weight: bold;
+    color: #8A2BE2;
+}
+#hly-modal-container .hly-preview-content {
+    margin-top: 8px;
+}
+#hly-modal-container .hly-preview-textarea {
+    width: 100%;
+    min-height: 100px;
+    background: #252525;
+    color: #E0E0E0;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 8px;
+    box-sizing: border-box;
+    resize: vertical;
+}
+#hly-modal-container .hly-preview-delete-btn-v2 {
+    background: #c0392b;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 24px;
+    text-align: center;
+    padding: 0;
+    flex-shrink: 0;
+}
 
+/* ------------------ 知识库管理列表 ------------------ */
+#hly-modal-container .hly-kb-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 10px;
+    background-color: #3a3a3a;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+#hly-modal-container .hly-kb-toolbar label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+#hly-modal-container .hly-kb-bulk-actions {
+    display: flex;
+    gap: 8px;
+}
+#hly-modal-container .hly-kb-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+#hly-modal-container .hly-kb-list-item {
+    display: flex;
+    align-items: center;
+    background-color: #383838;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid #484848;
+    gap: 10px;
+}
+#hly-modal-container .hly-kb-list-item input[type="checkbox"] {
+    margin-right: 5px;
+}
+#hly-modal-container .hly-kb-name {
+    font-weight: bold;
+    color: #DDD;
+    flex-grow: 1;
+}
+#hly-modal-container .hly-kb-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+#hly-modal-container .hly-kb-actions .hly-kb-move-btn,
+#hly-modal-container .hly-kb-actions .hly-kb-delete-btn {
+    background-color: var(--amily2-button-color);
+    color: var(--amily2-text-color);
+    border: 1px solid #666;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+    font-size: 1em;
+    line-height: 1;
+}
 
-    <div id="hly-log-container" style="border-top: 2px solid #444; padding-top: 10px; margin-top: 10px;">
-        <fieldset class="hly-settings-group">
-            <legend><i class="fas fa-scroll"></i> 起居注</legend>
-            <div id="hly-log-output" class="hly-log-display">
-                <p>翰林院运行日志将在此记录...</p>
-            </div>
-        </fieldset>
-    </div>
+#hly-modal-container .hly-kb-actions .hly-kb-move-btn:hover {
+    background-color: #5A5A5A;
+    border-color: #888;
+}
 
-    <div class="hly-footer">
-    </div>
-</div>
-<!-- 引入强大的文本解码库，确保编码转换万无一失 -->
-<script src="https://cdn.jsdelivr.net/npm/text-encoding@0.7.0/lib/encoding.min.js"></script>
+#hly-modal-container .hly-kb-actions .hly-kb-delete-btn {
+    background-color: #c94a4a;
+    font-size: 1.2em;
+    padding: 2px 8px;
+}
+
+#hly-modal-container .hly-kb-actions .hly-kb-delete-btn:hover {
+    background-color: #e04f4f;
+    color: white;
+}
+
+/* 【修复】为知识库管理列表中的开关添加特定样式 */
+#hly-modal-container .hly-kb-list .hly-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+}
+#hly-modal-container .hly-kb-list .hly-toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+#hly-modal-container .hly-kb-list .hly-toggle-switch .hly-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 20px;
+}
+#hly-modal-container .hly-kb-list .hly-toggle-switch .hly-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+#hly-modal-container .hly-kb-list input:checked + .hly-toggle-slider {
+    background-color: #2196F3;
+}
+#hly-modal-container .hly-kb-list input:checked + .hly-toggle-slider:before {
+    transform: translateX(20px);
+}
+
+/* ------------------ 自定义多选下拉框样式 ------------------ */
+#hly-modal-container .hly-multiselect-container {
+    position: relative;
+}
+#hly-modal-container .hly-multiselect-options-container {
+    position: absolute;
+    background-color: #333;
+    border: 1px solid #555;
+    border-radius: 4px;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    margin-top: 5px;
+}
+#hly-modal-container .hly-multiselect-option {
+    display: flex; /* 关键：使内部元素水平排列 */
+    align-items: center; /* 关键：垂直居中对齐 */
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+#hly-modal-container .hly-multiselect-option:hover {
+    background-color: #454545;
+}
+#hly-modal-container .hly-multiselect-option input[type="checkbox"] {
+    margin-right: 10px; /* 在复选框和文本之间添加间距 */
+}
+#hly-modal-container #hly-hist-entry-multiselect-btn {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+}
+#hly-modal-container #hly-hist-entry-multiselect-btn i {
+    transition: transform 0.3s;
+}
+#hly-modal-container #hly-hist-entry-multiselect-options[style*="display: block;"] + #hly-hist-entry-multiselect-btn i {
+    transform: rotate(180deg);
+}
+
+/* ------------------ 搜索框样式 ------------------ */
+#hly-modal-container .hly-search-wrapper,
+#hly-modal-container .hly-entry-search-wrapper {
+    position: relative;
+    margin-bottom: 8px;
+}
+
+#hly-modal-container .hly-search-input {
+    width: 100%;
+    padding: 8px 32px 8px 12px;
+    border: 1px solid #555;
+    border-radius: 4px;
+    font-size: 14px;
+    background: transparent;
+    color: var(--amily2-text-color);
+    box-sizing: border-box;
+}
+
+#hly-modal-container .hly-search-icon {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #888;
+    pointer-events: none;
+}
+
+#hly-modal-container .hly-search-input:focus {
+    outline: none;
+    border-color: #8A2BE2;
+    box-shadow: 0 0 5px rgba(138, 43, 226, 0.5);
+}
+
+#hly-modal-container .hly-search-input::placeholder {
+    color: #888;
+    opacity: 1;
+}
+
+/* 搜索高亮样式 */
+#hly-modal-container .search-highlight {
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 1px 2px;
+    border-radius: 2px;
+}
+
+/* 条目容器样式 */
+#hly-modal-container .hly-entries-container {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+#hly-modal-container .hly-multiselect-option {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #444;
+    margin: 0;
+    transition: background-color 0.2s;
+}
+
+#hly-modal-container .hly-multiselect-option:hover {
+    background-color: #454545;
+}
+
+#hly-modal-container .hly-multiselect-option input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+/* 无结果提示 */
+#hly-modal-container .hly-no-results {
+    padding: 12px;
+    text-align: center;
+    color: #888;
+    font-style: italic;
+}
+
+/* 增强选择器样式 */
+#hly-modal-container .hly-enhanced-selector {
+    position: relative;
+}
+
+#hly-modal-container .hly-search-container {
+    position: relative;
+    margin-bottom: 8px;
+}
