@@ -115,14 +115,41 @@ async function showPromptInspector(input) {
                 let content = message.content;
                 const iconsContainer = block.find('.mizhesi-injection-icons');
 
-                if (content.includes('%%HANLINYUAN_RAG_INJECTION%%')) {
-                    content = content.replace('%%HANLINYUAN_RAG_INJECTION%%', '');
-                    iconsContainer.append('<i class="fa-solid fa-brain" title="翰林院 RAG 注入" style="color: #66ccff;"></i>');
-                }
+                // 【V11.0 升级】支持多种注入来源标记
+                const injectionMarkers = {
+                    '%%HANLINYUAN_RAG_NOVEL%%': {
+                        icon: 'fa-book-open',
+                        title: '翰林院注入 (小说)',
+                        color: '#66ccff'
+                    },
+                    '%%HANLINYUAN_RAG_CHAT%%': {
+                        icon: 'fa-comments',
+                        title: '翰林院注入 (聊天记录)',
+                        color: '#66ccff'
+                    },
+                    '%%HANLINYUAN_RAG_LOREBOOK%%': {
+                        icon: 'fa-atlas',
+                        title: '翰林院注入 (世界书)',
+                        color: '#66ccff'
+                    },
+                    '%%HANLINYUAN_RAG_MANUAL%%': {
+                        icon: 'fa-pencil-alt',
+                        title: '翰林院注入 (手动)',
+                        color: '#66ccff'
+                    },
+                    '%%AMILY2_TABLE_INJECTION%%': {
+                        icon: 'fa-table-cells',
+                        title: '表格系统注入',
+                        color: '#99cc33'
+                    }
+                };
 
-                if (content.includes('%%AMILY2_TABLE_INJECTION%%')) {
-                    content = content.replace('%%AMILY2_TABLE_INJECTION%%', '');
-                    iconsContainer.append('<i class="fa-solid fa-table-cells" title="表格系统注入" style="color: #99cc33;"></i>');
+                for (const marker in injectionMarkers) {
+                    if (content.includes(marker)) {
+                        content = content.replace(marker, '');
+                        const details = injectionMarkers[marker];
+                        iconsContainer.append(`<i class="fa-solid ${details.icon}" title="${details.title}" style="color: ${details.color};"></i>`);
+                    }
                 }
 
                 const textarea = block.find('textarea');
