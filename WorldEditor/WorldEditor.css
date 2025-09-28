@@ -1,0 +1,344 @@
+/* 世界书编辑器样式 */
+#world-editor-container .world-editor {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #ffffff;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+#world-editor-container .world-editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background-color: #2d2d2d;
+    border-bottom: 1px solid #555;
+    flex-shrink: 0;
+}
+
+#world-editor-container .world-editor-header h1 {
+    margin: 0;
+    color: #68b7ff;
+    font-size: 20px;
+}
+
+#world-editor-container .world-editor-header-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+#world-editor-container .world-editor-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.3s;
+}
+
+#world-editor-container .world-editor-btn-primary {
+    background-color: #4a90e2;
+    color: white;
+}
+
+#world-editor-container .world-editor-btn-primary:hover {
+    background-color: #357abd;
+}
+
+#world-editor-container .world-editor-btn-success {
+    background-color: #4CAF50;
+    color: white;
+}
+
+#world-editor-container .world-editor-btn-success:hover {
+    background-color: #45a049;
+}
+
+#world-editor-container .world-editor-btn-danger {
+    background-color: #f44336;
+    color: white;
+}
+
+#world-editor-container .world-editor-btn-danger:hover {
+    background-color: #da190b;
+}
+
+#world-editor-container .world-editor-btn-warning {
+    background-color: #ff9800;
+    color: white;
+}
+
+#world-editor-container .world-editor-btn-warning:hover {
+    background-color: #e68900;
+}
+
+#world-editor-container .world-editor-content {
+    flex: 1;
+    padding: 20px;
+    overflow: auto;
+}
+
+#world-editor-container .world-editor-selector {
+    margin-bottom: 15px;
+    padding: 15px;
+    background-color: #2d2d2d;
+    border-radius: 8px;
+}
+
+#world-editor-container .world-editor-selector select {
+    width: 100%;
+    padding: 8px;
+    background-color: #404040;
+    color: white;
+    border: 1px solid #555;
+    border-radius: 4px;
+}
+
+#world-editor-container .world-editor-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 10px 15px;
+    background-color: #2d2d2d;
+    border-radius: 8px;
+}
+
+#world-editor-container .world-editor-toolbar-left {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+#world-editor-container .world-editor-toolbar-right {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+#world-editor-container .world-editor-search-box {
+    padding: 6px 10px;
+    background-color: #404040;
+    color: white;
+    border: 1px solid #555;
+    border-radius: 4px;
+    min-width: 200px;
+}
+
+#world-editor-container .world-editor-entries-container {
+    background-color: #2d2d2d;
+    border-radius: 8px;
+    overflow-y: auto;
+    max-height: calc(100vh - 300px); /* Adjust as needed */
+    position: relative;
+}
+
+#world-editor-container .world-editor-entries-header {
+    display: grid;
+    grid-template-columns: 40px 50px 50px 120px 1fr 100px 80px 80px;
+    background-color: #404040;
+    padding: 10px;
+    border-bottom: 1px solid #555;
+    font-weight: bold;
+    font-size: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+#world-editor-container .world-editor-entries-header > div[data-sort] {
+    cursor: pointer;
+    user-select: none;
+}
+
+#world-editor-container .world-editor-entries-header > div[data-sort]:hover {
+    color: #68b7ff;
+}
+
+#world-editor-container .world-editor-entry-row {
+    display: grid;
+    grid-template-columns: 40px 50px 50px 120px 1fr 100px 80px 80px;
+    padding: 8px 10px;
+    border-bottom: 1px solid #333;
+    align-items: center;
+    transition: background-color 0.2s;
+    min-height: 40px;
+    cursor: pointer;
+}
+
+
+#world-editor-container .world-editor-entry-row:hover {
+    background-color: #3a3a3a;
+}
+
+#world-editor-container .world-editor-entry-row.selected {
+    background-color: rgba(74, 74, 74, 0.5);
+}
+
+#world-editor-container .world-editor-entry-checkbox {
+    width: 16px;
+    height: 16px;
+    justify-self: center;
+}
+
+#world-editor-container .world-editor-entry-status {
+    text-align: center;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+#world-editor-container .world-editor-status-enabled {
+    color: #4CAF50;
+}
+
+#world-editor-container .world-editor-status-disabled {
+    color: #f44336;
+}
+
+#world-editor-container .fa-toggle-on {
+    color: #68b7ff;
+}
+
+#world-editor-container .fa-toggle-off {
+    color: #777;
+}
+
+#world-editor-container .world-editor-entry-activation {
+    text-align: center;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+#world-editor-container .world-editor-activation-constant {
+    color: #2196F3;
+}
+
+#world-editor-container .world-editor-activation-selective {
+    color: #4CAF50;
+}
+
+#world-editor-container .world-editor-entry-keys {
+    font-size: 11px;
+    color: #aaa;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#world-editor-container .world-editor-entry-content {
+    font-size: 11px;
+    color: #ccc;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#world-editor-container .world-editor-entry-position {
+    font-size: 10px;
+    color: #999;
+    text-align: center;
+}
+
+#world-editor-container .world-editor-entry-depth {
+    font-size: 12px;
+    color: #fff;
+    text-align: center;
+    background-color: #555;
+    border-radius: 3px;
+    padding: 2px 6px;
+    cursor: pointer;
+}
+
+#world-editor-container .world-editor-entry-order {
+    font-size: 12px;
+    color: #fff;
+    text-align: center;
+}
+
+/* 行内编辑样式 */
+#world-editor-container .inline-edit {
+    background-color: transparent;
+    border: 1px solid transparent;
+    color: #ccc;
+    font-family: inherit;
+    font-size: 11px;
+    padding: 2px 4px;
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 3px;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+#world-editor-container .inline-edit:hover {
+    border-color: #555;
+}
+
+#world-editor-container .inline-edit:focus {
+    background-color: #404040;
+    border-color: #68b7ff;
+    outline: none;
+}
+
+#world-editor-container .inline-edit[disabled] {
+    background-color: rgba(0,0,0,0.2);
+    color: #777;
+    cursor: not-allowed;
+}
+
+#world-editor-container .inline-toggle {
+    cursor: pointer;
+    text-align: center;
+}
+
+#world-editor-container .world-editor-batch-actions {
+    display: none;
+    padding: 15px;
+    background-color: #4a4a4a;
+    border-bottom: 1px solid #555;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+#world-editor-container .world-editor-batch-actions.active {
+    display: flex;
+}
+
+#world-editor-container .world-editor-selected-count {
+    color: #68b7ff;
+    font-weight: bold;
+}
+
+
+#world-editor-container .world-editor-loading {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+}
+
+#world-editor-container .world-editor-empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+}
+
+#world-editor-container .world-editor-error {
+    background-color: #d32f2f;
+    color: white;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+#world-editor-container .world-editor-success {
+    background-color: #388e3c;
+    color: white;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
