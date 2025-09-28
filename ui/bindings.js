@@ -340,7 +340,7 @@ export function bindModalEvents() {
 container
     .off("click.amily2.chamber_nav")
     .on("click.amily2.chamber_nav",
-         "#amily2_open_plot_optimization, #amily2_open_additional_features, #amily2_open_rag_palace, #amily2_open_memorisation_forms, #amily2_open_character_world_book, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan, #amily2_back_to_main_from_forms, #amily2_back_to_main_from_optimization, #amily2_back_to_main_from_cwb", function () {
+         "#amily2_open_plot_optimization, #amily2_open_additional_features, #amily2_open_rag_palace, #amily2_open_memorisation_forms, #amily2_open_character_world_book, #amily2_open_world_editor, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan, #amily2_back_to_main_from_forms, #amily2_back_to_main_from_optimization, #amily2_back_to_main_from_cwb, #amily2_back_to_main_from_world_editor", function () {
         if (!pluginAuthStatus.authorized) return;
 
         const mainPanel = container.find('.plugin-features');
@@ -349,6 +349,7 @@ container
         const memorisationFormsPanel = container.find('#amily2_memorisation_forms_panel');
         const plotOptimizationPanel = container.find('#amily2_plot_optimization_panel');
         const characterWorldBookPanel = container.find('#amily2_character_world_book_panel');
+        const worldEditorPanel = container.find('#amily2_world_editor_panel');
 
         mainPanel.hide();
         additionalPanel.hide();
@@ -356,6 +357,7 @@ container
         memorisationFormsPanel.hide();
         plotOptimizationPanel.hide();
         characterWorldBookPanel.hide();
+        worldEditorPanel.hide();
 
         switch (this.id) {
             case 'amily2_open_plot_optimization':
@@ -373,11 +375,15 @@ container
             case 'amily2_open_character_world_book':
                 characterWorldBookPanel.show();
                 break;
+            case 'amily2_open_world_editor':
+                worldEditorPanel.show();
+                break;
             case 'amily2_back_to_main_settings':
             case 'amily2_back_to_main_from_hanlinyuan':
             case 'amily2_back_to_main_from_forms':
             case 'amily2_back_to_main_from_optimization':
             case 'amily2_back_to_main_from_cwb':
+            case 'amily2_back_to_main_from_world_editor':
                 mainPanel.show();
                 break;
         }
