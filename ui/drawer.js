@@ -92,6 +92,20 @@ async function initializePanel(contentPanel, errorContainer) {
             const cwbContent = await $.get(`${extensionFolderPath}/CharacterWorldBook/cwb_settings.html`);
             const cwbPanelHtml = `<div id="amily2_character_world_book_panel" style="display: none;">${cwbContent}</div>`;
             mainContainer.append(cwbPanelHtml);
+
+            const worldEditorContent = await $.get(`${extensionFolderPath}/WorldEditor.html`);
+            const worldEditorPanelHtml = `<div id="amily2_world_editor_panel" style="display: none;">${worldEditorContent}</div>`;
+            mainContainer.append(worldEditorPanelHtml);
+
+            // 在面板创建后，加载世界书编辑器脚本
+            const worldEditorScriptId = 'world-editor-script';
+            if (!document.getElementById(worldEditorScriptId)) {
+                const worldEditorScript = document.createElement("script");
+                worldEditorScript.id = worldEditorScriptId;
+                worldEditorScript.type = "module"; // 必须作为模块加载
+                worldEditorScript.src = `${extensionFolderPath}/WorldEditor/WorldEditor.js?v=${Date.now()}`;
+                document.head.appendChild(worldEditorScript);
+            }
         }
 
         bindModalEvents();
