@@ -18,11 +18,28 @@ export const defaultSettings = {
         queryMessageCount: 2,
         maxResults: 10,
     },
-    injection: {
-        template: '以下内容是翰林院向量化后注入的相关内容，是已经发生过的事情简短总结，但可能顺序会有些错乱，但已经对前后做出了标识，请自行判断顺序：\n<总结内容>\n{{text}}\n</总结内容>\n【以上内容是已经发生过的事情，切莫以此作为剧情进展，只是作为提醒发生过的事情】',
-
-        position: 1, 
-        depth: 1,
+    injection_novel: {
+        template: '以下内容是翰林院向量化后注入的原著小说剧情，但可能顺序会有些错乱，已经对前后做出了标识，请自行判断顺序：\n\n{{novel_text}}\n\n【以上内容是小说的原著剧情，切莫以此作为剧情进展，只是作为剧情的关联】',
+        position: 1,
+        depth: 2,
+        depth_role: 0,
+    },
+    injection_chat: {
+        template: '以下内容是翰林院向量化后注入的聊天对话记录，但可能顺序会有些错乱，已经对前后做出了标识，请自行判断顺序：\n\n{{chat_text}}\n\n【以上内容是对话的楼层记录，切莫以此作为剧情进展，只是作为相关提示】',
+        position: 1,
+        depth: 2,
+        depth_role: 0,
+    },
+    injection_lorebook: {
+        template: '以下内容是翰林院向量化后注入的世界书的条目内容（可能内含对话记录的总结），顺序可能会有些错乱，但已经对前后做出了标识，请自行判断顺序：\n\n{{lorebook_text}}\n\n【以上内容是从世界书中向量化后的内容，切莫以此作为剧情进展，只是作为已发生过的事情提醒】',
+        position: 1,
+        depth: 2,
+        depth_role: 0,
+    },
+    injection_manual: {
+        template: '以下内容是翰林院向量化后用户手动注入的内容，可能顺序会有些错乱，但已经对前后做出了标识，请自行判断顺序：\n\n{{manual_text}}\n\n【以上内容为用户手动向量化注入的内容，切莫以此作为剧情进展，只是作为相关提示】',
+        position: 1,
+        depth: 2,
         depth_role: 0,
     },
     condensation: {
