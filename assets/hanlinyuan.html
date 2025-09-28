@@ -289,6 +289,14 @@
         <div id="hly-knowledge-bases-tab" class="hly-tab-pane">
             <fieldset class="hly-settings-group">
                 <legend><i class="fas fa-globe"></i> 全局知识库 (全角色通用)</legend>
+                <div class="hly-kb-toolbar">
+                    <label><input type="checkbox" id="hly-kb-select-all-global"> 全选</label>
+                    <div id="hly-kb-bulk-actions-global" class="hly-kb-bulk-actions" style="display: none;">
+                        <button class="hly-action-button" data-action="toggle">切换状态</button>
+                        <button class="hly-action-button" data-action="move">移至局部</button>
+                        <button class="hly-action-button danger" data-action="delete">删除</button>
+                    </div>
+                </div>
                 <div id="hly-kb-list-global" class="hly-kb-list">
                     <p id="hly-kb-list-global-placeholder" style="color: #888;">尚无全局知识库。</p>
                     <!-- Global KBs will be populated here -->
@@ -306,6 +314,14 @@
 
             <fieldset class="hly-settings-group">
                 <legend><i class="fas fa-user"></i> <span id="hly-local-kb-char-name">当前角色</span>的局部知识库</legend>
+                <div class="hly-kb-toolbar">
+                    <label><input type="checkbox" id="hly-kb-select-all-local"> 全选</label>
+                    <div id="hly-kb-bulk-actions-local" class="hly-kb-bulk-actions" style="display: none;">
+                        <button class="hly-action-button" data-action="toggle">切换状态</button>
+                        <button class="hly-action-button" data-action="move">移至全局</button>
+                        <button class="hly-action-button danger" data-action="delete">删除</button>
+                    </div>
+                </div>
                 <div id="hly-kb-list-local" class="hly-kb-list">
                     <p id="hly-kb-list-local-placeholder" style="color: #888;">当前角色没有知识库。通过“书库编纂”中的功能可自动创建。</p>
                     <!-- Local KBs will be populated here -->
@@ -349,46 +365,50 @@
                 </div>
             </fieldset>
             <fieldset class="hly-settings-group">
-                <legend><i class="fas fa-wand-magic-sparkles"></i> 圣言注入</legend>
+                <legend><i class="fas fa-wand-magic-sparkles"></i> 圣言注入 (按来源)</legend>
+                <div style="text-align: center; margin-bottom: 10px;">
+                    <small style="font-style: italic; color: #05c3f3;">感谢功能友情提供：Silence_Lurker潜默</small>
+                </div>
+                <!-- 【V12.0 重构】统一注入编辑器 -->
                 <div class="hly-control-block">
-                    <label for="hly-injection-template">圣言模板:</label>
-                    <textarea id="hly-injection-template" class="hly-imperial-brush" rows="3" data-setting-key="injection.template" data-type="string">翰林院呈报相关忆识：\n{{text}}</textarea>
-                    <small class="hly-notes">以 {{text}} 为占位符，代表检索到的内容。</small>
+                    <label for="hly-injection-source-selector">选择要配置的注入来源:</label>
+                    <select id="hly-injection-source-selector" class="hly-imperial-brush">
+                        <option value="novel">小说</option>
+                        <option value="chat">聊天记录</option>
+                        <option value="lorebook">世界书</option>
+                        <option value="manual">手动录入</option>
+                    </select>
                 </div>
 
-
-                <div class="hly-control-block">
-                    <label>注入位置:</label>
-                    <div class="hly-radio-group-vertical">
-                        <label class="hly-radio-label">
-                            <input type="radio" name="hly-injection-position" value="2" data-setting-key="injection.position" data-type="integer" />
-                            <span>主提示前 (在所有提示词的最前面)</span>
-                        </label>
-                        <label class="hly-radio-label">
-                            <input type="radio" name="hly-injection-position" value="0" data-setting-key="injection.position" data-type="integer" />
-                            <span>主提示后 (在主提示词之后，聊天记录之前)</span>
-                        </label>
-                        <label class="hly-radio-label">
-                            <input type="radio" name="hly-injection-position" value="1" checked data-setting-key="injection.position" data-type="integer" />
-                            <span>聊天内 @ 深度</span>
-                            <input
-                                id="hly-injection-depth"
-                                class="hly-imperial-brush"
-                                type="number"
-                                min="0"
-                                max="999"
-                                style="width: 60px; margin-left: 10px;"
-                                data-setting-key="injection.depth" data-type="integer"
-                            />
-                            <span style="margin-left: 10px;">作为</span>
-                            <select id="hly-injection-role" class="hly-imperial-brush" style="width: auto; margin-left: 10px;" data-setting-key="injection.depth_role" data-type="integer">
-                                <option value="0">系统</option>
-                                <option value="1">用户</option>
-                                <option value="2">助手</option>
-                            </select>
-                        </label>
+                <div id="hly-unified-injection-editor">
+                    <div class="hly-control-block">
+                        <label for="hly-unified-template-editor">圣言模板:</label>
+                        <textarea id="hly-unified-template-editor" class="hly-imperial-brush" rows="3"></textarea>
+                        <small id="hly-unified-template-notes" class="hly-notes">以 {{placeholder}} 为占位符。</small>
                     </div>
-                </div>
+                    <div class="hly-control-block">
+                        <label>注入位置:</label>
+                        <div class="hly-radio-group-vertical">
+                            <label class="hly-radio-label">
+                                <input type="radio" name="hly-unified-injection-position" value="2" /> <span>主提示前</span>
+                            </label>
+                            <label class="hly-radio-label">
+                                <input type="radio" name="hly-unified-injection-position" value="0" /> <span>主提示后</span>
+                            </label>
+                            <label class="hly-radio-label">
+                                <input type="radio" name="hly-unified-injection-position" value="1" />
+                                <span>聊天内 @ 深度</span>
+                                <input id="hly-unified-injection-depth" class="hly-imperial-brush" type="number" min="0" max="999" style="width: 60px; margin-left: 10px;" />
+                                <span style="margin-left: 10px;">作为</span>
+                                <select id="hly-unified-injection-role" class="hly-imperial-brush" style="width: auto; margin-left: 10px;">
+                                    <option value="0">系统</option>
+                                    <option value="1">用户</option>
+                                    <option value="2">助手</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+                </fieldset>
             </fieldset>
             <fieldset class="hly-settings-group">
                 <legend><i class="fas fa-bell"></i> 上奏设定</legend>
