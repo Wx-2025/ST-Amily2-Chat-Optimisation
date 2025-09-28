@@ -233,6 +233,19 @@ function loadPluginStyles() {
         document.head.appendChild(cwbLink);
         console.log(`[Amily2号-皇家制衣局] 已为角色世界书披上华服: cwb_style.css`);
     }
+
+    // 【第七道圣谕】为世界编辑器披上其专属华服
+    const worldEditorStyleId = 'world-editor-style';
+    if (!document.getElementById(worldEditorStyleId)) {
+        const worldEditorLink = document.createElement("link");
+        worldEditorLink.id = worldEditorStyleId;
+        worldEditorLink.rel = "stylesheet";
+        worldEditorLink.type = "text/css";
+        worldEditorLink.href = `scripts/extensions/third-party/${extensionName}/WorldEditor/WorldEditor.css?v=${Date.now()}`;
+        document.head.appendChild(worldEditorLink);
+        console.log(`[Amily2号-皇家制衣局] 已为世界编辑器披上华服: WorldEditor.css`);
+    }
+
 }
 
 
@@ -531,4 +544,5 @@ jQuery(async () => {
       }
     }
   }, checkInterval);
+
 });
