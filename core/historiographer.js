@@ -551,7 +551,7 @@ export async function executeRefinement(worldbook, loreKey) {
 
         const getRefinedContent = async () => {
             toastr.info("正在召唤模型进行内容精炼...", "宏史卷重铸");
-            return await callAI(messages);
+            return settings.ngmsEnabled ? await callNgmsAI(messages) : await callAI(messages);
         };
 
         const initialRefinedContent = await getRefinedContent();
