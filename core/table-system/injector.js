@@ -1,1 +1,103 @@
-const _0x1043f3=_0xa0a8;(function(_0x8b7307,_0x524585){const _0x485721=_0xa0a8,_0x36c85b=_0x8b7307();while(!![]){try{const _0x5b8433=-parseInt(_0x485721(0x1c2))/0x1+parseInt(_0x485721(0x1d1))/0x2+-parseInt(_0x485721(0x1c6))/0x3*(-parseInt(_0x485721(0x1c0))/0x4)+parseInt(_0x485721(0x1b8))/0x5+parseInt(_0x485721(0x1c4))/0x6*(parseInt(_0x485721(0x1cb))/0x7)+-parseInt(_0x485721(0x1b7))/0x8+parseInt(_0x485721(0x1b5))/0x9*(parseInt(_0x485721(0x1c1))/0xa);if(_0x5b8433===_0x524585)break;else _0x36c85b['push'](_0x36c85b['shift']());}catch(_0x4b26b4){_0x36c85b['push'](_0x36c85b['shift']());}}}(_0x4f83,0x28a92));function _0x4f83(){const _0x1e7483=['log','replace','426874XQfRCM',',\x20深度:\x20','##以下内容是故事发生的剧情中提取出的内容，已经转化为表格形式呈现给你，请将以下内容作为后续剧情的一部分参考：\x0a{{{Amily2TableDataContent}}}','main-api','891WITGZI','AMILY2_TABLE_SYSTEM','2509352VRUSTD','241200xWUBoB','position','isEnabled','depth','SYSTEM','%%AMILY2_TABLE_INJECTION%%','[Amily2-表格注入器]\x20已成功注入表格数据\x20(位置:\x20','quiet','30268mZcftl','33270JrJPlk','292290WxwAFt','secondary-api','6QnshNP','injection','57WLwTGq','role','error','optimized','[Amily2-表格注入器]\x20注入表格数据时发生错误:','263774pnYYIR','{{{Amily2TableData}}}','table_injection_enabled','trim'];_0x4f83=function(){return _0x1e7483;};return _0x4f83();}import{setExtensionPrompt}from'/script.js';import{extension_settings}from'/scripts/extensions.js';import{getBatchFillerFlowTemplate,convertTablesToCsvString,convertTablesToCsvStringForContentOnly}from'./manager.js';import{tableSystemDefaultSettings}from'./settings.js';import{extensionName}from'../../utils/settings.js';function _0xa0a8(_0xbd9f0f,_0x1013a8){const _0x4f8362=_0x4f83();return _0xa0a8=function(_0xa0a82,_0x3a18a8){_0xa0a82=_0xa0a82-0x1b3;let _0x4feb55=_0x4f8362[_0xa0a82];return _0x4feb55;},_0xa0a8(_0xbd9f0f,_0x1013a8);}const INJECTION_KEY=_0x1043f3(0x1b6);export function injectTableData(_0x1f1765,_0x106d54,_0x112707,_0x4d3bf5){const _0x15cb30=_0x1043f3,_0x58c8ba=extension_settings[extensionName]||{};if(_0x4d3bf5===_0x15cb30(0x1bf))return;if(!_0x58c8ba[_0x15cb30(0x1cd)]){setExtensionPrompt(INJECTION_KEY,'',0x0,0x0,![],_0x15cb30(0x1bc));return;}try{let _0x38152e='';const _0x5d5905=_0x58c8ba['filling_mode']||_0x15cb30(0x1b4);if(_0x5d5905===_0x15cb30(0x1c3)){const _0xe65609='##以下内容是故事发生的剧情中提取出的内容，已经转化为表格形式呈现给你，请将以下内容作为后续剧情的一部分参考：\x0a{{{Amily2TableDataContent}}}',_0x42d5e8=convertTablesToCsvStringForContentOnly();_0x42d5e8[_0x15cb30(0x1ce)]()&&(_0x38152e=_0xe65609[_0x15cb30(0x1d0)]('{{{Amily2TableDataContent}}}',_0x42d5e8));}else{if(_0x5d5905===_0x15cb30(0x1c9)){const _0x484c19=_0x15cb30(0x1b3),_0x46c0cf=convertTablesToCsvStringForContentOnly();_0x46c0cf['trim']()&&(_0x38152e=_0x484c19[_0x15cb30(0x1d0)]('{{{Amily2TableDataContent}}}',_0x46c0cf));}else{const _0xfab88b=getBatchFillerFlowTemplate(),_0x5baef7=convertTablesToCsvString();_0xfab88b&&_0x5baef7[_0x15cb30(0x1ce)]()&&(_0x38152e=_0xfab88b[_0x15cb30(0x1d0)](_0x15cb30(0x1cc),_0x5baef7));}}if(!_0x38152e){setExtensionPrompt(INJECTION_KEY,'',0x0,0x0,![],_0x15cb30(0x1bc));return;}_0x38152e[_0x15cb30(0x1ce)]()&&window['MiZheSi_Global']?.[_0x15cb30(0x1ba)]()&&(_0x38152e=_0x15cb30(0x1bd)+_0x38152e);const _0x330466=_0x58c8ba[_0x15cb30(0x1c5)]||tableSystemDefaultSettings[_0x15cb30(0x1c5)],_0x15c7bd=parseInt(_0x330466[_0x15cb30(0x1b9)],0xa),_0x2ccc11=parseInt(_0x330466[_0x15cb30(0x1bb)],0xa),_0x4909b2=parseInt(_0x330466[_0x15cb30(0x1c7)],0xa);setExtensionPrompt(INJECTION_KEY,_0x38152e,_0x15c7bd,_0x2ccc11,![],_0x4909b2),console[_0x15cb30(0x1cf)](_0x15cb30(0x1be)+_0x15c7bd+_0x15cb30(0x1d2)+_0x2ccc11+',\x20角色:\x20'+_0x4909b2+')。');}catch(_0x112fab){console[_0x15cb30(0x1c8)](_0x15cb30(0x1ca),_0x112fab);}}
+
+import { setExtensionPrompt } from '/script.js';
+import { extension_settings } from '/scripts/extensions.js';
+import { getBatchFillerFlowTemplate, convertTablesToCsvString, convertTablesToCsvStringForContentOnly } from './manager.js';
+import { tableSystemDefaultSettings } from './settings.js';
+import { extensionName } from '../../utils/settings.js';
+
+const INJECTION_KEY = 'AMILY2_TABLE_SYSTEM';
+
+export function generateTableContent() {
+    const settings = extension_settings[extensionName] || {};
+    let injectionContent = '';
+
+    if (!settings.table_injection_enabled) {
+        return '';
+    }
+
+    try {
+
+        const fillingMode = settings.filling_mode || 'main-api'; 
+
+        if (fillingMode === 'secondary-api') {
+            const contentOnlyTemplate = "##以下内容是故事发生的剧情中提取出的内容，已经转化为表格形式呈现给你，请将以下内容作为后续剧情的一部分参考：\n{{{Amily2TableDataContent}}}";
+            const dataString = convertTablesToCsvStringForContentOnly();
+            if (dataString.trim()) {
+                injectionContent = contentOnlyTemplate.replace('{{{Amily2TableDataContent}}}', dataString);
+            }
+        } else if (fillingMode === 'optimized') {
+            const contentOnlyTemplate = "##以下内容是故事发生的剧情中提取出的内容，已经转化为表格形式呈现给你，请将以下内容作为后续剧情的一部分参考：\n{{{Amily2TableDataContent}}}";
+            const dataString = convertTablesToCsvStringForContentOnly();
+            if (dataString.trim()) {
+                injectionContent = contentOnlyTemplate.replace('{{{Amily2TableDataContent}}}', dataString);
+            }
+        }
+        else { 
+            const flowTemplate = getBatchFillerFlowTemplate();
+            const dataString = convertTablesToCsvString();
+            if (flowTemplate && dataString.trim()) {
+                injectionContent = flowTemplate.replace('{{{Amily2TableData}}}', dataString);
+            }
+        }
+
+        if (injectionContent.trim() && window.MiZheSi_Global?.isEnabled()) {
+            injectionContent = `%%AMILY2_TABLE_INJECTION%%${injectionContent}`;
+        }
+    } catch (error) {
+        console.error('[Amily2-表格内容生成器] 生成表格内容时发生错误:', error);
+        return ''; 
+    }
+
+    return injectionContent;
+}
+
+
+
+export function injectTableData(chat, contextSize, abort, type) {
+
+    if (window.AMILY2_MACRO_REPLACED === true) {
+        console.log('[Amily2-表格注入器] 检测到宏已替换，跳过传统注入。');
+        window.AMILY2_MACRO_REPLACED = false; 
+        setExtensionPrompt(INJECTION_KEY, '', 0, 0, false, 'SYSTEM'); 
+        return;
+    }
+
+    const settings = extension_settings[extensionName] || {};
+
+    if (type === 'quiet') {
+        return;
+    }
+
+    if (!settings.table_injection_enabled) {
+        setExtensionPrompt(INJECTION_KEY, '', 0, 0, false, 'SYSTEM');
+        return;
+    }
+
+    try {
+        const injectionContent = generateTableContent();
+
+        if (!injectionContent) {
+            setExtensionPrompt(INJECTION_KEY, '', 0, 0, false, 'SYSTEM');
+            return;
+        }
+
+        const injectionSettings = settings.injection || tableSystemDefaultSettings.injection;
+        const position = parseInt(injectionSettings.position, 10);
+        const depth = parseInt(injectionSettings.depth, 10);
+        const role = parseInt(injectionSettings.role, 10);
+
+        setExtensionPrompt(
+            INJECTION_KEY,
+            injectionContent,
+            position,
+            depth,
+            false, 
+            role
+        );
+
+        console.log(`[Amily2-表格注入器] 已成功注入表格数据 (位置: ${position}, 深度: ${depth}, 角色: ${role})。`);
+
+    } catch (error) {
+        console.error('[Amily2-表格注入器] 注入表格数据时发生错误:', error);
+    }
+}
