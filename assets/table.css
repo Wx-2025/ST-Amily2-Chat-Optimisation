@@ -477,10 +477,11 @@
     height: 20px;
     width: 20px;
     left: 4px;
-    bottom: 4px;
+    top: 50%;
     background-color: var(--amily2-text-color);
-    transition: .4s;
     border-radius: 50%;
+    transition: .4s;
+    transform: translateY(-50%);
 }
 
 #amily2_memorisation_forms_panel input:checked + .slider {
@@ -492,7 +493,7 @@
 }
 
 #amily2_memorisation_forms_panel input:checked + .slider:before {
-    transform: translateX(22px);
+    transform: translateX(22px) translateY(-50%);
 }
 
 .amily2-context-menu {
@@ -663,4 +664,97 @@ th.amily2-menu-open .amily2-header-text {
 .nccs-button-row .menu_button.secondary:hover {
     background: linear-gradient(45deg, rgba(120, 120, 120, 0.8), rgba(160, 160, 160, 0.8));
     box-shadow: 0 4px 15px rgba(120, 120, 120, 0.4);
+}
+
+/* Styles for tables injected into chat messages */
+#amily2-chat-table-container {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid var(--am2-container-border, rgba(255, 255, 255, 0.2));
+    border-radius: 8px;
+    background-color: var(--am2-container-bg, rgba(0,0,0,0.1));
+    overflow-x: auto; /* Ensure horizontal scrolling on small screens */
+}
+
+.amily2-chat-table {
+    margin-bottom: 15px;
+}
+
+.amily2-chat-table:last-child {
+    margin-bottom: 0;
+}
+
+.amily2-chat-table h4 {
+    font-size: 1em;
+    font-weight: bold;
+    color: var(--am2-header-color, #e0e0e0);
+    margin-bottom: 8px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid var(--am2-table-border, rgba(255, 255, 255, 0.25));
+}
+
+.amily2-chat-table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9em;
+}
+
+.amily2-chat-table th,
+.amily2-chat-table td {
+    border: 1px solid var(--am2-table-border, rgba(255, 255, 255, 0.25));
+    padding: 5px 8px;
+    text-align: left;
+}
+
+.amily2-chat-table th {
+    background-color: var(--am2-header-bg, rgba(255, 255, 255, 0.1));
+    font-weight: bold;
+}
+
+/* Styles for collapsible in-chat tables */
+.amily2-chat-table-summary {
+    cursor: pointer;
+    font-weight: bold;
+    padding: 5px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    list-style: none; /* Hide the default triangle */
+    display: block;
+}
+
+.amily2-chat-table-summary::-webkit-details-marker {
+    display: none; /* Hide the default triangle in Chrome/Safari */
+}
+
+.amily2-chat-table-summary:before {
+    content: '▶';
+    margin-right: 8px;
+    font-size: 0.8em;
+    display: inline-block;
+    transition: transform 0.2s ease;
+}
+
+.amily2-chat-table-details[open] > .amily2-chat-table-summary:before {
+    transform: rotate(90deg);
+}
+
+.amily2-chat-table-summary:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+@media (max-width: 768px) {
+    .amily2-chat-table th,
+    .amily2-chat-table td {
+        padding: 4px 6px; /* Reduce padding on mobile */
+        font-size: 0.85em; /* Slightly smaller font on mobile */
+    }
+
+    #amily2-chat-table-container {
+        padding: 5px; /* Reduce container padding on mobile */
+    }
+}
+
+.amily2-chat-table td.amily2-cell-highlight {
+    background-color: var(--am2-cell-highlight-bg, rgba(144, 238, 144, 0.3));
+    transition: background-color 0.5s ease-in-out;
 }
