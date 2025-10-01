@@ -549,6 +549,7 @@ export const defaultSettings = {
   autoHideEnabled: false,
   autoHideThreshold: 30,
   tavernProfile: '',
+  show_table_in_chat: false,
 
   miZheSiEnabled: false,
   // --- 📜 微言录 (Small Summary) 法典 ---
