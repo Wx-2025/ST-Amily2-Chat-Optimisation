@@ -115,8 +115,7 @@ function updateButtonState(state, batchNum = 0, attemptNum = 0) {
 async function callTableModel(messages) {
     try {
         const settings = extension_settings[extensionName];
-        
-        // 检查是否启用了Nccs API
+
         if (settings.nccsEnabled) {
             log('使用 Nccs API 进行表格填充...', 'info');
             const result = await callNccsAI(messages);
@@ -150,21 +149,31 @@ function getRawMessagesForSummary(startFloor, endFloor) {
     const userName = context.name1 || '用户';
     const characterName = context.name2 || '角色';
     
-    const useTagExtraction = settings.historiographyTagExtractionEnabled ?? false;
-    const tagsToExtract = useTagExtraction ? (settings.historiographyTags || '').split(',').map(t => t.trim()).filter(Boolean) : [];
-    const exclusionRules = settings.historiographyExclusionRules || [];
+    let tagsToExtract;
+    let exclusionRules;
+
+    if (settings.table_independent_rules_enabled) {
+        log('批量填表：使用独立提取规则。', 'info');
+        tagsToExtract = (settings.table_tags_to_extract || '').split(',').map(t => t.trim()).filter(Boolean);
+        exclusionRules = settings.table_exclusion_rules || [];
+    } else {
+        log('批量填表：使用微言录提取规则。', 'info');
+        const useHistoriographyTags = settings.historiographyTagExtractionEnabled ?? false;
+        tagsToExtract = useHistoriographyTags ? (settings.historiographyTags || '').split(',').map(t => t.trim()).filter(Boolean) : [];
+        exclusionRules = settings.historiographyExclusionRules || [];
+    }
 
     const messages = historySlice.map((msg, index) => {
         let content = msg.mes;
 
-        if (useTagExtraction && tagsToExtract.length > 0) {
+        if (tagsToExtract.length > 0) {
             const blocks = extractBlocksByTags(content, tagsToExtract);
-            if (blocks.length > 0) {
-                content = blocks.join('\n\n');
-            }
+            content = blocks.length > 0 ? blocks.join('\n\n') : '';
         }
-
-        content = applyExclusionRules(content, exclusionRules);
+        
+        if (content) {
+            content = applyExclusionRules(content, exclusionRules);
+        }
         
         if (!content.trim()) return null;
 
