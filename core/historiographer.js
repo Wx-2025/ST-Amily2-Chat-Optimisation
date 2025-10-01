@@ -302,8 +302,7 @@ async function getSummary(formattedHistory, toastTitle) {
     toastr.info(`正在为您熔铸对话历史...`, toastTitle);
     const settings = extension_settings[extensionName];
     const presetPrompts = await getPresetPrompts('small_summary');
-    
-    // 获取混合排序
+
     let mixedOrder;
     try {
         const savedOrder = localStorage.getItem('amily2_prompt_presets_v2_mixed_order');
@@ -318,19 +317,16 @@ async function getSummary(formattedHistory, toastTitle) {
     const messages = [
         { role: 'system', content: generateRandomSeed() }
     ];
-    
-    // 根据混合排序添加提示词
-    let promptCounter = 0; // 用于跟踪已处理的提示词数量
+
+    let promptCounter = 0; 
     
     for (const item of order) {
         if (item.type === 'prompt') {
-            // 处理普通提示词 - getPresetPrompts已经按照mixedOrder排序，直接按顺序使用
             if (presetPrompts && presetPrompts[promptCounter]) {
                 messages.push(presetPrompts[promptCounter]);
-                promptCounter++; // 递增计数器
+                promptCounter++;
             }
         } else if (item.type === 'conditional') {
-            // 处理条件块
             switch (item.id) {
                 case 'jailbreakPrompt':
                     if (settings.historiographySmallJailbreakPrompt) {
