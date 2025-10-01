@@ -7,7 +7,7 @@ import { onMessageReceived, handleTableUpdate } from "./core/events.js";
 import { processPlotOptimization } from "./core/summarizer.js";
 import { getContext } from "/scripts/extensions.js";
 import { characters, this_chid } from '/script.js';
-import { injectTableData } from "./core/table-system/injector.js"; 
+import { injectTableData, generateTableContent } from "./core/table-system/injector.js"; 
 import { initialize as initializeRagProcessor } from "./core/rag-processor.js"; 
 import { loadTables, clearHighlights } from './core/table-system/manager.js';
 import { renderTables } from './ui/table-bindings.js';
@@ -22,6 +22,7 @@ import { manageLorebookEntriesForChat } from './core/lore.js';
 import { initializeCharacterWorldBook } from './CharacterWorldBook/cwb_index.js';
 import { cwbDefaultSettings } from './CharacterWorldBook/src/cwb_config.js';
 import './core/amily2-updater.js';
+import { updateOrInsertTableInChat } from './ui/message-table-renderer.js';
 
 const STYLE_SETTINGS_KEY = 'amily2_custom_styles';
 const STYLE_ROOT_SELECTOR = '#amily2_memorisation_forms_panel';
@@ -320,7 +321,24 @@ jQuery(async () => {
         
         waitForCwbPanelAndInitialize();
 
-
+        console.log("[Amily2号-开国大典] 步骤3.8：注册表格占位符宏...");
+        try {
+            const context = getContext();
+            if (context && typeof context.registerMacro === 'function') {
+                context.registerMacro('Amily2EditContent', () => {
+                    const content = generateTableContent();
+                    if (content) {
+                        window.AMILY2_MACRO_REPLACED = true;
+                    }
+                    return content;
+                });
+                console.log('[Amily2-核心引擎] 已成功注册表格占位符宏: {{Amily2EditContent}}');
+            } else {
+                console.warn('[Amily2-核心引擎] 无法注册表格宏，可能是 SillyTavern 版本不兼容。');
+            }
+        } catch (error) {
+            console.error('[Amily2-核心引擎] 注册表格宏时发生错误:', error);
+        }
 
         console.log("[Amily2号-开国大典] 步骤四：部署帝国哨兵网络...");
 
@@ -438,10 +456,17 @@ jQuery(async () => {
             eventSource.on(event_types.MESSAGE_SWIPED, (chat_id) => {
                 clearHighlights();
                 handleTableUpdate(chat_id);
+                updateOrInsertTableInChat(); 
             });
-            eventSource.on(event_types.MESSAGE_EDITED, (mes_id) => handleTableUpdate(mes_id));
+            eventSource.on(event_types.MESSAGE_EDITED, (mes_id) => {
+                handleTableUpdate(mes_id);
+                updateOrInsertTableInChat();
+            });
 
             eventSource.on(event_types.CHAT_CHANGED, () => {
+                window.lastPreOptimizationResult = null;
+                document.dispatchEvent(new CustomEvent('preOptimizationTextUpdated'));
+
                 manageLorebookEntriesForChat();
                 setTimeout(() => {
                     log("【监察系统】检测到“朝代更迭”(CHAT_CHANGED)，开始重修史书并刷新宫殿...", 'info');
@@ -457,6 +482,9 @@ jQuery(async () => {
                 loadTables(index);
                 renderTables();
             });
+
+            eventSource.on(event_types.MESSAGE_RECEIVED, updateOrInsertTableInChat);
+            eventSource.on(event_types.chat_updated, updateOrInsertTableInChat);
             
             window.amily2EventsRegistered = true;
         }
@@ -500,7 +528,6 @@ jQuery(async () => {
 
         console.log("【Amily2号】帝国秩序已完美建立。Amily2号的府邸已恭候陛下的莅临。");
 
-        // 初始化版本检测功能
         console.log("[Amily2号-开国大典] 步骤七：初始化版本显示系统...");
         if (typeof window.amily2Updater !== 'undefined') {
             setTimeout(() => {
