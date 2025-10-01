@@ -226,6 +226,74 @@ export async function writeSummaryToLorebook(pendingData) {
     }
 }
 
+export async function getOptimizationWorldbookContent() {
+    const panel = $("#amily2_chat_optimiser");
+    if (panel.length === 0) {
+        console.warn('[Amily2-正文优化] 未找到主设置面板，无法读取世界书设置。');
+        return '';
+    }
+
+    const settings = {
+        enabled: panel.find('#amily2_wb_enabled').is(':checked'),
+        source: panel.find('input[name="amily2_wb_source"]:checked').val() || 'character',
+        selectedBooks: [],
+        selectedEntries: {},
+    };
+
+    if (!settings.enabled) {
+        return '';
+    }
+
+    panel.find('#amily2_wb_checkbox_list input[type="checkbox"]:checked').each(function() {
+        settings.selectedBooks.push($(this).val());
+    });
+
+    panel.find('#amily2_wb_entry_list input[type="checkbox"]:checked').each(function() {
+        const book = $(this).data('book');
+        const uid = parseInt($(this).data('uid'));
+        if (!settings.selectedEntries[book]) {
+            settings.selectedEntries[book] = [];
+        }
+        settings.selectedEntries[book].push(uid);
+    });
+
+    try {
+        let bookNames = [];
+        if (settings.source === 'manual') {
+            bookNames = settings.selectedBooks;
+        } else {
+            const charLorebooks = await safeCharLorebooks({ type: 'all' });
+            if (charLorebooks.primary) bookNames.push(charLorebooks.primary);
+            if (charLorebooks.additional?.length) bookNames.push(...charLorebooks.additional);
+        }
+
+        if (bookNames.length === 0) return '';
+
+        let allEntries = [];
+        for (const bookName of bookNames) {
+            if (bookName) {
+                const entries = await safeLorebookEntries(bookName);
+                if (entries?.length) {
+                    entries.forEach(entry => allEntries.push({ ...entry, bookName }));
+                }
+            }
+        }
+
+        const userEnabledEntries = allEntries.filter(entry => {
+            if (!entry.enabled) return false;
+            const bookConfig = settings.selectedEntries[entry.bookName];
+            return bookConfig ? bookConfig.includes(entry.uid) : false;
+        });
+
+        const finalContent = userEnabledEntries.map(entry => entry.content).filter(Boolean);
+        return finalContent.join('\n\n---\n\n');
+
+    } catch (error) {
+        console.error(`[Amily2-正文优化] 处理世界书逻辑时出错:`, error);
+        return '';
+    }
+}
+
 
 export async function getPlotOptimizedWorldbookContent(context, apiSettings) {
     const panel = $('#amily2_plot_optimization_panel');
