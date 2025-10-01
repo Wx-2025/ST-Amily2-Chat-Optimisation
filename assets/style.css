@@ -444,6 +444,46 @@ hr.header-divider {
     padding-top: 5px;
 }
 
+/* === New Lore Config Grid Layout === */
+#amily2_chat_optimiser .lore-config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1.5fr;
+    gap: 15px;
+    align-items: start;
+}
+
+#amily2_chat_optimiser .grid-left-col {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    height: 100%;
+}
+
+#amily2_chat_optimiser .grid-right-col {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#amily2_chat_optimiser .grid-right-col .amily2_settings_block {
+    padding: 10px; /* Add some padding for better spacing */
+}
+
+#amily2_chat_optimiser .grid-right-col .amily2_settings_block:last-child {
+    margin-top: auto; /* Pushes the button to the bottom */
+}
+
+#amily2_chat_optimiser .radio-group.vertical {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+#amily2_chat_optimiser .radio-group.vertical label {
+    margin: 0;
+}
+
 /* === 通用样式 === */
 #amily2_chat_optimiser hr { 
     border: none; 
@@ -679,6 +719,3 @@ hr.header-divider {
 #amily2_chat_optimiser .prompt-editor-area textarea {
     flex: 1;
 }
-
-
-
