@@ -52,6 +52,28 @@ function removeTableContainer() {
     }
 }
 
+function bindSwipePreventer(container) {
+    let touchstartX = 0;
+    let touchstartY = 0;
+
+    container.addEventListener('touchstart', function(event) {
+        touchstartX = event.changedTouches[0].screenX;
+        touchstartY = event.changedTouches[0].screenY;
+    }, { passive: true });
+
+    container.addEventListener('touchmove', function(event) {
+        const touchendX = event.changedTouches[0].screenX;
+        const touchendY = event.changedTouches[0].screenY;
+
+        const deltaX = Math.abs(touchendX - touchstartX);
+        const deltaY = Math.abs(touchendY - touchstartY);
+
+        if (deltaX > deltaY) {
+            event.stopPropagation();
+        }
+    }, { passive: false });
+}
+
 export function updateOrInsertTableInChat() {
 
     setTimeout(() => {
@@ -81,6 +103,7 @@ export function updateOrInsertTableInChat() {
             container.id = TABLE_CONTAINER_ID;
             container.innerHTML = htmlContent;
             lastMessage.appendChild(container);
+            bindSwipePreventer(container); // Bind the event listener to prevent swipe conflicts
         } else {
             console.warn('[Amily2] 未找到最后一条消息的容器，无法插入表格。');
         }
