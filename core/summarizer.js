@@ -6,7 +6,7 @@ import { extractContentByTag, replaceContentByTag, extractFullTagBlock } from '.
 import { isGoogleEndpoint, convertToGoogleRequest, parseGoogleResponse, buildGoogleApiUrl, buildPlotOptimizationGoogleRequest, parsePlotOptimizationGoogleResponse } from './utils/googleAdapter.js';
 import { applyExclusionRules } from './utils/rag-tag-extractor.js';
 import {
-  getCombinedWorldbookContent, getPlotOptimizedWorldbookContent,
+  getCombinedWorldbookContent, getPlotOptimizedWorldbookContent, getOptimizationWorldbookContent,
 } from "./lore.js";
 import { getBatchFillerFlowTemplate, convertTablesToCsvString, updateTableFromText, saveStateToMessage, getMemoryState } from './table-system/manager.js';
 import { saveChat } from "/script.js";
@@ -33,6 +33,12 @@ export async function processOptimization(latestMessage, previousMessages) {
     console.time("优化任务总耗时");
  
     try {
+        window.Amily2PreOptimizationSnapshot = {
+            original: null,
+            optimized: null,
+            raw: latestMessage.mes, 
+        };
+
         const originalFullMessage = latestMessage.mes;
         let textToProcess = originalFullMessage;
 
@@ -50,10 +56,16 @@ export async function processOptimization(latestMessage, previousMessages) {
         
         if (!extractedBlock || extractContentByTag(extractedBlock, targetTag)?.trim() === '') {
              console.log(`[Amily2-外交部] 目标标签 <${targetTag}> 未找到或为空，或内容已被完全排除，优化任务已跳过。`);
+             window.Amily2PreOptimizationSnapshot = null;
+             document.dispatchEvent(new CustomEvent('preOptimizationStateUpdated'));
              console.timeEnd("优化任务总耗时");
              console.groupEnd();
              return null;
         }
+        
+        window.Amily2PreOptimizationSnapshot.original = extractContentByTag(extractedBlock, targetTag);
+        document.dispatchEvent(new CustomEvent('preOptimizationStateUpdated'));
+
         textToProcess = extractedBlock;
 
         const context = getContext();
@@ -64,13 +76,7 @@ export async function processOptimization(latestMessage, previousMessages) {
         const historyMessages = lastUserMessage ? previousMessages.slice(0, -1) : previousMessages;
         const history = historyMessages.map(m => (m.mes && m.mes.trim() ? `${m.is_user ? userName : characterName}: ${m.mes.trim()}` : null)).filter(Boolean).join("\n");
  
-        let worldbookContent = "";
-        if (settings.worldbookEnabled) {
-            const character = characters[context.characterId];
-            if (character?.data?.extensions?.world) {
-                worldbookContent = await getCombinedWorldbookContent(character.data.extensions.world);
-            }
-        }
+        const worldbookContent = await getOptimizationWorldbookContent();
         const presetPrompts = await getPresetPrompts('optimization');
         const messages = [
             { role: 'system', content: generateRandomSeed() }
@@ -79,8 +85,6 @@ export async function processOptimization(latestMessage, previousMessages) {
         let currentInteractionContent = lastUserMessage ? `${userName}（用户）最新消息：${lastUserMessage.mes}\n${characterName}（AI）最新消息，[核心处理内容]：${textToProcess}` : `${characterName}（AI）最新消息，[核心处理内容]：${textToProcess}`;
         const fillingMode = settings.filling_mode || 'main-api';
 
-        window.lastPreOptimizationText = currentInteractionContent;
-        document.dispatchEvent(new CustomEvent('preOptimizationTextUpdated'));
 
         const order = getMixedOrder('optimization') || [];
         let promptCounter = 0;
@@ -129,8 +133,6 @@ export async function processOptimization(latestMessage, previousMessages) {
             }
         }
 
-        window.lastPreOptimizationText = currentInteractionContent;
-        document.dispatchEvent(new CustomEvent('preOptimizationTextUpdated'));
         console.groupCollapsed("[Amily2号-最终国书内容 (发往AI)]");
         console.dir(messages);
         console.groupEnd();
@@ -150,9 +152,12 @@ export async function processOptimization(latestMessage, previousMessages) {
         
         if (purifiedTextFromAI?.trim()) {
             finalMessage = replaceContentByTag(originalFullMessage, targetTag, purifiedTextFromAI);
+            window.Amily2PreOptimizationSnapshot.optimized = purifiedTextFromAI;
         } else {
             console.warn(`[Amily2-外交部] AI的回复中未找到有效的目标标签 <${targetTag}>，将保留原始消息。`);
+            window.Amily2PreOptimizationSnapshot.optimized = window.Amily2PreOptimizationSnapshot.original;
         }
+        document.dispatchEvent(new CustomEvent('preOptimizationStateUpdated'));
 
         if (isOptimizationEnabled && fillingMode === 'optimized') {
             await updateTableFromText(rawContent);
@@ -169,8 +174,10 @@ export async function processOptimization(latestMessage, previousMessages) {
         }
 
         const result = {
+            originalContent: originalFullMessage,
             optimizedContent: finalMessage,
         };
+
 
         console.timeEnd("优化任务总耗时");
         console.groupEnd();
