@@ -59,6 +59,7 @@ export const defaultSettings = {
         top_n: 5,
         hybrid_alpha: 0.7,
         notify: true,
+        superSortEnabled: false, 
     },
     knowledgeBases: {},
 };
