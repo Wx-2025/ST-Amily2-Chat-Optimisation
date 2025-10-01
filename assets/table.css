@@ -704,8 +704,8 @@ th.amily2-menu-open .amily2-header-text {
     border: 1px solid var(--am2-table-border, rgba(255, 255, 255, 0.25));
     padding: 5px 8px;
     text-align: left;
+    white-space: nowrap; /* Prevent text from wrapping in cells */
 }
-
 .amily2-chat-table th {
     background-color: var(--am2-header-bg, rgba(255, 255, 255, 0.1));
     font-weight: bold;
@@ -758,3 +758,4 @@ th.amily2-menu-open .amily2-header-text {
     background-color: var(--am2-cell-highlight-bg, rgba(144, 238, 144, 0.3));
     transition: background-color 0.5s ease-in-out;
 }
+
