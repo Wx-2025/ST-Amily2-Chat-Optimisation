@@ -37,7 +37,6 @@ async function loadSillyTavernPresets() {
     
     const select = $('#amily2_preset_selector');
     const settings = extension_settings[extensionName] || {};
-    // 统一使用 tavernProfile 作为主要的预设存储键
     const currentProfileId = settings.tavernProfile || settings.selectedPreset;
 
     select.empty().append(new Option('-- 请选择一个酒馆预设 --', ''));
@@ -99,9 +98,215 @@ function updateApiProviderUI() {
     $('#amily2_api_provider').trigger('change');
 }
 
+function bindAmily2ModalWorldBookSettings() {
+    const settings = extension_settings[extensionName];
+
+    // Initialize settings with unique keys
+    if (settings.amily2_wb_enabled === undefined) settings.amily2_wb_enabled = false;
+    if (settings.amily2_wb_source === undefined) settings.amily2_wb_source = 'character';
+    if (settings.amily2_wb_selected_worldbooks === undefined) settings.amily2_wb_selected_worldbooks = [];
+    if (settings.amily2_wb_selected_entries === undefined) settings.amily2_wb_selected_entries = {};
+
+    const enabledCheckbox = document.getElementById('amily2_wb_enabled');
+    const optionsContainer = document.getElementById('amily2_wb_options_container');
+    const sourceRadios = document.querySelectorAll('input[name="amily2_wb_source"]');
+    const manualSelectWrapper = document.getElementById('amily2_wb_select_wrapper');
+    const bookListContainer = document.getElementById('amily2_wb_checkbox_list');
+    const entryListContainer = document.getElementById('amily2_wb_entry_list');
+
+    if (!enabledCheckbox || !optionsContainer || !sourceRadios.length || !manualSelectWrapper || !bookListContainer || !entryListContainer) {
+        console.warn('[Amily2 Modal] World book UI elements not found, skipping bindings.');
+        return;
+    }
+
+    const saveSelectedEntries = () => {
+        const selected = {};
+        entryListContainer.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+            const book = cb.dataset.book;
+            const uid = cb.dataset.uid;
+            if (!selected[book]) {
+                selected[book] = [];
+            }
+            selected[book].push(uid);
+        });
+        settings.amily2_wb_selected_entries = selected;
+        saveSettingsDebounced();
+    };
+
+    const renderWorldBookEntries = async () => {
+        entryListContainer.innerHTML = '<p class="notes">Loading entries...</p>';
+        const source = settings.amily2_wb_source || 'character';
+        let bookNames = [];
+
+        if (source === 'manual') {
+            bookNames = settings.amily2_wb_selected_worldbooks || [];
+        } else {
+            if (this_chid !== undefined && this_chid >= 0 && characters[this_chid]) {
+                try {
+                    const charLorebooks = await safeCharLorebooks({ type: 'all' });
+                    if (charLorebooks.primary) bookNames.push(charLorebooks.primary);
+                    if (charLorebooks.additional?.length) bookNames.push(...charLorebooks.additional);
+                } catch (error) {
+                    console.error(`[Amily2 Modal] Failed to get character world books:`, error);
+                    entryListContainer.innerHTML = '<p class="notes" style="color:red;">Failed to get character world books.</p>';
+                    return;
+                }
+            } else {
+                entryListContainer.innerHTML = '<p class="notes">Please load a character first.</p>';
+                return;
+            }
+        }
+
+        if (bookNames.length === 0) {
+            entryListContainer.innerHTML = '<p class="notes">No world book selected or linked.</p>';
+            return;
+        }
+
+        try {
+            const allEntries = [];
+            for (const bookName of bookNames) {
+                const entries = await safeLorebookEntries(bookName);
+                entries.forEach(entry => allEntries.push({ ...entry, bookName }));
+            }
+
+            entryListContainer.innerHTML = '';
+            if (allEntries.length === 0) {
+                entryListContainer.innerHTML = '<p class="notes">No entries in the selected world book(s).</p>';
+                return;
+            }
+
+            allEntries.forEach(entry => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                div.title = `World Book: ${entry.bookName}\nUID: ${entry.uid}`;
+                div.style.display = 'flex';
+                div.style.alignItems = 'center';
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.style.marginRight = '5px';
+                checkbox.id = `amily2-wb-entry-check-${entry.bookName}-${entry.uid}`;
+                checkbox.dataset.book = entry.bookName;
+                checkbox.dataset.uid = entry.uid;
+                
+                const isChecked = settings.amily2_wb_selected_entries[entry.bookName]?.includes(String(entry.uid));
+                checkbox.checked = !!isChecked;
+
+                const label = document.createElement('label');
+                label.htmlFor = checkbox.id;
+                label.textContent = entry.comment || 'Untitled Entry';
+
+                div.appendChild(checkbox);
+                div.appendChild(label);
+                entryListContainer.appendChild(div);
+            });
+        } catch (error) {
+            console.error(`[Amily2 Modal] Failed to load world book entries:`, error);
+            entryListContainer.innerHTML = '<p class="notes" style="color:red;">Failed to load entries.</p>';
+        }
+    };
+
+    const renderWorldBookList = async () => {
+        bookListContainer.innerHTML = '<p class="notes">Loading world books...</p>';
+        try {
+            const worldBooks = await safeLorebooks();
+            bookListContainer.innerHTML = '';
+            if (worldBooks && worldBooks.length > 0) {
+                worldBooks.forEach(bookName => {
+                    const div = document.createElement('div');
+                    div.className = 'checkbox-item';
+                    div.title = bookName;
+                    div.style.display = 'flex';
+                    div.style.alignItems = 'center';
+
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.style.marginRight = '5px';
+                    checkbox.id = `amily2-wb-check-${bookName}`;
+                    checkbox.value = bookName;
+                    checkbox.checked = settings.amily2_wb_selected_worldbooks.includes(bookName);
+
+                    checkbox.addEventListener('change', () => {
+                        if (checkbox.checked) {
+                            if (!settings.amily2_wb_selected_worldbooks.includes(bookName)) {
+                                settings.amily2_wb_selected_worldbooks.push(bookName);
+                            }
+                        } else {
+                            settings.amily2_wb_selected_worldbooks = settings.amily2_wb_selected_worldbooks.filter(name => name !== bookName);
+                        }
+                        saveSettingsDebounced();
+                        renderWorldBookEntries();
+                    });
+
+                    const label = document.createElement('label');
+                    label.htmlFor = `amily2-wb-check-${bookName}`;
+                    label.textContent = bookName;
+
+                    div.appendChild(checkbox);
+                    div.appendChild(label);
+                    bookListContainer.appendChild(div);
+                });
+            } else {
+                bookListContainer.innerHTML = '<p class="notes">No world books found.</p>';
+            }
+        } catch (error) {
+            console.error(`[Amily2 Modal] Failed to load world book list:`, error);
+            bookListContainer.innerHTML = '<p class="notes" style="color:red;">Failed to load world book list.</p>';
+        }
+        renderWorldBookEntries();
+    };
+    
+    const updateVisibility = () => {
+        const isEnabled = enabledCheckbox.checked;
+        optionsContainer.style.display = isEnabled ? 'block' : 'none';
+        
+        if (isEnabled) {
+            const isManual = settings.amily2_wb_source === 'manual';
+            manualSelectWrapper.style.display = isManual ? 'block' : 'none';
+            renderWorldBookEntries();
+            if (isManual) {
+                renderWorldBookList();
+            }
+        }
+    };
+
+    // Initial state setup
+    enabledCheckbox.checked = settings.amily2_wb_enabled;
+    sourceRadios.forEach(radio => {
+        radio.checked = radio.value === settings.amily2_wb_source;
+    });
+    updateVisibility();
+
+    // Event Listeners
+    enabledCheckbox.addEventListener('change', () => {
+        settings.amily2_wb_enabled = enabledCheckbox.checked;
+        saveSettingsDebounced();
+        updateVisibility();
+    });
+
+    sourceRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+            if (radio.checked) {
+                settings.amily2_wb_source = radio.value;
+                saveSettingsDebounced();
+                updateVisibility();
+            }
+        });
+    });
+
+    entryListContainer.addEventListener('change', (event) => {
+        if (event.target.type === 'checkbox') {
+            saveSelectedEntries();
+        }
+    });
+
+    console.log('[Amily2 Modal] World book settings bound successfully.');
+}
+
 export function bindModalEvents() {
 
     initializePlotOptimizationBindings();
+    bindAmily2ModalWorldBookSettings();
 
     const container = $("#amily2_drawer_content").length ? $("#amily2_drawer_content") : $("#amily2_chat_optimiser");
     
