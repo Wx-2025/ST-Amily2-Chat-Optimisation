@@ -2,8 +2,9 @@ import { getContext, extension_settings } from "/scripts/extensions.js";
 import { loadWorldInfo } from "/scripts/world-info.js";
 import { saveChat } from "/script.js";
 import { renderTables } from '../../ui/table-bindings.js';
+import { updateOrInsertTableInChat } from '../../ui/message-table-renderer.js';
 import { extensionName } from "../../utils/settings.js";
-import { updateTableFromText, getBatchFillerRuleTemplate, getBatchFillerFlowTemplate, convertTablesToCsvString, saveStateToMessage, getMemoryState } from './manager.js';
+import { updateTableFromText, getBatchFillerRuleTemplate, getBatchFillerFlowTemplate, convertTablesToCsvString, saveStateToMessage, getMemoryState, clearHighlights } from './manager.js';
 import { getPresetPrompts, getMixedOrder } from '../../PresetSettings/index.js';
 import { callAI, generateRandomSeed } from '../api.js';
 import { callNccsAI } from '../api/NccsApi.js';
@@ -48,6 +49,8 @@ async function getWorldBookContext() {
 }
 
 export async function fillWithSecondaryApi(latestMessage) {
+    clearHighlights();
+
     const context = getContext();
     if (context.chat.length <= 1) {
         console.log("[Amily2-副API] 聊天刚开始，跳过本次自动填表。");
@@ -76,11 +79,30 @@ export async function fillWithSecondaryApi(latestMessage) {
     }
 
     try {
-        const textToProcess = latestMessage.mes;
+        let textToProcess = latestMessage.mes;
         if (!textToProcess || !textToProcess.trim()) {
             console.log("[Amily2-副API] 消息内容为空，跳过填表任务。");
-            console.timeEnd("副API填表任务总耗时");
-            console.groupEnd();
+            return;
+        }
+
+        let tagsToExtract, exclusionRules;
+        if (settings.table_independent_rules_enabled) {
+            tagsToExtract = (settings.table_tags_to_extract || '').split(',').map(t => t.trim()).filter(Boolean);
+            exclusionRules = settings.table_exclusion_rules || [];
+        } else {
+            const useHistoriographyRules = settings.historiographyTagExtractionEnabled ?? false;
+            tagsToExtract = useHistoriographyRules ? (settings.historiographyTags || '').split(',').map(t => t.trim()).filter(Boolean) : [];
+            exclusionRules = settings.historiographyExclusionRules || [];
+        }
+
+        if (tagsToExtract.length > 0) {
+            const blocks = extractBlocksByTags(textToProcess, tagsToExtract);
+            textToProcess = blocks.join('\n\n');
+        }
+        textToProcess = applyExclusionRules(textToProcess, exclusionRules);
+
+        if (!textToProcess.trim()) {
+            console.log("[Amily2-副API] 规则处理后消息内容为空，跳过填表任务。");
             return;
         }
 
@@ -241,7 +263,8 @@ export async function fillWithSecondaryApi(latestMessage) {
             const lastMessage = currentContext.chat[currentContext.chat.length - 1];
             if (saveStateToMessage(getMemoryState(), lastMessage)) {
                 saveChat();
-                renderTables(); 
+                renderTables();
+                updateOrInsertTableInChat();
                 return;
             }
         }
@@ -270,21 +293,28 @@ async function getHistoryContext(contextLevel) {
     const userName = context.name1 || '用户';
     const characterName = context.name2 || '角色';
 
-    const useTagExtraction = settings.historiographyTagExtractionEnabled ?? false;
-    const tagsToExtract = useTagExtraction ? (settings.historiographyTags || '').split(',').map(t => t.trim()).filter(Boolean) : [];
-    const exclusionRules = settings.historiographyExclusionRules || [];
+    let tagsToExtract, exclusionRules;
+
+    if (settings.table_independent_rules_enabled) {
+        tagsToExtract = (settings.table_tags_to_extract || '').split(',').map(t => t.trim()).filter(Boolean);
+        exclusionRules = settings.table_exclusion_rules || [];
+    } else {
+        const useHistoriographyRules = settings.historiographyTagExtractionEnabled ?? false;
+        tagsToExtract = useHistoriographyRules ? (settings.historiographyTags || '').split(',').map(t => t.trim()).filter(Boolean) : [];
+        exclusionRules = settings.historiographyExclusionRules || [];
+    }
     
     const messages = historySlice.map((msg, index) => {
         let content = msg.mes;
 
-        if (useTagExtraction && tagsToExtract.length > 0) {
+        if (tagsToExtract.length > 0) {
             const blocks = extractBlocksByTags(content, tagsToExtract);
-            if (blocks.length > 0) {
-                content = blocks.join('\n\n');
-            }
+            content = blocks.length > 0 ? blocks.join('\n\n') : '';
         }
         
-        content = applyExclusionRules(content, exclusionRules);
+        if (content) {
+            content = applyExclusionRules(content, exclusionRules);
+        }
 
         if (!content.trim()) return null;
         
