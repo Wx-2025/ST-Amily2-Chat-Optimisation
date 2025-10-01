@@ -1,1 +1,349 @@
-const _0x204788=_0xd23b;(function(_0x2bcd8e,_0x40a3c3){const _0x334d80=_0xd23b,_0x424d15=_0x2bcd8e();while(!![]){try{const _0x2d999c=parseInt(_0x334d80(0x195))/0x1*(-parseInt(_0x334d80(0x1b0))/0x2)+parseInt(_0x334d80(0x1c8))/0x3+parseInt(_0x334d80(0x173))/0x4*(parseInt(_0x334d80(0x17f))/0x5)+-parseInt(_0x334d80(0x19d))/0x6+-parseInt(_0x334d80(0x183))/0x7*(parseInt(_0x334d80(0x19e))/0x8)+-parseInt(_0x334d80(0x1a8))/0x9+-parseInt(_0x334d80(0x191))/0xa*(-parseInt(_0x334d80(0x194))/0xb);if(_0x2d999c===_0x40a3c3)break;else _0x424d15['push'](_0x424d15['shift']());}catch(_0x303650){_0x424d15['push'](_0x424d15['shift']());}}}(_0x1697,0x4cd7a));import{renderExtensionTemplateAsync}from'/scripts/extensions.js';function _0xd23b(_0x1dbe35,_0x2fddd3){const _0x169702=_0x1697();return _0xd23b=function(_0xd23baf,_0x365699){_0xd23baf=_0xd23baf-0x172;let _0x6014e5=_0x169702[_0xd23baf];return _0x6014e5;},_0xd23b(_0x1dbe35,_0x2fddd3);}function _0x1697(){const _0x32d0e9=['filter','appendChild','transform\x200.2s\x20ease,\x20box-shadow\x200.2s\x20ease','clientX','lastPreOptimizationText','info','touchstart','/PreOptimizationViewer','grab','title','50px','【查看器】','template','var(--primary-color)','.popup-header\x20h4','find','touchend.draggable','44px','outerWidth','trim','346080yDwMvl','min','classList','preventDefault','clientY','body','fixed','8404bbrIUo','center','text','touches','优化前文','pre-optimization-viewer-btn','list-group-item','translate(-50%,\x20-50%)','flex','hidden','extensionsMenu','changedTouches','1225aPntnh','mouseup.draggable','type','flex-container','165221hesKct','test','top','优化前文查看器已关闭。','优化前文查看器已开启。','preOptimizationTextUpdated','css','createElement','stopPropagation','50%','9998','getElementById','#pre-optimization-content','show','10760OccMmA','max','third-party/','5038yamgTP','1qdhkgq','目前没有可供查看的优化前文。','优化前文已实时更新。','originalEvent','打开/关闭优化前文查看器','transparent','setItem','56px','1090746QqgbLx','8dmyONa','success','left','outerHeight','val','<i\x20class=\x22fa-solid\x20fa-file-alt\x22></i><span>查看优化前文</span>','length','auto','width','remove','3824010tQLsEk','touchmove.draggable','addEventListener','height','userAgent','none','touchend','click','355766YppuCB','offset','add','innerHTML'];_0x1697=function(){return _0x32d0e9;};return _0x1697();}import{POPUP_TYPE,Popup}from'/scripts/popup.js';import{extensionName}from'../utils/settings.js';const preOptimizationViewerPath=_0x204788(0x193)+extensionName+_0x204788(0x1bb);let viewerOrb=null;function addViewerButton(){const _0x38acdc=_0x204788,_0x39c998=document[_0x38acdc(0x18a)]('div');_0x39c998['id']=_0x38acdc(0x178),_0x39c998[_0x38acdc(0x1ca)][_0x38acdc(0x1b2)](_0x38acdc(0x179),_0x38acdc(0x182),'flexGap5','interactable'),_0x39c998[_0x38acdc(0x1b3)]=_0x38acdc(0x1a3),_0x39c998[_0x38acdc(0x1bd)]=_0x38acdc(0x199);const _0x8354d2=document[_0x38acdc(0x18e)](_0x38acdc(0x17d));_0x8354d2&&(_0x8354d2[_0x38acdc(0x1b5)](_0x39c998),$(_0x39c998)['on'](_0x38acdc(0x1af),toggleViewerOrb));}function toggleViewerOrb(){const _0x124574=_0x204788;if(viewerOrb&&viewerOrb[_0x124574(0x1a4)]>0x0)viewerOrb[_0x124574(0x1a7)](),viewerOrb=null,toastr[_0x124574(0x1b9)](_0x124574(0x186));else{viewerOrb=$('<div\x20id=\x22viewer-orb\x22\x20title=\x22点击查看优化前文\x20(可拖拽)\x22></div>');const _0x40aee5=/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i[_0x124574(0x184)](navigator[_0x124574(0x1ac)]);viewerOrb[_0x124574(0x189)]({'position':_0x124574(0x172),'top':'50%','left':_0x124574(0x18c),'transform':_0x124574(0x17a),'width':_0x40aee5?_0x124574(0x19c):_0x124574(0x1be),'height':_0x40aee5?_0x124574(0x19c):_0x124574(0x1be),'minWidth':_0x124574(0x1c5),'minHeight':'44px','backgroundColor':_0x124574(0x1c1),'color':'white','borderRadius':_0x124574(0x18c),'display':_0x124574(0x17b),'justifyContent':_0x124574(0x174),'alignItems':_0x124574(0x174),'cursor':_0x124574(0x1bc),'zIndex':_0x124574(0x18d),'boxShadow':'0\x204px\x2012px\x20rgba(0,0,0,0.3)','transition':'transform\x200.2s\x20ease,\x20box-shadow\x200.2s\x20ease','userSelect':_0x124574(0x1ad),'webkitUserSelect':_0x124574(0x1ad),'webkitTouchCallout':_0x124574(0x1ad),'webkitTapHighlightColor':_0x124574(0x19a),'touchAction':_0x124574(0x1ad)}),viewerOrb['html']('<i\x20class=\x22fa-solid\x20fa-file-alt\x20fa-lg\x22></i>'),$('body')['append'](viewerOrb),makeDraggable(viewerOrb,showViewerPopup),toastr['info'](_0x124574(0x187));}}async function showViewerPopup(){const _0x1f4ee5=_0x204788,_0x5f4b46=window[_0x1f4ee5(0x1b8)];if(!_0x5f4b46){toastr[_0x1f4ee5(0x1b9)](_0x1f4ee5(0x196));return;}const _0x39079d=await renderExtensionTemplateAsync(preOptimizationViewerPath,_0x1f4ee5(0x1c0)),_0x5b6f5f=$(_0x39079d);_0x5b6f5f['find']('#pre-optimization-content')['val'](_0x5f4b46),new Popup(_0x5b6f5f,POPUP_TYPE['OK'],_0x1f4ee5(0x177),{'wide':!![],'large':!![]})[_0x1f4ee5(0x190)]();}function makeDraggable(_0x12ba03,_0xee5438){const _0x55b301=_0x204788;let _0x30cece=![],_0xad2cba=![],_0x5d7dc4={'x':0x0,'y':0x0},_0x814ec9={'x':0x0,'y':0x0};const _0x435ccb=_0x447dc5=>{const _0x23bb19=_0xd23b;if(_0x447dc5['touches']&&_0x447dc5[_0x23bb19(0x176)]['length']>0x0)return{'x':_0x447dc5[_0x23bb19(0x176)][0x0][_0x23bb19(0x1b7)],'y':_0x447dc5['touches'][0x0][_0x23bb19(0x1cc)]};else{if(_0x447dc5['changedTouches']&&_0x447dc5[_0x23bb19(0x17e)]['length']>0x0)return{'x':_0x447dc5['changedTouches'][0x0]['clientX'],'y':_0x447dc5[_0x23bb19(0x17e)][0x0]['clientY']};}return{'x':_0x447dc5['clientX'],'y':_0x447dc5[_0x23bb19(0x1cc)]};},_0x9ee7a0=_0x11d50c=>{const _0x15d847=_0xd23b,_0x1d541c=$(window)[_0x15d847(0x1a6)](),_0x936b3e=$(window)[_0x15d847(0x1ab)](),_0xdeaed=_0x11d50c[_0x15d847(0x1c6)](),_0x164faa=_0x11d50c[_0x15d847(0x1a1)]();let _0x321a7a=_0x11d50c[_0x15d847(0x1b1)](),_0xf68ab4=Math[_0x15d847(0x192)](0x0,Math[_0x15d847(0x1c9)](_0x321a7a[_0x15d847(0x1a0)],_0x1d541c-_0xdeaed)),_0x3914b7=Math[_0x15d847(0x192)](0x0,Math['min'](_0x321a7a[_0x15d847(0x185)],_0x936b3e-_0x164faa));_0x11d50c[_0x15d847(0x189)]({'left':_0xf68ab4+'px','top':_0x3914b7+'px','transform':'none'}),localStorage[_0x15d847(0x19b)]('preOptimizationViewer_buttonPos',JSON['stringify']({'left':_0xf68ab4+'px','top':_0x3914b7+'px'}));},_0x934d28=_0x241daa=>{const _0x4a9e9f=_0xd23b;_0x241daa[_0x4a9e9f(0x1cb)](),_0x30cece=!![],_0xad2cba=![];const _0x91bfd=_0x435ccb(_0x241daa[_0x4a9e9f(0x198)]||_0x241daa);_0x5d7dc4={'x':_0x91bfd['x'],'y':_0x91bfd['y']};const _0x18779c=_0x12ba03[_0x4a9e9f(0x1b1)]();_0x814ec9={'x':_0x18779c[_0x4a9e9f(0x1a0)],'y':_0x18779c[_0x4a9e9f(0x185)]},_0x12ba03[_0x4a9e9f(0x189)]({'cursor':'grabbing','user-select':_0x4a9e9f(0x1ad),'pointer-events':_0x4a9e9f(0x1a5),'transition':_0x4a9e9f(0x1ad)}),$(_0x4a9e9f(0x1cd))[_0x4a9e9f(0x189)]({'user-select':_0x4a9e9f(0x1ad),'-webkit-user-select':'none','overflow':_0x4a9e9f(0x17c)});},_0x3b89fd=_0x19a029=>{const _0x4bed81=_0xd23b;if(!_0x30cece)return;_0x19a029[_0x4bed81(0x1cb)](),_0xad2cba=!![];const _0x4a9a05=_0x435ccb(_0x19a029['originalEvent']||_0x19a029),_0x56e006=_0x4a9a05['x']-_0x5d7dc4['x'],_0x5d5fe1=_0x4a9a05['y']-_0x5d7dc4['y'];let _0x683c59=_0x814ec9['x']+_0x56e006,_0x3ccdd3=_0x814ec9['y']+_0x5d5fe1;const _0x4ea894=$(window)[_0x4bed81(0x1a6)](),_0x3fef21=$(window)['height'](),_0x50bed0=_0x12ba03[_0x4bed81(0x1c6)](),_0x23df48=_0x12ba03[_0x4bed81(0x1a1)]();_0x683c59=Math[_0x4bed81(0x192)](0x0,Math[_0x4bed81(0x1c9)](_0x683c59,_0x4ea894-_0x50bed0)),_0x3ccdd3=Math[_0x4bed81(0x192)](0x0,Math['min'](_0x3ccdd3,_0x3fef21-_0x23df48)),_0x12ba03[_0x4bed81(0x189)]({'left':_0x683c59+'px','top':_0x3ccdd3+'px','transform':'none'});},_0x490115=_0xb7990=>{const _0x5c5733=_0xd23b;if(!_0x30cece)return;_0x30cece=![],_0x12ba03[_0x5c5733(0x189)]({'cursor':'grab','user-select':'auto','transition':_0x5c5733(0x1b6)}),$(_0x5c5733(0x1cd))[_0x5c5733(0x189)]({'user-select':_0x5c5733(0x1a5),'-webkit-user-select':_0x5c5733(0x1a5),'overflow':_0x5c5733(0x1a5)}),_0x9ee7a0(_0x12ba03),!_0xad2cba&&_0xee5438&&(_0xb7990[_0x5c5733(0x181)]===_0x5c5733(0x1ae)?(_0xb7990[_0x5c5733(0x1cb)](),setTimeout(_0xee5438,0xa)):_0xee5438());};_0x12ba03['on']('mousedown',_0x934d28),_0x12ba03['on'](_0x55b301(0x1ba),_0x934d28),$(document)['on']('mousemove.draggable',_0x3b89fd),$(document)['on'](_0x55b301(0x1a9),_0x3b89fd),$(document)['on'](_0x55b301(0x180),_0x490115),$(document)['on'](_0x55b301(0x1c4),_0x490115),_0x12ba03['on']('click',_0x42b96a=>{const _0x4b97cb=_0x55b301;_0xad2cba&&(_0x42b96a[_0x4b97cb(0x1cb)](),_0x42b96a[_0x4b97cb(0x18b)]());}),$(window)['on']('resize.draggable',()=>{const _0x25ac0e=_0x55b301;_0x12ba03[_0x25ac0e(0x1a4)]&&_0x9ee7a0(_0x12ba03);}),_0x12ba03[_0x55b301(0x189)]({'cursor':_0x55b301(0x1bc),'user-select':_0x55b301(0x1ad),'-webkit-user-select':_0x55b301(0x1ad)});}function handleTextUpdate(){const _0x54d2d9=_0x204788,_0x1199fc=$('.popup:visible')[_0x54d2d9(0x1b4)](function(){const _0x1f5bf2=_0x54d2d9;return $(this)[_0x1f5bf2(0x1c3)](_0x1f5bf2(0x1c2))[_0x1f5bf2(0x175)]()[_0x1f5bf2(0x1c7)]()===_0x1f5bf2(0x177);});if(_0x1199fc['length']>0x0){const _0x474a49=_0x1199fc[_0x54d2d9(0x1c3)](_0x54d2d9(0x18f));_0x474a49[_0x54d2d9(0x1a2)]('正在等待新的优化前文...'),setTimeout(()=>{const _0x4c84c6=_0x54d2d9,_0x9883af=window['lastPreOptimizationText'];_0x474a49[_0x4c84c6(0x1a2)](_0x9883af),toastr[_0x4c84c6(0x19f)](_0x4c84c6(0x197),_0x4c84c6(0x1bf),{'timeOut':0x7d0});},0x64);}}const interval=setInterval(()=>{const _0x2ef1b3=_0x204788;document['getElementById'](_0x2ef1b3(0x17d))&&(clearInterval(interval),addViewerButton(),document[_0x2ef1b3(0x1aa)](_0x2ef1b3(0x188),handleTextUpdate));},0x1f4);
+import { renderExtensionTemplateAsync, extension_settings } from '/scripts/extensions.js';
+import { POPUP_TYPE, Popup } from '/scripts/popup.js';
+import { extensionName } from '../utils/settings.js';
+import { applyExclusionRules } from '../core/utils/rag-tag-extractor.js';
+
+const preOptimizationViewerPath = `third-party/${extensionName}/PreOptimizationViewer`;
+let viewerOrb = null;
+function addViewerButton() {
+    const button = document.createElement('div');
+    button.id = 'pre-optimization-viewer-btn';
+    button.classList.add('list-group-item', 'flex-container', 'flexGap5', 'interactable');
+    button.innerHTML = `<i class="fa-solid fa-file-alt"></i><span>查看优化前文</span>`;
+    button.title = '打开/关闭优化前文查看器';
+
+    const extensionsMenu = document.getElementById('extensionsMenu');
+    if (extensionsMenu) {
+        extensionsMenu.appendChild(button);
+        $(button).on('click', toggleViewerOrb);
+    }
+}
+
+
+function toggleViewerOrb() {
+    if (viewerOrb && viewerOrb.length > 0) {
+        viewerOrb.remove();
+        viewerOrb = null;
+        toastr.info('优化前文查看器已关闭。');
+    } else {
+        viewerOrb = $(`<div id="viewer-orb" title="点击查看优化前文 (可拖拽)"></div>`);
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        viewerOrb.css({
+            position: 'fixed',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: isMobile ? '56px' : '50px',
+            height: isMobile ? '56px' : '50px',
+            minWidth: '44px', 
+            minHeight: '44px',
+            backgroundColor: 'var(--primary-color)',
+            color: 'white',
+            borderRadius: '50%',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            cursor: 'grab',
+            zIndex: '9998',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+            userSelect: 'none',
+            webkitUserSelect: 'none',
+            webkitTouchCallout: 'none',
+            webkitTapHighlightColor: 'transparent', 
+            touchAction: 'none' 
+        });
+        viewerOrb.html('<i class="fa-solid fa-file-alt fa-lg"></i>');
+        $('body').append(viewerOrb);
+
+        makeDraggable(viewerOrb, showViewerPopup);
+
+        toastr.info('优化前文查看器已开启。');
+    }
+}
+
+function loadJsDiff() {
+    return new Promise((resolve, reject) => {
+        if (window.Diff) {
+            resolve();
+            return;
+        }
+        const script = document.createElement('script');
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jsdiff/5.1.0/diff.min.js';
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+}
+
+
+async function renderDiffContent($contentContainer) {
+    const snapshot = window.Amily2PreOptimizationSnapshot;
+
+    if (!snapshot || !snapshot.original) {
+        $contentContainer.html('<p style="color: grey;">尚未捕获到优化前文。</p>');
+        return;
+    }
+
+    const settings = extension_settings[extensionName];
+    let originalText = snapshot.original;
+
+    if (settings.optimizationExclusionEnabled && settings.optimizationExclusionRules?.length > 0) {
+        originalText = applyExclusionRules(originalText, settings.optimizationExclusionRules);
+    }
+
+    const normalizeWhitespace = (text) => {
+
+        return text.replace(/\n{3,}/g, '\n\n').trim();
+    };
+
+    originalText = normalizeWhitespace(originalText);
+
+    if (snapshot.optimized === null) {
+        const fallbackHtml = `
+            <div class="diff-fallback">
+                <h4>正在等待优化结果...</h4>
+                <p>这通常需要几秒钟的时间。以下是优化前的原始文本（已应用排除和规范化规则）：</p>
+                <hr>
+                <pre style="white-space: pre-wrap; word-wrap: break-word;">${originalText.replace(/</g, '<').replace(/>/g, '>')}</pre>
+            </div>`;
+        $contentContainer.html(fallbackHtml);
+        return;
+    }
+
+    try {
+        await loadJsDiff();
+        const { optimized } = snapshot;
+
+        let cleanedOptimized = optimized.replace(/<!--[\s\S]*?-->/g, '');
+
+        cleanedOptimized = normalizeWhitespace(cleanedOptimized);
+
+        const diff = window.Diff.diffLines(originalText, cleanedOptimized, { newlineIsToken: true });
+        
+        let diffHtml = '<pre style="white-space: pre-wrap; word-wrap: break-word;">';
+        diff.forEach(part => {
+            const color = part.added ? 'green' : part.removed ? 'red' : 'grey';
+            const text = part.value.replace(/</g, '<').replace(/>/g, '>');
+            if (part.removed) {
+                diffHtml += `<del style="color: ${color}; background-color: rgba(255, 0, 0, 0.1); text-decoration: none;">${text}</del>`;
+            } else if (part.added) {
+                diffHtml += `<ins style="color: ${color}; background-color: rgba(0, 255, 0, 0.1); text-decoration: none;">${text}</ins>`;
+            } else {
+                diffHtml += `<span style="color: ${color};">${text}</span>`;
+            }
+        });
+        diffHtml += '</pre>';
+        $contentContainer.html(diffHtml);
+
+    } catch (error) {
+        toastr.warning('加载差异对比库失败，将分别显示原文。');
+        const fallbackHtml = `<div class="diff-fallback">
+                                <h4>未能加载差异对比视图</h4>
+                                <p>这通常是由于网络问题无法访问 cdnjs.cloudflare.com 导致的。以下是优化前后的文本：</p>
+                                <hr>
+                                <h5>优化前（已应用排除和规范化规则）</h5>
+                                <pre style="white-space: pre-wrap; word-wrap: break-word;">${originalText.replace(/</g, '<').replace(/>/g, '>')}</pre>
+                                <hr>
+                                <h5>优化后</h5>
+                                <pre style="white-space: pre-wrap; word-wrap: break-word;">${normalizeWhitespace(snapshot.optimized.replace(/<!--[\s\S]*?-->/g, '')).replace(/</g, '<').replace(/>/g, '>')}</pre>
+                              </div>`;
+        $contentContainer.html(fallbackHtml);
+    }
+}
+
+async function showViewerPopup() {
+    const snapshot = window.Amily2PreOptimizationSnapshot;
+    if (!snapshot || !snapshot.original) {
+        toastr.info('目前没有可供查看的优化前文。');
+        return;
+    }
+
+    const templateHtml = await renderExtensionTemplateAsync(preOptimizationViewerPath, 'template');
+    const template = $(templateHtml);
+    const contentDiv = template.find('#pre-optimization-content');
+
+    await renderDiffContent(contentDiv);
+
+    new Popup(template, POPUP_TYPE.OK, '优化前后对比', {
+        wide: true,
+        large: true,
+        allowVerticalScrolling: true 
+    }).show();
+}
+
+
+function makeDraggable($element, onClick) {
+    let isDragging = false;
+    let hasDragged = false;
+    let startPos = { x: 0, y: 0 };
+    let elementStartPos = { x: 0, y: 0 };
+
+    const getEventCoords = (e) => {
+        if (e.touches && e.touches.length > 0) {
+            return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+        } else if (e.changedTouches && e.changedTouches.length > 0) {
+            return { x: e.changedTouches[0].clientX, y: e.changedTouches[0].clientY };
+        }
+        return { x: e.clientX, y: e.clientY };
+    };
+
+    const keepInBounds = ($elem) => {
+        const windowWidth = $(window).width();
+        const windowHeight = $(window).height();
+        const elemWidth = $elem.outerWidth();
+        const elemHeight = $elem.outerHeight();
+        
+        let currentPos = $elem.offset();
+        let newLeft = Math.max(0, Math.min(currentPos.left, windowWidth - elemWidth));
+        let newTop = Math.max(0, Math.min(currentPos.top, windowHeight - elemHeight));
+        
+        $elem.css({
+            left: newLeft + 'px',
+            top: newTop + 'px',
+            transform: 'none'
+        });
+
+        localStorage.setItem('preOptimizationViewer_buttonPos', JSON.stringify({
+            left: newLeft + 'px',
+            top: newTop + 'px'
+        }));
+    };
+
+
+    const dragStart = (e) => {
+        e.preventDefault();
+        
+        isDragging = true;
+        hasDragged = false;
+        
+        const coords = getEventCoords(e.originalEvent || e);
+        startPos = { x: coords.x, y: coords.y };
+        
+        const offset = $element.offset();
+        elementStartPos = { x: offset.left, y: offset.top };
+        
+        $element.css({
+            'cursor': 'grabbing',
+            'user-select': 'none',
+            'pointer-events': 'auto',
+            'transition': 'none'
+        });
+
+        $('body').css({
+            'user-select': 'none',
+            '-webkit-user-select': 'none',
+            'overflow': 'hidden'
+        });
+    };
+
+    const dragMove = (e) => {
+        if (!isDragging) return;
+
+        e.preventDefault();
+        
+        hasDragged = true;
+        
+        const coords = getEventCoords(e.originalEvent || e);
+        const deltaX = coords.x - startPos.x;
+        const deltaY = coords.y - startPos.y;
+        
+        let newLeft = elementStartPos.x + deltaX;
+        let newTop = elementStartPos.y + deltaY;
+
+        const windowWidth = $(window).width();
+        const windowHeight = $(window).height();
+        const elemWidth = $element.outerWidth();
+        const elemHeight = $element.outerHeight();
+        
+        newLeft = Math.max(0, Math.min(newLeft, windowWidth - elemWidth));
+        newTop = Math.max(0, Math.min(newTop, windowHeight - elemHeight));
+        
+        $element.css({
+            left: newLeft + 'px',
+            top: newTop + 'px',
+            transform: 'none'
+        });
+    };
+
+
+    const dragEnd = (e) => {
+        if (!isDragging) return;
+        
+        isDragging = false;
+        
+        $element.css({
+            'cursor': 'grab',
+            'user-select': 'auto',
+            'transition': 'transform 0.2s ease, box-shadow 0.2s ease' 
+        });
+
+        $('body').css({
+            'user-select': 'auto',
+            '-webkit-user-select': 'auto',
+            'overflow': 'auto'
+        });
+
+        keepInBounds($element);
+
+        if (!hasDragged && onClick) {
+
+            if (e.type === 'touchend') {
+                e.preventDefault();
+                setTimeout(onClick, 10); 
+            } else {
+                onClick();
+            }
+        }
+    };
+
+    $element.on('mousedown', dragStart);
+    $element.on('touchstart', dragStart);
+
+    $(document).on('mousemove.draggable', dragMove);
+    $(document).on('touchmove.draggable', dragMove);
+    $(document).on('mouseup.draggable', dragEnd);
+    $(document).on('touchend.draggable', dragEnd);
+
+    $element.on('click', (e) => {
+        if (hasDragged) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    });
+
+    $(window).on('resize.draggable', () => {
+        if ($element.length) {
+            keepInBounds($element);
+        }
+    });
+
+    $element.css({
+        'cursor': 'grab',
+        'user-select': 'none',
+        '-webkit-user-select': 'none'
+    });
+}
+
+
+function handleTextUpdate() {
+    const $popup = $('.popup:visible').filter(function() {
+        return $(this).find('.popup-header h4').text().trim() === '优化前后对比';
+    });
+
+    if ($popup.length > 0) {
+        const $contentDiv = $popup.find('#pre-optimization-content');
+        renderDiffContent($contentDiv);
+        toastr.success('优化对比已实时更新。', '【查看器】', { timeOut: 2000 });
+    }
+}
+
+
+const interval = setInterval(() => {
+    if (document.getElementById('extensionsMenu')) {
+        clearInterval(interval);
+        addViewerButton();
+        document.addEventListener('preOptimizationStateUpdated', handleTextUpdate);
+    }
+}, 500);
