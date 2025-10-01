@@ -318,35 +318,62 @@
             </fieldset>
 
 <fieldset class="settings-group">
+    <legend><i class="fas fa-book-open"></i> 世界书档案司</legend>
 
-    <legend><i class="fas fa-book-open"></i> 世界书档案司与律法</legend>
+    <div class="amily2_settings_block">
+        <label for="amily2_wb_enabled">启用世界书</label>
+        <label class="toggle-switch">
+            <input id="amily2_wb_enabled" type="checkbox">
+            <span class="slider"></span>
+        </label>
+        <small class="notes">启用后，将根据下方配置读取世界书内容作为参考。</small>
+    </div>
 
-    <div class="amily2_lore_config_wrapper">
-
-        <div class="amily2_lore_config_section">
-            <div class="amily2_settings_block">
-                <label>连接世界书进行优化</label>
-                <label class="toggle-switch">
-                   <input id="amily2_worldbook_enabled" type="checkbox">
-                   <span class="slider"></span>
-                </label>
-               <small class="notes">独立开关：决定优化时是否读取世界书内容作为参考。</small>
-           </div>
-           <div class="amily2_settings_block">
-               <label>总结写入目标:</label>
-               <div class="radio-group">
-                   <input type="radio" id="amily2_target_main" name="amily2_lorebook_target" value="character_main" checked>
-                   <label for="amily2_target_main">写入【主世界书】</label>
-                   <input type="radio" id="amily2_target_dedicated" name="amily2_lorebook_target" value="dedicated">
-                   <label for="amily2_target_dedicated">写入【独立档案】</label>
-               </div>
-               <small class="notes">此设置仅在“启用即时总结”开启时生效。</small>
-           </div>
+    <div id="amily2_wb_options_container" style="display: none;">
+        <hr style="border-style: dashed; margin: 10px 0;">
+        <div class="amily2_settings_block">
+            <label>世界书来源:</label>
+            <div class="radio-group">
+                <input type="radio" id="amily2_wb_source_character" name="amily2_wb_source" value="character" checked>
+                <label for="amily2_wb_source_character">角色世界书</label>
+                <input type="radio" id="amily2_wb_source_manual" name="amily2_wb_source" value="manual">
+                <label for="amily2_wb_source_manual">手动选择</label>
+            </div>
         </div>
 
-        <div class="amily2_vertical_divider"></div>
+        <div id="amily2_wb_select_wrapper" style="display: none;">
+            <div class="amily2_settings_block">
+                <label>选择世界书:</label>
+                <div id="amily2_wb_checkbox_list" class="checkbox-list-container" style="max-height: 120px; overflow-y: auto; border: 1px solid #444; padding: 5px; border-radius: 5px; margin-top: 5px;">
+                    <!-- World book list will be populated here -->
+                </div>
+            </div>
+        </div>
 
-        <div class="amily2_lore_config_section">
+        <div class="amily2_settings_block">
+            <label>选择条目:</label>
+            <div id="amily2_wb_entry_list" class="checkbox-list-container" style="max-height: 150px; overflow-y: auto; border: 1px solid #444; padding: 5px; border-radius: 5px; margin-top: 5px;">
+                <!-- Entry list will be populated here -->
+            </div>
+        </div>
+    </div>
+</fieldset>
+<fieldset class="settings-group">
+    <legend><i class="fas fa-gavel"></i> 总结与律法</legend>
+    <div class="lore-config-grid">
+        <!-- Left Column -->
+        <div class="amily2_settings_block grid-left-col">
+            <label>总结写入目标:</label>
+            <div class="radio-group vertical">
+                <input type="radio" id="amily2_target_main" name="amily2_lorebook_target" value="character_main" checked>
+                <label for="amily2_target_main">写入【主世界书】</label>
+                <input type="radio" id="amily2_target_dedicated" name="amily2_lorebook_target" value="dedicated">
+                <label for="amily2_target_dedicated">写入【独立档案】</label>
+            </div>
+            <small class="notes">此设置仅在“启用即时总结”开启时生效。</small>
+        </div>
+        <!-- Right Column -->
+        <div class="grid-right-col">
             <div class="amily2_settings_block">
                 <label for="amily2_lore_activation_mode">默认激活模式:</label>
                 <select id="amily2_lore_activation_mode" class="text_pole">
@@ -366,14 +393,13 @@
             </div>
             <div id="amily2_lore_depth_container" class="amily2_settings_block" style="display: none;">
                 <label for="amily2_lore_depth_input">注入深度:</label>
-                <input id="amily2_lore_depth_input" title="深度" class="text_pole wideMax100px margin0" type="number" name="depth" placeholder="2" min="0" max="9999" style="width: calc(3em + 25px);">
+                <input id="amily2_lore_depth_input" title="深度" class="text_pole" type="number" name="depth" placeholder="2" min="0" max="9999">
             </div>
-            <div class="amily2_settings_block" style="margin-top: auto;">
+            <div class="amily2_settings_block">
                 <button id="amily2_save_lore_settings" class="menu_button"><i class="fas fa-save"></i> 确认敕令</button>
                 <small id="amily2_lore_save_status" class="notes" style="text-align: center; width: 100%;"></small>
             </div>
         </div>
-
     </div>
 </fieldset>
 
