@@ -6,6 +6,7 @@ import { extension_settings, getContext } from '/scripts/extensions.js';
 import { extensionName } from '../utils/settings.js';
 import { saveSettingsDebounced } from '/script.js';
 import { startBatchFilling } from '../core/table-system/batch-filler.js';
+import { showHtmlModal } from './page-window.js';
 import { DEFAULT_AI_RULE_TEMPLATE, DEFAULT_AI_FLOW_TEMPLATE } from '../core/table-system/settings.js';
 import { world_names, loadWorldInfo } from '/scripts/world-info.js';
 import { safeCharLorebooks, safeLorebookEntries } from '../core/tavernhelper-compatibility.js';
@@ -490,6 +491,74 @@ export function renderTables() {
 }
 
 
+function openTableRuleEditor() {
+    const settings = extension_settings[extensionName];
+    const tags = settings.table_tags_to_extract || '';
+    const exclusionRules = settings.table_exclusion_rules || [];
+
+    const rulesHtml = exclusionRules.map((rule, index) => `
+        <div class="exclusion-rule-item" data-index="${index}">
+            <input type="text" class="text_pole rule-start" value="${rule.start}" placeholder="起始标记">
+            <span>-</span>
+            <input type="text" class="text_pole rule-end" value="${rule.end}" placeholder="结束标记">
+            <button class="menu_button danger small_button remove-rule-btn"><i class="fas fa-trash-alt"></i></button>
+        </div>
+    `).join('');
+
+    const modalHtml = `
+        <div id="table-rules-editor" style="display: flex; flex-direction: column; gap: 20px;">
+            <div>
+                <label for="table-tags-input"><b>标签提取 (半角逗号分隔)</b></label>
+                <input type="text" id="table-tags-input" class="text_pole" value="${tags}" placeholder="例如: content,game,time">
+                <small class="notes">仅提取指定XML标签的内容，例如填“content”，即提取<content>...</content>中的内容。</small>
+            </div>
+            <div>
+                <label><b>内容排除规则</b></label>
+                <div id="exclusion-rules-list" style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">${rulesHtml}</div>
+                <button id="add-exclusion-rule-btn" class="menu_button small_button" style="margin-top: 10px;"><i class="fas fa-plus"></i> 添加规则</button>
+                <small class="notes">移除所有被起始和结束标记包裹的内容（例如 OOC 部分）。</small>
+            </div>
+        </div>
+    `;
+
+    const dialog = showHtmlModal('配置独立提取规则', modalHtml, {
+        onOk: () => {
+            const newTags = document.getElementById('table-tags-input').value;
+            updateAndSaveTableSetting('table_tags_to_extract', newTags);
+
+            const newExclusionRules = [];
+            document.querySelectorAll('#exclusion-rules-list .exclusion-rule-item').forEach(item => {
+                const start = item.querySelector('.rule-start').value.trim();
+                const end = item.querySelector('.rule-end').value.trim();
+                if (start && end) {
+                    newExclusionRules.push({ start, end });
+                }
+            });
+            updateAndSaveTableSetting('table_exclusion_rules', newExclusionRules);
+            toastr.success('独立提取规则已保存。');
+        },
+        onShow: (dialogElement) => {
+            const rulesList = dialogElement.find('#exclusion-rules-list');
+
+            dialogElement.find('#add-exclusion-rule-btn').on('click', () => {
+                const newIndex = rulesList.children().length;
+                const newItemHtml = `
+                    <div class="exclusion-rule-item" data-index="${newIndex}">
+                        <input type="text" class="text_pole rule-start" value="" placeholder="起始标记">
+                        <span>-</span>
+                        <input type="text" class="text_pole rule-end" value="" placeholder="结束标记">
+                        <button class="menu_button danger small_button remove-rule-btn"><i class="fas fa-trash-alt"></i></button>
+                    </div>`;
+                rulesList.append(newItemHtml);
+            });
+
+            rulesList.on('click', '.remove-rule-btn', function() {
+                $(this).closest('.exclusion-rule-item').remove();
+            });
+        }
+    });
+}
+
 function openRuleEditor(tableIndex) {
     const tables = TableManager.getMemoryState();
     if (!tables || !tables[tableIndex]) return;
@@ -884,6 +953,9 @@ export function bindTableEvents() {
     const contextSliderContainer = document.getElementById('context-reading-slider-container');
     const contextSlider = document.getElementById('context-reading-slider');
     const contextValueSpan = document.getElementById('context-reading-value');
+    const independentRulesContainer = document.getElementById('table-independent-rules-container');
+    const independentRulesToggle = document.getElementById('table-independent-rules-enabled');
+    const configureRulesBtn = document.getElementById('table-configure-rules-btn');
     
     const updateFillingModeUI = () => {
         const currentMode = extension_settings[extensionName]?.filling_mode || 'main-api';
@@ -891,12 +963,18 @@ export function bindTableEvents() {
             radio.checked = (radio.value === currentMode);
         });
 
+        const isSecondaryMode = currentMode === 'secondary-api';
+
         if (contextSliderContainer) {
-            if (currentMode === 'secondary-api') {
-                contextSliderContainer.style.display = 'block';
-            } else {
-                contextSliderContainer.style.display = 'none';
-            }
+            contextSliderContainer.style.display = isSecondaryMode ? 'block' : 'none';
+        }
+
+        if (independentRulesContainer) {
+            independentRulesContainer.style.display = 'flex';
+        }
+
+        if (independentRulesToggle && configureRulesBtn) {
+            configureRulesBtn.style.display = independentRulesToggle.checked ? 'block' : 'none';
         }
     };
 
@@ -929,7 +1007,19 @@ export function bindTableEvents() {
         });
     }
 
+    if (independentRulesToggle) {
+        independentRulesToggle.checked = extension_settings[extensionName]?.table_independent_rules_enabled ?? false;
+        independentRulesToggle.addEventListener('change', () => {
+            updateAndSaveTableSetting('table_independent_rules_enabled', independentRulesToggle.checked);
+            updateFillingModeUI();
+        });
+    }
+
     updateFillingModeUI();
+
+    if (configureRulesBtn) {
+        configureRulesBtn.addEventListener('click', openTableRuleEditor);
+    }
 
     const renderAll = () => {
         renderTables();
@@ -944,6 +1034,7 @@ export function bindTableEvents() {
     bindReorganizeButton(); // 【新增】绑定重新整理按钮
     bindTemplateEditors(); // 【新增】为新的指令模板编辑器绑定事件
     bindNccsApiEvents(); // 【新增】绑定Nccs API系统事件
+    bindChatTableDisplaySetting(); // 【新增】绑定聊天内表格显示开关
 
     const navDeck = document.querySelector('#amily2_memorisation_forms_panel .sinan-navigation-deck');
     if (navDeck) {
@@ -1121,11 +1212,23 @@ export function bindTableEvents() {
             const colIndex = parseInt(target.dataset.colIndex, 10);
             const newValue = target.textContent;
 
+            const hScroll = tableElement.scrollLeft;
+            const scrollContainer = allTablesContainer.closest('.hly-scroll');
+            const vScroll = scrollContainer ? scrollContainer.scrollTop : 0;
+
             TableManager.addHighlight(tableIndex, rowIndex, colIndex);
             const dataToUpdate = { [colIndex]: newValue };
             TableManager.updateRow(tableIndex, rowIndex, dataToUpdate);
 
             renderAll();
+
+            const newTableElement = document.getElementById(`amily2-table-${tableIndex}`);
+            if (newTableElement) {
+                newTableElement.scrollLeft = hScroll;
+            }
+            if (scrollContainer) {
+                scrollContainer.scrollTop = vScroll;
+            }
 
         }, true); 
     }
@@ -1601,4 +1704,24 @@ function bindNccsApiEvents() {
     }
 
     log('Nccs API事件绑定完成', 'success');
+}
+
+function bindChatTableDisplaySetting() {
+    const settings = extension_settings[extensionName];
+    const toggle = document.getElementById('show-table-in-chat-toggle');
+
+    if (!toggle) {
+        log('找不到“聊天内显示表格”的开关，绑定失败。', 'warn');
+        return;
+    }
+
+    toggle.checked = settings.show_table_in_chat === true;
+
+    toggle.addEventListener('change', () => {
+        settings.show_table_in_chat = toggle.checked;
+        saveSettingsDebounced();
+        toastr.info(`聊天内表格显示已${toggle.checked ? '开启' : '关闭'}。`);
+    });
+
+    log('“聊天内显示表格”开关已成功绑定。', 'success');
 }
