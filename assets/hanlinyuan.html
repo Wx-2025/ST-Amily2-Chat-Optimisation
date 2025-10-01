@@ -21,6 +21,20 @@
                     <span class="slider"></span>
                 </label>
             </div>
+            <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
+                <label for="hly-rerank-enabled-toggle">启用 Rerank</label>
+                <label class="hly-toggle-switch">
+                    <input type="checkbox" id="hly-rerank-enabled" data-setting-key="rerank.enabled" data-type="boolean">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
+                <label for="hly-super-sort-enabled-toggle" title="启用后，排序不再依照分数，而是使用绝对正确的排序及分类。">超级排序</label>
+                <label class="hly-toggle-switch">
+                    <input type="checkbox" id="hly-super-sort-enabled" data-setting-key="rerank.superSortEnabled" data-type="boolean">
+                    <span class="slider"></span>
+                </label>
+            </div>
         </fieldset>
         <div class="hly-edict-row">
             <div class="hly-edict-item">
@@ -94,13 +108,6 @@
         <div id="hly-rerank-tab" class="hly-tab-pane">
             <fieldset class="hly-settings-group">
                 <legend><i class="fas fa-wand-magic-sparkles"></i> Rerank 精炼</legend>
-                <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
-                    <label for="hly-rerank-enabled-toggle">启用 Rerank</label>
-                    <label class="hly-toggle-switch">
-                        <input type="checkbox" id="hly-rerank-enabled" data-setting-key="rerank.enabled" data-type="boolean">
-                        <span class="slider"></span>
-                    </label>
-                </div>
                 <div class="hly-control-block">
                     <label for="hly-rerank-api-mode">Rerank API 模式:</label>
                     <select id="hly-rerank-api-mode" class="hly-imperial-brush" data-setting-key="rerank.apiMode" data-type="string">
