@@ -1715,8 +1715,10 @@ function bindChatTableDisplaySetting() {
         return;
     }
 
+    // Initialize the toggle state from settings
     toggle.checked = settings.show_table_in_chat === true;
 
+    // Add event listener to update settings on change
     toggle.addEventListener('change', () => {
         settings.show_table_in_chat = toggle.checked;
         saveSettingsDebounced();
