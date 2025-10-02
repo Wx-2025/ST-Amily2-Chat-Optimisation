@@ -19,7 +19,7 @@ export const defaultSettings = {
   contextMessages: 2,
   promptPresets: [],
   lastUsedPresetName: '',
-  plotOpt_enabled: true,
+  plotOpt_enabled: false,
   plotOpt_max_tokens: 20000,
   plotOpt_temperature: 0.7,
   plotOpt_top_p: 0.95,
