@@ -3,6 +3,7 @@ import { extension_settings } from '/scripts/extensions.js';
 import { extensionName } from '../utils/settings.js';
 
 const TABLE_CONTAINER_ID = 'amily2-chat-table-container';
+const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches;
 
 function renderTablesToHtml(tables, highlights) {
     if (!tables || tables.length === 0) {
@@ -53,6 +54,11 @@ function removeTableContainer() {
 }
 
 function bindSwipePreventer(container) {
+    // Only apply this logic on mobile/touch devices
+    if (!isTouchDevice()) {
+        return;
+    }
+
     let touchstartX = 0;
     let touchstartY = 0;
 
