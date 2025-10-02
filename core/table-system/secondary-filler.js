@@ -111,7 +111,8 @@ export async function fillWithSecondaryApi(latestMessage) {
         const characterName = context.name2 || '角色';
 
         const chat = context.chat;
-        const lastUserMessage = chat.length > 1 && chat[chat.length - 2].is_user ? chat[chat.length - 2] : null;
+        // 【V140.0 核心修复】修正上下文定位逻辑，确保在任何情况下（包括重roll后）都能正确定位到最新的用户消息
+        const lastUserMessage = chat.length > 0 && chat[chat.length - 1].is_user ? chat[chat.length - 1] : null;
         const currentInteractionContent = lastUserMessage 
             ? `${userName}（用户）最新消息：${lastUserMessage.mes}\n${characterName}（AI）最新消息，[核心处理内容]：${textToProcess}`
             : `${characterName}（AI）最新消息，[核心处理内容]：${textToProcess}`;
@@ -285,9 +286,11 @@ async function getHistoryContext(contextLevel) {
         return null;
     }
 
-    const messagesToExtract = Math.min(contextLevel * 2, Math.max(0, chat.length - 2));
-    const startIndex = Math.max(0, chat.length - messagesToExtract - 2);
-    const endIndex = Math.max(0, chat.length - 2);
+    // 【V140.0 核心修复】修正历史记录的切片逻辑，确保它能获取到触发本次AI回应前的、正确的聊天历史记录
+    const historyUntil = Math.max(0, chat.length - 1); 
+    const messagesToExtract = Math.min(contextLevel * 2, historyUntil);
+    const startIndex = Math.max(0, historyUntil - messagesToExtract);
+    const endIndex = historyUntil;
 
     const historySlice = chat.slice(startIndex, endIndex);
     const userName = context.name1 || '用户';
