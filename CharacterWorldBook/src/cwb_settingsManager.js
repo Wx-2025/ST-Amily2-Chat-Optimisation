@@ -134,9 +134,7 @@ function bindWorldBookSettings() {
     if (settings.cwb_worldbook_target === undefined) settings.cwb_worldbook_target = 'primary';
     if (settings.cwb_custom_worldbook === undefined) settings.cwb_custom_worldbook = null;
 
-    const sourceRadios = $panel.find('input[name="cwb_worldbook_target"]');
     const customSelectWrapper = $panel.find('#cwb_worldbook_select_wrapper');
-    const refreshButton = $panel.find('#cwb_refresh_worldbooks');
     const bookListContainer = $panel.find('#cwb_worldbook_radio_list');
 
     const renderWorldBookList = () => {
@@ -150,15 +148,6 @@ function bindWorldBookSettings() {
                     .attr('id', `cwb-wb-radio-${book.file_name}`)
                     .val(book.file_name)
                     .prop('checked', settings.cwb_custom_worldbook === book.file_name);
-
-                radio.on('change', () => {
-                    if (radio.prop('checked')) {
-                        settings.cwb_custom_worldbook = book.file_name;
-                        saveSettingsDebounced();
-                        loadSettings(); 
-                        showToastr('info', `已选择世界书: ${book.name}`);
-                    }
-                });
 
                 const label = $('<label></label>').attr('for', `cwb-wb-radio-${book.file_name}`).text(book.name);
 
@@ -178,20 +167,28 @@ function bindWorldBookSettings() {
         }
     };
 
-    sourceRadios.each(function() {
+    $panel.find('input[name="cwb_worldbook_target"]').each(function() {
         $(this).prop('checked', $(this).val() === settings.cwb_worldbook_target);
     });
     updateCustomSelectVisibility();
-    sourceRadios.on('change', function() {
+    $panel.off('change.cwb_worldbook_target').on('change.cwb_worldbook_target', 'input[name="cwb_worldbook_target"]', function() {
         if ($(this).prop('checked')) {
             settings.cwb_worldbook_target = $(this).val();
             updateCustomSelectVisibility();
             saveSettingsDebounced();
-            loadSettings(); // Sync to state
+            loadSettings();
         }
     });
-
-    refreshButton.on('click', renderWorldBookList);
+    bookListContainer.off('change.cwb_worldbook_selection').on('change.cwb_worldbook_selection', 'input[name="cwb_worldbook_selection"]', function() {
+        const radio = $(this);
+        if (radio.prop('checked')) {
+            settings.cwb_custom_worldbook = radio.val();
+            saveSettingsDebounced();
+            loadSettings();
+            showToastr('info', `已选择世界书: ${radio.next('label').text()}`);
+        }
+    });
+    $panel.off('click.cwb_refresh_worldbooks').on('click.cwb_refresh_worldbooks', '#cwb_refresh_worldbooks', renderWorldBookList);
 }
 
 export function bindSettingsEvents($settingsPanel) {
@@ -209,8 +206,6 @@ export function bindSettingsEvents($settingsPanel) {
     });
     $panel.on('change', '#cwb-api-mode', function() {
         const selectedMode = $(this).val();
-        
-        // 自动保存API模式设置
         getSettings().cwb_api_mode = selectedMode;
         saveSettingsDebounced();
         
@@ -223,8 +218,6 @@ export function bindSettingsEvents($settingsPanel) {
     });
     $panel.on('change', '#cwb-tavern-profile', function() {
         const selectedProfile = $(this).val();
-        
-        // 自动保存SillyTavern预设选择
         getSettings().cwb_tavern_profile = selectedProfile;
         saveSettingsDebounced();
         
@@ -235,11 +228,8 @@ export function bindSettingsEvents($settingsPanel) {
         
         updateApiStatusDisplay($panel);
     });
-    // 添加API字段的实时保存
     $panel.on('input', '#cwb-api-url', function() {
         const apiUrl = $(this).val().trim();
-        
-        // 同时更新设置和状态
         getSettings().cwb_api_url = apiUrl;
         state.customApiConfig.url = apiUrl;
         
@@ -251,8 +241,6 @@ export function bindSettingsEvents($settingsPanel) {
     
     $panel.on('input', '#cwb-api-key', function() {
         const apiKey = $(this).val();
-        
-        // 同时更新设置和状态
         getSettings().cwb_api_key = apiKey;
         state.customApiConfig.apiKey = apiKey;
         
@@ -263,8 +251,6 @@ export function bindSettingsEvents($settingsPanel) {
     
     $panel.on('change', '#cwb-api-model', function() {
         const model = $(this).val();
-        
-        // 同时更新设置和状态
         getSettings().cwb_api_model = model;
         state.customApiConfig.model = model;
         
@@ -502,13 +488,11 @@ export function loadSettings() {
     console.log('[CWB] Loading settings...');
     
     const settings = getSettings();
-    
-    // Initialize settings with defaults if not present
+
     if (!settings) {
         extension_settings[extensionName] = { ...cwbCompleteDefaultSettings };
         console.log('[CWB] Initialized default settings');
     } else {
-        // Ensure all default settings exist
         Object.keys(cwbCompleteDefaultSettings).forEach(key => {
             if (settings[key] === undefined || settings[key] === null) {
                 settings[key] = cwbCompleteDefaultSettings[key];
@@ -517,8 +501,7 @@ export function loadSettings() {
     }
 
     const finalSettings = getSettings();
-    
-    // Apply localStorage overrides
+
     const overrides = JSON.parse(localStorage.getItem(CWB_BOOLEAN_SETTINGS_OVERRIDE_KEY) || '{}');
     if (overrides.cwb_master_enabled !== undefined) {
         finalSettings.cwb_master_enabled = overrides.cwb_master_enabled;
@@ -532,8 +515,6 @@ export function loadSettings() {
     if (overrides.cwb_incremental_update_enabled !== undefined) {
         finalSettings.cwb_incremental_update_enabled = overrides.cwb_incremental_update_enabled;
     }
-
-    // Update state object with current settings
     state.masterEnabled = finalSettings.cwb_master_enabled;
     state.viewerEnabled = finalSettings.cwb_viewer_enabled;
     state.autoUpdateEnabled = finalSettings.cwb_auto_update_enabled;
@@ -556,15 +537,11 @@ export function loadSettings() {
         viewerEnabled: state.viewerEnabled,
         autoUpdateEnabled: state.autoUpdateEnabled
     });
-
-    // Update UI if panel exists
     if ($panel) {
         updateUiWithSettings();
     }
 
     updateControlsLockState();
-
-    // Update viewer button visibility after state is loaded
     setTimeout(() => {
         const $viewerButton = $(`#${CHAR_CARD_VIEWER_BUTTON_ID}`);
         if ($viewerButton.length > 0) {
