@@ -1534,7 +1534,6 @@ function bindNccsApiEvents() {
         };
         
         urlInput.addEventListener('blur', saveUrl);
-        urlInput.addEventListener('input', saveUrl);
     }
 
     if (keyInput) {
@@ -1544,7 +1543,6 @@ function bindNccsApiEvents() {
         };
         
         keyInput.addEventListener('blur', saveKey);
-        keyInput.addEventListener('input', saveKey);
     }
 
     if (modelInput) {
@@ -1612,6 +1610,14 @@ function bindNccsApiEvents() {
         fetchModelsButton.addEventListener('click', async () => {
             fetchModelsButton.disabled = true;
             fetchModelsButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 获取中...';
+
+            if (urlInput) {
+                settings.nccsApiUrl = urlInput.value;
+            }
+            if (keyInput) {
+                settings.nccsApiKey = keyInput.value;
+            }
+            saveSettingsDebounced();
             
             try {
                 const models = await fetchNccsModels();
@@ -1714,11 +1720,7 @@ function bindChatTableDisplaySetting() {
         log('找不到“聊天内显示表格”的开关，绑定失败。', 'warn');
         return;
     }
-
-    // Initialize the toggle state from settings
     toggle.checked = settings.show_table_in_chat === true;
-
-    // Add event listener to update settings on change
     toggle.addEventListener('change', () => {
         settings.show_table_in_chat = toggle.checked;
         saveSettingsDebounced();
