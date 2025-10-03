@@ -415,7 +415,6 @@ export async function resetScriptStateForNewChat($panel, newChatName) {
     state.currentChatFileIdentifier = newChatName || 'unknown_chat_fallback';
 
     await loadAllChatMessages($panel);
-    await manageAutoCardUpdateLorebookEntry();
 
     logDebug('状态重置完成。');
 }
@@ -545,6 +544,7 @@ async function processNextBatch($panel) {
 }
 
 export async function startBatchUpdate($panel) {
+    await loadAllChatMessages($panel);
     if (!state.customApiConfig.url || !state.customApiConfig.model) {
         showToastr('warning', '请先配置API信息。');
         return;
@@ -565,7 +565,6 @@ export async function startBatchUpdate($panel) {
     }
 
     manualBatchStopRequested = false;
-    await loadAllChatMessages($panel);
     
     if (state.allChatMessages.length === 0) {
         showToastr('info', '当前没有聊天记录，无需更新。');
@@ -582,6 +581,7 @@ export async function startBatchUpdate($panel) {
 }
 
 export async function handleFloorRangeUpdate($panel) {
+    await loadAllChatMessages($panel);
     if (isUpdatingCard || isBatchUpdating) {
         showToastr('info', '已有更新任务在进行中。');
         return;
@@ -604,8 +604,11 @@ export async function handleFloorRangeUpdate($panel) {
         showToastr('warning', '起始楼层不能大于结束楼层。');
         return;
     }
-
-    await loadAllChatMessages($panel);
+    
+    if (state.allChatMessages.length === 0) {
+        showToastr('info', '当前没有聊天记录，无需更新。');
+        return;
+    }
     
     if (endFloor > state.allChatMessages.length) {
         showToastr('warning', `结束楼层 ${endFloor} 超出了当前聊天记录长度 ${state.allChatMessages.length}。`);
