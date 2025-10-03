@@ -238,6 +238,7 @@ function bindAmily2ModalWorldBookSettings() {
     };
     
     const updateVisibility = () => {
+        const settings = extension_settings[extensionName];
         const isEnabled = enabledCheckbox.checked;
         optionsContainer.style.display = isEnabled ? 'block' : 'none';
         
