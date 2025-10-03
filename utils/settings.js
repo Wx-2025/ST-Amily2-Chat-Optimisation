@@ -532,7 +532,6 @@ export const defaultSettings = {
   showOptimizationToast: true,
   suppressToast: false,
   optimizationMode: "intercept",
-  worldbookEnabled: false,
   optimizationTargetTag: 'content',
   optimizationEnabled: true,
   optimizationExclusionEnabled: false,
@@ -550,6 +549,12 @@ export const defaultSettings = {
   autoHideThreshold: 30,
   tavernProfile: '',
   show_table_in_chat: false,
+
+  // Settings for the text optimization modal's world book feature
+  modal_wbEnabled: false,
+  modal_wbSource: 'character',
+  modal_amily2_wb_selected_worldbooks: [],
+  modal_amily2_wb_selected_entries: {},
 
   miZheSiEnabled: false,
   // --- 📜 微言录 (Small Summary) 法典 ---
