@@ -173,9 +173,18 @@ class WorldEditor {
 
         const fragment = document.createDocumentFragment();
         this.filteredEntries.forEach(e => {
-            const row = document.createElement('div');
-            row.innerHTML = this.renderEntryRow(e).trim();
-            fragment.appendChild(row.firstChild);
+            const rowHTML = this.renderEntryRow(e).trim();
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = rowHTML;
+            const rowElement = tempDiv.firstChild;
+
+            // Safely set the content to prevent HTML rendering
+            const contentCell = rowElement.querySelector('.world-editor-entry-content');
+            if (contentCell) {
+                contentCell.textContent = e.content || '';
+            }
+
+            fragment.appendChild(rowElement);
         });
         container.appendChild(fragment);
         this.bindEntryEvents();
