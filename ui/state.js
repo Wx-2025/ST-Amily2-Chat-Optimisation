@@ -123,7 +123,6 @@ export function updateUI() {
     $("#amily2_summarization_prompt").val(settings.summarizationPrompt);
 
 
-    $("#amily2_worldbook_enabled").prop("checked", settings.worldbookEnabled);
     $("#amily2_summarization_enabled").prop(
       "checked",
       settings.summarizationEnabled,
