@@ -1,7 +1,8 @@
-import { getContext } from "/scripts/extensions.js";
+import { extension_settings, getContext } from "/scripts/extensions.js";
 import { characters, eventSource, event_types } from "/script.js";
 import { loadWorldInfo, createNewWorldInfo, createWorldInfoEntry, saveWorldInfo, world_names } from "/scripts/world-info.js";
 import { compatibleWriteToLorebook, safeLorebooks, safeCharLorebooks, safeLorebookEntries, isTavernHelperAvailable } from "./tavernhelper-compatibility.js";
+import { extensionName } from "../utils/settings.js";
 
 
 export const LOREBOOK_PREFIX = "Amily2档案-";
@@ -227,47 +228,25 @@ export async function writeSummaryToLorebook(pendingData) {
 }
 
 export async function getOptimizationWorldbookContent() {
-    const panel = $("#amily2_chat_optimiser");
-    if (panel.length === 0) {
-        console.warn('[Amily2-正文优化] 未找到主设置面板，无法读取世界书设置。');
+    const settings = extension_settings[extensionName];
+    if (!settings || !settings.modal_wbEnabled) {
         return '';
     }
-
-    const settings = {
-        enabled: panel.find('#amily2_wb_enabled').is(':checked'),
-        source: panel.find('input[name="amily2_wb_source"]:checked').val() || 'character',
-        selectedBooks: [],
-        selectedEntries: {},
-    };
-
-    if (!settings.enabled) {
-        return '';
-    }
-
-    panel.find('#amily2_wb_checkbox_list input[type="checkbox"]:checked').each(function() {
-        settings.selectedBooks.push($(this).val());
-    });
-
-    panel.find('#amily2_wb_entry_list input[type="checkbox"]:checked').each(function() {
-        const book = $(this).data('book');
-        const uid = parseInt($(this).data('uid'));
-        if (!settings.selectedEntries[book]) {
-            settings.selectedEntries[book] = [];
-        }
-        settings.selectedEntries[book].push(uid);
-    });
 
     try {
         let bookNames = [];
-        if (settings.source === 'manual') {
-            bookNames = settings.selectedBooks;
-        } else {
+        if (settings.modal_wbSource === 'manual') {
+            bookNames = settings.modal_amily2_wb_selected_worldbooks || [];
+        } else { // 'character' source
             const charLorebooks = await safeCharLorebooks({ type: 'all' });
             if (charLorebooks.primary) bookNames.push(charLorebooks.primary);
             if (charLorebooks.additional?.length) bookNames.push(...charLorebooks.additional);
         }
 
-        if (bookNames.length === 0) return '';
+        if (bookNames.length === 0) {
+            console.log('[Amily2-正文优化] No world books selected or linked for optimization.');
+            return '';
+        }
 
         let allEntries = [];
         for (const bookName of bookNames) {
@@ -279,17 +258,30 @@ export async function getOptimizationWorldbookContent() {
             }
         }
 
+        const selectedEntriesConfig = settings.modal_amily2_wb_selected_entries || {};
+
         const userEnabledEntries = allEntries.filter(entry => {
+            // Entry must be enabled in the lorebook itself
             if (!entry.enabled) return false;
-            const bookConfig = settings.selectedEntries[entry.bookName];
-            return bookConfig ? bookConfig.includes(entry.uid) : false;
+            
+            // Check against our UI selection
+            const bookConfig = selectedEntriesConfig[entry.bookName];
+            return bookConfig ? bookConfig.includes(String(entry.uid)) : false;
         });
 
+        if (userEnabledEntries.length === 0) {
+            console.log('[Amily2-正文优化] No entries are selected for optimization in the chosen world books.');
+            return '';
+        }
+
         const finalContent = userEnabledEntries.map(entry => entry.content).filter(Boolean);
-        return finalContent.join('\n\n---\n\n');
+        const combinedContent = finalContent.join('\n\n---\n\n');
+        
+        console.log(`[Amily2-正文优化] Loaded ${userEnabledEntries.length} world book entries, total length: ${combinedContent.length}`);
+        return combinedContent;
 
     } catch (error) {
-        console.error(`[Amily2-正文优化] 处理世界书逻辑时出错:`, error);
+        console.error(`[Amily2-正文优化] Processing world book content failed:`, error);
         return '';
     }
 }
