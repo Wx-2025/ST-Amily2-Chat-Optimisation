@@ -99,13 +99,10 @@ function updateApiProviderUI() {
 }
 
 function bindAmily2ModalWorldBookSettings() {
+    if (!extension_settings[extensionName]) {
+        extension_settings[extensionName] = {};
+    }
     const settings = extension_settings[extensionName];
-
-    // Initialize settings with unique keys
-    if (settings.amily2_wb_enabled === undefined) settings.amily2_wb_enabled = false;
-    if (settings.amily2_wb_source === undefined) settings.amily2_wb_source = 'character';
-    if (settings.amily2_wb_selected_worldbooks === undefined) settings.amily2_wb_selected_worldbooks = [];
-    if (settings.amily2_wb_selected_entries === undefined) settings.amily2_wb_selected_entries = {};
 
     const enabledCheckbox = document.getElementById('amily2_wb_enabled');
     const optionsContainer = document.getElementById('amily2_wb_options_container');
@@ -119,27 +116,23 @@ function bindAmily2ModalWorldBookSettings() {
         return;
     }
 
-    const saveSelectedEntries = () => {
-        const selected = {};
-        entryListContainer.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
-            const book = cb.dataset.book;
-            const uid = cb.dataset.uid;
-            if (!selected[book]) {
-                selected[book] = [];
-            }
-            selected[book].push(uid);
-        });
-        settings.amily2_wb_selected_entries = selected;
-        saveSettingsDebounced();
-    };
+    // Ensure settings objects exist before reading
+    if (settings.modal_amily2_wb_selected_worldbooks === undefined) {
+        settings.modal_amily2_wb_selected_worldbooks = [];
+    }
+    if (settings.modal_amily2_wb_selected_entries === undefined) {
+        settings.modal_amily2_wb_selected_entries = {};
+    }
+
 
     const renderWorldBookEntries = async () => {
+
         entryListContainer.innerHTML = '<p class="notes">Loading entries...</p>';
-        const source = settings.amily2_wb_source || 'character';
+        const source = settings.modal_wbSource || 'character';
         let bookNames = [];
 
         if (source === 'manual') {
-            bookNames = settings.amily2_wb_selected_worldbooks || [];
+            bookNames = settings.modal_amily2_wb_selected_worldbooks || [];
         } else {
             if (this_chid !== undefined && this_chid >= 0 && characters[this_chid]) {
                 try {
@@ -189,7 +182,7 @@ function bindAmily2ModalWorldBookSettings() {
                 checkbox.dataset.book = entry.bookName;
                 checkbox.dataset.uid = entry.uid;
                 
-                const isChecked = settings.amily2_wb_selected_entries[entry.bookName]?.includes(String(entry.uid));
+                const isChecked = settings.modal_amily2_wb_selected_entries[entry.bookName]?.includes(String(entry.uid));
                 checkbox.checked = !!isChecked;
 
                 const label = document.createElement('label');
@@ -224,19 +217,7 @@ function bindAmily2ModalWorldBookSettings() {
                     checkbox.style.marginRight = '5px';
                     checkbox.id = `amily2-wb-check-${bookName}`;
                     checkbox.value = bookName;
-                    checkbox.checked = settings.amily2_wb_selected_worldbooks.includes(bookName);
-
-                    checkbox.addEventListener('change', () => {
-                        if (checkbox.checked) {
-                            if (!settings.amily2_wb_selected_worldbooks.includes(bookName)) {
-                                settings.amily2_wb_selected_worldbooks.push(bookName);
-                            }
-                        } else {
-                            settings.amily2_wb_selected_worldbooks = settings.amily2_wb_selected_worldbooks.filter(name => name !== bookName);
-                        }
-                        saveSettingsDebounced();
-                        renderWorldBookEntries();
-                    });
+                    checkbox.checked = settings.modal_amily2_wb_selected_worldbooks.includes(bookName);
 
                     const label = document.createElement('label');
                     label.htmlFor = `amily2-wb-check-${bookName}`;
@@ -261,7 +242,7 @@ function bindAmily2ModalWorldBookSettings() {
         optionsContainer.style.display = isEnabled ? 'block' : 'none';
         
         if (isEnabled) {
-            const isManual = settings.amily2_wb_source === 'manual';
+            const isManual = settings.modal_wbSource === 'manual';
             manualSelectWrapper.style.display = isManual ? 'block' : 'none';
             renderWorldBookEntries();
             if (isManual) {
@@ -271,36 +252,171 @@ function bindAmily2ModalWorldBookSettings() {
     };
 
     // Initial state setup
-    enabledCheckbox.checked = settings.amily2_wb_enabled;
+    enabledCheckbox.checked = settings.modal_wbEnabled ?? false;
+    const source = settings.modal_wbSource ?? 'character';
     sourceRadios.forEach(radio => {
-        radio.checked = radio.value === settings.amily2_wb_source;
+        radio.checked = radio.value === source;
     });
     updateVisibility();
 
     // Event Listeners
-    enabledCheckbox.addEventListener('change', () => {
-        settings.amily2_wb_enabled = enabledCheckbox.checked;
+    $(enabledCheckbox).off('change.amily2_wb').on('change.amily2_wb', () => {
+        extension_settings[extensionName].modal_wbEnabled = enabledCheckbox.checked;
         saveSettingsDebounced();
         updateVisibility();
     });
 
-    sourceRadios.forEach(radio => {
-        radio.addEventListener('change', () => {
-            if (radio.checked) {
-                settings.amily2_wb_source = radio.value;
-                saveSettingsDebounced();
-                updateVisibility();
+    $(sourceRadios).off('change.amily2_wb').on('change.amily2_wb', (event) => {
+        if (event.target.checked) {
+            extension_settings[extensionName].modal_wbSource = event.target.value;
+            saveSettingsDebounced();
+            updateVisibility();
+        }
+    });
+
+    $(bookListContainer).off('change.amily2_wb').on('change.amily2_wb', (event) => {
+        if (event.target.type === 'checkbox' && event.target.id.startsWith('amily2-wb-check-')) {
+            const checkbox = event.target;
+            const bookName = checkbox.value;
+
+            if (!settings.modal_amily2_wb_selected_worldbooks) {
+                settings.modal_amily2_wb_selected_worldbooks = [];
+            }
+
+            if (checkbox.checked) {
+                if (!settings.modal_amily2_wb_selected_worldbooks.includes(bookName)) {
+                    settings.modal_amily2_wb_selected_worldbooks.push(bookName);
+                }
+            } else {
+                const index = settings.modal_amily2_wb_selected_worldbooks.indexOf(bookName);
+                if (index > -1) {
+                    settings.modal_amily2_wb_selected_worldbooks.splice(index, 1);
+                }
+                if (settings.modal_amily2_wb_selected_entries) {
+                    delete settings.modal_amily2_wb_selected_entries[bookName];
+                }
+            }
+            saveSettingsDebounced();
+            renderWorldBookEntries();
+        }
+    });
+
+    $(entryListContainer).off('change.amily2_wb').on('change.amily2_wb', (event) => {
+        if (event.target.type === 'checkbox') {
+            const checkbox = event.target;
+            const book = checkbox.dataset.book;
+            const uid = checkbox.dataset.uid;
+
+            if (!settings.modal_amily2_wb_selected_entries) {
+                settings.modal_amily2_wb_selected_entries = {};
+            }
+            if (!settings.modal_amily2_wb_selected_entries[book]) {
+                settings.modal_amily2_wb_selected_entries[book] = [];
+            }
+
+            const entryIndex = settings.modal_amily2_wb_selected_entries[book].indexOf(uid);
+
+            if (checkbox.checked) {
+                if (entryIndex === -1) {
+                    settings.modal_amily2_wb_selected_entries[book].push(uid);
+                }
+            } else {
+                if (entryIndex > -1) {
+                    settings.modal_amily2_wb_selected_entries[book].splice(entryIndex, 1);
+                }
+            }
+            
+            if (settings.modal_amily2_wb_selected_entries[book].length === 0) {
+                delete settings.modal_amily2_wb_selected_entries[book];
+            }
+
+            saveSettingsDebounced();
+        }
+    });
+
+    // Search and Select/Deselect All Logic
+    const bookSearchInput = document.getElementById('amily2_wb_book_search');
+    const bookSelectAllBtn = document.getElementById('amily2_wb_book_select_all');
+    const bookDeselectAllBtn = document.getElementById('amily2_wb_book_deselect_all');
+    const entrySearchInput = document.getElementById('amily2_wb_entry_search');
+    const entrySelectAllBtn = document.getElementById('amily2_wb_entry_select_all');
+    const entryDeselectAllBtn = document.getElementById('amily2_wb_entry_deselect_all');
+
+    bookSearchInput.addEventListener('input', () => {
+        const searchTerm = bookSearchInput.value.toLowerCase();
+        const items = bookListContainer.querySelectorAll('.checkbox-item');
+        items.forEach(item => {
+            const label = item.querySelector('label');
+            if (label.textContent.toLowerCase().includes(searchTerm)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
             }
         });
     });
 
-    entryListContainer.addEventListener('change', (event) => {
-        if (event.target.type === 'checkbox') {
-            saveSelectedEntries();
-        }
+    entrySearchInput.addEventListener('input', () => {
+        const searchTerm = entrySearchInput.value.toLowerCase();
+        const items = entryListContainer.querySelectorAll('.checkbox-item');
+        items.forEach(item => {
+            const label = item.querySelector('label');
+            if (label.textContent.toLowerCase().includes(searchTerm)) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    });
+
+    bookSelectAllBtn.addEventListener('click', () => {
+        const checkboxes = bookListContainer.querySelectorAll('.checkbox-item input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+            if (checkbox.parentElement.style.display !== 'none' && !checkbox.checked) {
+                $(checkbox).prop('checked', true).trigger('change');
+            }
+        });
+    });
+
+    bookDeselectAllBtn.addEventListener('click', () => {
+        const checkboxes = bookListContainer.querySelectorAll('.checkbox-item input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+            if (checkbox.parentElement.style.display !== 'none' && checkbox.checked) {
+                $(checkbox).prop('checked', false).trigger('change');
+            }
+        });
+    });
+
+    entrySelectAllBtn.addEventListener('click', () => {
+        const checkboxes = entryListContainer.querySelectorAll('.checkbox-item input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+            if (checkbox.parentElement.style.display !== 'none' && !checkbox.checked) {
+                $(checkbox).prop('checked', true).trigger('change');
+            }
+        });
+    });
+
+    entryDeselectAllBtn.addEventListener('click', () => {
+        const checkboxes = entryListContainer.querySelectorAll('.checkbox-item input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+            if (checkbox.parentElement.style.display !== 'none' && checkbox.checked) {
+                $(checkbox).prop('checked', false).trigger('change');
+            }
+        });
     });
 
     console.log('[Amily2 Modal] World book settings bound successfully.');
+
+    document.addEventListener('renderAmily2WorldBook', () => {
+        console.log('[Amily2 Modal] Received render event from state update.');
+        updateVisibility();
+    });
+
+    eventSource.on(event_types.CHAT_CHANGED, () => {
+        console.log('[Amily2 Modal] Chat changed, re-rendering world book entries.');
+        if (document.getElementById('amily2_wb_options_container')?.style.display === 'block') {
+            renderWorldBookEntries();
+        }
+    });
 }
 
 export function bindModalEvents() {
@@ -342,7 +458,7 @@ export function bindModalEvents() {
         if (!extension_settings[extensionName]) {
             extension_settings[extensionName] = {};
         }
-        extension_settings[extensionName] = { ...extension_settings[extensionName], [key]: value };
+        extension_settings[extensionName][key] = value;
         saveSettingsDebounced();
         console.log(`[Amily-谕令镌刻] [${key}] 的新状态已保存。`);
     };
@@ -598,7 +714,7 @@ container
         .off("change.amily2.checkbox")
         .on(
             "change.amily2.checkbox",
-            'input[type="checkbox"][id^="amily2_"]',
+            'input[type="checkbox"][id^="amily2_"]:not([id^="amily2_wb_enabled"])',
             function (event) {
                 if (!pluginAuthStatus.authorized) return;
 
@@ -666,7 +782,7 @@ container
         .off("change.amily2.radio")
         .on(
             "change.amily2.radio",
-            'input[type="radio"][name^="amily2_"]:not([name="amily2_icon_location"])', 
+            'input[type="radio"][name^="amily2_"]:not([name="amily2_icon_location"]):not([name="amily2_wb_source"])', 
             function () {
                 if (!pluginAuthStatus.authorized) return;
                 const key = snakeToCamel(this.name.replace("amily2_", ""));
