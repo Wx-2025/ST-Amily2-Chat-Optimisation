@@ -166,33 +166,39 @@ async function callCwbOpenAITest(messages, options) {
         };
     });
 
+    const isGoogleApi = validatedOptions.apiUrl.includes('googleapis.com');
+
     const requestBody = {
         chat_completion_source: 'openai',
-        custom_prompt_post_processing: 'strict',
-        enable_web_search: false,
-        frequency_penalty: 0,
-        group_names: [],
-        include_reasoning: false,
         max_tokens: validatedOptions.maxTokens,
         messages: validatedMessages,
         model: validatedOptions.model,
-        presence_penalty: 0.12,
         proxy_password: validatedOptions.apiKey,
-        reasoning_effort: 'medium',
-        request_images: false,
         reverse_proxy: validatedOptions.apiUrl,
         stream: false,
         temperature: validatedOptions.temperature,
         top_p: validatedOptions.top_p
     };
 
+    if (!isGoogleApi) {
+        Object.assign(requestBody, {
+            custom_prompt_post_processing: 'strict',
+            enable_web_search: false,
+            frequency_penalty: 0,
+            group_names: [],
+            include_reasoning: false,
+            presence_penalty: 0.12,
+            reasoning_effort: 'medium',
+            request_images: false,
+        });
+    }
+
     try {
         const response = await fetch('/api/backends/chat-completions/generate', {
             method: 'POST',
             headers: { 
                 ...getRequestHeaders(), 
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify(requestBody)
         });
@@ -280,10 +286,10 @@ export async function callCwbAPI(systemPrompt, userPromptContent, options = {}) 
         }
     }
 
-    const combinedSystemPrompt = `${state.currentBreakArmorPrompt}\n\n${systemPrompt}`;
+    const systemPromptContent = options.isTestCall ? systemPrompt : `${state.currentBreakArmorPrompt}\n\n${systemPrompt}`;
 
     const messages = [
-        { role: 'system', content: combinedSystemPrompt },
+        { role: 'system', content: systemPromptContent },
         { role: 'user', content: userPromptContent },
     ];
 
@@ -505,19 +511,26 @@ export async function testCwbConnection() {
     
     const apiSettings = getCwbApiSettings();
     
-    if (!apiSettings.apiUrl || !apiSettings.apiKey || !apiSettings.model) {
+    if (apiSettings.apiMode !== 'sillytavern_preset' && (!apiSettings.apiUrl || !apiSettings.apiKey || !apiSettings.model)) {
         showToastr('error', 'API配置不完整，请检查URL、Key和模型', 'CWB API连接测试失败');
+        return false;
+    }
+    if (apiSettings.apiMode === 'sillytavern_preset' && !apiSettings.tavernProfile) {
+        showToastr('error', 'SillyTavern预设ID未配置', 'CWB API连接测试失败');
         return false;
     }
 
     try {
         showToastr('info', '正在发送测试消息"你好！"...', 'CWB API连接测试');
         
-        const response = await callCwbAPI('你是一个有用的AI助手。', '你好！');
+        const userName = window.SillyTavern.getContext?.()?.name1 || '用户';
+        const systemPrompt = `接下来用户会使用测试按钮测试api连接是否正常，请回复ta连接是正常的，称呼用户为：“${userName}大人”，并复述群号1060183271，告知ta，本扩展开发者：“诗与酒.”正静待ta的入驻。`;
+        const response = await callCwbAPI(systemPrompt, '你好！', { isTestCall: true });
         
         if (response && response.trim()) {
             console.log('[CWB] 测试消息响应:', response);
-            showToastr('success', `连接测试成功！AI回复: "${response.substring(0, 50)}${response.length > 50 ? '...' : ''}"`, 'CWB API连接测试成功');
+            const formattedResponse = response.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+            showToastr('success', `连接测试成功！AI回复: "${formattedResponse}"`, { escapeHtml: false }, 'CWB API连接测试成功');
             return true;
         } else {
             throw new Error('API未返回有效响应');
@@ -617,25 +630,32 @@ export async function callCustomOpenAI(messages) {
             throw new Error('API URL/Model未配置。');
         }
 
+        const isGoogleApi = state.customApiConfig.url.includes('googleapis.com');
+
         const requestBody = {
             messages: messages,
             model: state.customApiConfig.model,
             temperature: 1,
-            frequency_penalty: 0,
-            presence_penalty: 0.12,
             top_p: 1,
             max_tokens: 65000,
             stream: false,
             chat_completion_source: 'openai',
-            group_names: [],
-            include_reasoning: false,
-            reasoning_effort: 'medium',
-            enable_web_search: false,
-            request_images: false,
-            custom_prompt_post_processing: 'strict',
             reverse_proxy: state.customApiConfig.url,
             proxy_password: state.customApiConfig.apiKey,
         };
+
+        if (!isGoogleApi) {
+            Object.assign(requestBody, {
+                frequency_penalty: 0,
+                presence_penalty: 0.12,
+                group_names: [],
+                include_reasoning: false,
+                reasoning_effort: 'medium',
+                enable_web_search: false,
+                request_images: false,
+                custom_prompt_post_processing: 'strict',
+            });
+        }
 
         const fullApiUrl = '/api/backends/chat-completions/generate';
         const headers = { ...getRequestHeaders(), 'Content-Type': 'application/json' };
