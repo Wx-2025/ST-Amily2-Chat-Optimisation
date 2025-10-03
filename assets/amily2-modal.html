@@ -344,7 +344,12 @@
         <div id="amily2_wb_select_wrapper" style="display: none;">
             <div class="amily2_settings_block">
                 <label>选择世界书:</label>
-                <div id="amily2_wb_checkbox_list" class="checkbox-list-container" style="max-height: 120px; overflow-y: auto; border: 1px solid #444; padding: 5px; border-radius: 5px; margin-top: 5px;">
+                <div style="display: flex; gap: 5px; margin-bottom: 5px; margin-top: 5px;">
+                    <input type="text" id="amily2_wb_book_search" class="text_pole" placeholder="搜索世界书..." style="flex-grow: 1;">
+                    <button id="amily2_wb_book_select_all" class="menu_button small_button" style="writing-mode: horizontal-tb;">全选</button>
+                    <button id="amily2_wb_book_deselect_all" class="menu_button small_button" style="writing-mode: horizontal-tb;">全不选</button>
+                </div>
+                <div id="amily2_wb_checkbox_list" class="checkbox-list-container" style="max-height: 120px; overflow-y: auto; border: 1px solid #444; padding: 5px; border-radius: 5px;">
                     <!-- World book list will be populated here -->
                 </div>
             </div>
@@ -352,7 +357,12 @@
 
         <div class="amily2_settings_block">
             <label>选择条目:</label>
-            <div id="amily2_wb_entry_list" class="checkbox-list-container" style="max-height: 150px; overflow-y: auto; border: 1px solid #444; padding: 5px; border-radius: 5px; margin-top: 5px;">
+            <div style="display: flex; gap: 5px; margin-bottom: 5px; margin-top: 5px;">
+                <input type="text" id="amily2_wb_entry_search" class="text_pole" placeholder="搜索条目..." style="flex-grow: 1;">
+                <button id="amily2_wb_entry_select_all" class="menu_button small_button" style="writing-mode: horizontal-tb;">全选</button>
+                <button id="amily2_wb_entry_deselect_all" class="menu_button small_button" style="writing-mode: horizontal-tb;">全不选</button>
+            </div>
+            <div id="amily2_wb_entry_list" class="checkbox-list-container" style="max-height: 150px; overflow-y: auto; border: 1px solid #444; padding: 5px; border-radius: 5px;">
                 <!-- Entry list will be populated here -->
             </div>
         </div>
