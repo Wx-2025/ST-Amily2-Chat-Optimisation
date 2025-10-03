@@ -266,10 +266,12 @@ jQuery(async () => {
     extension_settings[extensionName] = {};
   }
   const combinedDefaultSettings = { ...defaultSettings, ...tableSystemDefaultSettings, ...cwbDefaultSettings };
-  Object.assign(extension_settings[extensionName], {
-    ...combinedDefaultSettings,
-    ...extension_settings[extensionName],
-  });
+
+  for (const key in combinedDefaultSettings) {
+    if (extension_settings[extensionName][key] === undefined) {
+      extension_settings[extensionName][key] = combinedDefaultSettings[key];
+    }
+  }
   console.log("[Amily2号-帝国枢密院] 帝国基本法已确认，档案室已与国库对接完毕。");
 
   let attempts = 0;
@@ -457,17 +459,16 @@ jQuery(async () => {
             eventSource.on(event_types.MESSAGE_SWIPED, (chat_id) => {
                 log(`【监察系统】检测到消息滑动 (SWIPED)，开始回滚并刷新状态。`, 'warn');
                 clearHighlights();
-                loadTables(); // 【V140.0 核心修复】滑动时，从聊天记录末尾重新加载正确的表格状态
+                loadTables();
                 handleTableUpdate(chat_id);
-                updateOrInsertTableInChat(); // Also update in-chat table on swipe
+                updateOrInsertTableInChat();
             });
             eventSource.on(event_types.MESSAGE_EDITED, (mes_id) => {
                 handleTableUpdate(mes_id);
-                updateOrInsertTableInChat(); // Update in-chat table on edit
+                updateOrInsertTableInChat(); 
             });
 
             eventSource.on(event_types.CHAT_CHANGED, () => {
-                // 【新增】切换聊天时，清除上一次的优化结果
                 window.lastPreOptimizationResult = null;
                 document.dispatchEvent(new CustomEvent('preOptimizationTextUpdated'));
 
@@ -486,8 +487,6 @@ jQuery(async () => {
                 loadTables(index);
                 renderTables();
             });
-
-            // 【新增】监听多种事件，以在聊天窗口中渲染表格，确保在各种情况下都能正确显示
             eventSource.on(event_types.MESSAGE_RECEIVED, updateOrInsertTableInChat);
             eventSource.on(event_types.chat_updated, updateOrInsertTableInChat);
             
@@ -509,8 +508,6 @@ jQuery(async () => {
             console.log('[Amily2-核心引擎] 开始执行统一注入 (聊天长度:', args[0]?.length || 0, ')');
 
             try {
-                // 调用 injectTableData。该函数现在内部包含逻辑，
-                // 如果宏已被替换，它将自动跳过执行，从而避免重复注入。
                 injectTableData(...args);
             } catch (error) {
                 console.error('[Amily2-内存储司] 表格注入失败:', error);
@@ -535,7 +532,6 @@ jQuery(async () => {
 
         console.log("【Amily2号】帝国秩序已完美建立。Amily2号的府邸已恭候陛下的莅临。");
 
-        // 初始化版本检测功能
         console.log("[Amily2号-开国大典] 步骤七：初始化版本显示系统...");
         if (typeof window.amily2Updater !== 'undefined') {
             setTimeout(() => {
