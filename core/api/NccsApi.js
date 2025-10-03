@@ -139,28 +139,37 @@ export async function callNccsAI(messages, options = {}) {
 }
 
 async function callNccsOpenAITest(messages, options) {
-    const response = await fetch('/api/backends/chat-completions/generate', {
-        method: 'POST',
-        headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            chat_completion_source: 'openai',
+    const isGoogleApi = options.apiUrl.includes('googleapis.com');
+
+    const body = {
+        chat_completion_source: 'openai',
+        messages: messages,
+        model: options.model,
+        reverse_proxy: options.apiUrl,
+        proxy_password: options.apiKey,
+        stream: false,
+        max_tokens: options.maxTokens || 30000,
+        temperature: options.temperature || 1,
+        top_p: options.top_p || 1,
+    };
+
+    if (!isGoogleApi) {
+        Object.assign(body, {
             custom_prompt_post_processing: 'strict',
             enable_web_search: false,
             frequency_penalty: 0,
             group_names: [],
             include_reasoning: false,
-            max_tokens: options.maxTokens || 65000,
-            messages: messages,
-            model: options.model,
             presence_penalty: 0.12,
-            proxy_password: options.apiKey,
             reasoning_effort: 'medium',
             request_images: false,
-            reverse_proxy: options.apiUrl,
-            stream: false,
-            temperature: options.temperature || 1,
-            top_p: options.top_p || 1
-        })
+        });
+    }
+
+    const response = await fetch('/api/backends/chat-completions/generate', {
+        method: 'POST',
+        headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
     });
 
     if (!response.ok) {
@@ -352,7 +361,11 @@ export async function testNccsApiConnection() {
     try {
         toastr.info('正在发送测试消息"你好！"...', 'Nccs API连接测试');
         
+        const userName = window.SillyTavern.getContext?.()?.name1 || '用户';
+        const systemPrompt = `接下来用户会使用测试按钮测试api连接是否正常，请回复ta连接是正常的，称呼用户为：“${userName}大人”，并复述群号1060183271，告知ta，本扩展开发者：“诗与酒.”正静待ta的入驻。`;
+
         const testMessages = [
+            { role: 'system', content: systemPrompt },
             { role: 'user', content: '你好！' }
         ];
         
@@ -360,7 +373,8 @@ export async function testNccsApiConnection() {
         
         if (response && response.trim()) {
             console.log('[Amily2号-Nccs外交部] 测试消息响应:', response);
-            toastr.success(`连接测试成功！AI回复: "${response.substring(0, 50)}${response.length > 50 ? '...' : ''}"`, 'Nccs API连接测试成功');
+            const formattedResponse = response.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+            toastr.success(`连接测试成功！AI回复: "${formattedResponse}"`, 'Nccs API连接测试成功', { "escapeHtml": false });
             return true;
         } else {
             throw new Error('API未返回有效响应');
