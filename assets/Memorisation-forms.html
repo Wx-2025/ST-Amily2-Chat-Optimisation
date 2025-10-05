@@ -15,7 +15,7 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            min-width: 0; /* Prevents flex items from overflowing */
+            min-width: 0; 
         }
 
         .scrollable-container {
@@ -115,6 +115,13 @@
                             <span class="slider"></span>
                         </label>
                     </div>
+                    <div class="control-block-with-switch" style="margin-top: 10px;">
+                        <label for="render-on-every-message-toggle">持续渲染最新消息</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="render-on-every-message-toggle" data-setting-key="render_on_every_message" data-type="boolean">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
                 </div>
 
                 <div id="sinan-world-settings-tab" class="sinan-tab-pane">
@@ -145,7 +152,6 @@
 
                     <div id="table_worldbook_select_wrapper" style="display: none;">
                         <div class="worldbook-selection-container">
-                            <!-- World Book List Column -->
                             <div class="worldbook-column">
                                 <div class="amily2_opt_label_with_button_wrapper">
                                     <label>选择世界书 (可多选)</label>
@@ -163,7 +169,6 @@
                         </div>
                     </div>
 
-                    <!-- World Book Entry List Column -->
                     <div class="worldbook-column" style="margin-top: 10px;">
                         <label>选择条目 (可多选)</label>
                         <div class="table-search-wrapper">
@@ -352,6 +357,7 @@
                             <button id="fill-table-now-btn" class="menu_button small_button">立即填表</button>
                             <button id="fill-selected-floors-btn" class="menu_button accent small_button">选定楼层填表</button>
                             <button id="fill-current-floor-btn" class="menu_button secondary small_button">填当前楼层</button>
+                            <button id="rollback-and-refill-btn" class="menu_button secondary small_button">回退重填</button>
                             <button id="reorganize-table-btn" class="menu_button warning small_button">重新整理</button>
                         </div>
                     </div>
