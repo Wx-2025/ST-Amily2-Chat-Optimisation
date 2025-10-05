@@ -9,7 +9,7 @@ import { getContext } from "/scripts/extensions.js";
 import { characters, this_chid } from '/script.js';
 import { injectTableData, generateTableContent } from "./core/table-system/injector.js"; 
 import { initialize as initializeRagProcessor } from "./core/rag-processor.js"; 
-import { loadTables, clearHighlights } from './core/table-system/manager.js';
+import { loadTables, clearHighlights, rollbackAndRefill, rollbackState } from './core/table-system/manager.js';
 import { renderTables } from './ui/table-bindings.js';
 import { log } from './core/table-system/logger.js';
 import { eventSource, event_types, saveSettingsDebounced } from '/script.js';
@@ -22,7 +22,7 @@ import { manageLorebookEntriesForChat } from './core/lore.js';
 import { initializeCharacterWorldBook } from './CharacterWorldBook/cwb_index.js';
 import { cwbDefaultSettings } from './CharacterWorldBook/src/cwb_config.js';
 import './core/amily2-updater.js';
-import { updateOrInsertTableInChat } from './ui/message-table-renderer.js';
+import { updateOrInsertTableInChat, startContinuousRendering, stopContinuousRendering } from './ui/message-table-renderer.js';
 
 const STYLE_SETTINGS_KEY = 'amily2_custom_styles';
 const STYLE_ROOT_SELECTOR = '#amily2_memorisation_forms_panel';
@@ -265,7 +265,7 @@ jQuery(async () => {
   if (!extension_settings[extensionName]) {
     extension_settings[extensionName] = {};
   }
-  const combinedDefaultSettings = { ...defaultSettings, ...tableSystemDefaultSettings, ...cwbDefaultSettings };
+  const combinedDefaultSettings = { ...defaultSettings, ...tableSystemDefaultSettings, ...cwbDefaultSettings, render_on_every_message: false };
 
   for (const key in combinedDefaultSettings) {
     if (extension_settings[extensionName][key] === undefined) {
@@ -330,7 +330,6 @@ jQuery(async () => {
                 context.registerMacro('Amily2EditContent', () => {
                     const content = generateTableContent();
                     if (content) {
-                        // 只有当宏被实际调用并生成内容时，才设置标志
                         window.AMILY2_MACRO_REPLACED = true;
                     }
                     return content;
@@ -457,11 +456,8 @@ jQuery(async () => {
             eventSource.on(event_types.IMPERSONATE_READY, onMessageReceived);
             eventSource.on(event_types.MESSAGE_RECEIVED, (chat_id) => handleTableUpdate(chat_id));
             eventSource.on(event_types.MESSAGE_SWIPED, (chat_id) => {
-                log(`【监察系统】检测到消息滑动 (SWIPED)，开始回滚并刷新状态。`, 'warn');
-                clearHighlights();
-                loadTables();
-                handleTableUpdate(chat_id);
-                updateOrInsertTableInChat();
+                log(`【监察系统】检测到消息滑动 (SWIPED)，开始执行状态回退...`, 'warn');
+                rollbackState();
             });
             eventSource.on(event_types.MESSAGE_EDITED, (mes_id) => {
                 handleTableUpdate(mes_id);
@@ -478,6 +474,12 @@ jQuery(async () => {
                     clearHighlights();
                     loadTables();
                     renderTables();
+
+                    if (extension_settings[extensionName].render_on_every_message) {
+                        startContinuousRendering();
+                    } else {
+                        stopContinuousRendering();
+                    }
                 }, 100);
             });
 
@@ -487,6 +489,7 @@ jQuery(async () => {
                 loadTables(index);
                 renderTables();
             });
+
             eventSource.on(event_types.MESSAGE_RECEIVED, updateOrInsertTableInChat);
             eventSource.on(event_types.chat_updated, updateOrInsertTableInChat);
             
@@ -508,6 +511,7 @@ jQuery(async () => {
             console.log('[Amily2-核心引擎] 开始执行统一注入 (聊天长度:', args[0]?.length || 0, ')');
 
             try {
+
                 injectTableData(...args);
             } catch (error) {
                 console.error('[Amily2-内存储司] 表格注入失败:', error);
@@ -544,6 +548,10 @@ jQuery(async () => {
 
         handleUpdateCheck();
         handleMessageBoard();
+
+        if (extension_settings[extensionName].render_on_every_message) {
+            startContinuousRendering();
+        }
 
         setTimeout(() => {
             try {
