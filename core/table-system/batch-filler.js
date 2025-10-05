@@ -149,18 +149,13 @@ function getRawMessagesForSummary(startFloor, endFloor) {
     const userName = context.name1 || '用户';
     const characterName = context.name2 || '角色';
     
-    let tagsToExtract;
-    let exclusionRules;
+    let tagsToExtract = [];
+    let exclusionRules = [];
 
     if (settings.table_independent_rules_enabled) {
         log('批量填表：使用独立提取规则。', 'info');
         tagsToExtract = (settings.table_tags_to_extract || '').split(',').map(t => t.trim()).filter(Boolean);
         exclusionRules = settings.table_exclusion_rules || [];
-    } else {
-        log('批量填表：使用微言录提取规则。', 'info');
-        const useHistoriographyTags = settings.historiographyTagExtractionEnabled ?? false;
-        tagsToExtract = useHistoriographyTags ? (settings.historiographyTags || '').split(',').map(t => t.trim()).filter(Boolean) : [];
-        exclusionRules = settings.historiographyExclusionRules || [];
     }
 
     const messages = historySlice.map((msg, index) => {
