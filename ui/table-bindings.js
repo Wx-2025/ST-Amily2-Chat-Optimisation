@@ -15,6 +15,8 @@ import { fetchNccsModels, testNccsApiConnection } from '../core/api/NccsApi.js';
 const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches;
 const getAllTablesContainer = () => document.getElementById('all-tables-container');
 
+let isResizing = false;
+
 
 function toggleRowContextMenu(event) {
     event.preventDefault();
@@ -23,63 +25,104 @@ function toggleRowContextMenu(event) {
     const targetTd = event.target.closest('td.index-col');
     if (!targetTd) return;
 
-    const menu = targetTd.querySelector('.amily2-context-menu');
-    if (!menu) return;
+    const tableWrapper = targetTd.closest('.amily2-table-wrapper');
+    if (!tableWrapper) return;
 
-    const isActive = menu.classList.contains('amily2-menu-active');
-
-    document.querySelectorAll('.amily2-context-menu.amily2-menu-active').forEach(activeMenu => {
-        activeMenu.classList.remove('amily2-menu-active');
+    const isActive = targetTd.classList.contains('amily2-menu-open');
+    document.querySelectorAll('.amily2-menu-open').forEach(openEl => {
+        if (openEl !== targetTd) {
+            openEl.classList.remove('amily2-menu-open');
+            const otherWrapper = openEl.closest('.amily2-table-wrapper');
+            if (otherWrapper) {
+                otherWrapper.style.overflowX = 'auto';
+                otherWrapper.style.zIndex = '';
+                otherWrapper.style.position = '';
+            }
+        }
     });
-
-    if (!isActive) {
-        menu.classList.add('amily2-menu-active');
+    targetTd.classList.toggle('amily2-menu-open');
+    if (targetTd.classList.contains('amily2-menu-open')) {
+        tableWrapper.style.overflowX = 'visible';
+        tableWrapper.style.position = 'relative';
+        tableWrapper.style.zIndex = '10';
+    } else {
+        tableWrapper.style.overflowX = 'auto';
+        tableWrapper.style.position = '';
+        tableWrapper.style.zIndex = '';
     }
 
     const closeMenu = (e) => {
-        if (!menu.contains(e.target)) {
-            menu.classList.remove('amily2-menu-active');
+        if (!targetTd.contains(e.target)) {
+            targetTd.classList.remove('amily2-menu-open');
+            tableWrapper.style.overflowX = 'auto';
+            tableWrapper.style.position = '';
+            tableWrapper.style.zIndex = '';
             document.removeEventListener('click', closeMenu, true);
         }
     };
 
-    setTimeout(() => {
-        if (menu.classList.contains('amily2-menu-active')) {
+    if (targetTd.classList.contains('amily2-menu-open')) {
+        setTimeout(() => {
             document.addEventListener('click', closeMenu, true);
-        }
-    }, 0);
+        }, 0);
+    }
 }
 
 
 function toggleColumnContextMenu(event) {
+    if (isResizing || event.target.classList.contains('amily2-resizer')) {
+        return;
+    }
     event.preventDefault();
     event.stopPropagation();
 
     const targetTh = event.target.closest('th');
     if (!targetTh) return;
 
-    const isActive = targetTh.classList.contains('amily2-menu-open');
+    const tableWrapper = targetTh.closest('.amily2-table-wrapper');
+    if (!tableWrapper) return;
 
+    const isActive = targetTh.classList.contains('amily2-menu-open');
     document.querySelectorAll('th.amily2-menu-open').forEach(openTh => {
-        openTh.classList.remove('amily2-menu-open');
+        if (openTh !== targetTh) {
+            openTh.classList.remove('amily2-menu-open');
+            const otherWrapper = openTh.closest('.amily2-table-wrapper');
+            if (otherWrapper) {
+                otherWrapper.style.overflowX = 'auto';
+                otherWrapper.style.zIndex = '';
+                otherWrapper.style.position = '';
+            }
+        }
     });
 
-    if (!isActive) {
-        targetTh.classList.add('amily2-menu-open');
+    targetTh.classList.toggle('amily2-menu-open');
+
+    if (targetTh.classList.contains('amily2-menu-open')) {
+        tableWrapper.style.overflowX = 'visible';
+        tableWrapper.style.position = 'relative'; 
+        tableWrapper.style.zIndex = '10';
+    } else {
+        tableWrapper.style.overflowX = 'auto';
+        tableWrapper.style.position = '';
+        tableWrapper.style.zIndex = '';
     }
 
     const closeMenu = (e) => {
         if (!targetTh.contains(e.target)) {
             targetTh.classList.remove('amily2-menu-open');
+            tableWrapper.style.overflowX = 'auto';
+            tableWrapper.style.position = '';
+            tableWrapper.style.zIndex = '';
             document.removeEventListener('click', closeMenu, true);
         }
     };
 
-    setTimeout(() => {
-        if (targetTh.classList.contains('amily2-menu-open')) {
+    // If the menu was opened, set up the listener to close it
+    if (targetTh.classList.contains('amily2-menu-open')) {
+        setTimeout(() => {
             document.addEventListener('click', closeMenu, true);
-        }
-    }, 0);
+        }, 0);
+    }
 }
 
 
@@ -297,11 +340,33 @@ export function renderTables() {
         header.appendChild(controls);
         container.appendChild(header);
 
+        const tableWrapper = document.createElement('div');
+        tableWrapper.className = 'amily2-table-wrapper';
+
         const tableElement = document.createElement('table');
-        tableElement.style.display = 'block';
-        tableElement.style.overflowX = 'auto';
         tableElement.id = `amily2-table-${tableIndex}`;
         tableElement.dataset.tableIndex = tableIndex;
+
+        const colgroup = document.createElement('colgroup');
+        const indexCol = document.createElement('col');
+        indexCol.style.width = '40px';
+        colgroup.appendChild(indexCol);
+
+        if (tableData.headers) {
+            tableData.headers.forEach((_, colIndex) => {
+                const col = document.createElement('col');
+                const colWidth = (tableData.columnWidths && tableData.columnWidths[colIndex]) ? tableData.columnWidths[colIndex] : 90;
+                col.style.width = `${colWidth}px`;
+                colgroup.appendChild(col);
+            });
+        }
+        tableElement.appendChild(colgroup);
+        let totalWidth = 0;
+        const cols = colgroup.querySelectorAll('col');
+        cols.forEach(col => {
+            totalWidth += parseInt(col.style.width, 10);
+        });
+        tableElement.style.width = `${totalWidth}px`;
 
         const thead = tableElement.createTHead();
         const headerRow = thead.insertRow();
@@ -311,11 +376,11 @@ export function renderTables() {
         indexTh.textContent = '#';
         indexTh.style.cursor = 'pointer';
         indexTh.title = '点击添加第一行';
-        
+
         if (!tableData.rows || tableData.rows.length === 0) {
             const headerMenu = document.createElement('div');
             headerMenu.className = 'amily2-context-menu amily2-header-menu';
-            headerMenu.style.display = 'none';  
+            headerMenu.style.display = 'none';  // 默认隐藏
             
             const addRowButton = document.createElement('button');
             addRowButton.innerHTML = '<i class="fas fa-plus-circle"></i> 创建第一行';
@@ -398,6 +463,57 @@ export function renderTables() {
             });
 
             th.appendChild(menu);
+
+            const resizer = document.createElement('div');
+            resizer.className = 'amily2-resizer';
+            th.appendChild(resizer);
+
+            const startResize = (startEvent) => {
+                startEvent.preventDefault();
+                startEvent.stopPropagation();
+
+                isResizing = true;
+
+                const table = startEvent.target.closest('table');
+                const th = startEvent.target.parentElement;
+                const col = table.querySelector(`colgroup > col:nth-child(${th.cellIndex + 1})`);
+
+                const isTouchEvent = startEvent.type.startsWith('touch');
+                const startX = isTouchEvent ? startEvent.touches[0].clientX : startEvent.clientX;
+                const startWidth = th.offsetWidth;
+
+                const onMove = (moveEvent) => {
+                    const currentX = isTouchEvent ? moveEvent.touches[0].clientX : moveEvent.clientX;
+                    const newWidth = startWidth + (currentX - startX);
+                    if (newWidth > 50) {
+                        col.style.width = `${newWidth}px`;
+                    }
+                };
+
+                const onEnd = () => {
+                    document.removeEventListener('mousemove', onMove);
+                    document.removeEventListener('mouseup', onEnd);
+                    document.removeEventListener('touchmove', onMove);
+                    document.removeEventListener('touchend', onEnd);
+
+                    const finalWidth = parseInt(col.style.width, 10);
+                    TableManager.updateColumnWidth(tableIndex, colIndex, finalWidth);
+
+                    setTimeout(() => { isResizing = false; }, 0);
+                };
+
+                if (isTouchEvent) {
+                    document.addEventListener('touchmove', onMove, { passive: false });
+                    document.addEventListener('touchend', onEnd);
+                } else {
+                    document.addEventListener('mousemove', onMove);
+                    document.addEventListener('mouseup', onEnd);
+                }
+            };
+
+            resizer.addEventListener('mousedown', startResize);
+            resizer.addEventListener('touchstart', startResize, { passive: false });
+
             headerRow.appendChild(th);
         });
 
@@ -476,7 +592,8 @@ export function renderTables() {
                 });
             });
         }
-        container.appendChild(tableElement);
+        tableWrapper.appendChild(tableElement);
+        container.appendChild(tableWrapper);
     });
 
     if (placeholder) {
@@ -674,6 +791,8 @@ function openRuleEditor(tableIndex) {
             toastr.warning('请选择一个列。');
             return;
         }
+        
+        // 允许输入0，但0意味着“无限制”，所以我们不添加规则。
         if (isNaN(limitValue) || limitValue < 0) {
             toastr.warning('请输入一个有效的字数限制（大于等于0）。');
             return;
@@ -1223,6 +1342,7 @@ export function bindTableEvents() {
         allTablesContainer.addEventListener('click', (event) => {
             const th = event.target.closest('th');
             if (th && th.classList.contains('index-col')) {
+                // 处理表头 # 号的点击（用于空表格添加首行）
                 toggleHeaderIndexContextMenu(event);
                 return;
             }
@@ -1310,9 +1430,10 @@ export function bindTableEvents() {
             const colIndex = parseInt(target.dataset.colIndex, 10);
             const newValue = target.textContent;
 
-            const hScroll = tableElement.scrollLeft;
-            const scrollContainer = allTablesContainer.closest('.hly-scroll');
-            const vScroll = scrollContainer ? scrollContainer.scrollTop : 0;
+            // Correctly save scroll positions before re-rendering
+            const tableWrapper = tableElement.closest('.amily2-table-wrapper');
+            const hScroll = tableWrapper ? tableWrapper.scrollLeft : 0;
+            const vScroll = allTablesContainer.scrollTop;
 
             TableManager.addHighlight(tableIndex, rowIndex, colIndex);
             const dataToUpdate = { [colIndex]: newValue };
@@ -1320,15 +1441,14 @@ export function bindTableEvents() {
 
             renderAll();
 
-            const newTableElement = document.getElementById(`amily2-table-${tableIndex}`);
-            if (newTableElement) {
-                newTableElement.scrollLeft = hScroll;
+            // Correctly restore scroll positions after re-rendering
+            const newTableWrapper = document.getElementById(`amily2-table-${tableIndex}`)?.closest('.amily2-table-wrapper');
+            if (newTableWrapper) {
+                newTableWrapper.scrollLeft = hScroll;
             }
-            if (scrollContainer) {
-                scrollContainer.scrollTop = vScroll;
-            }
+            allTablesContainer.scrollTop = vScroll;
 
-        }, true); 
+        }, true);
     }
     
     panel.dataset.eventsBound = 'true';
@@ -1849,7 +1969,6 @@ function bindChatTableDisplaySetting() {
     }
     showInChatToggle.checked = settings.show_table_in_chat === true;
     continuousRenderToggle.checked = settings.render_on_every_message === true;
-
     const updateContinuousRenderState = () => {
         if (showInChatToggle.checked) {
             continuousRenderToggle.disabled = false;
@@ -1859,9 +1978,7 @@ function bindChatTableDisplaySetting() {
             continuousRenderToggle.closest('.control-block-with-switch').style.opacity = '0.5';
         }
     };
-
     updateContinuousRenderState();
-
     showInChatToggle.addEventListener('change', () => {
         settings.show_table_in_chat = showInChatToggle.checked;
         saveSettingsDebounced();
