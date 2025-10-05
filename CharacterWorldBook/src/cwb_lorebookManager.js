@@ -14,9 +14,9 @@ export async function getTargetWorldBook() {
     try {
         let localTavernHelper = TavernHelper;
         if (!localTavernHelper) {
-            console.log("TavernHelper 未定义，尝试重建");
+            // TavernHelper 未定义的情况下触发，但是为什么？
+            (localTavernHelper = window.TavernHelper);
         }
-        (localTavernHelper = window.TavernHelper);
         const primaryBook = await localTavernHelper.getCurrentCharPrimaryLorebook();
         if (!primaryBook) {
             showToastr('error', '当前角色未设置主世界书。');
