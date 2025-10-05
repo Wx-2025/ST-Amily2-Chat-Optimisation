@@ -54,7 +54,6 @@ function removeTableContainer() {
 }
 
 function bindSwipePreventer(container) {
-    // Only apply this logic on mobile/touch devices
     if (!isTouchDevice()) {
         return;
     }
@@ -109,9 +108,71 @@ export function updateOrInsertTableInChat() {
             container.id = TABLE_CONTAINER_ID;
             container.innerHTML = htmlContent;
             lastMessage.appendChild(container);
-            bindSwipePreventer(container); // Bind the event listener to prevent swipe conflicts
+            bindSwipePreventer(container); 
         } else {
             console.warn('[Amily2] 未找到最后一条消息的容器，无法插入表格。');
         }
     }, 0);
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+let chatObserver = null;
+const debouncedUpdate = debounce(updateOrInsertTableInChat, 100);
+
+export function startContinuousRendering() {
+    if (chatObserver) {
+        console.log('[Amily2] Continuous rendering is already active.');
+        return;
+    }
+
+    const chatContainer = document.getElementById('chat');
+    if (!chatContainer) {
+        console.error('[Amily2] Could not find chat container to observe.');
+        setTimeout(startContinuousRendering, 500);
+        return;
+    }
+
+    const observerConfig = { childList: true };
+
+    chatObserver = new MutationObserver((mutationsList, observer) => {
+        for (const mutation of mutationsList) {
+            if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                let messageAdded = false;
+                mutation.addedNodes.forEach(node => {
+                    if (node.nodeType === 1 && node.classList.contains('mes')) {
+                        messageAdded = true;
+                    }
+                });
+
+                if (messageAdded) {
+                    debouncedUpdate();
+                    return; 
+                }
+            }
+        }
+    });
+
+    chatObserver.observe(chatContainer, observerConfig);
+    console.log('[Amily2] Started continuous table rendering.');
+    updateOrInsertTableInChat();
+}
+
+export function stopContinuousRendering() {
+    if (chatObserver) {
+        chatObserver.disconnect();
+        chatObserver = null;
+        removeTableContainer();
+        console.log('[Amily2] Stopped continuous table rendering.');
+    }
 }
