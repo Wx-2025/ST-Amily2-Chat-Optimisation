@@ -1,9 +1,8 @@
-
-
 import * as TableManager from '../core/table-system/manager.js';
 import { log } from '../core/table-system/logger.js';
 import { extension_settings, getContext } from '/scripts/extensions.js';
 import { extensionName } from '../utils/settings.js';
+import { updateOrInsertTableInChat } from './message-table-renderer.js';
 import { saveSettingsDebounced } from '/script.js';
 import { startBatchFilling } from '../core/table-system/batch-filler.js';
 import { showHtmlModal } from './page-window.js';
@@ -313,11 +312,10 @@ export function renderTables() {
         indexTh.style.cursor = 'pointer';
         indexTh.title = '点击添加第一行';
         
-        // 为表头的 # 号添加特殊的上下文菜单（仅在表格为空时显示）
         if (!tableData.rows || tableData.rows.length === 0) {
             const headerMenu = document.createElement('div');
             headerMenu.className = 'amily2-context-menu amily2-header-menu';
-            headerMenu.style.display = 'none';  // 默认隐藏
+            headerMenu.style.display = 'none';  
             
             const addRowButton = document.createElement('button');
             addRowButton.innerHTML = '<i class="fas fa-plus-circle"></i> 创建第一行';
@@ -330,14 +328,10 @@ export function renderTables() {
             
             headerMenu.appendChild(addRowButton);
             indexTh.appendChild(headerMenu);
-            
-            // 为表头添加直接的点击事件监听器
             indexTh.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('Header # clicked for table', tableIndex);
-                
-                // 直接执行添加行操作
                 TableManager.addRow(tableIndex);
                 renderTables();
                 toastr.success('已添加第一行');
@@ -488,6 +482,7 @@ export function renderTables() {
     if (placeholder) {
         container.appendChild(placeholder);
     }
+    updateOrInsertTableInChat();
 }
 
 
@@ -563,6 +558,34 @@ function openRuleEditor(tableIndex) {
     const tables = TableManager.getMemoryState();
     if (!tables || !tables[tableIndex]) return;
     const table = tables[tableIndex];
+    if (table.charLimitRule && !table.charLimitRules) {
+        table.charLimitRules = {};
+        if (table.charLimitRule.columnIndex !== -1) {
+            table.charLimitRules[table.charLimitRule.columnIndex] = table.charLimitRule.limit;
+        }
+    }
+    const charLimitRules = table.charLimitRules || {};
+
+    const renderCharLimitRules = (rules) => {
+        return Object.entries(rules).map(([colIndex, limit]) => {
+            const header = table.headers[colIndex] || `未知列 (${colIndex})`;
+            return `
+                <div class="char-limit-rule-item" style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(0,0,0,0.1); border-radius: 4px;">
+                    <span><i class="fas fa-file-alt" style="margin-right: 8px; color: #9e8aff;"></i><b>${header}</b>: 不超过 ${limit} 字</span>
+                    <button class="menu_button danger small_button remove-char-limit-rule-btn" data-col-index="${colIndex}" title="删除此规则">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            `;
+        }).join('');
+    };
+
+    const getColumnOptions = (rules) => {
+        return table.headers.map((header, index) => {
+            if (rules[index]) return '';
+            return `<option value="${index}">${header}</option>`;
+        }).join('');
+    };
 
     const dialogHtml = `
         <dialog class="popup wide_dialogue_popup large_dialogue_popup">
@@ -572,6 +595,37 @@ function openRuleEditor(tableIndex) {
             </h4>
             <div class="popup-content" style="height: 70vh; overflow-y: auto;">
                 <div class="rule-editor-form" style="display: flex; flex-direction: column; gap: 15px; padding: 10px;">
+                    
+                    <div class="rule-editor-field" style="border: 1px solid #444; padding: 10px; border-radius: 5px;">
+                        <label style="font-weight: bold; color: #9e8aff;">内容长度限制 (0为禁用)</label>
+                        
+                        <div id="current-char-limit-rules" style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+                            ${renderCharLimitRules(charLimitRules)}
+                        </div>
+                        
+                        <div id="add-char-limit-rule-area" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #333;">
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <select id="new-rule-column-select" class="text_pole" style="flex: 1;">
+                                    <option value="-1">-- 选择要添加规则的列 --</option>
+                                    ${getColumnOptions(charLimitRules)}
+                                </select>
+                                <input type="number" id="new-rule-limit-input" class="text_pole" min="0" value="0" style="width: 80px;">
+                                <button id="add-char-limit-rule-btn" class="menu_button menu_button_primary small_button">
+                                    <i class="fas fa-plus"></i> 添加
+                                </button>
+                            </div>
+                        </div>
+                        <small class="notes">您可以为多个不同的列添加字符数限制规则。</small>
+                    </div>
+
+                    <div class="rule-editor-field" style="border: 1px solid #444; padding: 10px; border-radius: 5px;">
+                        <label for="rule-row-limit-value" style="font-weight: bold; color: #9e8aff;">表格行数限制 (0为禁用)</label>
+                        <input type="number" id="rule-row-limit-value" class="text_pole" min="0" value="${table.rowLimitRule || 0}" style="width: 100px; margin-top: 10px;">
+                        <small class="notes">当表格总行数超过设定值时，将在表格底部显示警告。</small>
+                    </div>
+
+                    <hr style="border-color: #444; margin: 10px 0;">
+
                     <div class="rule-editor-field">
                         <label for="rule-note">【说明】:</label>
                         <textarea id="rule-note" class="text_pole" rows="5" style="width: 100%;">${table.note || ''}</textarea>
@@ -604,12 +658,57 @@ function openRuleEditor(tableIndex) {
         dialogElement.remove();
     };
 
+    const refreshRuleUI = () => {
+        const currentRules = JSON.parse(dialogElement.find('#current-char-limit-rules').attr('data-rules') || '{}');
+        dialogElement.find('#current-char-limit-rules').html(renderCharLimitRules(currentRules));
+        dialogElement.find('#new-rule-column-select').html(`<option value="-1">-- 选择要添加规则的列 --</option>${getColumnOptions(currentRules)}`);
+    };
+
+    dialogElement.find('#current-char-limit-rules').attr('data-rules', JSON.stringify(charLimitRules));
+
+    dialogElement.on('click', '#add-char-limit-rule-btn', () => {
+        const selectedColumn = parseInt(dialogElement.find('#new-rule-column-select').val(), 10);
+        const limitValue = parseInt(dialogElement.find('#new-rule-limit-input').val(), 10);
+
+        if (selectedColumn === -1) {
+            toastr.warning('请选择一个列。');
+            return;
+        }
+        if (isNaN(limitValue) || limitValue < 0) {
+            toastr.warning('请输入一个有效的字数限制（大于等于0）。');
+            return;
+        }
+
+        const currentRules = JSON.parse(dialogElement.find('#current-char-limit-rules').attr('data-rules') || '{}');
+
+        if (limitValue > 0) {
+            currentRules[selectedColumn] = limitValue;
+            dialogElement.find('#current-char-limit-rules').attr('data-rules', JSON.stringify(currentRules));
+            refreshRuleUI();
+        } else {
+            toastr.info('字数限制为0表示不设置规则。');
+        }
+    });
+
+    dialogElement.on('click', '.remove-char-limit-rule-btn', function() {
+        const colIndexToRemove = $(this).data('col-index');
+        const currentRules = JSON.parse(dialogElement.find('#current-char-limit-rules').attr('data-rules') || '{}');
+        delete currentRules[colIndexToRemove];
+        dialogElement.find('#current-char-limit-rules').attr('data-rules', JSON.stringify(currentRules));
+        refreshRuleUI();
+    });
+
     dialogElement.find('.popup-button-ok').on('click', () => {
+        const newCharLimitRules = JSON.parse(dialogElement.find('#current-char-limit-rules').attr('data-rules') || '{}');
+        const rowLimitValue = parseInt(dialogElement.find('#rule-row-limit-value').val(), 10);
+
         const newRules = {
             note: dialogElement.find('#rule-note').val(),
             rule_add: dialogElement.find('#rule-add').val(),
             rule_delete: dialogElement.find('#rule-delete').val(),
             rule_update: dialogElement.find('#rule-update').val(),
+            charLimitRules: newCharLimitRules,
+            rowLimitRule: rowLimitValue,
         };
         TableManager.updateTableRules(tableIndex, newRules);
         closeDialog();
@@ -1124,7 +1223,6 @@ export function bindTableEvents() {
         allTablesContainer.addEventListener('click', (event) => {
             const th = event.target.closest('th');
             if (th && th.classList.contains('index-col')) {
-                // 处理表头 # 号的点击（用于空表格添加首行）
                 toggleHeaderIndexContextMenu(event);
                 return;
             }
@@ -1311,6 +1409,7 @@ function bindReorganizeButton() {
 function bindFloorFillButtons() {
     const selectedFloorsBtn = document.getElementById('fill-selected-floors-btn');
     const currentFloorBtn = document.getElementById('fill-current-floor-btn');
+    const rollbackBtn = document.getElementById('rollback-and-refill-btn');
     
     if (selectedFloorsBtn) {
 
@@ -1376,6 +1475,33 @@ function bindFloorFillButtons() {
         
         currentFloorBtn.dataset.currentEventBound = 'true';
         log('"填当前楼层"按钮已成功绑定。', 'success');
+    }
+
+    if (rollbackBtn) {
+        if (rollbackBtn.dataset.rollbackEventBound) return;
+
+        rollbackBtn.addEventListener('click', async (event) => {
+            const settings = extension_settings[extensionName];
+            const tableSystemEnabled = settings.table_system_enabled !== false;
+            
+            if (!tableSystemEnabled) {
+                event.preventDefault();
+                toastr.warning('表格系统总开关已关闭，请先启用总开关。');
+                return;
+            }
+
+            if (confirm('您确定要将表格状态回退到上一楼，并使用最新消息重新填表吗？')) {
+                try {
+                    await TableManager.rollbackAndRefill();
+                } catch (error) {
+                    console.error('[内存储司] 回退重填功能失败:', error);
+                    toastr.error('回退重填失败，请检查系统状态。');
+                }
+            }
+        });
+
+        rollbackBtn.dataset.rollbackEventBound = 'true';
+        log('"回退重填"按钮已成功绑定。', 'success');
     }
 }
 
@@ -1714,18 +1840,39 @@ function bindNccsApiEvents() {
 
 function bindChatTableDisplaySetting() {
     const settings = extension_settings[extensionName];
-    const toggle = document.getElementById('show-table-in-chat-toggle');
+    const showInChatToggle = document.getElementById('show-table-in-chat-toggle');
+    const continuousRenderToggle = document.getElementById('render-on-every-message-toggle');
 
-    if (!toggle) {
-        log('找不到“聊天内显示表格”的开关，绑定失败。', 'warn');
+    if (!showInChatToggle || !continuousRenderToggle) {
+        log('找不到聊天内表格相关的开关，绑定失败。', 'warn');
         return;
     }
-    toggle.checked = settings.show_table_in_chat === true;
-    toggle.addEventListener('change', () => {
-        settings.show_table_in_chat = toggle.checked;
+    showInChatToggle.checked = settings.show_table_in_chat === true;
+    continuousRenderToggle.checked = settings.render_on_every_message === true;
+
+    const updateContinuousRenderState = () => {
+        if (showInChatToggle.checked) {
+            continuousRenderToggle.disabled = false;
+            continuousRenderToggle.closest('.control-block-with-switch').style.opacity = '1';
+        } else {
+            continuousRenderToggle.disabled = true;
+            continuousRenderToggle.closest('.control-block-with-switch').style.opacity = '0.5';
+        }
+    };
+
+    updateContinuousRenderState();
+
+    showInChatToggle.addEventListener('change', () => {
+        settings.show_table_in_chat = showInChatToggle.checked;
         saveSettingsDebounced();
-        toastr.info(`聊天内表格显示已${toggle.checked ? '开启' : '关闭'}。`);
+        toastr.info(`聊天内表格显示已${showInChatToggle.checked ? '开启' : '关闭'}。`);
+        updateContinuousRenderState();
+    });
+    continuousRenderToggle.addEventListener('change', () => {
+        settings.render_on_every_message = continuousRenderToggle.checked;
+        saveSettingsDebounced();
+        toastr.info(`持续渲染最新消息功能已${continuousRenderToggle.checked ? '开启' : '关闭'}。请切换聊天以应用更改。`);
     });
 
-    log('“聊天内显示表格”开关已成功绑定。', 'success');
+    log('聊天内表格显示设置及其依赖关系已成功绑定。', 'success');
 }
