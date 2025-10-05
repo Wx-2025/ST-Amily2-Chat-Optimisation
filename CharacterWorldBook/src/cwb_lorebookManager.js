@@ -12,7 +12,12 @@ export async function getTargetWorldBook() {
         return state.customWorldBook;
     }
     try {
-        const primaryBook = await TavernHelper.getCurrentCharPrimaryLorebook();
+        let localTavernHelper = TavernHelper;
+        if (!localTavernHelper) {
+            // TavernHelper 未定义的情况下触发，但是为什么？
+            (localTavernHelper = window.TavernHelper);
+        }
+        const primaryBook = await localTavernHelper.getCurrentCharPrimaryLorebook();
         if (!primaryBook) {
             showToastr('error', '当前角色未设置主世界书。');
             return null;
