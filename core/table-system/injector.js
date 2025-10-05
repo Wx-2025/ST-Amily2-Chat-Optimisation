@@ -1,4 +1,3 @@
-
 import { setExtensionPrompt } from '/script.js';
 import { extension_settings } from '/scripts/extensions.js';
 import { getBatchFillerFlowTemplate, convertTablesToCsvString, convertTablesToCsvStringForContentOnly } from './manager.js';
