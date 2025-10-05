@@ -121,13 +121,8 @@
 .amily2-cell-content {
     padding: var(--am2-table-cell-padding);
     white-space: normal;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 3;
-    word-break: break-word;
-    height: 100%;
+    word-break: break-all; /* Use a strong break rule as default */
+    height: auto; /* Allow height to grow by default */
 }
 
 #amily2_memorisation_forms_panel table[id^="amily2-table-"] th {
@@ -605,6 +600,8 @@ th.amily2-menu-open .amily2-context-menu {
     box-shadow: none !important; 
 }
 
+/* This rule is now part of the main .amily2-row-context-menu block above */
+
 @media (max-width: 768px) {
     #amily2_memorisation_forms_panel {
         padding: 0;
@@ -618,9 +615,10 @@ th.amily2-menu-open .amily2-context-menu {
         padding: 10px 2px; 
     }
 
+    /* Make resizer easier to touch on mobile */
     #amily2_memorisation_forms_panel .amily2-resizer {
         width: 15px;
-        right: -7px;
+        right: -7px; /* Adjust position to keep it centered on the border */
     }
 }
 
@@ -629,6 +627,8 @@ th.amily2-menu-open .amily2-context-menu {
     transition: background-color 0.3s ease-in-out;
 }
 
+
+/* 自定义列名编辑对话框样式 */
 .custom-input-dialog {
     border: none;
     border-radius: 12px;
@@ -669,6 +669,7 @@ th.amily2-menu-open .amily2-context-menu {
     transform: translateY(-1px);
 }
 
+/* Nccs API 按钮行样式 */
 .nccs-button-row {
     display: flex;
     gap: 10px;
@@ -708,13 +709,14 @@ th.amily2-menu-open .amily2-context-menu {
     box-shadow: 0 4px 15px rgba(120, 120, 120, 0.4);
 }
 
+/* Styles for tables injected into chat messages */
 #amily2-chat-table-container {
     margin-top: 10px;
     padding: 10px;
     border: 1px solid var(--am2-container-border, rgba(255, 255, 255, 0.2));
     border-radius: 8px;
     background-color: var(--am2-container-bg, rgba(0,0,0,0.1));
-    overflow-x: auto;
+    overflow-x: auto; /* Ensure horizontal scrolling on small screens */
 }
 
 .amily2-chat-table {
@@ -745,6 +747,7 @@ th.amily2-menu-open .amily2-context-menu {
     border: 1px solid var(--am2-table-border, rgba(255, 255, 255, 0.25));
     padding: 5px 8px;
     text-align: left;
+    /* white-space: nowrap; will be applied via media query for mobile only */
 }
 
 .amily2-chat-table th {
@@ -752,18 +755,19 @@ th.amily2-menu-open .amily2-context-menu {
     font-weight: bold;
 }
 
+/* Styles for collapsible in-chat tables */
 .amily2-chat-table-summary {
     cursor: pointer;
     font-weight: bold;
     padding: 5px;
     border-radius: 4px;
     transition: background-color 0.2s ease;
-    list-style: none;
+    list-style: none; /* Hide the default triangle */
     display: block;
 }
 
 .amily2-chat-table-summary::-webkit-details-marker {
-    display: none;
+    display: none; /* Hide the default triangle in Chrome/Safari */
 }
 
 .amily2-chat-table-summary:before {
@@ -785,17 +789,19 @@ th.amily2-menu-open .amily2-context-menu {
 @media (max-width: 768px) {
     .amily2-chat-table th,
     .amily2-chat-table td {
-        padding: 4px 6px; 
-        font-size: 0.85em;
+        padding: 4px 6px; /* Reduce padding on mobile */
+        font-size: 0.85em; /* Slightly smaller font on mobile */
     }
 
     #amily2-chat-table-container {
-        padding: 5px;
+        padding: 5px; /* Reduce container padding on mobile */
     }
 
+    /* On mobile, allow text wrapping to prevent overflow */
     .amily2-chat-table th,
     .amily2-chat-table td {
-        white-space: nowrap;
+        white-space: normal;
+        word-break: break-all;
     }
 }
 
