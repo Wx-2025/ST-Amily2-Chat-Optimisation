@@ -29,6 +29,8 @@ function toggleRowContextMenu(event) {
     if (!tableWrapper) return;
 
     const isActive = targetTd.classList.contains('amily2-menu-open');
+
+    // Close all other open menus (both row and column)
     document.querySelectorAll('.amily2-menu-open').forEach(openEl => {
         if (openEl !== targetTd) {
             openEl.classList.remove('amily2-menu-open');
@@ -40,7 +42,11 @@ function toggleRowContextMenu(event) {
             }
         }
     });
+
+    // Toggle the class on the current cell
     targetTd.classList.toggle('amily2-menu-open');
+
+    // Adjust the overflow property
     if (targetTd.classList.contains('amily2-menu-open')) {
         tableWrapper.style.overflowX = 'visible';
         tableWrapper.style.position = 'relative';
@@ -83,6 +89,8 @@ function toggleColumnContextMenu(event) {
     if (!tableWrapper) return;
 
     const isActive = targetTh.classList.contains('amily2-menu-open');
+
+    // Close all other open menus and reset their wrappers' overflow
     document.querySelectorAll('th.amily2-menu-open').forEach(openTh => {
         if (openTh !== targetTh) {
             openTh.classList.remove('amily2-menu-open');
@@ -95,11 +103,13 @@ function toggleColumnContextMenu(event) {
         }
     });
 
+    // Toggle the class on the current header
     targetTh.classList.toggle('amily2-menu-open');
 
+    // Adjust the overflow property based on whether the menu is now open or closed
     if (targetTh.classList.contains('amily2-menu-open')) {
         tableWrapper.style.overflowX = 'visible';
-        tableWrapper.style.position = 'relative'; 
+        tableWrapper.style.position = 'relative'; // z-index only works on positioned elements
         tableWrapper.style.zIndex = '10';
     } else {
         tableWrapper.style.overflowX = 'auto';
@@ -108,6 +118,7 @@ function toggleColumnContextMenu(event) {
     }
 
     const closeMenu = (e) => {
+        // Check if the click is outside the th containing the menu
         if (!targetTh.contains(e.target)) {
             targetTh.classList.remove('amily2-menu-open');
             tableWrapper.style.overflowX = 'auto';
@@ -355,12 +366,15 @@ export function renderTables() {
         if (tableData.headers) {
             tableData.headers.forEach((_, colIndex) => {
                 const col = document.createElement('col');
+                // Assign a default width of 120px if none is specified
                 const colWidth = (tableData.columnWidths && tableData.columnWidths[colIndex]) ? tableData.columnWidths[colIndex] : 90;
                 col.style.width = `${colWidth}px`;
                 colgroup.appendChild(col);
             });
         }
         tableElement.appendChild(colgroup);
+
+        // Explicitly calculate and set the total table width to override CSS conflicts
         let totalWidth = 0;
         const cols = colgroup.querySelectorAll('col');
         cols.forEach(col => {
@@ -376,7 +390,8 @@ export function renderTables() {
         indexTh.textContent = '#';
         indexTh.style.cursor = 'pointer';
         indexTh.title = '点击添加第一行';
-
+        
+        // 为表头的 # 号添加特殊的上下文菜单（仅在表格为空时显示）
         if (!tableData.rows || tableData.rows.length === 0) {
             const headerMenu = document.createElement('div');
             headerMenu.className = 'amily2-context-menu amily2-header-menu';
@@ -393,10 +408,14 @@ export function renderTables() {
             
             headerMenu.appendChild(addRowButton);
             indexTh.appendChild(headerMenu);
+            
+            // 为表头添加直接的点击事件监听器
             indexTh.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('Header # clicked for table', tableIndex);
+                
+                // 直接执行添加行操作
                 TableManager.addRow(tableIndex);
                 renderTables();
                 toastr.success('已添加第一行');
@@ -577,7 +596,11 @@ export function renderTables() {
 
                 rowData.forEach((cellData, colIndex) => {
                     const cell = row.insertCell();
-                    cell.textContent = cellData;
+                    
+                    const cellContent = document.createElement('div');
+                    cellContent.className = 'amily2-cell-content';
+                    cellContent.textContent = cellData;
+                    cell.appendChild(cellContent);
 
                     if (!isTouchDevice()) {
                         cell.setAttribute('contenteditable', 'true');
@@ -599,6 +622,8 @@ export function renderTables() {
     if (placeholder) {
         container.appendChild(placeholder);
     }
+
+    // Also update the in-chat table whenever the main tables are re-rendered
     updateOrInsertTableInChat();
 }
 
@@ -675,6 +700,8 @@ function openRuleEditor(tableIndex) {
     const tables = TableManager.getMemoryState();
     if (!tables || !tables[tableIndex]) return;
     const table = tables[tableIndex];
+
+    // 兼容旧数据结构
     if (table.charLimitRule && !table.charLimitRules) {
         table.charLimitRules = {};
         if (table.charLimitRule.columnIndex !== -1) {
@@ -699,6 +726,7 @@ function openRuleEditor(tableIndex) {
 
     const getColumnOptions = (rules) => {
         return table.headers.map((header, index) => {
+            // 如果该列已存在规则，则不应出现在下拉菜单中
             if (rules[index]) return '';
             return `<option value="${index}">${header}</option>`;
         }).join('');
@@ -801,10 +829,12 @@ function openRuleEditor(tableIndex) {
         const currentRules = JSON.parse(dialogElement.find('#current-char-limit-rules').attr('data-rules') || '{}');
 
         if (limitValue > 0) {
+            // 只有当限制大于0时，才添加或更新规则
             currentRules[selectedColumn] = limitValue;
             dialogElement.find('#current-char-limit-rules').attr('data-rules', JSON.stringify(currentRules));
             refreshRuleUI();
         } else {
+            // 如果用户输入0，则视为不设置规则
             toastr.info('字数限制为0表示不设置规则。');
         }
     });
@@ -1967,8 +1997,12 @@ function bindChatTableDisplaySetting() {
         log('找不到聊天内表格相关的开关，绑定失败。', 'warn');
         return;
     }
+
+    // Initialize states from settings
     showInChatToggle.checked = settings.show_table_in_chat === true;
     continuousRenderToggle.checked = settings.render_on_every_message === true;
+
+    // Function to update the dependency
     const updateContinuousRenderState = () => {
         if (showInChatToggle.checked) {
             continuousRenderToggle.disabled = false;
@@ -1978,13 +2012,19 @@ function bindChatTableDisplaySetting() {
             continuousRenderToggle.closest('.control-block-with-switch').style.opacity = '0.5';
         }
     };
+
+    // Initial state update
     updateContinuousRenderState();
+
+    // Event listener for the main toggle
     showInChatToggle.addEventListener('change', () => {
         settings.show_table_in_chat = showInChatToggle.checked;
         saveSettingsDebounced();
         toastr.info(`聊天内表格显示已${showInChatToggle.checked ? '开启' : '关闭'}。`);
         updateContinuousRenderState();
     });
+
+    // Event listener for the continuous render toggle
     continuousRenderToggle.addEventListener('change', () => {
         settings.render_on_every_message = continuousRenderToggle.checked;
         saveSettingsDebounced();
