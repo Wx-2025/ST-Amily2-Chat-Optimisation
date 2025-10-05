@@ -9,33 +9,49 @@ import { getPresetPrompts, getMixedOrder } from '../../PresetSettings/index.js';
 import { callAI, generateRandomSeed } from '../api.js';
 import { callNccsAI } from '../api/NccsApi.js';
 import { extractBlocksByTags, applyExclusionRules } from '../utils/rag-tag-extractor.js';
+import { safeLorebookEntries } from '../tavernhelper-compatibility.js';
 
 
 async function getWorldBookContext() {
     const settings = extension_settings[extensionName];
-    const worldBookSettings = settings.world_book_settings || {};
-    const booksToInclude = worldBookSettings.books || [];
-    const entriesToInclude = worldBookSettings.entries || [];
 
-    if (booksToInclude.length === 0 || entriesToInclude.length === 0) {
+    if (!settings.table_worldbook_enabled) {
         return '';
     }
 
-    const worldBooks = await loadWorldInfo();
-    let content = '';
+    const selectedEntriesByBook = settings.table_selected_entries || {};
+    const booksToInclude = Object.keys(selectedEntriesByBook);
+    const selectedEntryUids = new Set(Object.values(selectedEntriesByBook).flat());
 
-    for (const book of worldBooks) {
-        if (booksToInclude.includes(book.name)) {
-            const bookData = book.entries ? book : JSON.parse(book.content);
-            for (const entry of Object.values(bookData.entries)) {
-                if (entriesToInclude.includes(String(entry.uid))) {
-                    content += `[来源：世界书，条目名字：${entry.comment || '无标题条目'}]\n${entry.content}\n\n`;
-                }
+    if (booksToInclude.length === 0 || selectedEntryUids.size === 0) {
+        return '';
+    }
+
+    let allEntries = [];
+    for (const bookName of booksToInclude) {
+        try {
+            const entries = await safeLorebookEntries(bookName);
+            if (entries?.length) {
+                entries.forEach(entry => allEntries.push({ ...entry, bookName }));
             }
+        } catch (error) {
+            console.error(`[Amily2-副API] Error loading entries for world book: ${bookName}`, error);
         }
     }
+
+    const userEnabledEntries = allEntries.filter(entry => {
+        return entry && selectedEntryUids.has(String(entry.uid));
+    });
+
+    if (userEnabledEntries.length === 0) {
+        return '';
+    }
+
+    let content = userEnabledEntries.map(entry => 
+        `[来源：世界书，条目名字：${entry.comment || '无标题条目'}]\n${entry.content}`
+    ).join('\n\n');
     
-    const maxChars = settings.max_world_book_context_length || 2000;
+    const maxChars = settings.table_worldbook_char_limit || 30000;
     if (content.length > maxChars) {
         content = content.substring(0, maxChars);
         const lastNewline = content.lastIndexOf('\n');
@@ -48,7 +64,7 @@ async function getWorldBookContext() {
     return content.trim() ? `<世界书>\n${content.trim()}\n</世界书>` : '';
 }
 
-export async function fillWithSecondaryApi(latestMessage) {
+export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
     clearHighlights();
 
     const context = getContext();
@@ -60,7 +76,8 @@ export async function fillWithSecondaryApi(latestMessage) {
     const settings = extension_settings[extensionName];
 
     const fillingMode = settings.filling_mode || 'main-api';
-    if (fillingMode !== 'secondary-api') {
+    if (fillingMode !== 'secondary-api' && !forceRun) {
+        log('当前非分步填表模式，且未强制执行，跳过。', 'info');
         return; 
     }
 
@@ -85,14 +102,11 @@ export async function fillWithSecondaryApi(latestMessage) {
             return;
         }
 
-        let tagsToExtract, exclusionRules;
+        let tagsToExtract = [];
+        let exclusionRules = [];
         if (settings.table_independent_rules_enabled) {
             tagsToExtract = (settings.table_tags_to_extract || '').split(',').map(t => t.trim()).filter(Boolean);
             exclusionRules = settings.table_exclusion_rules || [];
-        } else {
-            const useHistoriographyRules = settings.historiographyTagExtractionEnabled ?? false;
-            tagsToExtract = useHistoriographyRules ? (settings.historiographyTags || '').split(',').map(t => t.trim()).filter(Boolean) : [];
-            exclusionRules = settings.historiographyExclusionRules || [];
         }
 
         if (tagsToExtract.length > 0) {
@@ -111,11 +125,19 @@ export async function fillWithSecondaryApi(latestMessage) {
         const characterName = context.name2 || '角色';
 
         const chat = context.chat;
-        // 【V140.0 核心修复】修正上下文定位逻辑，确保在任何情况下（包括重roll后）都能正确定位到最新的用户消息
-        const lastUserMessage = chat.length > 0 && chat[chat.length - 1].is_user ? chat[chat.length - 1] : null;
-        const currentInteractionContent = lastUserMessage 
-            ? `${userName}（用户）最新消息：${lastUserMessage.mes}\n${characterName}（AI）最新消息，[核心处理内容]：${textToProcess}`
-            : `${characterName}（AI）最新消息，[核心处理内容]：${textToProcess}`;
+        
+        let lastUserMessage = null;
+        let lastUserMessageIndex = -1;
+        for (let i = chat.length - 2; i >= 0; i--) {
+            if (chat[i].is_user) {
+                lastUserMessage = chat[i];
+                lastUserMessageIndex = i;
+                break;
+            }
+        }
+
+        const currentInteractionContent = (lastUserMessage ? `${userName}（用户）最新消息：${lastUserMessage.mes}\n` : '') + 
+                                          `${characterName}（AI）最新消息，[核心处理内容]：${textToProcess}`;
 
         let mixedOrder;
         try {
@@ -160,8 +182,11 @@ export async function fillWithSecondaryApi(latestMessage) {
                         break;
                     case 'contextHistory':
                         const contextReadingLevel = settings.context_reading_level || 4;
-                        if (contextReadingLevel > 0) {
-                            const historyContext = await getHistoryContext(contextReadingLevel);
+                        const historyMessagesToGet = contextReadingLevel > 2 ? contextReadingLevel - 2 : 0;
+
+                        if (historyMessagesToGet > 0) {
+                            const historyEndIndex = lastUserMessageIndex !== -1 ? lastUserMessageIndex : chat.length - 1;
+                            const historyContext = await getHistoryContext(historyMessagesToGet, historyEndIndex, tagsToExtract, exclusionRules);
                             if (historyContext) {
                                 messages.push({ role: "system", content: historyContext });
                             }
@@ -217,11 +242,19 @@ export async function fillWithSecondaryApi(latestMessage) {
    - 过滤机制：忽略临时/不重要的描写
    - 必须填表：无论表格是否为新，都需要结合正文与现有表格内容，进行更新。
    - 必须填充：当内容为"未知"或者"无"的表格，必须结合现知内容补全。
+7. 【避错填表】
+   - 列出当前所有表以及行数，避免信息错误填充。
 ## 通用输出规范
 - 时间格式：YYYY-MM-DD HH:MM
 - 地点格式：[建筑]>[具体位置] (例：城堡>东侧塔楼)
 - 角色引用：统一使用全名首次出现
 - 状态标记：使用标准状态词(进行中/已完成/已取消)
+-   **插入行示例**: 
+insertRow(0, {0: "2025-09-04", 1: "晚上", 2: "19:30", 3: "图书馆", 4: "艾克"})
+-   **删除行示例**:
+deleteRow(1, 5)
+-   **更新行示例**:
+updateRow(1, 0, {8: "警惕/怀疑"})
 </thinking>
 <Amily2Edit>
 <!--
@@ -277,18 +310,16 @@ export async function fillWithSecondaryApi(latestMessage) {
     }
 }
 
-async function getHistoryContext(contextLevel) {
+async function getHistoryContext(messagesToFetch, historyEndIndex, tagsToExtract, exclusionRules) {
     const context = getContext();
     const chat = context.chat;
-    const settings = extension_settings[extensionName];
     
-    if (!chat || chat.length === 0 || contextLevel <= 0) {
+    if (!chat || chat.length === 0 || messagesToFetch <= 0) {
         return null;
     }
 
-    // 【V140.0 核心修复】修正历史记录的切片逻辑，确保它能获取到触发本次AI回应前的、正确的聊天历史记录
-    const historyUntil = Math.max(0, chat.length - 1); 
-    const messagesToExtract = Math.min(contextLevel * 2, historyUntil);
+    const historyUntil = Math.max(0, historyEndIndex); 
+    const messagesToExtract = Math.min(messagesToFetch, historyUntil);
     const startIndex = Math.max(0, historyUntil - messagesToExtract);
     const endIndex = historyUntil;
 
@@ -296,26 +327,15 @@ async function getHistoryContext(contextLevel) {
     const userName = context.name1 || '用户';
     const characterName = context.name2 || '角色';
 
-    let tagsToExtract, exclusionRules;
-
-    if (settings.table_independent_rules_enabled) {
-        tagsToExtract = (settings.table_tags_to_extract || '').split(',').map(t => t.trim()).filter(Boolean);
-        exclusionRules = settings.table_exclusion_rules || [];
-    } else {
-        const useHistoriographyRules = settings.historiographyTagExtractionEnabled ?? false;
-        tagsToExtract = useHistoriographyRules ? (settings.historiographyTags || '').split(',').map(t => t.trim()).filter(Boolean) : [];
-        exclusionRules = settings.historiographyExclusionRules || [];
-    }
-    
     const messages = historySlice.map((msg, index) => {
         let content = msg.mes;
 
-        if (tagsToExtract.length > 0) {
+        if (!msg.is_user && tagsToExtract && tagsToExtract.length > 0) {
             const blocks = extractBlocksByTags(content, tagsToExtract);
-            content = blocks.length > 0 ? blocks.join('\n\n') : '';
+            content = blocks.join('\n\n');
         }
         
-        if (content) {
+        if (content && exclusionRules) {
             content = applyExclusionRules(content, exclusionRules);
         }
 
