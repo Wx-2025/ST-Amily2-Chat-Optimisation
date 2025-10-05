@@ -129,66 +129,86 @@ function saveAutoUpdateThreshold() {
 }
 
 function bindWorldBookSettings() {
-    const settings = getSettings();
+    const MAX_RETRIES = 10;
+    const RETRY_DELAY = 200;
+    let attempt = 0;
 
-    if (settings.cwb_worldbook_target === undefined) settings.cwb_worldbook_target = 'primary';
-    if (settings.cwb_custom_worldbook === undefined) settings.cwb_custom_worldbook = null;
+    function tryBind() {
+        if (world_names && world_names.length > 0) {
+            console.log('[CWB] World books loaded, binding settings...');
+            const settings = getSettings();
 
-    const customSelectWrapper = $panel.find('#cwb_worldbook_select_wrapper');
-    const bookListContainer = $panel.find('#cwb_worldbook_radio_list');
+            if (settings.cwb_worldbook_target === undefined) settings.cwb_worldbook_target = 'primary';
+            if (settings.cwb_custom_worldbook === undefined) settings.cwb_custom_worldbook = null;
 
-    const renderWorldBookList = () => {
-        const worldBooks = world_names.map(name => ({ name: name.replace('.json', ''), file_name: name }));
-        bookListContainer.empty();
+            const customSelectWrapper = $panel.find('#cwb_worldbook_select_wrapper');
+            const bookListContainer = $panel.find('#cwb_worldbook_radio_list');
 
-        if (worldBooks && worldBooks.length > 0) {
-            worldBooks.forEach(book => {
-                const div = $('<div class="checkbox-item"></div>').attr('title', book.name);
-                const radio = $('<input type="radio" name="cwb_worldbook_selection">')
-                    .attr('id', `cwb-wb-radio-${book.file_name}`)
-                    .val(book.file_name)
-                    .prop('checked', settings.cwb_custom_worldbook === book.file_name);
+            const renderWorldBookList = () => {
+                const worldBooks = world_names.map(name => ({ name: name.replace('.json', ''), file_name: name }));
+                bookListContainer.empty();
 
-                const label = $('<label></label>').attr('for', `cwb-wb-radio-${book.file_name}`).text(book.name);
+                if (worldBooks.length > 0) {
+                    worldBooks.forEach(book => {
+                        const div = $('<div class="checkbox-item"></div>').attr('title', book.name);
+                        const radio = $('<input type="radio" name="cwb_worldbook_selection">')
+                            .attr('id', `cwb-wb-radio-${book.file_name}`)
+                            .val(book.file_name)
+                            .prop('checked', settings.cwb_custom_worldbook === book.file_name);
+                        const label = $('<label></label>').attr('for', `cwb-wb-radio-${book.file_name}`).text(book.name);
+                        div.append(radio).append(label);
+                        bookListContainer.append(div);
+                    });
+                } else {
+                    bookListContainer.html('<p class="notes">没有找到世界书。</p>');
+                }
+            };
 
-                div.append(radio).append(label);
-                bookListContainer.append(div);
+            const updateCustomSelectVisibility = () => {
+                const isCustom = settings.cwb_worldbook_target === 'custom';
+                customSelectWrapper.toggle(isCustom);
+                if (isCustom) {
+                    renderWorldBookList();
+                }
+            };
+
+            $panel.find('input[name="cwb_worldbook_target"]').each(function() {
+                $(this).prop('checked', $(this).val() === settings.cwb_worldbook_target);
             });
-        } else {
-            bookListContainer.html('<p class="notes">没有找到世界书。</p>');
-        }
-    };
-
-    const updateCustomSelectVisibility = () => {
-        const isCustom = settings.cwb_worldbook_target === 'custom';
-        customSelectWrapper.toggle(isCustom);
-        if (isCustom) {
-            renderWorldBookList();
-        }
-    };
-
-    $panel.find('input[name="cwb_worldbook_target"]').each(function() {
-        $(this).prop('checked', $(this).val() === settings.cwb_worldbook_target);
-    });
-    updateCustomSelectVisibility();
-    $panel.off('change.cwb_worldbook_target').on('change.cwb_worldbook_target', 'input[name="cwb_worldbook_target"]', function() {
-        if ($(this).prop('checked')) {
-            settings.cwb_worldbook_target = $(this).val();
             updateCustomSelectVisibility();
-            saveSettingsDebounced();
-            loadSettings();
+
+            $panel.off('change.cwb_worldbook_target').on('change.cwb_worldbook_target', 'input[name="cwb_worldbook_target"]', function() {
+                if ($(this).prop('checked')) {
+                    settings.cwb_worldbook_target = $(this).val();
+                    state.worldbookTarget = $(this).val();
+                    updateCustomSelectVisibility();
+                    saveSettingsDebounced();
+                }
+            });
+
+            bookListContainer.off('change.cwb_worldbook_selection').on('change.cwb_worldbook_selection', 'input[name="cwb_worldbook_selection"]', function() {
+                const radio = $(this);
+                if (radio.prop('checked')) {
+                    settings.cwb_custom_worldbook = radio.val();
+                    state.customWorldBook = radio.val();
+                    saveSettingsDebounced();
+                    showToastr('info', `已选择世界书: ${radio.next('label').text()}`);
+                }
+            });
+
+            $panel.off('click.cwb_refresh_worldbooks').on('click.cwb_refresh_worldbooks', '#cwb_refresh_worldbooks', renderWorldBookList);
+
+        } else if (attempt < MAX_RETRIES) {
+            attempt++;
+            console.log(`[CWB] World books not ready, retrying... (Attempt ${attempt})`);
+            setTimeout(tryBind, RETRY_DELAY);
+        } else {
+            console.error('[CWB] Failed to load world books after multiple retries.');
+            $panel.find('#cwb_worldbook_radio_list').html('<p class="notes error">加载世界书失败，请刷新页面重试。</p>');
         }
-    });
-    bookListContainer.off('change.cwb_worldbook_selection').on('change.cwb_worldbook_selection', 'input[name="cwb_worldbook_selection"]', function() {
-        const radio = $(this);
-        if (radio.prop('checked')) {
-            settings.cwb_custom_worldbook = radio.val();
-            saveSettingsDebounced();
-            loadSettings();
-            showToastr('info', `已选择世界书: ${radio.next('label').text()}`);
-        }
-    });
-    $panel.off('click.cwb_refresh_worldbooks').on('click.cwb_refresh_worldbooks', '#cwb_refresh_worldbooks', renderWorldBookList);
+    }
+
+    tryBind();
 }
 
 export function bindSettingsEvents($settingsPanel) {
@@ -206,6 +226,7 @@ export function bindSettingsEvents($settingsPanel) {
     });
     $panel.on('change', '#cwb-api-mode', function() {
         const selectedMode = $(this).val();
+
         getSettings().cwb_api_mode = selectedMode;
         saveSettingsDebounced();
         
@@ -218,6 +239,7 @@ export function bindSettingsEvents($settingsPanel) {
     });
     $panel.on('change', '#cwb-tavern-profile', function() {
         const selectedProfile = $(this).val();
+
         getSettings().cwb_tavern_profile = selectedProfile;
         saveSettingsDebounced();
         
@@ -230,6 +252,7 @@ export function bindSettingsEvents($settingsPanel) {
     });
     $panel.on('input', '#cwb-api-url', function() {
         const apiUrl = $(this).val().trim();
+
         getSettings().cwb_api_url = apiUrl;
         state.customApiConfig.url = apiUrl;
         
@@ -241,6 +264,7 @@ export function bindSettingsEvents($settingsPanel) {
     
     $panel.on('input', '#cwb-api-key', function() {
         const apiKey = $(this).val();
+        
         getSettings().cwb_api_key = apiKey;
         state.customApiConfig.apiKey = apiKey;
         
@@ -251,6 +275,7 @@ export function bindSettingsEvents($settingsPanel) {
     
     $panel.on('change', '#cwb-api-model', function() {
         const model = $(this).val();
+
         getSettings().cwb_api_model = model;
         state.customApiConfig.model = model;
         
@@ -493,6 +518,7 @@ export function loadSettings() {
         extension_settings[extensionName] = { ...cwbCompleteDefaultSettings };
         console.log('[CWB] Initialized default settings');
     } else {
+
         Object.keys(cwbCompleteDefaultSettings).forEach(key => {
             if (settings[key] === undefined || settings[key] === null) {
                 settings[key] = cwbCompleteDefaultSettings[key];
@@ -515,6 +541,7 @@ export function loadSettings() {
     if (overrides.cwb_incremental_update_enabled !== undefined) {
         finalSettings.cwb_incremental_update_enabled = overrides.cwb_incremental_update_enabled;
     }
+
     state.masterEnabled = finalSettings.cwb_master_enabled;
     state.viewerEnabled = finalSettings.cwb_viewer_enabled;
     state.autoUpdateEnabled = finalSettings.cwb_auto_update_enabled;
@@ -535,13 +562,17 @@ export function loadSettings() {
     console.log('[CWB] State updated:', {
         masterEnabled: state.masterEnabled,
         viewerEnabled: state.viewerEnabled,
-        autoUpdateEnabled: state.autoUpdateEnabled
+        autoUpdateEnabled: state.autoUpdateEnabled,
+        worldbookTarget: state.worldbookTarget,
+        customWorldBook: state.customWorldBook
     });
+
     if ($panel) {
         updateUiWithSettings();
     }
 
     updateControlsLockState();
+
     setTimeout(() => {
         const $viewerButton = $(`#${CHAR_CARD_VIEWER_BUTTON_ID}`);
         if ($viewerButton.length > 0) {
@@ -550,6 +581,4 @@ export function loadSettings() {
             console.log('[CWB] Viewer button visibility updated:', shouldShow);
         }
     }, 100);
-
-    saveSettingsDebounced();
 }
