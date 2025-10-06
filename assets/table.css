@@ -797,12 +797,18 @@ th.amily2-menu-open .amily2-context-menu {
         padding: 5px; /* Reduce container padding on mobile */
     }
 
-    /* On mobile, allow text wrapping to prevent overflow */
-    .amily2-chat-table th,
-    .amily2-chat-table td {
+    /* The problematic wrapping rule is now conditional */
+    #amily2_memorisation_forms_panel:not(.mobile-scrolling) .amily2-chat-table th,
+    #amily2_memorisation_forms_panel:not(.mobile-scrolling) .amily2-chat-table td {
         white-space: normal;
         word-break: break-all;
     }
+}
+
+/* Force horizontal scrolling on mobile devices by preventing text wrapping */
+#amily2_memorisation_forms_panel.mobile-scrolling .amily2-chat-table th,
+#amily2_memorisation_forms_panel.mobile-scrolling .amily2-chat-table td {
+    white-space: nowrap !important;
 }
 
 .amily2-chat-table td.amily2-cell-highlight {
