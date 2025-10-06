@@ -107,6 +107,12 @@ export function updateOrInsertTableInChat() {
             const container = document.createElement('div');
             container.id = TABLE_CONTAINER_ID;
             container.innerHTML = htmlContent;
+
+            // On mobile devices, add a specific class to enable horizontal scrolling via CSS
+            if (isTouchDevice()) {
+                container.classList.add('mobile-table-view');
+            }
+
             lastMessage.appendChild(container);
             bindSwipePreventer(container); 
         } else {
