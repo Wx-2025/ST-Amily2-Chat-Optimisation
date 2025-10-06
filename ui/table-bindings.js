@@ -13,6 +13,10 @@ import { characters, this_chid, eventSource, event_types } from "/script.js";
 import { fetchNccsModels, testNccsApiConnection } from '../core/api/NccsApi.js';
 
 const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches;
+
+// More reliable check for mobile layout adjustments
+const isMobileForScrolling = () => window.innerWidth <= 768;
+
 const getAllTablesContainer = () => document.getElementById('all-tables-container');
 
 let isResizing = false;
@@ -1196,6 +1200,12 @@ export function bindTableEvents() {
     if (!panel || panel.dataset.eventsBound) {
         return;
     }
+
+    // Add a specific class for mobile devices to handle scrolling behavior via CSS
+    if (isMobileForScrolling()) {
+        panel.classList.add('mobile-scrolling');
+    }
+
     log('开始为表格视图绑定交互事件...', 'info');
     const fillingModeRadios = panel.querySelectorAll('input[name="filling-mode"]');
     const contextSliderContainer = document.getElementById('context-reading-slider-container');
