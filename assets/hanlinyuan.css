@@ -208,6 +208,25 @@
     margin-top: 2px;
 }
 
+/* ------------------ 【V15.2 紧急修复】优先检索排版修正 ------------------ */
+#hly-modal-container .hly-priority-source-config .hly-control-block {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px; /* 为元素之间提供一些间距 */
+}
+#hly-modal-container .hly-priority-source-config .hly-control-block label:not(.hly-checkbox-label) {
+    white-space: nowrap; /* 防止 "固定检索:" 换行 */
+    flex-shrink: 0;
+}
+#hly-modal-container .hly-priority-source-config .hly-control-block .hly-imperial-brush {
+    width: 60px; /* 固定输入框宽度 */
+    flex-shrink: 0;
+    text-align: center;
+}
+#hly-modal-container .hly-priority-source-config .hly-control-block > span {
+    flex-shrink: 0;
+}
+
 /* ------------------ 按钮组 ------------------ */
 #hly-modal-container .hly-button-group {
     display: flex;
@@ -669,4 +688,63 @@
 #hly-modal-container .hly-search-container {
     position: relative;
     margin-bottom: 8px;
+}
+
+/* ------------------ 【V15.3 新增 & V15.4 优化】功能署名样式 ------------------ */
+#hly-modal-container .hly-feature-credit {
+    position: absolute;
+    bottom: 10px;
+    right: 15px;
+    font-size: 0.9em;
+    font-style: italic;
+    font-weight: bold;
+    opacity: 0.9;
+    background: linear-gradient(90deg, #00d2ff 0%, #928DFF 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    pointer-events: none;
+    text-shadow: 0 0 4px rgba(200, 200, 255, 0.5);
+}
+
+/* ------------------ 【V15.5】移动端响应式适配 ------------------ */
+@media (max-width: 768px) {
+    /* 知识库列表项 */
+    #hly-modal-container .hly-kb-list-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px; /* 增加垂直间距 */
+    }
+
+    /* 知识库名称，将其与复选框包裹起来以便对齐 */
+    #hly-modal-container .hly-kb-name-container {
+        display: flex;
+        align-items: center;
+        width: 100%;
+    }
+
+    #hly-modal-container .hly-kb-name {
+        white-space: normal; /* 允许长标题换行 */
+        word-break: break-all; /* 强制长单词换行 */
+        flex-grow: 1;
+        margin-left: 8px; /* 与复选框的间距 */
+    }
+
+    /* 操作按钮容器 */
+    #hly-modal-container .hly-kb-actions {
+        width: 100%;
+        justify-content: flex-end; /* 让按钮靠右对齐 */
+    }
+
+    /* 顶部批量操作按钮栏 */
+    #hly-modal-container .hly-kb-toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    #hly-modal-container .hly-kb-bulk-actions {
+        width: 100%;
+        justify-content: space-around; /* 让按钮均匀分布 */
+    }
 }
