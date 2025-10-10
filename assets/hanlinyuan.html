@@ -147,6 +147,63 @@
                     </label>
                 </div>
             </fieldset>
+
+            <fieldset class="hly-settings-group" style="position: relative; padding-bottom: 30px;">
+                <legend><i class="fas fa-star-of-life"></i> 优先检索</legend>
+                <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
+                    <label for="hly-priority-retrieval-enabled" title="启用后，您可以为特定来源设置固定的检索数量，这些结果将必定被注入。">启用优先检索</label>
+                    <label class="hly-toggle-switch">
+                        <input type="checkbox" id="hly-priority-retrieval-enabled" data-setting-key="rerank.priorityRetrieval.enabled" data-type="boolean">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <small class="hly-notes">启用后，可以为特定来源设置固定的检索数量，这些结果将必定被注入，不受后续Rerank和排序影响。未勾选的来源将共享剩余的检索名额。</small>
+
+                <!-- 来源配置 -->
+                <div class="hly-priority-source-config" style="margin-top: 15px;">
+                    <!-- 小说 -->
+                    <div class="hly-control-block" style="display: flex; justify-content: space-between; align-items: center;">
+                        <label class="hly-checkbox-label" style="flex-grow: 1;">
+                            <input type="checkbox" data-setting-key="rerank.priorityRetrieval.sources.novel.enabled" data-type="boolean">
+                            <span>小说录入</span>
+                        </label>
+                        <label>固定检索: </label>
+                        <input type="number" class="hly-imperial-brush" style="width: 60px; margin-left: 10px;" value="5" data-setting-key="rerank.priorityRetrieval.sources.novel.count" data-type="integer">
+                        <span>块</span>
+                    </div>
+                    <!-- 聊天记录 -->
+                    <div class="hly-control-block" style="display: flex; justify-content: space-between; align-items: center;">
+                        <label class="hly-checkbox-label" style="flex-grow: 1;">
+                            <input type="checkbox" data-setting-key="rerank.priorityRetrieval.sources.chat_history.enabled" data-type="boolean">
+                            <span>聊天记录</span>
+                        </label>
+                        <label>固定检索: </label>
+                        <input type="number" class="hly-imperial-brush" style="width: 60px; margin-left: 10px;" value="5" data-setting-key="rerank.priorityRetrieval.sources.chat_history.count" data-type="integer">
+                        <span>块</span>
+                    </div>
+                    <!-- 世界书 -->
+                    <div class="hly-control-block" style="display: flex; justify-content: space-between; align-items: center;">
+                        <label class="hly-checkbox-label" style="flex-grow: 1;">
+                            <input type="checkbox" data-setting-key="rerank.priorityRetrieval.sources.lorebook.enabled" data-type="boolean">
+                            <span>世界书</span>
+                        </label>
+                        <label>固定检索: </label>
+                        <input type="number" class="hly-imperial-brush" style="width: 60px; margin-left: 10px;" value="5" data-setting-key="rerank.priorityRetrieval.sources.lorebook.count" data-type="integer">
+                        <span>块</span>
+                    </div>
+                    <!-- 手动录入 -->
+                    <div class="hly-control-block" style="display: flex; justify-content: space-between; align-items: center;">
+                        <label class="hly-checkbox-label" style="flex-grow: 1;">
+                            <input type="checkbox" data-setting-key="rerank.priorityRetrieval.sources.manual.enabled" data-type="boolean">
+                            <span>手动录入</span>
+                        </label>
+                        <label>固定检索: </label>
+                        <input type="number" class="hly-imperial-brush" style="width: 60px; margin-left: 10px;" value="5" data-setting-key="rerank.priorityRetrieval.sources.manual.count" data-type="integer">
+                        <span>块</span>
+                    </div>
+                </div>
+                <div class="hly-feature-credit">感谢功能友情提供：Silence_Lurker潜默</div>
+            </fieldset>
         </div>
 
         <div id="hly-historiography-tab" class="hly-tab-pane">
