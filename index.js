@@ -2,6 +2,7 @@ import { createDrawer } from "./ui/drawer.js";
 import "./MiZheSi/index.js"; // 【密折司】独立模块
 import "./PresetSettings/index.js"; // 【预设设置】独立模块
 import "./PreOptimizationViewer/index.js"; // 【优化前文查看器】独立模块
+import "./WorldEditor/WorldEditor.js"; // 【世界编辑器】独立模块
 import { registerSlashCommands } from "./core/commands.js";
 import { onMessageReceived, handleTableUpdate } from "./core/events.js";
 import { processPlotOptimization } from "./core/summarizer.js";
@@ -21,6 +22,7 @@ import { extension_settings } from '/scripts/extensions.js';
 import { manageLorebookEntriesForChat } from './core/lore.js';
 import { initializeCharacterWorldBook } from './CharacterWorldBook/cwb_index.js';
 import { cwbDefaultSettings } from './CharacterWorldBook/src/cwb_config.js';
+import { bindGlossaryEvents } from './glossary/GT_bindings.js';
 import './core/amily2-updater.js';
 import { updateOrInsertTableInChat, startContinuousRendering, stopContinuousRendering } from './ui/message-table-renderer.js';
 
@@ -220,6 +222,7 @@ function loadPluginStyles() {
     loadStyleFile("style.css"); // 【第一道圣谕】为帝国主体宫殿披上通用华服
     loadStyleFile("historiography.css"); // 【第二道圣谕】为敕史局披上其专属华服
     loadStyleFile("hanlinyuan.css"); // 【第三道圣谕】为翰林院披上其专属华服
+    loadStyleFile("amily2-glossary.css"); // 【新圣谕】为术语表披上其专属华服
     loadStyleFile("table.css"); // 【第四道圣谕】为内存储司披上其专属华服
     loadStyleFile("optimization.css"); // 【第五道圣谕】为剧情优化披上其专属华服
 
@@ -293,6 +296,35 @@ jQuery(async () => {
 
         console.log("[Amily2号-开国大典] 步骤三：开始召唤府邸...");
         createDrawer();
+
+        // 【V15.0 修复】为术语表面板添加轮询加载，确保在面板渲染后再绑定事件
+        function waitForGlossaryPanelAndBindEvents() {
+            let attempts = 0;
+            const maxAttempts = 50; 
+            const interval = 100; 
+
+            const checker = setInterval(() => {
+                const glossaryPanel = document.getElementById('amily2_glossary_panel');
+
+                if (glossaryPanel) {
+                    clearInterval(checker);
+                    try {
+                        console.log("[Amily2号-开国大典] 步骤3.6：侦测到术语表停泊位，开始绑定事件...");
+                        bindGlossaryEvents();
+                        console.log("[Amily2号-开国大典] 术语表事件已成功绑定。");
+                    } catch (error) {
+                        console.error("!!!【术语表事件绑定失败】:", error);
+                    }
+                } else {
+                    attempts++;
+                    if (attempts >= maxAttempts) {
+                        clearInterval(checker);
+                        console.error("!!!【术语表事件绑定失败】: 等待面板 #amily2_glossary_panel 超时。");
+                    }
+                }
+            }, interval);
+        }
+        waitForGlossaryPanelAndBindEvents();
 
         function waitForCwbPanelAndInitialize() {
             let attempts = 0;
