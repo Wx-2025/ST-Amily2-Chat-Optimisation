@@ -7,8 +7,9 @@ import { extractBlocksByTags, applyExclusionRules } from '../../core/utils/rag-t
 import { getExtensionSettings } from '../../utils/settings.js';
 import { getPresetPrompts, getMixedOrder } from '../../PresetSettings/index.js';
 import { generateRandomSeed } from '../../core/api.js';
+import { getChatIdentifier } from '../../core/lore.js';
 
-const { SillyTavern, TavernHelper, jQuery } = window;
+const { SillyTavern, TavernHelper, jQuery, characters } = window;
 
 let isUpdatingCard = false;
 let isBatchUpdating = false;
@@ -77,31 +78,34 @@ export async function updateCardUpdateStatusDisplay($panel) {
 }
 
 async function loadAllChatMessages($panel) {
-    logDebug('尝试加载所有聊天消息...');
-    if (!TavernHelper || !SillyTavern) {
-        logError('用于加载消息的API不可用。');
+    logDebug('尝试使用 getContext() 加载所有聊天消息...');
+    if (!SillyTavern) {
+        logError('SillyTavern API 不可用。');
         state.allChatMessages = [];
         return;
     }
 
     try {
         const context = SillyTavern.getContext();
-        const chatLength = context?.chat?.length || 0;
+        const chat = context?.chat || [];
 
-        if (chatLength === 0) {
+        if (chat.length === 0) {
             logDebug('聊天为空，无需加载消息。');
             state.allChatMessages = [];
         } else {
-            const lastMessageId = chatLength - 1;
-            const messagesFromApi = await TavernHelper.getChatMessages(`0-${lastMessageId}`, { include_swipes: false });
-            state.allChatMessages = Array.isArray(messagesFromApi) ? messagesFromApi.map((msg, idx) => ({ ...msg, id: idx })) : [];
+            state.allChatMessages = chat.map((msg, idx) => ({
+                ...msg,
+                message: msg.mes,
+                id: idx
+            }));
         }
         
         logDebug(`成功为 ${state.currentChatFileIdentifier} 加载了 ${state.allChatMessages.length} 条消息。`);
         await updateCardUpdateStatusDisplay($panel);
 
     } catch (error) {
-        logError('获取聊天消息时发生严重错误:', error);
+        logError('使用 getContext() 获取聊天消息时发生严重错误:', error);
+        showToastr('error', '获取聊天记录时发生内部错误。');
         state.allChatMessages = [];
     }
 }
@@ -376,21 +380,21 @@ async function triggerAutomaticUpdate($panel) {
 }
 
 export async function getLatestChatName() {
-    let newChatFileIdentifier = 'unknown_chat_fallback';
-    try {
-        let chatNameFromCommand = await TavernHelper.triggerSlash('/getchatname');
-        if (chatNameFromCommand && typeof chatNameFromCommand === 'string' && chatNameFromCommand.trim() && !['null', 'undefined'].includes(chatNameFromCommand.trim())) {
-            newChatFileIdentifier = cleanChatName(chatNameFromCommand.trim());
-        } else {
-            const contextFallback = SillyTavern.getContext();
-            if (contextFallback && contextFallback.chat) {
-                newChatFileIdentifier = cleanChatName(contextFallback.chat);
-            }
+    let attempts = 0;
+    const maxAttempts = 50;
+    const interval = 100;
+
+    while (attempts < maxAttempts) {
+        const context = getContext();
+        if (context && context.chatId) {
+            return context.chatId;
         }
-    } catch (error) {
-        logError('获取最新聊天名称时出错:', error);
+        await new Promise((resolve) => setTimeout(resolve, interval));
+        attempts++;
     }
-    return newChatFileIdentifier;
+
+    logError("[CWB] 长时间等待后，仍无法确定聊天ID。");
+    return "unknown_chat_timeout";
 }
 
 export async function handleMessageReceived($panel) {
