@@ -83,7 +83,7 @@ export async function onMessageReceived(data) {
     const tableSystemEnabled = settings.table_system_enabled !== false; 
     
     await executeAutoHide();
-    const isOptimizationEnabled = settings.enabled && settings.optimizationEnabled && settings.apiUrl;
+    const isOptimizationEnabled = settings.optimizationEnabled && settings.apiUrl;
     if (isOptimizationEnabled) {
         if (chat.length >= 2 && chat[chat.length - 2].is_user) {
             const contextCount = settings.contextMessages || 2;
