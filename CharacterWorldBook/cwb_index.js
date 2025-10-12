@@ -44,6 +44,15 @@ export async function initializeCharacterWorldBook($cwbSettingsPanel) {
             updateCardUpdateStatusDisplay($cwbSettingsPanel);
         });
 
+        eventSource.on(event_types.CHARACTER_CHANGED, async () => {
+            console.log('[CWB] Detected character change. Resetting state and updating UI.');
+            setTimeout(async () => {
+                const newChatName = await getLatestChatName();
+                await resetScriptStateForNewChat($cwbSettingsPanel, newChatName);
+                updateCardUpdateStatusDisplay($cwbSettingsPanel);
+            }, 150);
+        });
+
         console.log('[CWB] Character World Book feature initialized successfully.');
 
     } catch (error) {
