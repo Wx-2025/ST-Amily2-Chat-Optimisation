@@ -112,31 +112,30 @@
 <div class="plugin-features" style="display: none;">
 
 <fieldset class="settings-group">
-    <legend><i class="fas fa-cog"></i> Amily中枢</legend>
-    <div class="amily2-header">
-        <div class="header-column center" style="width: 100%; flex-direction: row; justify-content: center; gap: 20px;">
-            <div class="main-toggle amily2_settings_block" style="margin: 0;">
-                <label class="toggle-switch">
-                    <input id="amily2_enabled" type="checkbox" />
-                    <span class="slider"></span>
-                </label>
-            </div>
-            <button id="amily2_open_tutorial" class="menu_button small_button interactable" title="查看使用教程">
-                教程
-            </button>
-        </div>
-    </div>
+    <legend style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+        <span><i class="fas fa-cog"></i> Amily中枢</span>
+        <button id="amily2_open_tutorial" class="menu_button small_button interactable" title="查看使用教程">
+            教程
+        </button>
+    </legend>
 </fieldset>
 
 <fieldset class="settings-group">
-    <legend><i class="fas fa-plus-circle"></i> 新增扩展</legend>
+    <legend><i class="fas fa-plus-circle"></i> 记忆增强</legend>
     <div class="button-group" style="display: flex; justify-content: space-between; gap: 8px;">
         <button id="amily2_open_additional_features" class="menu_button wide_button"><i class="fas fa-landmark-dome"></i> 内阁密室</button>
         <button id="amily2_open_rag_palace" class="menu_button wide_button"><i class="fas fa-brain"></i> 翰林学院</button>
         <button id="amily2_open_memorisation_forms" class="menu_button wide_button"><i class="fas fa-table"></i> 内存储司</button>
-        <button id="amily2_open_plot_optimization" class="menu_button wide_button"><i class="fas fa-feather-alt"></i> 剧情优化</button>
         <button id="amily2_open_character_world_book" class="menu_button wide_button"><i class="fa-solid fa-book-atlas"></i> 角色世界</button>
+    </div>
+</fieldset>
+ 
+<fieldset class="settings-group">
+    <legend><i class="fas fa-puzzle-piece"></i> 附加功能</legend>
+    <div class="button-group" style="display: flex; justify-content: space-between; gap: 8px;">
+        <button id="amily2_open_plot_optimization" class="menu_button wide_button"><i class="fas fa-feather-alt"></i> 剧情优化</button>
         <button id="amily2_open_world_editor" class="menu_button wide_button"><i class="fas fa-globe"></i> 世界编辑</button>
+        <button id="amily2_open_glossary" class="menu_button wide_button" disabled><i class="fas fa-book"></i> 术语表单</button>
     </div>
 </fieldset>
  
@@ -490,4 +489,3 @@
         </div>
     </div>
 </div>
-
