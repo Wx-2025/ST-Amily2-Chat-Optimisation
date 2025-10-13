@@ -320,13 +320,12 @@ export function renderTables() {
     }
 
     const highlights = TableManager.getHighlights();
+    const fragment = document.createDocumentFragment();
 
     const placeholder = document.getElementById('add-table-placeholder');
     if (placeholder) {
         placeholder.remove();
     }
-
-    container.innerHTML = '';
 
     tables.forEach((tableData, tableIndex) => {
         const header = document.createElement('div');
@@ -349,7 +348,7 @@ export function renderTables() {
         `;
         header.appendChild(title);
         header.appendChild(controls);
-        container.appendChild(header);
+        fragment.appendChild(header);
 
         const tableWrapper = document.createElement('div');
         tableWrapper.className = 'amily2-table-wrapper';
@@ -616,8 +615,11 @@ export function renderTables() {
             });
         }
         tableWrapper.appendChild(tableElement);
-        container.appendChild(tableWrapper);
+        fragment.appendChild(tableWrapper);
     });
+
+    container.innerHTML = '';
+    container.appendChild(fragment);
 
     if (placeholder) {
         container.appendChild(placeholder);
