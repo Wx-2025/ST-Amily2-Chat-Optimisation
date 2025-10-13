@@ -79,7 +79,6 @@ export function updateUI() {
     const settings = extension_settings[extensionName];
     if (!settings) return; 
 
-    $("#amily2_enabled").prop("checked", settings.enabled);
     $("#amily2_api_provider").val(settings.apiProvider || 'openai');
     $("#amily2_api_url").val(settings.apiUrl);
     $("#amily2_api_url").attr('type', 'text');

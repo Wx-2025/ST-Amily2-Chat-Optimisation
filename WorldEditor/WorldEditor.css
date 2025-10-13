@@ -1,5 +1,5 @@
 /* 世界书编辑器样式 */
-#world-editor-container .world-editor {
+#world-editor-container {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     color: #ffffff;
     overflow: hidden;
@@ -341,4 +341,122 @@
     padding: 10px;
     border-radius: 4px;
     margin-bottom: 15px;
+}
+
+/* 新增：世界书列表样式 */
+#world-book-list-container {
+    background-color: #2d2d2d;
+    border-radius: 8px;
+    overflow-y: auto;
+    max-height: calc(100vh - 350px); /* 根据需要调整 */
+    padding: 5px;
+}
+
+.world-book-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    border-bottom: 1px solid #3a3a3a;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.world-book-row:last-child {
+    border-bottom: none;
+}
+
+.world-book-row:hover {
+    background-color: #3f3f3f;
+}
+
+.world-book-row.selected {
+    background-color: #4a4a4a;
+    border-left: 3px solid #68b7ff;
+}
+
+.world-book-checkbox {
+    margin-right: 15px;
+    width: 16px;
+    height: 16px;
+}
+
+.world-book-name {
+    flex-grow: 1;
+    font-size: 14px;
+    color: #e0e0e0;
+}
+
+.world-book-actions {
+    display: flex;
+    gap: 8px;
+    opacity: 0; /* 默认隐藏 */
+    transition: opacity 0.2s;
+}
+
+.world-book-row:hover .world-book-actions {
+    opacity: 1; /* 悬停时显示 */
+}
+
+.world-editor-btn.small-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+}
+
+#world-editor-container .world-editor-selector h3 {
+    margin: 0;
+    font-size: 16px;
+    color: #e0e0e0;
+}
+
+#world-editor-container .world-editor-selector {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* ====== 布局修正 v2：针对 fieldset ====== */
+
+/* 1. 重置 fieldset 的默认样式，使其表现为标准的 flex 容器 */
+.settings-group {
+    display: flex;
+    flex-direction: column;
+    border: none; /* 移除 fieldset 默认边框 */
+    padding: 0; /* 移除 fieldset 默认内边距 */
+    margin: 0; /* 移除 fieldset 默认外边距 */
+    min-inline-size: auto; /* 覆盖默认行为 */
+    flex: 1; /* 让 fieldset 自身也能在父容器中伸展 */
+    min-height: 0;
+}
+
+/* 2. 让主容器在 fieldset 内撑满 */
+#world-editor-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+/* 3. 让视图（世界书列表 / 条目编辑器）作为flex子项，能够自动填充剩余空间 */
+#world-book-selection-view,
+#world-editor-entry-view {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+/* 4. 条目视图内的包裹容器也需要是flex布局 */
+.world-editor-entries-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+/* 5. 移除列表的固定高度限制，让它们在flex容器内自由伸展 */
+#world-book-list-container,
+#world-editor-container .world-editor-entries-container {
+    flex: 1;
+    min-height: 0;
+    max-height: none; /* 覆盖之前写死的max-height */
 }

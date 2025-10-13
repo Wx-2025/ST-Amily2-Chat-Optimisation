@@ -97,6 +97,10 @@ async function initializePanel(contentPanel, errorContainer) {
             const worldEditorPanelHtml = `<div id="amily2_world_editor_panel" style="display: none;">${worldEditorContent}</div>`;
             mainContainer.append(worldEditorPanelHtml);
 
+            const glossaryContent = await $.get(`${extensionFolderPath}/assets/amily2-glossary.html`);
+            const glossaryPanelHtml = `<div id="amily2_glossary_panel" style="display: none;">${glossaryContent}</div>`;
+            mainContainer.append(glossaryPanelHtml);
+
             // 在面板创建后，加载世界书编辑器脚本
             const worldEditorScriptId = 'world-editor-script';
             if (!document.getElementById(worldEditorScriptId)) {

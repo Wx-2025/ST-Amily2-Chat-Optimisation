@@ -178,6 +178,9 @@ export async function processOptimization(latestMessage, previousMessages) {
             optimizedContent: finalMessage,
         };
 
+        if (settings.showOptimizationToast) {
+            toastr.success("正文优化成功！", "Amily2号");
+        }
 
         console.timeEnd("优化任务总耗时");
         console.groupEnd();

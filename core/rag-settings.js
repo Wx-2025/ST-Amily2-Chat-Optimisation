@@ -59,7 +59,28 @@ export const defaultSettings = {
         top_n: 5,
         hybrid_alpha: 0.7,
         notify: true,
-        superSortEnabled: false, 
+        superSortEnabled: false,
+        priorityRetrieval: {
+            enabled: false,
+            sources: {
+                novel: {
+                    enabled: false,
+                    count: 5
+                },
+                chat_history: {
+                    enabled: false,
+                    count: 5
+                },
+                lorebook: {
+                    enabled: false,
+                    count: 5
+                },
+                manual: {
+                    enabled: false,
+                    count: 5
+                }
+            }
+        },
     },
     knowledgeBases: {},
 };
