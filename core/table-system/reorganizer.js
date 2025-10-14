@@ -5,6 +5,7 @@ import { extensionName } from "../../utils/settings.js";
 import { convertTablesToCsvString, saveStateToMessage, getMemoryState, updateTableFromText, getBatchFillerRuleTemplate, getBatchFillerFlowTemplate } from './manager.js';
 import { getPresetPrompts, getMixedOrder } from '../../PresetSettings/index.js';
 import { callAI, generateRandomSeed } from '../api.js';
+import { callNccsAI } from '../api/NccsApi.js';
 
 export async function reorganizeTableContent() {
     const settings = extension_settings[extensionName];
@@ -60,7 +61,14 @@ export async function reorganizeTableContent() {
         console.dir(messages);
         console.groupEnd();
 
-        const rawContent = await callAI(messages);
+        let rawContent;
+        if (settings.nccsEnabled) {
+            console.log('[Amily2-重新整理] 使用 Nccs API 进行表格重整...');
+            rawContent = await callNccsAI(messages);
+        } else {
+            console.log('[Amily2-重新整理] 使用默认 API 进行表格重整...');
+            rawContent = await callAI(messages);
+        }
 
         if (!rawContent) {
             console.error('[Amily2-重新整理] 未能获取AI响应内容。');
