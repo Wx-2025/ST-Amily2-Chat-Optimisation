@@ -286,6 +286,9 @@ function bindCharCardViewerPopupEvents($popup) {
             if (!localTavernHelper) {
                 // TavernHelper 未定义的情况下触发，但是为什么？
                 (localTavernHelper = window.TavernHelper);
+                if (localTavernHelper) {
+                    TavernHelper = localTavernHelper;
+                }
             }
             const finalContentToSave = buildCustomFormat(collectedData);
             const allEntries = await TavernHelper.getLorebookEntries(book);
@@ -335,6 +338,9 @@ function bindCharCardViewerPopupEvents($popup) {
             if (!localTavernHelper) {
                 // TavernHelper 未定义的情况下触发，但是为什么？
                 (localTavernHelper = window.TavernHelper);
+                if (localTavernHelper) {
+                    TavernHelper = localTavernHelper;
+                }
             }
             await TavernHelper.setLorebookEntries(book, [finalEntryData]);
             showToastr('success', '角色卡已成功保存！');
@@ -366,6 +372,9 @@ export async function showCharCardViewerPopup() {
         if (!localTavernHelper) {
             // TavernHelper 未定义的情况下触发，但是为什么？
             (localTavernHelper = window.TavernHelper);
+            if (localTavernHelper) {
+                TavernHelper = localTavernHelper;
+            }
         }
         const allEntries = await TavernHelper.getLorebookEntries(book);
         let currentChatId = state.currentChatFileIdentifier;
