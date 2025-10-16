@@ -248,16 +248,26 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
                 const safeWorld = (worldbookContent ?? '').toString();
                 const hasEjsUser = /<%[=_\-]?/.test(safeUser);
                 const hasEjsWorld = /<%[=_\-]?/.test(safeWorld);
+                const openTagRegex = /<%[=_\-]?/g;
+                const closeTagRegex = /[-_]?%>/g;
+                const openUser = (safeUser.match(openTagRegex) || []).length;
+                const closeUser = (safeUser.match(closeTagRegex) || []).length;
+                const openWorld = (safeWorld.match(openTagRegex) || []).length;
+                const closeWorld = (safeWorld.match(closeTagRegex) || []).length;
+                const balancedUser = hasEjsUser && openUser === closeUser && openUser > 0;
+                const balancedWorld = hasEjsWorld && openWorld === closeWorld && openWorld > 0;
 
                 if (hasEjsUser || hasEjsWorld) {
                     const env = await globalThis.EjsTemplate.prepareContext({ runType: 'plot_optimization', isDryRun: false });
 
                     try {
-                        if (hasEjsUser) {
+                        if (balancedUser) {
                             const compiledUser = await globalThis.EjsTemplate.evalTemplate(safeUser, env, { _with: true });
                             if (typeof compiledUser === 'string' && compiledUser.length > 0) {
                                 currentUserMessage.mes = compiledUser;
                             }
+                        } else if (hasEjsUser) {
+                            console.warn('[ST-Amily2-Chat-Optimisation][PlotOpt] 检测到未闭合的 EJS 标签（用户输入），已跳过预处理。');
                         }
                     } catch (errUser) {
                         console.error('[ST-Amily2-Chat-Optimisation][PlotOpt] EJS 預處理-用户输入失败：', errUser);
@@ -266,14 +276,34 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
                     }
 
                     try {
-                        if (hasEjsWorld) {
+                        if (balancedWorld) {
                             const compiledWorld = await globalThis.EjsTemplate.evalTemplate(safeWorld, env, { _with: true });
                             if (typeof compiledWorld === 'string' && compiledWorld.length > 0) {
                                 worldbookContent = compiledWorld;
                             }
+                        } else if (hasEjsWorld) {
+                            console.warn('[ST-Amily2-Chat-Optimisation][PlotOpt] 检测到未闭合的 EJS 标签（世界书），已跳过预处理。');
                         }
                     } catch (errWorld) {
-                        console.error('[ST-Amily2-Chat-Optimisation][PlotOpt] EJS 預處理-世界书失败：', errWorld);
+                        try {
+                            if (globalThis.EjsTemplate?.getSyntaxErrorInfo && typeof errWorld?.message === 'string') {
+                                const extra = globalThis.EjsTemplate.getSyntaxErrorInfo(safeWorld);
+                                console.error('[ST-Amily2-Chat-Optimisation][PlotOpt] EJS 預處理-世界书失败(含定位)：', errWorld?.message + (extra || ''));
+                            } else {
+                                console.error('[ST-Amily2-Chat-Optimisation][PlotOpt] EJS 預處理-世界书失败：', errWorld);
+                            }
+                            // 打印世界书片段（限長）
+                            try {
+                                const maxLen = 2000;
+                                const snippet = typeof safeWorld === 'string' ? safeWorld.slice(0, maxLen) : String(safeWorld).slice(0, maxLen);
+                                const isTruncated = (safeWorld?.length || 0) > maxLen;
+                                console.error('[ST-Amily2-Chat-Optimisation][PlotOpt] 失败世界书片段(截断=' + isTruncated + '):\n---BEGIN WORLD SNIPPET---\n' + snippet + '\n---END WORLD SNIPPET---');
+                            } catch (logErr) {
+                                console.error('[ST-Amily2-Chat-Optimisation][PlotOpt] 打印失败世界书片段时出错：', logErr);
+                            }
+                        } catch (sub) {
+                            console.error('[ST-Amily2-Chat-Optimisation][PlotOpt] 记录语法位置信息失败：', sub);
+                        }
                         toastr.error('EJS 预处理世界书失败，已中止。', 'Amily2号');
                         return null;
                     }
