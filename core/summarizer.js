@@ -244,24 +244,44 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
         // --- EJS 預處理（劇情優化專用）---
         try {
             if (settings.plotOpt_ejsEnabled !== false && globalThis.EjsTemplate?.evalTemplate && globalThis.EjsTemplate?.prepareContext) {
-                const env = await globalThis.EjsTemplate.prepareContext({ runType: 'plot_optimization', isDryRun: false });
                 const safeUser = (userMessageContent ?? '').toString();
                 const safeWorld = (worldbookContent ?? '').toString();
+                const hasEjsUser = /<%[=_\-]?/.test(safeUser);
+                const hasEjsWorld = /<%[=_\-]?/.test(safeWorld);
 
-                const compiledUser = await globalThis.EjsTemplate.evalTemplate(safeUser, env, { _with: true });
-                const compiledWorld = await globalThis.EjsTemplate.evalTemplate(safeWorld, env, { _with: true });
+                if (hasEjsUser || hasEjsWorld) {
+                    const env = await globalThis.EjsTemplate.prepareContext({ runType: 'plot_optimization', isDryRun: false });
 
-                // 只有在有內容時才覆蓋
-                if (typeof compiledUser === 'string' && compiledUser.length > 0) {
-                    currentUserMessage.mes = compiledUser;
-                }
-                if (typeof compiledWorld === 'string' && compiledWorld.length > 0) {
-                    worldbookContent = compiledWorld;
+                    try {
+                        if (hasEjsUser) {
+                            const compiledUser = await globalThis.EjsTemplate.evalTemplate(safeUser, env, { _with: true });
+                            if (typeof compiledUser === 'string' && compiledUser.length > 0) {
+                                currentUserMessage.mes = compiledUser;
+                            }
+                        }
+                    } catch (errUser) {
+                        console.error('[ST-Amily2-Chat-Optimisation][PlotOpt] EJS 預處理-用户输入失败：', errUser);
+                        toastr.error('EJS 预处理用户输入失败，已中止。', 'Amily2号');
+                        return null;
+                    }
+
+                    try {
+                        if (hasEjsWorld) {
+                            const compiledWorld = await globalThis.EjsTemplate.evalTemplate(safeWorld, env, { _with: true });
+                            if (typeof compiledWorld === 'string' && compiledWorld.length > 0) {
+                                worldbookContent = compiledWorld;
+                            }
+                        }
+                    } catch (errWorld) {
+                        console.error('[ST-Amily2-Chat-Optimisation][PlotOpt] EJS 預處理-世界书失败：', errWorld);
+                        toastr.error('EJS 预处理世界书失败，已中止。', 'Amily2号');
+                        return null;
+                    }
                 }
             }
         } catch (e) {
-            console.error('[ST-Amily2-Chat-Optimisation][PlotOpt] EJS 預處理失敗：', e);
-            toastr.error('剧情优化失败：EJS 预处理出错。', 'Amily2号');
+            console.error('[ST-Amily2-Chat-Optimisation][PlotOpt] EJS 預處理初始化失败（可能是上下文环境）：', e);
+            toastr.error('EJS 预处理初始化失败，已中止。', 'Amily2号');
             return null; // 直接中止，不送出訊息
         }
 
