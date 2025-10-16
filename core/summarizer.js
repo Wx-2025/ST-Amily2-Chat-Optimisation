@@ -239,7 +239,31 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
             systemPrompt = systemPrompt.replace(regex, value);
         }
 
-        const worldbookContent = await getPlotOptimizedWorldbookContent(context, settings);
+        let worldbookContent = await getPlotOptimizedWorldbookContent(context, settings);
+
+        // --- EJS 預處理（劇情優化專用）---
+        try {
+            if (settings.plotOpt_ejsEnabled !== false && globalThis.EjsTemplate?.evalTemplate && globalThis.EjsTemplate?.prepareContext) {
+                const env = await globalThis.EjsTemplate.prepareContext({ runType: 'plot_optimization', isDryRun: false });
+                const safeUser = (userMessageContent ?? '').toString();
+                const safeWorld = (worldbookContent ?? '').toString();
+
+                const compiledUser = await globalThis.EjsTemplate.evalTemplate(safeUser, env, { _with: true });
+                const compiledWorld = await globalThis.EjsTemplate.evalTemplate(safeWorld, env, { _with: true });
+
+                // 只有在有內容時才覆蓋
+                if (typeof compiledUser === 'string' && compiledUser.length > 0) {
+                    currentUserMessage.mes = compiledUser;
+                }
+                if (typeof compiledWorld === 'string' && compiledWorld.length > 0) {
+                    worldbookContent = compiledWorld;
+                }
+            }
+        } catch (e) {
+            console.error('[ST-Amily2-Chat-Optimisation][PlotOpt] EJS 預處理失敗：', e);
+            toastr.error('剧情优化失败：EJS 预处理出错。', 'Amily2号');
+            return null; // 直接中止，不送出訊息
+        }
 
         let tableContent = '';
         if (settings.plotOpt_tableEnabled) {
@@ -310,7 +334,7 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
                         }
                         break;
                     case 'coreContent':
-                        messages.push({ role: 'user', content: `[核心处理内容]:\n${userMessageContent}` });
+                        messages.push({ role: 'user', content: `[核心处理内容]:\n${currentUserMessage.mes}` });
                         break;
                     case 'plotTag':
                         messages.push({ role: 'assistant', content: '<plot>' });
