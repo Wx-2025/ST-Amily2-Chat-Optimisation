@@ -297,7 +297,26 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
                                 const maxLen = 2000;
                                 const snippet = typeof safeWorld === 'string' ? safeWorld.slice(0, maxLen) : String(safeWorld).slice(0, maxLen);
                                 const isTruncated = (safeWorld?.length || 0) > maxLen;
-                                console.error('[ST-Amily2-Chat-Optimisation][PlotOpt] 失败世界书片段(截断=' + isTruncated + '):\n---BEGIN WORLD SNIPPET---\n' + snippet + '\n---END WORLD SNIPPET---');
+                                // 存入全局以便用户在控制台直接读取
+                                try {
+                                    // @ts-ignore
+                                    window.Amily2PlotOptDebug = window.Amily2PlotOptDebug || {};
+                                    // @ts-ignore
+                                    window.Amily2PlotOptDebug.worldErrorMessage = (errWorld?.message || String(errWorld)) + '';
+                                    // @ts-ignore
+                                    window.Amily2PlotOptDebug.worldSnippet = snippet;
+                                    // @ts-ignore
+                                    window.Amily2PlotOptDebug.worldSnippetTruncated = isTruncated;
+                                    // @ts-ignore
+                                    window.Amily2PlotOptDebug.worldOpenClose = { open: openWorld, close: closeWorld };
+                                } catch (_) {}
+
+                                // 多级别日志，避免特定环境过滤
+                                console.groupCollapsed('[ST-Amily2-Chat-Optimisation][PlotOpt] 失败世界书片段 (截断=' + isTruncated + ')');
+                                console.log(snippet);
+                                console.groupEnd();
+                                console.warn('[ST-Amily2-Chat-Optimisation][PlotOpt] worldOpenClose:', { open: openWorld, close: closeWorld });
+                                console.error('[ST-Amily2-Chat-Optimisation][PlotOpt] 以上即失败世界书片段。');
                             } catch (logErr) {
                                 console.error('[ST-Amily2-Chat-Optimisation][PlotOpt] 打印失败世界书片段时出错：', logErr);
                             }
