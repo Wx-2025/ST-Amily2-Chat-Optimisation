@@ -488,6 +488,11 @@ jQuery(async () => {
             eventSource.on(event_types.IMPERSONATE_READY, onMessageReceived);
             eventSource.on(event_types.MESSAGE_RECEIVED, (chat_id) => handleTableUpdate(chat_id));
             eventSource.on(event_types.MESSAGE_SWIPED, (chat_id) => {
+                const context = getContext();
+                if (context.chat.length < 2) {
+                    log(`【监察系统】检测到消息滑动，但聊天记录不足2条，已跳过状态回退。`, 'info');
+                    return;
+                }
                 log(`【监察系统】检测到消息滑动 (SWIPED)，开始执行状态回退...`, 'warn');
                 rollbackState();
             });
