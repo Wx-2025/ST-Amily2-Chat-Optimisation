@@ -1,6 +1,7 @@
 import { getMemoryState, getHighlights } from '../core/table-system/manager.js';
 import { extension_settings } from '/scripts/extensions.js';
 import { extensionName } from '../utils/settings.js';
+import { getContext } from '/scripts/extensions.js';
 
 const TABLE_CONTAINER_ID = 'amily2-chat-table-container';
 const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches;
@@ -82,6 +83,12 @@ function bindSwipePreventer(container) {
 export function updateOrInsertTableInChat() {
 
     setTimeout(() => {
+        const context = getContext();
+        if (!context || !context.chat || context.chat.length < 2) {
+            removeTableContainer();
+            return;
+        }
+
         const settings = extension_settings[extensionName];
         removeTableContainer();
 
