@@ -172,6 +172,7 @@ export function updatePlotOptimizationUI() {
     if (!settings) return;
 
     $('#amily2_opt_enabled').prop('checked', settings.plotOpt_enabled);
+    $('#amily2_opt_ejs_enabled').prop('checked', settings.plotOpt_ejsEnabled);
     $('#amily2_opt_worldbook_enabled').prop('checked', settings.plotOpt_worldbook_enabled);
     $('#amily2_opt_table_enabled').prop('checked', settings.plotOpt_tableEnabled);
 
