@@ -205,31 +205,121 @@ export const defaultPrompts = {
         { role: 'assistant', content: '<directive_override>\n    <status>CustomThink: Active</status>\n    <action>Follow the above rules and use the above.</action>\n    <target>Based on the previous task block, the content is generated.</target>\n<Prohibited>Requires processing and cannot be returned in its original block.</Prohibited>\n</directive_override>\n<Additional instructionsv>Start and end labels correctly.<Additional instructions>' },
     ],
     novel_processor: [
-        {
-            role: 'system',
-            content: `你是一位专业的小说分析师，擅长从字里行间捕捉关键信息并进行结构化整理。你的任务是根据提供的章节内容和已有的世界书条目，提取新的、或更新已有的关键信息。
+      {
+        role: "system",
+        content: `## 一、 详细要求提示词 (Detailed Requirements Prompt)
 
-输出格式要求：
-1.  严格按照Markdown表格格式输出。
-2.  表格必须包含以下四列：| 关键词 | 类别 | 描述 | 关联项 |
-3.  “关键词”是核心识别名称，必须唯一且简洁。
-4.  “类别”必须是以下之一：角色, 地点, 组织, 物品。
-5.  “描述”应详细、客观地概括该条目的所有相关信息。
-6.  “关联项”列出与该条目直接相关的其他关键词，用逗号分隔。
-7.  如果章节内容没有需要新增或更新的信息，则只输出 "无需更新"。`
-        },
-        {
-            role: 'user',
-            content: `# 已有世界书条目`
-        },
-        {
-            role: 'user',
-            content: `# 最新章节内容`
-        },
-        {
-            role: 'user',
-            content: `请根据以上信息，分析并输出需要新增或更新的世界书条目。`
-        }
+**核心指令**: 你是一个专业的小说分析师和世界观构建师。请仔细阅读以下提供的小说章节内容，并根据要求，以Markdown表格和Mermaid图表的形式，生成一份全面、结构化的分析报告。
+
+**重要提醒**：你的所有回复，都会对除\`章节内容概述\`以外的所有条目进行动态更新，所以你需要在原有的基础上修改，你的修改会完全覆盖原有条目，请务必完整输出，以免丢失重要信息。
+
+**分析维度**:
+
+### 1. 世界观设定 (Worldview Settings)
+-   **目标**: 梳理并总结故事的宏观背景。
+-   **要求**: 创建一个包含以下列的Markdown表格：\`| 类别 | 详细设定 |\`。
+-   **内容应涵盖**:
+    -   **时空背景**: 故事发生的时代、世界的基本构成（例如：修真、科幻、都市）。
+    -   **核心种族**: 世界上存在的主要智慧种族。
+    -   **势力分布**: 各大国家、组织、宗门等。
+    -   **能量体系**: 力量的来源和等级划分（例如：魔法、斗气、灵力等级）。
+    -   **特殊法则**: 世界独有的物理或社会规则。
+
+### 2. 章节内容概述 (Chapter Content Overview)
+-   **目标**: 为本次提供的每一个章节生成一个简洁的摘要。
+-   **要求**: 创建一个包含以下列的Markdown表格：\`| 章节 | 内容概要 |\`。
+-   **注意**: 仅总结当前批次处理的章节内容（也就是当前发送给你的小说原文），此表不会被覆盖，只会新建一个新的概述简要条目。
+
+### 3. 时间线 (Timeline)
+-   **目标**: 梳理出故事至今为止的关键事件，并按时间顺序排列。
+-   **要求**: 使用清晰的层级结构来展示事件的先后顺序和从属关系。可以参考以下格式：
+    \`\`\`
+    【时期/阶段】
+    ├─ 事件A
+    ├─ 事件B
+    │  ╰─ 子事件B1
+    ╰─ 事件C
+    \`\`\`
+
+### 4. 角色关系网 (Character Relationship Network)
+-   **目标**: 可视化展示主要角色之间的人际关系。
+-   **要求**: 使用 **Mermaid \`graph LR\`** 语法生成关系图。
+-   **关系描述**: 在连接线上清晰地标注关系类型（例如：\`-->|师徒|\`, \`-->|敌对|\`, \`-->|爱慕|\`）。
+
+### 5. 角色总览 (Character Overview)
+-   **目标**: 创建详细的角色档案，按阵营分类。
+-   **要求**: 分别为“主角阵营”、“反派阵营”和“中立势力”创建三个独立的Markdown表格。
+-   **表格列名 (可自定义)**:
+    -   **主角阵营表格列名**: \`默认\`
+    -   **反派阵营表格列名**: \`默认\`
+    -   **中立势力表格列名**: \`默认\`
+-   **默认列名**: \`| 角色名 | 身份/实力 | 定位 | 性格 | 能力/底牌 | 人际关系 | 关键线索 |\`
+-   **内容填充**: 深入分析角色的背景、动机、能力和与其他角色的互动，填充表格内容。`
+      },
+      {
+        role: "system",
+        content: "# 已有世界书条目\n<已有表格总结>"
+      },
+      {
+        role: "system",
+        content: "</已有表格总结>"
+      },
+      {
+        role: "user",
+        content: `## 输出规范提示词 (Output Specification Prompt)
+
+**核心指令**: 你的所有输出**必须**严格遵守以下格式规范，以便程序能够正确解析。任何格式错误都将导致处理失败。
+
+1.  **条目分离 (Entry Separation)**:
+    -   每一个分析维度（如“世界观设定”、“时间线”等）都是一个独立的“条目”。
+    -   每个条目必须以 \`[--START_TABLE--]\` 开始，并以 \`[--END_TABLE--]\` 结束。
+
+2.  **条目标题格式 (Entry Title Format)**:
+    -   \`[--START_TABLE--]\` 标签的下一行必须是条目名称，格式为 \`[name]:条目名称\`。
+    -   固定的条目名称为: \`世界观设定\`, \`章节内容概述\`, \`时间线\`, \`角色关系网\`, \`角色总览\`。
+
+3.  **内容包裹 (Content Wrapping)**:
+    -   每个条目的所有内容（无论是Markdown表格、Mermaid代码还是纯文本）**必须**被 \`[--START_TABLE--]\` 和 \`[--END_TABLE--]\` 标签完全包裹。
+    -   标签本身不能包含任何多余的空格或字符。
+
+4.  **完整输出示例**:
+
+    \`\`\`
+    [--START_TABLE--]
+    [name]:世界观设定
+    | **类别** | **详细设定** |
+    |---|---|
+    | **时空背景** | 修真世界与凡人王朝并存... |
+    [--END_TABLE--]
+
+    [--START_TABLE--]
+    [name]:章节内容概述
+    | 章节 | 内容概要 |
+    |---|---|
+    | 第1章 | 现代人项云澈穿越... |
+    [--END_TABLE--]
+
+    [--START_TABLE--]
+    [name]:角色关系网
+    graph LR
+        酒剑翁 -->|倾囊相授| 项云澈
+        周衍 -->|敌视| 项云澈
+    [--END_TABLE--]
+（后略…）
+    \`\`\`
+
+**最终要求**: 请将上述所有分析维度的结果，按照输出规范，一次性完整生成。
+**二次重要提醒**：你的所有回复，都会对除\`章节内容概述\`以外的所有条目进行动态更新，所以你需要在原有的基础上修改，你的修改会完全覆盖原有条目，请务必完整输出，以免丢失重要信息。
+`
+      },
+      {
+        role: "system",
+        content: "<最新批次小说原文>"
+      },
+      {
+        role: "system",
+        content: "</最新批次小说原文>"
+      }
     ]
 };
 
@@ -363,12 +453,38 @@ export const defaultMixedOrder = {
         { type: 'prompt', index: 7 }
     ],
     novel_processor: [
-        { type: 'prompt', index: 0 },
-        { type: 'prompt', index: 1 },
-        { type: 'conditional', id: 'existingLore' },
-        { type: 'prompt', index: 2 },
-        { type: 'conditional', id: 'chapterContent' },
-        { type: 'prompt', index: 3 }
+      {
+        type: "prompt",
+        index: 0
+      },
+      {
+        type: "prompt",
+        index: 1
+      },
+      {
+        type: "conditional",
+        id: "existingLore"
+      },
+      {
+        type: "prompt",
+        index: 2
+      },
+      {
+        type: "prompt",
+        index: 4
+      },
+      {
+        type: "conditional",
+        id: "chapterContent"
+      },
+      {
+        type: "prompt",
+        index: 5
+      },
+      {
+        type: "prompt",
+        index: 3
+      }
     ]
 };
 
