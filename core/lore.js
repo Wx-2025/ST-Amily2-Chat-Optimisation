@@ -294,7 +294,14 @@ export async function getPlotOptimizedWorldbookContent(context, apiSettings) {
     if (panel.length > 0) {
         liveSettings.worldbookEnabled = panel.find('#amily2_opt_worldbook_enabled').is(':checked');
         liveSettings.worldbookSource = panel.find('input[name="amily2_opt_worldbook_source"]:checked').val() || 'character';
-        liveSettings.selectedWorldbooks = panel.find('#amily2_opt_selected_worldbooks').val() || [];
+        
+        liveSettings.selectedWorldbooks = [];
+        if (liveSettings.worldbookSource === 'manual') {
+            panel.find('#amily2_opt_worldbook_checkbox_list input[type="checkbox"]:checked').each(function() {
+                liveSettings.selectedWorldbooks.push($(this).val());
+            });
+        }
+
         liveSettings.worldbookCharLimit = parseInt(panel.find('#amily2_opt_worldbook_char_limit').val(), 10) || 60000;
 
         let enabledEntries = {};
