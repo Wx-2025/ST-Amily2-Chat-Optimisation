@@ -84,18 +84,19 @@ export async function executeNovelProcessing(processingState, updateStatusCallba
             if (messages.length <= 1) throw new Error('未能根据预设构建有效的API请求。');
 
             const response = await callSybdAI(messages);
-            if (!response || response.trim() === '无需更新') {
+            if (!response) {
+                throw new Error(`API调用失败，批次 ${Math.floor(i / batchSize) + 1} 未收到响应。`);
+            }
+            if (response.trim() === '无需更新') {
                 updateStatusCallback(`批次 ${Math.floor(i / batchSize) + 1} 无需更新。`, 'info');
                 continue;
             }
 
             const structuredData = parseStructuredResponse(response);
             if (structuredData.length === 0) {
-                updateStatusCallback(`批次 ${Math.floor(i / batchSize) + 1} 未提取到有效信息。`, 'info');
-                continue;
+                throw new Error(`未能从API响应中提取有效信息，批次 ${Math.floor(i / batchSize) + 1}。`);
             }
 
-            // --- 自定义同步逻辑 ---
             const currentAllEntries = (await TavernHelper.getLorebookEntries(bookName)) || [];
             const currentManagedEntries = currentAllEntries.filter(e => e.comment?.startsWith('[Amily2小说处理]') || e.comment?.startsWith('[Amily2-Glossary]'));
             
@@ -123,7 +124,7 @@ export async function executeNovelProcessing(processingState, updateStatusCallba
                     continue;
                 }
 
-                const existingEntry = currentManagedEntries.find(e => e.keyword === title);
+                const existingEntry = currentManagedEntries.find(e => Array.isArray(e.keyword) && e.keyword.includes(title));
                 
                 if (fixedNovelEntries.includes(title)) {
                     comment = `[Amily2小说处理] ${title}`;
@@ -150,9 +151,18 @@ export async function executeNovelProcessing(processingState, updateStatusCallba
                 await TavernHelper.createLorebookEntries(bookName, entriesToCreate);
                 updateStatusCallback(`创建了 ${entriesToCreate.length} 个新世界书条目。`, 'success');
             }
-            // --- 同步逻辑结束 ---
 
-            existingEntriesContent = response; // 更新上下文以便下一个批次使用
+            const updatedAllEntries = (await TavernHelper.getLorebookEntries(bookName)) || [];
+            const updatedManagedEntries = updatedAllEntries.filter(e => e.comment?.startsWith('[Amily2小说处理]') || e.comment?.startsWith('[Amily2-Glossary]'));
+            
+            if (updatedManagedEntries.length > 0) {
+                existingEntriesContent = updatedManagedEntries.map(entry => {
+                    const name = entry.keyword;
+                    return `[--START_TABLE--]\n[name]:${name}\n${entry.content}\n[--END_TABLE--]`;
+                }).join('\n\n');
+            } else {
+                existingEntriesContent = '当前世界书为空。';
+            }
         }
 
         updateStatusCallback('小说处理完成！', 'success');
