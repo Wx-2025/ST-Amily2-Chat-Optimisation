@@ -461,8 +461,8 @@ function bindNovelProcessEvents() {
                     processBtn.disabled = false;
                     break;
                 case 'failed':
-                    processBtn.innerHTML = '<i class="fas fa-times-circle"></i> 处理失败';
-                    processBtn.disabled = true;
+                    processBtn.innerHTML = '<i class="fas fa-redo"></i> 重试处理';
+                    processBtn.disabled = false;
                     break;
                 case 'success':
                     processBtn.innerHTML = '<i class="fas fa-check"></i> 处理完成';
