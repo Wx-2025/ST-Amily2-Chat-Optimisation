@@ -5,6 +5,22 @@ import { generateRandomSeed } from '../core/api.js';
 
 const { TavernHelper } = window;
 
+function buildContextFromEntries(entries) {
+    if (!entries || entries.length === 0) {
+        return '当前世界书为空。';
+    }
+
+    const mappedContent = entries.map(entry => {
+        if (!Array.isArray(entry.keyword) || entry.keyword.length < 2) {
+            return null;
+        }
+        const name = entry.keyword[1];
+        return `[--START_TABLE--]\n[name]:${name}\n${entry.content}\n[--END_TABLE--]`;
+    }).filter(Boolean).join('\n\n');
+
+    return mappedContent || '当前世界书为空。';
+}
+
 function parseStructuredResponse(responseText) {
     const entries = [];
     const entryRegex = /\[--START_TABLE--\]\s*\[name\]:(.*?)\n([\s\S]*?)\[--END_TABLE--\]/g;
@@ -40,13 +56,11 @@ export async function executeNovelProcessing(processingState, updateStatusCallba
 
         const allEntries = (await TavernHelper.getLorebookEntries(bookName)) || [];
         const managedEntries = allEntries.filter(e => e.comment?.startsWith('[Amily2小说处理]') || e.comment?.startsWith('[Amily2-Glossary]'));
+        const localManagedEntries = [...managedEntries];
 
         let existingEntriesContent = '当前世界书为空。';
-        if (!forceNew && managedEntries.length > 0) {
-            existingEntriesContent = managedEntries.map(entry => {
-                const name = entry.keyword;
-                return `[--START_TABLE--]\n[name]:${name}\n${entry.content}\n[--END_TABLE--]`;
-            }).join('\n\n');
+        if (!forceNew) {
+            existingEntriesContent = buildContextFromEntries(localManagedEntries);
         }
 
         for (let i = processingState.currentIndex; i < recognizedChapters.length; i += batchSize) {
@@ -96,16 +110,13 @@ export async function executeNovelProcessing(processingState, updateStatusCallba
             if (structuredData.length === 0) {
                 throw new Error(`未能从API响应中提取有效信息，批次 ${Math.floor(i / batchSize) + 1}。`);
             }
-
-            const currentAllEntries = (await TavernHelper.getLorebookEntries(bookName)) || [];
-            const currentManagedEntries = currentAllEntries.filter(e => e.comment?.startsWith('[Amily2小说处理]') || e.comment?.startsWith('[Amily2-Glossary]'));
             
             const entriesToUpdate = [];
             const entriesToCreate = [];
             const fixedNovelEntries = ['世界观设定', '时间线', '角色关系网', '角色总览'];
 
             let maxPart = 0;
-            currentManagedEntries.forEach(entry => {
+            localManagedEntries.forEach(entry => {
                 const match = entry.comment.match(/章节内容概述-第(\d+)部分/);
                 if (match && parseInt(match[1], 10) > maxPart) maxPart = parseInt(match[1], 10);
             });
@@ -119,13 +130,13 @@ export async function executeNovelProcessing(processingState, updateStatusCallba
                 if (title === '章节内容概述') {
                     comment = `[Amily2小说处理] ${title}-第${nextPart}部分`;
                     keys = [`小说处理`, title, `第${nextPart}部分`];
-                    entriesToCreate.push({ keys, content, comment, enabled: true, order: 100, position: 'before_char' });
+                    const newEntryData = { keys, content, comment, enabled: true, order: 100, position: 'before_char' };
+                    entriesToCreate.push(newEntryData);
+                    localManagedEntries.push({ uid: -1, ...newEntryData, keyword: keys });
                     nextPart++;
                     continue;
                 }
 
-                const existingEntry = currentManagedEntries.find(e => Array.isArray(e.keyword) && e.keyword.includes(title));
-                
                 if (fixedNovelEntries.includes(title)) {
                     comment = `[Amily2小说处理] ${title}`;
                     keys = [`小说处理`, title];
@@ -134,12 +145,15 @@ export async function executeNovelProcessing(processingState, updateStatusCallba
                     keys = [`自定义条目`, title];
                 }
 
+                const existingEntry = localManagedEntries.find(e => e.comment === comment);
                 const loreData = { keys, content, comment, enabled: true, order: 100, position: 'before_char' };
 
                 if (existingEntry) {
                     entriesToUpdate.push({ uid: existingEntry.uid, ...loreData });
+                    Object.assign(existingEntry, { ...loreData, keyword: keys });
                 } else {
                     entriesToCreate.push(loreData);
+                    localManagedEntries.push({ uid: -1, ...loreData, keyword: keys });
                 }
             }
 
@@ -152,17 +166,7 @@ export async function executeNovelProcessing(processingState, updateStatusCallba
                 updateStatusCallback(`创建了 ${entriesToCreate.length} 个新世界书条目。`, 'success');
             }
 
-            const updatedAllEntries = (await TavernHelper.getLorebookEntries(bookName)) || [];
-            const updatedManagedEntries = updatedAllEntries.filter(e => e.comment?.startsWith('[Amily2小说处理]') || e.comment?.startsWith('[Amily2-Glossary]'));
-            
-            if (updatedManagedEntries.length > 0) {
-                existingEntriesContent = updatedManagedEntries.map(entry => {
-                    const name = entry.keyword;
-                    return `[--START_TABLE--]\n[name]:${name}\n${entry.content}\n[--END_TABLE--]`;
-                }).join('\n\n');
-            } else {
-                existingEntriesContent = '当前世界书为空。';
-            }
+            existingEntriesContent = buildContextFromEntries(localManagedEntries);
         }
 
         updateStatusCallback('小说处理完成！', 'success');
