@@ -1,5 +1,5 @@
 import { extension_settings, getContext } from "/scripts/extensions.js";
-import { saveSettingsDebounced } from "/script.js";
+import { saveSettingsDebounced, eventSource, event_types } from "/script.js";
 import { world_names } from "/scripts/world-info.js";
 import { extensionName } from "../utils/settings.js";
 import { testSybdApiConnection, fetchSybdModels } from '../core/api/SybdApi.js';
@@ -604,6 +604,12 @@ export function bindGlossaryEvents() {
     bindTabEvents();
     bindNovelProcessEvents();
     loadWorldBooks();
+
+    // 监听角色加载事件，以确保 world_names 可用
+    eventSource.on(event_types.CHARACTER_PAGE_LOADED, () => {
+        console.log('[Amily2-术语表] 检测到角色加载，重新加载世界书列表以确保同步。');
+        loadWorldBooks();
+    });
 
     const worldBookSelect = document.getElementById('novel-world-book-select');
     if (worldBookSelect) {
