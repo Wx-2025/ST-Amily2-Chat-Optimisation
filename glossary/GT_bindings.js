@@ -1,9 +1,14 @@
 import { extension_settings, getContext } from "/scripts/extensions.js";
-import { saveSettingsDebounced } from "/script.js";
+import { saveSettingsDebounced, eventSource, event_types } from "/script.js";
+import { world_names } from "/scripts/world-info.js";
 import { extensionName } from "../utils/settings.js";
 import { testSybdApiConnection, fetchSybdModels } from '../core/api/SybdApi.js';
-import { handleFileUpload, recognizeChapters, processNovel } from './index.js';
+import { handleFileUpload, processNovel } from './index.js';
 import { SETTINGS_KEY as PRESET_SETTINGS_KEY } from '../PresetSettings/config.js';
+
+const moduleState = {
+    selectedWorldBook: '',
+};
 
 function updateAndSaveSetting(key, value) {
     if (!extension_settings[extensionName]) {
@@ -49,10 +54,9 @@ function loadSettingsToUI() {
         }
     });
 
-    const sybdToggle = document.getElementById('amily2_sybd_enabled');
     const sybdContent = document.getElementById('amily2_sybd_content');
-    if (sybdToggle && sybdContent) {
-        sybdContent.classList.toggle('amily2-content-hidden', !sybdToggle.checked);
+    if (sybdContent) {
+        sybdContent.classList.remove('amily2-content-hidden');
     }
 
     const apiModeSelect = document.getElementById('amily2_sybd_api_mode');
@@ -87,9 +91,6 @@ function bindAutoSaveEvents() {
         
         updateAndSaveSetting(key, value);
 
-        if (key === 'sybdEnabled') {
-            document.getElementById('amily2_sybd_content').classList.toggle('amily2-content-hidden', !value);
-        }
         if (key === 'sybdApiMode') {
             updateConfigVisibility(value);
         }
@@ -204,6 +205,178 @@ function bindManualActionEvents() {
     }
 }
 
+async function renderWorldBookEntries() {
+    const container = document.getElementById('world-book-entries-display');
+    if (!container) return;
+
+    const selectedBook = moduleState.selectedWorldBook;
+    if (!selectedBook) {
+        container.innerHTML = '<p style="text-align:center;">请先在“小说处理”标签页中选择一个世界书。</p>';
+        return;
+    }
+
+    container.innerHTML = '<p style="text-align:center;"><i class="fas fa-spinner fa-spin"></i> 正在加载条目...</p>';
+
+    try {
+        const { TavernHelper } = window;
+        if (!TavernHelper) {
+            container.innerHTML = '<p style="text-align:center; color: #ff8a8a;">TavernHelper 未找到!</p>';
+            return;
+        }
+
+        const allEntries = await TavernHelper.getLorebookEntries(selectedBook);
+        let managedEntries = allEntries.filter(e => e.comment?.startsWith('[Amily2小说处理]'));
+
+        if (managedEntries.length === 0) {
+            container.innerHTML = '<p style="text-align:center;">未找到由小说处理功能生成的条目。</p>';
+            return;
+        }
+
+        container.innerHTML = ''; 
+
+        const summaryEntries = managedEntries.filter(e => e.comment.replace('[Amily2小说处理]', '').trim().startsWith('章节内容概述'));
+        const otherEntries = managedEntries.filter(e => !e.comment.replace('[Amily2小说处理]', '').trim().startsWith('章节内容概述'));
+        const sortedEntries = otherEntries.concat(summaryEntries);
+
+        sortedEntries.forEach(entry => {
+            const entryElement = document.createElement('div');
+            entryElement.className = 'world-book-entry-item';
+            entryElement.dataset.entryId = entry.uid;
+
+            const title = entry.comment.replace('[Amily2小说处理]', '').trim();
+
+            const renderContent = (content) => {
+                const trimmedContent = content.trim();
+                if (trimmedContent.startsWith('graph') || trimmedContent.startsWith('flowchart')) {
+                    try {
+                        const lines = trimmedContent.split('\n').map(l => l.trim()).filter(l => l.includes('-->') || l.includes('--'));
+                        let body = '';
+                        lines.forEach(line => {
+                            if (line.startsWith('flowchart')) return;
+                            let source = '', rel = '', target = '';
+
+                            let match = line.match(/(.+?)\s*--\s*"(.*?)"\s*-->(.+)/);
+                            if (match) {
+                                [source, rel, target] = [match[1], match[2], match[3]];
+                            } else {
+                                match = line.match(/(.+?)\s*-->\s*\|(.*?)\|(.+)/);
+                                if (match) {
+                                    [source, rel, target] = [match[1], match[2], match[3]];
+                                } else {
+                                    match = line.match(/(.+?)\s*-->(.+)/);
+                                    if (match) {
+                                        [source, target] = [match[1], match[2]];
+                                        rel = '<i>(直接关联)</i>';
+                                    }
+                                }
+                            }
+
+                            if (source && target) {
+                                body += `<tr><td>${source.trim()}</td><td>${rel.trim()}</td><td>${target.trim().replace(';','')}</td></tr>`;
+                            }
+                        });
+                        return `<table class="table-render"><thead><tr><th>源头</th><th>关系</th><th>目标</th></tr></thead><tbody>${body}</tbody></table>`;
+                    } catch {
+                        return `<pre>${content}</pre>`;
+                    }
+                }
+                if (trimmedContent.includes('|') && trimmedContent.includes('\n')) {
+                    try {
+                        const rows = trimmedContent.split('\n').filter(row => row.trim() && row.includes('|'));
+                        let header = '';
+                        let body = '';
+                        let isHeaderRow = true;
+                        rows.forEach(rowStr => {
+                            if (rowStr.includes('---')) return;
+                            const cells = rowStr.split('|').filter(c => c.trim()).map(cell => `<td>${cell.trim()}</td>`).join('');
+                            if (isHeaderRow) {
+                                header += `<tr>${cells.replace(/<td>/g, '<th>').replace(/<\/td>/g, '</th>')}</tr>`;
+                                isHeaderRow = false;
+                            } else {
+                                body += `<tr>${cells}</tr>`;
+                            }
+                        });
+                        return `<table class="table-render"><thead>${header}</thead><tbody>${body}</tbody></table>`;
+                    } catch {
+                        return `<pre>${content}</pre>`;
+                    }
+                }
+                return `<pre>${content}</pre>`;
+            };
+
+            entryElement.innerHTML = `
+                <div class="entry-header">
+                    <strong class="entry-title">${title}</strong>
+                    <div class="entry-actions">
+                        <button class="menu_button primary small_button save-entry-btn" style="display: none;"><i class="fas fa-save"></i> 保存</button>
+                        <button class="menu_button danger small_button cancel-entry-btn" style="display: none;"><i class="fas fa-times"></i> 取消</button>
+                        <button class="menu_button secondary small_button edit-entry-btn"><i class="fas fa-edit"></i> 编辑</button>
+                    </div>
+                </div>
+                <div class="entry-content-display">${renderContent(entry.content)}</div>
+                <div class="entry-content-editor" style="display: none;">
+                    <textarea class="text_pole" style="width: 98%; min-height: 150px;">${entry.content}</textarea>
+                </div>
+            `;
+
+            const editBtn = entryElement.querySelector('.edit-entry-btn');
+            const saveBtn = entryElement.querySelector('.save-entry-btn');
+            const cancelBtn = entryElement.querySelector('.cancel-entry-btn');
+            const displayDiv = entryElement.querySelector('.entry-content-display');
+            const editorDiv = entryElement.querySelector('.entry-content-editor');
+            const textarea = editorDiv.querySelector('textarea');
+            const originalContent = entry.content;
+
+            editBtn.addEventListener('click', () => {
+                displayDiv.style.display = 'none';
+                editorDiv.style.display = 'block';
+                saveBtn.style.display = 'inline-block';
+                cancelBtn.style.display = 'inline-block';
+                editBtn.style.display = 'none';
+            });
+
+            const hideEditor = () => {
+                displayDiv.style.display = 'block';
+                editorDiv.style.display = 'none';
+                saveBtn.style.display = 'none';
+                cancelBtn.style.display = 'none';
+                editBtn.style.display = 'inline-block';
+            };
+
+            cancelBtn.addEventListener('click', () => {
+                textarea.value = originalContent;
+                hideEditor();
+            });
+
+            saveBtn.addEventListener('click', async () => {
+                const newContent = textarea.value;
+                
+                displayDiv.innerHTML = renderContent(newContent);
+                hideEditor();
+                
+                try {
+                    const { TavernHelper } = window;
+                    const entryToUpdate = { uid: entry.uid, content: newContent };
+                    await TavernHelper.setLorebookEntries(selectedBook, [entryToUpdate]);
+                    toastr.success(`条目 "${title}" 已保存。`);
+                    entry.content = newContent;
+                } catch (error) {
+                    displayDiv.innerHTML = renderContent(originalContent);
+                    console.error('保存世界书条目失败:', error);
+                    toastr.error(`保存失败: ${error.message}`);
+                }
+            });
+
+            container.appendChild(entryElement);
+        });
+        
+    } catch (error) {
+        console.error('加载世界书条目失败:', error);
+        container.innerHTML = `<p style="text-align:center; color: #ff8a8a;">加载失败: ${error.message}</p>`;
+    }
+}
+
+
 function bindTabEvents() {
     const tabs = document.querySelectorAll('.glossary-tab');
     const contents = document.querySelectorAll('.glossary-content');
@@ -223,6 +396,9 @@ function bindTabEvents() {
                 }
             });
 
+            if (tabId === 'context') {
+                renderWorldBookEntries();
+            }
         });
     });
 }
@@ -230,43 +406,187 @@ function bindTabEvents() {
 function bindNovelProcessEvents() {
     const fileInput = document.getElementById('novel-file-input');
     const fileLabel = document.querySelector('label[for="novel-file-input"]');
-    const recognizeBtn = document.getElementById('novel-recognize-chapters');
     const processBtn = document.getElementById('novel-confirm-and-process');
+    const chunkSizeInput = document.getElementById('novel-chunk-size');
+    const chunkCountEl = document.getElementById('novel-chunk-count');
+    const chunkPreviewEl = document.getElementById('novel-chunk-preview');
+
+    let fileContent = '';
+    let processingState = {
+        chunks: [],
+        batchSize: 1,
+        forceNew: false,
+        selectedWorldBook: '',
+        currentIndex: 0,
+        isAborted: false,
+        isRunning: false,
+        lastStatus: 'idle',
+    };
+
+    function updateChunks() {
+        if (!fileContent) return;
+        const chunkSize = parseInt(chunkSizeInput.value, 10) || 5000;
+        const newChunks = [];
+        for (let i = 0; i < fileContent.length; i += chunkSize) {
+            newChunks.push({ title: `Part ${i/chunkSize + 1}`, content: fileContent.substring(i, i + chunkSize) });
+        }
+        processingState.chunks = newChunks;
+
+        chunkCountEl.textContent = newChunks.length;
+        chunkPreviewEl.innerHTML = newChunks.map((chunk, index) =>
+            `<div class="chunk-preview-item"><b>块 ${index + 1}:</b> ${chunk.content.substring(0, 100)}...</div>`
+        ).join('');
+        
+        resetProcessing();
+    }
+    
+    function resetProcessing() {
+        processingState.currentIndex = 0;
+        processingState.isAborted = false;
+        processingState.isRunning = false;
+        processingState.lastStatus = 'idle';
+        updateButtonUI();
+    }
+
+    function updateButtonUI() {
+        if (processingState.isRunning) {
+            processBtn.disabled = false;
+            processBtn.innerHTML = '<i class="fas fa-stop-circle"></i> 请求中止';
+            processBtn.classList.add('danger');
+        } else {
+            processBtn.classList.remove('danger');
+            switch (processingState.lastStatus) {
+                case 'paused':
+                    processBtn.innerHTML = '<i class="fas fa-play"></i> 继续处理';
+                    processBtn.disabled = false;
+                    break;
+                case 'failed':
+                    processBtn.innerHTML = '<i class="fas fa-redo"></i> 重试处理';
+                    processBtn.disabled = false;
+                    break;
+                case 'success':
+                    processBtn.innerHTML = '<i class="fas fa-check"></i> 处理完成';
+                    processBtn.disabled = true;
+                    break;
+                case 'idle':
+                default:
+                    processBtn.innerHTML = '确认并开始处理';
+                    processBtn.disabled = processingState.chunks.length === 0;
+                    break;
+            }
+        }
+    }
+
+    async function startOrResumeProcessing() {
+        if (processingState.isRunning) return;
+
+        processingState.isRunning = true;
+        processingState.isAborted = false;
+        updateButtonUI();
+
+        processingState.forceNew = document.getElementById('novel-force-new').checked;
+        processingState.batchSize = 1;
+        processingState.selectedWorldBook = moduleState.selectedWorldBook;
+
+        try {
+            const result = await processNovel(processingState);
+            if (result === 'paused') {
+                processingState.lastStatus = 'paused';
+            } else if (result === 'success') {
+                processingState.lastStatus = 'success';
+                processingState.currentIndex = 0;
+            }
+        } catch (error) {
+            processingState.lastStatus = 'failed';
+            processingState.isAborted = true;
+        } finally {
+            processingState.isRunning = false;
+            updateButtonUI();
+        }
+    }
 
     if (fileLabel && fileInput) {
         fileLabel.addEventListener('click', (event) => {
-            event.preventDefault(); 
-            fileInput.click(); 
+            event.preventDefault();
+            fileInput.click();
         });
         fileInput.addEventListener('change', (event) => {
-            handleFileUpload(event.target.files[0]);
+            handleFileUpload(event.target.files[0], (content) => {
+                fileContent = content;
+                updateChunks();
+            });
         });
     }
 
-    if (recognizeBtn) {
-        recognizeBtn.addEventListener('click', async () => {
-            const originalHtml = recognizeBtn.innerHTML;
-            recognizeBtn.disabled = true;
-            recognizeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 识别中...';
-            
-            await recognizeChapters();
-
-            recognizeBtn.disabled = false;
-            recognizeBtn.innerHTML = originalHtml;
-        });
+    if (chunkSizeInput) {
+        chunkSizeInput.addEventListener('input', updateChunks);
     }
+
 
     if (processBtn) {
         processBtn.addEventListener('click', async () => {
-            const originalHtml = processBtn.innerHTML;
-            processBtn.disabled = true;
-            processBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 处理中...';
-
-            await processNovel();
-
-            processBtn.disabled = false;
-            processBtn.innerHTML = originalHtml;
+            if (processingState.isRunning) {
+                processingState.isAborted = true;
+                processBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在中止...';
+                processBtn.disabled = true;
+            } else {
+                if (processingState.lastStatus === 'success') {
+                    resetProcessing();
+                }
+                if (processingState.lastStatus === 'idle' || processingState.lastStatus === 'success') {
+                    processingState.currentIndex = 0;
+                }
+                startOrResumeProcessing();
+            }
         });
+    }
+}
+
+function isTavernHelperAvailable() {
+    return typeof window.TavernHelper !== 'undefined' && 
+           window.TavernHelper !== null &&
+           typeof window.TavernHelper.getLorebooks === 'function';
+}
+
+async function safeLorebooks() {
+    try {
+        if (isTavernHelperAvailable()) {
+            return await window.TavernHelper.getLorebooks();
+        }
+        return [...world_names];
+    } catch (error) {
+        console.error('[Amily2-兼容性] 获取世界书列表失败:', error);
+        return [...world_names];
+    }
+}
+
+async function loadWorldBooks() {
+    const select = document.getElementById('novel-world-book-select');
+    if (!select) return;
+
+    const { extension_settings } = window;
+    const savedBook = extension_settings[extensionName]?.selectedWorldBook;
+    moduleState.selectedWorldBook = savedBook || '';
+
+    try {
+        const allBooks = await safeLorebooks();
+        select.innerHTML = '<option value="">-- 请选择世界书 --</option>';
+
+        if (allBooks && allBooks.length > 0) {
+            allBooks.forEach(bookName => {
+                const option = new Option(bookName, bookName);
+                select.add(option);
+            });
+
+            if (savedBook && allBooks.includes(savedBook)) {
+                select.value = savedBook;
+            }
+        } else {
+            select.innerHTML = '<option value="">未找到世界书</option>';
+        }
+    } catch (error) {
+        console.error('[Amily2-术语表] 加载世界书失败:', error);
+        select.innerHTML = '<option value="">加载失败</option>';
     }
 }
 
@@ -283,6 +603,27 @@ export function bindGlossaryEvents() {
     bindManualActionEvents();
     bindTabEvents();
     bindNovelProcessEvents();
+    loadWorldBooks();
+
+    // 监听角色加载事件，以确保 world_names 可用
+    eventSource.on(event_types.CHARACTER_PAGE_LOADED, () => {
+        console.log('[Amily2-术语表] 检测到角色加载，重新加载世界书列表以确保同步。');
+        loadWorldBooks();
+    });
+
+    const worldBookSelect = document.getElementById('novel-world-book-select');
+    if (worldBookSelect) {
+        worldBookSelect.addEventListener('change', () => {
+            const selectedValue = worldBookSelect.value;
+            updateAndSaveSetting('selectedWorldBook', selectedValue);
+            moduleState.selectedWorldBook = selectedValue;
+
+            const contextTab = document.querySelector('.glossary-tab[data-tab="context"]');
+            if (contextTab && contextTab.classList.contains('active')) {
+                renderWorldBookEntries();
+            }
+        });
+    }
 
     panel.dataset.eventsBound = 'true';
     console.log('[Amily2-术语表] UI事件绑定完成 (最终重构版)。');

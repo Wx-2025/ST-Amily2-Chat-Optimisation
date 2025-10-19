@@ -1,118 +1,325 @@
-/* --- 术语表 (Glossary) 专属样式 --- */
-/* 所有样式均已限定在 #amily2_glossary_panel 范围内，防止全局污染 */
 
-/* 标签页导航容器 */
-#amily2_glossary_panel .glossary-tabs {
-    display: flex;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    margin-bottom: 15px;
+#amily2_glossary_panel {
+    --am2-gap-main: 15px;
+    --am2-padding-main: 10px;
+    
+    --am2-container-bg: rgba(0,0,0,0.2);
+    --am2-container-border: 1px solid rgba(255, 255, 255, 0.15);
+    --am2-container-border-radius: 12px;
+    --am2-container-padding: 20px;
+    --am2-container-shadow: inset 0 0 15px rgba(0,0,0,0.25);
+
+    --am2-title-font-size: 1.15em;
+    --am2-title-font-weight: bold;
+    --am2-title-icon-color: #9e8aff;
+    --am2-title-icon-margin: 10px;
+
+    --am2-button-bg: #4A4A4A;
+    --am2-button-border-color: rgba(255, 255, 255, 0.2);
+    --am2-button-hover-bg: rgba(255, 255, 255, 0.15);
+    --am2-button-hover-border-color: #fff;
+    --am2-button-text-color: #E0E0E0;
 }
 
-/* 单个标签页按钮 */
+/* --- 整体布局 --- */
+#amily2_glossary_panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--am2-gap-main);
+    padding: var(--am2-padding-main);
+}
+
+/* --- 标签页系统 --- */
+#amily2_glossary_panel .glossary-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--am2-container-border);
+    margin: 0 5px;
+}
+
 #amily2_glossary_panel .glossary-tab {
     background: none;
     border: none;
+    border-bottom: 3px solid transparent;
     color: var(--text-color-secondary);
-    padding: 10px 15px;
     cursor: pointer;
     font-size: 1em;
-    transition: color 0.2s, border-bottom 0.2s;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px; /* 让下边框与容器边框重合 */
+    padding: 10px 15px;
+    transition: all 0.3s ease;
+    margin-bottom: -1px;
 }
 
 #amily2_glossary_panel .glossary-tab:hover {
+    background-color: rgba(255, 255, 255, 0.05);
     color: var(--text-color-light);
 }
 
-/* 激活状态的标签页 */
 #amily2_glossary_panel .glossary-tab.active {
-    color: var(--text-color-accent);
-    border-bottom: 2px solid var(--text-color-accent);
+    color: var(--am2-title-icon-color);
+    border-bottom-color: var(--am2-title-icon-color);
+    font-weight: bold;
 }
 
 #amily2_glossary_panel .glossary-tab i {
     margin-right: 8px;
 }
 
-/* 标签页内容面板 */
 #amily2_glossary_panel .glossary-content {
-    display: none; /* 默认隐藏 */
+    display: none;
 }
 
-/* 激活状态的内容面板 */
 #amily2_glossary_panel .glossary-content.active {
-    display: block; /* 显示激活的面板 */
+    display: block;
 }
 
-/* 隐藏内容的辅助类 */
-#amily2_glossary_panel .amily2-content-hidden {
-    display: none !important;
-}
-
-/* 通用设置组样式 */
+/* --- 设置组 (卡片样式) --- */
 #amily2_glossary_panel .settings-group {
-    background-color: rgba(0, 0, 0, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 10px;
-    padding: 15px;
-    margin-bottom: 15px;
+    background: var(--am2-container-bg);
+    border: var(--am2-container-border);
+    border-radius: var(--am2-container-border-radius);
+    padding: var(--am2-container-padding);
+    box-shadow: var(--am2-container-shadow);
+    display: flex;
+    flex-direction: column;
+    gap: 18px; /* 组内元素的间距 */
 }
 
 #amily2_glossary_panel .settings-group .legend {
-    font-size: 1.1em;
-    font-weight: bold;
-    color: var(--text-color-light);
-    margin-bottom: 10px;
-    padding-bottom: 5px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    font-size: var(--am2-title-font-size);
+    font-weight: var(--am2-title-font-weight);
+    color: var(--am2-button-text-color);
+    margin: 0;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 #amily2_glossary_panel .settings-group .legend i {
-    margin-right: 8px;
-    color: var(--text-color-accent);
+    margin-right: var(--am2-title-icon-margin);
+    color: var(--am2-title-icon-color);
 }
 
-/* 设置块 */
+/* --- 表单控件 --- */
+#amily2_glossary_panel .control-group,
 #amily2_glossary_panel .amily2_settings_block {
     display: flex;
-    justify-content: space-between;
+    flex-wrap: wrap;
     align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-#amily2_glossary_panel .amily2_settings_block:last-child {
-    border-bottom: none;
+    gap: 10px 15px;
 }
 
-/* 控制组（标签和输入框） */
-#amily2_glossary_panel .control-group {
-    display: flex;
-    align-items: center;
-    margin-bottom: 12px;
-}
-
-#amily2_glossary_panel .control-group label {
-    flex-basis: 150px; /* 固定标签宽度 */
-    flex-shrink: 0;
-    margin-right: 10px;
+#amily2_glossary_panel .control-group label,
+#amily2_glossary_panel .amily2_settings_block > label { /* > 选择器避免影响toggle-switch内的label */
+    flex: 1 1 150px;
+    min-width: 120px;
+    font-weight: bold;
 }
 
 #amily2_glossary_panel .control-group .text_pole,
-#amily2_glossary_panel .control-group .select-with-refresh {
-    flex-grow: 1;
+#amily2_glossary_panel .control-group .select-with-refresh,
+#amily2_glossary_panel .control-group input[type="range"] {
+    flex: 2 1 250px;
 }
 
-/* 带刷新按钮的选择器 */
-#amily2_glossary_panel .select-with-refresh {
-    display: flex;
-    align-items: center;
+/* --- 开关按钮 (使用专属Class，彻底隔离污染) --- */
+#amily2_glossary_panel .amily2-glossary-toggle {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 28px;
+    min-width: 50px;
+    flex-shrink: 0;
+    vertical-align: middle;
 }
 
-/* 按钮行 */
+#amily2_glossary_panel .amily2-glossary-toggle input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+#amily2_glossary_panel .amily2-glossary-toggle .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #555;
+    transition: .4s;
+    border-radius: 28px;
+}
+
+#amily2_glossary_panel .amily2-glossary-toggle .slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 4px;
+    top: 50%;
+    background-color: white;
+    border-radius: 50%;
+    transition: .4s;
+    transform: translateY(-50%);
+}
+
+#amily2_glossary_panel .amily2-glossary-toggle input:checked + .slider {
+    background-color: #8a72ff;
+}
+
+#amily2_glossary_panel .amily2-glossary-toggle input:focus + .slider {
+    box-shadow: 0 0 1px #8a72ff;
+}
+
+#amily2_glossary_panel .amily2-glossary-toggle input:checked + .slider:before {
+    transform: translateX(22px) translateY(-50%);
+}
+
+/* --- 按钮 (移植自 table.css) --- */
 #amily2_glossary_panel .sybd-button-row {
     display: flex;
     gap: 10px;
     justify-content: center;
-    margin-top: 20px;
+    margin-top: 10px;
+}
+
+#amily2_glossary_panel .menu_button {
+    background: var(--am2-button-bg, #4A4A4A);
+    border: 1px solid var(--am2-button-border-color, rgba(255, 255, 255, 0.2)) !important;
+    color: var(--am2-button-text-color, #E0E0E0) !important;
+    padding: 8px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.4s ease-out !important;
+    white-space: nowrap; /* 防止文字换行 */
+    display: inline-flex; /* 确保图标和文字对齐 */
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+#amily2_glossary_panel .menu_button:hover {
+    background-color: var(--am2-button-hover-bg, rgba(255, 255, 255, 0.15));
+    border-color: var(--am2-button-hover-border-color, #fff) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+#amily2_glossary_panel .menu_button.small_button {
+    padding: 5px 12px;
+    font-size: 0.9em;
+    border-radius: 6px;
+}
+
+/* --- 世界书条目渲染 --- */
+#amily2_glossary_panel .world-book-entry-item {
+    background-color: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 15px;
+}
+
+#amily2_glossary_panel .entry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#amily2_glossary_panel .entry-title {
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+#amily2_glossary_panel .entry-content-display pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    background-color: rgba(0, 0, 0, 0.25);
+    padding: 10px;
+    border-radius: 5px;
+}
+
+#amily2_glossary_panel .table-render {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#amily2_glossary_panel .table-render th,
+#amily2_glossary_panel .table-render td {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 8px;
+}
+
+#amily2_glossary_panel .table-render th {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* --- 小说处理面板特定样式修复 --- */
+
+/* 为需要水平布局的组应用flex */
+#amily2_glossary_panel #glossary-content-novel-process .horizontal-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 15px;
+}
+#amily2_glossary_panel #glossary-content-novel-process .horizontal-group label {
+    flex: 0 0 150px; /* 固定标签宽度 */
+}
+#amily2_glossary_panel #glossary-content-novel-process .horizontal-group .text_pole,
+#amily2_glossary_panel #glossary-content-novel-process .horizontal-group select {
+    flex: 1 1 200px; /* 输入框占据剩余空间 */
+}
+
+/* 上传按钮容器 */
+#amily2_glossary_panel #glossary-content-novel-process .upload-button-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 0;
+}
+#amily2_glossary_panel #glossary-content-novel-process .upload-button-container .menu_button {
+    cursor: pointer; /* 确保鼠标指针是手型 */
+}
+
+
+/* 预览区域 */
+#amily2_glossary_panel #glossary-content-novel-process .preview-container label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+#amily2_glossary_panel #glossary-content-novel-process #novel-chunk-preview {
+    height: 150px;
+    width: 100%;
+    overflow-y: auto;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 0.9em;
+}
+#amily2_glossary_panel #glossary-content-novel-process #novel-chunk-preview .chunk-preview-item {
+    padding: 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+#amily2_glossary_panel #glossary-content-novel-process #novel-chunk-preview .chunk-preview-item:last-child {
+    border-bottom: none;
+}
+
+
+/* 开关组的对齐 */
+#amily2_glossary_panel #glossary-content-novel-process .amily2_settings_block {
+    justify-content: space-between; /* 让label和开关分布在两端 */
+    padding: 12px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+}
+#amily2_glossary_panel #glossary-content-novel-process .amily2_settings_block > label {
+    flex: 1 1 auto; /* 让标签占据可用空间 */
+}
+#amily2_glossary_panel #glossary-content-novel-process .amily2_settings_block .amily2-glossary-toggle {
+    flex: 0 0 auto; /* 开关不拉伸 */
 }

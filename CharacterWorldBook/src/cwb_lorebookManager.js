@@ -317,11 +317,7 @@ export async function manageAutoCardUpdateLorebookEntry() {
         logError('管理世界书条目时出错:', error);
     }
 }
-/**
- * (重构) 通用函数，用于同步小说处理生成的世界书条目。
- * @param {string} bookName - 目标世界书名称。
- * @param {Array<{title: string, content: string}>} entries - 从API回复中解析出的条目数组。
- */
+
 export async function syncNovelLorebookEntries(bookName, entries) {
     if (!bookName || !Array.isArray(entries) || entries.length === 0) {
         logError('[CWB-NovelSync] 参数无效或条目为空');
@@ -337,8 +333,6 @@ export async function syncNovelLorebookEntries(bookName, entries) {
         
         const entriesToUpdate = [];
         const entriesToCreate = [];
-
-        // 查找“章节内容概述”的最新部分编号
         let maxPart = 0;
         managedEntries.forEach(entry => {
             const match = entry.comment.match(/章节内容概述-第(\d+)部分/);
@@ -352,7 +346,6 @@ export async function syncNovelLorebookEntries(bookName, entries) {
             const { title, content } = entry;
 
             if (title === '章节内容概述') {
-                // “章节内容概述”条目总是新建
                 const loreData = {
                     keys: [`小说处理`, title, `第${nextPart}部分`],
                     content: content,
@@ -362,9 +355,8 @@ export async function syncNovelLorebookEntries(bookName, entries) {
                     position: 'before_char',
                 };
                 entriesToCreate.push(loreData);
-                nextPart++; // 为同一批次中的下一个概述增加编号
+                nextPart++;
             } else {
-                // 其他条目（世界观、时间线等）是动态更新的
                 const existingEntry = managedEntries.find(e => e.comment === `[Amily2小说处理] ${title}`);
                 
                 const loreData = {
