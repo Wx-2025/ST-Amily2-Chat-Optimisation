@@ -20,7 +20,7 @@
         <i class="fas fa-edit"></i> 待开发
     </button>
     <button class="glossary-tab" data-tab="context">
-        <i class="fas fa-book-open"></i> 待开发
+        <i class="fas fa-book-open"></i> 世界书条目
     </button>
 </div>
 
@@ -35,15 +35,7 @@
                 独立的API调用系统，可与主系统并行使用，支持全兼容和SillyTavern预设两种模式。
             </small>
 
-            <div class="amily2_settings_block">
-                <label for="amily2_sybd_enabled">启用Sybd API系统</label>
-                <label class="toggle-switch">
-                    <input id="amily2_sybd_enabled" type="checkbox" data-setting-key="sybdEnabled" data-type="boolean" />
-                    <span class="slider"></span>
-                </label>
-            </div>
-
-            <div class="amily2_settings_block amily2-content-hidden" id="amily2_sybd_content">
+            <div class="amily2_settings_block" id="amily2_sybd_content">
                 <div class="control-group">
                     <label for="amily2_sybd_api_mode">API调用模式：</label>
                     <select id="amily2_sybd_api_mode" class="text_pole" data-setting-key="sybdApiMode" data-type="string">
@@ -116,11 +108,19 @@
         </div>
     </div>
 
-    <!-- 上下文设置面板 -->
+    <!-- 世界书条目面板 -->
     <div id="glossary-content-context" class="glossary-content">
         <div class="settings-group">
-            <div class="legend"><i class="fas fa-book-open"></i> 待开发</div>
-            <p style="text-align: center; margin-top: 20px;">待开发</p>
+            <div class="legend"><i class="fas fa-book-open"></i> 世界书条目预览</div>
+            <small class="notes" style="text-align: center; display: block; margin-bottom: 15px;">
+                此处将显示在“小说处理”标签页中选定世界书的条目。
+            </small>
+            <div class="amily2-glossary-toolbar" style="text-align: center; margin-bottom: 15px;">
+                
+            </div>
+            <div id="world-book-entries-display" class="world-book-entries-container">
+                <!-- 条目将在这里动态生成 -->
+            </div>
         </div>
     </div>
 
@@ -129,53 +129,51 @@
         <div class="settings-group">
             <div class="legend"><i class="fas fa-file-upload"></i> 小说文件处理流程</div>
             
-            <div class="control-group" style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-                <label for="novel-file-input" class="menu_button secondary small_button interactable" style="cursor: pointer;">
-                    <i class="fas fa-upload"></i> 1. 上传小说文件 (.txt)
+            <!-- 使用 horizontal-group 来确保标签和控件水平对齐 -->
+            <div class="control-group horizontal-group">
+                <label for="novel-world-book-select">1. 选择目标世界书:</label>
+                <select id="novel-world-book-select" class="text_pole"></select>
+            </div>
+
+            <!-- 为上传按钮使用独立的容器，不再使用 control-group -->
+            <div class="upload-button-container">
+                <label for="novel-file-input" class="menu_button secondary interactable">
+                    <i class="fas fa-upload"></i> 2. 上传小说文件 (.txt)
                 </label>
                 <input type="file" id="novel-file-input" accept=".txt" style="display: none;">
             </div>
 
-            <div class="control-group">
-                <label for="novel-chapter-regex">2. 章节识别规则 (高级, 可选):</label>
-                <input type="text" id="novel-chapter-regex" class="text_pole" placeholder="默认支持: 第1章, 1. , Chapter 1, 序章等多种格式">
+            <div class="control-group horizontal-group">
+                <label for="novel-chunk-size">3. 每批处理字符数:</label>
+                <input type="number" id="novel-chunk-size" class="text_pole" value="300000" min="1000" step="500" data-setting-key="novelChunkSize" data-type="integer">
             </div>
 
-            <div class="sybd-button-row" style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
-                <button id="novel-recognize-chapters" class="menu_button secondary small_button interactable">
-                    <i class="fas fa-search"></i> ① 识别章节
-                </button>
-            </div>
+            <hr class="header-divider">
 
-            <hr class="header-divider" style="margin-top: 20px; margin-bottom: 20px;">
-
-            <div class="control-group">
-                <label>3. 章节预览 (共 <span id="novel-chapter-count">0</span> 章):</label>
-                <div id="novel-chapter-preview" style="height: 150px; overflow-y: auto; border: 1px solid #444; padding: 10px; background-color: #2e2e2e; border-radius: 5px;">
-                    <small>请先上传文件并识别章节...</small>
+            <!-- 为预览区域使用独立的容器 -->
+            <div class="preview-container">
+                <label>4. 内容分块预览 (共 <span id="novel-chunk-count">0</span> 块):</label>
+                <div id="novel-chunk-preview">
+                    <small>请先上传文件...</small>
                 </div>
             </div>
 
-            <div class="control-group">
-                <label for="novel-batch-size">4. 每批处理章节数:</label>
-                <input type="number" id="novel-batch-size" class="text_pole" value="10" min="1">
-            </div>
-
-            <div class="amily2_settings_block" style="justify-content: center;">
+            <!-- 开关按钮使用 amily2_settings_block，但CSS会对其进行特殊处理 -->
+            <div class="amily2_settings_block">
                 <label for="novel-force-new">强制新建条目 (不更新现有条目)</label>
-                <label class="toggle-switch">
+                <label class="amily2-glossary-toggle">
                     <input id="novel-force-new" type="checkbox" />
                     <span class="slider"></span>
                 </label>
             </div>
 
-            <div class="sybd-button-row" style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
-                <button id="novel-confirm-and-process" class="menu_button primary small_button interactable" disabled>
-                    <i class="fas fa-play-circle"></i> ② 确认并开始处理
+            <div class="sybd-button-row">
+                <button id="novel-confirm-and-process" class="menu_button primary interactable" disabled>
+                    <i class="fas fa-play-circle"></i> 确认并开始处理
                 </button>
             </div>
 
-            <div id="novel-process-status" style="text-align: center; margin-top: 20px; font-weight: bold;">
+            <div id="novel-process-status" style="text-align: center; margin-top: 10px; font-weight: bold;">
                 等待操作...
             </div>
         </div>

@@ -41,8 +41,8 @@ function onDragStart(e, item) {
     draggedSection = draggedItem.data('section');
     draggedOrderIndex = draggedItem.data('order-index');
 
-    const popup = draggedItem.closest('.popup');
-    scrollContainer = popup.length ? popup.find('.popup-body') : null;
+    // 修复：直接查找固定的滚动容器
+    scrollContainer = $('#amily2-preset-settings-popup').find('#prompt-editor-container');
     
     const pos = getEventPosition(e);
     startX = pos.x;
@@ -103,23 +103,31 @@ function onDragEnd(e) {
 function completeDrag() {
     if (!draggedItem || !dragPlaceholder) return;
 
-    const placeholderIndex = dragPlaceholder.index();
     const sectionContainer = dragPlaceholder.closest('.mixed-list');
-    
-    const order = state.getCurrentMixedOrder()[draggedSection];
-    const draggedElement = order[draggedOrderIndex];
-    
-    order.splice(draggedOrderIndex, 1);
-    
-    const newIndex = placeholderIndex > draggedOrderIndex ? placeholderIndex - 1 : placeholderIndex;
-    
-    order.splice(newIndex, 0, draggedElement);
-    
     dragPlaceholder.before(draggedItem);
-    
+
+    const newOrder = [];
     sectionContainer.find('.mixed-item').each(function(index) {
-        $(this).attr('data-order-index', index);
+        const $item = $(this);
+        $item.attr('data-order-index', index); // 更新UI索引属性
+
+        const type = $item.data('type');
+        if (type === 'prompt') {
+            newOrder.push({
+                type: 'prompt',
+                index: parseInt($item.data('prompt-index'), 10)
+            });
+        } else if (type === 'conditional') {
+            newOrder.push({
+                type: 'conditional',
+                id: $item.data('conditional-id')
+            });
+        }
     });
+
+    const allOrders = state.getCurrentMixedOrder();
+    allOrders[draggedSection] = newOrder;
+    state.setCurrentMixedOrder(allOrders);
     
     toastr.info('顺序已调整，请点击保存按钮以生效。', '', { timeOut: 3000 });
 }

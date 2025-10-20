@@ -202,7 +202,15 @@ export function loadActivePreset() {
             localStorage.setItem(SETTINGS_KEY, JSON.stringify(presetManager));
             toastr.info("Amily2 提示词预设已自动更新以支持最新功能。");
         }
+        const novelProcessorOrder = currentMixedOrder.novel_processor || [];
+        const hasChapterContent = novelProcessorOrder.some(item => item.type === 'conditional' && item.id === 'chapterContent');
 
+        if (!hasChapterContent) {
+            console.log("Amily2: 检测到 novel_processor 缺少 chapterContent 条件块，正在执行迁移...");
+            currentPresets.novel_processor = JSON.parse(JSON.stringify(defaultPrompts.novel_processor));
+            currentMixedOrder.novel_processor = JSON.parse(JSON.stringify(defaultMixedOrder.novel_processor));
+            isMigrated = true;
+        }
     } else {
         const firstPresetName = Object.keys(presetManager.presets)[0];
         if (firstPresetName) {
