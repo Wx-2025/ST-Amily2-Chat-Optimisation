@@ -1,7 +1,7 @@
 import { extension_settings, getContext } from "/scripts/extensions.js";
 import { saveSettingsDebounced, eventSource, event_types } from "/script.js";
-import { world_names } from "/scripts/world-info.js";
 import { extensionName } from "../utils/settings.js";
+import { safeLorebooks } from '../core/tavernhelper-compatibility.js';
 import { testSybdApiConnection, fetchSybdModels } from '../core/api/SybdApi.js';
 import { handleFileUpload, processNovel } from './index.js';
 import { SETTINGS_KEY as PRESET_SETTINGS_KEY } from '../PresetSettings/config.js';
@@ -542,29 +542,11 @@ function bindNovelProcessEvents() {
     }
 }
 
-function isTavernHelperAvailable() {
-    return typeof window.TavernHelper !== 'undefined' && 
-           window.TavernHelper !== null &&
-           typeof window.TavernHelper.getLorebooks === 'function';
-}
-
-async function safeLorebooks() {
-    try {
-        if (isTavernHelperAvailable()) {
-            return await window.TavernHelper.getLorebooks();
-        }
-        return [...world_names];
-    } catch (error) {
-        console.error('[Amily2-兼容性] 获取世界书列表失败:', error);
-        return [...world_names];
-    }
-}
 
 async function loadWorldBooks() {
     const select = document.getElementById('novel-world-book-select');
     if (!select) return;
 
-    const { extension_settings } = window;
     const savedBook = extension_settings[extensionName]?.selectedWorldBook;
     moduleState.selectedWorldBook = savedBook || '';
 

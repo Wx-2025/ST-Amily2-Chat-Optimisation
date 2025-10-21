@@ -2,8 +2,7 @@ import { callSybdAI } from '../core/api/SybdApi.js';
 import { extensionName } from '../utils/settings.js';
 import { getPresetPrompts, getMixedOrder } from '../PresetSettings/index.js';
 import { generateRandomSeed } from '../core/api.js';
-
-const { TavernHelper } = window;
+import { safeLorebookEntries, safeUpdateLorebookEntries, compatibleWriteToLorebook } from '../core/tavernhelper-compatibility.js';
 
 function buildContextFromEntries(entries) {
     if (!entries || entries.length === 0) {
@@ -11,10 +10,10 @@ function buildContextFromEntries(entries) {
     }
 
     const mappedContent = entries.map(entry => {
-        if (!Array.isArray(entry.keyword) || entry.keyword.length < 2) {
+        if (!Array.isArray(entry.keys) || entry.keys.length < 2) {
             return null;
         }
-        const name = entry.keyword[1];
+        const name = entry.keys[1];
         return `[--START_TABLE--]\n[name]:${name}\n${entry.content}\n[--END_TABLE--]`;
     }).filter(Boolean).join('\n\n');
 
@@ -54,7 +53,7 @@ export async function executeNovelProcessing(processingState, updateStatusCallba
             throw new Error('请先在设置中选择一个目标世界书。');
         }
 
-        const allEntries = (await TavernHelper.getLorebookEntries(bookName)) || [];
+        const allEntries = (await safeLorebookEntries(bookName)) || [];
         const managedEntries = allEntries.filter(e => e.comment?.startsWith('[Amily2小说处理]') || e.comment?.startsWith('[Amily2-Glossary]'));
         const localManagedEntries = [...managedEntries];
 
@@ -132,7 +131,7 @@ export async function executeNovelProcessing(processingState, updateStatusCallba
                     keys = [`小说处理`, title, `第${nextPart}部分`];
                     const newEntryData = { keys, content, comment, enabled: true, order: 100, position: 'before_char' };
                     entriesToCreate.push(newEntryData);
-                    localManagedEntries.push({ uid: -1, ...newEntryData, keyword: keys });
+                    localManagedEntries.push({ uid: -1, ...newEntryData, keys: keys });
                     nextPart++;
                     continue;
                 }
@@ -150,19 +149,26 @@ export async function executeNovelProcessing(processingState, updateStatusCallba
 
                 if (existingEntry) {
                     entriesToUpdate.push({ uid: existingEntry.uid, ...loreData });
-                    Object.assign(existingEntry, { ...loreData, keyword: keys });
+                    Object.assign(existingEntry, { ...loreData, keys: keys });
                 } else {
                     entriesToCreate.push(loreData);
-                    localManagedEntries.push({ uid: -1, ...loreData, keyword: keys });
+                    localManagedEntries.push({ uid: -1, ...loreData, keys: keys });
                 }
             }
 
             if (entriesToUpdate.length > 0) {
-                await TavernHelper.setLorebookEntries(bookName, entriesToUpdate);
+                await safeUpdateLorebookEntries(bookName, entriesToUpdate);
                 updateStatusCallback(`更新了 ${entriesToUpdate.length} 个世界书条目。`, 'info');
             }
             if (entriesToCreate.length > 0) {
-                await TavernHelper.createLorebookEntries(bookName, entriesToCreate);
+                for (const entry of entriesToCreate) {
+                    await compatibleWriteToLorebook(bookName, entry.comment, () => entry.content, {
+                        keys: entry.keys,
+                        isConstant: false,
+                        insertion_position: 'before_char',
+                        depth: 100,
+                    });
+                }
                 updateStatusCallback(`创建了 ${entriesToCreate.length} 个新世界书条目。`, 'success');
             }
 
