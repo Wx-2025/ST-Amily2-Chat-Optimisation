@@ -4,6 +4,7 @@ import { extensionName } from "../utils/settings.js";
 import { safeLorebooks } from '../core/tavernhelper-compatibility.js';
 import { testSybdApiConnection, fetchSybdModels } from '../core/api/SybdApi.js';
 import { handleFileUpload, processNovel } from './index.js';
+import { reorganizeEntriesByHeadings, loadDatabaseFiles } from './executor.js';
 import { SETTINGS_KEY as PRESET_SETTINGS_KEY } from '../PresetSettings/config.js';
 
 const moduleState = {
@@ -398,14 +399,70 @@ function bindTabEvents() {
 
             if (tabId === 'context') {
                 renderWorldBookEntries();
+            } else if (tabId === 'tools') {
+                const statusEl = document.getElementById('reorganize-status');
+                if (statusEl) {
+                    if (moduleState.selectedWorldBook) {
+                        statusEl.textContent = `当前已选择世界书: "${moduleState.selectedWorldBook}"。可以开始重组。`;
+                        statusEl.style.color = '';
+                    } else {
+                        statusEl.textContent = '请先在“小说处理”标签页中选择一个世界书。';
+                        statusEl.style.color = '#ffdb58'; // Warning color
+                    }
+                }
             }
         });
+    });
+}
+
+function bindReorganizeEvents() {
+    const reorganizeBtn = document.getElementById('reorganize-entries-by-heading');
+    const statusEl = document.getElementById('reorganize-status');
+    const headingsListEl = document.getElementById('reorganize-headings-list');
+
+    if (!reorganizeBtn || !statusEl || !headingsListEl) return;
+
+    const updateStatusCallback = (message, type = 'info') => {
+        statusEl.textContent = message;
+        statusEl.style.color = type === 'error' ? '#ff8a8a' : (type === 'success' ? '#8aff8a' : '');
+    };
+
+    reorganizeBtn.addEventListener('click', async () => {
+        const headingsToProcess = headingsListEl.value.split('\n').map(h => h.trim()).filter(Boolean);
+        if (headingsToProcess.length === 0) {
+            updateStatusCallback('错误：请在文本框中输入至少一个要重组的标题。', 'error');
+            return;
+        }
+
+        const bookName = moduleState.selectedWorldBook;
+        if (!bookName) {
+            updateStatusCallback('错误：请先在“小说处理”标签页中选择一个世界书。', 'error');
+            return;
+        }
+
+        const originalHtml = reorganizeBtn.innerHTML;
+        reorganizeBtn.disabled = true;
+        reorganizeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在重组...';
+
+        try {
+            await reorganizeEntriesByHeadings(bookName, headingsToProcess, updateStatusCallback);
+            
+            if (document.querySelector('.glossary-tab[data-tab="context"].active')) {
+                renderWorldBookEntries();
+            }
+        } catch (error) {
+            console.error('An error occurred during reorganization:', error);
+        } finally {
+            reorganizeBtn.disabled = false;
+            reorganizeBtn.innerHTML = originalHtml;
+        }
     });
 }
 
 function bindNovelProcessEvents() {
     const fileInput = document.getElementById('novel-file-input');
     const fileLabel = document.querySelector('label[for="novel-file-input"]');
+    const dbSelectBtn = document.getElementById('select-from-database-button');
     const processBtn = document.getElementById('novel-confirm-and-process');
     const chunkSizeInput = document.getElementById('novel-chunk-size');
     const chunkCountEl = document.getElementById('novel-chunk-count');
@@ -511,12 +568,30 @@ function bindNovelProcessEvents() {
             fileInput.click();
         });
         fileInput.addEventListener('change', (event) => {
-            handleFileUpload(event.target.files[0], (content) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            fileLabel.innerHTML = `<i class="fas fa-check"></i> 已选择: ${file.name}`;
+            handleFileUpload(file, (content) => {
                 fileContent = content;
                 updateChunks();
             });
         });
     }
+
+    if (dbSelectBtn) {
+        dbSelectBtn.addEventListener('click', () => {
+            loadDatabaseFiles();
+        });
+    }
+
+    document.addEventListener('novel-file-loaded', (event) => {
+        const { content, fileName } = event.detail;
+        fileContent = content;
+        updateChunks();
+        if (fileLabel) {
+            fileLabel.innerHTML = `<i class="fas fa-upload"></i> 2a. 上传本地文件 (.txt)`;
+        }
+    });
 
     if (chunkSizeInput) {
         chunkSizeInput.addEventListener('input', updateChunks);
@@ -530,11 +605,14 @@ function bindNovelProcessEvents() {
                 processBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在中止...';
                 processBtn.disabled = true;
             } else {
-                if (processingState.lastStatus === 'success') {
-                    resetProcessing();
-                }
-                if (processingState.lastStatus === 'idle' || processingState.lastStatus === 'success') {
-                    processingState.currentIndex = 0;
+                if (processingState.lastStatus !== 'paused') {
+                    const startBatchInput = document.getElementById('novel-start-batch-index');
+                    let startBatch = parseInt(startBatchInput.value, 10);
+                    if (isNaN(startBatch) || startBatch < 1) {
+                        startBatch = 1;
+                        if (startBatchInput) startBatchInput.value = 1;
+                    }
+                    processingState.currentIndex = (startBatch - 1);
                 }
                 startOrResumeProcessing();
             }
@@ -585,9 +663,9 @@ export function bindGlossaryEvents() {
     bindManualActionEvents();
     bindTabEvents();
     bindNovelProcessEvents();
+    bindReorganizeEvents();
     loadWorldBooks();
 
-    // 监听角色加载事件，以确保 world_names 可用
     eventSource.on(event_types.CHARACTER_PAGE_LOADED, () => {
         console.log('[Amily2-术语表] 检测到角色加载，重新加载世界书列表以确保同步。');
         loadWorldBooks();
@@ -595,8 +673,7 @@ export function bindGlossaryEvents() {
 
     const worldBookSelect = document.getElementById('novel-world-book-select');
     if (worldBookSelect) {
-        worldBookSelect.addEventListener('change', () => {
-            const selectedValue = worldBookSelect.value;
+        const updateOnBookSelect = (selectedValue) => {
             updateAndSaveSetting('selectedWorldBook', selectedValue);
             moduleState.selectedWorldBook = selectedValue;
 
@@ -604,7 +681,29 @@ export function bindGlossaryEvents() {
             if (contextTab && contextTab.classList.contains('active')) {
                 renderWorldBookEntries();
             }
+
+            const toolsTab = document.querySelector('.glossary-tab[data-tab="tools"]');
+            if (toolsTab && toolsTab.classList.contains('active')) {
+                const statusEl = document.getElementById('reorganize-status');
+                if (statusEl) {
+                    if (selectedValue) {
+                        statusEl.textContent = `当前已选择世界书: "${selectedValue}"。可以开始重组。`;
+                        statusEl.style.color = '';
+                    } else {
+                        statusEl.textContent = '请先在“小说处理”标签页中选择一个世界书。';
+                        statusEl.style.color = '#ffdb58';
+                    }
+                }
+            }
+        };
+        
+        worldBookSelect.addEventListener('change', () => {
+            updateOnBookSelect(worldBookSelect.value);
         });
+
+        if (moduleState.selectedWorldBook) {
+             updateOnBookSelect(moduleState.selectedWorldBook);
+        }
     }
 
     panel.dataset.eventsBound = 'true';
