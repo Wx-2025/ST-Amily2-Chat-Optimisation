@@ -1,5 +1,5 @@
 import { SETTINGS_KEY, defaultPrompts, defaultMixedOrder } from './config.js';
-import { safeTriggerSlash } from '../core/tavernhelper-compatibility.js';
+import { compatibleTriggerSlash } from '../core/tavernhelper-compatibility.js';
 
 let presetManager = {
     activePreset: '默认预设',
@@ -266,7 +266,7 @@ export async function getPresetPrompts(sectionKey) {
                 if (prompt.content) {
                     try {
                         const command = `/echo ${prompt.content}`;
-                        const replacedContent = await safeTriggerSlash(command);
+                        const replacedContent = await compatibleTriggerSlash(command);
                         prompt.content = replacedContent;
                     } catch (error) {
                         console.error(`[Amily2] 宏替换失败 for prompt at index ${index}:`, error);
