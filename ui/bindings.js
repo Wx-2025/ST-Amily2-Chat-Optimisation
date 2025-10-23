@@ -1641,6 +1641,7 @@ function opt_loadSettings(panel) {
 
     panel.find('#amily2_opt_enabled').prop('checked', settings.plotOpt_enabled);
     panel.find('#amily2_opt_table_enabled').prop('checked', settings.plotOpt_tableEnabled);
+    panel.find('#amily2_opt_ejs_enabled').prop('checked', settings.plotOpt_ejsEnabled);
     panel.find(`input[name="amily2_opt_api_mode"][value="${settings.plotOpt_apiMode}"]`).prop('checked', true);
     panel.find('#amily2_opt_tavern_api_profile_select').val(settings.plotOpt_tavernProfile);
     panel.find(`input[name="amily2_opt_worldbook_source"][value="${settings.plotOpt_worldbookSource || 'character'}"]`).prop('checked', true);
