@@ -1,7 +1,7 @@
 import { extension_settings, getContext } from "/scripts/extensions.js";
 import { saveSettingsDebounced, eventSource, event_types } from "/script.js";
 import { extensionName } from "../utils/settings.js";
-import { safeLorebooks } from '../core/tavernhelper-compatibility.js';
+import { safeLorebooks, safeLorebookEntries, safeUpdateLorebookEntries } from '../core/tavernhelper-compatibility.js';
 import { testSybdApiConnection, fetchSybdModels } from '../core/api/SybdApi.js';
 import { handleFileUpload, processNovel } from './index.js';
 import { reorganizeEntriesByHeadings, loadDatabaseFiles } from './executor.js';
@@ -219,13 +219,7 @@ async function renderWorldBookEntries() {
     container.innerHTML = '<p style="text-align:center;"><i class="fas fa-spinner fa-spin"></i> 正在加载条目...</p>';
 
     try {
-        const { TavernHelper } = window;
-        if (!TavernHelper) {
-            container.innerHTML = '<p style="text-align:center; color: #ff8a8a;">TavernHelper 未找到!</p>';
-            return;
-        }
-
-        const allEntries = await TavernHelper.getLorebookEntries(selectedBook);
+        const allEntries = await safeLorebookEntries(selectedBook);
         let managedEntries = allEntries.filter(e => e.comment?.startsWith('[Amily2小说处理]'));
 
         if (managedEntries.length === 0) {
@@ -356,9 +350,8 @@ async function renderWorldBookEntries() {
                 hideEditor();
                 
                 try {
-                    const { TavernHelper } = window;
                     const entryToUpdate = { uid: entry.uid, content: newContent };
-                    await TavernHelper.setLorebookEntries(selectedBook, [entryToUpdate]);
+                    await safeUpdateLorebookEntries(selectedBook, [entryToUpdate]);
                     toastr.success(`条目 "${title}" 已保存。`);
                     entry.content = newContent;
                 } catch (error) {
