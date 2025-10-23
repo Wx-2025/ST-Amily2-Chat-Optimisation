@@ -8,8 +8,9 @@ import { getExtensionSettings } from '../../utils/settings.js';
 import { getPresetPrompts, getMixedOrder } from '../../PresetSettings/index.js';
 import { generateRandomSeed } from '../../core/api.js';
 import { getChatIdentifier } from '../../core/lore.js';
+import { safeLorebookEntries } from '../../core/tavernhelper-compatibility.js';
 
-const { SillyTavern, TavernHelper, jQuery, characters } = window;
+const { SillyTavern, jQuery, characters } = window;
 
 let isUpdatingCard = false;
 let isBatchUpdating = false;
@@ -41,7 +42,7 @@ export async function updateCardUpdateStatusDisplay($panel) {
             $statusDisplay.text('当前角色未设置主世界书或自定义世界书。');
             return;
         }
-        const entries = await TavernHelper.getLorebookEntries(bookName);
+        const entries = await safeLorebookEntries(bookName);
         const entryPrefixForCurrentChat = `角色卡更新-${state.currentChatFileIdentifier}-`;
 
         let latestEntryToShow = null;
@@ -187,7 +188,7 @@ async function proceedWithCardUpdate($panel, messagesToUse) {
             try {
                 const bookName = await getTargetWorldBook();
                 if (bookName) {
-                    const entries = (await TavernHelper.getLorebookEntries(bookName)) || [];
+                    const entries = (await safeLorebookEntries(bookName)) || [];
                     let chatIdentifier = state.currentChatFileIdentifier.replace(/ imported/g, '');
                     
                     const characterEntries = entries.filter(e => 
@@ -342,7 +343,7 @@ async function triggerAutomaticUpdate($panel) {
         }
         const bookName = await getTargetWorldBook();
         if (bookName) {
-            const entries = (await TavernHelper.getLorebookEntries(bookName)) || [];
+            const entries = (await safeLorebookEntries(bookName)) || [];
             const cleanChatId = state.currentChatFileIdentifier.replace(/ imported/g, '');
             const rosterEntry = entries.find(e => 
                 Array.isArray(e.keys) &&
