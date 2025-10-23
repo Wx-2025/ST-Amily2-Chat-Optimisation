@@ -1,8 +1,12 @@
-import { setExtensionPrompt } from '/script.js';
-import { extension_settings } from '/scripts/extensions.js';
-import { getBatchFillerFlowTemplate, convertTablesToCsvString, convertTablesToCsvStringForContentOnly } from './manager.js';
+
+import { setExtensionPrompt, saveChat } from '/script.js';
+import { extension_settings, getContext } from '/scripts/extensions.js';
+import { getBatchFillerFlowTemplate, convertTablesToCsvString, convertTablesToCsvStringForContentOnly, commitPendingDeletions, getMemoryState, saveStateToMessage } from './manager.js';
 import { tableSystemDefaultSettings } from './settings.js';
 import { extensionName } from '../../utils/settings.js';
+import { log } from './logger.js';
+import { renderTables } from '../../ui/table-bindings.js';
+import { updateOrInsertTableInChat } from '../../ui/message-table-renderer.js';
 
 const INJECTION_KEY = 'AMILY2_TABLE_SYSTEM';
 
@@ -52,7 +56,26 @@ export function generateTableContent() {
 
 
 
-export function injectTableData(chat, contextSize, abort, type) {
+export async function injectTableData(chat, contextSize, abort, type) {
+    // 【V15.3 核心修正】将提交删除的逻辑移至此处，确保在用户发送消息时立即触发
+    try {
+        const hasDeletions = commitPendingDeletions();
+        if (hasDeletions) {
+            const context = getContext();
+            if (context.chat && context.chat.length > 0) {
+                const currentState = getMemoryState();
+                const lastMessage = context.chat[context.chat.length - 1];
+                if (saveStateToMessage(currentState, lastMessage)) {
+                    await saveChat();
+                    log('【延迟删除】已在注入前提交待删除行并永久保存状态。', 'info');
+                    renderTables();
+                    updateOrInsertTableInChat();
+                }
+            }
+        }
+    } catch (error) {
+        console.error('[Amily2-延迟删除] 在注入前提交待删除行时发生错误:', error);
+    }
 
     if (window.AMILY2_MACRO_REPLACED === true) {
         console.log('[Amily2-表格注入器] 检测到宏已替换，跳过传统注入。');
