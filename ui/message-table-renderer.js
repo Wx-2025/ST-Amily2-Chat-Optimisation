@@ -27,7 +27,9 @@ function renderTablesToHtml(tables, highlights) {
 
             html += '<tbody>';
             table.rows.forEach((row, rowIndex) => {
-                html += '<tr>';
+                const rowStatus = table.rowStatuses ? table.rowStatuses[rowIndex] : 'normal';
+                const deletionClass = rowStatus === 'pending-deletion' ? ' pending-deletion-row' : '';
+                html += `<tr class="${deletionClass}">`;
                 row.forEach((cell, colIndex) => {
                     const highlightKey = `${tableIndex}-${rowIndex}-${colIndex}`;
                     const isHighlighted = highlights.has(highlightKey);
