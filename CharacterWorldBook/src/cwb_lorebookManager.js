@@ -1,7 +1,15 @@
 import { state } from './cwb_state.js';
 import { logError, logDebug, showToastr, parseCustomFormat } from './cwb_utils.js';
+import {
+    safeLorebooks,
+    safeCharLorebooks,
+    safeLorebookEntries,
+    safeUpdateLorebookEntries,
+    compatibleWriteToLorebook,
+} from '../../core/tavernhelper-compatibility.js';
+import { amilyHelper } from '../../core/tavern-helper/main.js';
 
-const { SillyTavern, TavernHelper } = window;
+const { SillyTavern } = window;
 
 export async function getTargetWorldBook() {
     logDebug('[CWB-DIAGNOSTIC] getTargetWorldBook called. Current state:', { 
@@ -12,12 +20,8 @@ export async function getTargetWorldBook() {
         return state.customWorldBook;
     }
     try {
-        let localTavernHelper = TavernHelper;
-        if (!localTavernHelper) {
-            // TavernHelper 未定义的情况下触发，但是为什么？
-            (localTavernHelper = window.TavernHelper);
-        }
-        const primaryBook = await localTavernHelper.getCurrentCharPrimaryLorebook();
+        const charLorebooks = await safeCharLorebooks();
+        const primaryBook = charLorebooks.primary;
         if (!primaryBook) {
             showToastr('error', '当前角色未设置主世界书。');
             return null;
@@ -40,7 +44,12 @@ export async function deleteLorebookEntries(uids) {
         const book = await getTargetWorldBook();
         if (!book) throw new Error('未找到目标世界书。');
 
-        await TavernHelper.deleteLorebookEntries(book, uids.map(Number));
+        const bookData = await amilyHelper.loadWorldInfo(book);
+        if (!bookData) throw new Error(`World book "${book}" not found.`);
+        uids.forEach(uid => {
+            delete bookData.entries[uid];
+        });
+        await amilyHelper.saveWorldInfo(book, bookData, true);
     } catch (error) {
         logError('删除世界书条目失败:', error);
         showToastr('error', `删除失败: ${error.message}`);
@@ -64,19 +73,14 @@ export async function saveDescriptionToLorebook(characterName, newDescription, s
 
         const newComment = `${safeCharName}-${chatIdentifier}`;
 
-        let bookName;
-        if (state.worldbookTarget === 'custom' && state.customWorldBook) {
-            bookName = state.customWorldBook;
-        } else {
-            bookName = await TavernHelper.getCurrentCharPrimaryLorebook();
-        }
+        let bookName = await getTargetWorldBook();
 
         if (!bookName) {
             showToastr('error', '未能确定要写入的世界书。请检查主世界书或自定义世界书设置。');
             return false;
         }
 
-        const entries = (await TavernHelper.getLorebookEntries(bookName)) || [];
+        const entries = (await safeLorebookEntries(bookName)) || [];
         let existing = entries.find(e => 
             Array.isArray(e.keys) &&
             e.keys.includes(chatIdentifier) &&
@@ -93,7 +97,7 @@ export async function saveDescriptionToLorebook(characterName, newDescription, s
         };
 
         if (existing) {
-            await TavernHelper.setLorebookEntries(bookName, [{ uid: existing.uid, ...entryData }]);
+            await safeUpdateLorebookEntries(bookName, [{ uid: existing.uid, ...entryData }]);
         } else {
             const cwbEntries = entries.filter(e => 
                 Array.isArray(e.keys) && 
@@ -131,7 +135,7 @@ export async function saveDescriptionToLorebook(characterName, newDescription, s
                 order: newEntryData.order
             });
             
-            await TavernHelper.createLorebookEntries(bookName, [newEntryData]);
+            await amilyHelper.createLorebookEntries(bookName, [newEntryData]);
         }
         showToastr('success', `角色 ${safeCharName} 的描述已保存到世界书。`);
         return true;
@@ -169,19 +173,14 @@ export async function updateCharacterRosterLorebookEntry(processedCharacterNames
         
         const initialContentPrefix = `此为当前角色卡【${characterCardName}】中登场的角色，AI需要根据剧情让以下角色在合适的时机登场：\n\n`;
         
-        let bookName;
-        if (state.worldbookTarget === 'custom' && state.customWorldBook) {
-            bookName = state.customWorldBook;
-        } else {
-            bookName = await TavernHelper.getCurrentCharPrimaryLorebook();
-        }
+        let bookName = await getTargetWorldBook();
 
         if (!bookName) {
             showToastr('error', '未能确定要写入的世界书。请检查主世界书或自定义世界书设置。');
             return false;
         }
 
-        let entries = (await TavernHelper.getLorebookEntries(bookName)) || [];
+        let entries = (await safeLorebookEntries(bookName)) || [];
         let existingRosterEntry = entries.find(entry => 
             entry.comment === rosterEntryComment || 
             entry.comment === `Amily2角色总集-${chatIdentifier}-角色总览`
@@ -244,11 +243,11 @@ export async function updateCharacterRosterLorebookEntry(processedCharacterNames
         };
 
         if (existingRosterEntry) {
-            await TavernHelper.setLorebookEntries(bookName, [
+            await safeUpdateLorebookEntries(bookName, [
                 { uid: existingRosterEntry.uid, comment: rosterEntryComment, ...entryData },
             ]);
         } else {
-            await TavernHelper.createLorebookEntries(bookName, [
+            await amilyHelper.createLorebookEntries(bookName, [
                 { comment: rosterEntryComment, ...entryData },
             ]);
         }
@@ -275,7 +274,7 @@ export async function manageAutoCardUpdateLorebookEntry() {
         const bookName = await getTargetWorldBook();
         if (!bookName) return;
 
-        const entries = (await TavernHelper.getLorebookEntries(bookName)) || [];
+        const entries = (await safeLorebookEntries(bookName)) || [];
         
         const currentChatId = state.currentChatFileIdentifier;
         if (!currentChatId || currentChatId.startsWith('unknown_chat')) {
@@ -304,7 +303,7 @@ export async function manageAutoCardUpdateLorebookEntry() {
         }
 
         if (entriesToUpdate.length > 0) {
-            await TavernHelper.setLorebookEntries(bookName, entriesToUpdate);
+            await safeUpdateLorebookEntries(bookName, entriesToUpdate);
             logDebug(`已为聊天: ${cleanChatId} 管理了 ${entriesToUpdate.length} 个世界书条目的状态。`);
         }
 
@@ -315,78 +314,5 @@ export async function manageAutoCardUpdateLorebookEntry() {
 
     } catch (error) {
         logError('管理世界书条目时出错:', error);
-    }
-}
-
-export async function syncNovelLorebookEntries(bookName, entries) {
-    if (!bookName || !Array.isArray(entries) || entries.length === 0) {
-        logError('[CWB-NovelSync] 参数无效或条目为空');
-        if (Array.isArray(entries) && entries.length === 0) {
-            showToastr('warning', '[小说处理] API回复中未找到有效条目。');
-        }
-        return;
-    }
-
-    try {
-        const allEntries = (await TavernHelper.getLorebookEntries(bookName)) || [];
-        const managedEntries = allEntries.filter(e => e.comment?.startsWith(`[Amily2小说处理]`));
-        
-        const entriesToUpdate = [];
-        const entriesToCreate = [];
-        let maxPart = 0;
-        managedEntries.forEach(entry => {
-            const match = entry.comment.match(/章节内容概述-第(\d+)部分/);
-            if (match && parseInt(match[1], 10) > maxPart) {
-                maxPart = parseInt(match[1], 10);
-            }
-        });
-        let nextPart = maxPart + 1;
-
-        for (const entry of entries) {
-            const { title, content } = entry;
-
-            if (title === '章节内容概述') {
-                const loreData = {
-                    keys: [`小说处理`, title, `第${nextPart}部分`],
-                    content: content,
-                    comment: `[Amily2小说处理] ${title}-第${nextPart}部分`,
-                    enabled: true,
-                    order: 100,
-                    position: 'before_char',
-                };
-                entriesToCreate.push(loreData);
-                nextPart++;
-            } else {
-                const existingEntry = managedEntries.find(e => e.comment === `[Amily2小说处理] ${title}`);
-                
-                const loreData = {
-                    keys: [`小说处理`, title],
-                    content: content,
-                    comment: `[Amily2小说处理] ${title}`,
-                    enabled: true,
-                    order: 100,
-                    position: 'before_char',
-                };
-
-                if (existingEntry) {
-                    entriesToUpdate.push({ uid: existingEntry.uid, ...loreData });
-                } else {
-                    entriesToCreate.push(loreData);
-                }
-            }
-        }
-
-        if (entriesToUpdate.length > 0) {
-            await TavernHelper.setLorebookEntries(bookName, entriesToUpdate);
-            showToastr('info', `[小说处理] 更新了 ${entriesToUpdate.length} 个世界书条目。`);
-        }
-        if (entriesToCreate.length > 0) {
-            await TavernHelper.createLorebookEntries(bookName, entriesToCreate);
-            showToastr('success', `[小说处理] 创建了 ${entriesToCreate.length} 个新世界书条目。`);
-        }
-
-    } catch (error) {
-        logError('同步小说世界书条目时出错:', error);
-        showToastr('error', '同步世界书失败，详情请查看控制台。');
     }
 }
