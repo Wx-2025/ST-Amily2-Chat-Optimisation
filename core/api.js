@@ -1,760 +1,474 @@
 import { extension_settings, getContext } from "/scripts/extensions.js";
-import { characters } from "/script.js";
-import { world_names } from "/scripts/world-info.js";
+import { characters, eventSource, event_types } from "/script.js";
+import { loadWorldInfo, createNewWorldInfo, createWorldInfoEntry, saveWorldInfo, world_names } from "/scripts/world-info.js";
+import { compatibleWriteToLorebook, safeLorebooks, safeCharLorebooks, safeLorebookEntries } from "./tavernhelper-compatibility.js";
 import { extensionName } from "../utils/settings.js";
-import { extractContentByTag, replaceContentByTag, extractFullTagBlock } from '../utils/tagProcessor.js';
-import {
-  getCombinedWorldbookContent,
-  findLatestSummaryLore,
-  DEDICATED_LOREBOOK_NAME,
-  getChatIdentifier,
-} from "./lore.js";
-
-import {
-  isGoogleEndpoint,
-  convertToGoogleRequest,
-  parseGoogleResponse,
-  buildGoogleApiUrl
-} from '../core/utils/googleAdapter.js';
- 
-import {
-  intelligentPoll,
-  createGooglePollingTask,
-  progressTracker
-} from '../core/utils/pollingManager.js';
-
-import {
-  buildGoogleEmbeddingRequest,
-  parseGoogleEmbeddingResponse,
-  buildGoogleEmbeddingApiUrl
-} from './utils/googleAdapter.js';
-
-import { getRequestHeaders } from '/script.js';
 
 
-let ChatCompletionService = undefined;
-try {
-    const module = await import('/scripts/custom-request.js');
-    ChatCompletionService = module.ChatCompletionService;
-    console.log('[Amily2号-外交部] 已成功召唤“皇家信使”(ChatCompletionService)。');
-} catch (e) {
-    console.warn("[Amily2号-外交部] 未能召唤“皇家信使”，部分高级功能（如Claw代理）将受限。请考虑更新SillyTavern版本。", e);
-}
- 
-const UPDATE_CHECK_URL =
-  "https://raw.githubusercontent.com/Wx-2025/ST-Amily2-Chat-Optimisation/refs/heads/main/amily2_update_info.json";
+export const LOREBOOK_PREFIX = "Amily2档案-";
+export const DEDICATED_LOREBOOK_NAME = "Amily2号-国史馆";
+export const INTRODUCTORY_TEXT =
+  "【Amily2号自动档案】\n此卷宗由Amily2号优化助手自动生成并维护，记录核心事件脉络。\n---\n";
 
-const MESSAGE_BOARD_URL =
-  "https://raw.githubusercontent.com/Wx-2025/ST-Amily2-Chat-Optimisation/refs/heads/main/amily2_message_board.json";
- 
-export async function fetchMessageBoardContent() {
-    if (!MESSAGE_BOARD_URL) {
-        console.log('[Amily2号-内务府] 任务取消：陛下尚未配置留言板URL。');
-        return null;
-    }
+export async function getChatIdentifier() {
+  let attempts = 0;
+  const maxAttempts = 50;
+  const interval = 100;
+
+  while (attempts < maxAttempts) {
     try {
-        const response = await fetch(MESSAGE_BOARD_URL, { cache: 'no-store' });
-        if (!response.ok) {
-            throw new Error(`服务器响应异常: ${response.status}`);
+      const context = getContext();
+      if (context && context.characterId) {
+        const character = characters[context.characterId];
+        if (character && character.avatar) {
+          return `char-${character.avatar.replace(/\.(png|webp|jpg|jpeg|gif)$/, "")}`;
         }
-        const data = await response.json();
-        return data;
+        return `char-${context.characterId}`;
+      }
+      if (context && context.chat_filename) {
+        const fileName = context.chat_filename.split(/[\\/]/).pop();
+        return fileName.replace(/\.jsonl?$/, "");
+      }
     } catch (error) {
-        console.error('[Amily2号-内务府] 获取留言板内容失败:', error);
-        return null;
+      console.warn(
+        `[Amily2-户籍管理处] 等待上下文时发生轻微错误 (尝试次数 ${attempts + 1}):`,
+        error.message,
+      );
     }
-}
- 
-export async function checkForUpdates() {
-    if (!UPDATE_CHECK_URL || UPDATE_CHECK_URL.includes('YourUsername')) {
-        console.log('[Amily2号-外交部] 任务取消：陛下尚未配置情报来源URL。');
-        return null;
-    }
- 
- 
-    try {
-        console.log('[Amily2号-外交部] 已派遣使者前往云端获取最新情报...');
-        const response = await fetch(UPDATE_CHECK_URL, {
-            method: 'GET',
-            cache: 'no-store',
-            mode: 'cors'
-        });
- 
- 
- 
-        if (!response.ok) {
-            throw new Error(`远方服务器响应异常，状态: ${response.status}`);
-        }
- 
-        const data = await response.json();
-        console.log('[Amily2号-外交部] 情报已成功获取并解析。');
-        return data;
- 
-    } catch (error) {
-        console.error('[Amily2号-外交部] 紧急军情：外交任务失败！', error);
-        return null;
-    }
-}
- 
-function normalizeApiResponse(responseData) {
-    let data = responseData;
-    if (typeof data === 'string') {
-        try {
-            data = JSON.parse(data);
-        } catch (e) {
-            console.error(`[${extensionName}] API响应JSON解析失败:`, e);
-            return { error: { message: 'Invalid JSON response' } };
-        }
-    }
-    if (data && typeof data.data === 'object' && data.data !== null && !Array.isArray(data.data)) {
-        if (Object.hasOwn(data.data, 'data')) {
-            data = data.data;
-        }
-    }
-    if (data && data.choices && data.choices[0]) {
-        return { content: data.choices[0].message?.content?.trim() };
-    }
-    if (data && data.content) {
-        return { content: data.content.trim() };
-    }
-    if (data && data.data) { 
-        return { data: data.data };
-    }
-    if (data && data.error) {
-        return { error: data.error };
-    }
-    return data;
+    await new Promise((resolve) => setTimeout(resolve, interval));
+    attempts++;
+  }
+
+  console.error("[Amily2-国史馆] 户籍管理处在长时间等待后，仍无法确定户籍。");
+  toastr.warning(
+    "Amily2号无法确定当前聊天身份，世界书功能将受影响。",
+    "上下文错误",
+  );
+  return "unknown_chat_timeout";
 }
 
-
-export async function fetchModels() {
-    if (window.AMILY2_LOCK_MODEL_FETCHING) {
-        console.warn("[Amily2号-使节团] 上次任务尚未完成，本次任务取消。");
-        toastr.info("上次任务尚未完成，请稍后再试。", "任务排队中");
-        return [];
+export async function findLatestSummaryLore(lorebookName, chatIdentifier) {
+  try {
+    const bookData = await loadWorldInfo(lorebookName);
+    if (!bookData || !bookData.entries) {
+      return null;
     }
-
-    window.AMILY2_LOCK_MODEL_FETCHING = true;
-
-    try {
-        const apiProvider = $("#amily2_api_provider").val() || 'openai';
-        const apiUrl = $("#amily2_api_url").val().trim();
-        const apiKey = $("#amily2_api_key").val().trim();
-        const $button = $("#amily2_refresh_models");
-        const $selector = $("#amily2_model");
-
-        console.log(`[Amily2号-使节团] 使用 API 提供商: ${apiProvider}`);
-
-        $button.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> 加载中');
-        $selector.empty().append($('<option>', { value: '', text: '正在获取模型列表...' }));
-
-        let result = [];
-
-        switch (apiProvider) {
-            case 'openai':
-                result = await fetchOpenAICompatibleModels(apiUrl, apiKey);
-                break;
-            case 'openai_test':
-                result = await fetchOpenAITestModels(apiUrl, apiKey);
-                break;
-            case 'google':
-                result = await fetchGoogleDirectModels(apiUrl, apiKey);
-                break;
-            case 'sillytavern_backend':
-                result = await fetchSillyTavernBackendModels(apiUrl, apiKey);
-                break;
-            case 'sillytavern_preset':
-                result = await fetchSillyTavernPresetModels();
-                break;
-            default:
-                throw new Error(`未支持的API提供商: ${apiProvider}`);
-        }
-
-        if (result.length > 0) {
-            toastr.success(`成功获取 ${result.length} 个模型`, "任务成功");
-            return result;
-        } else {
-            toastr.warning("未找到可用模型", "注意");
-            return [];
-        }
-
-    } catch (error) {
-        console.error("[Amily2号-使节团] 获取模型列表失败:", error);
-        toastr.error(`获取模型列表失败: ${error.message}`, "任务失败");
-        return [];
-    } finally {
-        window.AMILY2_LOCK_MODEL_FETCHING = false;
-        const $button = $("#amily2_refresh_models");
-        $button.prop("disabled", false).html('<i class="fas fa-sync-alt"></i> 刷新模型');
-    }
+    const entriesArray = Object.values(bookData.entries);
+    const uniqueLoreName = `${LOREBOOK_PREFIX}${chatIdentifier}`;
+    return (
+      entriesArray.find(
+        (entry) => entry.comment === uniqueLoreName && !entry.disable,
+      ) || null
+    );
+  } catch (error) {
+    console.error(
+      `[Amily2-国史馆] 钦差大臣在 '${lorebookName}' 检索时发生错误:`,
+      error,
+    );
+    return null;
+  }
 }
 
-
-async function fetchOpenAICompatibleModels(apiUrl, apiKey) {
-    if (!apiUrl || !apiKey) {
-        throw new Error("OpenAI兼容模式需要API URL和API Key");
+export async function getCombinedWorldbookContent(lorebookName) {
+  if (!lorebookName) return "";
+  try {
+    const bookData = await loadWorldInfo(lorebookName);
+    if (!bookData || !bookData.entries) {
+      return "";
     }
-
-    const baseUrl = apiUrl.replace(/\/$/, '').replace(/\/v1$/, '');
-    const modelsUrl = `${baseUrl}/v1/models`;
-
-    console.log(`[Amily2号-使节团] OpenAI兼容模式: ${modelsUrl}`);
-
-    const response = await fetch(modelsUrl, {
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
-        }
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
-    }
-
-    const data = await response.json();
-    const models = data.data || data.models || [];
-    
-    return models
-        .map(m => m.id || m.model)
-        .filter(Boolean)
-        .filter(m => !m.toLowerCase().includes('embed'))
-        .sort();
+    const activeContents = Object.values(bookData.entries)
+      .filter((entry) => !entry.disable)
+      .map((entry) => `[条目: ${entry.comment || "无标题"}]\n${entry.content}`);
+    return activeContents.join("\n\n---\n\n");
+  } catch (error) {
+    console.error(
+      `[Amily2-国史馆] 钦差大臣在整合 '${lorebookName}' 时发生错误:`,
+      error,
+    );
+    toastr.error(`读取世界书 '${lorebookName}' 失败!`, "档案整合错误");
+    return "";
+  }
 }
 
-async function fetchOpenAITestModels(apiUrl, apiKey) {
-    const response = await fetch('/api/backends/chat-completions/status', {
-        method: 'POST',
-        headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            reverse_proxy: apiUrl,
-            proxy_password: apiKey,
-            chat_completion_source: 'openai'
-        })
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`HTTP ${response.status}: ${errorText}`);
+async function refreshWorldbookListOnly(newBookName = null) {
+  console.log("[Amily2号-工部-v1.3] 执行“圣谕广播”式UI更新...");
+  try {
+    if (newBookName) {
+      if (Array.isArray(world_names) && !world_names.includes(newBookName)) {
+        world_names.push(newBookName);
+        world_names.sort();
+        console.log(`[Amily2号-工部] 已将《${newBookName}》注入前端数据模型。`);
+      } else {
+         console.log(`[Amily2号-工部] 《${newBookName}》已存在于数据模型中，跳过注入。`);
+      }
     }
 
-    const rawData = await response.json();
-    const models = Array.isArray(rawData) ? rawData : (rawData.data || rawData.models || []);
-
-    if (!Array.isArray(models)) {
-        const errorMessage = 'API未返回有效的模型列表数组';
-        throw new Error(errorMessage);
-    }
-
-    const formattedModels = models
-        .map(m => {
-            const modelName = m.name ? m.name.replace('models/', '') : (m.id || m.model || m);
-            return {
-                id: m.name || m.id || m.model || m,
-                name: modelName
-            };
-        })
-        .filter(m => m.id)
-        .sort((a, b) => String(a.name).localeCompare(String(b.name)));
-
-    console.log('[Amily2号-使节团] 全兼容(测试)模式获取到模型:', formattedModels);
-    return formattedModels.map(m => m.name);
-}
-
-
-async function fetchGoogleDirectModels(apiUrl, apiKey) {
-    if (!apiKey) {
-        throw new Error("Google直连模式需要API Key");
-    }
-
-    const GOOGLE_API_BASE_URL = 'https://generativelanguage.googleapis.com';
-    
-    const fetchGoogleModels = async (version) => {
-        const url = `${GOOGLE_API_BASE_URL}/${version}/models?key=${apiKey}`;
-        console.log(`[Amily2号-使节团] 正在从 Google API (${version}) 获取模型列表: ${url}`);
-        
-        const response = await fetch(url);
-        if (!response.ok) {
-            console.warn(`获取 Google API (${version}) 模型列表失败: ${response.status}`);
-            return [];
-        }
-        
-        const json = await response.json();
-        if (!json.models || !Array.isArray(json.models)) {
-            return [];
-        }
-        
-        return json.models
-            .filter(model => 
-                model.supportedGenerationMethods?.includes('generateContent') ||
-                model.supportedGenerationMethods?.includes('streamGenerateContent')
-            )
-            .map(model => model.name.replace('models/', ''));
-    };
-
-    const [v1Models, v1betaModels] = await Promise.all([
-        fetchGoogleModels('v1'),
-        fetchGoogleModels('v1beta')
-    ]);
-
-    const allModels = [...new Set([...v1Models, ...v1betaModels])].sort();
-    return allModels;
-}
-
-async function fetchSillyTavernBackendModels(apiUrl, apiKey) {
-    if (!apiUrl) {
-        throw new Error("SillyTavern后端模式需要API URL");
-    }
-
-    console.log('[Amily2号-使节团] 通过SillyTavern后端获取模型列表');
-
-    const rawResponse = await $.ajax({
-        url: '/api/backends/chat-completions/status',
-        type: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify({
-            chat_completion_source: 'custom',
-            custom_url: apiUrl,
-            api_key: apiKey
-        })
-    });
-
-    const result = normalizeApiResponse(rawResponse);
-    const models = result.data || [];
-
-    if (result.error || !Array.isArray(models)) {
-        const errorMessage = result.error?.message || 'API未返回有效的模型列表数组';
-        throw new Error(errorMessage);
-    }
-
-    return models
-        .map(model => model.id || model.model)
-        .filter(Boolean)
-        .sort();
-}
-
-
-async function fetchSillyTavernPresetModels() {
-    console.log('[Amily2号-使节团] 使用SillyTavern预设模式');
-
-    try {
-        const context = getContext();
-        if (!context) {
-            throw new Error("无法获取SillyTavern上下文");
-        }
-
-        const currentModel = context.chat_completion_source;
-        const models = [];
-
-        if (currentModel) {
-            models.push(currentModel);
-        }
-
-        const defaultModels = [
-            'gpt-3.5-turbo',
-            'gpt-4',
-            'claude-3-sonnet',
-            'claude-3-haiku',
-            'gemini-pro'
-        ];
-
-        const allModels = [...new Set([...models, ...defaultModels])].sort();
-        return allModels;
-
-    } catch (error) {
-        console.warn('[Amily2号-使节团] 获取SillyTavern预设失败，返回默认模型列表:', error);
-        
-
-        return [
-            'gpt-3.5-turbo',
-            'gpt-4',
-            'claude-3-sonnet',
-            'claude-3-haiku',
-            'gemini-pro'
-        ];
-    }
-}
- 
-
-export function getApiSettings() {
-    return {
-        apiProvider: $("#amily2_api_provider").val() || 'openai',
-        apiUrl: $("#amily2_api_url").val().trim(),
-        apiKey: $("#amily2_api_key").val().trim(),
-        model: $("#amily2_model").val(),
-        maxTokens: extension_settings[extensionName]?.maxTokens || 4000,
-        temperature: extension_settings[extensionName]?.temperature || 0.7,
-        tavernProfile: extension_settings[extensionName]?.tavernProfile || ''
-    };
-}
-
-
-export async function testApiConnection() {
-    console.log('[Amily2号-外交部] 开始API连接测试');
-    
-    const apiProvider = $("#amily2_api_provider").val() || 'openai';
-    const models = await fetchModels();
-    
-    if (models.length > 0) {
-        toastr.success(`${apiProvider} 提供商连接正常，找到 ${models.length} 个模型`, 'API连接正常');
-        return true;
+    if (
+      eventSource &&
+      typeof eventSource.emit === "function" &&
+      event_types.CHARACTER_PAGE_LOADED
+    ) {
+      console.log(`[Amily2号-工部] 正在广播事件: ${event_types.CHARACTER_PAGE_LOADED}`);
+      eventSource.emit(event_types.CHARACTER_PAGE_LOADED);
+      console.log("[Amily2号-工部] “character_page_loaded”事件已广播，UI应已响应刷新。");
     } else {
-        toastr.error('无法获取模型列表，请检查配置', 'API连接失败');
-        return false;
+      console.error("[Amily2号] 致命错误: eventSource 或 event_types.CHARACTER_PAGE_LOADED 未找到。无法广播刷新事件。");
+      toastr.error("Amily2号无法触发UI刷新。", "核心事件系统缺失");
     }
+  } catch (error) {
+    console.error("[Amily2号-工部] “圣谕广播”式刷新失败:", error);
+  }
 }
 
-export async function callAI(messages, options = {}) {
-    if (window.AMILY2_SYSTEM_PARALYZED === true) {
-        console.error("[Amily2-制裁] 系统完整性已受损，所有外交活动被无限期中止。");
-        return null;
-    }
-
-    const apiSettings = getApiSettings();
-
-    const finalOptions = {
-        maxTokens: apiSettings.maxTokens,
-        temperature: apiSettings.temperature,
-        model: apiSettings.model,
-        apiUrl: apiSettings.apiUrl,
-        apiKey: apiSettings.apiKey,
-        apiProvider: apiSettings.apiProvider,
-        ...options
-    };
-
-    if (finalOptions.apiProvider !== 'sillytavern_preset') {
-        if (!finalOptions.apiUrl || !finalOptions.model) {
-            console.warn("[Amily2-外交部] API URL或模型未配置，无法调用AI");
-            toastr.error("API URL或模型未配置，无法调用AI。", "Amily2-外交部");
-            return null;
-        }
-    }
-
-    console.groupCollapsed(`[Amily2号-统一API调用] ${new Date().toLocaleTimeString()}`);
-    console.log("【请求参数】:", { 
-        provider: finalOptions.apiProvider,
-        model: finalOptions.model, 
-        maxTokens: finalOptions.maxTokens, 
-        temperature: finalOptions.temperature,
-        messagesCount: messages.length
-    });
-    console.log("【消息内容】:", messages);
-    console.groupEnd();
-
-    try {
-        let responseContent;
-
-        switch (finalOptions.apiProvider) {
-            case 'openai':
-                responseContent = await callOpenAICompatible(messages, finalOptions);
-                break;
-            case 'openai_test':
-                responseContent = await callOpenAITest(messages, finalOptions);
-                break;
-            case 'google':
-                responseContent = await callGoogleDirect(messages, finalOptions);
-                break;
-            case 'sillytavern_backend':
-                responseContent = await callSillyTavernBackend(messages, finalOptions);
-                break;
-            case 'sillytavern_preset':
-                responseContent = await callSillyTavernPreset(messages, finalOptions);
-                break;
-            default:
-                console.error(`[Amily2-外交部] 未支持的API提供商: ${finalOptions.apiProvider}`);
-                return null;
-        }
-
-        if (!responseContent) {
-            console.warn('[Amily2-外交部] 未能获取AI响应内容，但不视为错误');
-            return null;
-        }
-
-        console.groupCollapsed("[Amily2号-AI回复]");
-        console.log(responseContent);
-        console.groupEnd();
-
-        return responseContent;
-
-    } catch (error) {
-        console.error(`[Amily2-外交部] API调用发生错误:`, error);
-
-        if (error.message.includes('400')) {
-            toastr.error(`API请求格式错误 (400): 请检查消息格式和模型配置`, "API调用失败");
-        } else if (error.message.includes('401')) {
-            toastr.error(`API认证失败 (401): 请检查API Key配置`, "API调用失败");
-        } else if (error.message.includes('403')) {
-            toastr.error(`API访问被拒绝 (403): 请检查权限设置`, "API调用失败");
-        } else if (error.message.includes('429')) {
-            toastr.error(`API调用频率超限 (429): 请稍后重试`, "API调用失败");
-        } else if (error.message.includes('500')) {
-            toastr.error(`API服务器错误 (500): 请稍后重试`, "API调用失败");
-        } else {
-            toastr.error(`API调用失败: ${error.message}`, "API调用失败");
-        }
-        
-        return null;
-    }
-}
-
-
-async function callOpenAICompatible(messages, options) {
-    const baseUrl = options.apiUrl.replace(/\/$/, '').replace(/\/v1$/, '');
-    const apiUrl = `${baseUrl}/v1/chat/completions`;
-
-    console.log(`[Amily2号-OpenAI兼容] API地址: ${apiUrl}`);
-
-    const response = await fetch(apiUrl, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${options.apiKey}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            model: options.model,
-            messages: messages,
-            max_tokens: options.maxTokens,
-            temperature: options.temperature,
-            stream: false
-        })
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`OpenAI兼容API请求失败: ${response.status} - ${errorText}`);
-    }
-
-    const responseData = await response.json();
-    return responseData?.choices?.[0]?.message?.content;
-}
-
-async function callOpenAITest(messages, options) {
-    const response = await fetch('/api/backends/chat-completions/generate', {
-        method: 'POST',
-        headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            chat_completion_source: 'openai',
-            custom_prompt_post_processing: 'strict',
-            enable_web_search: false,
-            frequency_penalty: 0,
-            group_names: [],
-            include_reasoning: false,
-            max_tokens: options.maxTokens || 100000,
-            messages: messages,
-            model: options.model,
-            presence_penalty: 0.12,
-            proxy_password: options.apiKey,
-            reasoning_effort: 'medium',
-            request_images: false,
-            reverse_proxy: options.apiUrl,
-            stream: false,
-            temperature: options.temperature || 1,
-            top_p: options.top_p || 1
-        })
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`OpenAI兼容(测试)API请求失败: ${response.status} - ${errorText}`);
-    }
-
-    const responseData = await response.json();
-    return responseData?.choices?.[0]?.message?.content;
-}
-
-
-async function callGoogleDirect(messages, options) {
-    const GOOGLE_API_BASE_URL = 'https://generativelanguage.googleapis.com';
-
-    const apiVersion = options.model.includes('gemini-1.5') ? 'v1beta' : 'v1';
-    const finalApiUrl = `${GOOGLE_API_BASE_URL}/${apiVersion}/models/${options.model}:generateContent?key=${options.apiKey}`;
-    
-    console.log(`[Amily2号-Google直连] API地址: ${finalApiUrl}`);
-
-    const headers = { 
-        "Content-Type": "application/json"
-    };
-
-    const requestBody = JSON.stringify(convertToGoogleRequest({ 
-        model: options.model, 
-        messages, 
-        max_tokens: options.maxTokens, 
-        temperature: options.temperature 
-    }));
-
-    const response = await fetch(finalApiUrl, { 
-        method: "POST", 
-        headers: headers, 
-        body: requestBody 
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Google API请求失败: ${response.status} - ${errorText}`);
-    }
-
-    let responseData = await response.json();
-
-    if (responseData.name && responseData.metadata) {
-        console.log("[Amily2号-Google] 收到异步操作ID，启用轮询机制...");
-        const operationId = responseData.name;
-        const tracker = progressTracker(operationId, 6);
-        tracker.start();
-        
-        try {
-            const pollingTask = createGooglePollingTask(operationId, GOOGLE_API_BASE_URL, { "Content-Type": "application/json" });
-            const pollingOptions = { 
-                maxAttempts: 6, 
-                baseDelay: 3000, 
-                shouldStop: res => res.done, 
-                onAttempt: (attempt, delay) => { tracker.onAttempt(attempt, delay); }, 
-                onError: (error, attempt) => { tracker.error(error.message); }
-            };
-            const pollingResult = await intelligentPoll(pollingTask, pollingOptions);
-            tracker.complete();
-            
-            if (!pollingResult.response) { 
-                throw new Error("轮询完成但未获得有效响应"); 
-            }
-            responseData = pollingResult.response;
-        } catch (pollingError) {
-            console.error('[Google轮询错误]', pollingError);
-            tracker.error(`轮询失败: ${pollingError.message}`);
-            throw new Error("Google轮询任务失败: " + pollingError.message);
-        }
-    }
-
-    return parseGoogleResponse(responseData)?.choices?.[0]?.message?.content;
-}
-
-async function callSillyTavernBackend(messages, options) {
-    console.log('[Amily2号-ST后端] 通过SillyTavern后端调用API');
-
-    const rawResponse = await $.ajax({
-        url: '/api/backends/chat-completions/generate',
-        type: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify({
-            chat_completion_source: 'custom',
-            custom_url: options.apiUrl,
-            api_key: options.apiKey,
-            model: options.model,
-            messages: messages,
-            max_tokens: options.maxTokens,
-            temperature: options.temperature,
-            stream: false
-        })
-    });
-
-    const result = normalizeApiResponse(rawResponse);
-    if (result.error) {
-        throw new Error(result.error.message || 'SillyTavern后端API调用失败');
-    }
-
-    return result.content;
-}
-
-
-async function callSillyTavernPreset(messages, options) {
-    console.log('[Amily2号-ST预设] 使用SillyTavern预设调用');
-
-    if (!window.TavernHelper || !window.TavernHelper.triggerSlash) {
-        throw new Error('TavernHelper不可用，无法使用SillyTavern预设模式');
+export async function writeSummaryToLorebook(pendingData) {
+    if (!pendingData || !pendingData.summary || !pendingData.sourceAiMessageTimestamp || !pendingData.settings) {
+        console.warn("[Amily助手-国史馆] 接到一份残缺的待办文书，写入任务已中止。", pendingData);
+        return;
     }
 
     const context = getContext();
-    if (!context) {
-        throw new Error('无法获取SillyTavern上下文');
+    const chat = context.chat;
+    let isSourceMessageValid = false;
+    let sourceMessageCandidate = null;
+    // 寻找最新的 AI 消息以进行时间戳验证
+    for (let i = chat.length - 1; i >= 0; i--) {
+        if (!chat[i].is_user) {
+            sourceMessageCandidate = chat[i];
+            break;
+        }
     }
 
-    const profileId = options.tavernProfile || extension_settings[extensionName]?.tavernProfile;
-    if (!profileId) {
-        throw new Error('未配置SillyTavern预设ID');
+    if (sourceMessageCandidate && sourceMessageCandidate.send_date === pendingData.sourceAiMessageTimestamp) {
+        isSourceMessageValid = true;
     }
 
-    let originalProfile = '';
-    let responsePromise;
+    if (!isSourceMessageValid) {
+        console.log("[Amily助手-逆时寻踪] 裁决: 源消息已被修改或删除，遵旨废黜过时总结。");
+        return;
+    }
+
+    const { summary: summaryToCommit, settings } = pendingData;
+
+    console.groupCollapsed(`[Amily助手-存档任务] ${new Date().toLocaleTimeString()}`);
+    console.time("总结写入总耗时");
 
     try {
-        originalProfile = await window.TavernHelper.triggerSlash('/profile');
-        console.log(`[Amily2号-ST预设] 当前配置文件: ${originalProfile}`);
+        const chatIdentifier = await getChatIdentifier();
+        const character = characters[context.characterId];
+        let targetLorebookName = null;
 
-        const targetProfile = context.extensionSettings?.connectionManager?.profiles?.find(p => p.id === profileId);
-        if (!targetProfile) {
-            throw new Error(`未找到配置文件ID: ${profileId}`);
+        switch (settings.target) {
+            case "character_main":
+                targetLorebookName = character?.data?.extensions?.world;
+                if (!targetLorebookName) {
+                    toastr.warning("角色未绑定主世界书，总结写入任务已中止。", "Amily助手");
+                    console.groupEnd();
+                    return;
+                }
+                break;
+            case "dedicated":
+                targetLorebookName = `${DEDICATED_LOREBOOK_NAME}-${chatIdentifier}`;
+                break;
+            default:
+                toastr.error(`收到未知的写入指令: "${settings.target}"`, "Amily助手");
+                console.groupEnd();
+                return;
         }
 
-        const targetProfileName = targetProfile.name;
-        console.log(`[Amily2号-ST预设] 目标配置文件: ${targetProfileName}`);
+        const uniqueLoreName = `${LOREBOOK_PREFIX}${chatIdentifier}`;
 
-        const currentProfile = await window.TavernHelper.triggerSlash('/profile');
-        if (currentProfile !== targetProfileName) {
-            console.log(`[Amily2号-ST预设] 切换配置文件: ${currentProfile} -> ${targetProfileName}`);
-            const escapedProfileName = targetProfileName.replace(/"/g, '\\"');
-            await window.TavernHelper.triggerSlash(`/profile await=true "${escapedProfileName}"`);
-        }
-
-        if (!context.ConnectionManagerRequestService) {
-            throw new Error('ConnectionManagerRequestService不可用');
-        }
-
-        console.log(`[Amily2号-ST预设] 通过配置文件 ${targetProfileName} 发送请求`);
-        responsePromise = context.ConnectionManagerRequestService.sendRequest(
-            targetProfile.id,
-            messages,
-            options.maxTokens || 4000
-        );
-
-    } finally {
-        try {
-            const currentProfileAfterCall = await window.TavernHelper.triggerSlash('/profile');
-            if (originalProfile && originalProfile !== currentProfileAfterCall) {
-                console.log(`[Amily2号-ST预设] 恢复原始配置文件: ${currentProfileAfterCall} -> ${originalProfile}`);
-                const escapedOriginalProfile = originalProfile.replace(/"/g, '\\"');
-                await window.TavernHelper.triggerSlash(`/profile await=true "${escapedOriginalProfile}"`);
+        // 定义内容更新的回调函数
+        const contentUpdateCallback = (existingContent) => {
+            if (existingContent) {
+                // 如果条目已存在，追加内容
+                const cleanedContent = existingContent.replace(INTRODUCTORY_TEXT, "").trim();
+                const lines = cleanedContent ? cleanedContent.split("\n") : [];
+                const nextNumber = lines.length + 1;
+                return `${existingContent}\n${nextNumber}. ${summaryToCommit}`;
+            } else {
+                // 如果条目不存在，创建新内容
+                return `${INTRODUCTORY_TEXT}1. ${summaryToCommit}`;
             }
-        } catch (restoreError) {
-            console.error('[Amily2号-ST预设] 恢复配置文件失败:', restoreError);
+        };
+
+        // 定义写入选项
+        const options = {
+            keys: settings.keywords.split(',').map(k => k.trim()).filter(Boolean),
+            isConstant: settings.activationMode === 'always',
+            insertion_position: settings.insertionPosition,
+            depth: settings.depth,
+        };
+
+        // 使用统一的兼容性写入函数
+        const success = await compatibleWriteToLorebook(targetLorebookName, uniqueLoreName, contentUpdateCallback, options);
+
+        if (success) {
+            toastr.success(`总结已成功写入《${targetLorebookName}》！`, "Amily助手");
+        } else {
+            toastr.error(`总结写入《${targetLorebookName}》时失败。`, "Amily助手");
         }
+
+    } catch (error) {
+        console.error("[Amily助手-写入失败] 写入流程发生意外错误:", error);
+        toastr.error("后台写入总结时发生错误。", "Amily助手");
+    } finally {
+        console.timeEnd("总结写入总耗时");
+        console.groupEnd();
     }
-
-    const result = await responsePromise;
-
-    if (!result) {
-        throw new Error('未收到API响应');
-    }
-
-    const normalizedResult = normalizeApiResponse(result);
-    if (normalizedResult.error) {
-        throw new Error(normalizedResult.error.message || 'SillyTavern预设API调用失败');
-    }
-
-    return normalizedResult.content;
 }
 
-export function generateRandomSeed() {
-    const letters = 'abcdefghijklmnopqrstuvwxyz';
-    const randomLetter = () => letters[Math.floor(Math.random() * letters.length)];
-    const randomRoll = (max) => Math.floor(Math.random() * max) + 1;
+export async function getOptimizationWorldbookContent() {
+    const settings = extension_settings[extensionName];
+    if (!settings || !settings.modal_wbEnabled) {
+        return '';
+    }
 
-    let seed = '';
-    seed += randomLetter();
-    seed += randomRoll(1919819);
-    seed += randomLetter();
-    seed += randomLetter();
-    seed += randomRoll(114514);
-    seed += randomLetter();
-    seed += randomLetter();
-    seed += randomRoll(9999);
-    seed += randomRoll(9999);
-    seed += randomLetter();
-    
-    return seed;
+    try {
+        let bookNames = [];
+        if (settings.modal_wbSource === 'manual') {
+            bookNames = settings.modal_amily2_wb_selected_worldbooks || [];
+        } else { // 'character' source
+            const charLorebooks = await safeCharLorebooks({ type: 'all' });
+            if (charLorebooks.primary) bookNames.push(charLorebooks.primary);
+            if (charLorebooks.additional?.length) bookNames.push(...charLorebooks.additional);
+        }
+
+        if (bookNames.length === 0) {
+            console.log('[Amily2-正文优化] No world books selected or linked for optimization.');
+            return '';
+        }
+
+        let allEntries = [];
+        for (const bookName of bookNames) {
+            if (bookName) {
+                const entries = await safeLorebookEntries(bookName);
+                if (entries?.length) {
+                    entries.forEach(entry => allEntries.push({ ...entry, bookName }));
+                }
+            }
+        }
+
+        const selectedEntriesConfig = settings.modal_amily2_wb_selected_entries || {};
+
+        const userEnabledEntries = allEntries.filter(entry => {
+            // Entry must be enabled in the lorebook itself
+            if (!entry.enabled) return false;
+            
+            // Check against our UI selection
+            const bookConfig = selectedEntriesConfig[entry.bookName];
+            return bookConfig ? bookConfig.includes(String(entry.uid)) : false;
+        });
+
+        if (userEnabledEntries.length === 0) {
+            console.log('[Amily2-正文优化] No entries are selected for optimization in the chosen world books.');
+            return '';
+        }
+
+        const finalContent = userEnabledEntries.map(entry => entry.content).filter(Boolean);
+        const combinedContent = finalContent.join('\n\n---\n\n');
+        
+        console.log(`[Amily2-正文优化] Loaded ${userEnabledEntries.length} world book entries, total length: ${combinedContent.length}`);
+        return combinedContent;
+
+    } catch (error) {
+        console.error(`[Amily2-正文优化] Processing world book content failed:`, error);
+        return '';
+    }
 }
 
 
-export async function checkAndFixWithAPI(latestMessage, previousMessages) {
-    const { processOptimization } = await import('./summarizer.js');
-    return await processOptimization(latestMessage, previousMessages);
+export async function getPlotOptimizedWorldbookContent(context, apiSettings) {
+    const panel = $('#amily2_plot_optimization_panel');
+    let liveSettings = {};
+
+    if (panel.length > 0) {
+        liveSettings.worldbookEnabled = panel.find('#amily2_opt_worldbook_enabled').is(':checked');
+        liveSettings.worldbookSource = panel.find('input[name="amily2_opt_worldbook_source"]:checked').val() || 'character';
+        
+        liveSettings.selectedWorldbooks = [];
+        if (liveSettings.worldbookSource === 'manual') {
+            panel.find('#amily2_opt_worldbook_checkbox_list input[type="checkbox"]:checked').each(function() {
+                liveSettings.selectedWorldbooks.push($(this).val());
+            });
+        }
+
+        liveSettings.worldbookCharLimit = parseInt(panel.find('#amily2_opt_worldbook_char_limit').val(), 10) || 60000;
+
+        let enabledEntries = {};
+        panel.find('#amily2_opt_worldbook_entry_list_container input[type="checkbox"]').each(function() {
+            if ($(this).is(':checked')) {
+                const bookName = $(this).data('book');
+                const uid = parseInt($(this).data('uid'));
+                if (!enabledEntries[bookName]) {
+                    enabledEntries[bookName] = [];
+                }
+                enabledEntries[bookName].push(uid);
+            }
+        });
+        liveSettings.enabledWorldbookEntries = enabledEntries;
+    } else {
+        console.warn('[剧情优化大师] 未找到设置面板，世界书功能将回退到使用已保存的设置。');
+        liveSettings = {
+            worldbookEnabled: apiSettings.worldbookEnabled,
+            worldbookSource: apiSettings.worldbookSource,
+            selectedWorldbooks: apiSettings.selectedWorldbooks,
+            worldbookCharLimit: apiSettings.worldbookCharLimit,
+            enabledWorldbookEntries: apiSettings.enabledWorldbookEntries,
+        };
+    }
+
+    if (!liveSettings.worldbookEnabled) {
+        return '';
+    }
+
+    if (!context) {
+        console.warn('[剧情优化大师] context 未提供，无法获取世界书内容。');
+        return '';
+    }
+
+    try {
+        let bookNames = [];
+        
+        if (liveSettings.worldbookSource === 'manual') {
+            bookNames = liveSettings.selectedWorldbooks;
+            if (bookNames.length === 0) return '';
+        } else {
+            const charLorebooks = await safeCharLorebooks({ type: 'all' });
+            if (charLorebooks.primary) bookNames.push(charLorebooks.primary);
+            if (charLorebooks.additional?.length) bookNames.push(...charLorebooks.additional);
+            if (bookNames.length === 0) return '';
+        }
+
+        let allEntries = [];
+        for (const bookName of bookNames) {
+            if (bookName) {
+                const entries = await safeLorebookEntries(bookName);
+                if (entries?.length) {
+                    entries.forEach(entry => allEntries.push({ ...entry, bookName }));
+                }
+            }
+        }
+
+        if (allEntries.length === 0) return '';
+        
+        const enabledEntriesMap = liveSettings.enabledWorldbookEntries || {};
+        const userEnabledEntries = allEntries.filter(entry => {
+            if (!entry.enabled) return false;
+            const bookConfig = enabledEntriesMap[entry.bookName];
+            return bookConfig ? bookConfig.includes(entry.uid) : false;
+        });
+
+        if (userEnabledEntries.length === 0) return '';
+        
+        const chatHistory = context.chat.map(message => message.mes).join('\n').toLowerCase();
+        const getEntryKeywords = (entry) => [...new Set([...(entry.key || []), ...(entry.keys || [])])].map(k => k.toLowerCase());
+
+        const blueLightEntries = userEnabledEntries.filter(entry => entry.type === 'constant');
+        let pendingGreenLights = userEnabledEntries.filter(entry => entry.type !== 'constant');
+        
+        const triggeredEntries = new Set([...blueLightEntries]);
+
+        while (true) {
+            let hasChangedInThisPass = false;
+            
+            const recursionSourceContent = Array.from(triggeredEntries)
+                .filter(e => !e.prevent_recursion)
+                .map(e => e.content)
+                .join('\n')
+                .toLowerCase();
+            const fullSearchText = `${chatHistory}\n${recursionSourceContent}`;
+
+            const nextPendingGreenLights = [];
+            
+            for (const entry of pendingGreenLights) {
+                const keywords = getEntryKeywords(entry);
+                let isTriggered = keywords.length > 0 && keywords.some(keyword => 
+                    entry.exclude_recursion ? chatHistory.includes(keyword) : fullSearchText.includes(keyword)
+                );
+
+                if (isTriggered) {
+                    triggeredEntries.add(entry);
+                    hasChangedInThisPass = true;
+                } else {
+                    nextPendingGreenLights.push(entry);
+                }
+            }
+            
+            if (!hasChangedInThisPass) break;
+            
+            pendingGreenLights = nextPendingGreenLights;
+        }
+
+        const finalContent = Array.from(triggeredEntries).map(entry => entry.content).filter(Boolean);
+        if (finalContent.length === 0) return '';
+
+        const combinedContent = finalContent.join('\n\n---\n\n');
+        
+        const limit = liveSettings.worldbookCharLimit;
+        if (combinedContent.length > limit) {
+            console.log(`[剧情优化大师] 世界书内容 (${combinedContent.length} chars) 超出限制 (${limit} chars)，将被截断。`);
+            return combinedContent.substring(0, limit);
+        }
+
+        return combinedContent;
+
+    } catch (error) {
+        console.error(`[剧情优化大师] 处理世界书逻辑时出错:`, error);
+        return '';
+    }
+}
+
+
+export async function manageLorebookEntriesForChat() {
+    try {
+        const chatIdentifier = await getChatIdentifier();
+        if (!chatIdentifier || chatIdentifier.startsWith("unknown_chat")) {
+            console.error(`[Amily2-国史馆] 无法获取有效的聊天标识符，中止条目状态管理。`);
+            return;
+        }
+
+        const context = getContext();
+        if (!context || !context.characterId) {
+            console.log("[Amily2-国史馆] 未选择任何角色，跳过世界书管理。");
+            return;
+        }
+
+        const charLorebooks = await safeCharLorebooks({ type: 'all' });
+        const bookNames = [];
+        if (charLorebooks.primary) bookNames.push(charLorebooks.primary);
+        if (charLorebooks.additional?.length) bookNames.push(...charLorebooks.additional);
+
+        const dedicatedBookName = `${DEDICATED_LOREBOOK_NAME}-${chatIdentifier}`;
+        if (!bookNames.includes(dedicatedBookName)) {
+            bookNames.push(dedicatedBookName);
+        }
+
+        for (const bookName of bookNames) {
+            if (!world_names.includes(bookName)) continue; 
+
+            const entries = await safeLorebookEntries(bookName);
+            const entriesToUpdate = [];
+
+            for (const entry of entries) {
+                if (entry.comment && entry.comment.startsWith(LOREBOOK_PREFIX)) {
+                    const isForCurrentChat = entry.comment.includes(chatIdentifier);
+                    if (isForCurrentChat && entry.disable) {
+                        entriesToUpdate.push({ uid: entry.uid, enabled: true });
+                    } else if (!isForCurrentChat && !entry.disable) {
+                        entriesToUpdate.push({ uid: entry.uid, enabled: false });
+                    }
+                }
+            }
+
+            if (entriesToUpdate.length > 0) {
+                const success = await safeUpdateLorebookEntries(bookName, entriesToUpdate);
+                if (success) {
+                    console.log(`[Amily2-国史馆] 已为《${bookName}》更新了 ${entriesToUpdate.length} 个条目的状态以匹配当前聊天: ${chatIdentifier}`);
+                }
+            }
+        }
+
+    } catch (error) {
+        console.error("[Amily2-国史馆] 管理世界书条目状态时发生错误:", error);
+    }
 }
