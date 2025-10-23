@@ -239,7 +239,100 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
             systemPrompt = systemPrompt.replace(regex, value);
         }
 
-        const worldbookContent = await getPlotOptimizedWorldbookContent(context, settings);
+        let worldbookContent = await getPlotOptimizedWorldbookContent(context, settings);
+
+        // --- EJS 預處理（劇情優化專用）---
+        try {
+            if (settings.plotOpt_ejsEnabled !== false && globalThis.EjsTemplate?.evalTemplate && globalThis.EjsTemplate?.prepareContext) {
+                const safeUser = (userMessageContent ?? '').toString();
+                const safeWorld = (worldbookContent ?? '').toString();
+                const hasEjsUser = /<%[=_\-]?/.test(safeUser);
+                const hasEjsWorld = /<%[=_\-]?/.test(safeWorld);
+                const openTagRegex = /<%[=_\-]?/g;
+                const closeTagRegex = /[-_]?%>/g;
+                const openUser = (safeUser.match(openTagRegex) || []).length;
+                const closeUser = (safeUser.match(closeTagRegex) || []).length;
+                const openWorld = (safeWorld.match(openTagRegex) || []).length;
+                const closeWorld = (safeWorld.match(closeTagRegex) || []).length;
+                const balancedUser = hasEjsUser && openUser === closeUser && openUser > 0;
+                const balancedWorld = hasEjsWorld && openWorld === closeWorld && openWorld > 0;
+
+                if (hasEjsUser || hasEjsWorld) {
+                    const env = await globalThis.EjsTemplate.prepareContext({ runType: 'plot_optimization', isDryRun: false });
+
+                    try {
+                        if (balancedUser) {
+                            const compiledUser = await globalThis.EjsTemplate.evalTemplate(safeUser, env, { _with: true });
+                            if (typeof compiledUser === 'string' && compiledUser.length > 0) {
+                                currentUserMessage.mes = compiledUser;
+                            }
+                        } else if (hasEjsUser) {
+                            console.warn('[ST-Amily2-Chat-Optimisation][PlotOpt] 检测到未闭合的 EJS 标签（用户输入），已跳过预处理。');
+                        }
+                    } catch (errUser) {
+                        console.error('[ST-Amily2-Chat-Optimisation][PlotOpt] EJS 預處理-用户输入失败：', errUser);
+                        toastr.error('EJS 预处理用户输入失败，已中止。', 'Amily2号');
+                        return null;
+                    }
+
+                    try {
+                        if (balancedWorld) {
+                            const compiledWorld = await globalThis.EjsTemplate.evalTemplate(safeWorld, env, { _with: true });
+                            if (typeof compiledWorld === 'string' && compiledWorld.length > 0) {
+                                worldbookContent = compiledWorld;
+                            }
+                        } else if (hasEjsWorld) {
+                            console.warn('[ST-Amily2-Chat-Optimisation][PlotOpt] 检测到未闭合的 EJS 标签（世界书），已跳过预处理。');
+                        }
+                    } catch (errWorld) {
+                        try {
+                            if (globalThis.EjsTemplate?.getSyntaxErrorInfo && typeof errWorld?.message === 'string') {
+                                const extra = globalThis.EjsTemplate.getSyntaxErrorInfo(safeWorld);
+                                console.error('[ST-Amily2-Chat-Optimisation][PlotOpt] EJS 預處理-世界书失败(含定位)：', errWorld?.message + (extra || ''));
+                            } else {
+                                console.error('[ST-Amily2-Chat-Optimisation][PlotOpt] EJS 預處理-世界书失败：', errWorld);
+                            }
+                            // 打印世界书片段（限長）
+                            try {
+                                const maxLen = 2000;
+                                const snippet = typeof safeWorld === 'string' ? safeWorld.slice(0, maxLen) : String(safeWorld).slice(0, maxLen);
+                                const isTruncated = (safeWorld?.length || 0) > maxLen;
+                                // 存入全局以便用户在控制台直接读取
+                                try {
+                                    // @ts-ignore
+                                    window.Amily2PlotOptDebug = window.Amily2PlotOptDebug || {};
+                                    // @ts-ignore
+                                    window.Amily2PlotOptDebug.worldErrorMessage = (errWorld?.message || String(errWorld)) + '';
+                                    // @ts-ignore
+                                    window.Amily2PlotOptDebug.worldSnippet = snippet;
+                                    // @ts-ignore
+                                    window.Amily2PlotOptDebug.worldSnippetTruncated = isTruncated;
+                                    // @ts-ignore
+                                    window.Amily2PlotOptDebug.worldOpenClose = { open: openWorld, close: closeWorld };
+                                } catch (_) {}
+
+                                // 多级别日志，避免特定环境过滤
+                                console.groupCollapsed('[ST-Amily2-Chat-Optimisation][PlotOpt] 失败世界书片段 (截断=' + isTruncated + ')');
+                                console.log(snippet);
+                                console.groupEnd();
+                                console.warn('[ST-Amily2-Chat-Optimisation][PlotOpt] worldOpenClose:', { open: openWorld, close: closeWorld });
+                                console.error('[ST-Amily2-Chat-Optimisation][PlotOpt] 以上即失败世界书片段。');
+                            } catch (logErr) {
+                                console.error('[ST-Amily2-Chat-Optimisation][PlotOpt] 打印失败世界书片段时出错：', logErr);
+                            }
+                        } catch (sub) {
+                            console.error('[ST-Amily2-Chat-Optimisation][PlotOpt] 记录语法位置信息失败：', sub);
+                        }
+                        toastr.error('EJS 预处理世界书失败，已中止。', 'Amily2号');
+                        return null;
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('[ST-Amily2-Chat-Optimisation][PlotOpt] EJS 預處理初始化失败（可能是上下文环境）：', e);
+            toastr.error('EJS 预处理初始化失败，已中止。', 'Amily2号');
+            return null; // 直接中止，不送出訊息
+        }
 
         let tableContent = '';
         if (settings.plotOpt_tableEnabled) {
@@ -310,7 +403,7 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
                         }
                         break;
                     case 'coreContent':
-                        messages.push({ role: 'user', content: `[核心处理内容]:\n${userMessageContent}` });
+                        messages.push({ role: 'user', content: `[核心处理内容]:\n${currentUserMessage.mes}` });
                         break;
                     case 'plotTag':
                         messages.push({ role: 'assistant', content: '<plot>' });
