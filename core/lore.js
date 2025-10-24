@@ -1,8 +1,16 @@
 import { extension_settings, getContext } from "/scripts/extensions.js";
 import { characters, eventSource, event_types } from "/script.js";
-import { loadWorldInfo, createNewWorldInfo, createWorldInfoEntry, saveWorldInfo, world_names } from "/scripts/world-info.js";
+import { loadWorldInfo, createNewWorldInfo, createWorldInfoEntry, saveWorldInfo, world_names, updateWorldInfoList } from "/scripts/world-info.js";
 import { compatibleWriteToLorebook, safeLorebooks, safeCharLorebooks, safeLorebookEntries } from "./tavernhelper-compatibility.js";
 import { extensionName } from "../utils/settings.js";
+
+
+document.addEventListener('amily-lorebook-created', (event) => {
+    if (event.detail && event.detail.bookName) {
+        console.log(`[Amily2-国史馆] 监听到史书《${event.detail.bookName}》变更，即刻通报工部刷新宫殿。`);
+        refreshWorldbookListOnly(event.detail.bookName);
+    }
+});
 
 
 export const LOREBOOK_PREFIX = "Amily2档案-";
@@ -90,34 +98,15 @@ export async function getCombinedWorldbookContent(lorebookName) {
   }
 }
 
-async function refreshWorldbookListOnly(newBookName = null) {
-  console.log("[Amily2号-工部-v1.3] 执行“圣谕广播”式UI更新...");
-  try {
-    if (newBookName) {
-      if (Array.isArray(world_names) && !world_names.includes(newBookName)) {
-        world_names.push(newBookName);
-        world_names.sort();
-        console.log(`[Amily2号-工部] 已将《${newBookName}》注入前端数据模型。`);
-      } else {
-         console.log(`[Amily2号-工部] 《${newBookName}》已存在于数据模型中，跳过注入。`);
-      }
+export async function refreshWorldbookListOnly(newBookName = null) {
+    console.log("[Amily2号-工部-v2.0] 执行SillyTavern核心UI刷新...");
+    try {
+        await updateWorldInfoList();
+        console.log("[Amily2号-工部] SillyTavern核心刷新函数 (updateWorldInfoList) 调用成功。");
+    } catch (error) {
+        console.error("[Amily2号-工部] 调用核心刷新函数时出错:", error);
+        toastr.error("Amily2号调用核心UI刷新函数时失败。", "核心刷新失败");
     }
-
-    if (
-      eventSource &&
-      typeof eventSource.emit === "function" &&
-      event_types.CHARACTER_PAGE_LOADED
-    ) {
-      console.log(`[Amily2号-工部] 正在广播事件: ${event_types.CHARACTER_PAGE_LOADED}`);
-      eventSource.emit(event_types.CHARACTER_PAGE_LOADED);
-      console.log("[Amily2号-工部] “character_page_loaded”事件已广播，UI应已响应刷新。");
-    } else {
-      console.error("[Amily2号] 致命错误: eventSource 或 event_types.CHARACTER_PAGE_LOADED 未找到。无法广播刷新事件。");
-      toastr.error("Amily2号无法触发UI刷新。", "核心事件系统缺失");
-    }
-  } catch (error) {
-    console.error("[Amily2号-工部] “圣谕广播”式刷新失败:", error);
-  }
 }
 
 export async function writeSummaryToLorebook(pendingData) {
