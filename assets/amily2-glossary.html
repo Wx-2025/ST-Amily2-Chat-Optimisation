@@ -8,7 +8,6 @@
 </div>
 <hr class="header-divider">
 
-<!-- 标签页导航 -->
 <div class="glossary-tabs">
     <button class="glossary-tab active" data-tab="api">
         <i class="fas fa-bolt"></i> API 设置
@@ -16,18 +15,16 @@
     <button class="glossary-tab" data-tab="novel-process">
         <i class="fas fa-file-invoice"></i> 小说处理
     </button>
-    <button class="glossary-tab" data-tab="prompts">
-        <i class="fas fa-edit"></i> 待开发
+    <button class="glossary-tab" data-tab="tools">
+        <i class="fas fa-tools"></i> 条目工具
     </button>
     <button class="glossary-tab" data-tab="context">
         <i class="fas fa-book-open"></i> 世界书条目
     </button>
 </div>
 
-<!-- 标签页内容容器 -->
 <div class="glossary-content-container">
 
-    <!-- API 设置面板 -->
     <div id="glossary-content-api" class="glossary-content active">
         <div class="settings-group">
             <div class="legend"><i class="fas fa-satellite-dish"></i> Sybd API 调用系统</div>
@@ -100,15 +97,28 @@
         </div>
     </div>
 
-    <!-- 提示词指令面板 -->
-    <div id="glossary-content-prompts" class="glossary-content">
+    <div id="glossary-content-tools" class="glossary-content">
         <div class="settings-group">
-            <div class="legend"><i class="fas fa-edit"></i> 待开发</div>
-            <p style="text-align: center; margin-top: 20px;">待开发</p>
+            <div class="legend"><i class="fas fa-sitemap"></i> 按标题重组条目</div>
+            <small class="notes" style="text-align: center; display: block; margin-bottom: 15px;">
+                在下方文本框中输入您想要合并的标题 (不带'#')，每行一个。<br>
+                插件将精确查找这些标题，并将它们的内容合并到同名的新条目中。
+            </small>
+            <div class="control-group" style="margin: 15px auto; max-width: 80%;">
+                <label for="reorganize-headings-list" style="display: block; text-align: center; margin-bottom: 5px;">要重组的标题列表:</label>
+                <textarea id="reorganize-headings-list" class="text_pole" style="width: 100%; min-height: 120px;" placeholder="世界观设定&#10;章节内容概述&#10;时间线&#10;角色关系网&#10;角色总览"></textarea>
+            </div>
+            <div class="sybd-button-row" style="justify-content: center; margin-top: 10px;">
+                <button id="reorganize-entries-by-heading" class="menu_button primary interactable">
+                    <i class="fas fa-play-circle"></i> 开始重组
+                </button>
+            </div>
+            <div id="reorganize-status" style="text-align: center; margin-top: 10px; font-weight: bold;">
+                请选择一个世界书并开始操作...
+            </div>
         </div>
     </div>
 
-    <!-- 世界书条目面板 -->
     <div id="glossary-content-context" class="glossary-content">
         <div class="settings-group">
             <div class="legend"><i class="fas fa-book-open"></i> 世界书条目预览</div>
@@ -119,28 +129,31 @@
                 
             </div>
             <div id="world-book-entries-display" class="world-book-entries-container">
-                <!-- 条目将在这里动态生成 -->
+
             </div>
         </div>
     </div>
 
-    <!-- 小说处理面板 -->
     <div id="glossary-content-novel-process" class="glossary-content">
         <div class="settings-group">
             <div class="legend"><i class="fas fa-file-upload"></i> 小说文件处理流程</div>
             
-            <!-- 使用 horizontal-group 来确保标签和控件水平对齐 -->
             <div class="control-group horizontal-group">
                 <label for="novel-world-book-select">1. 选择目标世界书:</label>
                 <select id="novel-world-book-select" class="text_pole"></select>
             </div>
 
-            <!-- 为上传按钮使用独立的容器，不再使用 control-group -->
-            <div class="upload-button-container">
+            <div class="upload-button-container" style="display: flex; gap: 10px; justify-content: center;">
                 <label for="novel-file-input" class="menu_button secondary interactable">
-                    <i class="fas fa-upload"></i> 2. 上传小说文件 (.txt)
+                    <i class="fas fa-upload"></i> 2a. 上传本地文件 (.txt)
                 </label>
                 <input type="file" id="novel-file-input" accept=".txt" style="display: none;">
+                <button id="select-from-database-button" class="menu_button secondary interactable">
+                    <i class="fas fa-database"></i> 2b. 从数据库选择
+                </button>
+            </div>
+            <div id="database-file-list-container" class="world-book-entries-container" style="display: none; margin-top: 10px; max-height: 200px; overflow-y: auto;">
+
             </div>
 
             <div class="control-group horizontal-group">
@@ -148,9 +161,13 @@
                 <input type="number" id="novel-chunk-size" class="text_pole" value="300000" min="1000" step="500" data-setting-key="novelChunkSize" data-type="integer">
             </div>
 
+            <div class="control-group horizontal-group">
+                <label for="novel-start-batch-index" title="如果处理中断，可在此指定从第几批重新开始。">指定开始批次:</label>
+                <input type="number" id="novel-start-batch-index" class="text_pole" value="1" min="1" step="1">
+            </div>
+
             <hr class="header-divider">
 
-            <!-- 为预览区域使用独立的容器 -->
             <div class="preview-container">
                 <label>4. 内容分块预览 (共 <span id="novel-chunk-count">0</span> 块):</label>
                 <div id="novel-chunk-preview">
@@ -158,7 +175,6 @@
                 </div>
             </div>
 
-            <!-- 开关按钮使用 amily2_settings_block，但CSS会对其进行特殊处理 -->
             <div class="amily2_settings_block">
                 <label for="novel-force-new">强制新建条目 (不更新现有条目)</label>
                 <label class="amily2-glossary-toggle">

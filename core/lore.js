@@ -1,7 +1,7 @@
 import { extension_settings, getContext } from "/scripts/extensions.js";
 import { characters, eventSource, event_types } from "/script.js";
 import { loadWorldInfo, createNewWorldInfo, createWorldInfoEntry, saveWorldInfo, world_names } from "/scripts/world-info.js";
-import { compatibleWriteToLorebook, safeLorebooks, safeCharLorebooks, safeLorebookEntries, isTavernHelperAvailable } from "./tavernhelper-compatibility.js";
+import { compatibleWriteToLorebook, safeLorebooks, safeCharLorebooks, safeLorebookEntries } from "./tavernhelper-compatibility.js";
 import { extensionName } from "../utils/settings.js";
 
 
@@ -122,7 +122,7 @@ async function refreshWorldbookListOnly(newBookName = null) {
 
 export async function writeSummaryToLorebook(pendingData) {
     if (!pendingData || !pendingData.summary || !pendingData.sourceAiMessageTimestamp || !pendingData.settings) {
-        console.warn("[Amily2-国史馆] 接到一份残缺的待办文书，写入任务已中止。", pendingData);
+        console.warn("[Amily助手-国史馆] 接到一份残缺的待办文书，写入任务已中止。", pendingData);
         return;
     }
 
@@ -130,32 +130,38 @@ export async function writeSummaryToLorebook(pendingData) {
     const chat = context.chat;
     let isSourceMessageValid = false;
     let sourceMessageCandidate = null;
-    for (let i = chat.length - 2; i >= 0; i--) {
-        if (!chat[i].is_user) { sourceMessageCandidate = chat[i]; break; }
+    // 寻找最新的 AI 消息以进行时间戳验证
+    for (let i = chat.length - 1; i >= 0; i--) {
+        if (!chat[i].is_user) {
+            sourceMessageCandidate = chat[i];
+            break;
+        }
     }
+
     if (sourceMessageCandidate && sourceMessageCandidate.send_date === pendingData.sourceAiMessageTimestamp) {
         isSourceMessageValid = true;
     }
+
     if (!isSourceMessageValid) {
-        console.log("[Amily2号-逆时寻踪] 裁决: 源消息已被修改或删除，遵旨废黜过时总结。");
+        console.log("[Amily助手-逆时寻踪] 裁决: 源消息已被修改或删除，遵旨废黜过时总结。");
         return;
     }
 
     const { summary: summaryToCommit, settings } = pendingData;
 
-    console.groupCollapsed(`[Amily2号-存档任务-v21.0 最终圣旨版] ${new Date().toLocaleTimeString()}`);
+    console.groupCollapsed(`[Amily助手-存档任务] ${new Date().toLocaleTimeString()}`);
     console.time("总结写入总耗时");
 
     try {
         const chatIdentifier = await getChatIdentifier();
         const character = characters[context.characterId];
         let targetLorebookName = null;
-        let isNewBook = false;
+
         switch (settings.target) {
             case "character_main":
                 targetLorebookName = character?.data?.extensions?.world;
                 if (!targetLorebookName) {
-                    toastr.warning("角色未绑定主世界书，总结写入任务已中止。", "Amily2号");
+                    toastr.warning("角色未绑定主世界书，总结写入任务已中止。", "Amily助手");
                     console.groupEnd();
                     return;
                 }
@@ -164,63 +170,47 @@ export async function writeSummaryToLorebook(pendingData) {
                 targetLorebookName = `${DEDICATED_LOREBOOK_NAME}-${chatIdentifier}`;
                 break;
             default:
-                toastr.error(`收到未知的写入指令: "${settings.target}"`, "Amily2号");
+                toastr.error(`收到未知的写入指令: "${settings.target}"`, "Amily助手");
                 console.groupEnd();
                 return;
         }
 
-        if (!world_names.includes(targetLorebookName)) {
-            await createNewWorldInfo(targetLorebookName);
-            isNewBook = true;
-        }
-
         const uniqueLoreName = `${LOREBOOK_PREFIX}${chatIdentifier}`;
-        const bookData = await loadWorldInfo(targetLorebookName);
-        if (!bookData) {
-            toastr.error(`无法加载世界书《${targetLorebookName}》`, "Amily2号");
-            console.groupEnd();
-            return;
-        }
 
-        const existingEntry = Object.values(bookData.entries).find(e => e.comment === uniqueLoreName && !e.disable);
+        // 定义内容更新的回调函数
+        const contentUpdateCallback = (existingContent) => {
+            if (existingContent) {
+                // 如果条目已存在，追加内容
+                const cleanedContent = existingContent.replace(INTRODUCTORY_TEXT, "").trim();
+                const lines = cleanedContent ? cleanedContent.split("\n") : [];
+                const nextNumber = lines.length + 1;
+                return `${existingContent}\n${nextNumber}. ${summaryToCommit}`;
+            } else {
+                // 如果条目不存在，创建新内容
+                return `${INTRODUCTORY_TEXT}1. ${summaryToCommit}`;
+            }
+        };
 
-        if (existingEntry) {
-            const existingContent = existingEntry.content.replace(INTRODUCTORY_TEXT, "").trim();
-            const lines = existingContent ? existingContent.split("\n") : [];
-            const nextNumber = lines.length + 1;
-            existingEntry.content += `\n${nextNumber}. ${summaryToCommit}`;
+        // 定义写入选项
+        const options = {
+            keys: settings.keywords.split(',').map(k => k.trim()).filter(Boolean),
+            isConstant: settings.activationMode === 'always',
+            insertion_position: settings.insertionPosition,
+            depth: settings.depth,
+        };
+
+        // 使用统一的兼容性写入函数
+        const success = await compatibleWriteToLorebook(targetLorebookName, uniqueLoreName, contentUpdateCallback, options);
+
+        if (success) {
+            toastr.success(`总结已成功写入《${targetLorebookName}》！`, "Amily助手");
         } else {
-
-            const positionMap = {
-                'before_char': 0, 'after_char': 1, 'before_an': 2,
-                'after_an': 3, 'at_depth': 4
-            };
-
-            const finalKeywords = settings.keywords.split(',').map(k => k.trim()).filter(Boolean);
-            const isConstant = settings.activationMode === 'always';
-            const newEntry = createWorldInfoEntry(targetLorebookName, bookData);
-            Object.assign(newEntry, {
-                comment: uniqueLoreName,
-                content: `${INTRODUCTORY_TEXT}1. ${summaryToCommit}`,
-                key: finalKeywords,
-                constant: isConstant,
-                position: positionMap[settings.insertionPosition] ?? 4,
-                depth: settings.depth,
-                disable: false,
-            });
+            toastr.error(`总结写入《${targetLorebookName}》时失败。`, "Amily助手");
         }
 
-
-        await saveWorldInfo(targetLorebookName, bookData, true);
-        console.log(`[史官司] 总结已遵旨写入《${targetLorebookName}》文件。`);
-
-        if (isNewBook) {
-            await refreshWorldbookListOnly(targetLorebookName);
-            toastr.success(`已创建并写入新档案《${targetLorebookName}》！`, "Amily2号");
-        }
     } catch (error) {
-        console.error("[Amily2号-写入失败] 写入流程发生意外错误:", error);
-        toastr.error("后台写入总结时发生错误。", "Amily2号");
+        console.error("[Amily助手-写入失败] 写入流程发生意外错误:", error);
+        toastr.error("后台写入总结时发生错误。", "Amily助手");
     } finally {
         console.timeEnd("总结写入总耗时");
         console.groupEnd();
@@ -331,8 +321,8 @@ export async function getPlotOptimizedWorldbookContent(context, apiSettings) {
         return '';
     }
 
-    if (!isTavernHelperAvailable() || !context) {
-        console.warn('[剧情优化大师] TavernHelper API 或 context 未提供，无法获取世界书内容。');
+    if (!context) {
+        console.warn('[剧情优化大师] context 未提供，无法获取世界书内容。');
         return '';
     }
 
@@ -429,37 +419,7 @@ export async function getPlotOptimizedWorldbookContent(context, apiSettings) {
 }
 
 
-export async function writeToLorebookWithTavernHelper(targetLorebookName, entryComment, contentUpdateCallback, options = {}) {
-    console.log('[国史馆-兼容性] writeToLorebookWithTavernHelper 接收到的选项:', options);
-
-    try {
-        const success = await compatibleWriteToLorebook(targetLorebookName, entryComment, contentUpdateCallback, options);
-        
-        if (success) {
-            console.log(`[Amily2-国史馆] 已通过兼容性层将内容成功写入《${targetLorebookName}》的条目 "${entryComment}"。`);
-
-            if (eventSource && typeof eventSource.emit === "function" && event_types.CHARACTER_PAGE_LOADED) {
-                eventSource.emit(event_types.CHARACTER_PAGE_LOADED);
-            }
-            
-            return true;
-        } else {
-            throw new Error("兼容性层写入失败，请检查控制台日志。");
-        }
-    } catch (error) {
-        console.error(`[Amily2-国史馆] 兼容性写入失败:`, error);
-        toastr.error(`写入世界书失败: ${error.message}`, "Amily2号-国史馆");
-        return false;
-    }
-}
-
-
 export async function manageLorebookEntriesForChat() {
-    if (!isTavernHelperAvailable()) {
-        console.warn("[Amily2-国史馆] TavernHelper API 未找到，无法管理条目状态。");
-        return;
-    }
-
     try {
         const chatIdentifier = await getChatIdentifier();
         if (!chatIdentifier || chatIdentifier.startsWith("unknown_chat")) {

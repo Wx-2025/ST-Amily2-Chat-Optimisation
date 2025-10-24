@@ -4,7 +4,7 @@ import { saveSettingsDebounced } from "/script.js";
 import { pluginAuthStatus } from "./auth.js";
 
 export const extensionName = "ST-Amily2-Chat-Optimisation";
-export const pluginVersion = "1.4.4";
+export const pluginVersion = "1.4.5";
 
 
 export const defaultSettings = {
@@ -30,8 +30,9 @@ export const defaultSettings = {
   plotOpt_tableEnabled: false,
   plotOpt_worldbookSource: 'character',
   plotOpt_worldbookCharLimit: 60000,
-  plotOpt_contextLimit: 4,
-  plotOpt_rateMain: 0.7,
+    plotOpt_contextLimit: 4,
+    plotOpt_ejsEnabled: false,
+    plotOpt_rateMain: 0.7,
   plotOpt_ratePersonal: 0.1,
   plotOpt_rateErotic: 0.2,
   plotOpt_rateCuckold: 0.2,

@@ -3,6 +3,7 @@ import { logError, showToastr, escapeHtml } from './cwb_utils.js';
 import { getRequestHeaders } from '/script.js';
 import { extensionName } from '../../utils/settings.js';
 import { extension_settings, getContext } from "/scripts/extensions.js";
+import { compatibleTriggerSlash } from '../../core/tavernhelper-compatibility.js';
 
 function normalizeApiResponse(responseData) {
     let data = responseData;
@@ -51,10 +52,6 @@ function getCwbApiSettings() {
 async function callCwbSillyTavernPreset(messages, options) {
     console.log('[CWB-ST预设] 使用SillyTavern预设调用');
 
-    if (!window.TavernHelper || !window.TavernHelper.triggerSlash) {
-        throw new Error('TavernHelper不可用，无法使用SillyTavern预设模式');
-    }
-
     const context = getContext();
     if (!context) {
         throw new Error('无法获取SillyTavern上下文');
@@ -69,7 +66,7 @@ async function callCwbSillyTavernPreset(messages, options) {
     let responsePromise;
 
     try {
-        originalProfile = await window.TavernHelper.triggerSlash('/profile');
+        originalProfile = await compatibleTriggerSlash('/profile');
         console.log(`[CWB-ST预设] 当前配置文件: ${originalProfile}`);
 
         const targetProfile = context.extensionSettings?.connectionManager?.profiles?.find(p => p.id === profileId);
@@ -80,11 +77,11 @@ async function callCwbSillyTavernPreset(messages, options) {
         const targetProfileName = targetProfile.name;
         console.log(`[CWB-ST预设] 目标配置文件: ${targetProfileName}`);
 
-        const currentProfile = await window.TavernHelper.triggerSlash('/profile');
+        const currentProfile = await compatibleTriggerSlash('/profile');
         if (currentProfile !== targetProfileName) {
             console.log(`[CWB-ST预设] 切换配置文件: ${currentProfile} -> ${targetProfileName}`);
             const escapedProfileName = targetProfileName.replace(/"/g, '\\"');
-            await window.TavernHelper.triggerSlash(`/profile await=true "${escapedProfileName}"`);
+            await compatibleTriggerSlash(`/profile await=true "${escapedProfileName}"`);
         }
 
         if (!context.ConnectionManagerRequestService) {
@@ -100,11 +97,11 @@ async function callCwbSillyTavernPreset(messages, options) {
 
     } finally {
         try {
-            const currentProfileAfterCall = await window.TavernHelper.triggerSlash('/profile');
+            const currentProfileAfterCall = await compatibleTriggerSlash('/profile');
             if (originalProfile && originalProfile !== currentProfileAfterCall) {
                 console.log(`[CWB-ST预设] 恢复原始配置文件: ${currentProfileAfterCall} -> ${originalProfile}`);
                 const escapedOriginalProfile = originalProfile.replace(/"/g, '\\"');
-                await window.TavernHelper.triggerSlash(`/profile await=true "${escapedOriginalProfile}"`);
+                await compatibleTriggerSlash(`/profile await=true "${escapedOriginalProfile}"`);
             }
         } catch (restoreError) {
             console.error('[CWB-ST预设] 恢复配置文件失败:', restoreError);

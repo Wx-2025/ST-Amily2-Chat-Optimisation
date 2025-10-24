@@ -212,6 +212,17 @@
     border-color: var(--am2-button-danger-hover-border-color, #ff5252) !important;
 }
 
+/* 【延迟删除】恢复按钮的成功样式 */
+#amily2_memorisation_forms_panel .menu_button.success {
+    background: var(--am2-button-success-bg, rgba(40, 167, 69, 0.2)) !important;
+    border-color: var(--am2-button-success-border-color, rgba(40, 167, 69, 0.5)) !important;
+}
+
+#amily2_memorisation_forms_panel .menu_button.success:hover {
+    background: var(--am2-button-success-hover-bg, rgba(40, 167, 69, 0.4)) !important;
+    border-color: var(--am2-button-success-hover-border-color, #28a745) !important;
+}
+
 #amily2_memorisation_forms_panel .menu_button.small_button {
     padding: 5px 12px;
     font-size: 0.9em;
@@ -794,10 +805,9 @@ th.amily2-menu-open .amily2-context-menu {
     }
 
     #amily2-chat-table-container {
-        padding: 5px; /* Reduce container padding on mobile */
+        padding: 5px; 
     }
 
-    /* On mobile, allow text wrapping to prevent overflow */
     .amily2-chat-table th,
     .amily2-chat-table td {
         white-space: normal;
@@ -810,8 +820,26 @@ th.amily2-menu-open .amily2-context-menu {
     transition: background-color 0.5s ease-in-out;
 }
 
-/* Override for mobile horizontal scrolling when JS detects a touch device */
 #amily2-chat-table-container.mobile-table-view .amily2-chat-table th,
 #amily2-chat-table-container.mobile-table-view .amily2-chat-table td {
     white-space: nowrap;
+}
+
+.pending-deletion-row {
+    background-color: rgba(255, 82, 82, 0.15) !important;
+    transition: background-color 0.3s ease;
+}
+
+.pending-deletion-row:hover {
+    background-color: rgba(255, 82, 82, 0.25) !important;
+}
+
+.pending-deletion-row td {
+    opacity: 0.7; 
+}
+
+h3.table-updated {
+    color: #87CEFA !important; 
+    text-shadow: 0 0 8px #00BFFF, 0 0 12px rgba(0, 191, 255, 0.5);
+    transition: color 0.4s ease-in-out, text-shadow 0.4s ease-in-out;
 }

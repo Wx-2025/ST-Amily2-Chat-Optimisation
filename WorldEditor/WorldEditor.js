@@ -2,21 +2,18 @@
 import { world_names, loadWorldInfo, saveWorldInfo, deleteWorldInfo, updateWorldInfoList } from "/scripts/world-info.js";
 import { eventSource, event_types } from '/script.js';
 import { showHtmlModal } from '/scripts/extensions/third-party/ST-Amily2-Chat-Optimisation/ui/page-window.js';
-import { safeLorebooks, safeLorebookEntries, safeUpdateLorebookEntries } from '../core/tavernhelper-compatibility.js';
-import { writeToLorebookWithTavernHelper } from '../core/lore.js';
-const { SillyTavern, TavernHelper } = window;
+import { safeLorebooks, safeLorebookEntries, safeUpdateLorebookEntries, compatibleWriteToLorebook } from '../core/tavernhelper-compatibility.js';
+import { amilyHelper } from '../core/tavern-helper/main.js';
+const { SillyTavern } = window;
 
 class WorldEditor {
     constructor() {
-        // 通用状态
         this.isLoading = false;
 
-        // 世界书视图状态
         this.allWorldBooks = [];
         this.filteredWorldBooks = [];
         this.selectedWorldBooks = new Set();
 
-        // 条目视图状态
         this.currentWorldBook = null;
         this.entries = [];
         this.selectedEntries = new Set();
@@ -204,7 +201,7 @@ class WorldEditor {
         if (bookName && bookName.trim()) {
             const trimmedBookName = bookName.trim();
             try {
-                await writeToLorebookWithTavernHelper(trimmedBookName, '新条目', () => '这是一个新条目', {});
+                await compatibleWriteToLorebook(trimmedBookName, '新条目', () => '这是一个新条目', {});
                 if (window.toastr) window.toastr.success(`世界书 "${trimmedBookName}" 创建成功！`);
                 this.loadAvailableWorldBooks();
             } catch (error) {
@@ -305,7 +302,7 @@ class WorldEditor {
             this.entries = (rawEntries || []).map(e => ({
                 uid: e.uid, enabled: e.enabled, type: e.type || (e.constant ? 'constant' : 'selective'),
                 keys: e.keys || [], content: e.content || '', position: e.position || 'before_character_definition',
-                depth: (e.position?.startsWith('at_depth')) ? e.depth : null, order: e.order || 100, comment: e.comment || '',
+                depth: (String(e.position)?.startsWith('at_depth')) ? e.depth : null, order: e.order || 100, comment: e.comment || '',
                 exclude_recursion: e.exclude_recursion, prevent_recursion: e.prevent_recursion
             }));
             this.filteredEntries = [...this.entries];
@@ -381,7 +378,7 @@ class WorldEditor {
                 <div data-label="条目"><input type="text" class="inline-edit" data-field="comment" data-uid="${entry.uid}" value="${entry.comment || ''}" placeholder="点击填写条目名"></div>
                 <div data-label="内容" class="world-editor-entry-content" data-action="open-editor" data-uid="${entry.uid}" title="${entry.content || ''}">${entry.content || ''}</div>
                 <div data-label="位置">${positionSelect}</div>
-                <div data-label="深度"><input type="number" class="inline-edit" data-field="depth" data-uid="${entry.uid}" value="${entry.depth != null ? entry.depth : ''}" ${!entry.position?.startsWith('at_depth') ? 'disabled' : ''}></div>
+                <div data-label="深度"><input type="number" class="inline-edit" data-field="depth" data-uid="${entry.uid}" value="${entry.depth != null ? entry.depth : ''}" ${!String(entry.position)?.startsWith('at_depth') ? 'disabled' : ''}></div>
                 <div data-label="顺序"><input type="number" class="inline-edit" data-field="order" data-uid="${entry.uid}" value="${entry.order}"></div>
             </div>`;
     }
@@ -523,7 +520,12 @@ class WorldEditor {
     async batchDeleteEntries() {
         if (this.selectedEntries.size === 0 || !confirm(`删除 ${this.selectedEntries.size} 个条目?`)) return;
         try {
-            await TavernHelper.deleteLorebookEntries(this.currentWorldBook, Array.from(this.selectedEntries));
+            const bookData = await loadWorldInfo(this.currentWorldBook);
+            if (!bookData) throw new Error(`World book "${this.currentWorldBook}" not found.`);
+            this.selectedEntries.forEach(uid => {
+                delete bookData.entries[uid];
+            });
+            await saveWorldInfo(this.currentWorldBook, bookData, true);
             this.loadWorldBookEntries(this.currentWorldBook);
         } catch (error) {
             this.showError(`删除失败: ${error.message}`);
@@ -605,7 +607,7 @@ class WorldEditor {
                 await this.updateEntriesWithNativeMethod([{ ...this.currentEditingEntry, ...formData }]);
             } else {
                 // 创建条目仍然可以使用TavernHelper，因为它通常不会触发跳转
-                await TavernHelper.createLorebookEntries(this.currentWorldBook, [formData]);
+                await amilyHelper.createLorebookEntries(this.currentWorldBook, [formData]);
             }
             // 刷新当前视图
             this.loadWorldBookEntries(this.currentWorldBook);
@@ -667,21 +669,40 @@ class WorldEditor {
 }
 
 function initializeWorldEditor() {
-    // 确保面板存在
-    if (!document.getElementById('amily2_world_editor_panel')) {
+    const panel = document.getElementById('amily2_world_editor_panel');
+    if (!panel) {
         console.error('[WorldEditor] Panel not found, initialization aborted.');
         return;
     }
-    // 防止重复初始化
-    if (!window.worldEditorInstance) {
-        console.log('[WorldEditor] Initializing WorldEditor instance.');
-        window.worldEditorInstance = new WorldEditor();
+    if (panel.dataset.initialized) {
+        return;
+    }
+    panel.dataset.initialized = 'true';
+    console.log('[WorldEditor] Initializing WorldEditor instance.');
+    window.worldEditorInstance = new WorldEditor();
+}
+
+function tryInitialize() {
+    const panel = document.getElementById('amily2_world_editor_panel');
+    if (panel) {
+        initializeWorldEditor();
+    } else {
+        const observer = new MutationObserver((mutations, obs) => {
+            const panel = document.getElementById('amily2_world_editor_panel');
+            if (panel) {
+                obs.disconnect();
+                initializeWorldEditor();
+            }
+        });
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
     }
 }
 
-// 确保在DOM加载完毕后执行
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeWorldEditor);
+    document.addEventListener('DOMContentLoaded', tryInitialize);
 } else {
-    initializeWorldEditor();
+    tryInitialize();
 }

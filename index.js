@@ -10,7 +10,7 @@ import { getContext } from "/scripts/extensions.js";
 import { characters, this_chid } from '/script.js';
 import { injectTableData, generateTableContent } from "./core/table-system/injector.js"; 
 import { initialize as initializeRagProcessor } from "./core/rag-processor.js"; 
-import { loadTables, clearHighlights, rollbackAndRefill, rollbackState } from './core/table-system/manager.js';
+import { loadTables, clearHighlights, rollbackAndRefill, rollbackState, commitPendingDeletions, saveStateToMessage, getMemoryState, clearUpdatedTables } from './core/table-system/manager.js';
 import { renderTables } from './ui/table-bindings.js';
 import { log } from './core/table-system/logger.js';
 import { eventSource, event_types, saveSettingsDebounced } from '/script.js';
@@ -25,6 +25,7 @@ import { cwbDefaultSettings } from './CharacterWorldBook/src/cwb_config.js';
 import { bindGlossaryEvents } from './glossary/GT_bindings.js';
 import './core/amily2-updater.js';
 import { updateOrInsertTableInChat, startContinuousRendering, stopContinuousRendering } from './ui/message-table-renderer.js';
+import { isTavernHelperAvailable } from './core/tavernhelper-compatibility.js';
 
 const STYLE_SETTINGS_KEY = 'amily2_custom_styles';
 const STYLE_ROOT_SELECTOR = '#amily2_memorisation_forms_panel';
@@ -379,6 +380,11 @@ jQuery(async () => {
         let isProcessingPlotOptimization = false;
 
         async function onPlotGenerationAfterCommands(type, params, dryRun) {
+            // 【V15.2 新增】在发送消息后，清除所有表格的“已更新”高亮状态
+            clearUpdatedTables();
+
+            // 【V15.3 修正】提交删除的逻辑已移至 injector.js，此处不再需要
+
             console.log("[Amily2-剧情优化] Generation after commands triggered", { type, params, dryRun, isProcessing: isProcessingPlotOptimization });
 
             if (type === 'regenerate' || isProcessingPlotOptimization || dryRun) {
@@ -509,6 +515,7 @@ jQuery(async () => {
                 setTimeout(() => {
                     log("【监察系统】检测到“朝代更迭”(CHAT_CHANGED)，开始重修史书并刷新宫殿...", 'info');
                     clearHighlights();
+                    clearUpdatedTables(); // 【V15.2 新增】切换聊天时清除“已更新”高亮
                     loadTables();
                     renderTables();
 
@@ -548,8 +555,8 @@ jQuery(async () => {
             console.log('[Amily2-核心引擎] 开始执行统一注入 (聊天长度:', args[0]?.length || 0, ')');
 
             try {
-
-                injectTableData(...args);
+                // 【V15.3 修正】由于 injectTableData 现在是异步的，需要 await
+                await injectTableData(...args);
             } catch (error) {
                 console.error('[Amily2-内存储司] 表格注入失败:', error);
             }

@@ -9,7 +9,8 @@ import {
   saveWorldInfo,
 } from "/scripts/world-info.js";
 import { extensionName } from "../utils/settings.js";
-import { getChatIdentifier, writeToLorebookWithTavernHelper } from "./lore.js";
+import { getChatIdentifier } from "./lore.js";
+import { compatibleWriteToLorebook } from "./tavernhelper-compatibility.js";
 import { ingestTextToHanlinyuan } from "./rag-processor.js";
 import { showSummaryModal, showHtmlModal } from "../ui/page-window.js";
 import { getPresetPrompts, getMixedOrder } from '../PresetSettings/index.js';
@@ -437,7 +438,7 @@ async function writeSummary(summary, startFloor, endFloor, toastTitle) {
 
             console.log('[大史官-调试] 构建并传递的选项:', optionsForNewEntry);
 
-            const success = await writeToLorebookWithTavernHelper(
+            const success = await compatibleWriteToLorebook(
                 targetLorebookName,
                 RUNNING_LOG_COMMENT,
                 contentUpdateCallback,
@@ -448,7 +449,8 @@ async function writeSummary(summary, startFloor, endFloor, toastTitle) {
                 toastr.success(`编年史已成功更新！`, `${toastTitle} - 国史馆`);
                 return true;
             } else {
-                throw new Error("使用 TavernHelper 写入失败，请检查控制台日志。");
+                // 错误已在 compatibleWriteToLorebook 内部处理和记录
+                return false;
             }
 
         } catch (error) {
