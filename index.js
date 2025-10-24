@@ -627,5 +627,4 @@ jQuery(async () => {
       }
     }
   }, checkInterval);
-
 });
