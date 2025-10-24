@@ -208,9 +208,11 @@ export async function updateCharacterRosterLorebookEntry(processedCharacterNames
                     }
                 });
             }
-            const floorRangeKey = existingRosterEntry.keys.find(k => /^\d+-\d+$/.test(k));
-            if (floorRangeKey) {
-                [oldStartFloor] = floorRangeKey.split('-').map(Number);
+            if (Array.isArray(existingRosterEntry.keys)) {
+                const floorRangeKey = existingRosterEntry.keys.find(k => /^\d+-\d+$/.test(k));
+                if (floorRangeKey) {
+                    [oldStartFloor] = floorRangeKey.split('-').map(Number);
+                }
             }
         }
 
