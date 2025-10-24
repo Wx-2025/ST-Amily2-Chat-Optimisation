@@ -659,8 +659,9 @@ export function bindGlossaryEvents() {
     bindReorganizeEvents();
     loadWorldBooks();
 
-    eventSource.on(event_types.CHARACTER_PAGE_LOADED, () => {
-        console.log('[Amily2-术语表] 检测到角色加载，重新加载世界书列表以确保同步。');
+    // 监听我们自己的世界书创建事件，而不是监听全局的角色加载事件，避免冲突
+    document.addEventListener('amily-lorebook-created', (event) => {
+        console.log(`[Amily2-术语表] 检测到新世界书《${event.detail.bookName}》创建，重新加载列表以确保同步。`);
         loadWorldBooks();
     });
 
