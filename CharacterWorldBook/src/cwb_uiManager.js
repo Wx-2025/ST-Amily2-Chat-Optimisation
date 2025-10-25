@@ -145,7 +145,7 @@ function createCharCardViewerPopupHtml(displayItems) {
                 if (charData.psyche_profile) html += renderCard('心智侧写', charData.psyche_profile, 'psyche_profile');
                 if (charData.social_matrix) html += renderCard('社交矩阵', charData.social_matrix, 'social_matrix');
                 if (charData.narrative_essence) html += renderCard('叙事精粹', charData.narrative_essence, 'narrative_essence');
-
+                
                 html += `<div class="cwb-cyber-card cwb-insertion-settings-card">
                             <h4 class="cwb-cyber-card__title">注入设置</h4>
                             <div class="cwb-cyber-card__content cwb-insertion-settings-content">
@@ -184,7 +184,7 @@ function createCharCardViewerPopupHtml(displayItems) {
 }
 
 function bindCharCardViewerPopupEvents($popup) {
-    $popup.on('change', '.cwb-insertion-position', function () {
+    $popup.on('change', '.cwb-insertion-position', function() {
         const $this = $(this);
         const $depthContainer = $this.closest('.cwb-insertion-settings-content').find('.cwb-insertion-depth-container');
         if ($this.val() === 'at_depth') {
@@ -200,7 +200,7 @@ function bindCharCardViewerPopupEvents($popup) {
         showCharCardViewerPopup();
     });
 
-    $popup.find('#cwb-manual-update-btn').on('click', async function () {
+    $popup.find('#cwb-manual-update-btn').on('click', async function() {
         const $button = $(this);
         $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 更新中...');
         await manualUpdateLogic();
@@ -217,7 +217,7 @@ function bindCharCardViewerPopupEvents($popup) {
         $popup.find(`#cwb-char-content-${targetUid}`).addClass('active');
     });
 
-    $popup.find('.cwb-cyber-tab__delete').on('click', async function (e) {
+    $popup.find('.cwb-cyber-tab__delete').on('click', async function(e) {
         e.stopPropagation();
         if (confirm('您确定要删除这个角色条目吗？此操作不可撤销。')) {
             const uidToDelete = $(this).data('char-uid');
@@ -235,9 +235,9 @@ function bindCharCardViewerPopupEvents($popup) {
         }
     });
 
-    $popup.find('#cwb-viewer-delete-all').on('click', async function () {
+    $popup.find('#cwb-viewer-delete-all').on('click', async function() {
         if (confirm('您确定要清除当前聊天中的所有角色卡和总览吗？此操作将删除所有相关条目，且不可撤销。')) {
-            const allUids = $popup.find('.cwb-cyber-tab__button').map(function () {
+            const allUids = $popup.find('.cwb-cyber-tab__button').map(function() {
                 return $(this).data('char-uid');
             }).get();
             if (allUids.length > 0) {
@@ -278,18 +278,10 @@ function bindCharCardViewerPopupEvents($popup) {
                 if ($field.data('is-array')) {
                     value = value.split('\n').map(l => l.trim()).filter(Boolean);
                 }
-                if (path) {
-                    setNestedValue(collectedData, path, value);
+                if(path){
+                   setNestedValue(collectedData, path, value);
                 }
             });
-            let localTavernHelper = TavernHelper;
-            if (!localTavernHelper) {
-                // TavernHelper 未定义的情况下触发，但是为什么？
-                (localTavernHelper = window.TavernHelper);
-                if (localTavernHelper) {
-                    TavernHelper = localTavernHelper;
-                }
-            }
             const finalContentToSave = buildCustomFormat(collectedData);
             const allEntries = await TavernHelper.getLorebookEntries(book);
             const entryToUpdate = allEntries.find(e => e.uid === targetUid);
@@ -307,7 +299,7 @@ function bindCharCardViewerPopupEvents($popup) {
 
             const positionMap = {
                 'before_char': 'before_character_definition',
-                'after_char': 'after_character_definition',
+                'after_char': 'after_character_definition', 
                 'before_an': 'before_author_note',
                 'after_an': 'after_author_note',
                 'at_depth': 'at_depth_as_system'
@@ -317,7 +309,7 @@ function bindCharCardViewerPopupEvents($popup) {
 
             finalEntryData.content = finalContentToSave;
             finalEntryData.uid = targetUid;
-
+            
             const newPosition = positionMap[insertionPosition];
             finalEntryData.position = newPosition || 'before_character_definition';
             if (insertionPosition === 'at_depth') {
@@ -325,7 +317,7 @@ function bindCharCardViewerPopupEvents($popup) {
             } else {
                 finalEntryData.depth = null;
             }
-
+            
             finalEntryData.order = isNaN(insertionOrder) ? 7001 : insertionOrder;
 
             logDebug(`[DEBUG] 最终保存数据 UID:${targetUid}`, {
@@ -334,14 +326,7 @@ function bindCharCardViewerPopupEvents($popup) {
                 order: finalEntryData.order,
                 hasDepthField: 'depth' in finalEntryData
             });
-            localTavernHelper = TavernHelper;
-            if (!localTavernHelper) {
-                // TavernHelper 未定义的情况下触发，但是为什么？
-                (localTavernHelper = window.TavernHelper);
-                if (localTavernHelper) {
-                    TavernHelper = localTavernHelper;
-                }
-            }
+
             await TavernHelper.setLorebookEntries(book, [finalEntryData]);
             showToastr('success', '角色卡已成功保存！');
         } catch (error) {
@@ -358,7 +343,7 @@ function closeCharCardViewerPopup() {
 }
 
 export async function showCharCardViewerPopup() {
-    if (!isCwbEnabled()) return;
+    if (!isCwbEnabled()) return; 
     closeCharCardViewerPopup();
     try {
         const book = await getTargetWorldBook();
@@ -367,14 +352,6 @@ export async function showCharCardViewerPopup() {
             $('body').append(createCharCardViewerPopupHtml([]));
             bindCharCardViewerPopupEvents($(`#${CHAR_CARD_VIEWER_POPUP_ID}`));
             return;
-        }
-        let localTavernHelper = TavernHelper;
-        if (!localTavernHelper) {
-            // TavernHelper 未定义的情况下触发，但是为什么？
-            (localTavernHelper = window.TavernHelper);
-            if (localTavernHelper) {
-                TavernHelper = localTavernHelper;
-            }
         }
         const allEntries = await TavernHelper.getLorebookEntries(book);
         let currentChatId = state.currentChatFileIdentifier;
@@ -385,7 +362,7 @@ export async function showCharCardViewerPopup() {
             bindCharCardViewerPopupEvents($(`#${CHAR_CARD_VIEWER_POPUP_ID}`));
             return;
         }
-
+        
         const cleanChatId = currentChatId.replace(/ imported/g, '');
         let displayItems = [];
 
@@ -402,76 +379,81 @@ export async function showCharCardViewerPopup() {
                         return false;
                     }
                 }
-
+                
                 return false;
             });
         } else {
-            relevantEntries = allEntries.filter(entry =>
+            relevantEntries = allEntries.filter(entry => 
                 entry.enabled &&
                 Array.isArray(entry.keys) &&
                 entry.keys.includes(cleanChatId)
             );
         }
 
-        const rosterEntries = relevantEntries.filter(entry =>
+        const rosterEntries = relevantEntries.filter(entry => 
             entry.keys.includes('Amily2角色总集') && entry.keys.includes('角色总览')
         );
 
         rosterEntries.forEach((entry, index) => {
-            displayItems.push({
-                uid: entry.uid,
-                isRoster: true,
-                comment: entry.comment,
+            displayItems.push({ 
+                uid: entry.uid, 
+                isRoster: true, 
+                comment: entry.comment, 
                 content: entry.content,
-                rosterIndex: index
+                rosterIndex: index 
             });
         });
 
         const characterEntries = relevantEntries
             .filter(entry => !entry.keys.includes('Amily2角色总集'))
             .map(entry => {
-                logDebug(`[DEBUG] 原始条目数据 UID:${entry.uid}`, {
-                    position: entry.position,
-                    depth: entry.depth,
-                    order: entry.order,
-                    comment: entry.comment
-                });
+                try {
+                    logDebug(`[DEBUG] 原始条目数据 UID:${entry.uid}`, {
+                        position: entry.position,
+                        depth: entry.depth,
+                        order: entry.order,
+                        comment: entry.comment
+                    });
 
-                const positionStringMap = {
-                    0: 'before_char',
-                    1: 'after_char',
-                    2: 'before_an',
-                    3: 'after_an',
-                    4: 'at_depth',
-                    'before_character_definition': 'before_char',
-                    'after_character_definition': 'after_char',
-                    'before_author_note': 'before_an',
-                    'after_author_note': 'after_an',
-                    'at_depth_as_system': 'at_depth'
-                };
+                    const positionStringMap = {
+                        0: 'before_char',
+                        1: 'after_char',
+                        2: 'before_an',
+                        3: 'after_an',
+                        4: 'at_depth',
+                        'before_character_definition': 'before_char',
+                        'after_character_definition': 'after_char',
+                        'before_author_note': 'before_an',
+                        'after_author_note': 'after_an',
+                        'at_depth_as_system': 'at_depth'
+                    };
 
-                const position = entry.position;
-                const mappedPosition = positionStringMap[position] || 'at_depth';
-                const finalDepth = (position === 4 || position === 'at_depth_as_system') ? (entry.depth ?? 0) : 0;
-                logDebug(`[DEBUG] 映射结果 UID:${entry.uid}`, {
-                    originalPosition: position,
-                    mappedPosition: mappedPosition,
-                    finalDepth: finalDepth
-                });
+                    const position = entry.position;
+                    const mappedPosition = positionStringMap[position] || 'at_depth';
+                    const finalDepth = (position === 4 || position === 'at_depth_as_system') ? (entry.depth ?? 0) : 0;
+                    logDebug(`[DEBUG] 映射结果 UID:${entry.uid}`, {
+                        originalPosition: position,
+                        mappedPosition: mappedPosition,
+                        finalDepth: finalDepth
+                    });
 
-                return {
-                    uid: entry.uid,
-                    isRoster: false,
-                    comment: entry.comment,
-                    content: entry.content,
-                    parsed: parseCustomFormat(entry.content),
-                    insertionPosition: mappedPosition,
-                    insertionDepth: finalDepth,
-                    insertionOrder: entry.order ?? 7001,
-                };
+                    return {
+                        uid: entry.uid,
+                        isRoster: false,
+                        comment: entry.comment,
+                        content: entry.content,
+                        parsed: parseCustomFormat(entry.content),
+                        insertionPosition: mappedPosition,
+                        insertionDepth: finalDepth,
+                        insertionOrder: entry.order ?? 7001,
+                    };
+                } catch (e) {
+                    logError(`解析角色条目失败 (UID: ${entry.uid})，已跳过。`, e);
+                    return null;
+                }
             })
-            .filter(c => c.parsed && Object.keys(c.parsed).length > 0);
-
+            .filter(c => c && c.parsed && Object.keys(c.parsed).length > 0);
+        
         displayItems = displayItems.concat(characterEntries);
 
         const popupHtml = createCharCardViewerPopupHtml(displayItems);
@@ -576,7 +558,7 @@ function makeButtonDraggable($button) {
 
 export function initializeCharCardViewer() {
     const $existingButton = $(`#${CHAR_CARD_VIEWER_BUTTON_ID}`);
-
+    
     if ($existingButton.length > 0) {
         console.log('[CWB] Char card viewer button already exists');
         setTimeout(() => {
@@ -586,12 +568,12 @@ export function initializeCharCardViewer() {
         }, 100);
         return;
     }
-
+    
     const buttonHtml = `<div id="${CHAR_CARD_VIEWER_BUTTON_ID}" title="查看角色世界书" class="fa-solid fa-book-open"></div>`;
     $('body').append(buttonHtml);
     const $viewerButton = $(`#${CHAR_CARD_VIEWER_BUTTON_ID}`);
     makeButtonDraggable($viewerButton);
-
+    
     const savedPosition = JSON.parse(localStorage.getItem(state.STORAGE_KEY_VIEWER_BUTTON_POS) || 'null');
     if (savedPosition) {
         $viewerButton.css({ top: savedPosition.top, left: savedPosition.left });
@@ -604,9 +586,9 @@ export function initializeCharCardViewer() {
         $viewerButton.toggle(shouldShow);
         console.log(`[CWB] New button created with visibility: ${shouldShow}`);
     }, 100);
-
+    
     console.log('[CWB] Char card viewer button initialized');
-
+    
     let resizeTimeout;
     $(window).on('resize.cwbViewer', function () {
         clearTimeout(resizeTimeout);
@@ -617,9 +599,9 @@ export function initializeCharCardViewer() {
 export function updateViewerButtonVisibility() {
     const $button = $(`#${CHAR_CARD_VIEWER_BUTTON_ID}`);
     const shouldShow = isCwbEnabled() && state.viewerEnabled;
-
+    
     console.log(`[CWB] Updating viewer button visibility: ${shouldShow} (master: ${isCwbEnabled()}, viewer: ${state.viewerEnabled})`);
-
+    
     if ($button.length > 0) {
         $button.toggle(shouldShow);
         console.log(`[CWB] Viewer button visibility set to: ${shouldShow}`);
@@ -630,7 +612,7 @@ export function updateViewerButtonVisibility() {
             initializeCharCardViewer();
         }, 500);
     }
-
+    
     logDebug('悬浮窗按钮显示状态更新:', {
         masterEnabled: isCwbEnabled(),
         viewerEnabled: state.viewerEnabled,
@@ -640,43 +622,43 @@ export function updateViewerButtonVisibility() {
 
 export function bindCwbApiEvents() {
     console.log('[CWB] Binding API events');
-
-    $('#cwb-api-url').off('input').on('input', function () {
+    
+    $('#cwb-api-url').off('input').on('input', function() {
         const value = $(this).val();
         extension_settings[extensionName].cwb_api_url = value;
         saveSettingsDebounced();
     });
 
-    $('#cwb-api-key').off('input').on('input', function () {
+    $('#cwb-api-key').off('input').on('input', function() {
         const value = $(this).val();
         extension_settings[extensionName].cwb_api_key = value;
         saveSettingsDebounced();
     });
 
-    $('#cwb-model').off('input').on('input', function () {
+    $('#cwb-model').off('input').on('input', function() {
         const value = $(this).val();
         extension_settings[extensionName].cwb_model = value;
         saveSettingsDebounced();
     });
 
-    $('#cwb-temperature').off('input').on('input', function () {
+    $('#cwb-temperature').off('input').on('input', function() {
         const value = parseFloat($(this).val());
         $('#cwb-temperature-value').text(value);
         extension_settings[extensionName].cwb_temperature = value;
         saveSettingsDebounced();
     });
 
-    $('#cwb-max-tokens').off('input').on('input', function () {
+    $('#cwb-max-tokens').off('input').on('input', function() {
         const value = parseInt($(this).val());
         $('#cwb-max-tokens-value').text(value);
         extension_settings[extensionName].cwb_max_tokens = value;
         saveSettingsDebounced();
     });
 
-    $('#cwb-test-connection').off('click').on('click', async function () {
+    $('#cwb-test-connection').off('click').on('click', async function() {
         const $button = $(this);
         $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 测试中...');
-
+        
         try {
             await testCwbConnection();
         } catch (error) {
@@ -686,15 +668,15 @@ export function bindCwbApiEvents() {
         }
     });
 
-    $('#cwb-fetch-models').off('click').on('click', async function () {
+    $('#cwb-fetch-models').off('click').on('click', async function() {
         const $button = $(this);
         $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 获取中...');
-
+        
         try {
             const models = await fetchCwbModels();
             const $modelSelect = $('#cwb-model');
             $modelSelect.empty();
-
+            
             if (models && models.length > 0) {
                 models.forEach(model => {
                     $modelSelect.append(new Option(model.name, model.id));
