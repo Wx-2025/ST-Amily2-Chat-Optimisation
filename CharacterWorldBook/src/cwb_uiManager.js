@@ -6,8 +6,9 @@ import { testCwbConnection, fetchCwbModels } from './cwb_apiService.js';
 import { extensionName } from '../../utils/settings.js';
 import { extension_settings } from '/scripts/extensions.js';
 import { saveSettingsDebounced } from '/script.js';
+import { amilyHelper } from '../../core/tavern-helper/main.js';
 
-const { jQuery: $, SillyTavern, TavernHelper } = window;
+const { jQuery: $, SillyTavern } = window;
 
 function createCharCardViewerPopupHtml(displayItems) {
     const pathToLabelMap = {
@@ -283,7 +284,7 @@ function bindCharCardViewerPopupEvents($popup) {
                 }
             });
             const finalContentToSave = buildCustomFormat(collectedData);
-            const allEntries = await TavernHelper.getLorebookEntries(book);
+            const allEntries = await amilyHelper.getLorebookEntries(book);
             const entryToUpdate = allEntries.find(e => e.uid === targetUid);
             if (!entryToUpdate) throw new Error('无法在世界书中找到原始条目。');
 
@@ -327,7 +328,7 @@ function bindCharCardViewerPopupEvents($popup) {
                 hasDepthField: 'depth' in finalEntryData
             });
 
-            await TavernHelper.setLorebookEntries(book, [finalEntryData]);
+            await amilyHelper.setLorebookEntries(book, [finalEntryData]);
             showToastr('success', '角色卡已成功保存！');
         } catch (error) {
             logError('保存角色卡失败:', error);
@@ -353,7 +354,7 @@ export async function showCharCardViewerPopup() {
             bindCharCardViewerPopupEvents($(`#${CHAR_CARD_VIEWER_POPUP_ID}`));
             return;
         }
-        const allEntries = await TavernHelper.getLorebookEntries(book);
+        const allEntries = await amilyHelper.getLorebookEntries(book);
         let currentChatId = state.currentChatFileIdentifier;
 
         if (!currentChatId || currentChatId.startsWith('unknown_chat')) {
