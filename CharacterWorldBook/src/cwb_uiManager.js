@@ -284,9 +284,6 @@ function bindCharCardViewerPopupEvents($popup) {
                 }
             });
             const finalContentToSave = buildCustomFormat(collectedData);
-            const allEntries = await amilyHelper.getLorebookEntries(book);
-            const entryToUpdate = allEntries.find(e => e.uid === targetUid);
-            if (!entryToUpdate) throw new Error('无法在世界书中找到原始条目。');
 
             const insertionPosition = $activePane.find('.cwb-insertion-position').val();
             const insertionDepth = parseInt($activePane.find('.cwb-insertion-depth').val(), 10);
@@ -306,20 +303,18 @@ function bindCharCardViewerPopupEvents($popup) {
                 'at_depth': 'at_depth_as_system'
             };
 
-            const finalEntryData = { ...entryToUpdate };
+            const finalEntryData = {
+                uid: targetUid,
+                content: finalContentToSave,
+                position: positionMap[insertionPosition] || 'before_character_definition',
+                order: isNaN(insertionOrder) ? 7001 : insertionOrder,
+            };
 
-            finalEntryData.content = finalContentToSave;
-            finalEntryData.uid = targetUid;
-            
-            const newPosition = positionMap[insertionPosition];
-            finalEntryData.position = newPosition || 'before_character_definition';
             if (insertionPosition === 'at_depth') {
                 finalEntryData.depth = isNaN(insertionDepth) ? 0 : insertionDepth;
             } else {
                 finalEntryData.depth = null;
             }
-            
-            finalEntryData.order = isNaN(insertionOrder) ? 7001 : insertionOrder;
 
             logDebug(`[DEBUG] 最终保存数据 UID:${targetUid}`, {
                 position: finalEntryData.position,
