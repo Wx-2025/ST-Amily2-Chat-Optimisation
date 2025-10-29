@@ -148,9 +148,37 @@ export function updateUI() {
     if (settings.historiographySmallTriggerThreshold !== undefined) {
         $('#amily2_mhb_small_trigger_count').val(settings.historiographySmallTriggerThreshold);
     }
-    populateModelDropdown();
-    updatePlotOptimizationUI(); 
+    // 同步渲染器开关状态
+    if (settings.render_enabled !== undefined) {
+      $('#render-enable-toggle').prop('checked', settings.render_enabled);
   }
+  
+  // 同步渲染深度设置
+  if (settings.render_depth !== undefined) {
+      $('#render-depth').val(settings.render_depth);
+  }
+  
+  populateModelDropdown();
+  updatePlotOptimizationUI(); 
+
+    // Restore collapsible sections state
+    $('.collapsible').each(function() {
+        const section = $(this);
+        const legend = section.find('.collapsible-legend');
+        const content = section.find('.collapsible-content');
+        const icon = legend.find('.collapse-icon');
+        const sectionId = legend.text().trim(); 
+        const isCollapsed = extension_settings[extensionName][`collapsible_${sectionId}_collapsed`] ?? true;
+
+        if (isCollapsed) {
+            content.hide();
+            icon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+        } else {
+            content.show();
+            icon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+        }
+    });
+}
 }
 
 
