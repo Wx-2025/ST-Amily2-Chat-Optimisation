@@ -235,11 +235,6 @@ async function proceedWithCardUpdate($panel, messagesToUse) {
                             messages.push({ role: "system", content: state.currentCharCardPrompt });
                         }
                         break;
-                    case 'cwb_incremental_char_card_prompt':
-                        if (state.isIncrementalUpdateEnabled && state.currentIncrementalCharCardPrompt) {
-                            messages.push({ role: "system", content: state.currentIncrementalCharCardPrompt });
-                        }
-                        break;
                     case 'oldFiles':
                         if (state.isIncrementalUpdateEnabled) {
                             let oldFilesContent = "【旧档案】\n";
