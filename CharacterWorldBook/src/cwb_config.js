@@ -207,7 +207,6 @@ export const cwbDefaultSettings = {
     cwb_tavern_profile: '',
     cwb_break_armor_prompt: cwbCompleteDefaultSettings.cwb_break_armor_prompt,
     cwb_char_card_prompt: cwbCompleteDefaultSettings.cwb_char_card_prompt,
-    cwb_incremental_char_card_prompt: cwbCompleteDefaultSettings.cwb_incremental_char_card_prompt,
     cwb_prompt_version: '1.0.2',
     cwb_auto_update_threshold: 20,
     cwb_auto_update_enabled: false,
