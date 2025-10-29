@@ -87,6 +87,48 @@
         from { text-shadow: 0 0 5px rgba(255, 107, 107, 0.5); }
         to { text-shadow: 0 0 10px rgba(255, 107, 107, 0.8), 0 0 15px rgba(255, 107, 107, 0.3); }
     }
+
+    .collapsible-legend {
+        cursor: pointer;
+        user-select: none;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+    .collapsible-legend:hover {
+        background-color: rgba(255, 255, 255, 0.05);
+    }
+    .collapse-icon {
+        transition: transform 0.2s ease-in-out;
+    }
+    .collapsible-content {
+        padding-top: 10px;
+    }
+    .disclaimer-box {
+        margin-top: 15px;
+        padding: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 8px;
+        background-color: rgba(0, 0, 0, 0.1);
+    }
+    .disclaimer-emo {
+        font-style: italic;
+        color: #adb6e6;
+        text-align: center;
+        margin-bottom: 10px;
+        font-size: 13px;
+    }
+    .disclaimer-text {
+        font-size: 12px;
+        color: #c0c0c0;
+        line-height: 1.6;
+    }
+    .disclaimer-text strong {
+        color: #ffc107;
+        display: block;
+        margin-bottom: 5px;
+    }
 </style>
 <div class="flex-container">
     <div id="amily2_chat_optimiser">
@@ -123,9 +165,9 @@
 <fieldset class="settings-group">
     <legend><i class="fas fa-plus-circle"></i> 记忆增强</legend>
     <div class="button-group" style="display: flex; justify-content: space-between; gap: 8px;">
-        <button id="amily2_open_additional_features" class="menu_button wide_button"><i class="fas fa-landmark-dome"></i> 内阁密室</button>
-        <button id="amily2_open_rag_palace" class="menu_button wide_button"><i class="fas fa-brain"></i> 翰林学院</button>
-        <button id="amily2_open_memorisation_forms" class="menu_button wide_button"><i class="fas fa-table"></i> 内存储司</button>
+        <button id="amily2_open_additional_features" class="menu_button wide_button"><i class="fas fa-landmark-dome"></i> 总结模块</button>
+        <button id="amily2_open_rag_palace" class="menu_button wide_button"><i class="fas fa-brain"></i> 向量模块</button>
+        <button id="amily2_open_memorisation_forms" class="menu_button wide_button"><i class="fas fa-table"></i> 表格模块</button>
         <button id="amily2_open_character_world_book" class="menu_button wide_button"><i class="fa-solid fa-book-atlas"></i> 角色世界</button>
     </div>
 </fieldset>
@@ -136,6 +178,7 @@
         <button id="amily2_open_plot_optimization" class="menu_button wide_button"><i class="fas fa-feather-alt"></i> 剧情优化</button>
         <button id="amily2_open_world_editor" class="menu_button wide_button"><i class="fas fa-globe"></i> 世界编辑</button>
         <button id="amily2_open_glossary" class="menu_button wide_button"><i class="fas fa-book"></i> 术语表单</button>
+        <button id="amily2_open_renderer" class="menu_button wide_button"><i class="fas fa-paint-brush"></i> 前端渲染</button>
     </div>
 </fieldset>
  
@@ -169,11 +212,18 @@
     </div>
 </fieldset>
 
+<div class="disclaimer-box">
+    <p class="disclaimer-emo">“我也想过琴棋书画诗酒花，奈何生活只有柴米油盐酱醋茶。”</p>
+    <p class="disclaimer-text">
+        <strong>免责声明：</strong>本插件仅供个人学习与技术交流使用，严禁用于任何商业目的或非法活动。使用者需自行承担因使用本插件而产生的一切风险与法律责任，开发者对此不承担任何责任。
+    </p>
+</div>
+
 <hr class="header-divider">
 
-            <fieldset class="settings-group">
-                <legend><i class="fas fa-cogs"></i> 正文优化</legend>
-
+            <fieldset class="settings-group collapsible">
+                <legend class="collapsible-legend"><i class="fas fa-cogs"></i> 正文优化 <i class="fas fa-chevron-down collapse-icon"></i></legend>
+                <div class="collapsible-content">
 
                 <div class="control-pair-container" style="justify-content: space-around;">
                     <div class="amily2_settings_block">
@@ -227,10 +277,12 @@
                     </div>
                     <small class="notes">无感优化：直接替换文本，速度更快但要关流式，高楼层推荐。刷新优化：重载聊天界面，更加稳定无需关流式，低楼层推荐。</small>
                 </div>
+                </div>
             </fieldset>
 
-            <fieldset class="settings-group">
-                <legend><i class="fas fa-network-wired"></i> API与模型配置</legend>
+            <fieldset class="settings-group collapsible">
+                <legend class="collapsible-legend"><i class="fas fa-network-wired"></i> API与模型配置 <i class="fas fa-chevron-down collapse-icon"></i></legend>
+                <div class="collapsible-content">
                 <div class="amily2_settings_block">
                     <label for="amily2_api_provider">API 提供商</label>
                     <select id="amily2_api_provider" class="text_pole">
@@ -289,11 +341,12 @@
                     <label for="amily2_context_messages">上下文参考数: <span id="amily2_context_messages_value"></span></label>
                     <input id="amily2_context_messages" type="range" min="0" max="10" step="1" />
                 </div>
+                </div>
             </fieldset>
 
-            <fieldset class="settings-group">
-                <legend><i class="fas fa-edit"></i> 统一提示词编辑器</legend>
-
+            <fieldset class="settings-group collapsible">
+                <legend class="collapsible-legend"><i class="fas fa-edit"></i> 统一提示词编辑器 <i class="fas fa-chevron-down collapse-icon"></i></legend>
+                <div class="collapsible-content">
 
                 <div class="amily2_settings_block">
                     <div class="label-with-button">
@@ -314,11 +367,12 @@
                         <button id="amily2_unified_restore_button" class="menu_button secondary small_button interactable"><i class="fas fa-undo"></i> 恢复默认</button>
                     </div>
                 </div>
+                </div>
             </fieldset>
 
-<fieldset class="settings-group">
-    <legend><i class="fas fa-book-open"></i> 世界书档案司</legend>
-
+<fieldset class="settings-group collapsible">
+    <legend class="collapsible-legend"><i class="fas fa-book-open"></i> 世界书档案司 <i class="fas fa-chevron-down collapse-icon"></i></legend>
+    <div class="collapsible-content">
     <div class="amily2_settings_block">
         <label for="amily2_wb_enabled">启用世界书</label>
         <label class="toggle-switch">
@@ -365,6 +419,7 @@
                 <!-- Entry list will be populated here -->
             </div>
         </div>
+    </div>
     </div>
 </fieldset>
 <fieldset class="settings-group">
@@ -413,11 +468,12 @@
 </fieldset>
 
 			 
-			<fieldset class="settings-group">
-                <legend><i class="fas fa-palette"></i> 界面定制</legend>
-                <div class="amily2_settings_block">
-                    <label>帝国徽记位置:</label>
-                    <div class="radio-toggle-group">
+			<fieldset class="settings-group collapsible">
+                <legend class="collapsible-legend"><i class="fas fa-palette"></i> 界面定制 <i class="fas fa-chevron-down collapse-icon"></i></legend>
+                <div class="collapsible-content">
+                    <div class="amily2_settings_block">
+                        <label>帝国徽记位置:</label>
+                        <div class="radio-toggle-group">
                         <input type="radio" id="amily2_icon_location_topbar" name="amily2_icon_location" value="topbar">
                         <label for="amily2_icon_location_topbar">驻扎顶栏</label>
                         <input type="radio" id="amily2_icon_location_extensions" name="amily2_icon_location" value="extensions">
@@ -454,8 +510,8 @@
                         </label>
                         <input type="file" id="amily2_custom_bg_image" accept="image/*" style="display: none;">
                         <button id="amily2_restore_bg_image" class="menu_button small_button">默认</button>
+                        <small class="notes">选择一张图片作为背景。推荐使用小于5MB的图片。</small>
                     </div>
-                    <small class="notes">选择一张图片作为背景。推荐使用小于5MB的图片。</small>
                 </div>
             </fieldset>
 			
