@@ -25,7 +25,8 @@ import { cwbDefaultSettings } from './CharacterWorldBook/src/cwb_config.js';
 import { bindGlossaryEvents } from './glossary/GT_bindings.js';
 import './core/amily2-updater.js';
 import { updateOrInsertTableInChat, startContinuousRendering, stopContinuousRendering } from './ui/message-table-renderer.js';
-import { isTavernHelperAvailable } from './core/tavernhelper-compatibility.js';
+import { initializeRenderer } from './core/tavern-helper/renderer.js';
+import { initializeApiListener, registerApiHandler, amilyHelper, initializeAmilyHelper } from './core/tavern-helper/main.js';
 
 const STYLE_SETTINGS_KEY = 'amily2_custom_styles';
 const STYLE_ROOT_SELECTOR = '#amily2_memorisation_forms_panel';
@@ -226,6 +227,7 @@ function loadPluginStyles() {
     loadStyleFile("amily2-glossary.css"); // 【新圣谕】为术语表披上其专属华服
     loadStyleFile("table.css"); // 【第四道圣谕】为内存储司披上其专属华服
     loadStyleFile("optimization.css"); // 【第五道圣谕】为剧情优化披上其专属华服
+    loadStyleFile("renderer.css"); // 【新圣谕】为渲染器披上其专属华服
 
     // 【第六道圣谕】为角色世界书披上其专属华服
     const cwbStyleId = 'cwb-feature-style';
@@ -254,6 +256,55 @@ function loadPluginStyles() {
 }
 
 
+window.addEventListener('message', function (event) {
+    // 处理头像获取请求
+    if (event.data && event.data.type === 'getAvatars') {
+        const userAvatar = `/characters/${getContext().userCharacter.avatar}`;
+        const charAvatar = `/characters/${getContext().characters[this_chid].avatar}`;
+        event.source.postMessage({
+            source: 'amily2-host',
+            type: 'avatars',
+            urls: { user: userAvatar, char: charAvatar }
+        }, '*');
+        return;
+    }
+
+    // 处理来自 iframe 的交互事件
+    if (event.data && event.data.source === 'amily2-iframe') {
+        const { action, detail } = event.data;
+        console.log(`[Amily2-主窗口] 收到来自iframe的动作: ${action}`, detail);
+
+        switch (action) {
+            case 'sendMessage':
+                if (detail && detail.message) {
+                    $('#send_textarea').val(detail.message).trigger('input');
+                    $('#send_but').trigger('click');
+                    console.log(`[Amily2-主窗口] 已发送消息: ${detail.message}`);
+                }
+                break;
+
+            case 'showToast':
+                if (detail && detail.message && window.toastr) {
+                    const toastType = detail.type || 'info';
+                    if (typeof window.toastr[toastType] === 'function') {
+                        window.toastr[toastType](detail.message, detail.title || '通知');
+                    }
+                }
+                break;
+
+            case 'buttonClick':
+                console.log(`[Amily2-主窗口] 按钮被点击:`, detail);
+                if (window.toastr) {
+                    window.toastr.info(`按钮 "${detail.buttonId || '未知'}" 被点击`, 'iframe交互');
+                }
+                break;
+
+            default:
+                console.warn(`[Amily2-主窗口] 未知的动作类型: ${action}`);
+        }
+    }
+});
+
 window.addEventListener("error", (event) => {
   const stackTrace = event.error?.stack || "";
   if (stackTrace.includes("ST-Amily2-Chat-Optimisation")) {
@@ -265,11 +316,105 @@ window.addEventListener("error", (event) => {
 
 jQuery(async () => {
   console.log("[Amily2号-帝国枢密院] 开始执行开国大典...");
+  initializeApiListener();
+
+  registerApiHandler('getChatMessages', async (data) => {
+      return amilyHelper.getChatMessages(data.range, data.options);
+  });
+
+  registerApiHandler('setChatMessages', async (data) => {
+      return await amilyHelper.setChatMessages(data.messages, data.options);
+  });
+
+  registerApiHandler('setChatMessage', async (data) => {
+      const field_values = data.field_values || data.content;
+      const message_id = data.message_id !== undefined ? data.message_id : data.index;
+      const options = data.options || {};
+      
+      console.log('[Amily2-API] setChatMessage 收到参数:', { field_values, message_id, options, raw_data: data });
+      
+      return await amilyHelper.setChatMessage(field_values, message_id, options);
+  });
+
+  registerApiHandler('createChatMessages', async (data) => {
+      return await amilyHelper.createChatMessages(data.messages, data.options);
+  });
+
+  registerApiHandler('deleteChatMessages', async (data) => {
+      return await amilyHelper.deleteChatMessages(data.ids, data.options);
+  });
+
+  registerApiHandler('getLorebooks', async (data) => {
+      return await amilyHelper.getLorebooks();
+  });
+
+  registerApiHandler('getCharLorebooks', async (data) => {
+      return await amilyHelper.getCharLorebooks(data.options);
+  });
+
+  registerApiHandler('getLorebookEntries', async (data) => {
+      return await amilyHelper.getLorebookEntries(data.bookName);
+  });
+
+  registerApiHandler('setLorebookEntries', async (data) => {
+      return await amilyHelper.setLorebookEntries(data.bookName, data.entries);
+  });
+
+  registerApiHandler('createLorebookEntries', async (data) => {
+      return await amilyHelper.createLorebookEntries(data.bookName, data.entries);
+  });
+
+  registerApiHandler('createLorebook', async (data) => {
+      return await amilyHelper.createLorebook(data.bookName);
+  });
+
+  registerApiHandler('triggerSlash', async (data) => {
+      return await amilyHelper.triggerSlash(data.command);
+  });
+
+  registerApiHandler('getLastMessageId', async (data) => {
+      return amilyHelper.getLastMessageId();
+  });
+
+  registerApiHandler('toastr', async (data) => {
+      if (window.toastr && typeof window.toastr[data.type] === 'function') {
+          window.toastr[data.type](data.message, data.title);
+      }
+      return true;
+  });
+
+  registerApiHandler('switchSwipe', async (data) => {
+      const { messageIndex, swipeIndex } = data;
+      const messages = await amilyHelper.getChatMessages(messageIndex, { include_swipes: true });
+      
+      if (messages && messages.length > 0 && messages[0].swipes) {
+          const content = messages[0].swipes[swipeIndex];
+          if (content !== undefined) {
+              await amilyHelper.setChatMessages([{
+                  message_id: messageIndex,
+                  message: content
+              }], { refresh: 'affected' });
+              
+              const context = getContext();
+              if (context.chat[messageIndex]) {
+                  context.chat[messageIndex].swipe_id = swipeIndex;
+              }
+              
+              return { success: true, message: `已切换至开场白 ${swipeIndex}` };
+          }
+      }
+      
+      throw new Error(`无法切换到开场白 ${swipeIndex}`);
+  });
+
+  initializeAmilyHelper();
+
+  console.log("[Amily2号-帝国枢密院] 开始执行开国大典...");
 
   if (!extension_settings[extensionName]) {
     extension_settings[extensionName] = {};
   }
-  const combinedDefaultSettings = { ...defaultSettings, ...tableSystemDefaultSettings, ...cwbDefaultSettings, render_on_every_message: false };
+  const combinedDefaultSettings = { ...defaultSettings, ...tableSystemDefaultSettings, ...cwbDefaultSettings, render_on_every_message: false, render_enabled: false };
 
   for (const key in combinedDefaultSettings) {
     if (extension_settings[extensionName][key] === undefined) {
@@ -298,7 +443,6 @@ jQuery(async () => {
         console.log("[Amily2号-开国大典] 步骤三：开始召唤府邸...");
         createDrawer();
 
-        // 【V15.0 修复】为术语表面板添加轮询加载，确保在面板渲染后再绑定事件
         function waitForGlossaryPanelAndBindEvents() {
             let attempts = 0;
             const maxAttempts = 50; 
@@ -380,10 +524,8 @@ jQuery(async () => {
         let isProcessingPlotOptimization = false;
 
         async function onPlotGenerationAfterCommands(type, params, dryRun) {
-            // 【V15.2 新增】在发送消息后，清除所有表格的“已更新”高亮状态
             clearUpdatedTables();
 
-            // 【V15.3 修正】提交删除的逻辑已移至 injector.js，此处不再需要
 
             console.log("[Amily2-剧情优化] Generation after commands triggered", { type, params, dryRun, isProcessing: isProcessingPlotOptimization });
 
@@ -515,7 +657,7 @@ jQuery(async () => {
                 setTimeout(() => {
                     log("【监察系统】检测到“朝代更迭”(CHAT_CHANGED)，开始重修史书并刷新宫殿...", 'info');
                     clearHighlights();
-                    clearUpdatedTables(); // 【V15.2 新增】切换聊天时清除“已更新”高亮
+                    clearUpdatedTables();
                     loadTables();
                     renderTables();
 
@@ -555,7 +697,6 @@ jQuery(async () => {
             console.log('[Amily2-核心引擎] 开始执行统一注入 (聊天长度:', args[0]?.length || 0, ')');
 
             try {
-                // 【V15.3 修正】由于 injectTableData 现在是异步的，需要 await
                 await injectTableData(...args);
             } catch (error) {
                 console.error('[Amily2-内存储司] 表格注入失败:', error);
@@ -592,6 +733,8 @@ jQuery(async () => {
 
         handleUpdateCheck();
         handleMessageBoard();
+
+        initializeRenderer(); 
 
         if (extension_settings[extensionName].render_on_every_message) {
             startContinuousRendering();
