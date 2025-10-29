@@ -421,11 +421,33 @@ function bindAmily2ModalWorldBookSettings() {
 }
 
 export function bindModalEvents() {
-
     initializePlotOptimizationBindings();
     bindAmily2ModalWorldBookSettings();
 
     const container = $("#amily2_drawer_content").length ? $("#amily2_drawer_content") : $("#amily2_chat_optimiser");
+
+    // Collapsible sections logic
+    container.on('click', '.collapsible-legend', function() {
+        const legend = $(this);
+        const content = legend.siblings('.collapsible-content');
+        const icon = legend.find('.collapse-icon');
+        
+        content.slideToggle(200, function() {
+            const isCollapsed = !content.is(':visible');
+            if (isCollapsed) {
+                icon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+            } else {
+                icon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+            }
+            
+            const sectionId = legend.text().trim();
+            if (!extension_settings[extensionName]) {
+                extension_settings[extensionName] = {};
+            }
+            extension_settings[extensionName][`collapsible_${sectionId}_collapsed`] = isCollapsed;
+            saveSettingsDebounced();
+        });
+    });
     
     displayDailyAuthCode(); 
     function updateModelInputView() {
@@ -662,7 +684,7 @@ export function bindModalEvents() {
 container
     .off("click.amily2.chamber_nav")
     .on("click.amily2.chamber_nav",
-         "#amily2_open_plot_optimization, #amily2_open_additional_features, #amily2_open_rag_palace, #amily2_open_memorisation_forms, #amily2_open_character_world_book, #amily2_open_world_editor, #amily2_open_glossary, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan, #amily2_back_to_main_from_forms, #amily2_back_to_main_from_optimization, #amily2_back_to_main_from_cwb, #amily2_back_to_main_from_world_editor, #amily2_back_to_main_from_glossary", function () {
+         "#amily2_open_plot_optimization, #amily2_open_additional_features, #amily2_open_rag_palace, #amily2_open_memorisation_forms, #amily2_open_character_world_book, #amily2_open_world_editor, #amily2_open_glossary, #amily2_open_renderer, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan, #amily2_back_to_main_from_forms, #amily2_back_to_main_from_optimization, #amily2_back_to_main_from_cwb, #amily2_back_to_main_from_world_editor, #amily2_back_to_main_from_glossary, #amily2_renderer_back_button", function () {
         if (!pluginAuthStatus.authorized) return;
 
         const mainPanel = container.find('.plugin-features');
@@ -673,6 +695,7 @@ container
         const characterWorldBookPanel = container.find('#amily2_character_world_book_panel');
         const worldEditorPanel = container.find('#amily2_world_editor_panel');
         const glossaryPanel = container.find('#amily2_glossary_panel');
+        const rendererPanel = container.find('#amily2_renderer_panel');
 
         mainPanel.hide();
         additionalPanel.hide();
@@ -682,8 +705,12 @@ container
         characterWorldBookPanel.hide();
         worldEditorPanel.hide();
         glossaryPanel.hide();
+        rendererPanel.hide();
 
         switch (this.id) {
+            case 'amily2_open_renderer':
+                rendererPanel.show();
+                break;
             case 'amily2_open_plot_optimization':
                 plotOptimizationPanel.show();
                 break;
@@ -712,6 +739,7 @@ container
             case 'amily2_back_to_main_from_cwb':
             case 'amily2_back_to_main_from_world_editor':
             case 'amily2_back_to_main_from_glossary':
+            case 'amily2_renderer_back_button':
                 mainPanel.show();
                 break;
         }
