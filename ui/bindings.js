@@ -2,7 +2,7 @@ import { extension_settings, getContext } from "/scripts/extensions.js";
 import { characters, this_chid, getRequestHeaders, saveSettingsDebounced, eventSource, event_types } from "/script.js";
 import { defaultSettings, extensionName, saveSettings } from "../utils/settings.js";
 import { pluginAuthStatus, activatePluginAuthorization, getPasswordForDate } from "../utils/auth.js";
-import { fetchModels } from "../core/api.js";
+import { fetchModels, testApiConnection } from "../core/api.js";
 import { getJqyhApiSettings, testJqyhApiConnection, fetchJqyhModels } from '../core/api/JqyhApi.js';
 import { safeLorebooks, safeCharLorebooks, safeLorebookEntries, isTavernHelperAvailable } from "../core/tavernhelper-compatibility.js";
 
@@ -421,6 +421,15 @@ function bindAmily2ModalWorldBookSettings() {
 }
 
 export function bindModalEvents() {
+    const refreshButton = document.getElementById('amily2_refresh_models');
+    if (refreshButton && !document.getElementById('amily2_test_api_connection')) {
+        const testButton = document.createElement('button');
+        testButton.id = 'amily2_test_api_connection';
+        testButton.className = 'menu_button interactable';
+        testButton.innerHTML = '<i class="fas fa-plug"></i> 测试连接';
+        refreshButton.insertAdjacentElement('afterend', testButton);
+    }
+
     initializePlotOptimizationBindings();
     bindAmily2ModalWorldBookSettings();
 
@@ -530,7 +539,7 @@ export function bindModalEvents() {
         .off("click.amily2.actions")
         .on(
             "click.amily2.actions",
-            "#amily2_refresh_models, #amily2_test, #amily2_fix_now",
+            "#amily2_refresh_models, #amily2_test_api_connection, #amily2_test, #amily2_fix_now",
             async function () {
                 if (!pluginAuthStatus.authorized) return;
                 const button = $(this);
@@ -544,12 +553,15 @@ export function bindModalEvents() {
                             const models = await fetchModels();
                             if (models.length > 0) {
                                 setAvailableModels(models);
-                localStorage.setItem(
-                  "cached_models_amily2",
-                  JSON.stringify(models),
-                );
+                                localStorage.setItem(
+                                  "cached_models_amily2",
+                                  JSON.stringify(models),
+                                );
                                 populateModelDropdown();
                             }
+                            break;
+                        case "amily2_test_api_connection":
+                            await testApiConnection();
                             break;
                         case "amily2_test":
                             await testReplyChecker();
