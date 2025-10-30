@@ -144,7 +144,9 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
             const savedOrder = localStorage.getItem('amily2_prompt_presets_v2_mixed_order');
             if (savedOrder) {
                 mixedOrder = JSON.parse(savedOrder);
+saveChat();  // 或正确导入 saveChatDebounced
             }
+
         } catch (e) {
             console.error("[副API填表] 加载混合顺序失败:", e);
         }
