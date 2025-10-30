@@ -1,4 +1,3 @@
-
 :root {
     --amily2-bg-color: #2C2C2C;
     --amily2-button-color: #4A4A4A;
@@ -718,4 +717,8 @@ hr.header-divider {
 
 #amily2_chat_optimiser .prompt-editor-area textarea {
     flex: 1;
+}
+
+#amily2_test_api_connection {
+    margin-left: 10px;
 }
