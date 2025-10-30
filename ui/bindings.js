@@ -427,8 +427,19 @@ export function bindModalEvents() {
     const container = $("#amily2_drawer_content").length ? $("#amily2_drawer_content") : $("#amily2_chat_optimiser");
 
     // Collapsible sections logic
-    container.on('click', '.collapsible-legend', function() {
+    container.on('click touchend', '.collapsible-legend', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+
         const legend = $(this);
+        // Debounce to prevent double firing on touch devices
+        const now = Date.now();
+        const lastTouch = legend.data('lastTouch') || 0;
+        if (now - lastTouch < 500) {
+            return;
+        }
+        legend.data('lastTouch', now);
+
         const content = legend.siblings('.collapsible-content');
         const icon = legend.find('.collapse-icon');
         
