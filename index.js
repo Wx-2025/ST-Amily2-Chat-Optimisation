@@ -228,6 +228,7 @@ function loadPluginStyles() {
     loadStyleFile("table.css"); // 【第四道圣谕】为内存储司披上其专属华服
     loadStyleFile("optimization.css"); // 【第五道圣谕】为剧情优化披上其专属华服
     loadStyleFile("renderer.css"); // 【新圣谕】为渲染器披上其专属华服
+    loadStyleFile("iframe-renderer.css"); // 【新圣谕】为iframe渲染内容披上其专属华服
 
     // 【第六道圣谕】为角色世界书披上其专属华服
     const cwbStyleId = 'cwb-feature-style';
@@ -259,8 +260,12 @@ function loadPluginStyles() {
 window.addEventListener('message', function (event) {
     // 处理头像获取请求
     if (event.data && event.data.type === 'getAvatars') {
-        const userAvatar = `/characters/${getContext().userCharacter.avatar}`;
-        const charAvatar = `/characters/${getContext().characters[this_chid].avatar}`;
+        // 【兼容性修复】如果 LittleWhiteBox 激活，则不处理此消息，避免冲突
+        if (window.isXiaobaixEnabled) {
+            return;
+        }
+        const userAvatar = `/characters/${getContext().userCharacter?.avatar ?? ''}`;
+        const charAvatar = `/characters/${getContext().characters[this_chid]?.avatar ?? ''}`;
         event.source.postMessage({
             source: 'amily2-host',
             type: 'avatars',
