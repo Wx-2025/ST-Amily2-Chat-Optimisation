@@ -28,6 +28,7 @@ import { updateOrInsertTableInChat, startContinuousRendering, stopContinuousRend
 import { initializeRenderer } from './core/tavern-helper/renderer.js';
 import { initializeApiListener, registerApiHandler, amilyHelper, initializeAmilyHelper } from './core/tavern-helper/main.js';
 import { fillWithSecondaryApi } from './core/table-system/secondary-filler.js';
+let isSwipeProcessing = false;  // 防止并发滑动重复
 
 const STYLE_SETTINGS_KEY = 'amily2_custom_styles';
 const STYLE_ROOT_SELECTOR = '#amily2_memorisation_forms_panel';
@@ -636,36 +637,55 @@ jQuery(async () => {
             eventSource.on(event_types.MESSAGE_RECEIVED, onMessageReceived);
             eventSource.on(event_types.IMPERSONATE_READY, onMessageReceived);
             eventSource.on(event_types.MESSAGE_RECEIVED, (chat_id) => handleTableUpdate(chat_id));
-eventSource.on(event_types.MESSAGE_SWIPED, async (chat_id) => {  
-    const context = getContext();
-    if (context.chat.length < 2) {
-        log(`【监察系统】检测到消息滑动，但聊天记录不足2条，已跳过状态回退。`, 'info');
-        return;
+let swipeDebounceTimer = null;  
+eventSource.on(event_types.MESSAGE_SWIPED, (chat_id) => {  
+    if (swipeDebounceTimer) {
+        clearTimeout(swipeDebounceTimer);  
     }
-    
-    log(`【监察系统】检测到消息滑动 (SWIPED)，开始执行状态回退...`, 'warn');
-    rollbackState();      
-    const latestMessage = context.chat[chat_id] || context.chat[context.chat.length - 1];
-    if (!latestMessage || latestMessage.is_user) {
-        log(`【监察系统】滑动后最新消息无效，跳过填表。`, 'info');
-        renderTables();  
-        return;
-    }
-    
-    const settings = extension_settings[extensionName];
-    const fillingMode = settings.filling_mode || 'main-api';
-    
-    if (fillingMode === 'main-api') {
-        log(`【监察系统】主填表模式，回退后强制填表最新消息 ID: ${chat_id}。`, 'info');
-        await handleTableUpdate(chat_id, true);  
-    } else if (fillingMode === 'secondary-api' || fillingMode === 'optimized') {
-        log(`【监察系统】分步/优化模式，回退后强制二次填表最新消息。`, 'info');
-        await fillWithSecondaryApi(latestMessage, true);      } else {
-        log(`【监察系统】未知填表模式，跳过填表。`, 'info');
-    }
-    
-    renderTables();
-    log(`【监察系统】滑动后填表完成，UI 已刷新。`, 'success');
+
+    swipeDebounceTimer = setTimeout(async () => {  // 延迟 500ms 执行，如翻页到第三页则取消第二页表格API。
+        if (isSwipeProcessing) {
+            log(`【监察系统】检测到快速滑动，正在处理中，跳过本次 (ID: ${chat_id})。`, 'warn');
+            return;
+        }
+
+        isSwipeProcessing = true;  
+        try {
+            const context = getContext();
+            if (context.chat.length < 2) {
+                log(`【监察系统】检测到消息滑动，但聊天记录不足2条，已跳过状态回退。`, 'info');
+                return;
+            }
+            
+            log(`【监察系统】检测到消息滑动 (SWIPED)，开始执行状态回退...`, 'warn');
+            rollbackState();              
+            const latestMessage = context.chat[chat_id] || context.chat[context.chat.length - 1];
+            if (!latestMessage || latestMessage.is_user) {
+                log(`【监察系统】滑动后最新消息无效，跳过填表。`, 'info');
+                renderTables();                  return;
+            }
+            
+            const settings = extension_settings[extensionName];
+            const fillingMode = settings.filling_mode || 'main-api';
+            
+            if (fillingMode === 'main-api') {
+                log(`【监察系统】主填表模式，回退后强制填表最新消息 ID: ${chat_id}。`, 'info');
+                await handleTableUpdate(chat_id, true);  
+            } else if (fillingMode === 'secondary-api' || fillingMode === 'optimized') {
+                log(`【监察系统】分步/优化模式，回退后强制二次填表最新消息。`, 'info');
+                await fillWithSecondaryApi(latestMessage, true);  
+            } else {
+                log(`【监察系统】未知填表模式，跳过填表。`, 'info');
+            }
+            
+                        renderTables();
+            log(`【监察系统】滑动后填表完成，UI 已刷新。`, 'success');
+        } catch (error) {
+            console.error(`【监察系统】滑动处理错误: ${error.message}`, 'error');
+        } finally {
+            isSwipeProcessing = false;  
+        }
+    }, 500); 
 });
             eventSource.on(event_types.CHAT_CHANGED, () => {
                 window.lastPreOptimizationResult = null;
