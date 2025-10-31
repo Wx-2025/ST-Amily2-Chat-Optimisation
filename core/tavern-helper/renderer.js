@@ -504,12 +504,12 @@ function renderHtmlInIframe(htmlContent, container, preElement) {
             iframe.srcdoc = full;
         }
         wrapper.appendChild(iframe);
-        preElement.classList.remove('xb-show');
+        preElement.classList.remove('amily2-show');
         preElement.style.display = 'none';
         registerIframeMapping(iframe, wrapper);
         try { iframe.contentWindow?.postMessage({ type: 'probe' }, '*'); } catch (e) { }
-        preElement.dataset.xbFinal = 'true';
-        preElement.dataset.xbHash = originalHash;
+        preElement.dataset.amily2Final = 'true';
+        preElement.dataset.amily2Hash = originalHash;
         return iframe;
     } catch (err) {
         return null;
@@ -525,18 +525,18 @@ function processCodeBlocks(messageElement) {
             const should = shouldRenderContentByBlock(codeBlock);
             const html = codeBlock.textContent || '';
             const hash = djb2(html);
-            const isFinal = preElement.dataset.xbFinal === 'true';
-            const same = preElement.dataset.xbHash === hash;
+            const isFinal = preElement.dataset.amily2Final === 'true';
+            const same = preElement.dataset.amily2Hash === hash;
             if (isFinal && same) return;
             if (should) {
                 renderHtmlInIframe(html, preElement.parentNode, preElement);
             } else {
-                preElement.classList.add('xb-show');
-                preElement.removeAttribute('data-xbfinal');
-                preElement.removeAttribute('data-xbhash');
+                preElement.classList.add('amily2-show');
+                preElement.removeAttribute('data-amily2-final');
+                preElement.removeAttribute('data-amily2-hash');
                 preElement.style.display = '';
             }
-            preElement.dataset.xiaobaixBound = 'true';
+            preElement.dataset.amily2Bound = 'true';
         });
     } catch (err) {
         console.error('[Amily2-Renderer] Error during processCodeBlocks:', err);
@@ -550,6 +550,11 @@ function processMessageById(messageId) {
 }
 
 export function initializeRenderer() {
+    if (window.isXiaobaixEnabled) {
+        console.log('[Amily2-Renderer] 检测到 LittleWhiteBox 已激活，为避免冲突，Amily2 渲染器已禁用。');
+        return;
+    }
+
     const handleMessage = (data) => {
         const messageId = typeof data === 'object' ? data.messageId : data;
         if (messageId == null) return;
@@ -592,7 +597,7 @@ export function clearAllIframes() {
         if (wrapper && wrapper.classList.contains('amily2-iframe-wrapper')) {
             const preElement = wrapper.nextElementSibling;
             if (preElement && preElement.tagName === 'PRE') {
-                preElement.classList.add('xb-show');
+                preElement.classList.add('amily2-show');
                 preElement.style.display = '';
             }
             wrapper.remove();
