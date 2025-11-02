@@ -171,6 +171,13 @@ hr.header-divider {
     color: #ff9800;
 }
 
+/* === Collapsible Legend Fix === */
+.collapsible-legend {
+    position: relative; /* Establish a stacking context */
+    z-index: 2;       /* Ensure it's above sibling content */
+    cursor: pointer;  /* Indicate it's clickable */
+}
+
 
 #amily2_chat_optimiser .color-controls-container {
     flex-direction: row !important;
