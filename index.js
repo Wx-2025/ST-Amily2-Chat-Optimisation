@@ -11,6 +11,7 @@ import { characters, this_chid } from '/script.js';
 import { injectTableData, generateTableContent } from "./core/table-system/injector.js"; 
 import { initialize as initializeRagProcessor } from "./core/rag-processor.js"; 
 import { loadTables, clearHighlights, rollbackAndRefill, rollbackState, commitPendingDeletions, saveStateToMessage, getMemoryState, clearUpdatedTables } from './core/table-system/manager.js';
+import { fillWithSecondaryApi } from './core/table-system/secondary-filler.js';
 import { renderTables } from './ui/table-bindings.js';
 import { log } from './core/table-system/logger.js';
 import { eventSource, event_types, saveSettingsDebounced } from '/script.js';
@@ -640,14 +641,38 @@ jQuery(async () => {
             eventSource.on(event_types.MESSAGE_RECEIVED, onMessageReceived);
             eventSource.on(event_types.IMPERSONATE_READY, onMessageReceived);
             eventSource.on(event_types.MESSAGE_RECEIVED, (chat_id) => handleTableUpdate(chat_id));
-            eventSource.on(event_types.MESSAGE_SWIPED, (chat_id) => {
+            eventSource.on(event_types.MESSAGE_SWIPED, async (chat_id) => {
                 const context = getContext();
                 if (context.chat.length < 2) {
-                    log(`【监察系统】检测到消息滑动，但聊天记录不足2条，已跳过状态回退。`, 'info');
+                    log('【监察系统】检测到消息滑动，但聊天记录不足，已跳过状态回退。', 'info');
                     return;
                 }
-                log(`【监察系统】检测到消息滑动 (SWIPED)，开始执行状态回退...`, 'warn');
+
+                log('【监察系统】检测到消息滑动 (SWIPED)，开始执行状态回退...', 'warn');
                 rollbackState();
+
+                const latestMessage = context.chat[chat_id] || context.chat[context.chat.length - 1];
+                if (latestMessage.is_user) {
+                    log('【监察系统】滑动后最新消息是用户，跳过填表。', 'info');
+                    renderTables();
+                    return;
+                }
+
+                const settings = extension_settings[extensionName];
+                const fillingMode = settings.filling_mode || 'main-api';
+
+                if (fillingMode === 'main-api') {
+                    log(`【监察系统】主填表模式，回退后强制刷新消息ID: ${chat_id}。`, 'info');
+                    await handleTableUpdate(chat_id, true);
+                } else if (fillingMode === 'secondary-api' || fillingMode === 'optimized') {
+                    log('【监察系统】分步/优化模式，回退后强制二次填表最新消息。', 'info');
+                    await fillWithSecondaryApi(latestMessage, true);
+                } else {
+                    log('【监察系统】未配置填表模式，跳过填表。', 'info');
+                }
+
+                renderTables();
+                log('【监察系统】滑动后填表完成，UI 已刷新。', 'success');
             });
             eventSource.on(event_types.MESSAGE_EDITED, (mes_id) => {
                 handleTableUpdate(mes_id);
