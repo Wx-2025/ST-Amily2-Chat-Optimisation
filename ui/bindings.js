@@ -436,38 +436,33 @@ export function bindModalEvents() {
     const container = $("#amily2_drawer_content").length ? $("#amily2_drawer_content") : $("#amily2_chat_optimiser");
 
     // Collapsible sections logic
-    container.on('click touchend', '.collapsible-legend', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
+    container.find('.collapsible-legend').each(function() {
+        $(this).on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
 
-        const legend = $(this);
-        // Debounce to prevent double firing on touch devices
-        const now = Date.now();
-        const lastTouch = legend.data('lastTouch') || 0;
-        if (now - lastTouch < 500) {
-            return;
-        }
-        legend.data('lastTouch', now);
+            const legend = $(this);
+            const content = legend.siblings('.collapsible-content');
+            const icon = legend.find('.collapse-icon');
+            
+            const isCurrentlyVisible = content.is(':visible');
+            const isCollapsedAfterClick = isCurrentlyVisible;
 
-        const content = legend.siblings('.collapsible-content');
-        const icon = legend.find('.collapse-icon');
-        
-        const isCollapsed = content.is(':visible');
-
-        if (isCollapsed) {
-            content.hide();
-            icon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
-        } else {
-            content.show();
-            icon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
-        }
-        
-        const sectionId = legend.text().trim();
-        if (!extension_settings[extensionName]) {
-            extension_settings[extensionName] = {};
-        }
-        extension_settings[extensionName][`collapsible_${sectionId}_collapsed`] = isCollapsed;
-        saveSettingsDebounced();
+            if (isCollapsedAfterClick) {
+                content.hide();
+                icon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+            } else {
+                content.show();
+                icon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+            }
+            
+            const sectionId = legend.text().trim();
+            if (!extension_settings[extensionName]) {
+                extension_settings[extensionName] = {};
+            }
+            extension_settings[extensionName][`collapsible_${sectionId}_collapsed`] = isCollapsedAfterClick;
+            saveSettingsDebounced();
+        });
     });
     
     displayDailyAuthCode(); 
