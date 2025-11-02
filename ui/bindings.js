@@ -452,21 +452,22 @@ export function bindModalEvents() {
         const content = legend.siblings('.collapsible-content');
         const icon = legend.find('.collapse-icon');
         
-        content.slideToggle(200, function() {
-            const isCollapsed = !content.is(':visible');
-            if (isCollapsed) {
-                icon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
-            } else {
-                icon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
-            }
-            
-            const sectionId = legend.text().trim();
-            if (!extension_settings[extensionName]) {
-                extension_settings[extensionName] = {};
-            }
-            extension_settings[extensionName][`collapsible_${sectionId}_collapsed`] = isCollapsed;
-            saveSettingsDebounced();
-        });
+        const isCollapsed = content.is(':visible');
+
+        if (isCollapsed) {
+            content.hide();
+            icon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+        } else {
+            content.show();
+            icon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+        }
+        
+        const sectionId = legend.text().trim();
+        if (!extension_settings[extensionName]) {
+            extension_settings[extensionName] = {};
+        }
+        extension_settings[extensionName][`collapsible_${sectionId}_collapsed`] = isCollapsed;
+        saveSettingsDebounced();
     });
     
     displayDailyAuthCode(); 
