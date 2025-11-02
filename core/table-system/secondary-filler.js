@@ -234,13 +234,11 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
         if (currentContext.chat && currentContext.chat.length > 0) {
             const lastMessage = currentContext.chat[currentContext.chat.length - 1];
             if (saveStateToMessage(getMemoryState(), lastMessage)) {
-                saveChat();
                 renderTables();
                 updateOrInsertTableInChat();
-                return;
             }
         }
-        saveChatDebounced(); 
+        saveChat();
 
     } catch (error) {
         console.error(`[Amily2-副API] 发生严重错误:`, error);
