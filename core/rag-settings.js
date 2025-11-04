@@ -10,6 +10,7 @@ export const defaultSettings = {
         embeddingModel: 'text-embedding-3-small',
         notify: true,
         batchSize: 50, 
+        independentChatMemoryEnabled: false,
     },
     advanced: {
         chunkSize: 768,
