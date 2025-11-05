@@ -128,10 +128,9 @@ export async function executeManualSummary(startFloor, endFloor, isAuto = false)
                     onRegenerate: async (summaryDialog) => {
                         summaryDialog.find('textarea').prop('disabled', true).val('正在重新生成，请稍候...');
                         const newSummary = await getSummary(textToSummarize, toastTitle);
-                        if (newSummary) {
-                            summaryDialog.find('textarea').prop('disabled', false).val(newSummary);
-                        } else {
-                            summaryDialog.find('textarea').prop('disabled', false).val(summary);
+                        summaryDialog.find('textarea').prop('disabled', false).val(newSummary || summary);
+                        summaryDialog[0].showModal(); // 重新显示弹窗
+                        if (!newSummary) {
                             toastr.error("重新生成失败，已恢复原始内容。", "模型召唤失败");
                         }
                     },
@@ -243,10 +242,9 @@ export async function executeManualSummary(startFloor, endFloor, isAuto = false)
                         onRegenerate: async (summaryDialog) => {
                             summaryDialog.find('textarea').prop('disabled', true).val('正在重新生成，请稍候...');
                             const newSummary = await getSummary(textToSummarize, toastTitle);
-                            if (newSummary) {
-                                summaryDialog.find('textarea').prop('disabled', false).val(newSummary);
-                            } else {
-                                summaryDialog.find('textarea').prop('disabled', false).val(summary);
+                            summaryDialog.find('textarea').prop('disabled', false).val(newSummary || summary);
+                            summaryDialog[0].showModal(); // 重新显示弹窗
+                            if (!newSummary) {
                                 toastr.error("重新生成失败，已恢复原始内容。", "模型召唤失败");
                             }
                         },
@@ -620,10 +618,9 @@ export async function executeRefinement(worldbook, loreKey) {
                 onRegenerate: async (dialog) => {
                     dialog.find('textarea').prop('disabled', true).val('正在重新生成，请稍候...');
                     const newContent = await getRefinedContent();
-                    if (newContent) {
-                        dialog.find('textarea').prop('disabled', false).val(newContent);
-                    } else {
-                        dialog.find('textarea').prop('disabled', false).val(currentRefinedContent);
+                    dialog.find('textarea').prop('disabled', false).val(newContent || currentRefinedContent);
+                    dialog[0].showModal(); // 重新显示弹窗
+                    if (!newContent) {
                         toastr.error("重新生成失败，已恢复原始内容。", "模型召唤失败");
                     }
                 },
