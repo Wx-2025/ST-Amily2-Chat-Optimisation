@@ -460,3 +460,80 @@
     min-height: 0;
     max-height: none; /* 覆盖之前写死的max-height */
 }
+
+/* 响应式设计：移动端适配 */
+@media (max-width: 768px) {
+    #world-editor-container .world-editor-header-controls,
+    #world-editor-container .world-editor-toolbar-left,
+    #world-editor-container .world-editor-toolbar-right {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+    }
+
+    #world-editor-container .world-editor-btn {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+
+    #world-editor-container .world-editor-search-box {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    #world-editor-container .world-editor-entries-header {
+        display: none; /* 在移动端隐藏表头 */
+    }
+
+    #world-editor-container .world-editor-entry-row {
+        grid-template-columns: 40px 1fr; /* 简化为两列：复选框和内容 */
+        padding: 10px;
+        border-bottom: 1px solid #444;
+    }
+
+    #world-editor-container .world-editor-entry-row > div:not(:nth-child(1)):not(:nth-child(2)) {
+        display: none; /* 隐藏除复选框和主要内容外的所有列 */
+    }
+
+    #world-editor-container .world-editor-entry-row {
+        display: grid;
+        grid-template-columns: auto 1fr; /* 复选框和内容区 */
+        gap: 10px;
+        padding: 10px;
+    }
+
+    #world-editor-container .world-editor-entry-row > div {
+        display: block !important; /* 确保所有单元格都可见 */
+        text-align: left;
+        padding: 5px 0;
+    }
+
+    #world-editor-container .world-editor-entry-row::before {
+        display: block;
+        font-weight: bold;
+        color: #888;
+    }
+
+    #world-editor-container .world-editor-entry-checkbox { grid-row: 1 / span 5; align-self: center; }
+    #world-editor-container .world-editor-entry-status { grid-column: 2; }
+    #world-editor-container .world-editor-entry-activation { grid-column: 2; }
+    #world-editor-container .world-editor-entry-keys { grid-column: 2; }
+    #world-editor-container .world-editor-entry-content { grid-column: 2; }
+    #world-editor-container .world-editor-entry-position { grid-column: 2; }
+    #world-editor-container .world-editor-entry-depth { grid-column: 2; }
+    #world-editor-container .world-editor-entry-order { grid-column: 2; }
+
+    #world-editor-container .world-editor-entry-keys,
+    #world-editor-container .world-editor-entry-content {
+        white-space: normal;
+        max-width: 100%;
+    }
+
+    #world-editor-container .world-editor-batch-actions {
+        flex-direction: column;
+    }
+
+    #world-editor-container .world-editor-batch-actions .world-editor-btn {
+        width: auto;
+    }
+}

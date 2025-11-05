@@ -1,8 +1,16 @@
 import { extension_settings, getContext } from "/scripts/extensions.js";
 import { characters, eventSource, event_types } from "/script.js";
-import { loadWorldInfo, createNewWorldInfo, createWorldInfoEntry, saveWorldInfo, world_names } from "/scripts/world-info.js";
+import { loadWorldInfo, createNewWorldInfo, createWorldInfoEntry, saveWorldInfo, world_names, updateWorldInfoList } from "/scripts/world-info.js";
 import { compatibleWriteToLorebook, safeLorebooks, safeCharLorebooks, safeLorebookEntries } from "./tavernhelper-compatibility.js";
 import { extensionName } from "../utils/settings.js";
+
+
+document.addEventListener('amily-lorebook-created', (event) => {
+    if (event.detail && event.detail.bookName) {
+        console.log(`[Amily2-国史馆] 监听到史书《${event.detail.bookName}》变更，即刻通报工部刷新宫殿。`);
+        refreshWorldbookListOnly(event.detail.bookName);
+    }
+});
 
 
 export const LOREBOOK_PREFIX = "Amily2档案-";
@@ -90,34 +98,15 @@ export async function getCombinedWorldbookContent(lorebookName) {
   }
 }
 
-async function refreshWorldbookListOnly(newBookName = null) {
-  console.log("[Amily2号-工部-v1.3] 执行“圣谕广播”式UI更新...");
-  try {
-    if (newBookName) {
-      if (Array.isArray(world_names) && !world_names.includes(newBookName)) {
-        world_names.push(newBookName);
-        world_names.sort();
-        console.log(`[Amily2号-工部] 已将《${newBookName}》注入前端数据模型。`);
-      } else {
-         console.log(`[Amily2号-工部] 《${newBookName}》已存在于数据模型中，跳过注入。`);
-      }
+export async function refreshWorldbookListOnly(newBookName = null) {
+    console.log("[Amily2号-工部-v2.0] 执行SillyTavern核心UI刷新...");
+    try {
+        await updateWorldInfoList();
+        console.log("[Amily2号-工部] SillyTavern核心刷新函数 (updateWorldInfoList) 调用成功。");
+    } catch (error) {
+        console.error("[Amily2号-工部] 调用核心刷新函数时出错:", error);
+        toastr.error("Amily2号调用核心UI刷新函数时失败。", "核心刷新失败");
     }
-
-    if (
-      eventSource &&
-      typeof eventSource.emit === "function" &&
-      event_types.CHARACTER_PAGE_LOADED
-    ) {
-      console.log(`[Amily2号-工部] 正在广播事件: ${event_types.CHARACTER_PAGE_LOADED}`);
-      eventSource.emit(event_types.CHARACTER_PAGE_LOADED);
-      console.log("[Amily2号-工部] “character_page_loaded”事件已广播，UI应已响应刷新。");
-    } else {
-      console.error("[Amily2号] 致命错误: eventSource 或 event_types.CHARACTER_PAGE_LOADED 未找到。无法广播刷新事件。");
-      toastr.error("Amily2号无法触发UI刷新。", "核心事件系统缺失");
-    }
-  } catch (error) {
-    console.error("[Amily2号-工部] “圣谕广播”式刷新失败:", error);
-  }
 }
 
 export async function writeSummaryToLorebook(pendingData) {
@@ -281,7 +270,12 @@ export async function getPlotOptimizedWorldbookContent(context, apiSettings) {
     const panel = $('#amily2_plot_optimization_panel');
     let liveSettings = {};
 
-    if (panel.length > 0) {
+    // Check if the panel exists and its dynamic content (the entry list) has been populated.
+    // This helps prevent a race condition where we read from an empty, partially-rendered panel.
+    const isPanelReady = panel.length > 0 && panel.find('#amily2_opt_worldbook_entry_list_container input[type="checkbox"]').length > 0;
+
+    if (isPanelReady) {
+        // Panel is ready, so we can trust the live values from the UI.
         liveSettings.worldbookEnabled = panel.find('#amily2_opt_worldbook_enabled').is(':checked');
         liveSettings.worldbookSource = panel.find('input[name="amily2_opt_worldbook_source"]:checked').val() || 'character';
         
@@ -295,25 +289,30 @@ export async function getPlotOptimizedWorldbookContent(context, apiSettings) {
         liveSettings.worldbookCharLimit = parseInt(panel.find('#amily2_opt_worldbook_char_limit').val(), 10) || 60000;
 
         let enabledEntries = {};
-        panel.find('#amily2_opt_worldbook_entry_list_container input[type="checkbox"]').each(function() {
-            if ($(this).is(':checked')) {
-                const bookName = $(this).data('book');
-                const uid = parseInt($(this).data('uid'));
-                if (!enabledEntries[bookName]) {
-                    enabledEntries[bookName] = [];
-                }
-                enabledEntries[bookName].push(uid);
+        panel.find('#amily2_opt_worldbook_entry_list_container input[type="checkbox"]:checked').each(function() {
+            const bookName = $(this).data('book');
+            const uid = parseInt($(this).data('uid'));
+            if (!enabledEntries[bookName]) {
+                enabledEntries[bookName] = [];
             }
+            enabledEntries[bookName].push(uid);
         });
         liveSettings.enabledWorldbookEntries = enabledEntries;
     } else {
-        console.warn('[剧情优化大师] 未找到设置面板，世界书功能将回退到使用已保存的设置。');
+        // Panel is not ready or doesn't exist. Fall back to the saved settings from the extension.
+        // This uses the correct, prefixed keys.
+        if (panel.length > 0) {
+            console.warn('[剧情优化大师] 检测到UI面板但内容未完全加载，回退到使用已保存的设置。');
+        } else {
+            console.warn('[剧情优化大师] 未找到设置面板，世界书功能将使用已保存的设置。');
+        }
+        
         liveSettings = {
-            worldbookEnabled: apiSettings.worldbookEnabled,
-            worldbookSource: apiSettings.worldbookSource,
-            selectedWorldbooks: apiSettings.selectedWorldbooks,
-            worldbookCharLimit: apiSettings.worldbookCharLimit,
-            enabledWorldbookEntries: apiSettings.enabledWorldbookEntries,
+            worldbookEnabled: apiSettings.plotOpt_worldbook_enabled,
+            worldbookSource: apiSettings.plotOpt_worldbook_source || 'character', // Default to 'character'
+            selectedWorldbooks: apiSettings.plotOpt_worldbook_selected_worldbooks,
+            worldbookCharLimit: apiSettings.plotOpt_worldbook_char_limit,
+            enabledWorldbookEntries: apiSettings.plotOpt_worldbook_selected_entries,
         };
     }
 
@@ -355,7 +354,8 @@ export async function getPlotOptimizedWorldbookContent(context, apiSettings) {
         const userEnabledEntries = allEntries.filter(entry => {
             if (!entry.enabled) return false;
             const bookConfig = enabledEntriesMap[entry.bookName];
-            return bookConfig ? bookConfig.includes(entry.uid) : false;
+            // 同时检查数字和字符串类型的UID，以兼容从实时UI（数字）和已保存设置（可能为字符串）中读取的配置
+            return bookConfig ? (bookConfig.includes(entry.uid) || bookConfig.includes(String(entry.uid))) : false;
         });
 
         if (userEnabledEntries.length === 0) return '';
@@ -363,8 +363,8 @@ export async function getPlotOptimizedWorldbookContent(context, apiSettings) {
         const chatHistory = context.chat.map(message => message.mes).join('\n').toLowerCase();
         const getEntryKeywords = (entry) => [...new Set([...(entry.key || []), ...(entry.keys || [])])].map(k => k.toLowerCase());
 
-        const blueLightEntries = userEnabledEntries.filter(entry => entry.type === 'constant');
-        let pendingGreenLights = userEnabledEntries.filter(entry => entry.type !== 'constant');
+        const blueLightEntries = userEnabledEntries.filter(entry => entry.constant);
+        let pendingGreenLights = userEnabledEntries.filter(entry => !entry.constant);
         
         const triggeredEntries = new Set([...blueLightEntries]);
 

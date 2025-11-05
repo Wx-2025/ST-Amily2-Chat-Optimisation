@@ -1,0 +1,26 @@
+#amily2_renderer_panel {
+    padding: 10px;
+}
+
+.amily2-renderer-info-container {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: rgba(45, 45, 55, 0.5);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.emo-statement {
+    font-style: italic;
+    color: #d1c4e9;
+    text-align: center;
+    margin-bottom: 15px;
+    text-shadow: 0 0 5px rgba(209, 196, 233, 0.5);
+}
+
+.description-text {
+    font-size: 14px;
+    color: #dddddd;
+    line-height: 1.6;
+}

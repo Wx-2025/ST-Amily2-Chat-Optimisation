@@ -195,11 +195,8 @@ export async function executeManualSummary(startFloor, endFloor, isAuto = false)
                     container.find('.historiography-message-item').each(function() {
                         const item = $(this);
                         const authorType = item.data('author-type');
-                        if ((authorType === 'user' && !includeUser) || (authorType === 'char' && !includeChar)) {
-                            item.prop('hidden', true);
-                        } else {
-                            item.prop('hidden', false);
-                        }
+                        const shouldBeHidden = (authorType === 'user' && !includeUser) || (authorType === 'char' && !includeChar);
+                        item.toggle(!shouldBeHidden);
                     });
                 };
 
@@ -207,7 +204,17 @@ export async function executeManualSummary(startFloor, endFloor, isAuto = false)
                 charCheckbox.on('change', updateVisibility);
             },
             onOk: async (dialog) => {
-                const textToSummarize = dialog.find('.historiography-message-item:not([hidden]) textarea')
+                const includeUser = dialog.find('#hist-include-user').is(':checked');
+                const includeChar = dialog.find('#hist-include-char').is(':checked');
+                
+                const textToSummarize = dialog.find('.historiography-message-item')
+                    .filter(function() {
+                        const authorType = $(this).data('author-type');
+                        if (authorType === 'user' && !includeUser) return false;
+                        if (authorType === 'char' && !includeChar) return false;
+                        return true;
+                    })
+                    .find('textarea')
                     .map(function() {
                         const floor = $(this).data('floor');
                         const author = $(this).closest('.historiography-message-item').find('summary').text().replace(`【第 ${floor} 楼】 `, '');

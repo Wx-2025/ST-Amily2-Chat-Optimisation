@@ -35,6 +35,13 @@
                     <span class="slider"></span>
                 </label>
             </div>
+            <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
+                <label for="hly-independent-chat-memory-toggle" title="启用后，每个聊天文件都将拥有独立的知识库。关闭后，同一角色的所有聊天将共享同一个知识库。">独立聊天记忆</label>
+                <label class="hly-toggle-switch">
+                    <input type="checkbox" id="hly-independent-chat-memory-enabled" data-setting-key="retrieval.independentChatMemoryEnabled" data-type="boolean">
+                    <span class="slider"></span>
+                </label>
+            </div>
         </fieldset>
         <div class="hly-edict-row">
             <div class="hly-edict-item">
@@ -428,6 +435,22 @@
                     <small class="hly-notes">每次调用API时处理的文本数量。</small>
                 </div>
             </fieldset>
+            
+            <fieldset class="hly-settings-group">
+                <legend><i class="fas fa-wand-magic-sparkles"></i> 检索预处理</legend>
+                <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
+                    <label for="hly-query-preprocessing-enabled" title="启用后，将在向量检索前对您的提问进行净化处理，以提高准确性。">启用检索预处理</label>
+                    <label class="hly-toggle-switch">
+                        <input type="checkbox" id="hly-query-preprocessing-enabled" data-setting-key="queryPreprocessing.enabled" data-type="boolean">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="hly-button-group" style="justify-content: flex-start;">
+                    <button id="hly-query-preprocessing-rules-btn" class="hly-action-button">配置处理规则</button>
+                </div>
+                <small class="hly-notes">此功能类似于“凝识法则”，可对您最近的几条聊天记录（即用于检索的文本）进行标签提取和内容排除，以生成更纯净、更高效的检索查询。</small>
+            </fieldset>
+
             <fieldset class="hly-settings-group">
                 <legend><i class="fas fa-wand-magic-sparkles"></i> 圣言注入 (按来源)</legend>
                 <div style="text-align: center; margin-bottom: 10px;">

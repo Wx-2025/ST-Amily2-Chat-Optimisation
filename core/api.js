@@ -379,30 +379,81 @@ async function fetchSillyTavernPresetModels() {
  
 
 export function getApiSettings() {
+    const settings = extension_settings[extensionName] || {};
+    const apiProvider = document.getElementById('amily2_api_provider')?.value || 'openai';
+    
+    let model;
+    if (apiProvider === 'sillytavern_preset') {
+        const context = getContext();
+        const profileId = document.getElementById('amily2_preset_selector')?.value;
+        const profile = context.extensionSettings?.connectionManager?.profiles?.find(p => p.id === profileId);
+        model = profile?.openai_model || 'Preset Model';
+    } else {
+        model = document.getElementById('amily2_model')?.value;
+    }
+
     return {
-        apiProvider: $("#amily2_api_provider").val() || 'openai',
-        apiUrl: $("#amily2_api_url").val().trim(),
-        apiKey: $("#amily2_api_key").val().trim(),
-        model: $("#amily2_model").val(),
-        maxTokens: extension_settings[extensionName]?.maxTokens || 4000,
-        temperature: extension_settings[extensionName]?.temperature || 0.7,
-        tavernProfile: extension_settings[extensionName]?.tavernProfile || ''
+        apiProvider: apiProvider,
+        apiUrl: document.getElementById('amily2_api_url')?.value.trim() || '',
+        apiKey: document.getElementById('amily2_api_key')?.value.trim() || '',
+        model: model,
+        maxTokens: settings.maxTokens || 4000,
+        temperature: settings.temperature || 0.7,
+        tavernProfile: document.getElementById('amily2_preset_selector')?.value || ''
     };
 }
 
 
 export async function testApiConnection() {
     console.log('[Amily2号-外交部] 开始API连接测试');
-    
-    const apiProvider = $("#amily2_api_provider").val() || 'openai';
-    const models = await fetchModels();
-    
-    if (models.length > 0) {
-        toastr.success(`${apiProvider} 提供商连接正常，找到 ${models.length} 个模型`, 'API连接正常');
-        return true;
-    } else {
-        toastr.error('无法获取模型列表，请检查配置', 'API连接失败');
+    const $button = $("#amily2_test_api_connection");
+    if (!$button.length) return;
+
+    const originalHtml = $button.html();
+    $button.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> 测试中');
+
+    try {
+        const apiSettings = getApiSettings();
+        
+        if (apiSettings.apiProvider === 'sillytavern_preset') {
+            if (!apiSettings.tavernProfile) {
+                throw new Error("请先在下方选择一个SillyTavern预设");
+            }
+        } else {
+            if (!apiSettings.apiUrl || !apiSettings.apiKey || !apiSettings.model) {
+                throw new Error("API配置不完整，请检查URL、Key和模型选择");
+            }
+        }
+
+        toastr.info('正在发送测试消息"你好！"...', 'API连接测试');
+        
+        const userName = getContext()?.name1 || '用户';
+        const systemPrompt = `接下来用户会使用测试按钮测试api连接是否正常，请回复ta连接是正常的，称呼用户为：“${userName}大人”，并复述群号1060183271，告知ta，本扩展开发者：“诗与酒.”正静待ta的入驻。`;
+
+        const testMessages = [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: '你好！' }
+        ];
+        
+        const response = await callAI(testMessages, {
+            maxTokens: 8192,
+            temperature: 0.5
+        });
+        
+        if (response && response.trim()) {
+            console.log('[Amily2号-外交部] 测试消息响应:', response);
+            toastr.success(`连接测试成功！AI回复: "${response}"`, 'API连接测试成功');
+            return true;
+        } else {
+            throw new Error('API未返回有效响应，请检查您的代理、API URL和密钥是否正确。这通常发生在网络问题或认证失败时。');
+        }
+        
+    } catch (error) {
+        console.error('[Amily2号-使节团] API连接测试失败:', error);
+        toastr.error(`连接测试失败: ${error.message}`, 'API连接测试失败');
         return false;
+    } finally {
+        $button.prop("disabled", false).html(originalHtml);
     }
 }
 
@@ -531,28 +582,30 @@ async function callOpenAICompatible(messages, options) {
 }
 
 async function callOpenAITest(messages, options) {
+    const body = {
+        chat_completion_source: 'openai',
+        messages: messages,
+        model: options.model,
+        reverse_proxy: options.apiUrl,
+        proxy_password: options.apiKey,
+        stream: false,
+        max_tokens: options.maxTokens || 30000,
+        temperature: options.temperature || 1,
+        top_p: options.top_p || 1,
+        custom_prompt_post_processing: 'strict',
+        enable_web_search: false,
+        frequency_penalty: 0,
+        group_names: [],
+        include_reasoning: false,
+        presence_penalty: 0.12,
+        reasoning_effort: 'medium',
+        request_images: false,
+    };
+
     const response = await fetch('/api/backends/chat-completions/generate', {
         method: 'POST',
         headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            chat_completion_source: 'openai',
-            custom_prompt_post_processing: 'strict',
-            enable_web_search: false,
-            frequency_penalty: 0,
-            group_names: [],
-            include_reasoning: false,
-            max_tokens: options.maxTokens || 100000,
-            messages: messages,
-            model: options.model,
-            presence_penalty: 0.12,
-            proxy_password: options.apiKey,
-            reasoning_effort: 'medium',
-            request_images: false,
-            reverse_proxy: options.apiUrl,
-            stream: false,
-            temperature: options.temperature || 1,
-            top_p: options.top_p || 1
-        })
+        body: JSON.stringify(body)
     });
 
     if (!response.ok) {
@@ -561,6 +614,15 @@ async function callOpenAITest(messages, options) {
     }
 
     const responseData = await response.json();
+    
+    if (!responseData || !responseData.choices || responseData.choices.length === 0) {
+        console.error('[Amily2号-OpenAI兼容(测试)] API返回了空的choices数组或错误:', responseData);
+        if (responseData.error) {
+            throw new Error(`API返回错误: ${responseData.error.message || JSON.stringify(responseData.error)}`);
+        }
+        return null; 
+    }
+    
     return responseData?.choices?.[0]?.message?.content;
 }
 

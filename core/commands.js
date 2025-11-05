@@ -1,1 +1,221 @@
-(function(_0x18689,_0x75b104){const _0x22eef5=_0x1e93,_0x211589=_0x18689();while(!![]){try{const _0x1fc4aa=parseInt(_0x22eef5(0x87))/0x1+-parseInt(_0x22eef5(0x9a))/0x2+parseInt(_0x22eef5(0xad))/0x3+parseInt(_0x22eef5(0x92))/0x4*(parseInt(_0x22eef5(0x95))/0x5)+-parseInt(_0x22eef5(0xa8))/0x6+parseInt(_0x22eef5(0xb3))/0x7*(-parseInt(_0x22eef5(0x8c))/0x8)+parseInt(_0x22eef5(0x9f))/0x9;if(_0x1fc4aa===_0x75b104)break;else _0x211589['push'](_0x211589['shift']());}catch(_0x155ea3){_0x211589['push'](_0x211589['shift']());}}}(_0x5a0e,0xd1ebd));import{getContext,extension_settings}from'/scripts/extensions.js';import{saveChatConditional,reloadCurrentChat}from'/script.js';import{extensionName}from'../utils/settings.js';import{SlashCommand}from'/scripts/slash-commands/SlashCommand.js';function _0x5a0e(){const _0x4d9310=['error','info','apiUrl','检测到问题，建议使用修复功能','需要至少2条消息才能测试','63libeyI','正在使用API检查回复...','正在使用API测试检测功能...','修复最新的AI回复中的问题','[Amily2]\x20致命错误：SlashCommand\x20或\x20SlashCommandParser\x20模块未能加载。','未检测到问题','mes','[Amily2-命令检查器]\x20已获取上下文消息:','正在检查并修复回复...','fix-reply','请先配置API\x20URL','测试结果：API未检测到问题，请检查API配置或提示词','592774fVyiKg','optimizedContent','...','最新消息是用户消息，无需检查','previousMessages','1233928GYQwMk','检查最新的AI回复是否有问题','[Amily2-新诏]\x20/fix-reply\x20命令已成功颁布。','[Amily2-命令检查器]\x20目标为用户消息，跳过。','contextMessages','[Amily2-命令检查器]\x20没有聊天记录。','180GJJBhk','[Amily2]\x20命令注册过程中发生意外错误:','message','184430ijBqSz','fromProps','命令检查器','addCommandObject','length','3144032mSqFRc','log','warning','未检测到需要修复的问题','check-reply','19929132pvOOTj','test-reply-checker','slice','success','chat','is_user','undefined','[Amily2-新诏]\x20/test-reply-checker\x20命令已成功颁布。','[Amily2-新诏]\x20/check-reply\x20命令已成功颁布。','5894136ufrcWW','没有找到可用于测试的AI消息','max','没有可修复的消息','测试聊天回复检查器功能','1006158NMrHEv'];_0x5a0e=function(){return _0x4d9310;};return _0x5a0e();}function _0x1e93(_0x594217,_0x4e8ad1){const _0x5a0e36=_0x5a0e();return _0x1e93=function(_0x1e9306,_0x1385fb){_0x1e9306=_0x1e9306-0x84;let _0x11a0cb=_0x5a0e36[_0x1e9306];return _0x11a0cb;},_0x1e93(_0x594217,_0x4e8ad1);}import{SlashCommandParser}from'/scripts/slash-commands/SlashCommandParser.js';import{checkAndFixWithAPI}from'./api.js';async function checkLatestMessage(){const _0x5426a2=_0x1e93,_0xd34af3=getContext(),_0x134d56=_0xd34af3[_0x5426a2(0xa3)]||[];if(!_0x134d56||_0x134d56['length']===0x0)return console[_0x5426a2(0x9b)](_0x5426a2(0x91)),{'message':null,'previousMessages':[]};const _0x6f9c91=_0x134d56[_0x134d56[_0x5426a2(0x99)]-0x1];console[_0x5426a2(0x9b)]('[Amily2-命令检查器]\x20正在侦测消息:',{'isUser':_0x6f9c91['is_user'],'messagePreview':_0x6f9c91['mes']?.['substring'](0x0,0x32)+_0x5426a2(0x89)});if(_0x6f9c91[_0x5426a2(0xa4)])return console[_0x5426a2(0x9b)](_0x5426a2(0x8f)),{'message':_0x6f9c91,'previousMessages':[]};const _0x2a6209=extension_settings[extensionName],_0xe8211a=_0x2a6209[_0x5426a2(0x90)]||0x2,_0x581bd8=Math[_0x5426a2(0xaa)](0x0,_0x134d56[_0x5426a2(0x99)]-_0xe8211a-0x1),_0x45c0ea=_0x134d56[_0x5426a2(0xa1)](_0x581bd8,_0x134d56[_0x5426a2(0x99)]-0x1);return console[_0x5426a2(0x9b)](_0x5426a2(0xba),{'count':_0x45c0ea[_0x5426a2(0x99)]}),{'message':_0x6f9c91,'previousMessages':_0x45c0ea};}async function checkCommand(){const _0xb1f058=_0x1e93,_0x391057=extension_settings[extensionName];if(!_0x391057['apiUrl'])return toastr[_0xb1f058(0xae)](_0xb1f058(0x85),'命令检查器'),'';const _0x52f2a0=await checkLatestMessage();if(!_0x52f2a0[_0xb1f058(0x94)]||_0x52f2a0[_0xb1f058(0x94)][_0xb1f058(0xa4)])return toastr[_0xb1f058(0xaf)](_0xb1f058(0x8a),_0xb1f058(0x97)),'';toastr['info'](_0xb1f058(0xb4),'命令检查器');const _0x50e800=await checkAndFixWithAPI(_0x52f2a0[_0xb1f058(0x94)],_0x52f2a0[_0xb1f058(0x8b)]);return _0x50e800&&_0x50e800[_0xb1f058(0x88)]&&_0x50e800[_0xb1f058(0x88)]!==_0x52f2a0['message'][_0xb1f058(0xb9)]?toastr[_0xb1f058(0x9c)](_0xb1f058(0xb1),_0xb1f058(0x97)):toastr[_0xb1f058(0xa2)](_0xb1f058(0xb8),_0xb1f058(0x97)),'';}export async function fixCommand(){const _0x34f052=_0x1e93,_0x2e8506=extension_settings[extensionName];if(!_0x2e8506[_0x34f052(0xb0)])return toastr[_0x34f052(0xae)](_0x34f052(0x85),_0x34f052(0x97)),'';const _0x419437=getContext(),_0x21071a=_0x419437[_0x34f052(0xa3)];if(!_0x21071a||_0x21071a[_0x34f052(0x99)]===0x0)return toastr[_0x34f052(0xaf)](_0x34f052(0xab),'命令检查器'),'';const _0x31d855=_0x21071a[_0x21071a['length']-0x1];if(_0x31d855[_0x34f052(0xa4)])return toastr[_0x34f052(0xaf)]('最新消息是用户消息，无需修复','命令检查器'),'';const _0x56bf1c=_0x2e8506['contextMessages']||0x2,_0x739a3a=Math[_0x34f052(0xaa)](0x0,_0x21071a[_0x34f052(0x99)]-0x1-_0x56bf1c),_0x5b8caa=_0x21071a[_0x34f052(0xa1)](_0x739a3a,_0x21071a[_0x34f052(0x99)]-0x1);toastr[_0x34f052(0xaf)](_0x34f052(0xbb),_0x34f052(0x97));const _0x2575e8=await checkAndFixWithAPI(_0x31d855,_0x5b8caa);return _0x2575e8&&_0x2575e8[_0x34f052(0x88)]&&_0x2575e8[_0x34f052(0x88)]!==_0x31d855[_0x34f052(0xb9)]?(_0x31d855[_0x34f052(0xb9)]=_0x2575e8[_0x34f052(0x88)],await saveChatConditional(),await reloadCurrentChat(),toastr[_0x34f052(0xa2)]('回复已修复',_0x34f052(0x97))):toastr[_0x34f052(0xaf)](_0x34f052(0x9d),'命令检查器'),'';}export async function testReplyChecker(){const _0x337447=_0x1e93,_0x4e0dc1=extension_settings[extensionName];if(!_0x4e0dc1[_0x337447(0xb0)])return toastr[_0x337447(0xae)]('请先配置API\x20URL',_0x337447(0x97)),'';const _0x55f607=getContext(),_0x83fffd=_0x55f607['chat'];if(!_0x83fffd||_0x83fffd[_0x337447(0x99)]<0x2)return toastr[_0x337447(0x9c)](_0x337447(0xb2),_0x337447(0x97)),'';let _0x53f0e1=null;for(let _0x129cbc=_0x83fffd[_0x337447(0x99)]-0x2;_0x129cbc>=0x0;_0x129cbc--){if(!_0x83fffd[_0x129cbc][_0x337447(0xa4)]){_0x53f0e1=_0x83fffd[_0x129cbc][_0x337447(0xb9)];break;}}if(!_0x53f0e1)return toastr['warning'](_0x337447(0xa9),_0x337447(0x97)),'';const _0x5c5890=_0x83fffd[_0x83fffd[_0x337447(0x99)]-0x1];if(_0x5c5890[_0x337447(0xa4)])return toastr[_0x337447(0x9c)]('最后一条消息是用户消息，无法测试',_0x337447(0x97)),'';const _0x492d95=_0x5c5890[_0x337447(0xb9)];_0x5c5890[_0x337447(0xb9)]=_0x53f0e1+'\x0a\x0a'+_0x53f0e1,toastr['info'](_0x337447(0xb5),'命令检查器');const _0x355121=_0x4e0dc1[_0x337447(0x90)]||0x2,_0x47f2a8=Math['max'](0x0,_0x83fffd[_0x337447(0x99)]-_0x355121-0x1),_0x57c82b=_0x83fffd[_0x337447(0xa1)](_0x47f2a8,_0x83fffd[_0x337447(0x99)]-0x1),_0x37e83d=await checkAndFixWithAPI(_0x5c5890,_0x57c82b);return _0x5c5890[_0x337447(0xb9)]=_0x492d95,_0x37e83d&&_0x37e83d[_0x337447(0x88)]&&_0x37e83d['optimizedContent']!==_0x53f0e1+'\x0a\x0a'+_0x53f0e1?toastr[_0x337447(0xa2)]('测试成功！API检测到重复内容并提供了修复建议','命令检查器'):toastr['warning'](_0x337447(0x86),_0x337447(0x97)),'';}export async function registerSlashCommands(){const _0x52e940=_0x1e93;try{if(typeof SlashCommand==='undefined'||typeof SlashCommandParser===_0x52e940(0xa5)){console[_0x52e940(0xae)](_0x52e940(0xb7));return;}SlashCommandParser[_0x52e940(0x98)](SlashCommand[_0x52e940(0x96)]({'name':_0x52e940(0x9e),'callback':checkCommand,'helpString':_0x52e940(0x8d)})),console['log'](_0x52e940(0xa7)),SlashCommandParser[_0x52e940(0x98)](SlashCommand[_0x52e940(0x96)]({'name':_0x52e940(0x84),'callback':fixCommand,'helpString':_0x52e940(0xb6)})),console[_0x52e940(0x9b)](_0x52e940(0x8e)),SlashCommandParser[_0x52e940(0x98)](SlashCommand[_0x52e940(0x96)]({'name':_0x52e940(0xa0),'callback':testReplyChecker,'helpString':_0x52e940(0xac)})),console[_0x52e940(0x9b)](_0x52e940(0xa6));}catch(_0x212a74){console[_0x52e940(0xae)](_0x52e940(0x93),_0x212a74);}}
+import { getContext, extension_settings } from "/scripts/extensions.js";
+import { saveChatConditional, reloadCurrentChat } from "/script.js";
+import { extensionName } from "../utils/settings.js";
+import { SlashCommand } from "/scripts/slash-commands/SlashCommand.js";
+import { SlashCommandParser } from "/scripts/slash-commands/SlashCommandParser.js";
+import { checkAndFixWithAPI } from "./api.js";
+
+async function checkLatestMessage() {
+  const context = getContext();
+  const chat = context.chat || [];
+
+  if (!chat || chat.length === 0) {
+    console.log("[Amily2-命令检查器] 没有聊天记录。");
+    return { message: null, previousMessages: [] };
+  }
+
+  const latestMessage = chat[chat.length - 1];
+
+  console.log("[Amily2-命令检查器] 正在侦测消息:", {
+    isUser: latestMessage.is_user,
+    messagePreview: latestMessage.mes?.substring(0, 50) + "...",
+  });
+
+  if (latestMessage.is_user) {
+    console.log("[Amily2-命令检查器] 目标为用户消息，跳过。");
+    return { message: latestMessage, previousMessages: [] };
+  }
+
+  const settings = extension_settings[extensionName];
+  const contextCount = settings.contextMessages || 2;
+  const startIndex = Math.max(0, chat.length - contextCount - 1);
+  const previousMessages = chat.slice(startIndex, chat.length - 1);
+
+  console.log("[Amily2-命令检查器] 已获取上下文消息:", {
+    count: previousMessages.length,
+  });
+
+  return { message: latestMessage, previousMessages };
+}
+
+async function checkCommand() {
+  const settings = extension_settings[extensionName];
+  if (!settings.apiUrl) {
+    toastr.error("请先配置API URL", "命令检查器");
+    return "";
+  }
+  const checkResult = await checkLatestMessage();
+  if (!checkResult.message || checkResult.message.is_user) {
+    toastr.info("最新消息是用户消息，无需检查", "命令检查器");
+    return "";
+  }
+  toastr.info("正在使用API检查回复...", "命令检查器");
+  const result = await checkAndFixWithAPI(
+    checkResult.message,
+    checkResult.previousMessages,
+  );
+  if (
+    result &&
+    result.optimizedContent &&
+    result.optimizedContent !== checkResult.message.mes
+  ) {
+    toastr.warning("检测到问题，建议使用修复功能", "命令检查器");
+  } else {
+    toastr.success("未检测到问题", "命令检查器");
+  }
+  return "";
+}
+
+
+export async function fixCommand() {
+  const settings = extension_settings[extensionName];
+  if (!settings.apiUrl) {
+    toastr.error("请先配置API URL", "命令检查器");
+    return "";
+  }
+  const context = getContext();
+  const chat = context.chat;
+  if (!chat || chat.length === 0) {
+    toastr.info("没有可修复的消息", "命令检查器");
+    return "";
+  }
+  const latestMessage = chat[chat.length - 1];
+  if (latestMessage.is_user) {
+    toastr.info("最新消息是用户消息，无需修复", "命令检查器");
+    return "";
+  }
+  const contextCount = settings.contextMessages || 2;
+  const startIndex = Math.max(0, chat.length - 1 - contextCount);
+  const previousMessages = chat.slice(startIndex, chat.length - 1);
+  toastr.info("正在检查并修复回复...", "命令检查器");
+  const result = await checkAndFixWithAPI(latestMessage, previousMessages);
+  if (
+    result &&
+    result.optimizedContent &&
+    result.optimizedContent !== latestMessage.mes
+  ) {
+    latestMessage.mes = result.optimizedContent;
+    await saveChatConditional();
+    await reloadCurrentChat();
+    toastr.success("回复已修复", "命令检查器");
+  } else {
+    toastr.info("未检测到需要修复的问题", "命令检查器");
+  }
+  return "";
+}
+
+export async function testReplyChecker() {
+  const settings = extension_settings[extensionName];
+  if (!settings.apiUrl) {
+    toastr.error("请先配置API URL", "命令检查器");
+    return "";
+  }
+  const context = getContext();
+  const chat = context.chat;
+  if (!chat || chat.length < 2) {
+    toastr.warning("需要至少2条消息才能测试", "命令检查器");
+    return "";
+  }
+  let testMessage = null;
+  for (let i = chat.length - 2; i >= 0; i--) {
+    if (!chat[i].is_user) {
+      testMessage = chat[i].mes;
+      break;
+    }
+  }
+  if (!testMessage) {
+    toastr.warning("没有找到可用于测试的AI消息", "命令检查器");
+    return "";
+  }
+  const lastMessage = chat[chat.length - 1];
+  if (lastMessage.is_user) {
+    toastr.warning("最后一条消息是用户消息，无法测试", "命令检查器");
+    return "";
+  }
+  const originalMessage = lastMessage.mes;
+  lastMessage.mes = testMessage + "\n\n" + testMessage;
+  toastr.info("正在使用API测试检测功能...", "命令检查器");
+  const contextCount = settings.contextMessages || 2;
+  const startIndex = Math.max(0, chat.length - contextCount - 1);
+  const previousMessages = chat.slice(startIndex, chat.length - 1);
+  const result = await checkAndFixWithAPI(lastMessage, previousMessages);
+  lastMessage.mes = originalMessage;
+  if (
+    result &&
+    result.optimizedContent &&
+    result.optimizedContent !== testMessage + "\n\n" + testMessage
+  ) {
+    toastr.success("测试成功！API检测到重复内容并提供了修复建议", "命令检查器");
+  } else {
+    toastr.warning(
+      "测试结果：API未检测到问题，请检查API配置或提示词",
+      "命令检查器",
+    );
+  }
+  return "";
+}
+
+async function triggerSendButton() {
+  // 模拟点击发送按钮
+  const sendButton = document.getElementById('send_but');
+  if (sendButton) {
+    sendButton.click();
+    console.log("[Amily2-触发器] 已触发发送按钮");
+    return "";
+  } else {
+    console.warn("[Amily2-触发器] 未找到发送按钮");
+    toastr.warning("未找到发送按钮", "触发器");
+    return "";
+  }
+}
+
+export async function registerSlashCommands() {
+  try {
+    if (
+      typeof SlashCommand === "undefined" ||
+      typeof SlashCommandParser === "undefined"
+    ) {
+      console.error(
+        "[Amily2] 致命错误：SlashCommand 或 SlashCommandParser 模块未能加载。",
+      );
+      return;
+    }
+    SlashCommandParser.addCommandObject(
+      SlashCommand.fromProps({
+        name: "check-reply",
+        callback: checkCommand,
+        helpString: "检查最新的AI回复是否有问题",
+      }),
+    );
+    console.log("[Amily2-新诏] /check-reply 命令已成功颁布。");
+
+    SlashCommandParser.addCommandObject(
+      SlashCommand.fromProps({
+        name: "fix-reply",
+        callback: fixCommand,
+        helpString: "修复最新的AI回复中的问题",
+      }),
+    );
+    console.log("[Amily2-新诏] /fix-reply 命令已成功颁布。");
+
+    SlashCommandParser.addCommandObject(
+      SlashCommand.fromProps({
+        name: "test-reply-checker",
+        callback: testReplyChecker,
+        helpString: "测试聊天回复检查器功能",
+      }),
+    );
+    console.log("[Amily2-新诏] /test-reply-checker 命令已成功颁布。");
+
+    SlashCommandParser.addCommandObject(
+      SlashCommand.fromProps({
+        name: "trigger",
+        callback: triggerSendButton,
+        helpString: "触发发送按钮 (用于自动发送消息)",
+      }),
+    );
+    console.log("[Amily2-新诏] /trigger 命令已成功颁布。");
+  } catch (e) {
+    console.error("[Amily2] 命令注册过程中发生意外错误:", e);
+  }
+}

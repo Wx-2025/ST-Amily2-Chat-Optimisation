@@ -2,7 +2,7 @@ import { extension_settings, getContext } from "/scripts/extensions.js";
 import { characters, this_chid, getRequestHeaders, saveSettingsDebounced, eventSource, event_types } from "/script.js";
 import { defaultSettings, extensionName, saveSettings } from "../utils/settings.js";
 import { pluginAuthStatus, activatePluginAuthorization, getPasswordForDate } from "../utils/auth.js";
-import { fetchModels } from "../core/api.js";
+import { fetchModels, testApiConnection } from "../core/api.js";
 import { getJqyhApiSettings, testJqyhApiConnection, fetchJqyhModels } from '../core/api/JqyhApi.js';
 import { safeLorebooks, safeCharLorebooks, safeLorebookEntries, isTavernHelperAvailable } from "../core/tavernhelper-compatibility.js";
 
@@ -421,11 +421,49 @@ function bindAmily2ModalWorldBookSettings() {
 }
 
 export function bindModalEvents() {
+    const refreshButton = document.getElementById('amily2_refresh_models');
+    if (refreshButton && !document.getElementById('amily2_test_api_connection')) {
+        const testButton = document.createElement('button');
+        testButton.id = 'amily2_test_api_connection';
+        testButton.className = 'menu_button interactable';
+        testButton.innerHTML = '<i class="fas fa-plug"></i> 测试连接';
+        refreshButton.insertAdjacentElement('afterend', testButton);
+    }
 
     initializePlotOptimizationBindings();
     bindAmily2ModalWorldBookSettings();
 
     const container = $("#amily2_drawer_content").length ? $("#amily2_drawer_content") : $("#amily2_chat_optimiser");
+
+    // Collapsible sections logic
+    container.find('.collapsible-legend').each(function() {
+        $(this).on('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            const legend = $(this);
+            const content = legend.siblings('.collapsible-content');
+            const icon = legend.find('.collapse-icon');
+            
+            const isCurrentlyVisible = content.is(':visible');
+            const isCollapsedAfterClick = isCurrentlyVisible;
+
+            if (isCollapsedAfterClick) {
+                content.hide();
+                icon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+            } else {
+                content.show();
+                icon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+            }
+            
+            const sectionId = legend.text().trim();
+            if (!extension_settings[extensionName]) {
+                extension_settings[extensionName] = {};
+            }
+            extension_settings[extensionName][`collapsible_${sectionId}_collapsed`] = isCollapsedAfterClick;
+            saveSettingsDebounced();
+        });
+    });
     
     displayDailyAuthCode(); 
     function updateModelInputView() {
@@ -497,7 +535,7 @@ export function bindModalEvents() {
         .off("click.amily2.actions")
         .on(
             "click.amily2.actions",
-            "#amily2_refresh_models, #amily2_test, #amily2_fix_now",
+            "#amily2_refresh_models, #amily2_test_api_connection, #amily2_test, #amily2_fix_now",
             async function () {
                 if (!pluginAuthStatus.authorized) return;
                 const button = $(this);
@@ -511,12 +549,15 @@ export function bindModalEvents() {
                             const models = await fetchModels();
                             if (models.length > 0) {
                                 setAvailableModels(models);
-                localStorage.setItem(
-                  "cached_models_amily2",
-                  JSON.stringify(models),
-                );
+                                localStorage.setItem(
+                                  "cached_models_amily2",
+                                  JSON.stringify(models),
+                                );
                                 populateModelDropdown();
                             }
+                            break;
+                        case "amily2_test_api_connection":
+                            await testApiConnection();
                             break;
                         case "amily2_test":
                             await testReplyChecker();
@@ -662,7 +703,7 @@ export function bindModalEvents() {
 container
     .off("click.amily2.chamber_nav")
     .on("click.amily2.chamber_nav",
-         "#amily2_open_plot_optimization, #amily2_open_additional_features, #amily2_open_rag_palace, #amily2_open_memorisation_forms, #amily2_open_character_world_book, #amily2_open_world_editor, #amily2_open_glossary, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan, #amily2_back_to_main_from_forms, #amily2_back_to_main_from_optimization, #amily2_back_to_main_from_cwb, #amily2_back_to_main_from_world_editor, #amily2_back_to_main_from_glossary", function () {
+         "#amily2_open_plot_optimization, #amily2_open_additional_features, #amily2_open_rag_palace, #amily2_open_memorisation_forms, #amily2_open_character_world_book, #amily2_open_world_editor, #amily2_open_glossary, #amily2_open_renderer, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan, #amily2_back_to_main_from_forms, #amily2_back_to_main_from_optimization, #amily2_back_to_main_from_cwb, #amily2_back_to_main_from_world_editor, #amily2_back_to_main_from_glossary, #amily2_renderer_back_button", function () {
         if (!pluginAuthStatus.authorized) return;
 
         const mainPanel = container.find('.plugin-features');
@@ -673,6 +714,7 @@ container
         const characterWorldBookPanel = container.find('#amily2_character_world_book_panel');
         const worldEditorPanel = container.find('#amily2_world_editor_panel');
         const glossaryPanel = container.find('#amily2_glossary_panel');
+        const rendererPanel = container.find('#amily2_renderer_panel');
 
         mainPanel.hide();
         additionalPanel.hide();
@@ -682,8 +724,12 @@ container
         characterWorldBookPanel.hide();
         worldEditorPanel.hide();
         glossaryPanel.hide();
+        rendererPanel.hide();
 
         switch (this.id) {
+            case 'amily2_open_renderer':
+                rendererPanel.show();
+                break;
             case 'amily2_open_plot_optimization':
                 plotOptimizationPanel.show();
                 break;
@@ -712,6 +758,7 @@ container
             case 'amily2_back_to_main_from_cwb':
             case 'amily2_back_to_main_from_world_editor':
             case 'amily2_back_to_main_from_glossary':
+            case 'amily2_renderer_back_button':
                 mainPanel.show();
                 break;
         }

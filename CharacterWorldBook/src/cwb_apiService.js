@@ -300,6 +300,10 @@ export async function callCwbAPI(systemPrompt, userPromptContent, options = {}) 
     });
     console.log("【消息内容】:", messages);
 
+    // 格式化并打印完整的提示词
+    const fullPromptText = messages.map(msg => `[${msg.role}]\n${msg.content}`).join('\n\n');
+    console.log("【完整提示词】:\n", fullPromptText);
+
     try {
         let responseContent;
 

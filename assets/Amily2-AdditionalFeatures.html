@@ -184,12 +184,12 @@
         <div class="mhb-controls-wrapper">
 
             <div class="manual-command-block">
-                <label>手动熔铸范围:</label>
+                <label>手动总结范围:</label>
                 <input type="number" id="amily2_mhb_small_start_floor" class="manual-input" placeholder="起始层">
                 <span class="manual-command-divider">-</span>
                 <input type="number" id="amily2_mhb_small_end_floor" class="manual-input" placeholder="结束层">
                 <button id="amily2_mhb_small_manual_execute" class="menu_button primary small_button interactable">
-                    <i class="fas fa-fire"></i> 熔铸
+                    <i class="fas fa-fire"></i> 开始
                 </button>
             </div>
 
@@ -220,12 +220,12 @@
             <div class="auto-command-block" id="amily2_mhb_auto_command_block">
 
                 <button id="amily2_mhb_small_expedition_execute" class="menu_button primary small_button interactable" title="立即发动一次彻底的总结远征，将所有未归档的历史一次性清算。">
-                    <i class="fas fa-flag-checkered"></i> 开始远征
+                    <i class="fas fa-flag-checkered"></i> 自动批量
                 </button>
 
 
                 <div class="auto-control-pair">
-                    <label for="amily2_mhb_small_auto_enabled" title="在您聊天时，于后台默默守护史册的完整。">自动巡录:</label>
+                    <label for="amily2_mhb_small_auto_enabled" title="在您聊天时，于后台默默守护史册的完整。">静默总结:</label>
                     <label class="toggle-switch">
                         <input id="amily2_mhb_small_auto_enabled" type="checkbox" />
                         <span class="slider"></span>
@@ -234,7 +234,7 @@
 
 
                 <div class="auto-control-pair">
-                    <label for="historiography_write_to_lorebook" title="将生成的总结写入世界书。">写入史册:</label>
+                    <label for="historiography_write_to_lorebook" title="将生成的总结写入世界书。">存世界书:</label>
                     <label class="toggle-switch">
                         <input id="historiography_write_to_lorebook" type="checkbox" checked />
                         <span class="slider"></span>
@@ -242,7 +242,7 @@
                 </div>
 
                 <div class="auto-control-pair">
-                    <label for="historiography_ingest_to_rag" title="将生成的总结存入翰林院进行向量化。">存入翰林院:</label>
+                    <label for="historiography_ingest_to_rag" title="将生成的总结存入翰林院进行向量化。">上传向量:</label>
                     <label class="toggle-switch">
                         <input id="historiography_ingest_to_rag" type="checkbox" />
                         <span class="slider"></span>
@@ -250,7 +250,7 @@
                 </div>
 
                 <div class="auto-control-pair">
-                    <label for="amily2_mhb_small_trigger_count" title="“自动巡录”和“开始远征”的单次作战楼层数。">远征阈值:</label>
+                    <label for="amily2_mhb_small_trigger_count" title="“自动巡录”和“开始远征”的单次作战楼层数。">总结阈值:</label>
                     <input id="amily2_mhb_small_trigger_count" type="number" min="1" class="text_pole" style="width: 70px;" placeholder="30">
                 </div>
 

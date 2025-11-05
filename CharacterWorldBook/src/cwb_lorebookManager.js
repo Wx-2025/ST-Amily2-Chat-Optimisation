@@ -1,13 +1,7 @@
 import { state } from './cwb_state.js';
 import { logError, logDebug, showToastr, parseCustomFormat } from './cwb_utils.js';
-import {
-    safeLorebooks,
-    safeCharLorebooks,
-    safeLorebookEntries,
-    safeUpdateLorebookEntries,
-    compatibleWriteToLorebook,
-} from '../../core/tavernhelper-compatibility.js';
 import { amilyHelper } from '../../core/tavern-helper/main.js';
+import { loadWorldInfo, saveWorldInfo } from "/scripts/world-info.js";
 
 const { SillyTavern } = window;
 
@@ -20,7 +14,7 @@ export async function getTargetWorldBook() {
         return state.customWorldBook;
     }
     try {
-        const charLorebooks = await safeCharLorebooks();
+        const charLorebooks = await amilyHelper.getCharLorebooks();
         const primaryBook = charLorebooks.primary;
         if (!primaryBook) {
             showToastr('error', '当前角色未设置主世界书。');
@@ -44,12 +38,12 @@ export async function deleteLorebookEntries(uids) {
         const book = await getTargetWorldBook();
         if (!book) throw new Error('未找到目标世界书。');
 
-        const bookData = await amilyHelper.loadWorldInfo(book);
+        const bookData = await loadWorldInfo(book);
         if (!bookData) throw new Error(`World book "${book}" not found.`);
         uids.forEach(uid => {
             delete bookData.entries[uid];
         });
-        await amilyHelper.saveWorldInfo(book, bookData, true);
+        await saveWorldInfo(book, bookData, true);
     } catch (error) {
         logError('删除世界书条目失败:', error);
         showToastr('error', `删除失败: ${error.message}`);
@@ -80,7 +74,7 @@ export async function saveDescriptionToLorebook(characterName, newDescription, s
             return false;
         }
 
-        const entries = (await safeLorebookEntries(bookName)) || [];
+        const entries = await amilyHelper.getLorebookEntries(bookName);
         let existing = entries.find(e => 
             Array.isArray(e.keys) &&
             e.keys.includes(chatIdentifier) &&
@@ -97,7 +91,7 @@ export async function saveDescriptionToLorebook(characterName, newDescription, s
         };
 
         if (existing) {
-            await safeUpdateLorebookEntries(bookName, [{ uid: existing.uid, ...entryData }]);
+            await amilyHelper.setLorebookEntries(bookName, [{ uid: existing.uid, ...entryData }]);
         } else {
             const cwbEntries = entries.filter(e => 
                 Array.isArray(e.keys) && 
@@ -180,7 +174,7 @@ export async function updateCharacterRosterLorebookEntry(processedCharacterNames
             return false;
         }
 
-        let entries = (await safeLorebookEntries(bookName)) || [];
+        let entries = await amilyHelper.getLorebookEntries(bookName);
         let existingRosterEntry = entries.find(entry => 
             entry.comment === rosterEntryComment || 
             entry.comment === `Amily2角色总集-${chatIdentifier}-角色总览`
@@ -208,9 +202,11 @@ export async function updateCharacterRosterLorebookEntry(processedCharacterNames
                     }
                 });
             }
-            const floorRangeKey = existingRosterEntry.keys.find(k => /^\d+-\d+$/.test(k));
-            if (floorRangeKey) {
-                [oldStartFloor] = floorRangeKey.split('-').map(Number);
+            if (Array.isArray(existingRosterEntry.keys)) {
+                const floorRangeKey = existingRosterEntry.keys.find(k => /^\d+-\d+$/.test(k));
+                if (floorRangeKey) {
+                    [oldStartFloor] = floorRangeKey.split('-').map(Number);
+                }
             }
         }
 
@@ -243,7 +239,7 @@ export async function updateCharacterRosterLorebookEntry(processedCharacterNames
         };
 
         if (existingRosterEntry) {
-            await safeUpdateLorebookEntries(bookName, [
+            await amilyHelper.setLorebookEntries(bookName, [
                 { uid: existingRosterEntry.uid, comment: rosterEntryComment, ...entryData },
             ]);
         } else {
@@ -274,7 +270,7 @@ export async function manageAutoCardUpdateLorebookEntry() {
         const bookName = await getTargetWorldBook();
         if (!bookName) return;
 
-        const entries = (await safeLorebookEntries(bookName)) || [];
+        const entries = await amilyHelper.getLorebookEntries(bookName);
         
         const currentChatId = state.currentChatFileIdentifier;
         if (!currentChatId || currentChatId.startsWith('unknown_chat')) {
@@ -303,7 +299,7 @@ export async function manageAutoCardUpdateLorebookEntry() {
         }
 
         if (entriesToUpdate.length > 0) {
-            await safeUpdateLorebookEntries(bookName, entriesToUpdate);
+            await amilyHelper.setLorebookEntries(bookName, entriesToUpdate);
             logDebug(`已为聊天: ${cleanChatId} 管理了 ${entriesToUpdate.length} 个世界书条目的状态。`);
         }
 

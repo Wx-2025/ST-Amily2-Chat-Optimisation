@@ -19,6 +19,7 @@ import { bindHistoriographyEvents } from "./historiography-bindings.js";
 import { bindHanlinyuanEvents } from "./hanlinyuan-bindings.js";
 import { bindTableEvents } from './table-bindings.js';
 import { showContentModal } from "./page-window.js";
+import { initializeRendererBindings } from "../core/tavern-helper/renderer-bindings.js";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
 
@@ -101,6 +102,10 @@ async function initializePanel(contentPanel, errorContainer) {
             const glossaryPanelHtml = `<div id="amily2_glossary_panel" style="display: none;">${glossaryContent}</div>`;
             mainContainer.append(glossaryPanelHtml);
 
+            const rendererContent = await $.get(`${extensionFolderPath}/core/tavern-helper/renderer.html`);
+            const rendererPanelHtml = `<div id="amily2_renderer_panel" style="display: none;">${rendererContent}</div>`;
+            mainContainer.append(rendererPanelHtml);
+
             // 在面板创建后，加载世界书编辑器脚本
             const worldEditorScriptId = 'world-editor-script';
             if (!document.getElementById(worldEditorScriptId)) {
@@ -117,6 +122,7 @@ async function initializePanel(contentPanel, errorContainer) {
         await loadSettings();
         bindHanlinyuanEvents();
         bindTableEvents();
+        initializeRendererBindings();
         contentPanel.data("initialized", true);
         console.log("[Amily-重构] 宫殿模块已按蓝图竣工。");
         applyUpdateIndicator();

@@ -428,37 +428,8 @@ class WorldEditor {
      */
     async updateEntriesWithNativeMethod(entriesToUpdate) {
         try {
-            const bookData = await loadWorldInfo(this.currentWorldBook);
-            if (!bookData || !bookData.entries) {
-                throw new Error("无法加载世界书数据。");
-            }
-
-            const uidsToUpdate = new Set(entriesToUpdate.map(e => e.uid));
-            const updatedUIDs = new Set();
-
-            // 更新 bookData.entries
-            for (const entry of entriesToUpdate) {
-                if (bookData.entries[entry.uid]) {
-                    const nativeEntry = bookData.entries[entry.uid];
-                    nativeEntry.comment = entry.comment;
-                    nativeEntry.content = entry.content;
-                    nativeEntry.key = entry.keys;
-                    nativeEntry.disable = !entry.enabled;
-                    nativeEntry.constant = entry.type === 'constant';
-                    nativeEntry.position = this.convertPositionToNative(entry.position);
-                    nativeEntry.depth = entry.depth;
-                    nativeEntry.order = entry.order;
-                    nativeEntry.exclude_recursion = entry.exclude_recursion;
-                    nativeEntry.prevent_recursion = entry.prevent_recursion;
-                    updatedUIDs.add(entry.uid);
-                }
-            }
-
-            if (updatedUIDs.size !== uidsToUpdate.size) {
-                console.warn("[世界书编辑器] 部分条目更新失败，UID可能不存在。");
-            }
-
-            await saveWorldInfo(this.currentWorldBook, bookData, true); // true 表示静默保存
+            // 将所有更新逻辑统一到 amilyHelper.setLorebookEntries
+            await amilyHelper.setLorebookEntries(this.currentWorldBook, entriesToUpdate);
 
             // Optimistic UI update in local state
             for (const updatedEntry of entriesToUpdate) {
