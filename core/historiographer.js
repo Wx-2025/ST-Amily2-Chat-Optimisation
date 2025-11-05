@@ -16,6 +16,7 @@ import { showSummaryModal, showHtmlModal } from "../ui/page-window.js";
 import { getPresetPrompts, getMixedOrder } from '../PresetSettings/index.js';
 import { callAI, generateRandomSeed } from "./api.js";
 import { callNgmsAI } from "./api/Ngms_api.js";
+import { executeAutoHide } from "./autoHideManager.js";
 
 let isExpeditionRunning = false; 
 let manualStopRequested = false; 
@@ -24,7 +25,7 @@ const RUNNING_LOG_COMMENT = "【敕史局】对话流水总帐";
 const PROGRESS_SEAL_REGEX =
   /本条勿动【前(\d+)楼总结已完成】否则后续总结无法进行。$/;
 
-async function readGoldenLedgerProgress(targetLorebookName) {
+export async function readGoldenLedgerProgress(targetLorebookName) {
   if (!targetLorebookName) return 0;
   try {
     const bookData = await loadWorldInfo(targetLorebookName);
@@ -454,6 +455,7 @@ async function writeSummary(summary, startFloor, endFloor, toastTitle) {
 
             if (success) {
                 toastr.success(`编年史已成功更新！`, `${toastTitle} - 国史馆`);
+                executeAutoHide(); // 总结成功后立即触发自动隐藏
                 return true;
             } else {
                 // 错误已在 compatibleWriteToLorebook 内部处理和记录
