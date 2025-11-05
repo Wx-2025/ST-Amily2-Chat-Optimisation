@@ -1,1 +1,129 @@
-(function(_0x4ee988,_0x4037de){const _0x37bb46=_0x58cf,_0x4f5812=_0x4ee988();while(!![]){try{const _0x1c6d7c=-parseInt(_0x37bb46(0x1c9))/0x1*(parseInt(_0x37bb46(0x1df))/0x2)+parseInt(_0x37bb46(0x1da))/0x3*(-parseInt(_0x37bb46(0x1d0))/0x4)+-parseInt(_0x37bb46(0x1d2))/0x5+-parseInt(_0x37bb46(0x1ea))/0x6+parseInt(_0x37bb46(0x1dd))/0x7*(-parseInt(_0x37bb46(0x1d6))/0x8)+-parseInt(_0x37bb46(0x1d1))/0x9+parseInt(_0x37bb46(0x1d7))/0xa;if(_0x1c6d7c===_0x4037de)break;else _0x4f5812['push'](_0x4f5812['shift']());}catch(_0xa818b5){_0x4f5812['push'](_0x4f5812['shift']());}}}(_0x5992,0xc4f22));function _0x58cf(_0x18e475,_0x4450b0){const _0x599238=_0x5992();return _0x58cf=function(_0x58cf6f,_0x5e2dd5){_0x58cf6f=_0x58cf6f-0x1c0;let _0x33b306=_0x599238[_0x58cf6f];return _0x33b306;},_0x58cf(_0x18e475,_0x4450b0);}import{getContext,extension_settings}from'/scripts/extensions.js';import{SlashCommandParser}from'/scripts/slash-commands/SlashCommandParser.js';import{extensionName}from'../utils/settings.js';async function executeSlashCommand(_0x28ecae){const _0x4e2c65=_0x58cf;if(!_0x28ecae)return;try{console['log']('[Amily-敕令执行官]\x20准备执行圣谕:\x20'+_0x28ecae);const _0x54b194=new SlashCommandParser(),_0x2ebd11=_0x54b194[_0x4e2c65(0x1e8)](_0x28ecae,![]);if(_0x2ebd11&&typeof _0x2ebd11[_0x4e2c65(0x1c7)]===_0x4e2c65(0x1e4))await _0x2ebd11[_0x4e2c65(0x1c7)](),console[_0x4e2c65(0x1d3)]('[Amily-敕令执行官]\x20圣谕:\x20\x22'+_0x28ecae+_0x4e2c65(0x1cd)),toastr[_0x4e2c65(0x1e5)](_0x4e2c65(0x1c1)+_0x28ecae+'\x22\x20已成功颁布','敕令司回报');else{const _0x4902df=_0x4e2c65(0x1db)+_0x28ecae;console[_0x4e2c65(0x1e6)](_0x4e2c65(0x1d8)+_0x4902df),toastr[_0x4e2c65(0x1e6)](_0x4902df,_0x4e2c65(0x1e2));}}catch(_0x3fb9f0){console[_0x4e2c65(0x1e6)](_0x4e2c65(0x1cb)+_0x28ecae+_0x4e2c65(0x1c5),_0x3fb9f0),toastr[_0x4e2c65(0x1e6)](_0x4e2c65(0x1e0)+_0x3fb9f0[_0x4e2c65(0x1c6)],_0x4e2c65(0x1e2));}}export async function executeAutoHide(){const _0x5f18de=_0x58cf;try{const _0x5185f0=extension_settings[extensionName];if(!_0x5185f0[_0x5f18de(0x1c8)])return;const _0x1bd89b=_0x5185f0['autoHideThreshold']||0x1e,_0x4cdc8a=getContext(),_0x22e5ff=_0x4cdc8a['chat']['length'],_0x430d62=_0x22e5ff-_0x1bd89b-0x1;if(_0x430d62<0x0){;return;}const _0x4768bf=_0x5f18de(0x1c3)+_0x430d62;console[_0x5f18de(0x1d3)](_0x5f18de(0x1ca)+_0x4768bf);const _0x1b6e36=new SlashCommandParser(),_0x31a7eb=_0x1b6e36[_0x5f18de(0x1e8)](_0x4768bf,![]);_0x31a7eb&&typeof _0x31a7eb[_0x5f18de(0x1c7)]===_0x5f18de(0x1e4)?(await _0x31a7eb[_0x5f18de(0x1c7)](),console[_0x5f18de(0x1d3)]('[Amily-史册管理员]\x20圣谕颁布成功。')):console[_0x5f18de(0x1e6)](_0x5f18de(0x1e3));}catch(_0x170bc5){console[_0x5f18de(0x1e6)](_0x5f18de(0x1e7),_0x170bc5);}}export async function executeManualCommand(_0xaf2ae3,_0x15bb0a={}){const _0x567b75=_0x58cf,{from:_0x1666d9,to:_0x3462b1}=_0x15bb0a;let _0x5cc3b1='';switch(_0xaf2ae3){case _0x567b75(0x1de):{const _0x6bd434=getContext()[_0x567b75(0x1e1)][_0x567b75(0x1c4)];if(_0x6bd434>0x0){const _0x4dbd57=_0x6bd434-0x1;_0x5cc3b1=_0x567b75(0x1cf)+_0x4dbd57;}else{toastr[_0x567b75(0x1c0)](_0x567b75(0x1ce),'敕令司回报');return;}break;}case _0x567b75(0x1c2):case _0x567b75(0x1d5):{const _0x582643=_0xaf2ae3===_0x567b75(0x1c2)?'/hide':_0x567b75(0x1cc);if(_0x1666d9===''&&_0x3462b1!=='')_0x5cc3b1=_0x582643+'\x20'+_0x3462b1;else{if(_0x1666d9!==''&&_0x3462b1!==''){if(parseInt(_0x1666d9)>parseInt(_0x3462b1)){toastr[_0x567b75(0x1e9)](_0x567b75(0x1d9),_0x567b75(0x1dc));return;}_0x5cc3b1=_0x582643+'\x20'+_0x1666d9+'-'+_0x3462b1;}else{toastr[_0x567b75(0x1e9)]('请输入有效的楼层范围',_0x567b75(0x1dc));return;}}break;}default:console[_0x567b75(0x1e6)](_0x567b75(0x1d4)+_0xaf2ae3);return;}await executeSlashCommand(_0x5cc3b1);}function _0x5992(){const _0x133664=['success','error','[Amily-史册管理员]\x20执行自动隐藏律法时发生意外错误:','parse','warning','8803272zKOyks','info','圣谕\x20\x22','manual_hide','/hide\x200-','length','\x22\x20时发生意外:','message','execute','autoHideEnabled','17XaePWh','[Amily-史册管理员]\x20颁布圣谕:\x20','[Amily-敕令执行官]\x20执行圣谕\x20\x22','/unhide','\x22\x20已成功颁布。','史册为空，无需解除隐藏。','/unhide\x200-','3241588UWNBsl','2333502whztNt','6368380RiIATK','log','[Amily-手动敕令司]\x20未知的命令类型:\x20','manual_unhide','12590440mhbLFH','65756490EvHMoU','[Amily-敕令执行官]\x20','起始层不能大于结束层','3MrmhsI','铸造出的圣谕法印无法执行！指令:\x20','敕令司提示','7TQjRrw','unhide_all','45246UriBuS','执行圣谕时发生意外:\x20','chat','敕令司紧急报告','[Amily-史册管理员]\x20致命错误：铸造出的圣谕法印无法执行！','function'];_0x5992=function(){return _0x133664;};return _0x5992();}
+import { getContext, extension_settings } from "/scripts/extensions.js";
+import { SlashCommandParser } from "/scripts/slash-commands/SlashCommandParser.js";
+import { extensionName } from "../utils/settings.js";
+import { readGoldenLedgerProgress } from "./historiographer.js";
+import { characters } from "/script.js";
+import { getChatIdentifier } from "./lore.js";
+
+
+async function executeSlashCommand(commandString) {
+    if (!commandString) return;
+    try {
+        console.log(`[Amily-敕令执行官] 准备执行圣谕: ${commandString}`);
+        const parser = new SlashCommandParser();
+        const closure = parser.parse(commandString, false);
+
+        if (closure && typeof closure.execute === 'function') {
+            await closure.execute();
+            console.log(`[Amily-敕令执行官] 圣谕: "${commandString}" 已成功颁布。`);
+            toastr.success(`圣谕 "${commandString}" 已成功颁布`, "敕令司回报");
+        } else {
+            const errorMsg = `铸造出的圣谕法印无法执行！指令: ${commandString}`;
+            console.error(`[Amily-敕令执行官] ${errorMsg}`);
+            toastr.error(errorMsg, "敕令司紧急报告");
+        }
+    } catch (error) {
+        console.error(`[Amily-敕令执行官] 执行圣谕 "${commandString}" 时发生意外:`, error);
+        toastr.error(`执行圣谕时发生意外: ${error.message}`, "敕令司紧急报告");
+    }
+}
+
+export async function executeAutoHide() {
+    try {
+        const settings = extension_settings[extensionName];
+        const context = getContext();
+        const chatLength = context.chat.length;
+        let hideUntilIndex = -1;
+
+        if (settings.autoHideSummarizedEnabled) {
+            let targetLorebookName;
+            switch (settings.lorebookTarget) {
+                case "character_main":
+                    targetLorebookName = characters[context.characterId]?.data?.extensions?.world;
+                    break;
+                case "dedicated":
+                    const chatIdentifier = await getChatIdentifier();
+                    targetLorebookName = `Amily2-Lore-${chatIdentifier}`;
+                    break;
+            }
+
+            if (targetLorebookName) {
+                const summarizedCount = await readGoldenLedgerProgress(targetLorebookName);
+                if (summarizedCount > 0) {
+                    hideUntilIndex = summarizedCount - 1;
+                }
+            }
+        }
+
+        if (settings.autoHideEnabled) {
+            const threshold = settings.autoHideThreshold || 30;
+            const thresholdHideIndex = chatLength - threshold - 1;
+            if (thresholdHideIndex > hideUntilIndex) {
+                hideUntilIndex = thresholdHideIndex;
+            }
+        }
+
+        if (hideUntilIndex < 0) {
+            return;
+        }
+
+        const commandString = `/hide 0-${hideUntilIndex}`;
+        console.log(`[Amily-史册管理员] 颁布圣谕: ${commandString}`);
+        const parser = new SlashCommandParser();
+        const closure = parser.parse(commandString, false);
+
+        if (closure && typeof closure.execute === 'function') {
+            await closure.execute();
+            console.log(`[Amily-史册管理员] 圣谕颁布成功。`);
+        } else {
+            console.error('[Amily-史册管理员] 致命错误：铸造出的圣谕法印无法执行！');
+        }
+
+    } catch (error) {
+        console.error('[Amily-史册管理员] 执行自动隐藏律法时发生意外错误:', error);
+    }
+}
+
+export async function executeManualCommand(commandType, params = {}) {
+    const { from, to } = params;
+
+    let commandString = '';
+
+    switch (commandType) {
+        case 'unhide_all': {
+            const chatLength = getContext().chat.length;
+            if (chatLength > 0) {
+                const lastIndex = chatLength - 1;
+                commandString = `/unhide 0-${lastIndex}`;
+            } else {
+                toastr.info("史册为空，无需解除隐藏。", "敕令司回报");
+                return; 
+            }
+            break;
+        }
+
+        case 'manual_hide':
+        case 'manual_unhide': {
+            const command = commandType === 'manual_hide' ? '/hide' : '/unhide';
+            if (from === '' && to !== '') {
+                commandString = `${command} ${to}`;
+            } else if (from !== '' && to !== '') {
+                if (parseInt(from) > parseInt(to)) {
+                    toastr.warning("起始层不能大于结束层", "敕令司提示");
+                    return;
+                }
+                commandString = `${command} ${from}-${to}`;
+            } else {
+                toastr.warning("请输入有效的楼层范围", "敕令司提示");
+                return;
+            }
+            break;
+        }
+
+        default:
+            console.error(`[Amily-手动敕令司] 未知的命令类型: ${commandType}`);
+            return;
+    }
+
+    await executeSlashCommand(commandString);
+}
