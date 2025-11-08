@@ -416,6 +416,9 @@ class AmilyHelper {
                         existingEntry.position = positionMap[entryUpdate.position] ?? 4;
                     }
                     if (entryUpdate.depth !== undefined) existingEntry.depth = entryUpdate.depth;
+                    if (entryUpdate.order !== undefined) existingEntry.order = entryUpdate.order;
+                    if (entryUpdate.exclude_recursion !== undefined) existingEntry.excludeRecursion = entryUpdate.exclude_recursion;
+                    if (entryUpdate.prevent_recursion !== undefined) existingEntry.preventRecursion = entryUpdate.prevent_recursion;
                 }
             }
             await saveWorldInfo(bookName, bookData, true);
