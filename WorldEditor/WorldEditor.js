@@ -51,7 +51,7 @@ class WorldEditor {
             'world-editor-select-all', 'world-editor-selected-count', 'world-editor-batch-actions',
             'world-editor-entries-container',
             'world-editor-enable-selected-btn', 'world-editor-disable-selected-btn',
-            'world-editor-set-blue-btn', 'world-editor-set-green-btn', 'world-editor-delete-selected-btn',
+            'world-editor-set-blue-btn', 'world-editor-set-green-btn', 'world-editor-copy-entries-btn', 'world-editor-delete-selected-btn',
             'world-editor-set-disable-recursion-btn', 'world-editor-set-prevent-recursion-btn'
         ];
         this.elements = {};
@@ -95,6 +95,7 @@ class WorldEditor {
         this.elements.worldEditorDisableSelectedBtn.addEventListener('click', () => this.batchUpdateEntries({ enabled: false }));
         this.elements.worldEditorSetBlueBtn.addEventListener('click', () => this.batchUpdateEntries({ type: 'constant' }));
         this.elements.worldEditorSetGreenBtn.addEventListener('click', () => this.batchUpdateEntries({ type: 'selective' }));
+        this.elements.worldEditorCopyEntriesBtn.addEventListener('click', () => this.copySelectedEntries());
         this.elements.worldEditorDeleteSelectedBtn.addEventListener('click', () => this.batchDeleteEntries());
         this.elements.worldEditorSetDisableRecursionBtn.addEventListener('click', () => this.toggleBatchRecursion('exclude_recursion', '不可递归'));
         this.elements.worldEditorSetPreventRecursionBtn.addEventListener('click', () => this.toggleBatchRecursion('prevent_recursion', '防止递归'));
@@ -298,13 +299,37 @@ class WorldEditor {
         this.setLoading(true);
         this.currentWorldBook = worldBookName;
         try {
-            const rawEntries = await safeLorebookEntries(worldBookName);
-            this.entries = (rawEntries || []).map(e => ({
-                uid: e.uid, enabled: e.enabled, type: e.type || (e.constant ? 'constant' : 'selective'),
-                keys: e.keys || [], content: e.content || '', position: e.position || 'before_character_definition',
-                depth: (String(e.position)?.startsWith('at_depth')) ? e.depth : null, order: e.order || 100, comment: e.comment || '',
-                exclude_recursion: e.exclude_recursion, prevent_recursion: e.prevent_recursion
+            const bookData = await loadWorldInfo(worldBookName);
+            if (!bookData || !bookData.entries) {
+                this.entries = [];
+                this.filteredEntries = [];
+                this.renderEntries();
+                this.updateEntryCount();
+                return;
+            }
+            
+            const positionMap = { 
+                0: 'before_character_definition', 
+                1: 'after_character_definition', 
+                2: 'before_author_note', 
+                3: 'after_author_note', 
+                4: 'at_depth' 
+            };
+            
+            this.entries = Object.entries(bookData.entries).map(([uid, e]) => ({
+                uid: parseInt(uid),
+                enabled: !e.disable,
+                type: e.constant ? 'constant' : 'selective',
+                keys: e.key || [],
+                content: e.content || '',
+                position: positionMap[e.position] || 'at_depth',
+                depth: e.depth != null ? e.depth : 4,
+                order: e.order != null ? e.order : 100,
+                comment: e.comment || '',
+                exclude_recursion: e.excludeRecursion || false,
+                prevent_recursion: e.preventRecursion || false
             }));
+            
             this.filteredEntries = [...this.entries];
             this.renderEntries();
             this.updateEntryCount();
@@ -486,6 +511,114 @@ class WorldEditor {
         const action = shouldEnable ? '启用' : '禁用';
         const confirmation = `确定为 ${this.selectedEntries.size} 个条目 ${action} "${fieldName}" 吗?`;
         this.batchUpdateEntries({ [field]: shouldEnable }, confirmation);
+    }
+
+    async copySelectedEntries() {
+        if (this.selectedEntries.size === 0) {
+            this.showError('请先选择要复制的条目');
+            return;
+        }
+
+        // 获取所有世界书列表（包括当前世界书，允许在同一世界书内复制）
+        const availableBooks = this.allWorldBooks.map(book => book.name);
+
+        if (availableBooks.length === 0) {
+            this.showError('没有可用的世界书');
+            return;
+        }
+
+        console.log('[世界书编辑器] 准备复制条目，已选择:', this.selectedEntries.size, '个条目');
+        console.log('[世界书编辑器] 选中的UID:', Array.from(this.selectedEntries));
+
+        // 创建选择对话框
+        const selectHtml = `
+            <style>
+                .copy-dialog { padding: 20px; }
+                .copy-dialog label { display: block; margin-bottom: 10px; color: #ccc; font-weight: bold; }
+                .copy-dialog select { width: 100%; padding: 10px; background-color: #404040; color: white; border: 1px solid #555; border-radius: 4px; font-size: 14px; }
+                .copy-dialog .info { margin-top: 15px; padding: 10px; background-color: #2a2a2a; border-left: 3px solid #4a9eff; color: #ccc; }
+            </style>
+            <div class="copy-dialog">
+                <label for="target-worldbook">选择目标世界书：</label>
+                <select id="target-worldbook" class="form-control">
+                    ${availableBooks.map(name => `<option value="${name}" ${name === this.currentWorldBook ? 'selected' : ''}>${name}${name === this.currentWorldBook ? ' (当前)' : ''}</option>`).join('')}
+                </select>
+                <div class="info">
+                    将复制 ${this.selectedEntries.size} 个条目到目标世界书
+                </div>
+            </div>
+        `;
+
+        showHtmlModal('复制条目', selectHtml, {
+            onOk: async (dialog) => {
+                const targetBook = dialog.find('#target-worldbook').val();
+                
+                if (!targetBook) {
+                    this.showError('请选择目标世界书');
+                    return false;
+                }
+
+                await this.performCopy(targetBook);
+                return true;
+            }
+        });
+    }
+
+    async performCopy(targetBookName) {
+        this.setLoading(true);
+        try {
+            // 获取要复制的条目
+            const entriesToCopy = this.entries.filter(e => this.selectedEntries.has(e.uid));
+            
+            console.log('[世界书编辑器] 过滤后的条目数量:', entriesToCopy.length);
+            console.log('[世界书编辑器] 条目详情:', entriesToCopy);
+            
+            if (entriesToCopy.length === 0) {
+                this.showError('没有选中的条目');
+                return;
+            }
+
+            // 加载目标世界书
+            const targetBookData = await loadWorldInfo(targetBookName);
+            if (!targetBookData) {
+                this.showError(`目标世界书 "${targetBookName}" 不存在`);
+                return;
+            }
+
+            // 准备要创建的条目数据
+            const newEntries = entriesToCopy.map(entry => ({
+                enabled: entry.enabled,
+                type: entry.type,
+                keys: Array.isArray(entry.keys) ? entry.keys : [],
+                content: entry.content || '',
+                position: entry.position,
+                depth: entry.depth != null ? entry.depth : 4,
+                order: entry.order != null ? entry.order : 100,
+                comment: entry.comment || '',
+                exclude_recursion: entry.exclude_recursion || false,
+                prevent_recursion: entry.prevent_recursion || false
+            }));
+
+            console.log('[世界书编辑器] 准备创建的条目:', newEntries);
+
+            // 在目标世界书中创建条目
+            await amilyHelper.createLorebookEntries(targetBookName, newEntries);
+
+            if (window.toastr) {
+                window.toastr.success(`成功复制 ${entriesToCopy.length} 个条目到 "${targetBookName}"`);
+            }
+
+            // 如果复制到当前世界书，刷新视图
+            if (targetBookName === this.currentWorldBook) {
+                await this.loadWorldBookEntries(this.currentWorldBook);
+            }
+            
+        } catch (error) {
+            console.error('[世界书编辑器] 复制失败:', error);
+            this.showError(`复制失败: ${error.message}`);
+        } finally {
+            this.setLoading(false);
+        }
     }
 
     async batchDeleteEntries() {
