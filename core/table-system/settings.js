@@ -33,8 +33,9 @@ const DEFAULT_AI_FLOW_TEMPLATE = `# dataTable 说明
 【说明】:
 · [表格用途和规则的说明]
 <[tableName]内容>
-rowIndex,[colIndex]:[colName],[colIndex]:[colName],...
-[rowIndex],[单元格数据],[单元格数据],...
+| rowIndex | [colIndex]:[colName] | [colIndex]:[colName] | ... |
+|---|---|---|---|
+| [rowIndex] | [单元格数据] | [单元格数据] | ... |
 ...
 </[tableName]内容>
 【增加】: · [插入新行的触发条件]
@@ -46,9 +47,9 @@ rowIndex,[colIndex]:[colName],[colIndex]:[colName],...
 ### 格式解析:
 -   \`* [tableIndex]:[tableName]\`: 表格的标题行，包含表格的索引（\`tableIndex\`）和名称（\`tableName\`）。
 -   \`【说明】\`: 提供了表格的详细用途和填写规则。
--   \`<[tableName]内容>\`: 包含了表格的实际数据。
-    -   第一行是表头，定义了每一列的索引 (\`colIndex\`) 和名称 (\`colName\`)。
-    -   后续每一行都是一条数据记录，以行索引 (\`rowIndex\`) 开头，后面跟着对应列的单元格数据。
+-   \`<[tableName]内容>\`: 包含了使用 Markdown 格式的实际数据表格。
+    -   表头行定义了每一列的索引 (\`colIndex\`) 和名称 (\`colName\`)。第一列始终是 \`rowIndex\`。
+    -   后续每一行都是一条数据记录，第一列是该行的索引 (\`rowIndex\`)，后面跟着对应列的单元格数据。
 -   \`【增加】\`, \`【删除】\`, \`【修改】\`: 分别描述了你应该在何种剧情下对表格进行增、删、改操作。
 
 ### 示例:
@@ -57,8 +58,9 @@ rowIndex,[colIndex]:[colName],[colIndex]:[colName],...
 【说明】:
 （内容省略...）
 <时空栏内容>
-rowIndex,0:日期,1:时段,2:时间,3:地点,4:此地角色
-0,2025-09-04,下午,18:40,办公室,艾克/克莱因
+| rowIndex | 0:日期 | 1:时段 | 2:时间 | 3:地点 | 4:此地角色 |
+|---|---|---|---|---|---|
+| 0 | 2025-09-04 | 下午 | 18:40 | 办公室 | 艾克/克莱因 |
 </时空栏内容>
 【增加】: · 此表不存在任何一行时
 【删除】: · 此表大于一行时应删除多余行

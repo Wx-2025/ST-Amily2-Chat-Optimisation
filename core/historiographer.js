@@ -16,6 +16,7 @@ import { showSummaryModal, showHtmlModal } from "../ui/page-window.js";
 import { getPresetPrompts, getMixedOrder } from '../PresetSettings/index.js';
 import { callAI, generateRandomSeed } from "./api.js";
 import { callNgmsAI } from "./api/Ngms_api.js";
+import { executeAutoHide } from "./autoHideManager.js";
 
 let isExpeditionRunning = false; 
 let manualStopRequested = false; 
@@ -24,7 +25,7 @@ const RUNNING_LOG_COMMENT = "【敕史局】对话流水总帐";
 const PROGRESS_SEAL_REGEX =
   /本条勿动【前(\d+)楼总结已完成】否则后续总结无法进行。$/;
 
-async function readGoldenLedgerProgress(targetLorebookName) {
+export async function readGoldenLedgerProgress(targetLorebookName) {
   if (!targetLorebookName) return 0;
   try {
     const bookData = await loadWorldInfo(targetLorebookName);
@@ -127,10 +128,9 @@ export async function executeManualSummary(startFloor, endFloor, isAuto = false)
                     onRegenerate: async (summaryDialog) => {
                         summaryDialog.find('textarea').prop('disabled', true).val('正在重新生成，请稍候...');
                         const newSummary = await getSummary(textToSummarize, toastTitle);
-                        if (newSummary) {
-                            summaryDialog.find('textarea').prop('disabled', false).val(newSummary);
-                        } else {
-                            summaryDialog.find('textarea').prop('disabled', false).val(summary);
+                        summaryDialog.find('textarea').prop('disabled', false).val(newSummary || summary);
+                        summaryDialog[0].showModal(); // 重新显示弹窗
+                        if (!newSummary) {
                             toastr.error("重新生成失败，已恢复原始内容。", "模型召唤失败");
                         }
                     },
@@ -242,10 +242,9 @@ export async function executeManualSummary(startFloor, endFloor, isAuto = false)
                         onRegenerate: async (summaryDialog) => {
                             summaryDialog.find('textarea').prop('disabled', true).val('正在重新生成，请稍候...');
                             const newSummary = await getSummary(textToSummarize, toastTitle);
-                            if (newSummary) {
-                                summaryDialog.find('textarea').prop('disabled', false).val(newSummary);
-                            } else {
-                                summaryDialog.find('textarea').prop('disabled', false).val(summary);
+                            summaryDialog.find('textarea').prop('disabled', false).val(newSummary || summary);
+                            summaryDialog[0].showModal(); // 重新显示弹窗
+                            if (!newSummary) {
                                 toastr.error("重新生成失败，已恢复原始内容。", "模型召唤失败");
                             }
                         },
@@ -454,6 +453,7 @@ async function writeSummary(summary, startFloor, endFloor, toastTitle) {
 
             if (success) {
                 toastr.success(`编年史已成功更新！`, `${toastTitle} - 国史馆`);
+                executeAutoHide(); // 总结成功后立即触发自动隐藏
                 return true;
             } else {
                 // 错误已在 compatibleWriteToLorebook 内部处理和记录
@@ -618,10 +618,9 @@ export async function executeRefinement(worldbook, loreKey) {
                 onRegenerate: async (dialog) => {
                     dialog.find('textarea').prop('disabled', true).val('正在重新生成，请稍候...');
                     const newContent = await getRefinedContent();
-                    if (newContent) {
-                        dialog.find('textarea').prop('disabled', false).val(newContent);
-                    } else {
-                        dialog.find('textarea').prop('disabled', false).val(currentRefinedContent);
+                    dialog.find('textarea').prop('disabled', false).val(newContent || currentRefinedContent);
+                    dialog[0].showModal(); // 重新显示弹窗
+                    if (!newContent) {
                         toastr.error("重新生成失败，已恢复原始内容。", "模型召唤失败");
                     }
                 },

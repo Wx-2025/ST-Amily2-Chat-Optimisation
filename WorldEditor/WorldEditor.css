@@ -37,6 +37,14 @@
     cursor: pointer;
     font-size: 12px;
     transition: background-color 0.3s;
+    color: white;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+#world-editor-container .world-editor-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 #world-editor-container .world-editor-btn-primary {
@@ -73,6 +81,15 @@
 
 #world-editor-container .world-editor-btn-warning:hover {
     background-color: #e68900;
+}
+
+#world-editor-container .world-editor-btn-info {
+    background-color: #17a2b8;
+    color: white;
+}
+
+#world-editor-container .world-editor-btn-info:hover {
+    background-color: #138496;
 }
 
 #world-editor-container .world-editor-content {
@@ -400,6 +417,12 @@
 .world-editor-btn.small-btn {
     padding: 4px 8px;
     font-size: 11px;
+    color: white;
+    background-color: #4a90e2;
+}
+
+.world-editor-btn.small-btn:hover {
+    background-color: #357abd;
 }
 
 #world-editor-container .world-editor-selector h3 {
@@ -412,6 +435,26 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+
+#world-editor-container .world-editor-selector button {
+    color: white;
+    font-weight: 500;
+    background-color: #4a90e2;
+}
+
+#world-editor-container .world-editor-selector button:hover {
+    background-color: #357abd;
+}
+
+/* 确保返回列表按钮有颜色 */
+#world-editor-back-to-list-btn {
+    color: white !important;
+    background-color: #4a90e2 !important;
+}
+
+#world-editor-back-to-list-btn:hover {
+    background-color: #357abd !important;
 }
 
 /* ====== 布局修正 v2：针对 fieldset ====== */

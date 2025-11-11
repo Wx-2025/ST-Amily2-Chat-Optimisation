@@ -324,6 +324,10 @@ async function proceedWithCardUpdate($panel, messagesToUse) {
 
 async function triggerAutomaticUpdate($panel) {
     logDebug(`检查是否需要更新。总消息数: ${state.allChatMessages.length}, 自动更新启用: ${state.autoUpdateEnabled}`);
+    if (!isCwbEnabled()) {
+        logDebug('更新检查已跳过 - CharacterWorldBook总开关已关闭。');
+        return;
+    }
     if (!state.autoUpdateEnabled || isUpdatingCard || !state.customApiConfig.url || !state.customApiConfig.model || state.allChatMessages.length === 0) {
         logDebug('更新检查已跳过（未启用、正在更新、未配置或无消息）。');
         return;
@@ -544,6 +548,10 @@ async function processNextBatch($panel) {
 }
 
 export async function startBatchUpdate($panel) {
+    if (!isCwbEnabled()) {
+        showToastr('warning', 'CharacterWorldBook总开关已关闭，无法执行批量更新。');
+        return;
+    }
     await loadAllChatMessages($panel);
     if (!state.customApiConfig.url || !state.customApiConfig.model) {
         showToastr('warning', '请先配置API信息。');
@@ -581,6 +589,10 @@ export async function startBatchUpdate($panel) {
 }
 
 export async function handleFloorRangeUpdate($panel) {
+    if (!isCwbEnabled()) {
+        showToastr('warning', 'CharacterWorldBook总开关已关闭，无法执行楼层范围更新。');
+        return;
+    }
     await loadAllChatMessages($panel);
     if (isUpdatingCard || isBatchUpdating) {
         showToastr('info', '已有更新任务在进行中。');
@@ -639,6 +651,10 @@ export async function handleFloorRangeUpdate($panel) {
 }
 
 export async function manualUpdateLogic($panel = null) {
+    if (!isCwbEnabled()) {
+        logDebug('手动更新已跳过 - CharacterWorldBook总开关已关闭。');
+        return;
+    }
     if (isUpdatingCard) {
         showToastr('info', '已有更新任务在进行中。');
         return;

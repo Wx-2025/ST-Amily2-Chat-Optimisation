@@ -150,6 +150,7 @@ export function showSummaryModal(summaryText, callbacks) {
     const regenerateButton = $('<button class="menu_button secondary interactable" style="margin-right: auto;">重新生成</button>');
     regenerateButton.on('click', () => {
         if (onRegenerate) {
+            dialogElement[0].close();
             onRegenerate(dialogElement); 
         }
     });
