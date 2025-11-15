@@ -3,9 +3,23 @@ import {
     loadWorldInfo, 
     saveWorldInfo, 
     createNewWorldInfo, 
-    createWorldInfoEntry,
-    reloadEditor
+    createWorldInfoEntry
 } from "/scripts/world-info.js";
+
+let reloadEditor = () => {
+    console.warn("[Amily助手] reloadEditor 函数不可用，可能是旧版本。已使用空函数代替。");
+};
+(async () => {
+    try {
+        const { reloadEditor: importedReloadEditor } = await import("/scripts/world-info.js");
+        if (importedReloadEditor) {
+            reloadEditor = importedReloadEditor;
+            console.log("[Amily助手] 已成功动态导入 reloadEditor。");
+        }
+    } catch (error) {
+        console.warn("[Amily助手] 动态导入 reloadEditor 失败，将使用空函数。错误信息：", error.message);
+    }
+})();
 import { 
     characters, 
     eventSource, 
