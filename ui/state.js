@@ -151,7 +151,7 @@ export function updateUI() {
     }
     // 同步渲染器开关状态
     if (settings.render_enabled !== undefined) {
-      $('#render-enable-toggle').prop('checked', settings.render_enabled);
+      $('#render-enable-toggle-amily').prop('checked', settings.render_enabled);
   }
   
   // 同步渲染深度设置

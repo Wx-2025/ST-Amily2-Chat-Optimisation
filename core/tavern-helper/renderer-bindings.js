@@ -14,7 +14,7 @@ export function initializeRendererBindings() {
         console.warn("[Amily2-Renderer] Could not find the settings container.");
         return;
     }
-    container.on('change', '#render-enable-toggle', function() {
+    container.on('change', '#render-enable-toggle-amily', function () {
         const isChecked = this.checked;
 
         if (!extension_settings[extensionName]) {
