@@ -150,8 +150,8 @@ export function updateUI() {
         $('#amily2_mhb_small_trigger_count').val(settings.historiographySmallTriggerThreshold);
     }
     // 同步渲染器开关状态
-    if (settings.render_enabled !== undefined) {
-      $('#render-enable-toggle').prop('checked', settings.render_enabled);
+    if (settings.amily_render_enabled !== undefined) {
+      $('#amily-render-enable-toggle').prop('checked', settings.amily_render_enabled);
   }
   
   // 同步渲染深度设置
