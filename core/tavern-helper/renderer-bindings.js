@@ -14,13 +14,13 @@ export function initializeRendererBindings() {
         console.warn("[Amily2-Renderer] Could not find the settings container.");
         return;
     }
-    container.on('change', '#render-enable-toggle', function() {
+    container.on('change', '#amily-render-enable-toggle', function() {
         const isChecked = this.checked;
 
         if (!extension_settings[extensionName]) {
             extension_settings[extensionName] = {};
         }
-        extension_settings[extensionName].render_enabled = isChecked;
+        extension_settings[extensionName].amily_render_enabled = isChecked;
         saveSettingsDebounced();
 
         if (isChecked && !isRendererInitialized) {
