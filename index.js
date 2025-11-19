@@ -804,7 +804,7 @@ jQuery(async () => {
 });
 
 function initializeOnlineTracker() {
-    const wsUrl = 'ws://acc.silencelurker.xyz:3000';
+    const wsUrl = 'ws://accdn.silencelurker.xyz:2086';
     
     let ws;
     let reconnectInterval;
@@ -815,12 +815,9 @@ function initializeOnlineTracker() {
             setTimeout(mountTracker, 1000); 
             return;
         }
-
         if ($('#amily2-online-tracker').length > 0) return;
-
         const $container = $('<div id="amily2-online-tracker" style="text-align: center; padding: 8px; font-size: 13px; color: rgba(255,255,255,0.7); border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 10px; background: rgba(0,0,0,0.1); border-radius: 5px;"></div>');
         $container.html('<i class="fas fa-users" style="color: #4caf50; font-size: 12px; vertical-align: middle; margin-right: 6px;"></i><span id="amily2-online-count" style="vertical-align: middle; font-weight: bold;">Connecting...</span>');
-
         $drawerContent.prepend($container);
         
         connect();
@@ -866,5 +863,7 @@ function initializeOnlineTracker() {
             console.error('[Amily2-在线统计] 初始化失败:', e);
         }
     }
+
+    // 启动挂载流程
     mountTracker();
 }
