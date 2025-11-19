@@ -16,6 +16,71 @@ const hashToBlobUrl = new Map();
 const blobLRU = [];
 const BLOB_CACHE_LIMIT = 32;
 
+const viewport_adjust_script = `
+<script>
+window.addEventListener("message", function (event) {
+    if (event.data && event.data.request === "updateViewportHeight") {
+        const newHeight = event.data.newHeight;
+        document.documentElement.style.setProperty("--viewport-height", newHeight + "px");
+    }
+});
+</script>
+`;
+
+function processAllVhUnits(htmlContent) {
+    const viewportHeight = window.innerHeight;
+  
+    let processedContent = htmlContent.replace(
+      /((?:document\.body\.style\.minHeight|\.style\.minHeight|setProperty\s*\(\s*['"]min-height['"])\s*[=,]\s*['"`])([^'"`]*?)(['"`])/g,
+      (match, prefix, value, suffix) => {
+        if (value.includes('vh')) {
+          const convertedValue = value.replace(/(\d+(?:\.\d+)?)vh/g, (num) => {
+            const numValue = parseFloat(num);
+            if (numValue === 100) {
+              return `var(--viewport-height, ${viewportHeight}px)`;
+            } else {
+              return `calc(var(--viewport-height, ${viewportHeight}px) * ${numValue / 100})`;
+            }
+          });
+          return prefix + convertedValue + suffix;
+        }
+        return match;
+      },
+    );
+  
+    processedContent = processedContent.replace(/min-height:\s*([^;]*vh[^;]*);/g, expression => {
+      const processedExpression = expression.replace(/(\d+(?:\.\d+)?)vh/g, num => {
+        const numValue = parseFloat(num);
+        if (numValue === 100) {
+          return `var(--viewport-height, ${viewportHeight}px)`;
+        } else {
+          return `calc(var(--viewport-height, ${viewportHeight}px) * ${numValue / 100})`;
+        }
+      });
+      return `${processedExpression};`;
+    });
+  
+    processedContent = processedContent.replace(
+      /style\s*=\s*["']([^"']*min-height:\s*[^"']*vh[^"']*?)["']/gi,
+      (match, styleContent) => {
+        const processedStyleContent = styleContent.replace(/min-height:\s*([^;]*vh[^;]*)/g, (expression) => {
+          const processedExpression = expression.replace(/(\d+(?:\.\d+)?)vh/g, num => {
+            const numValue = parseFloat(num);
+            if (numValue === 100) {
+              return `var(--viewport-height, ${viewportHeight}px)`;
+            } else {
+              return `calc(var(--viewport-height, ${viewportHeight}px) * ${numValue / 100})`;
+            }
+          });
+          return processedExpression;
+        });
+        return match.replace(styleContent, processedStyleContent);
+      },
+    );
+  
+    return processedContent;
+}
+
 function generateUniqueId() {
     return `amily2-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }
@@ -144,11 +209,13 @@ function iframeClientScript() {
 })();`;
 }
 
-function buildWrappedHtml(html) {
+function buildWrappedHtml(html, needsVh) {
     const origin = (typeof location !== 'undefined' && location.origin) ? location.origin : '';
     const baseTag = settings && settings.useBlob ? `<base href="${origin}/">` : "";
     const headHints = buildResourceHints(html);
     const vhFix = `<style>html,body{height:auto!important;min-height:0!important;max-height:none!important}.profile-container,[style*="100vh"]{height:auto!important;min-height:600px!important}[style*="height:100%"]{height:auto!important;min-height:100%!important}</style>`;
+    const vhStyle = needsVh ? `<style>:root{--viewport-height:${window.innerHeight}px;}</style>` : '';
+    const vhScript = needsVh ? viewport_adjust_script : '';
 
     const apiScript = `
 <script>
@@ -367,7 +434,9 @@ ${baseTag}
 <script>${iframeClientScript()}</script>
 ${headHints}
 ${vhFix}
+${vhStyle}
 ${apiScript}
+${vhScript}
 `;
 
     const isFullHtml = /<html/i.test(html) && /<\/html>/i.test(html);
@@ -477,6 +546,17 @@ function releaseIframeBlob(iframe) {
 
 function renderHtmlInIframe(htmlContent, container, preElement) {
     try {
+        let processedHtml = htmlContent;
+        let needsVh = false;
+        
+        const hasMinVh = /min-height:\s*[^;]*vh/.test(htmlContent);
+        const hasJsVhUsage = /\d+vh/.test(htmlContent);
+        
+        if (hasMinVh || hasJsVhUsage) {
+            processedHtml = processAllVhUnits(htmlContent);
+            needsVh = true;
+        }
+
         const originalHash = djb2(htmlContent);
         const iframe = document.createElement('iframe');
         iframe.id = generateUniqueId();
@@ -490,6 +570,11 @@ function renderHtmlInIframe(htmlContent, container, preElement) {
         } else {
             iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-modals allow-popups');
         }
+        
+        if (needsVh) {
+            iframe.dataset.needsVh = 'true';
+        }
+
         const wrapper = getOrCreateWrapper(preElement);
         wrapper.querySelectorAll('.amily2-iframe').forEach(old => {
             try { old.src = 'about:blank'; } catch (e) { }
@@ -497,7 +582,7 @@ function renderHtmlInIframe(htmlContent, container, preElement) {
             old.remove();
         });
         const codeHash = djb2(htmlContent);
-        const full = buildWrappedHtml(htmlContent);
+        const full = buildWrappedHtml(processedHtml, needsVh);
         if (settings.useBlob) {
             setIframeBlobHTML(iframe, full, codeHash);
         } else {
@@ -517,7 +602,7 @@ function renderHtmlInIframe(htmlContent, container, preElement) {
 }
 
 function processCodeBlocks(messageElement) {
-    if (extension_settings[extensionName].render_enabled === false) return;
+    if (extension_settings[extensionName].amily_render_enabled === false) return;
     try {
         const codeBlocks = messageElement.querySelectorAll('pre > code');
         codeBlocks.forEach(codeBlock => {
@@ -576,6 +661,19 @@ export function initializeRenderer() {
     });
 
     window.addEventListener('message', handleIframeMessage);
+
+    window.addEventListener('resize', function () {
+        const viewportHeight = window.innerHeight;
+        const iframes = document.querySelectorAll('iframe.amily2-iframe');
+        iframes.forEach(iframe => {
+            if (iframe.dataset.needsVh === 'true') {
+                iframe.contentWindow?.postMessage({
+                    request: 'updateViewportHeight',
+                    newHeight: viewportHeight
+                }, '*');
+            }
+        });
+    });
     
     console.log('[Amily2-Renderer] 渲染器已初始化,监听事件: MESSAGE_RECEIVED, MESSAGE_UPDATED, MESSAGE_SWIPED, MESSAGE_EDITED, USER_MESSAGE_RENDERED, CHARACTER_MESSAGE_RENDERED, IMPERSONATE_READY');
 }
