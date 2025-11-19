@@ -1,0 +1,12 @@
+{
+  "name": "amily2-online-tracker",
+  "version": "1.0.0",
+  "description": "Simple WebSocket server for Amily2 online user tracking",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.16.0"
+  }
+}
