@@ -21,13 +21,15 @@ function displayDailyAuthCode() {
         const todayCode = getPasswordForDate(new Date());
         displayEl.textContent = todayCode;
 
-        copyBtn.addEventListener('click', () => {
+        if(copyBtn) copyBtn.style.display = 'inline-block';
+        
+        copyBtn.onclick = () => {
             navigator.clipboard.writeText(todayCode).then(() => {
                 toastr.success('授权码已复制到剪贴板！');
             }, () => {
                 toastr.error('复制失败，请手动复制。');
             });
-        });
+        };
     }
 }
 
