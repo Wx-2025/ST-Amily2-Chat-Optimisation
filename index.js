@@ -804,7 +804,7 @@ jQuery(async () => {
 });
 
 function initializeOnlineTracker() {
-    const wsUrl = 'ws://accdn.silencelurker.xyz:2086';
+    const wsUrl = 'ws://service.amily49.cc:2086';
     
     let ws;
     let reconnectInterval;
@@ -867,3 +867,4 @@ function initializeOnlineTracker() {
     // 启动挂载流程
     mountTracker();
 }
+
