@@ -7,7 +7,7 @@ import { cwbCompleteDefaultSettings } from './cwb_config.js';
 import { logError, showToastr, escapeHtml, compareVersions, isCwbEnabled } from './cwb_utils.js';
 import { fetchModelsAndConnect, updateApiStatusDisplay } from './cwb_apiService.js';
 import { checkForUpdates } from './cwb_updater.js';
-import { handleManualUpdateCard, startBatchUpdate, handleFloorRangeUpdate } from './cwb_core.js';
+import { handleManualUpdateCard, startBatchUpdate, handleFloorRangeUpdate, handleLegacyFormatConversion } from './cwb_core.js';
 import { initializeCharCardViewer } from './cwb_uiManager.js';
 import { CHAR_CARD_VIEWER_BUTTON_ID } from './cwb_state.js';
 
@@ -128,6 +128,20 @@ function saveAutoUpdateThreshold() {
     }
 }
 
+function saveScanDepth() {
+    const valStr = $panel.find('#cwb-scan-depth').val();
+    const newT = parseInt(valStr, 10);
+    if (!isNaN(newT) && newT >= 1) {
+        getSettings().cwb_scan_depth = newT;
+        state.scanDepth = newT;
+        saveSettingsDebounced();
+        showToastr('success', '扫描深度已保存！');
+    } else {
+        showToastr('warning', `深度 "${valStr}" 无效。`);
+        $panel.find('#cwb-scan-depth').val(getSettings().cwb_scan_depth);
+    }
+}
+
 function bindWorldBookSettings() {
     const MAX_RETRIES = 10;
     const RETRY_DELAY = 200;
@@ -226,7 +240,8 @@ export function bindSettingsEvents($settingsPanel) {
     });
     $panel.on('change', '#cwb-api-mode', function() {
         const selectedMode = $(this).val();
-
+        
+        // 自动保存API模式设置
         getSettings().cwb_api_mode = selectedMode;
         saveSettingsDebounced();
         
@@ -239,7 +254,8 @@ export function bindSettingsEvents($settingsPanel) {
     });
     $panel.on('change', '#cwb-tavern-profile', function() {
         const selectedProfile = $(this).val();
-
+        
+        // 自动保存SillyTavern预设选择
         getSettings().cwb_tavern_profile = selectedProfile;
         saveSettingsDebounced();
         
@@ -250,9 +266,11 @@ export function bindSettingsEvents($settingsPanel) {
         
         updateApiStatusDisplay($panel);
     });
+    // 添加API字段的实时保存
     $panel.on('input', '#cwb-api-url', function() {
         const apiUrl = $(this).val().trim();
-
+        
+        // 同时更新设置和状态
         getSettings().cwb_api_url = apiUrl;
         state.customApiConfig.url = apiUrl;
         
@@ -265,6 +283,7 @@ export function bindSettingsEvents($settingsPanel) {
     $panel.on('input', '#cwb-api-key', function() {
         const apiKey = $(this).val();
         
+        // 同时更新设置和状态
         getSettings().cwb_api_key = apiKey;
         state.customApiConfig.apiKey = apiKey;
         
@@ -275,7 +294,8 @@ export function bindSettingsEvents($settingsPanel) {
     
     $panel.on('change', '#cwb-api-model', function() {
         const model = $(this).val();
-
+        
+        // 同时更新设置和状态
         getSettings().cwb_api_model = model;
         state.customApiConfig.model = model;
         
@@ -297,9 +317,11 @@ export function bindSettingsEvents($settingsPanel) {
     $panel.on('click', '#cwb-reset-char-card-prompt', resetCharCardPrompt);
 
     $panel.on('click', '#cwb-save-auto-update-threshold', saveAutoUpdateThreshold);
+    $panel.on('click', '#cwb-save-scan-depth', saveScanDepth);
     $panel.on('click', '#cwb-manual-update-card', () => handleManualUpdateCard($panel));
     $panel.on('click', '#cwb-batch-update-card', () => startBatchUpdate($panel));
     $panel.on('click', '#cwb-floor-range-update', () => handleFloorRangeUpdate($panel));
+    $panel.on('click', '#cwb-legacy-auto-update', () => handleLegacyFormatConversion($panel));
     $panel.on('click', '#cwb-check-for-updates', () => checkForUpdates(true, $panel));
 
     $panel.on('click', '#cwb-auto-update-enabled', function () {
@@ -487,6 +509,7 @@ function updateUiWithSettings() {
     $panel.find('#cwb-max-tokens-value').text(settings.cwb_max_tokens);
 
     $panel.find('#cwb-auto-update-threshold').val(settings.cwb_auto_update_threshold);
+    $panel.find('#cwb-scan-depth').val(settings.cwb_scan_depth);
     $panel.find('#cwb_master_enabled-checkbox').prop('checked', settings.cwb_master_enabled);
     $panel.find('#cwb-auto-update-enabled-checkbox').prop('checked', settings.cwb_auto_update_enabled);
     $panel.find('#cwb-viewer-enabled-checkbox').prop('checked', settings.cwb_viewer_enabled);
@@ -513,12 +536,10 @@ export function loadSettings() {
     console.log('[CWB] Loading settings...');
     
     const settings = getSettings();
-
     if (!settings) {
         extension_settings[extensionName] = { ...cwbCompleteDefaultSettings };
         console.log('[CWB] Initialized default settings');
     } else {
-
         Object.keys(cwbCompleteDefaultSettings).forEach(key => {
             if (settings[key] === undefined || settings[key] === null) {
                 settings[key] = cwbCompleteDefaultSettings[key];
@@ -527,7 +548,6 @@ export function loadSettings() {
     }
 
     const finalSettings = getSettings();
-
     const overrides = JSON.parse(localStorage.getItem(CWB_BOOLEAN_SETTINGS_OVERRIDE_KEY) || '{}');
     if (overrides.cwb_master_enabled !== undefined) {
         finalSettings.cwb_master_enabled = overrides.cwb_master_enabled;
@@ -542,6 +562,7 @@ export function loadSettings() {
         finalSettings.cwb_incremental_update_enabled = overrides.cwb_incremental_update_enabled;
     }
 
+    // Update state object with current settings
     state.masterEnabled = finalSettings.cwb_master_enabled;
     state.viewerEnabled = finalSettings.cwb_viewer_enabled;
     state.autoUpdateEnabled = finalSettings.cwb_auto_update_enabled;
@@ -556,6 +577,7 @@ export function loadSettings() {
     state.currentIncrementalCharCardPrompt = finalSettings.cwb_incremental_char_card_prompt;
     
     state.autoUpdateThreshold = finalSettings.cwb_auto_update_threshold;
+    state.scanDepth = finalSettings.cwb_scan_depth;
     state.worldbookTarget = finalSettings.cwb_worldbook_target;
     state.customWorldBook = finalSettings.cwb_custom_worldbook;
 
@@ -566,13 +588,11 @@ export function loadSettings() {
         worldbookTarget: state.worldbookTarget,
         customWorldBook: state.customWorldBook
     });
-
     if ($panel) {
         updateUiWithSettings();
     }
 
     updateControlsLockState();
-
     setTimeout(() => {
         const $viewerButton = $(`#${CHAR_CARD_VIEWER_BUTTON_ID}`);
         if ($viewerButton.length > 0) {
