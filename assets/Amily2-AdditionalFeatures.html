@@ -176,8 +176,8 @@
                 <i id="amily2_mhb_small_expand_editor" class="editor_maximize fa-solid fa-maximize right_menu_button interactable" title="展开编辑器" tabindex="0"></i>
             </div>
             <select id="amily2_mhb_small_prompt_selector" class="text_pole">
-                <option value="jailbreak">破限谕旨 (最高优先级)</option>
-                <option value="summary">敕史纲要 (总结任务)</option>
+                <option value="jailbreak">小总结主要提示词</option>
+                <option value="summary">小总结任务提示词</option>
             </select>
         </div>
         <div class="amily2_settings_block prompt-editor-area">
@@ -270,11 +270,46 @@
 
 
             <small class="notes" style="text-align: center; display: block; margin-top: 5px;">
-                【开始远征】将立即清算所有未记录的历史。 【自动巡录】则在您聊天时，于后台默默守护史册的完整。
+                【自动批量】将立即清算所有未记录的历史。 【静默总结】则在您聊天时，于后台默默守护史册的完整。
             </small>
 
 
         </div>
+    </fieldset>
+
+    <!-- 上下分割线 -->
+    <hr class="header-divider" style="margin: 20px 0;">
+
+    <fieldset class="settings-group" style="border-style: dashed;">
+        <legend>📚 史册归档与回溯</legend>
+        <small class="notes" style="text-align: center; display: block; margin-bottom: 15px;">
+            管理多条时间线的史册，随时封存或重启旧的历史。
+        </small>
+
+        <div class="amily2_settings_block">
+            <button id="amily2_mhb_archive_current" class="menu_button secondary small_button interactable" style="width: 100%; margin-bottom: 10px;">
+                <i class="fas fa-archive"></i> 归档当前【对话流水总帐】并停用
+            </button>
+        </div>
+
+        <div class="mhb-selector-container">
+            <div class="mhb-selector-group">
+                <label for="amily2_mhb_archive_selector">选择要回溯的旧史册</label>
+                <div class="select-with-refresh">
+                    <select id="amily2_mhb_archive_selector" class="text_pole" style="flex-grow: 1;">
+                        <option value="">请刷新列表...</option>
+                    </select>
+                    <button id="amily2_mhb_refresh_archives" class="menu_button secondary small_button interactable" title="刷新归档列表">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <button id="amily2_mhb_restore_archive" class="menu_button primary small_button interactable" style="margin-top: 10px; width: 100%;">
+            <i class="fas fa-trash-restore"></i> 回溯选中史册 (自动归档当前)
+        </button>
+
     </fieldset>
 
     <!-- 上下分割线 -->
@@ -290,8 +325,8 @@
                 <i id="amily2_mhb_large_expand_editor" class="editor_maximize fa-solid fa-maximize right_menu_button interactable" title="展开编辑器" tabindex="0"></i>
             </div>
             <select id="amily2_mhb_large_prompt_selector" class="text_pole">
-                <option value="jailbreak">破限谕旨 (最高优先级)</option>
-                <option value="summary">精炼纲要 (精炼任务)</option>
+                <option value="jailbreak">大总结主要提示词</option>
+                <option value="summary">大总结任务提示词)</option>
             </select>
         </div>
         <div class="amily2_settings_block prompt-editor-area">
