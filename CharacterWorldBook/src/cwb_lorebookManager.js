@@ -88,6 +88,7 @@ export async function saveDescriptionToLorebook(characterName, newDescription, s
             keys: [chatIdentifier, safeCharName, floorRange],
             enabled: true,
             type: 'selective',
+            scanDepth: state.scanDepth || 6,
         };
 
         if (existing) {
