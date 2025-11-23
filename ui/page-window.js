@@ -120,12 +120,22 @@ export function showHtmlModal(title, htmlContent, options = {}) {
 }
 
 
+function escapeHtml(text) {
+    if (!text) return '';
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 export function showSummaryModal(summaryText, callbacks) {
     const { onConfirm, onRegenerate, onCancel } = callbacks;
 
     const modalHtml = `
         <div class="historiographer-summary-modal">
-            <textarea class="text_pole" style="width: 100%; height: 50vh; resize: vertical;">${summaryText}</textarea>
+            <textarea class="text_pole" style="width: 100%; height: 50vh; resize: vertical;">${escapeHtml(summaryText)}</textarea>
         </div>
     `;
 
