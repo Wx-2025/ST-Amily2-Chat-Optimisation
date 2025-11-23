@@ -430,6 +430,7 @@ class AmilyHelper {
                         existingEntry.position = positionMap[entryUpdate.position] ?? 4;
                     }
                     if (entryUpdate.depth !== undefined) existingEntry.depth = entryUpdate.depth;
+                    if (entryUpdate.scanDepth !== undefined) existingEntry.scanDepth = entryUpdate.scanDepth;
                     if (entryUpdate.order !== undefined) existingEntry.order = entryUpdate.order;
                     if (entryUpdate.exclude_recursion !== undefined) existingEntry.excludeRecursion = entryUpdate.exclude_recursion;
                     if (entryUpdate.prevent_recursion !== undefined) existingEntry.preventRecursion = entryUpdate.prevent_recursion;
@@ -474,6 +475,7 @@ class AmilyHelper {
                     constant: newEntryData.type === 'constant' ? true : (newEntryData.constant || false),
                     position: typeof newEntryData.position === 'string' ? (positionMap[newEntryData.position] ?? 4) : (newEntryData.position ?? 4),
                     depth: newEntryData.depth ?? 998,
+                    scanDepth: newEntryData.scanDepth ?? null,
                     disable: !(newEntryData.enabled ?? true),
                 });
                 if (newEntryData.type === 'selective') newEntry.constant = false;
