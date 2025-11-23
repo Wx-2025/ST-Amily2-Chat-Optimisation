@@ -475,8 +475,8 @@ export const defaultMixedOrder = {
         { type: 'prompt', index: 5 },
         { type: 'prompt', index: 6 },
         { type: 'conditional', id: 'cwb_break_armor_prompt' },
-        { type: 'conditional', id: 'cwb_char_card_prompt' },
         { type: 'conditional', id: 'newContext' },
+        { type: 'conditional', id: 'cwb_char_card_prompt' },
         { type: 'prompt', index: 7 }
     ],
     cwb_summarizer_incremental: [
@@ -488,10 +488,10 @@ export const defaultMixedOrder = {
         { type: 'prompt', index: 5 },
         { type: 'prompt', index: 6 },
         { type: 'conditional', id: 'cwb_break_armor_prompt' },
-        { type: 'conditional', id: 'cwb_char_card_prompt' },
-        { type: 'conditional', id: 'cwb_incremental_char_card_prompt' },
         { type: 'conditional', id: 'oldFiles' },
         { type: 'conditional', id: 'newContext' },
+        { type: 'conditional', id: 'cwb_char_card_prompt' },
+        { type: 'conditional', id: 'cwb_incremental_char_card_prompt' },
         { type: 'prompt', index: 7 }
     ],
     novel_processor: [
@@ -542,4 +542,3 @@ export const sectionTitles = {
     cwb_summarizer_incremental: '角色世界书(CWB-增量)',
     novel_processor: '小说处理',
 };
-
