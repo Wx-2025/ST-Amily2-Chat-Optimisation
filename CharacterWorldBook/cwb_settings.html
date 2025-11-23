@@ -126,6 +126,12 @@
                             <input type="number" id="cwb-auto-update-threshold" class="text_pole" min="1" max="100" placeholder="消息数">
                             <button id="cwb-save-auto-update-threshold" class="menu_button accent small_button">保存</button>
                         </div>
+                        
+                        <label for="cwb-scan-depth">扫描深度</label>
+                        <div class="cwb-input-with-button">
+                            <input type="number" id="cwb-scan-depth" class="text_pole" min="1" max="100" placeholder="消息数">
+                            <button id="cwb-save-scan-depth" class="menu_button accent small_button">保存</button>
+                        </div>
                     </div>
 
                     <div class="control-block-with-switch" id="cwb-viewer-enabled">
@@ -188,9 +194,12 @@
                         <button id="cwb-manual-update-card" class="menu_button secondary">
                             <i class="fa-solid fa-pencil"></i> 快速更新 (最新阈值条)
                         </button>
+                        <button id="cwb-legacy-auto-update" class="menu_button secondary" title="自动将旧版格式的角色卡转换为新版格式">
+                            <i class="fa-solid fa-history"></i> 旧版格式转换
+                        </button>
                     </div>
                     <small class="notes" style="text-align: center; display: block; margin-top: 10px;">
-                        <b>重要提示:</b> 上下文处理会内阁密室中“微言录”的<b>标签提取</b>和<b>内容排除</b>规则。如果发现上下文不完整，请检查相关设置。
+                        <b>重要提示:</b> 上下文处理会复用主功能区“手动敕史局”的<b>标签提取</b>和<b>内容排除</b>规则。如果发现上下文不完整，请检查相关设置。
                     </small>
                     <div style="margin-top: 15px;">
                         <div id="cwb-status-message" class="notes"></div>
