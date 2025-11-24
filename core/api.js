@@ -46,7 +46,7 @@ const UPDATE_CHECK_URL =
   "https://raw.githubusercontent.com/Wx-2025/ST-Amily2-Chat-Optimisation/refs/heads/main/amily2_update_info.json";
 
 const MESSAGE_BOARD_URL =
-  "https://raw.githubusercontent.com/Wx-2025/ST-Amily2-Chat-Optimisation/refs/heads/main/amily2_message_board.json";
+  "https://amilyservice.amily49.cc/amily2_message_board.json";
  
 export async function fetchMessageBoardContent() {
     if (!MESSAGE_BOARD_URL) {
