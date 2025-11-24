@@ -193,14 +193,22 @@ async function handleUpdateCheck() {
 }
 
 async function handleMessageBoard() {
-    const messageData = await fetchMessageBoardContent();
-    if (messageData && messageData.message) {
-        const messageBoard = $('#amily2_message_board');
-        const messageContent = $('#amily2_message_content');
-        messageContent.html(messageData.message); 
-        messageBoard.show();
-        console.log("【Amily2号-内务府】已成功获取并展示来自陛下的最新圣谕。");
-    }
+    const updateMessage = async () => {
+        try {
+            const messageData = await fetchMessageBoardContent();
+            if (messageData && messageData.message) {
+                const messageBoard = $('#amily2_message_board');
+                const messageContent = $('#amily2_message_content');
+                messageContent.html(messageData.message); 
+                messageBoard.show();
+                console.log("【Amily2号-内务府】已成功获取并展示来自陛下的最新圣谕。");
+            }
+        } catch (error) {
+            console.error("【Amily2号-内务府】获取留言板失败:", error);
+        }
+    };
+    await updateMessage();
+    setInterval(updateMessage, 60000);
 }
 
 
@@ -763,7 +771,7 @@ jQuery(async () => {
 
         handleUpdateCheck();
         handleMessageBoard();
-        initializeOnlineTracker();
+        initializeOnlineTracker(); // 【Amily2号-在线统计】启动在线人数统计
 
         initializeRenderer(); 
 
@@ -804,7 +812,7 @@ jQuery(async () => {
 });
 
 function initializeOnlineTracker() {
-    const wsUrl = 'ws://service.amily49.cc:2086';
+    const wsUrl = 'wss://amilyservice.amily49.cc';
     
     let ws;
     let reconnectInterval;
@@ -818,6 +826,7 @@ function initializeOnlineTracker() {
         if ($('#amily2-online-tracker').length > 0) return;
         const $container = $('<div id="amily2-online-tracker" style="text-align: center; padding: 8px; font-size: 13px; color: rgba(255,255,255,0.7); border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 10px; background: rgba(0,0,0,0.1); border-radius: 5px;"></div>');
         $container.html('<i class="fas fa-users" style="color: #4caf50; font-size: 12px; vertical-align: middle; margin-right: 6px;"></i><span id="amily2-online-count" style="vertical-align: middle; font-weight: bold;">Connecting...</span>');
+
         $drawerContent.prepend($container);
         
         connect();
@@ -867,4 +876,3 @@ function initializeOnlineTracker() {
     // 启动挂载流程
     mountTracker();
 }
-
