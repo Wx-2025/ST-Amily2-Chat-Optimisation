@@ -1,0 +1,85 @@
+<div class="amily2-header">
+    <div class="additional-features-title interactable" title="Amily2 究极长期记忆系统">
+        <i class="fas fa-brain"></i> 灵台 · 记忆中枢
+    </div>
+    <button id="amily2_back_to_main_from_super_memory" class="menu_button secondary small_button interactable">
+        返回主殿 <i class="fas fa-arrow-right"></i>
+    </button>
+</div>
+<hr class="header-divider">
+
+<div id="sm-modal-container">
+    <div class="sm-intro-box">
+        <h3><i class="fas fa-microchip"></i> 究极长期记忆 (Super Memory)</h3>
+        <p>欢迎来到 Amily2 的核心记忆中枢。这里掌管着世界的记忆，连接着每一个角色、每一个物品与每一段传说。</p>
+        <p>通过“三级金字塔”注入策略，我们将实现极致的 Token 节省与无限的记忆深度。</p>
+    </div>
+
+    <div class="sm-navigation-deck">
+        <button class="sm-nav-item active" data-tab="dashboard">概览</button>
+        <button class="sm-nav-item" data-tab="config">配置</button>
+        <button class="sm-nav-item" data-tab="relation">关联网络</button>
+    </div>
+
+    <div class="sm-scroll">
+        <!-- Dashboard Tab -->
+        <div id="sm-dashboard-tab" class="sm-tab-pane active">
+            <fieldset class="sm-settings-group">
+                <legend><i class="fas fa-tachometer-alt"></i> 状态监控</legend>
+                <div class="sm-control-block">
+                    <label>记忆系统状态:</label>
+                    <span id="sm-system-status" class="sm-status-indicator">未初始化</span>
+                </div>
+                <div class="sm-control-block">
+                    <label>当前索引 (Tier 1):</label>
+                    <span id="sm-index-count">0 条目</span>
+                </div>
+                <div class="sm-control-block">
+                    <label>已触发详情 (Tier 2):</label>
+                    <span id="sm-detail-count">0 条目</span>
+                </div>
+                <div class="sm-button-group">
+                    <button class="sm-action-button success" onclick="sm_initializeSystem()">初始化系统</button>
+                    <button class="sm-action-button danger" onclick="sm_purgeMemory()">清空记忆</button>
+                </div>
+            </fieldset>
+        </div>
+
+        <!-- Config Tab -->
+        <div id="sm-config-tab" class="sm-tab-pane">
+            <fieldset class="sm-settings-group">
+                <legend><i class="fas fa-cogs"></i> 记忆策略配置</legend>
+                <div class="sm-control-block">
+                    <label>启用 Super Memory (总开关):</label>
+                    <label class="sm-toggle-switch">
+                        <input type="checkbox" id="sm-system-enabled">
+                        <span class="sm-slider"></span>
+                    </label>
+                </div>
+                <div class="sm-control-block">
+                    <label>启用世界书桥接:</label>
+                    <label class="sm-toggle-switch">
+                        <input type="checkbox" id="sm-bridge-enabled">
+                        <span class="sm-slider"></span>
+                    </label>
+                </div>
+                <div class="sm-control-block">
+                    <label>索引注入深度 (@Depth):</label>
+                    <input type="number" id="sm-index-depth" class="sm-input" value="0">
+                </div>
+                <div class="sm-control-block">
+                    <label>详情注入深度 (@Depth):</label>
+                    <input type="number" id="sm-detail-depth" class="sm-input" value="2">
+                </div>
+            </fieldset>
+        </div>
+
+        <!-- Relation Tab -->
+        <div id="sm-relation-tab" class="sm-tab-pane">
+            <fieldset class="sm-settings-group">
+                <legend><i class="fas fa-project-diagram"></i> 关联网络 (The Mesh)</legend>
+                <p>关联触发逻辑正在开发中...</p>
+            </fieldset>
+        </div>
+    </div>
+</div>
