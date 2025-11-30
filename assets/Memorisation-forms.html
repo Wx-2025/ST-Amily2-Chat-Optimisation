@@ -15,7 +15,7 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            min-width: 0; 
+            min-width: 0; /* Prevents flex items from overflowing */
         }
 
         .scrollable-container {
@@ -152,6 +152,7 @@
 
                     <div id="table_worldbook_select_wrapper" style="display: none;">
                         <div class="worldbook-selection-container">
+                            <!-- World Book List Column -->
                             <div class="worldbook-column">
                                 <div class="amily2_opt_label_with_button_wrapper">
                                     <label>选择世界书 (可多选)</label>
@@ -169,6 +170,7 @@
                         </div>
                     </div>
 
+                    <!-- World Book Entry List Column -->
                     <div class="worldbook-column" style="margin-top: 10px;">
                         <label>选择条目 (可多选)</label>
                         <div class="table-search-wrapper">
@@ -200,6 +202,13 @@
                         </label> 
                     </div>
                     <div class="control-block-with-switch" style="margin-bottom: 10px;">
+                        <label for="context-optimization-enabled-toggle">启用上下文优化 (合并世界书)</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="context-optimization-enabled" data-setting-key="context_optimization_enabled" data-type="boolean">
+                            <span class="slider"></span>
+                        </label> 
+                    </div>
+                    <div class="control-block-with-switch" style="margin-bottom: 10px;">
                         <label>填表模式</label>
                         <div class="radio-group">
                             <input type="radio" id="main-api-mode" name="filling-mode" value="main-api" checked>
@@ -216,6 +225,13 @@
                         <label for="context-reading-slider">上下文读取: <span id="context-reading-value">4</span></label>
                         <input type="range" id="context-reading-slider" min="0" max="10" step="1" value="4" class="text_pole" style="width: 100%; margin-top: 5px;">
                         <small class="notes" style="margin-top: 5px; display: block;">默认使用微言录的标签提取与内容排除规则。</small>
+                    </div>
+
+                    <!-- 分步填表延迟滑块 - 仅在分步模式下显示 -->
+                    <div id="secondary-filler-delay-container" class="control-block-with-switch" style="margin-bottom: 10px; display: none;">
+                        <label for="secondary-filler-delay-slider">填表延迟 (楼层): <span id="secondary-filler-delay-value">0</span></label>
+                        <input type="range" id="secondary-filler-delay-slider" min="0" max="10" step="1" value="0" class="text_pole" style="width: 100%; margin-top: 5px;">
+                        <small class="notes" style="margin-top: 5px; display: block;">设置延迟多少楼层后才进行填表（防并发冲突、超级记忆功能专用，默认为0）。</small>
                     </div>
                     
                     <div id="table-independent-rules-container" class="control-block-with-switch" style="margin-bottom: 10px; display: none; flex-direction: column; align-items: flex-start; gap: 8px;">
@@ -378,5 +394,4 @@
 </div>
 
 </body>
-</html>
 </html>
