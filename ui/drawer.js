@@ -20,6 +20,7 @@ import { bindHanlinyuanEvents } from "./hanlinyuan-bindings.js";
 import { bindTableEvents } from './table-bindings.js';
 import { showContentModal } from "./page-window.js";
 import { initializeRendererBindings } from "../core/tavern-helper/renderer-bindings.js";
+import { bindSuperMemoryEvents } from "../core/super-memory/bindings.js";
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
 
@@ -106,6 +107,10 @@ async function initializePanel(contentPanel, errorContainer) {
             const rendererPanelHtml = `<div id="amily2_renderer_panel" style="display: none;">${rendererContent}</div>`;
             mainContainer.append(rendererPanelHtml);
 
+            const superMemoryContent = await $.get(`${extensionFolderPath}/core/super-memory/index.html`);
+            const superMemoryPanelHtml = `<div id="amily2_super_memory_panel" style="display: none;">${superMemoryContent}</div>`;
+            mainContainer.append(superMemoryPanelHtml);
+
             // 在面板创建后，加载世界书编辑器脚本
             const worldEditorScriptId = 'world-editor-script';
             if (!document.getElementById(worldEditorScriptId)) {
@@ -123,6 +128,7 @@ async function initializePanel(contentPanel, errorContainer) {
         bindHanlinyuanEvents();
         bindTableEvents();
         initializeRendererBindings();
+        bindSuperMemoryEvents();
         contentPanel.data("initialized", true);
         console.log("[Amily-重构] 宫殿模块已按蓝图竣工。");
         applyUpdateIndicator();

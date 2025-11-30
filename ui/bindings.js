@@ -630,6 +630,26 @@ export function bindModalEvents() {
         });
 
     container
+        .off("click.amily2.reset_auth")
+        .on("click.amily2.reset_auth", "#amily2_reset_auth", function() {
+            if (!pluginAuthStatus.authorized) return;
+            
+            if (confirm("确定要清除本地授权码吗？\n这将使您的授权失效，需要重新验证。\n\n这通常用于：\n1. 升级为高级用户\n2. 解决授权异常问题")) {
+                localStorage.removeItem("plugin_auth_code");
+                localStorage.removeItem("plugin_activated");
+                localStorage.removeItem("plugin_auto_login");
+                localStorage.removeItem("plugin_user_type");
+                localStorage.removeItem("plugin_valid_until");
+                
+                toastr.success("授权已清除，即将重新加载以生效...", "Amily2号");
+                
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            }
+        });
+
+    container
         .off("click.amily2.update")
         .on("click.amily2.update", "#amily2_update_button", function() {
             $("#amily2_update_indicator").hide();
@@ -705,7 +725,7 @@ export function bindModalEvents() {
 container
     .off("click.amily2.chamber_nav")
     .on("click.amily2.chamber_nav",
-         "#amily2_open_plot_optimization, #amily2_open_additional_features, #amily2_open_rag_palace, #amily2_open_memorisation_forms, #amily2_open_character_world_book, #amily2_open_world_editor, #amily2_open_glossary, #amily2_open_renderer, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan, #amily2_back_to_main_from_forms, #amily2_back_to_main_from_optimization, #amily2_back_to_main_from_cwb, #amily2_back_to_main_from_world_editor, #amily2_back_to_main_from_glossary, #amily2_renderer_back_button", function () {
+         "#amily2_open_plot_optimization, #amily2_open_additional_features, #amily2_open_rag_palace, #amily2_open_memorisation_forms, #amily2_open_character_world_book, #amily2_open_world_editor, #amily2_open_glossary, #amily2_open_renderer, #amily2_open_super_memory, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan, #amily2_back_to_main_from_forms, #amily2_back_to_main_from_optimization, #amily2_back_to_main_from_cwb, #amily2_back_to_main_from_world_editor, #amily2_back_to_main_from_glossary, #amily2_renderer_back_button, #amily2_back_to_main_from_super_memory", function () {
         if (!pluginAuthStatus.authorized) return;
 
         const mainPanel = container.find('.plugin-features');
@@ -717,6 +737,7 @@ container
         const worldEditorPanel = container.find('#amily2_world_editor_panel');
         const glossaryPanel = container.find('#amily2_glossary_panel');
         const rendererPanel = container.find('#amily2_renderer_panel');
+        const superMemoryPanel = container.find('#amily2_super_memory_panel');
 
         mainPanel.hide();
         additionalPanel.hide();
@@ -727,8 +748,18 @@ container
         worldEditorPanel.hide();
         glossaryPanel.hide();
         rendererPanel.hide();
+        superMemoryPanel.hide();
 
         switch (this.id) {
+            case 'amily2_open_super_memory':
+                const userType = parseInt(localStorage.getItem("plugin_user_type") || "0");
+                if (userType < 2) {
+                    toastr.warning("此功能为内测功能，仅限我看顺眼的用户使用。", "权限不足");
+                    mainPanel.show();
+                    return;
+                }
+                superMemoryPanel.show();
+                break;
             case 'amily2_open_renderer':
                 rendererPanel.show();
                 break;
@@ -761,6 +792,7 @@ container
             case 'amily2_back_to_main_from_world_editor':
             case 'amily2_back_to_main_from_glossary':
             case 'amily2_renderer_back_button':
+            case 'amily2_back_to_main_from_super_memory':
                 mainPanel.show();
                 break;
         }

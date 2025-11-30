@@ -1,1 +1,2113 @@
-const _0xc6d991=_0x54ef;(function(_0x4bc794,_0x5ed8db){const _0x101fb1=_0x54ef,_0x540247=_0x4bc794();while(!![]){try{const _0x44326d=parseInt(_0x101fb1(0x282))/0x1*(parseInt(_0x101fb1(0x179))/0x2)+parseInt(_0x101fb1(0x175))/0x3+-parseInt(_0x101fb1(0x28a))/0x4*(parseInt(_0x101fb1(0x180))/0x5)+-parseInt(_0x101fb1(0x11a))/0x6*(-parseInt(_0x101fb1(0x27f))/0x7)+parseInt(_0x101fb1(0x172))/0x8+-parseInt(_0x101fb1(0x1ee))/0x9*(parseInt(_0x101fb1(0x25a))/0xa)+-parseInt(_0x101fb1(0x1bb))/0xb*(-parseInt(_0x101fb1(0x26f))/0xc);if(_0x44326d===_0x5ed8db)break;else _0x540247['push'](_0x540247['shift']());}catch(_0x4bde54){_0x540247['push'](_0x540247['shift']());}}}(_0x3643,0x735d3));import*as _0x93db26 from'../core/table-system/manager.js';import{log}from'../core/table-system/logger.js';import{extension_settings,getContext}from'/scripts/extensions.js';import{extensionName}from'../utils/settings.js';import{updateOrInsertTableInChat}from'./message-table-renderer.js';import{saveSettingsDebounced}from'/script.js';import{startBatchFilling}from'../core/table-system/batch-filler.js';import{showHtmlModal}from'./page-window.js';import{DEFAULT_AI_RULE_TEMPLATE,DEFAULT_AI_FLOW_TEMPLATE}from'../core/table-system/settings.js';import{world_names,loadWorldInfo}from'/scripts/world-info.js';import{safeCharLorebooks,safeLorebookEntries}from'../core/tavernhelper-compatibility.js';import{characters,this_chid,eventSource,event_types}from'/script.js';import{fetchNccsModels,testNccsApiConnection}from'../core/api/NccsApi.js';function _0x54ef(_0x1b1ef6,_0x17bc2d){const _0x3643fc=_0x3643();return _0x54ef=function(_0x54efb1,_0x12467d){_0x54efb1=_0x54efb1-0xf8;let _0x2f901e=_0x3643fc[_0x54efb1];return _0x2f901e;},_0x54ef(_0x1b1ef6,_0x17bc2d);}const isTouchDevice=()=>window[_0xc6d991(0x267)](_0xc6d991(0x277))[_0xc6d991(0x1f7)],getAllTablesContainer=()=>document[_0xc6d991(0x16c)]('all-tables-container');let isResizing=![];function toggleRowContextMenu(_0x1d18fd){const _0x3fe02f=_0xc6d991;_0x1d18fd[_0x3fe02f(0x2ee)](),_0x1d18fd['stopPropagation']();const _0x2102c4=_0x1d18fd[_0x3fe02f(0x195)][_0x3fe02f(0x104)](_0x3fe02f(0x19e));if(!_0x2102c4)return;const _0x1f2286=_0x2102c4['closest'](_0x3fe02f(0x27b));if(!_0x1f2286)return;const _0x45f4c5=_0x2102c4['classList'][_0x3fe02f(0xfe)](_0x3fe02f(0x20f));document[_0x3fe02f(0x212)](_0x3fe02f(0x1cd))[_0x3fe02f(0x14b)](_0x234114=>{const _0x52f6c0=_0x3fe02f;if(_0x234114!==_0x2102c4){_0x234114['classList']['remove']('amily2-menu-open'),_0x234114[_0x52f6c0(0x263)][_0x52f6c0(0x1ba)]='',_0x234114[_0x52f6c0(0x263)][_0x52f6c0(0x293)]='';const _0x31bf41=_0x234114['closest'](_0x52f6c0(0x27b));_0x31bf41&&(_0x31bf41[_0x52f6c0(0x263)][_0x52f6c0(0x2ad)]='auto',_0x31bf41[_0x52f6c0(0x263)]['zIndex']='',_0x31bf41[_0x52f6c0(0x263)][_0x52f6c0(0x293)]='');}}),_0x2102c4['classList'][_0x3fe02f(0x28f)](_0x3fe02f(0x20f));_0x2102c4[_0x3fe02f(0x14a)]['contains'](_0x3fe02f(0x20f))?(_0x1f2286[_0x3fe02f(0x263)][_0x3fe02f(0x2ad)]=_0x3fe02f(0x13b),_0x1f2286['style'][_0x3fe02f(0x293)]=_0x3fe02f(0x124),_0x1f2286['style'][_0x3fe02f(0x1ba)]='10',_0x2102c4[_0x3fe02f(0x263)][_0x3fe02f(0x293)]=_0x3fe02f(0x124),_0x2102c4[_0x3fe02f(0x263)][_0x3fe02f(0x1ba)]=_0x3fe02f(0x134)):(_0x1f2286[_0x3fe02f(0x263)][_0x3fe02f(0x2ad)]='auto',_0x1f2286['style']['position']='',_0x1f2286['style'][_0x3fe02f(0x1ba)]='',_0x2102c4[_0x3fe02f(0x263)][_0x3fe02f(0x293)]='',_0x2102c4[_0x3fe02f(0x263)][_0x3fe02f(0x1ba)]='');const _0x5c0bc4=_0x4cb60d=>{const _0xa3c1f4=_0x3fe02f;!_0x2102c4['contains'](_0x4cb60d[_0xa3c1f4(0x195)])&&(_0x2102c4[_0xa3c1f4(0x14a)][_0xa3c1f4(0x1e4)](_0xa3c1f4(0x20f)),_0x2102c4[_0xa3c1f4(0x263)][_0xa3c1f4(0x293)]='',_0x2102c4[_0xa3c1f4(0x263)][_0xa3c1f4(0x1ba)]='',_0x1f2286[_0xa3c1f4(0x263)]['overflowX']=_0xa3c1f4(0x10c),_0x1f2286[_0xa3c1f4(0x263)][_0xa3c1f4(0x293)]='',_0x1f2286[_0xa3c1f4(0x263)][_0xa3c1f4(0x1ba)]='',document[_0xa3c1f4(0x2a6)](_0xa3c1f4(0x29d),_0x5c0bc4,!![]));};_0x2102c4[_0x3fe02f(0x14a)]['contains'](_0x3fe02f(0x20f))&&setTimeout(()=>{const _0x34ba72=_0x3fe02f;document[_0x34ba72(0x242)](_0x34ba72(0x29d),_0x5c0bc4,!![]);},0x0);}function toggleColumnContextMenu(_0x3a9ec9){const _0x1933ac=_0xc6d991;if(isResizing||_0x3a9ec9['target'][_0x1933ac(0x14a)][_0x1933ac(0xfe)](_0x1933ac(0x1ef)))return;_0x3a9ec9[_0x1933ac(0x2ee)](),_0x3a9ec9[_0x1933ac(0x1eb)]();const _0x37cfb4=_0x3a9ec9[_0x1933ac(0x195)][_0x1933ac(0x104)]('th');if(!_0x37cfb4)return;const _0x1232b4=_0x37cfb4['closest'](_0x1933ac(0x27b));if(!_0x1232b4)return;const _0xd82936=_0x37cfb4['classList'][_0x1933ac(0xfe)](_0x1933ac(0x20f));document['querySelectorAll'](_0x1933ac(0x1e3))[_0x1933ac(0x14b)](_0x510511=>{const _0xdf6fbb=_0x1933ac;if(_0x510511!==_0x37cfb4){_0x510511[_0xdf6fbb(0x14a)][_0xdf6fbb(0x1e4)](_0xdf6fbb(0x20f));const _0x104136=_0x510511[_0xdf6fbb(0x104)](_0xdf6fbb(0x27b));_0x104136&&(_0x104136[_0xdf6fbb(0x263)]['overflowX']=_0xdf6fbb(0x10c),_0x104136['style'][_0xdf6fbb(0x1ba)]='',_0x104136[_0xdf6fbb(0x263)][_0xdf6fbb(0x293)]='');}}),_0x37cfb4[_0x1933ac(0x14a)][_0x1933ac(0x28f)](_0x1933ac(0x20f));_0x37cfb4[_0x1933ac(0x14a)]['contains']('amily2-menu-open')?(_0x1232b4[_0x1933ac(0x263)][_0x1933ac(0x2ad)]='visible',_0x1232b4[_0x1933ac(0x263)][_0x1933ac(0x293)]=_0x1933ac(0x124),_0x1232b4['style'][_0x1933ac(0x1ba)]='10'):(_0x1232b4['style'][_0x1933ac(0x2ad)]=_0x1933ac(0x10c),_0x1232b4['style'][_0x1933ac(0x293)]='',_0x1232b4[_0x1933ac(0x263)][_0x1933ac(0x1ba)]='');const _0x428644=_0x88011e=>{const _0x7bb1ef=_0x1933ac;!_0x37cfb4[_0x7bb1ef(0xfe)](_0x88011e[_0x7bb1ef(0x195)])&&(_0x37cfb4['classList']['remove'](_0x7bb1ef(0x20f)),_0x1232b4['style'][_0x7bb1ef(0x2ad)]=_0x7bb1ef(0x10c),_0x1232b4[_0x7bb1ef(0x263)][_0x7bb1ef(0x293)]='',_0x1232b4[_0x7bb1ef(0x263)][_0x7bb1ef(0x1ba)]='',document[_0x7bb1ef(0x2a6)](_0x7bb1ef(0x29d),_0x428644,!![]));};_0x37cfb4[_0x1933ac(0x14a)][_0x1933ac(0xfe)]('amily2-menu-open')&&setTimeout(()=>{document['addEventListener']('click',_0x428644,!![]);},0x0);}function toggleHeaderIndexContextMenu(_0x2a891b){const _0x150649=_0xc6d991;_0x2a891b[_0x150649(0x2ee)](),_0x2a891b['stopPropagation']();const _0x4941ea=_0x2a891b[_0x150649(0x195)][_0x150649(0x104)](_0x150649(0x249));if(!_0x4941ea)return;const _0x1600fe=_0x4941ea[_0x150649(0x17d)](_0x150649(0x14e));if(!_0x1600fe)return;const _0x5b08c6=_0x1600fe['classList'][_0x150649(0xfe)]('amily2-menu-active');document[_0x150649(0x212)](_0x150649(0x138))['forEach'](_0x44245f=>{const _0xa8928f=_0x150649;_0x44245f[_0xa8928f(0x14a)][_0xa8928f(0x1e4)](_0xa8928f(0x25b));});!_0x5b08c6&&_0x1600fe[_0x150649(0x14a)][_0x150649(0x197)]('amily2-menu-active');const _0xbde0ed=_0x1f1548=>{const _0x57cccf=_0x150649;!_0x1600fe['contains'](_0x1f1548[_0x57cccf(0x195)])&&(_0x1600fe[_0x57cccf(0x14a)][_0x57cccf(0x1e4)](_0x57cccf(0x25b)),document[_0x57cccf(0x2a6)]('click',_0xbde0ed,!![]));};setTimeout(()=>{const _0x577a66=_0x150649;_0x1600fe[_0x577a66(0x14a)][_0x577a66(0xfe)]('amily2-menu-active')&&document[_0x577a66(0x242)](_0x577a66(0x29d),_0xbde0ed,!![]);},0x0);}function showInputDialog({title:_0xb2cf72,label:_0x245cf7,currentValue:_0x165570,placeholder:_0x18239b,onSave:_0x239eca}){const _0x3ee6eb=_0xc6d991,_0x57b318=_0x3ee6eb(0x1cb)+_0xb2cf72+_0x3ee6eb(0x1de)+_0x245cf7+'</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20id=\x22generic-input\x22\x20class=\x22text_pole\x22\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20value=\x22'+_0x165570+_0x3ee6eb(0x2a7)+_0x18239b+_0x3ee6eb(0x227),_0x2b155a=$(_0x57b318)[_0x3ee6eb(0x1f8)]('body'),_0x3ad368=_0x2b155a['find']('#generic-input'),_0x3358b5=()=>{const _0xde6a1c=_0x3ee6eb;_0x2b155a[0x0][_0xde6a1c(0x10b)](),_0x2b155a['remove']();},_0x223b13=()=>{const _0xaad09f=_0x3ee6eb,_0x46af64=_0x3ad368['val']()[_0xaad09f(0xf9)]();if(_0x46af64&&_0x46af64!==_0x165570)_0x239eca(_0x46af64);else{if(!_0x46af64){toastr[_0xaad09f(0xfc)]('名称不能为空！'),_0x3ad368[_0xaad09f(0x2c1)]();return;}}_0x3358b5();};_0x2b155a['find'](_0x3ee6eb(0x15a))['on'](_0x3ee6eb(0x29d),_0x223b13),_0x2b155a[_0x3ee6eb(0x1e5)](_0x3ee6eb(0x1ab))['on']('click',_0x3358b5),_0x3ad368['on']('keypress',_0x119201=>{if(_0x119201['which']===0xd)_0x223b13();}),_0x3ad368['on'](_0x3ee6eb(0x16a),_0x2b67c5=>{const _0x92fc04=_0x3ee6eb;if(_0x2b67c5[_0x92fc04(0x1d7)]===0x1b)_0x3358b5();}),_0x2b155a[0x0]['showModal'](),_0x3ad368[_0x3ee6eb(0x2c1)]()[_0x3ee6eb(0x2f0)]();}function _0x3643(){const _0x5e9b2b=['<button\x20class=\x22menu_button\x20small_button\x20move-table-down-btn\x22\x20data-table-index=\x22','createDocumentFragment','td.index-col','move-down','context-reading-slider','【确认】您确定要清空所有表格的剧情内容吗？此操作将保留表格结构，但会删除所有已填写的行。','currentEventBound','Nccs\x20API\x20','push','tab','nccsMaxTokens','table-independent-rules-container','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22add-char-limit-rule-area\x22\x20style=\x22margin-top:\x2015px;\x20padding-top:\x2015px;\x20border-top:\x201px\x20solid\x20#333;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20flex;\x20gap:\x2010px;\x20align-items:\x20center;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<select\x20id=\x22new-rule-column-select\x22\x20class=\x22text_pole\x22\x20style=\x22flex:\x201;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<option\x20value=\x22-1\x22>--\x20选择要添加规则的列\x20--</option>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','colIndex','table-updated','.popup-button-cancel','moveRow','table_injection_enabled','amily2-import-preset-btn','add-table-placeholder','rowIndex','input','.delete-table-btn','<p\x20class=\x22notes\x22\x20style=\x22color:red;\x22>获取角色世界书失败。</p>','\x22\x20title=\x22下移\x22><i\x20class=\x22fas\x20fa-arrow-down\x22></i></button>','table_exclusion_rules','独立提取规则已保存。','</textarea>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22rule-editor-field\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20for=\x22rule-delete\x22>【删除】:</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<textarea\x20id=\x22rule-delete\x22\x20class=\x22text_pole\x22\x20rows=\x223\x22\x20style=\x22width:\x20100%;\x22>','amily2-export-preset-btn','</b>:\x20不超过\x20','zIndex','737peYDXJ','\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22table-rules-editor\x22\x20style=\x22display:\x20flex;\x20flex-direction:\x20column;\x20gap:\x2020px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20for=\x22table-tags-input\x22><b>标签提取\x20(半角逗号分隔)</b></label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20id=\x22table-tags-input\x22\x20class=\x22text_pole\x22\x20value=\x22','</textarea>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22rule-editor-field\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20for=\x22rule-update\x22>【修改】:</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<textarea\x20id=\x22rule-update\x22\x20class=\x22text_pole\x22\x20rows=\x223\x22\x20style=\x22width:\x20100%;\x22>','data','index-col','block','.radio-group','amily2-export-preset-full-btn','success','restore-row-btn','CHAT_CHANGED','sillytavern_preset','html','addRow','showModal','cellIndex','\x0a\x20\x20\x20\x20\x20\x20\x20\x20<dialog\x20class=\x22popup\x20custom-input-dialog\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-body\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h4\x20style=\x22margin-top:0;\x20color:\x20#e0e0e0;\x20border-bottom:\x201px\x20solid\x20rgba(255,255,255,0.2);\x20padding-bottom:\x2010px;\x20display:\x20flex;\x20align-items:\x20center;\x20gap:\x208px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<i\x20class=\x22fas\x20fa-edit\x22\x20style=\x22color:\x20#9e8aff;\x22></i>\x20','parentElement','.amily2-menu-open','selected','rows','nccs-api-enabled',']\x20检测到角色/聊天切换，正在刷新表格系统UI和世界书设置...','label','restoreRow','add-above','delete-row-btn','向左移动','which','\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20class=\x22text_pole\x20rule-start\x22\x20value=\x22','false','getBatchFillerFlowTemplate','nccsTemperature','.remove-char-limit-rule-btn','limit','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</h4>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-content\x22\x20style=\x22padding:\x2020px\x2010px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20style=\x22display:\x20flex;\x20flex-direction:\x20column;\x20gap:\x2012px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22color:\x20#ccc;\x20font-weight:\x20bold;\x22>','connectionManager','<p\x20class=\x22notes\x22>未选择或绑定世界书。</p>','exportPreset','parentNode','th.amily2-menu-open','remove','find','normal','在右加列','nccsApiUrl','down','fa-undo','stopPropagation','table-injection-depth','contenteditable','171HaZvty','amily2-resizer','字数限制为0表示不设置规则。','input[name=\x22table-injection-role\x22]','amily2-clear-global-preset-btn','amily2-context-menu','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','moveColumn','stringify','matches','appendTo','amily2-context-menu\x20amily2-row-context-menu','.edit-rules-btn','0.5',']”\x20吗？此操作不可逆！','向上移动','rename','alignItems','.sinan-nav-item','opacity','loadTables','marginTop','选择预设','nccs-fetch-models','injection','input[name=\x22filling-mode\x22]','table-role-system','amily2-table-wrapper','blur','【最终警告】您确定要永久废黜表格\x20“[','move-up','start','touchend','amily2-menu-open','未知表格','headers','querySelectorAll',']\x20刷新世界书设置时出错:','.json','htmlFor','删除该列','insertBefore','.amily2_opt_settings_block','找不到聊天内表格相关的开关，绑定失败。','warn','input[type=\x22checkbox\x22]:checked','table_selected_entries','.table-rename-icon','createTHead','无标题条目','恢复该行','rule_add','table-injection-enabled','-tab','<i\x20class=\x22fas\x20fa-download\x22></i>\x20获取模型','nccs-max-tokens-value','无法获取SillyTavern配置文件列表','\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<small\x20style=\x22color:\x20#aaa;\x20font-style:\x20italic;\x22>提示：输入内容将用于更新项目。</small>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-controls\x22\x20style=\x22display:\x20flex;\x20gap:\x2010px;\x20justify-content:\x20flex-end;\x20padding-top:\x2015px;\x20border-top:\x201px\x20solid\x20rgba(255,255,255,0.1);\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-button-cancel\x20menu_button\x20interactable\x22\x20style=\x22background:\x20rgba(120,120,120,0.2);\x20border-color:\x20rgba(120,120,120,0.4);\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<i\x20class=\x22fas\x20fa-times\x22></i>\x20取消\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-button-ok\x20menu_button\x20menu_button_primary\x20interactable\x22\x20style=\x22background:\x20rgba(158,138,255,0.3);\x20border-color:\x20rgba(158,138,255,0.6);\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<i\x20class=\x22fas\x20fa-check\x22></i>\x20确认\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</dialog>','起始楼层不能大于结束楼层。','#add-exclusion-rule-btn','attr','value','reorganizeEventBound','right','then','end','display','deleteTable','marginBottom','[内存储司]\x20加载世界书条目失败:','filling_mode','span','[内存储司]\x20重新整理功能导入失败:','add-left','floor-end-input','table_worldbook_source','nccsApiKey','流程提示词已恢复为默认。','render_on_every_message','type','fa-arrow-right','40px','您确定要将规则提示词恢复为默认设置吗？','table_worldbook_char_limit_value','addEventListener','Nccs\x20API获取到\x20','entries','#new-rule-limit-input','请输入列名...','bookName','<i\x20class=\x22fas\x20fa-plus-circle\x22></i>\x20创建第一行','th.index-col','getBatchFillerRuleTemplate','bottom','#sinan-','nccs-temperature-value','指令模板编辑器已成功绑定。','clearGlobalPreset','rollback-and-refill-btn','nccsEnabled','<button\x20class=\x22menu_button\x20small_button\x20move-table-up-btn\x22\x20data-table-index=\x22','nccs-api-mode','table_system_enabled','info','restore-row','nccsApiMode','nccs-api-config','render-on-every-message-toggle','406230xsWOfN','amily2-menu-active','rollbackAndRefill','原始填表','rule_update','表格系统总开关已关闭，请先启用总开关。','nccsModel','move-left','mousemove','style','filter','nccsTavernProfile','\x22\x20title=\x22编辑规则\x22><i\x20class=\x22fa-solid\x20fa-scroll\x22></i></button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22menu_button\x20small_button\x20danger\x20delete-table-btn\x22\x20data-table-index=\x22','matchMedia','table-configure-rules-btn','table','error','button','checked','mouseup','已启用','89868ZTVAOc','<p\x20class=\x22notes\x22>所选世界书中没有条目。</p>','新表格','none','offsetWidth','move-table-up-btn','updateRow','context-reading-value','(pointer:\x20coarse)','批量填表-流程提示词已保存。','。请切换聊天以应用更改。','table-injection-position','.amily2-table-wrapper','table-system-master-switch','您确定要删除\x20“','change','4218095YSHVDI','.settings-group','addHighlight','686754IKfXtA','[内存储司-工部]\x20缺少表格数据或容器，无法渲染。','file_name','点击添加第一行','moveTable','startsWith','delete-row','批量填表-规则提示词已恢复默认。','4lgIIUs','\x0aUID:\x20','规则提示词已保存。','Nccs\x20API连接测试成功！','move-row-up-btn','toggle','checkbox-item','未找到可用的SillyTavern配置文件','charLimitRule','position','nccs-api-model','col-index','updateTableRules','flex','val','聊天内表格显示已','rowStatuses','left','insertRow','click','reorganize-table-btn','clientX','scrollLeft','extensionSettings','length','deleteColumn','appendChild','move-right','removeEventListener','\x22\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20style=\x22padding:\x2010px;\x20border-radius:\x206px;\x20border:\x201px\x20solid\x20rgba(255,255,255,0.3);\x20background:\x20rgba(0,0,0,0.2);\x20color:\x20#fff;\x20font-size:\x201em;\x22\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20placeholder=\x22','log','name','touchmove','touchstart','列名：','overflowX','表格注入设置已成功绑定。','table_worldbook_entry_list','pending-deletion-row','checkbox','add-below','nextSibling','table-independent-rules-enabled','.rule-end','Nccs\x20API连接测试出错：','delete','active','has','floor-start-input','pointer','<i\x20class=\x22fas\x20fa-spinner\x20fa-spin\x22></i>\x20获取中...','col','table_tags_to_extract','\x22\x20title=\x22重命名\x22></i>\x20','世界书设置已成功绑定。','focus','addColumn','importGlobalPreset','.add-col-btn','character','option','body','children','main-api','聊天内表格显示设置及其依赖关系已成功绑定。','scrollTop','openai_test','#rule-delete','uid','<option\x20value=\x22','编辑表名','\x22\x20title=\x22删除此规则\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<i\x20class=\x22fas\x20fa-trash-alt\x22></i>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','持续渲染最新消息功能已','includes','成功加载\x20','add-row-below-btn','\x22\x20placeholder=\x22例如:\x20content,game,time\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<small\x20class=\x22notes\x22>仅提取指定XML标签的内容，例如填“content”，即提取<content>...</content>中的内容。</small>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label><b>内容排除规则</b></label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22exclusion-rules-list\x22\x20style=\x22display:\x20flex;\x20flex-direction:\x20column;\x20gap:\x208px;\x20margin-top:\x208px;\x22>','insertCell','div[style*=\x22overflowX\x22]','createTBody','../core/table-system/batch-filler.js','comment','role','流程提示词已保存。','amily2-context-menu\x20amily2-header-menu','disabled','table_refresh_worldbooks','\x20字</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22menu_button\x20danger\x20small_button\x20remove-char-limit-rule-btn\x22\x20data-col-index=\x22','您确定要将流程提示词恢复为默认设置吗？','\x20个模型','\x22\x20style=\x22width:\x20100px;\x20margin-top:\x2010px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<small\x20class=\x22notes\x22>当表格总行数超过设定值时，将在表格底部显示警告。</small>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<hr\x20style=\x22border-color:\x20#444;\x20margin:\x2010px\x200;\x22>\x0a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22rule-editor-field\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20for=\x22rule-note\x22>【说明】:</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<textarea\x20id=\x22rule-note\x22\x20class=\x22text_pole\x22\x20rows=\x225\x22\x20style=\x22width:\x20100%;\x22>','<i\x20class=\x22fas\x20fa-plug\x22></i>\x20测试连接','100%','previousElementSibling','additional','<p>加载条目中...</p>','amily2-table-','Nccs\x20API连接测试成功','Nccs\x20API事件绑定完成','nccs-api-key','preventDefault','世界书:\x20','select','isCurrentTablesEmpty','未知列\x20(','nccs-api-model-select','danger','trim','\x22></i>\x20','ai-flow-template-editor','warning','touches','contains','Nccs\x20API获取模型失败：','ai-flow-template-restore-btn','.sinan-tab-pane','您确定要将表格状态回退到上一楼，并使用最新消息重新填表吗？','#rule-add','closest','nccs-temperature','getMemoryState','优化中填表','楼层不能小于1。','innerHTML','.remove-rule-btn','close','auto','startFloorRangeFilling','menu_button\x20small_button','删除该行','columnWidths','fill-table-now-btn','justifyContent','pending-deletion','charLimitRules','#rule-row-limit-value','nccs-api-url','table_worldbook_select_wrapper','.control-block-with-switch','addTable','6WxNUuP','.move-table-up-btn','规则提示词已恢复为默认。','top','table_selected_worldbooks','\x22\x20title=\x22废黜此表\x22><i\x20class=\x22fas\x20fa-trash-alt\x22></i></button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20','context_reading_level','</textarea>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-controls\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-button-ok\x20menu_button\x20menu_button_primary\x20interactable\x22>保存</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-button-cancel\x20menu_button\x20interactable\x22\x20style=\x22margin-left:\x2010px;\x22>取消</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</dialog>','rowLimitRule','show-table-in-chat-toggle','relative','getTime','colgroup','.hly-scroll','<option\x20value=\x22-1\x22>--\x20选择要添加规则的列\x20--</option>','内存状态为空，从聊天记录加载作为后备。','table_worldbook_enabled','\x0a\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22exclusion-rule-item\x22\x20data-index=\x22','saveBatchFillerRuleTemplate','getBoundingClientRect','fill-selected-floors-btn','saveBatchFillerFlowTemplate','批量填表-规则提示词已保存。','分步填表','ai-rule-template-editor','\x22重新整理\x22按钮已成功绑定。','100','cursor','batchEventBound','dataset','.amily2-context-menu.amily2-menu-active','”\x20的规则\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</h4>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-content\x22\x20style=\x22height:\x2070vh;\x20overflow-y:\x20auto;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22rule-editor-form\x22\x20style=\x22display:\x20flex;\x20flex-direction:\x20column;\x20gap:\x2015px;\x20padding:\x2010px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22rule-editor-field\x22\x20style=\x22border:\x201px\x20solid\x20#444;\x20padding:\x2010px;\x20border-radius:\x205px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20style=\x22font-weight:\x20bold;\x20color:\x20#9e8aff;\x22>内容长度限制\x20(0为禁用)</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20id=\x22current-char-limit-rules\x22\x20style=\x22margin-top:\x2010px;\x20display:\x20flex;\x20flex-direction:\x20column;\x20gap:\x208px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20','context-reading-slider-container','visible','textContent','.move-table-down-btn','updateColumnWidth','配置独立提取规则','add-row-above-btn','编辑列名','title','startCurrentFloorFilling','fa-arrow-up','book','table_worldbook_checkbox_list','在左加列','tableIndex','amily2-clear-all-tables-btn','classList','forEach','[内存储司]\x20获取角色世界书失败:','未获取到可用模型','.amily2-context-menu','createElement','”\x20列吗？','2px','</textarea>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22rule-editor-field\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20for=\x22rule-add\x22>【增加】:</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<textarea\x20id=\x22rule-add\x22\x20class=\x22text_pole\x22\x20rows=\x223\x22\x20style=\x22width:\x20100%;\x22>',']\x20世界书设置已刷新','在下加行','parse','nccs-test-connection','#current-char-limit-rules','message','\x22\x20title=\x22上移\x22><i\x20class=\x22fas\x20fa-arrow-up\x22></i></button>','.popup-button-ok','已禁用','成功获取\x20','请输入一个有效的字数限制（大于等于0）。','\x22\x20placeholder=\x22起始标记\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span>-</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20class=\x22text_pole\x20rule-end\x22\x20value=\x22','move-row-down-btn','在上加行','insertColumn','manual','fa-arrow-down','depth','center','table_independent_rules_enabled','eventsBound','批量填表-流程提示词已恢复默认。','.nccs-button-row','keydown','div','getElementById','Nccs\x20API模式已切换为:\x20','Nccs\x20API未获取到可用模型','getAttribute','getUpdatedTables','fa-trash-alt','1768488ZdUdAm','wb-check-','<i\x20class=\x22fas\x20','330672Ptydfg','add-right','table-tags-input','表名已更新为\x20\x22','2ovKUqT','profiles','table_worldbook_char_limit','join','querySelector','fa-pen','templateEventsBound','4390095hAcuSl','renameTable','ai-rule-template-save-btn','\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22menu_button\x20small_button\x20edit-rules-btn\x22\x20data-table-index=\x22','rollbackEventBound','primary','表格视图交互事件已成功绑定。','all','className','map','true','../core/table-system/reorganizer.js','请输入新表格的名称：','setAttribute','show_table_in_chat','data-rules','已添加第一行','fa-plus-circle','floorEventBound','updateHeader','<i\x20class=\x22fas\x20fa-table\x20table-rename-icon\x22\x20data-table-index=\x22','target','表格系统总开关','add','width','ai-rule-template-restore-btn','maxHeight','columnIndex'];_0x3643=function(){return _0x5e9b2b;};return _0x3643();}function showColumnNameEditor(_0x45d69e,_0x172498,_0x3a3a40){const _0x1d01ad=_0xc6d991;showInputDialog({'title':_0x1d01ad(0x141),'label':_0x1d01ad(0x2ac),'currentValue':_0x3a3a40,'placeholder':_0x1d01ad(0x246),'onSave':_0x51b6c5=>{const _0x1a0eb7=_0x1d01ad;_0x93db26[_0x1a0eb7(0x193)](_0x45d69e,_0x172498,_0x51b6c5),renderTables(),toastr[_0x1a0eb7(0x1c3)]('列名已更新为\x20\x22'+_0x51b6c5+'\x22');}});}function showTableNameEditor(_0x38d15b,_0x2288f0){const _0x524fc0=_0xc6d991;showInputDialog({'title':_0x524fc0(0x2d0),'label':'表名：','currentValue':_0x2288f0,'placeholder':'请输入表名...','onSave':_0x5657be=>{const _0x48d431=_0x524fc0;_0x93db26[_0x48d431(0x181)](_0x38d15b,_0x5657be),renderTables(),toastr[_0x48d431(0x1c3)](_0x48d431(0x178)+_0x5657be+'\x22');}});}function positionContextMenu(_0x5cf053,_0x49230f){const _0x1918ea=_0xc6d991;_0x5cf053[_0x1918ea(0x263)][_0x1918ea(0x293)]='absolute',_0x5cf053[_0x1918ea(0x263)][_0x1918ea(0x1ba)]='10000',_0x5cf053['style'][_0x1918ea(0x29b)]='0',_0x5cf053[_0x1918ea(0x263)]['right']=_0x1918ea(0x10c),_0x5cf053[_0x1918ea(0x263)][_0x1918ea(0x203)]='',_0x5cf053[_0x1918ea(0x263)][_0x1918ea(0x232)]='',_0x5cf053[_0x1918ea(0x263)][_0x1918ea(0x19a)]='',_0x5cf053[_0x1918ea(0x263)]['overflowY']='';const _0x32e35a=window['innerHeight'],_0xffec4e=_0x49230f['getBoundingClientRect'](),_0x2a5629=0xc8,_0x10b36d=_0x49230f[_0x1918ea(0x104)](_0x1918ea(0x127)),_0x4873ac=_0x10b36d?_0x10b36d[_0x1918ea(0x12d)]():{'top':0x0,'bottom':_0x32e35a},_0x3e88db=Math['min'](_0x32e35a,_0x4873ac['bottom'])-_0xffec4e[_0x1918ea(0x24b)],_0x19329a=_0xffec4e[_0x1918ea(0x11d)]-Math['max'](0x0,_0x4873ac['top']);_0x3e88db<_0x2a5629&&_0x19329a>_0x3e88db?(_0x5cf053[_0x1918ea(0x263)]['top']='auto',_0x5cf053['style']['bottom']=_0x1918ea(0x2e6),_0x5cf053[_0x1918ea(0x263)][_0x1918ea(0x232)]=_0x1918ea(0x151)):(_0x5cf053[_0x1918ea(0x263)]['top']=_0x1918ea(0x2e6),_0x5cf053[_0x1918ea(0x263)][_0x1918ea(0x24b)]='auto',_0x5cf053['style'][_0x1918ea(0x203)]=_0x1918ea(0x151));const _0x18d1a8=0xa0,_0x3ca7a7=_0x49230f['closest'](_0x1918ea(0x269)),_0x2d66c0=_0x3ca7a7?_0x3ca7a7['closest'](_0x1918ea(0x2d8)):null;if(_0x2d66c0){const _0x2b373e=_0x2d66c0[_0x1918ea(0x12d)](),_0x58106a=_0xffec4e['left']-_0x2b373e[_0x1918ea(0x29b)];_0x58106a+_0x18d1a8>_0x2b373e[_0x1918ea(0x198)]-0x14&&(_0x5cf053[_0x1918ea(0x263)][_0x1918ea(0x29b)]='auto',_0x5cf053[_0x1918ea(0x263)][_0x1918ea(0x22d)]='0');}}export function renderTables(){const _0x1d6dd1=_0xc6d991;let _0x3a4c57=_0x93db26[_0x1d6dd1(0x106)]();!_0x3a4c57&&(log(_0x1d6dd1(0x129),_0x1d6dd1(0x21a)),_0x3a4c57=_0x93db26[_0x1d6dd1(0x202)]());const _0x10836d=getAllTablesContainer();if(!_0x3a4c57||!_0x10836d){console[_0x1d6dd1(0x26a)](_0x1d6dd1(0x283));return;}const _0x42c3ce=_0x93db26['getHighlights'](),_0x323042=_0x93db26[_0x1d6dd1(0x170)](),_0x1de6b4=document[_0x1d6dd1(0x19d)](),_0x33c80d=document['getElementById'](_0x1d6dd1(0x1af));_0x33c80d&&_0x33c80d[_0x1d6dd1(0x1e4)](),_0x3a4c57['forEach']((_0x449a66,_0x559cb1)=>{const _0x473ea6=_0x1d6dd1,_0x1325fe=document[_0x473ea6(0x14f)](_0x473ea6(0x16b));_0x1325fe[_0x473ea6(0x263)][_0x473ea6(0x230)]='flex',_0x1325fe[_0x473ea6(0x263)][_0x473ea6(0x112)]='space-between',_0x1325fe[_0x473ea6(0x263)][_0x473ea6(0x1ff)]=_0x473ea6(0x165);const _0xbbdc6=document[_0x473ea6(0x14f)]('h3');_0x323042['has'](_0x559cb1)&&_0xbbdc6[_0x473ea6(0x14a)][_0x473ea6(0x197)](_0x473ea6(0x1aa));_0xbbdc6[_0x473ea6(0x109)]=_0x473ea6(0x194)+_0x559cb1+_0x473ea6(0x2bf)+_0x449a66[_0x473ea6(0x2a9)];const _0x119fcd=document[_0x473ea6(0x14f)](_0x473ea6(0x16b));_0x119fcd[_0x473ea6(0x188)]='table-controls';const _0x54b3e3=_0x559cb1>0x0?_0x473ea6(0x252)+_0x559cb1+_0x473ea6(0x159):'',_0xeba45f=_0x559cb1<_0x3a4c57[_0x473ea6(0x2a2)]-0x1?_0x473ea6(0x19c)+_0x559cb1+_0x473ea6(0x1b4):'';_0x119fcd[_0x473ea6(0x109)]=_0x473ea6(0x1f4)+_0x54b3e3+_0x473ea6(0x1f4)+_0xeba45f+_0x473ea6(0x183)+_0x559cb1+_0x473ea6(0x266)+_0x559cb1+_0x473ea6(0x11f),_0x1325fe[_0x473ea6(0x2a4)](_0xbbdc6),_0x1325fe['appendChild'](_0x119fcd),_0x1de6b4['appendChild'](_0x1325fe);const _0x326ee0=document[_0x473ea6(0x14f)](_0x473ea6(0x16b));_0x326ee0[_0x473ea6(0x188)]=_0x473ea6(0x209);const _0x1b2282=document[_0x473ea6(0x14f)]('table');_0x1b2282['id']=_0x473ea6(0x2ea)+_0x559cb1,_0x1b2282['dataset'][_0x473ea6(0x148)]=_0x559cb1;const _0x5a1ad5=document[_0x473ea6(0x14f)](_0x473ea6(0x126)),_0x4692a3=document['createElement']('col');_0x4692a3[_0x473ea6(0x263)][_0x473ea6(0x198)]=_0x473ea6(0x23f),_0x5a1ad5[_0x473ea6(0x2a4)](_0x4692a3);_0x449a66['headers']&&_0x449a66['headers'][_0x473ea6(0x14b)]((_0x529473,_0x306561)=>{const _0x1ebb30=_0x473ea6,_0x444246=document[_0x1ebb30(0x14f)]('col'),_0x2eee94=_0x449a66[_0x1ebb30(0x110)]&&_0x449a66[_0x1ebb30(0x110)][_0x306561]?_0x449a66[_0x1ebb30(0x110)][_0x306561]:0x5a;_0x444246['style']['width']=_0x2eee94+'px',_0x5a1ad5['appendChild'](_0x444246);});_0x1b2282[_0x473ea6(0x2a4)](_0x5a1ad5);let _0x2b62df=0x0;const _0x4fd198=_0x5a1ad5[_0x473ea6(0x212)](_0x473ea6(0x2bd));_0x4fd198[_0x473ea6(0x14b)](_0x1e35f0=>{const _0x4aa67e=_0x473ea6;_0x2b62df+=parseInt(_0x1e35f0['style'][_0x4aa67e(0x198)],0xa);}),_0x1b2282['style'][_0x473ea6(0x198)]=_0x2b62df+'px';const _0x4b27c5=_0x1b2282[_0x473ea6(0x21e)](),_0x594470=_0x4b27c5[_0x473ea6(0x29c)](),_0x11c62c=document[_0x473ea6(0x14f)]('th');_0x11c62c[_0x473ea6(0x188)]=_0x473ea6(0x1bf),_0x11c62c[_0x473ea6(0x13c)]='#',_0x11c62c[_0x473ea6(0x263)]['cursor']='pointer',_0x11c62c[_0x473ea6(0x142)]=_0x473ea6(0x285);if(!_0x449a66['rows']||_0x449a66['rows']['length']===0x0){const _0x156f63=document[_0x473ea6(0x14f)](_0x473ea6(0x16b));_0x156f63[_0x473ea6(0x188)]=_0x473ea6(0x2de),_0x156f63[_0x473ea6(0x263)][_0x473ea6(0x230)]=_0x473ea6(0x272);const _0x42e2e7=document['createElement'](_0x473ea6(0x26b));_0x42e2e7[_0x473ea6(0x109)]=_0x473ea6(0x248),_0x42e2e7[_0x473ea6(0x188)]=_0x473ea6(0x10e),_0x42e2e7['addEventListener'](_0x473ea6(0x29d),_0xe3e010=>{const _0x59520e=_0x473ea6;_0xe3e010[_0x59520e(0x1eb)](),_0x93db26[_0x59520e(0x1c8)](_0x559cb1),renderTables();}),_0x156f63[_0x473ea6(0x2a4)](_0x42e2e7),_0x11c62c[_0x473ea6(0x2a4)](_0x156f63),_0x11c62c[_0x473ea6(0x242)](_0x473ea6(0x29d),_0x2882da=>{const _0x1de127=_0x473ea6;_0x2882da[_0x1de127(0x2ee)](),_0x2882da['stopPropagation'](),console[_0x1de127(0x2a8)]('Header\x20#\x20clicked\x20for\x20table',_0x559cb1),_0x93db26[_0x1de127(0x1c8)](_0x559cb1),renderTables(),toastr['success'](_0x1de127(0x190));});}_0x594470[_0x473ea6(0x2a4)](_0x11c62c),_0x449a66[_0x473ea6(0x211)]['forEach']((_0x32cc2a,_0x1af9c4)=>{const _0x4ddb95=_0x473ea6,_0x3e1392=document['createElement']('th');_0x3e1392[_0x4ddb95(0x137)]['colIndex']=_0x1af9c4,_0x3e1392[_0x4ddb95(0x263)][_0x4ddb95(0x135)]=_0x4ddb95(0x2bb);const _0x5631d4=document[_0x4ddb95(0x14f)](_0x4ddb95(0x235));_0x5631d4[_0x4ddb95(0x188)]='amily2-header-text',_0x5631d4['textContent']=_0x32cc2a,_0x3e1392[_0x4ddb95(0x2a4)](_0x5631d4);const _0x42d337=document[_0x4ddb95(0x14f)](_0x4ddb95(0x16b));_0x42d337['className']=_0x4ddb95(0x1f3);const _0x461913=[{'label':_0x4ddb95(0x1d6),'action':_0x4ddb95(0x261),'icon':'fa-arrow-left'},{'label':'向右移动','action':_0x4ddb95(0x2a5),'icon':_0x4ddb95(0x23e)},{'label':_0x4ddb95(0x147),'action':'add-left','icon':'fa-plus-circle'},{'label':_0x4ddb95(0x1e7),'action':'add-right','icon':_0x4ddb95(0x191)},{'label':_0x4ddb95(0x141),'action':'rename','icon':_0x4ddb95(0x17e)},{'label':_0x4ddb95(0x216),'action':_0x4ddb95(0x2b7),'icon':_0x4ddb95(0x171),'isDanger':!![]}];_0x461913[_0x4ddb95(0x14b)](({label:_0x5f15cd,action:_0x1c1556,icon:_0x52025c,isDanger:_0x41012b})=>{const _0x5d5de7=_0x4ddb95,_0x12877c=document[_0x5d5de7(0x14f)](_0x5d5de7(0x26b));_0x12877c[_0x5d5de7(0x13c)]=_0x5f15cd,_0x12877c['className']=_0x5d5de7(0x10e);if(_0x41012b)_0x12877c[_0x5d5de7(0x14a)][_0x5d5de7(0x197)](_0x5d5de7(0xf8));_0x12877c['addEventListener']('click',_0x41bbe5=>{const _0x24ed34=_0x5d5de7;_0x41bbe5[_0x24ed34(0x1eb)]();switch(_0x1c1556){case _0x24ed34(0x261):_0x93db26[_0x24ed34(0x1f5)](_0x559cb1,_0x1af9c4,_0x24ed34(0x29b));break;case _0x24ed34(0x2a5):_0x93db26['moveColumn'](_0x559cb1,_0x1af9c4,'right');break;case _0x24ed34(0x237):_0x93db26[_0x24ed34(0x161)](_0x559cb1,_0x1af9c4,_0x24ed34(0x29b));break;case _0x24ed34(0x176):_0x93db26[_0x24ed34(0x161)](_0x559cb1,_0x1af9c4,_0x24ed34(0x22d));break;case _0x24ed34(0x1fe):showColumnNameEditor(_0x559cb1,_0x1af9c4,_0x32cc2a);break;case _0x24ed34(0x2b7):confirm(_0x24ed34(0x27d)+_0x32cc2a+_0x24ed34(0x150))&&_0x93db26[_0x24ed34(0x2a3)](_0x559cb1,_0x1af9c4);break;}renderTables();}),_0x42d337[_0x5d5de7(0x2a4)](_0x12877c);}),_0x3e1392['appendChild'](_0x42d337);const _0x4a84f9=document[_0x4ddb95(0x14f)](_0x4ddb95(0x16b));_0x4a84f9[_0x4ddb95(0x188)]=_0x4ddb95(0x1ef),_0x3e1392[_0x4ddb95(0x2a4)](_0x4a84f9);const _0x54f4ba=_0x1d3ce4=>{const _0x4add9f=_0x4ddb95;_0x1d3ce4['preventDefault'](),_0x1d3ce4[_0x4add9f(0x1eb)](),isResizing=!![];const _0x16e9cb=_0x1d3ce4[_0x4add9f(0x195)][_0x4add9f(0x104)](_0x4add9f(0x269)),_0x3a6dbe=_0x1d3ce4[_0x4add9f(0x195)][_0x4add9f(0x1cc)],_0x5c21a7=_0x16e9cb[_0x4add9f(0x17d)]('colgroup\x20>\x20col:nth-child('+(_0x3a6dbe[_0x4add9f(0x1ca)]+0x1)+')'),_0x15cb15=_0x1d3ce4[_0x4add9f(0x23d)][_0x4add9f(0x287)]('touch'),_0x42554b=_0x15cb15?_0x1d3ce4['touches'][0x0][_0x4add9f(0x29f)]:_0x1d3ce4[_0x4add9f(0x29f)],_0x46d3d5=_0x3a6dbe[_0x4add9f(0x273)],_0x46dbe4=_0x5e9261=>{const _0x92a4b8=_0x4add9f,_0x35ed17=_0x15cb15?_0x5e9261[_0x92a4b8(0xfd)][0x0][_0x92a4b8(0x29f)]:_0x5e9261[_0x92a4b8(0x29f)],_0x2d5cfd=_0x46d3d5+(_0x35ed17-_0x42554b);_0x2d5cfd>0x32&&(_0x5c21a7[_0x92a4b8(0x263)][_0x92a4b8(0x198)]=_0x2d5cfd+'px');},_0x57e243=()=>{const _0xce8d00=_0x4add9f;document[_0xce8d00(0x2a6)](_0xce8d00(0x262),_0x46dbe4),document[_0xce8d00(0x2a6)]('mouseup',_0x57e243),document[_0xce8d00(0x2a6)]('touchmove',_0x46dbe4),document[_0xce8d00(0x2a6)](_0xce8d00(0x20e),_0x57e243);const _0x1b1a9c=parseInt(_0x5c21a7[_0xce8d00(0x263)][_0xce8d00(0x198)],0xa);_0x93db26[_0xce8d00(0x13e)](_0x559cb1,_0x1af9c4,_0x1b1a9c),setTimeout(()=>{isResizing=![];},0x0);};_0x15cb15?(document[_0x4add9f(0x242)](_0x4add9f(0x2aa),_0x46dbe4,{'passive':![]}),document[_0x4add9f(0x242)](_0x4add9f(0x20e),_0x57e243)):(document[_0x4add9f(0x242)](_0x4add9f(0x262),_0x46dbe4),document[_0x4add9f(0x242)](_0x4add9f(0x26d),_0x57e243));};_0x4a84f9[_0x4ddb95(0x242)]('mousedown',_0x54f4ba),_0x4a84f9[_0x4ddb95(0x242)](_0x4ddb95(0x2ab),_0x54f4ba,{'passive':![]}),_0x594470[_0x4ddb95(0x2a4)](_0x3e1392);});const _0x379ad3=_0x1b2282[_0x473ea6(0x2d9)]();_0x449a66[_0x473ea6(0x1cf)]&&_0x449a66[_0x473ea6(0x1cf)]['length']>0x0&&_0x449a66[_0x473ea6(0x1cf)][_0x473ea6(0x14b)]((_0x3b00f2,_0x1dba6e)=>{const _0x2c9f75=_0x473ea6,_0x4fdae7=_0x379ad3['insertRow']();_0x4fdae7[_0x2c9f75(0x137)][_0x2c9f75(0x1b0)]=_0x1dba6e;const _0x42f054=_0x449a66[_0x2c9f75(0x29a)]?_0x449a66['rowStatuses'][_0x1dba6e]:_0x2c9f75(0x1e6);_0x42f054===_0x2c9f75(0x113)&&_0x4fdae7[_0x2c9f75(0x14a)]['add'](_0x2c9f75(0x2b0));const _0x3b6b53=_0x4fdae7[_0x2c9f75(0x2d7)]();_0x3b6b53[_0x2c9f75(0x188)]=_0x2c9f75(0x1bf);const _0x1ea219=document[_0x2c9f75(0x14f)]('span');_0x1ea219[_0x2c9f75(0x13c)]=_0x1dba6e+0x1,_0x3b6b53['appendChild'](_0x1ea219);const _0x1b6e0b=document[_0x2c9f75(0x14f)](_0x2c9f75(0x16b));_0x1b6e0b[_0x2c9f75(0x188)]=_0x2c9f75(0x1f9);let _0x56eb66;_0x42f054===_0x2c9f75(0x113)?_0x56eb66=[{'label':_0x2c9f75(0x220),'action':'restore-row','icon':_0x2c9f75(0x1ea),'isSuccess':!![],'btnClass':_0x2c9f75(0x1c4)}]:_0x56eb66=[{'label':_0x2c9f75(0x1fd),'action':_0x2c9f75(0x20c),'icon':_0x2c9f75(0x144),'btnClass':_0x2c9f75(0x28e)},{'label':'向下移动','action':_0x2c9f75(0x19f),'icon':_0x2c9f75(0x163),'btnClass':_0x2c9f75(0x15f)},{'label':_0x2c9f75(0x160),'action':_0x2c9f75(0x1d4),'icon':_0x2c9f75(0x191),'btnClass':_0x2c9f75(0x140)},{'label':_0x2c9f75(0x154),'action':_0x2c9f75(0x2b2),'icon':_0x2c9f75(0x191),'btnClass':_0x2c9f75(0x2d5)},{'label':_0x2c9f75(0x10f),'action':_0x2c9f75(0x288),'icon':_0x2c9f75(0x171),'isDanger':!![],'btnClass':_0x2c9f75(0x1d5)}],_0x56eb66[_0x2c9f75(0x14b)](({label:_0x566338,action:_0x2a83d3,icon:_0x2d09ea,isDanger:_0x3e7db2,isSuccess:_0x3173d6})=>{const _0x451b63=_0x2c9f75,_0x2bcc21=document[_0x451b63(0x14f)](_0x451b63(0x26b));_0x2bcc21[_0x451b63(0x109)]=_0x451b63(0x174)+_0x2d09ea+_0x451b63(0xfa)+_0x566338,_0x2bcc21[_0x451b63(0x188)]=_0x451b63(0x10e);if(_0x3e7db2)_0x2bcc21[_0x451b63(0x14a)][_0x451b63(0x197)](_0x451b63(0xf8));if(_0x3173d6)_0x2bcc21[_0x451b63(0x14a)][_0x451b63(0x197)](_0x451b63(0x1c3));_0x2bcc21[_0x451b63(0x242)](_0x451b63(0x29d),_0x6d5b1c=>{const _0x1b631e=_0x451b63;_0x6d5b1c[_0x1b631e(0x1eb)]();switch(_0x2a83d3){case _0x1b631e(0x20c):_0x93db26[_0x1b631e(0x1ac)](_0x559cb1,_0x1dba6e,'up');break;case'move-down':_0x93db26[_0x1b631e(0x1ac)](_0x559cb1,_0x1dba6e,'down');break;case _0x1b631e(0x1d4):_0x93db26[_0x1b631e(0x29c)](_0x559cb1,_0x1dba6e,'above');break;case'add-below':_0x93db26[_0x1b631e(0x29c)](_0x559cb1,_0x1dba6e,'below');break;case _0x1b631e(0x288):_0x93db26['deleteRow'](_0x559cb1,_0x1dba6e);break;case _0x1b631e(0x256):_0x93db26[_0x1b631e(0x1d3)](_0x559cb1,_0x1dba6e);break;}if(_0x2a83d3===_0x1b631e(0x288)||_0x2a83d3===_0x1b631e(0x256)){}else renderTables();}),_0x1b6e0b[_0x451b63(0x2a4)](_0x2bcc21);}),_0x3b6b53[_0x2c9f75(0x2a4)](_0x1b6e0b),_0x3b00f2[_0x2c9f75(0x14b)]((_0x659437,_0x4e032d)=>{const _0x45c61d=_0x2c9f75,_0x1ff8c8=_0x4fdae7[_0x45c61d(0x2d7)](),_0x3b175f=document[_0x45c61d(0x14f)](_0x45c61d(0x16b));_0x3b175f['className']='amily2-cell-content',_0x3b175f[_0x45c61d(0x13c)]=_0x659437,_0x1ff8c8[_0x45c61d(0x2a4)](_0x3b175f);_0x42f054!=='pending-deletion'&&!isTouchDevice()&&_0x1ff8c8[_0x45c61d(0x18d)](_0x45c61d(0x1ed),_0x45c61d(0x18a));_0x1ff8c8['dataset'][_0x45c61d(0x1a9)]=_0x4e032d,_0x1ff8c8[_0x45c61d(0x137)][_0x45c61d(0x1d2)]=_0x449a66[_0x45c61d(0x211)][_0x4e032d]||'';const _0x43ff1f=_0x559cb1+'-'+_0x1dba6e+'-'+_0x4e032d;_0x42c3ce[_0x45c61d(0x2b9)](_0x43ff1f)&&_0x1ff8c8[_0x45c61d(0x14a)][_0x45c61d(0x197)]('cell-highlight');});}),_0x326ee0['appendChild'](_0x1b2282),_0x1de6b4['appendChild'](_0x326ee0);}),_0x10836d['innerHTML']='',_0x10836d[_0x1d6dd1(0x2a4)](_0x1de6b4),_0x33c80d&&_0x10836d['appendChild'](_0x33c80d),updateOrInsertTableInChat();}function openTableRuleEditor(){const _0x998dce=_0xc6d991,_0x5cb741=extension_settings[extensionName],_0x3a0c44=_0x5cb741[_0x998dce(0x2be)]||'',_0x27e0ff=_0x5cb741[_0x998dce(0x1b5)]||[],_0x67ea8b=_0x27e0ff[_0x998dce(0x189)]((_0x1e6de2,_0x3dc8e7)=>_0x998dce(0x12b)+_0x3dc8e7+_0x998dce(0x1d8)+_0x1e6de2[_0x998dce(0x20d)]+_0x998dce(0x15e)+_0x1e6de2[_0x998dce(0x22f)]+'\x22\x20placeholder=\x22结束标记\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22menu_button\x20danger\x20small_button\x20remove-rule-btn\x22><i\x20class=\x22fas\x20fa-trash-alt\x22></i></button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20')[_0x998dce(0x17c)](''),_0x4e092f=_0x998dce(0x1bc)+_0x3a0c44+_0x998dce(0x2d6)+_0x67ea8b+'</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20id=\x22add-exclusion-rule-btn\x22\x20class=\x22menu_button\x20small_button\x22\x20style=\x22margin-top:\x2010px;\x22><i\x20class=\x22fas\x20fa-plus\x22></i>\x20添加规则</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<small\x20class=\x22notes\x22>移除所有被起始和结束标记包裹的内容（例如\x20OOC\x20部分）。</small>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20',_0x1ae8ec=showHtmlModal(_0x998dce(0x13f),_0x4e092f,{'onOk':()=>{const _0x5af4a0=_0x998dce,_0x24de17=document[_0x5af4a0(0x16c)](_0x5af4a0(0x177))[_0x5af4a0(0x22b)];updateAndSaveTableSetting(_0x5af4a0(0x2be),_0x24de17);const _0x484396=[];document[_0x5af4a0(0x212)]('#exclusion-rules-list\x20.exclusion-rule-item')['forEach'](_0x24c399=>{const _0x38f351=_0x5af4a0,_0x4b26ec=_0x24c399[_0x38f351(0x17d)]('.rule-start')[_0x38f351(0x22b)][_0x38f351(0xf9)](),_0x489781=_0x24c399[_0x38f351(0x17d)](_0x38f351(0x2b5))[_0x38f351(0x22b)]['trim']();_0x4b26ec&&_0x489781&&_0x484396[_0x38f351(0x1a4)]({'start':_0x4b26ec,'end':_0x489781});}),updateAndSaveTableSetting('table_exclusion_rules',_0x484396),toastr[_0x5af4a0(0x1c3)](_0x5af4a0(0x1b6));},'onShow':_0x2c6b51=>{const _0x453313=_0x998dce,_0x88febe=_0x2c6b51[_0x453313(0x1e5)]('#exclusion-rules-list');_0x2c6b51['find'](_0x453313(0x229))['on'](_0x453313(0x29d),()=>{const _0x55beb0=_0x453313,_0x1cc9ac=_0x88febe[_0x55beb0(0x2c8)]()[_0x55beb0(0x2a2)],_0x4164d4='\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22exclusion-rule-item\x22\x20data-index=\x22'+_0x1cc9ac+'\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20class=\x22text_pole\x20rule-start\x22\x20value=\x22\x22\x20placeholder=\x22起始标记\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span>-</span>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22text\x22\x20class=\x22text_pole\x20rule-end\x22\x20value=\x22\x22\x20placeholder=\x22结束标记\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20class=\x22menu_button\x20danger\x20small_button\x20remove-rule-btn\x22><i\x20class=\x22fas\x20fa-trash-alt\x22></i></button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>';_0x88febe['append'](_0x4164d4);}),_0x88febe['on'](_0x453313(0x29d),_0x453313(0x10a),function(){$(this)['closest']('.exclusion-rule-item')['remove']();});}});}function openRuleEditor(_0x2aaf19){const _0x2ac8b4=_0xc6d991,_0x5e47d6=_0x93db26[_0x2ac8b4(0x106)]();if(!_0x5e47d6||!_0x5e47d6[_0x2aaf19])return;const _0x45e1e7=_0x5e47d6[_0x2aaf19];_0x45e1e7[_0x2ac8b4(0x292)]&&!_0x45e1e7[_0x2ac8b4(0x114)]&&(_0x45e1e7[_0x2ac8b4(0x114)]={},_0x45e1e7[_0x2ac8b4(0x292)][_0x2ac8b4(0x19b)]!==-0x1&&(_0x45e1e7[_0x2ac8b4(0x114)][_0x45e1e7[_0x2ac8b4(0x292)][_0x2ac8b4(0x19b)]]=_0x45e1e7[_0x2ac8b4(0x292)][_0x2ac8b4(0x1dd)]));const _0x27f775=_0x45e1e7['charLimitRules']||{},_0xee4110=_0xf4e9cc=>{const _0x2d01c8=_0x2ac8b4;return Object[_0x2d01c8(0x244)](_0xf4e9cc)[_0x2d01c8(0x189)](([_0x1bcdac,_0x15f166])=>{const _0x4a5d82=_0x2d01c8,_0x1d943d=_0x45e1e7[_0x4a5d82(0x211)][_0x1bcdac]||_0x4a5d82(0x2f2)+_0x1bcdac+')';return'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22char-limit-rule-item\x22\x20style=\x22display:\x20flex;\x20justify-content:\x20space-between;\x20align-items:\x20center;\x20padding:\x208px;\x20background:\x20rgba(0,0,0,0.1);\x20border-radius:\x204px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<span><i\x20class=\x22fas\x20fa-file-alt\x22\x20style=\x22margin-right:\x208px;\x20color:\x20#9e8aff;\x22></i><b>'+_0x1d943d+_0x4a5d82(0x1b9)+_0x15f166+_0x4a5d82(0x2e1)+_0x1bcdac+_0x4a5d82(0x2d1);})[_0x2d01c8(0x17c)]('');},_0xe4588e=_0x2fa96e=>{const _0x3b6f5e=_0x2ac8b4;return _0x45e1e7[_0x3b6f5e(0x211)][_0x3b6f5e(0x189)]((_0x561018,_0x4c9842)=>{const _0x47c39a=_0x3b6f5e;if(_0x2fa96e[_0x4c9842])return'';return _0x47c39a(0x2cf)+_0x4c9842+'\x22>'+_0x561018+'</option>';})['join']('');},_0x3c8e72='\x0a\x20\x20\x20\x20\x20\x20\x20\x20<dialog\x20class=\x22popup\x20wide_dialogue_popup\x20large_dialogue_popup\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22popup-body\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<h4\x20style=\x22margin-top:0;\x20color:\x20#eee;\x20border-bottom:\x201px\x20solid\x20rgba(255,255,255,0.2);\x20padding-bottom:\x2010px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<i\x20class=\x22fa-solid\x20fa-scroll\x22></i>\x20编辑\x20“'+_0x45e1e7[_0x2ac8b4(0x2a9)]+_0x2ac8b4(0x139)+_0xee4110(_0x27f775)+_0x2ac8b4(0x1a8)+_0xe4588e(_0x27f775)+'\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</select>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22number\x22\x20id=\x22new-rule-limit-input\x22\x20class=\x22text_pole\x22\x20min=\x220\x22\x20value=\x220\x22\x20style=\x22width:\x2080px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<button\x20id=\x22add-char-limit-rule-btn\x22\x20class=\x22menu_button\x20menu_button_primary\x20small_button\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<i\x20class=\x22fas\x20fa-plus\x22></i>\x20添加\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</button>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<small\x20class=\x22notes\x22>您可以为多个不同的列添加字符数限制规则。</small>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20</div>\x0a\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<div\x20class=\x22rule-editor-field\x22\x20style=\x22border:\x201px\x20solid\x20#444;\x20padding:\x2010px;\x20border-radius:\x205px;\x22>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<label\x20for=\x22rule-row-limit-value\x22\x20style=\x22font-weight:\x20bold;\x20color:\x20#9e8aff;\x22>表格行数限制\x20(0为禁用)</label>\x0a\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20\x20<input\x20type=\x22number\x22\x20id=\x22rule-row-limit-value\x22\x20class=\x22text_pole\x22\x20min=\x220\x22\x20value=\x22'+(_0x45e1e7[_0x2ac8b4(0x122)]||0x0)+_0x2ac8b4(0x2e4)+(_0x45e1e7['note']||'')+_0x2ac8b4(0x152)+(_0x45e1e7[_0x2ac8b4(0x221)]||'')+_0x2ac8b4(0x1b7)+(_0x45e1e7['rule_delete']||'')+_0x2ac8b4(0x1bd)+(_0x45e1e7[_0x2ac8b4(0x25e)]||'')+_0x2ac8b4(0x121),_0x11c53=$(_0x3c8e72)['appendTo'](_0x2ac8b4(0x2c7)),_0x5a61fe=()=>{_0x11c53[0x0]['close'](),_0x11c53['remove']();},_0x4ad40c=()=>{const _0x137c6d=_0x2ac8b4,_0x111e03=JSON[_0x137c6d(0x155)](_0x11c53[_0x137c6d(0x1e5)](_0x137c6d(0x157))[_0x137c6d(0x22a)](_0x137c6d(0x18f))||'{}');_0x11c53['find'](_0x137c6d(0x157))[_0x137c6d(0x1c7)](_0xee4110(_0x111e03)),_0x11c53[_0x137c6d(0x1e5)]('#new-rule-column-select')['html'](_0x137c6d(0x128)+_0xe4588e(_0x111e03));};_0x11c53['find'](_0x2ac8b4(0x157))['attr']('data-rules',JSON['stringify'](_0x27f775)),_0x11c53['on']('click','#add-char-limit-rule-btn',()=>{const _0x461a90=_0x2ac8b4,_0x5337d=parseInt(_0x11c53[_0x461a90(0x1e5)]('#new-rule-column-select')[_0x461a90(0x298)](),0xa),_0xd19ddb=parseInt(_0x11c53[_0x461a90(0x1e5)](_0x461a90(0x245))['val'](),0xa);if(_0x5337d===-0x1){toastr[_0x461a90(0xfc)]('请选择一个列。');return;}if(isNaN(_0xd19ddb)||_0xd19ddb<0x0){toastr[_0x461a90(0xfc)](_0x461a90(0x15d));return;}const _0x29e1d3=JSON[_0x461a90(0x155)](_0x11c53[_0x461a90(0x1e5)](_0x461a90(0x157))[_0x461a90(0x22a)](_0x461a90(0x18f))||'{}');_0xd19ddb>0x0?(_0x29e1d3[_0x5337d]=_0xd19ddb,_0x11c53[_0x461a90(0x1e5)](_0x461a90(0x157))['attr'](_0x461a90(0x18f),JSON[_0x461a90(0x1f6)](_0x29e1d3)),_0x4ad40c()):toastr['info'](_0x461a90(0x1f0));}),_0x11c53['on']('click',_0x2ac8b4(0x1dc),function(){const _0x30d1b0=_0x2ac8b4,_0x5433a7=$(this)[_0x30d1b0(0x1be)](_0x30d1b0(0x295)),_0x59ec31=JSON[_0x30d1b0(0x155)](_0x11c53[_0x30d1b0(0x1e5)](_0x30d1b0(0x157))[_0x30d1b0(0x22a)]('data-rules')||'{}');delete _0x59ec31[_0x5433a7],_0x11c53[_0x30d1b0(0x1e5)](_0x30d1b0(0x157))[_0x30d1b0(0x22a)]('data-rules',JSON['stringify'](_0x59ec31)),_0x4ad40c();}),_0x11c53[_0x2ac8b4(0x1e5)](_0x2ac8b4(0x15a))['on']('click',()=>{const _0x54a971=_0x2ac8b4,_0xbd88bc=JSON[_0x54a971(0x155)](_0x11c53[_0x54a971(0x1e5)]('#current-char-limit-rules')['attr'](_0x54a971(0x18f))||'{}'),_0xfc60a6=parseInt(_0x11c53[_0x54a971(0x1e5)](_0x54a971(0x115))[_0x54a971(0x298)](),0xa),_0x1b441c={'note':_0x11c53[_0x54a971(0x1e5)]('#rule-note')[_0x54a971(0x298)](),'rule_add':_0x11c53[_0x54a971(0x1e5)](_0x54a971(0x103))[_0x54a971(0x298)](),'rule_delete':_0x11c53['find'](_0x54a971(0x2cd))['val'](),'rule_update':_0x11c53[_0x54a971(0x1e5)]('#rule-update')[_0x54a971(0x298)](),'charLimitRules':_0xbd88bc,'rowLimitRule':_0xfc60a6};_0x93db26[_0x54a971(0x296)](_0x2aaf19,_0x1b441c),_0x5a61fe();}),_0x11c53['find']('.popup-button-cancel')['on'](_0x2ac8b4(0x29d),_0x5a61fe),_0x11c53[0x0][_0x2ac8b4(0x1c9)]();}function bindInjectionSettings(){const _0x18fad7=_0xc6d991,_0xd15c37=extension_settings[extensionName],_0x5987ee=document[_0x18fad7(0x16c)](_0x18fad7(0x27c)),_0x177c73=document[_0x18fad7(0x16c)](_0x18fad7(0x222)),_0x3f1f47=document['getElementById'](_0x18fad7(0x27a)),_0x4313b8=document['getElementById'](_0x18fad7(0x1ec)),_0x2cc9b0=document[_0x18fad7(0x212)](_0x18fad7(0x1f1));if(!_0x5987ee||!_0x177c73||!_0x3f1f47||!_0x4313b8||!_0x2cc9b0[_0x18fad7(0x2a2)])return;const _0x2f9a0c=()=>{const _0xa24c78=_0x18fad7,_0x4df20d=_0x3f1f47['value'],_0xa9cbfd=_0x5987ee['checked'],_0x34fd16=_0x4df20d==='1';_0x177c73[_0xa24c78(0x2df)]=!_0xa9cbfd,_0x3f1f47[_0xa24c78(0x2df)]=!_0xa9cbfd,_0x4313b8[_0xa24c78(0x2df)]=!_0xa9cbfd||!_0x34fd16,_0x2cc9b0[_0xa24c78(0x14b)](_0xb4213f=>_0xb4213f[_0xa24c78(0x2df)]=!_0xa9cbfd||!_0x34fd16);const _0x1d5be8=_0xa9cbfd?'1':_0xa24c78(0x1fb);_0x177c73['style'][_0xa24c78(0x201)]=_0x1d5be8;_0x177c73[_0xa24c78(0x104)](_0xa24c78(0x118))&&(_0x177c73[_0xa24c78(0x104)]('.control-block-with-switch')['style'][_0xa24c78(0x201)]=_0x1d5be8);_0x3f1f47[_0xa24c78(0x263)][_0xa24c78(0x201)]=_0x1d5be8;_0x3f1f47[_0xa24c78(0x2e7)]&&(_0x3f1f47['previousElementSibling']['style'][_0xa24c78(0x201)]=_0x1d5be8);const _0x54e34b=_0xa9cbfd&&_0x34fd16?'1':'0.5';_0x4313b8['style'][_0xa24c78(0x201)]=_0x54e34b;_0x4313b8[_0xa24c78(0x2e7)]&&(_0x4313b8[_0xa24c78(0x2e7)][_0xa24c78(0x263)]['opacity']=_0x54e34b);const _0x751634=_0xa9cbfd&&_0x34fd16?'1':_0xa24c78(0x1fb),_0x38538b=document['getElementById'](_0xa24c78(0x208))?.[_0xa24c78(0x104)](_0xa24c78(0x1c1));_0x38538b&&(_0x38538b[_0xa24c78(0x263)][_0xa24c78(0x201)]=_0x751634,_0x38538b['previousElementSibling']&&(_0x38538b[_0xa24c78(0x2e7)][_0xa24c78(0x263)][_0xa24c78(0x201)]=_0x751634));const _0x77843c=document[_0xa24c78(0x212)](_0xa24c78(0x207));_0x77843c['forEach'](_0x7a3edd=>{const _0x13098e=_0xa24c78;_0x7a3edd[_0x13098e(0x2df)]=!_0xa9cbfd;const _0x11e9bc=_0x7a3edd['closest'](_0x13098e(0x1d2));_0x11e9bc&&(_0x11e9bc[_0x13098e(0x263)][_0x13098e(0x201)]=_0xa9cbfd?'1':_0x13098e(0x1fb));});const _0x5ea175=document['getElementById']('fill-table-now-btn');_0x5ea175&&(_0x5ea175['disabled']=!_0xa9cbfd,_0x5ea175[_0xa24c78(0x263)][_0xa24c78(0x201)]=_0xa9cbfd?'1':_0xa24c78(0x1fb));};_0x5987ee[_0x18fad7(0x26c)]=_0xd15c37[_0x18fad7(0x254)]!==![],_0x177c73[_0x18fad7(0x26c)]=_0xd15c37[_0x18fad7(0x1ad)],_0x3f1f47['value']=_0xd15c37['injection'][_0x18fad7(0x293)],_0x4313b8[_0x18fad7(0x22b)]=_0xd15c37['injection']['depth'],_0x2cc9b0[_0x18fad7(0x14b)](_0x56e3c7=>{const _0x28c3ba=_0x18fad7;parseInt(_0x56e3c7['value'],0xa)===_0xd15c37[_0x28c3ba(0x206)][_0x28c3ba(0x2dc)]&&(_0x56e3c7['checked']=!![]);}),_0x2f9a0c();if(_0x5987ee[_0x18fad7(0x137)][_0x18fad7(0x167)])return;_0x5987ee[_0x18fad7(0x242)](_0x18fad7(0x27e),()=>{const _0x656671=_0x18fad7;_0xd15c37[_0x656671(0x254)]=_0x5987ee['checked'],saveSettingsDebounced(),_0x2f9a0c();const _0x109b2e=_0x5987ee[_0x656671(0x26c)]?_0x656671(0x26e):_0x656671(0x15b);toastr['info'](_0x656671(0x196)+_0x109b2e+'。'),log(_0x656671(0x196)+_0x109b2e+'。','info');}),_0x177c73[_0x18fad7(0x242)](_0x18fad7(0x27e),()=>{const _0xb59af=_0x18fad7;_0xd15c37['table_injection_enabled']=_0x177c73[_0xb59af(0x26c)],saveSettingsDebounced();}),_0x3f1f47[_0x18fad7(0x242)](_0x18fad7(0x27e),()=>{const _0x2af862=_0x18fad7;_0xd15c37[_0x2af862(0x206)][_0x2af862(0x293)]=parseInt(_0x3f1f47['value'],0xa),saveSettingsDebounced(),_0x2f9a0c();}),_0x4313b8['addEventListener'](_0x18fad7(0x1b1),()=>{const _0x41f763=_0x18fad7;_0xd15c37[_0x41f763(0x206)][_0x41f763(0x164)]=parseInt(_0x4313b8['value'],0xa),saveSettingsDebounced();}),_0x2cc9b0['forEach'](_0x1f12a4=>{_0x1f12a4['addEventListener']('change',()=>{const _0x87d006=_0x54ef;_0x1f12a4[_0x87d006(0x26c)]&&(_0xd15c37[_0x87d006(0x206)][_0x87d006(0x2dc)]=parseInt(_0x1f12a4[_0x87d006(0x22b)],0xa),saveSettingsDebounced());});}),_0x5987ee[_0x18fad7(0x137)][_0x18fad7(0x167)]=_0x18fad7(0x18a),log(_0x18fad7(0x2ae),_0x18fad7(0x1c3));}function updateAndSaveTableSetting(_0x2c1ccd,_0xd7edea){!extension_settings[extensionName]&&(extension_settings[extensionName]={}),extension_settings[extensionName][_0x2c1ccd]=_0xd7edea,saveSettingsDebounced();}function bindWorldBookSettings(){const _0x52e59d=_0xc6d991,_0x23152c=extension_settings[extensionName];if(_0x23152c[_0x52e59d(0x12a)]===undefined)_0x23152c[_0x52e59d(0x12a)]=![];if(_0x23152c[_0x52e59d(0x17b)]===undefined)_0x23152c[_0x52e59d(0x17b)]=0x7530;if(_0x23152c[_0x52e59d(0x239)]===undefined)_0x23152c['table_worldbook_source']=_0x52e59d(0x2c5);if(_0x23152c[_0x52e59d(0x11e)]===undefined)_0x23152c[_0x52e59d(0x11e)]=[];if(_0x23152c[_0x52e59d(0x21c)]===undefined)_0x23152c['table_selected_entries']={};const _0xba1878=document[_0x52e59d(0x16c)](_0x52e59d(0x12a)),_0x19bf57=document['getElementById'](_0x52e59d(0x17b)),_0x55f9cc=document['getElementById'](_0x52e59d(0x241)),_0x2915ca=document['querySelectorAll']('input[name=\x22table_worldbook_source\x22]'),_0x3695e6=document[_0x52e59d(0x16c)](_0x52e59d(0x117)),_0x33478c=document[_0x52e59d(0x16c)](_0x52e59d(0x2e0)),_0x20030a=document[_0x52e59d(0x16c)](_0x52e59d(0x146)),_0x5f2fa4=document['getElementById'](_0x52e59d(0x2af));if(!_0xba1878||!_0x19bf57||!_0x55f9cc||!_0x2915ca[_0x52e59d(0x2a2)]||!_0x3695e6||!_0x33478c||!_0x20030a||!_0x5f2fa4){log('无法找到世界书设置的相关UI元素，绑定失败。',_0x52e59d(0x21a));return;}const _0x50ee26=()=>{const _0x5029f4=_0x52e59d,_0x1e287f={};_0x5f2fa4['querySelectorAll'](_0x5029f4(0x21b))[_0x5029f4(0x14b)](_0x21faf1=>{const _0x6dcf4c=_0x5029f4,_0x30d180=_0x21faf1[_0x6dcf4c(0x137)][_0x6dcf4c(0x145)],_0x22cbd5=_0x21faf1['dataset'][_0x6dcf4c(0x2ce)];!_0x1e287f[_0x30d180]&&(_0x1e287f[_0x30d180]=[]),_0x1e287f[_0x30d180][_0x6dcf4c(0x1a4)](_0x22cbd5);}),_0x23152c[_0x5029f4(0x21c)]=_0x1e287f,saveSettingsDebounced();},_0x477014=async()=>{const _0x1ba53e=_0x52e59d;_0x5f2fa4[_0x1ba53e(0x109)]=_0x1ba53e(0x2e9);const _0x5d720c=_0x23152c[_0x1ba53e(0x239)]||_0x1ba53e(0x2c5);let _0x1ec73e=[];if(_0x5d720c===_0x1ba53e(0x162))_0x1ec73e=_0x23152c[_0x1ba53e(0x11e)]||[];else{if(this_chid!==undefined&&this_chid>=0x0&&characters[this_chid])try{const _0x3209ce=await safeCharLorebooks({'type':_0x1ba53e(0x187)});if(_0x3209ce[_0x1ba53e(0x185)])_0x1ec73e[_0x1ba53e(0x1a4)](_0x3209ce[_0x1ba53e(0x185)]);if(_0x3209ce[_0x1ba53e(0x2e8)]?.[_0x1ba53e(0x2a2)])_0x1ec73e['push'](..._0x3209ce['additional']);}catch(_0x2ac5a1){console['error'](_0x1ba53e(0x14c),_0x2ac5a1),_0x5f2fa4['innerHTML']=_0x1ba53e(0x1b3);return;}else{_0x5f2fa4[_0x1ba53e(0x109)]='<p\x20class=\x22notes\x22>请先加载一个角色。</p>';return;}}if(_0x1ec73e[_0x1ba53e(0x2a2)]===0x0){_0x5f2fa4[_0x1ba53e(0x109)]=_0x1ba53e(0x1e0);return;}try{const _0x24fe40=[];for(const _0x4c840b of _0x1ec73e){const _0x38b686=await safeLorebookEntries(_0x4c840b);_0x38b686[_0x1ba53e(0x14b)](_0x21ffea=>_0x24fe40[_0x1ba53e(0x1a4)]({..._0x21ffea,'bookName':_0x4c840b}));}_0x5f2fa4[_0x1ba53e(0x109)]='';if(_0x24fe40[_0x1ba53e(0x2a2)]===0x0){_0x5f2fa4[_0x1ba53e(0x109)]=_0x1ba53e(0x270);return;}_0x24fe40[_0x1ba53e(0x14b)](_0x2e9e55=>{const _0x9fc761=_0x1ba53e,_0x278d8c=document[_0x9fc761(0x14f)](_0x9fc761(0x16b));_0x278d8c['className']='checkbox-item',_0x278d8c[_0x9fc761(0x142)]=_0x9fc761(0x2ef)+_0x2e9e55[_0x9fc761(0x247)]+_0x9fc761(0x28b)+_0x2e9e55[_0x9fc761(0x2ce)];const _0xd7b56f=document[_0x9fc761(0x14f)](_0x9fc761(0x1b1));_0xd7b56f[_0x9fc761(0x23d)]='checkbox',_0xd7b56f['id']='wb-entry-check-'+_0x2e9e55[_0x9fc761(0x247)]+'-'+_0x2e9e55[_0x9fc761(0x2ce)],_0xd7b56f['dataset']['book']=_0x2e9e55['bookName'],_0xd7b56f[_0x9fc761(0x137)][_0x9fc761(0x2ce)]=_0x2e9e55['uid'];const _0x5957b4=_0x23152c[_0x9fc761(0x21c)][_0x2e9e55[_0x9fc761(0x247)]]?.[_0x9fc761(0x2d3)](String(_0x2e9e55['uid']));_0xd7b56f[_0x9fc761(0x26c)]=!!_0x5957b4;const _0x469c52=document[_0x9fc761(0x14f)](_0x9fc761(0x1d2));_0x469c52[_0x9fc761(0x215)]=_0xd7b56f['id'],_0x469c52['textContent']=_0x2e9e55[_0x9fc761(0x2db)]||_0x9fc761(0x21f),_0x278d8c['appendChild'](_0xd7b56f),_0x278d8c['appendChild'](_0x469c52),_0x5f2fa4[_0x9fc761(0x2a4)](_0x278d8c);});}catch(_0x106095){console['error'](_0x1ba53e(0x233),_0x106095),_0x5f2fa4[_0x1ba53e(0x109)]='<p\x20class=\x22notes\x22\x20style=\x22color:red;\x22>加载条目失败。</p>';}},_0x4344c3=()=>{const _0x229a11=_0x52e59d,_0x9a4c84=world_names['map'](_0x9a82b5=>({'name':_0x9a82b5['replace'](_0x229a11(0x214),''),'file_name':_0x9a82b5}));_0x20030a[_0x229a11(0x109)]='',_0x9a4c84&&_0x9a4c84[_0x229a11(0x2a2)]>0x0?_0x9a4c84[_0x229a11(0x14b)](_0x1c8f1b=>{const _0xdf1506=_0x229a11,_0x1c562b=document[_0xdf1506(0x14f)](_0xdf1506(0x16b));_0x1c562b[_0xdf1506(0x188)]=_0xdf1506(0x290),_0x1c562b['title']=_0x1c8f1b['name'];const _0x501dcc=document['createElement']('input');_0x501dcc[_0xdf1506(0x23d)]=_0xdf1506(0x2b1),_0x501dcc['id']='wb-check-'+_0x1c8f1b[_0xdf1506(0x284)],_0x501dcc['value']=_0x1c8f1b[_0xdf1506(0x284)],_0x501dcc[_0xdf1506(0x26c)]=_0x23152c[_0xdf1506(0x11e)][_0xdf1506(0x2d3)](_0x1c8f1b[_0xdf1506(0x284)]),_0x501dcc[_0xdf1506(0x242)](_0xdf1506(0x27e),()=>{const _0x4fc523=_0xdf1506;_0x501dcc['checked']?!_0x23152c[_0x4fc523(0x11e)][_0x4fc523(0x2d3)](_0x1c8f1b['file_name'])&&_0x23152c['table_selected_worldbooks'][_0x4fc523(0x1a4)](_0x1c8f1b[_0x4fc523(0x284)]):_0x23152c[_0x4fc523(0x11e)]=_0x23152c[_0x4fc523(0x11e)][_0x4fc523(0x264)](_0x3ee59a=>_0x3ee59a!==_0x1c8f1b[_0x4fc523(0x284)]),saveSettingsDebounced(),_0x477014();});const _0x24440d=document['createElement']('label');_0x24440d[_0xdf1506(0x215)]=_0xdf1506(0x173)+_0x1c8f1b['file_name'],_0x24440d[_0xdf1506(0x13c)]=_0x1c8f1b['name'],_0x1c562b[_0xdf1506(0x2a4)](_0x501dcc),_0x1c562b[_0xdf1506(0x2a4)](_0x24440d),_0x20030a[_0xdf1506(0x2a4)](_0x1c562b);}):_0x20030a['innerHTML']='<p\x20class=\x22notes\x22>没有找到世界书。</p>',_0x477014();},_0x1ad8ce=()=>{const _0x3826d3=_0x52e59d,_0xcd2991=_0x23152c['table_worldbook_source']==='manual';_0x3695e6[_0x3826d3(0x263)][_0x3826d3(0x230)]=_0xcd2991?_0x3826d3(0x1c0):'none',_0x477014(),_0xcd2991&&_0x4344c3();};_0xba1878[_0x52e59d(0x26c)]=_0x23152c[_0x52e59d(0x12a)],_0x19bf57[_0x52e59d(0x22b)]=_0x23152c[_0x52e59d(0x17b)],_0x55f9cc[_0x52e59d(0x13c)]=_0x23152c[_0x52e59d(0x17b)],_0x2915ca[_0x52e59d(0x14b)](_0x410ef9=>{const _0x344540=_0x52e59d;_0x410ef9[_0x344540(0x26c)]=_0x410ef9[_0x344540(0x22b)]===_0x23152c[_0x344540(0x239)];}),_0x1ad8ce();if(_0xba1878[_0x52e59d(0x137)][_0x52e59d(0x167)])return;_0xba1878['addEventListener'](_0x52e59d(0x27e),()=>{const _0x2f0cd8=_0x52e59d;_0x23152c[_0x2f0cd8(0x12a)]=_0xba1878[_0x2f0cd8(0x26c)],saveSettingsDebounced();}),_0x19bf57[_0x52e59d(0x242)](_0x52e59d(0x1b1),()=>{const _0x526cab=_0x52e59d;_0x55f9cc[_0x526cab(0x13c)]=_0x19bf57[_0x526cab(0x22b)];}),_0x19bf57[_0x52e59d(0x242)]('change',()=>{_0x23152c['table_worldbook_char_limit']=parseInt(_0x19bf57['value'],0xa),saveSettingsDebounced();}),_0x2915ca['forEach'](_0x4150fb=>{const _0x2b0113=_0x52e59d;_0x4150fb[_0x2b0113(0x242)](_0x2b0113(0x27e),()=>{const _0xea28cb=_0x2b0113;_0x4150fb[_0xea28cb(0x26c)]&&(_0x23152c[_0xea28cb(0x239)]=_0x4150fb[_0xea28cb(0x22b)],_0x1ad8ce(),saveSettingsDebounced());});}),_0x33478c['addEventListener'](_0x52e59d(0x29d),_0x4344c3),_0x5f2fa4[_0x52e59d(0x242)](_0x52e59d(0x27e),_0x5e6156=>{_0x5e6156['target']['type']==='checkbox'&&_0x50ee26();}),_0xba1878[_0x52e59d(0x137)][_0x52e59d(0x167)]=_0x52e59d(0x18a),log(_0x52e59d(0x2c0),_0x52e59d(0x1c3));}export function bindTableEvents(){const _0x33e88f=_0xc6d991,_0x240270=document[_0x33e88f(0x16c)]('amily2_memorisation_forms_panel');if(!_0x240270||_0x240270['dataset'][_0x33e88f(0x167)])return;log('开始为表格视图绑定交互事件...',_0x33e88f(0x255));const _0x289976=_0x240270[_0x33e88f(0x212)](_0x33e88f(0x207)),_0x436a60=document[_0x33e88f(0x16c)](_0x33e88f(0x13a)),_0x4c4f71=document['getElementById'](_0x33e88f(0x1a0)),_0x317dc7=document['getElementById'](_0x33e88f(0x276)),_0x267da2=document[_0x33e88f(0x16c)](_0x33e88f(0x1a7)),_0x331ce1=document['getElementById'](_0x33e88f(0x2b4)),_0x123c7a=document[_0x33e88f(0x16c)](_0x33e88f(0x268)),_0xaea382=()=>{const _0x1923ce=_0x33e88f,_0x3f66f4=extension_settings[extensionName]?.[_0x1923ce(0x234)]||_0x1923ce(0x2c9);_0x289976[_0x1923ce(0x14b)](_0xdf71d7=>{const _0x87303c=_0x1923ce;_0xdf71d7['checked']=_0xdf71d7[_0x87303c(0x22b)]===_0x3f66f4;});const _0x4d3d18=_0x3f66f4==='secondary-api';_0x436a60&&(_0x436a60[_0x1923ce(0x263)][_0x1923ce(0x230)]=_0x4d3d18?_0x1923ce(0x1c0):_0x1923ce(0x272)),_0x267da2&&(_0x267da2[_0x1923ce(0x263)]['display']=_0x1923ce(0x297)),_0x331ce1&&_0x123c7a&&(_0x123c7a[_0x1923ce(0x263)][_0x1923ce(0x230)]=_0x331ce1[_0x1923ce(0x26c)]?_0x1923ce(0x1c0):'none');};_0x289976[_0x33e88f(0x14b)](_0x3e2efb=>{const _0x5800d6=_0x33e88f;_0x3e2efb[_0x5800d6(0x242)]('change',function(){const _0x2dc09c=_0x5800d6,_0x11a9f6=this['value'];updateAndSaveTableSetting(_0x2dc09c(0x234),_0x11a9f6);let _0x3c50a7=_0x2dc09c(0x25d);if(_0x11a9f6==='secondary-api')_0x3c50a7=_0x2dc09c(0x131);if(_0x11a9f6==='optimized')_0x3c50a7=_0x2dc09c(0x107);toastr[_0x2dc09c(0x255)]('填表模式已切换为\x20'+_0x3c50a7+'。'),_0xaea382();});});if(_0x4c4f71&&_0x317dc7){const _0x2b4853=extension_settings[extensionName]?.[_0x33e88f(0x120)]||0x4;_0x4c4f71[_0x33e88f(0x22b)]=_0x2b4853,_0x317dc7[_0x33e88f(0x13c)]=_0x2b4853,_0x4c4f71[_0x33e88f(0x242)]('input',function(){const _0xd0d92c=_0x33e88f;_0x317dc7['textContent']=this[_0xd0d92c(0x22b)];}),_0x4c4f71[_0x33e88f(0x242)](_0x33e88f(0x27e),function(){const _0x5eb6f6=_0x33e88f;updateAndSaveTableSetting(_0x5eb6f6(0x120),parseInt(this[_0x5eb6f6(0x22b)],0xa)),toastr['info']('上下文读取级别已设置为\x20'+this[_0x5eb6f6(0x22b)]+'。');});}_0x331ce1&&(_0x331ce1[_0x33e88f(0x26c)]=extension_settings[extensionName]?.[_0x33e88f(0x166)]??![],_0x331ce1['addEventListener'](_0x33e88f(0x27e),()=>{const _0x4b17bd=_0x33e88f;updateAndSaveTableSetting(_0x4b17bd(0x166),_0x331ce1[_0x4b17bd(0x26c)]),_0xaea382();}));_0xaea382();_0x123c7a&&_0x123c7a['addEventListener']('click',openTableRuleEditor);const _0x9dcdd0=()=>{renderTables(),bindInjectionSettings(),bindTemplateEditors();};_0x9dcdd0(),bindWorldBookSettings(),bindBatchFillButton(),bindFloorFillButtons(),bindReorganizeButton(),bindNccsApiEvents(),bindChatTableDisplaySetting();const _0x4f5227=document['querySelector']('#amily2_memorisation_forms_panel\x20.sinan-navigation-deck');_0x4f5227&&_0x4f5227[_0x33e88f(0x242)]('click',_0x6af184=>{const _0x50d3ca=_0x33e88f,_0x502eab=_0x6af184['target'][_0x50d3ca(0x104)](_0x50d3ca(0x200));if(!_0x502eab)return;const _0x18bace=_0x502eab[_0x50d3ca(0x137)][_0x50d3ca(0x1a5)];if(!_0x18bace)return;const _0x2f5ec5=_0x502eab[_0x50d3ca(0x104)](_0x50d3ca(0x280));if(!_0x2f5ec5)return;_0x2f5ec5[_0x50d3ca(0x212)]('.sinan-nav-item')[_0x50d3ca(0x14b)](_0x51e7ad=>_0x51e7ad[_0x50d3ca(0x14a)][_0x50d3ca(0x1e4)]('active')),_0x502eab[_0x50d3ca(0x14a)][_0x50d3ca(0x197)](_0x50d3ca(0x2b8)),_0x2f5ec5[_0x50d3ca(0x212)](_0x50d3ca(0x101))[_0x50d3ca(0x14b)](_0x35462e=>_0x35462e[_0x50d3ca(0x14a)][_0x50d3ca(0x1e4)](_0x50d3ca(0x2b8)));const _0x316f73=_0x2f5ec5[_0x50d3ca(0x17d)](_0x50d3ca(0x24c)+_0x18bace+_0x50d3ca(0x223));_0x316f73&&_0x316f73[_0x50d3ca(0x14a)]['add']('active');});const _0x31b57b=document['getElementById'](_0x33e88f(0x1b8)),_0x11e6f8=document['getElementById'](_0x33e88f(0x1c2)),_0x40f171=document[_0x33e88f(0x16c)](_0x33e88f(0x1ae)),_0x1a26b2=document[_0x33e88f(0x16c)]('amily2-import-global-preset-btn'),_0xb1a86d=document[_0x33e88f(0x16c)](_0x33e88f(0x1f2));_0x31b57b&&_0x31b57b[_0x33e88f(0x242)](_0x33e88f(0x29d),()=>_0x93db26[_0x33e88f(0x1e1)]());_0x11e6f8&&_0x11e6f8[_0x33e88f(0x242)](_0x33e88f(0x29d),()=>_0x93db26['exportPresetFull']());_0x40f171&&_0x40f171[_0x33e88f(0x242)]('click',()=>_0x93db26['importPreset'](_0x9dcdd0));_0x1a26b2&&_0x1a26b2[_0x33e88f(0x242)](_0x33e88f(0x29d),()=>{const _0x2e5545=_0x33e88f,_0x548949=_0x93db26[_0x2e5545(0x2f1)]();_0x93db26[_0x2e5545(0x2c3)](()=>{const _0x12b788=_0x2e5545;_0x548949&&(_0x93db26[_0x12b788(0x202)](),_0x9dcdd0());});});_0xb1a86d&&_0xb1a86d[_0x33e88f(0x242)]('click',()=>{const _0x450fae=_0x33e88f,_0x1c46e5=_0x93db26['isCurrentTablesEmpty']();_0x93db26[_0x450fae(0x24f)](),_0x1c46e5&&(_0x93db26['loadTables'](),_0x9dcdd0());});const _0x4ceab6=document[_0x33e88f(0x16c)](_0x33e88f(0x149));_0x4ceab6&&_0x4ceab6[_0x33e88f(0x242)]('click',()=>{const _0x4bd8e4=_0x33e88f;confirm(_0x4bd8e4(0x1a1))&&(_0x93db26['clearAllTables'](),_0x9dcdd0());});const _0x15dbea=document[_0x33e88f(0x16c)](_0x33e88f(0x1af));_0x15dbea&&_0x15dbea[_0x33e88f(0x242)](_0x33e88f(0x29d),()=>{const _0x3c225c=_0x33e88f,_0x3cf5b9=prompt(_0x3c225c(0x18c),_0x3c225c(0x271));_0x3cf5b9&&_0x3cf5b9['trim']()&&(_0x93db26[_0x3c225c(0x119)](_0x3cf5b9[_0x3c225c(0xf9)]()),_0x9dcdd0());});const _0x243933=getAllTablesContainer();if(_0x243933){_0x243933[_0x33e88f(0x242)](_0x33e88f(0x29d),_0x1d6983=>{const _0x4264f4=_0x33e88f,_0x2860e2=_0x1d6983[_0x4264f4(0x195)][_0x4264f4(0x104)]('th');if(_0x2860e2&&_0x2860e2['classList'][_0x4264f4(0xfe)](_0x4264f4(0x1bf))){toggleHeaderIndexContextMenu(_0x1d6983);return;}if(_0x2860e2&&!_0x2860e2['classList'][_0x4264f4(0xfe)]('index-col')){toggleColumnContextMenu(_0x1d6983);return;}const _0x48f211=_0x1d6983[_0x4264f4(0x195)][_0x4264f4(0x104)]('td.index-col');if(_0x48f211){toggleRowContextMenu(_0x1d6983);return;}const _0x18543b=_0x1d6983[_0x4264f4(0x195)][_0x4264f4(0x104)](_0x4264f4(0x21d));if(_0x18543b){const _0x5acb24=parseInt(_0x18543b['dataset'][_0x4264f4(0x148)],0xa),_0x295eba=_0x93db26[_0x4264f4(0x106)](),_0x71fba4=_0x295eba[_0x5acb24]?.[_0x4264f4(0x2a9)]||'';showTableNameEditor(_0x5acb24,_0x71fba4);return;}const _0x50e969=_0x1d6983['target'][_0x4264f4(0x104)](_0x4264f4(0x26b));if(!_0x50e969)return;const _0x64611f=parseInt(_0x50e969['dataset'][_0x4264f4(0x148)],0xa);if(_0x50e969[_0x4264f4(0x1f7)]('.add-row-btn'))_0x93db26[_0x4264f4(0x1c8)](_0x64611f),_0x9dcdd0();else{if(_0x50e969['matches'](_0x4264f4(0x2c4)))_0x93db26[_0x4264f4(0x2c2)](_0x64611f),_0x9dcdd0();else{if(_0x50e969[_0x4264f4(0x1f7)](_0x4264f4(0x11b))||_0x50e969[_0x4264f4(0x1f7)](_0x4264f4(0x13d))){const _0x8be378=_0x50e969[_0x4264f4(0x14a)][_0x4264f4(0xfe)](_0x4264f4(0x274))?'up':_0x4264f4(0x1e9);_0x93db26[_0x4264f4(0x286)](_0x64611f,_0x8be378),_0x9dcdd0();}else{if(_0x50e969[_0x4264f4(0x1f7)](_0x4264f4(0x1fa)))openRuleEditor(_0x64611f);else{if(_0x50e969[_0x4264f4(0x1f7)](_0x4264f4(0x1b2))){const _0x19f31f=_0x93db26[_0x4264f4(0x106)](),_0x456a6b=_0x19f31f[_0x64611f]?.[_0x4264f4(0x2a9)]||_0x4264f4(0x210);confirm(_0x4264f4(0x20b)+_0x456a6b+_0x4264f4(0x1fc))&&(_0x93db26[_0x4264f4(0x231)](_0x64611f),_0x9dcdd0());}}}}}});if(isTouchDevice()){let _0x207870=0x0,_0x2b277e=null;_0x243933['addEventListener'](_0x33e88f(0x2ab),_0x1a65b2=>{const _0x2a4e72=_0x33e88f,_0x188b29=_0x1a65b2['target']['closest']('td');if(!_0x188b29||_0x188b29[_0x2a4e72(0x137)][_0x2a4e72(0x1a9)]===undefined)return;const _0x461fce=new Date()[_0x2a4e72(0x125)](),_0x228c2c=_0x461fce-_0x207870;_0x228c2c<0x12c&&_0x228c2c>0x0&&_0x2b277e===_0x188b29&&(_0x1a65b2[_0x2a4e72(0x2ee)](),_0x188b29[_0x2a4e72(0x16f)]('contenteditable')!==_0x2a4e72(0x18a)&&(_0x188b29['setAttribute'](_0x2a4e72(0x1ed),_0x2a4e72(0x18a)),setTimeout(()=>_0x188b29[_0x2a4e72(0x2c1)](),0x0))),_0x207870=_0x461fce,_0x2b277e=_0x188b29;});}_0x243933[_0x33e88f(0x242)]('blur',_0x5a98c8=>{const _0x75b436=_0x33e88f,_0x564912=_0x5a98c8[_0x75b436(0x195)];if(_0x564912['tagName']!=='TD'||_0x564912[_0x75b436(0x16f)](_0x75b436(0x1ed))!=='true')return;isTouchDevice()&&_0x564912['setAttribute'](_0x75b436(0x1ed),_0x75b436(0x1d9));const _0xdf4a60=_0x564912[_0x75b436(0x104)](_0x75b436(0x269));if(!_0xdf4a60)return;const _0x1f8e10=parseInt(_0xdf4a60[_0x75b436(0x137)][_0x75b436(0x148)],0xa),_0x32c526=parseInt(_0x564912['closest']('tr')[_0x75b436(0x137)][_0x75b436(0x1b0)],0xa),_0x5eec9d=parseInt(_0x564912[_0x75b436(0x137)][_0x75b436(0x1a9)],0xa),_0x5155a5=_0x564912['textContent'],_0x4125e9=_0xdf4a60[_0x75b436(0x104)](_0x75b436(0x27b)),_0x4a9d56=_0x4125e9?_0x4125e9['scrollLeft']:0x0,_0x39c2ba=_0x243933[_0x75b436(0x2cb)];_0x93db26[_0x75b436(0x281)](_0x1f8e10,_0x32c526,_0x5eec9d);const _0x3eefae={[_0x5eec9d]:_0x5155a5};_0x93db26[_0x75b436(0x275)](_0x1f8e10,_0x32c526,_0x3eefae),_0x9dcdd0();const _0x491795=document['getElementById'](_0x75b436(0x2ea)+_0x1f8e10)?.[_0x75b436(0x104)]('.amily2-table-wrapper');_0x491795&&(_0x491795[_0x75b436(0x2a0)]=_0x4a9d56),_0x243933[_0x75b436(0x2cb)]=_0x39c2ba;},!![]);}_0x240270[_0x33e88f(0x137)][_0x33e88f(0x167)]='true',log(_0x33e88f(0x186),_0x33e88f(0x1c3)),eventSource['on'](event_types[_0x33e88f(0x1c5)],()=>{const _0x418577=_0x33e88f;console[_0x418577(0x2a8)]('['+extensionName+_0x418577(0x1d1)),_0x9dcdd0(),setTimeout(()=>{const _0x43cd2d=_0x418577,_0x570a9b=extension_settings[extensionName];if(_0x570a9b&&_0x570a9b[_0x43cd2d(0x12a)])try{bindWorldBookSettings(),console['log']('['+extensionName+_0x43cd2d(0x153));}catch(_0x117cdf){console[_0x43cd2d(0x26a)]('['+extensionName+_0x43cd2d(0x213),_0x117cdf);}},0x64);});}function bindBatchFillButton(){const _0xc5a31f=_0xc6d991,_0xdd2db6=document[_0xc5a31f(0x16c)](_0xc5a31f(0x111));if(_0xdd2db6){if(_0xdd2db6['dataset'][_0xc5a31f(0x136)])return;_0xdd2db6['addEventListener'](_0xc5a31f(0x29d),_0x169af7=>{const _0x167f60=_0xc5a31f,_0x519d65=extension_settings[extensionName],_0x592df4=_0x519d65[_0x167f60(0x254)]!==![];if(!_0x592df4){_0x169af7[_0x167f60(0x2ee)](),toastr['warning'](_0x167f60(0x25f));return;}startBatchFilling();}),_0xdd2db6[_0xc5a31f(0x137)]['batchEventBound']='true',log('\x22立即填表\x22按钮已成功绑定。',_0xc5a31f(0x1c3));}}function bindReorganizeButton(){const _0x1f4261=_0xc6d991,_0xa730bf=document[_0x1f4261(0x16c)](_0x1f4261(0x29e));if(_0xa730bf){if(_0xa730bf[_0x1f4261(0x137)][_0x1f4261(0x22c)])return;_0xa730bf[_0x1f4261(0x242)](_0x1f4261(0x29d),async _0x24fcc9=>{const _0x132662=_0x1f4261,_0x2326f5=extension_settings[extensionName],_0x2a2759=_0x2326f5['table_system_enabled']!==![];if(!_0x2a2759){_0x24fcc9['preventDefault'](),toastr[_0x132662(0xfc)](_0x132662(0x25f));return;}try{const {reorganizeTableContent:_0x543599}=await import(_0x132662(0x18b));await _0x543599();}catch(_0x181609){console[_0x132662(0x26a)](_0x132662(0x236),_0x181609),toastr[_0x132662(0x26a)]('重新整理功能启动失败，请检查系统状态。');}}),_0xa730bf['dataset'][_0x1f4261(0x22c)]='true',log(_0x1f4261(0x133),_0x1f4261(0x1c3));}}function bindFloorFillButtons(){const _0x386d37=_0xc6d991,_0xdd22d9=document['getElementById'](_0x386d37(0x12e)),_0x377e68=document[_0x386d37(0x16c)]('fill-current-floor-btn'),_0x5dbecd=document[_0x386d37(0x16c)](_0x386d37(0x250));if(_0xdd22d9){if(_0xdd22d9[_0x386d37(0x137)][_0x386d37(0x192)])return;_0xdd22d9[_0x386d37(0x242)](_0x386d37(0x29d),_0x49c2f7=>{const _0xb5ace3=_0x386d37,_0xc861fc=extension_settings[extensionName],_0x3a99ff=_0xc861fc[_0xb5ace3(0x254)]!==![];if(!_0x3a99ff){_0x49c2f7[_0xb5ace3(0x2ee)](),toastr[_0xb5ace3(0xfc)](_0xb5ace3(0x25f));return;}const _0x44d317=document[_0xb5ace3(0x16c)](_0xb5ace3(0x2ba)),_0x16ed2e=document[_0xb5ace3(0x16c)](_0xb5ace3(0x238)),_0x14fff5=parseInt(_0x44d317[_0xb5ace3(0x22b)],0xa),_0x2c5408=parseInt(_0x16ed2e[_0xb5ace3(0x22b)],0xa);if(!_0x14fff5||!_0x2c5408){toastr[_0xb5ace3(0xfc)]('请输入有效的起始楼层和结束楼层。');return;}if(_0x14fff5>_0x2c5408){toastr[_0xb5ace3(0xfc)](_0xb5ace3(0x228));return;}if(_0x14fff5<0x1){toastr['warning'](_0xb5ace3(0x108));return;}import(_0xb5ace3(0x2da))[_0xb5ace3(0x22e)](_0x3c582c=>{const _0x1dc836=_0xb5ace3;_0x3c582c[_0x1dc836(0x10d)](_0x14fff5,_0x2c5408);});}),_0xdd22d9[_0x386d37(0x137)][_0x386d37(0x192)]=_0x386d37(0x18a),log('\x22选定楼层填表\x22按钮已成功绑定。','success');}if(_0x377e68){if(_0x377e68[_0x386d37(0x137)][_0x386d37(0x1a2)])return;_0x377e68[_0x386d37(0x242)]('click',_0x33e98d=>{const _0x2d5258=_0x386d37,_0x5c0587=extension_settings[extensionName],_0x2dcb91=_0x5c0587[_0x2d5258(0x254)]!==![];if(!_0x2dcb91){_0x33e98d[_0x2d5258(0x2ee)](),toastr[_0x2d5258(0xfc)](_0x2d5258(0x25f));return;}import('../core/table-system/batch-filler.js')[_0x2d5258(0x22e)](_0x540718=>{const _0x1614d5=_0x2d5258;_0x540718[_0x1614d5(0x143)]();});}),_0x377e68[_0x386d37(0x137)][_0x386d37(0x1a2)]=_0x386d37(0x18a),log('\x22填当前楼层\x22按钮已成功绑定。',_0x386d37(0x1c3));}if(_0x5dbecd){if(_0x5dbecd[_0x386d37(0x137)]['rollbackEventBound'])return;_0x5dbecd[_0x386d37(0x242)](_0x386d37(0x29d),async _0x5360de=>{const _0x2c921a=_0x386d37,_0x1478b2=extension_settings[extensionName],_0x1d9a9b=_0x1478b2[_0x2c921a(0x254)]!==![];if(!_0x1d9a9b){_0x5360de[_0x2c921a(0x2ee)](),toastr['warning'](_0x2c921a(0x25f));return;}if(confirm(_0x2c921a(0x102)))try{await _0x93db26[_0x2c921a(0x25c)]();}catch(_0x75eaf4){console[_0x2c921a(0x26a)]('[内存储司]\x20回退重填功能失败:',_0x75eaf4),toastr[_0x2c921a(0x26a)]('回退重填失败，请检查系统状态。');}}),_0x5dbecd['dataset'][_0x386d37(0x184)]=_0x386d37(0x18a),log('\x22回退重填\x22按钮已成功绑定。',_0x386d37(0x1c3));}}function bindTemplateEditors(){const _0x49e712=_0xc6d991,_0x28a1cf=document[_0x49e712(0x16c)](_0x49e712(0x132)),_0x26bf6d=document[_0x49e712(0x16c)](_0x49e712(0x182)),_0x4fba3e=document['getElementById'](_0x49e712(0x199)),_0x1d516c=document[_0x49e712(0x16c)](_0x49e712(0xfb)),_0x344db1=document[_0x49e712(0x16c)]('ai-flow-template-save-btn'),_0x40f7a4=document[_0x49e712(0x16c)](_0x49e712(0x100));if(!_0x28a1cf||!_0x1d516c||!_0x26bf6d||!_0x344db1){log('无法找到指令模板编辑器或其按钮，绑定失败。',_0x49e712(0x21a));return;}if(_0x26bf6d[_0x49e712(0x137)][_0x49e712(0x17f)])return;_0x28a1cf['value']=_0x93db26[_0x49e712(0x24a)](),_0x1d516c[_0x49e712(0x22b)]=_0x93db26[_0x49e712(0x1da)](),_0x26bf6d['addEventListener']('click',()=>{const _0x3d1492=_0x49e712;_0x93db26[_0x3d1492(0x12c)](_0x28a1cf[_0x3d1492(0x22b)]),toastr[_0x3d1492(0x1c3)](_0x3d1492(0x28c)),log(_0x3d1492(0x130),_0x3d1492(0x1c3));}),_0x344db1['addEventListener']('click',()=>{const _0x1ea69e=_0x49e712;_0x93db26['saveBatchFillerFlowTemplate'](_0x1d516c['value']),toastr[_0x1ea69e(0x1c3)](_0x1ea69e(0x2dd)),log(_0x1ea69e(0x278),_0x1ea69e(0x1c3));}),_0x4fba3e[_0x49e712(0x242)]('click',()=>{const _0x9dc726=_0x49e712;confirm(_0x9dc726(0x240))&&(_0x28a1cf['value']=DEFAULT_AI_RULE_TEMPLATE,_0x93db26[_0x9dc726(0x12c)](_0x28a1cf['value']),toastr[_0x9dc726(0x255)](_0x9dc726(0x11c)),log(_0x9dc726(0x289),'info'));}),_0x40f7a4[_0x49e712(0x242)](_0x49e712(0x29d),()=>{const _0x3353e4=_0x49e712;confirm(_0x3353e4(0x2e2))&&(_0x1d516c['value']=DEFAULT_AI_FLOW_TEMPLATE,_0x93db26[_0x3353e4(0x12f)](_0x1d516c[_0x3353e4(0x22b)]),toastr[_0x3353e4(0x255)](_0x3353e4(0x23b)),log(_0x3353e4(0x168),_0x3353e4(0x255)));}),_0x26bf6d['dataset'][_0x49e712(0x17f)]=_0x49e712(0x18a),_0x344db1['dataset'][_0x49e712(0x17f)]='true',log(_0x49e712(0x24e),_0x49e712(0x1c3));}function bindNccsApiEvents(){const _0x3b44ac=_0xc6d991,_0x542ef3=extension_settings[extensionName];if(_0x542ef3[_0x3b44ac(0x251)]===undefined)_0x542ef3[_0x3b44ac(0x251)]=![];if(_0x542ef3[_0x3b44ac(0x257)]===undefined)_0x542ef3[_0x3b44ac(0x257)]=_0x3b44ac(0x2cc);if(_0x542ef3[_0x3b44ac(0x1e8)]===undefined)_0x542ef3[_0x3b44ac(0x1e8)]='https://api.openai.com/v1';if(_0x542ef3[_0x3b44ac(0x23a)]===undefined)_0x542ef3[_0x3b44ac(0x23a)]='';if(_0x542ef3[_0x3b44ac(0x260)]===undefined)_0x542ef3[_0x3b44ac(0x260)]='';if(_0x542ef3[_0x3b44ac(0x1a6)]===undefined)_0x542ef3[_0x3b44ac(0x1a6)]=0x7d0;if(_0x542ef3[_0x3b44ac(0x1db)]===undefined)_0x542ef3['nccsTemperature']=0.7;if(_0x542ef3[_0x3b44ac(0x265)]===undefined)_0x542ef3[_0x3b44ac(0x265)]='';const _0x28f082=document[_0x3b44ac(0x16c)](_0x3b44ac(0x1d0)),_0x3656ec=document['getElementById'](_0x3b44ac(0x258)),_0x46bfc4=document[_0x3b44ac(0x16c)](_0x3b44ac(0x253)),_0x14fa9a=document[_0x3b44ac(0x16c)](_0x3b44ac(0x116)),_0x54b43b=document[_0x3b44ac(0x16c)](_0x3b44ac(0x2ed)),_0xae6bb5=document[_0x3b44ac(0x16c)](_0x3b44ac(0x294)),_0x3738fe=document['getElementById']('nccs-max-tokens'),_0x24a9f=document[_0x3b44ac(0x16c)](_0x3b44ac(0x225)),_0x3589f5=document[_0x3b44ac(0x16c)](_0x3b44ac(0x105)),_0x51c622=document['getElementById'](_0x3b44ac(0x24d)),_0x3a64de=document[_0x3b44ac(0x16c)]('nccs-sillytavern-preset'),_0x26bf33=document[_0x3b44ac(0x16c)](_0x3b44ac(0x156)),_0x22aefb=document[_0x3b44ac(0x16c)](_0x3b44ac(0x205));if(!_0x28f082||!_0x3656ec)return;_0x28f082[_0x3b44ac(0x26c)]=_0x542ef3[_0x3b44ac(0x251)];if(_0x46bfc4)_0x46bfc4['value']=_0x542ef3[_0x3b44ac(0x257)];if(_0x14fa9a)_0x14fa9a[_0x3b44ac(0x22b)]=_0x542ef3[_0x3b44ac(0x1e8)];if(_0x54b43b)_0x54b43b['value']=_0x542ef3['nccsApiKey'];if(_0xae6bb5)_0xae6bb5[_0x3b44ac(0x22b)]=_0x542ef3[_0x3b44ac(0x260)];if(_0x3738fe){_0x3738fe[_0x3b44ac(0x22b)]=_0x542ef3[_0x3b44ac(0x1a6)];if(_0x24a9f)_0x24a9f[_0x3b44ac(0x13c)]=_0x542ef3[_0x3b44ac(0x1a6)];}if(_0x3589f5){_0x3589f5[_0x3b44ac(0x22b)]=_0x542ef3[_0x3b44ac(0x1db)];if(_0x51c622)_0x51c622[_0x3b44ac(0x13c)]=_0x542ef3[_0x3b44ac(0x1db)];}if(_0x3a64de)_0x3a64de[_0x3b44ac(0x22b)]=_0x542ef3[_0x3b44ac(0x265)]||'';const _0x1b1bf4=()=>{const _0x33d211=_0x3b44ac;_0x3656ec[_0x33d211(0x263)]['display']=_0x28f082['checked']?'block':_0x33d211(0x272);};_0x1b1bf4();const _0x1f0b18=()=>{const _0x8bf01e=_0x3b44ac;if(!_0x46bfc4)return;const _0x461ccc=_0x46bfc4['value']===_0x8bf01e(0x1c6),_0x31467e=_0x46bfc4[_0x8bf01e(0x22b)]==='openai_test',_0x59b78c=_0x3a64de?.[_0x8bf01e(0x104)](_0x8bf01e(0x218));_0x59b78c&&(_0x59b78c[_0x8bf01e(0x263)]['display']=_0x461ccc?_0x8bf01e(0x1c0):'none');const _0x523f5f=[{'element':_0x14fa9a,'containerId':null},{'element':_0x54b43b,'containerId':null},{'element':_0xae6bb5,'containerId':null},{'element':_0x3738fe,'containerId':null},{'element':_0x3589f5,'containerId':null}];_0x523f5f[_0x8bf01e(0x14b)](({element:_0x317c39})=>{const _0x545ed2=_0x8bf01e;if(_0x317c39){const _0x4ffb86=_0x317c39[_0x545ed2(0x104)](_0x545ed2(0x218));_0x4ffb86&&(_0x4ffb86[_0x545ed2(0x263)]['display']=_0x461ccc?'none':_0x545ed2(0x1c0));}});const _0x76c898=_0x26bf33?.['closest'](_0x8bf01e(0x169));_0x76c898&&(_0x76c898[_0x8bf01e(0x263)][_0x8bf01e(0x230)]=_0x8bf01e(0x297));};_0x1f0b18(),_0x28f082['addEventListener'](_0x3b44ac(0x27e),()=>{const _0x56a412=_0x3b44ac;_0x542ef3[_0x56a412(0x251)]=_0x28f082['checked'],saveSettingsDebounced(),_0x1b1bf4(),log(_0x56a412(0x1a3)+(_0x28f082['checked']?_0x56a412(0x26e):'已禁用'),_0x56a412(0x255));});_0x46bfc4&&_0x46bfc4[_0x3b44ac(0x242)](_0x3b44ac(0x27e),()=>{const _0x40ef49=_0x3b44ac;_0x542ef3[_0x40ef49(0x257)]=_0x46bfc4[_0x40ef49(0x22b)],saveSettingsDebounced(),_0x1f0b18(),log(_0x40ef49(0x16d)+_0x46bfc4[_0x40ef49(0x22b)],_0x40ef49(0x255));});if(_0x14fa9a){const _0x27fe2e=()=>{const _0x3a457a=_0x3b44ac;_0x542ef3[_0x3a457a(0x1e8)]=_0x14fa9a[_0x3a457a(0x22b)],saveSettingsDebounced();};_0x14fa9a[_0x3b44ac(0x242)]('blur',_0x27fe2e);}if(_0x54b43b){const _0x2a7661=()=>{const _0x397162=_0x3b44ac;_0x542ef3[_0x397162(0x23a)]=_0x54b43b[_0x397162(0x22b)],saveSettingsDebounced();};_0x54b43b['addEventListener'](_0x3b44ac(0x20a),_0x2a7661);}if(_0xae6bb5){const _0x25105a=()=>{const _0x4efa5e=_0x3b44ac;_0x542ef3[_0x4efa5e(0x260)]=_0xae6bb5['value'],saveSettingsDebounced();};_0xae6bb5['addEventListener'](_0x3b44ac(0x20a),_0x25105a),_0xae6bb5[_0x3b44ac(0x242)](_0x3b44ac(0x1b1),_0x25105a);}_0x3738fe&&_0x24a9f&&(_0x3738fe[_0x3b44ac(0x242)](_0x3b44ac(0x1b1),()=>{const _0x1d9ad3=_0x3b44ac;_0x24a9f['textContent']=_0x3738fe[_0x1d9ad3(0x22b)];}),_0x3738fe[_0x3b44ac(0x242)](_0x3b44ac(0x27e),()=>{const _0x5677f4=_0x3b44ac;_0x542ef3[_0x5677f4(0x1a6)]=parseInt(_0x3738fe['value']),saveSettingsDebounced();}));_0x3589f5&&_0x51c622&&(_0x3589f5['addEventListener'](_0x3b44ac(0x1b1),()=>{const _0x3cbef4=_0x3b44ac;_0x51c622[_0x3cbef4(0x13c)]=_0x3589f5['value'];}),_0x3589f5[_0x3b44ac(0x242)](_0x3b44ac(0x27e),()=>{const _0x8e87e=_0x3b44ac;_0x542ef3[_0x8e87e(0x1db)]=parseFloat(_0x3589f5[_0x8e87e(0x22b)]),saveSettingsDebounced();}));_0x3a64de&&_0x3a64de[_0x3b44ac(0x242)](_0x3b44ac(0x27e),()=>{const _0x20bd63=_0x3b44ac;_0x542ef3[_0x20bd63(0x265)]=_0x3a64de['value'],saveSettingsDebounced();});_0x26bf33&&_0x26bf33['addEventListener'](_0x3b44ac(0x29d),async()=>{const _0x4ecfbb=_0x3b44ac;_0x26bf33['disabled']=!![],_0x26bf33[_0x4ecfbb(0x109)]='<i\x20class=\x22fas\x20fa-spinner\x20fa-spin\x22></i>\x20测试中...';try{const _0x56f0bb=await testNccsApiConnection();_0x56f0bb?(toastr[_0x4ecfbb(0x1c3)](_0x4ecfbb(0x28d)),log(_0x4ecfbb(0x2eb),_0x4ecfbb(0x1c3))):(toastr[_0x4ecfbb(0x26a)]('Nccs\x20API连接测试失败，请检查配置'),log('Nccs\x20API连接测试失败',_0x4ecfbb(0x26a)));}catch(_0x24abc3){toastr[_0x4ecfbb(0x26a)](_0x4ecfbb(0x2b6)+_0x24abc3[_0x4ecfbb(0x158)]),log('Nccs\x20API连接测试出错：'+_0x24abc3['message'],_0x4ecfbb(0x26a));}finally{_0x26bf33['disabled']=![],_0x26bf33[_0x4ecfbb(0x109)]=_0x4ecfbb(0x2e5);}});_0x22aefb&&_0x22aefb[_0x3b44ac(0x242)](_0x3b44ac(0x29d),async()=>{const _0x16a1dc=_0x3b44ac;_0x22aefb[_0x16a1dc(0x2df)]=!![],_0x22aefb['innerHTML']=_0x16a1dc(0x2bc);_0x14fa9a&&(_0x542ef3[_0x16a1dc(0x1e8)]=_0x14fa9a[_0x16a1dc(0x22b)]);_0x54b43b&&(_0x542ef3['nccsApiKey']=_0x54b43b[_0x16a1dc(0x22b)]);saveSettingsDebounced();try{const _0x3782bd=await fetchNccsModels();if(_0x3782bd&&_0x3782bd[_0x16a1dc(0x2a2)]>0x0){let _0x5b8a5e=document['getElementById']('nccs-api-model-select');!_0x5b8a5e&&(_0x5b8a5e=document[_0x16a1dc(0x14f)](_0x16a1dc(0x2f0)),_0x5b8a5e['id']=_0x16a1dc(0x2f3),_0x5b8a5e['className']='text_pole',_0xae6bb5[_0x16a1dc(0x1e2)][_0x16a1dc(0x217)](_0x5b8a5e,_0xae6bb5[_0x16a1dc(0x2b3)])),_0x5b8a5e[_0x16a1dc(0x109)]='<option\x20value=\x22\x22>--\x20请选择模型\x20--</option>',_0x3782bd[_0x16a1dc(0x14b)](_0x126236=>{const _0x3a313c=_0x16a1dc,_0x44fca6=document[_0x3a313c(0x14f)](_0x3a313c(0x2c6));_0x44fca6[_0x3a313c(0x22b)]=_0x126236['id']||_0x126236[_0x3a313c(0x2a9)],_0x44fca6['textContent']=_0x126236['name']||_0x126236['id'],(_0x126236['id']||_0x126236['name'])===_0x542ef3['nccsModel']&&(_0x44fca6[_0x3a313c(0x1ce)]=!![]),_0x5b8a5e['appendChild'](_0x44fca6);}),_0xae6bb5[_0x16a1dc(0x263)][_0x16a1dc(0x230)]='none',_0x5b8a5e['style']['display']=_0x16a1dc(0x1c0),_0x5b8a5e['addEventListener'](_0x16a1dc(0x27e),()=>{const _0x516ba7=_0x16a1dc,_0x53c576=_0x5b8a5e[_0x516ba7(0x22b)];_0x542ef3['nccsModel']=_0x53c576,_0xae6bb5['value']=_0x53c576,saveSettingsDebounced();}),toastr[_0x16a1dc(0x1c3)](_0x16a1dc(0x15c)+_0x3782bd[_0x16a1dc(0x2a2)]+_0x16a1dc(0x2e3)),log(_0x16a1dc(0x243)+_0x3782bd[_0x16a1dc(0x2a2)]+'\x20个模型','success');}else toastr[_0x16a1dc(0xfc)](_0x16a1dc(0x14d)),log(_0x16a1dc(0x16e),_0x16a1dc(0x21a));}catch(_0x16da3a){toastr['error']('获取模型失败：'+_0x16da3a['message']),log(_0x16a1dc(0xff)+_0x16da3a[_0x16a1dc(0x158)],_0x16a1dc(0x26a));}finally{_0x22aefb[_0x16a1dc(0x2df)]=![],_0x22aefb[_0x16a1dc(0x109)]=_0x16a1dc(0x224);}});const _0x54558b=async()=>{const _0x431ecc=_0x3b44ac;if(!_0x3a64de)return;try{const _0x258ada=getContext();if(!_0x258ada?.[_0x431ecc(0x2a1)]?.['connectionManager']?.[_0x431ecc(0x17a)])throw new Error(_0x431ecc(0x226));const _0x5f2cc0=_0x258ada[_0x431ecc(0x2a1)][_0x431ecc(0x1df)]['profiles'],_0x4a4438=_0x542ef3['nccsTavernProfile'];_0x3a64de[_0x431ecc(0x109)]='',_0x3a64de[_0x431ecc(0x2a4)](new Option(_0x431ecc(0x204),'',![],![])),_0x5f2cc0&&_0x5f2cc0[_0x431ecc(0x2a2)]>0x0?(_0x5f2cc0['forEach'](_0x5cb007=>{const _0xfb8f11=_0x431ecc,_0x26cd01=_0x5cb007['id']===_0x4a4438,_0x1d1668=new Option(_0x5cb007[_0xfb8f11(0x2a9)],_0x5cb007['id'],_0x26cd01,_0x26cd01);_0x3a64de['appendChild'](_0x1d1668);}),log(_0x431ecc(0x2d4)+_0x5f2cc0[_0x431ecc(0x2a2)]+'\x20个SillyTavern配置文件',_0x431ecc(0x1c3))):log(_0x431ecc(0x291),_0x431ecc(0x21a));}catch(_0x239406){log('加载SillyTavern预设失败：'+_0x239406['message'],'error');}};_0x46bfc4&&_0x3a64de&&(_0x46bfc4[_0x3b44ac(0x242)](_0x3b44ac(0x27e),()=>{const _0x3ed69c=_0x3b44ac;_0x46bfc4[_0x3ed69c(0x22b)]===_0x3ed69c(0x1c6)&&_0x54558b();}),_0x542ef3[_0x3b44ac(0x257)]==='sillytavern_preset'&&_0x54558b()),log(_0x3b44ac(0x2ec),'success');}function bindChatTableDisplaySetting(){const _0x36305d=_0xc6d991,_0x4060c7=extension_settings[extensionName],_0x37b6eb=document['getElementById'](_0x36305d(0x123)),_0x4adfcc=document[_0x36305d(0x16c)](_0x36305d(0x259));if(!_0x37b6eb||!_0x4adfcc){log(_0x36305d(0x219),'warn');return;}_0x37b6eb[_0x36305d(0x26c)]=_0x4060c7[_0x36305d(0x18e)]===!![],_0x4adfcc['checked']=_0x4060c7[_0x36305d(0x23c)]===!![];const _0x16f8d8=()=>{const _0x169c76=_0x36305d;_0x37b6eb[_0x169c76(0x26c)]?(_0x4adfcc[_0x169c76(0x2df)]=![],_0x4adfcc[_0x169c76(0x104)](_0x169c76(0x118))[_0x169c76(0x263)][_0x169c76(0x201)]='1'):(_0x4adfcc['disabled']=!![],_0x4adfcc['closest'](_0x169c76(0x118))[_0x169c76(0x263)][_0x169c76(0x201)]=_0x169c76(0x1fb));};_0x16f8d8(),_0x37b6eb[_0x36305d(0x242)](_0x36305d(0x27e),()=>{const _0xe241fe=_0x36305d;_0x4060c7[_0xe241fe(0x18e)]=_0x37b6eb[_0xe241fe(0x26c)],saveSettingsDebounced(),toastr[_0xe241fe(0x255)](_0xe241fe(0x299)+(_0x37b6eb[_0xe241fe(0x26c)]?'开启':'关闭')+'。'),_0x16f8d8();}),_0x4adfcc[_0x36305d(0x242)](_0x36305d(0x27e),()=>{const _0x30d3d9=_0x36305d;_0x4060c7[_0x30d3d9(0x23c)]=_0x4adfcc['checked'],saveSettingsDebounced(),toastr[_0x30d3d9(0x255)](_0x30d3d9(0x2d2)+(_0x4adfcc['checked']?'开启':'关闭')+_0x30d3d9(0x279));}),log(_0x36305d(0x2ca),'success');}
+import * as TableManager from '../core/table-system/manager.js';
+import { log } from '../core/table-system/logger.js';
+import { extension_settings, getContext } from '/scripts/extensions.js';
+import { extensionName } from '../utils/settings.js';
+import { updateOrInsertTableInChat } from './message-table-renderer.js';
+import { saveSettingsDebounced } from '/script.js';
+import { startBatchFilling } from '../core/table-system/batch-filler.js';
+import { showHtmlModal } from './page-window.js';
+import { DEFAULT_AI_RULE_TEMPLATE, DEFAULT_AI_FLOW_TEMPLATE } from '../core/table-system/settings.js';
+import { world_names, loadWorldInfo } from '/scripts/world-info.js';
+import { safeCharLorebooks, safeLorebookEntries } from '../core/tavernhelper-compatibility.js';
+import { characters, this_chid, eventSource, event_types } from "/script.js";
+import { fetchNccsModels, testNccsApiConnection } from '../core/api/NccsApi.js';
+
+const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches;
+const getAllTablesContainer = () => document.getElementById('all-tables-container');
+
+let isResizing = false;
+
+
+function toggleRowContextMenu(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const targetTd = event.target.closest('td.index-col');
+    if (!targetTd) return;
+
+    const tableWrapper = targetTd.closest('.amily2-table-wrapper');
+    if (!tableWrapper) return;
+
+    const isActive = targetTd.classList.contains('amily2-menu-open');
+    document.querySelectorAll('.amily2-menu-open').forEach(openEl => {
+        if (openEl !== targetTd) {
+            openEl.classList.remove('amily2-menu-open');
+            openEl.style.zIndex = '';
+            openEl.style.position = '';
+            const otherWrapper = openEl.closest('.amily2-table-wrapper');
+            if (otherWrapper) {
+                otherWrapper.style.overflowX = 'auto';
+                otherWrapper.style.zIndex = '';
+                otherWrapper.style.position = '';
+            }
+        }
+    });
+
+    targetTd.classList.toggle('amily2-menu-open');
+
+    if (targetTd.classList.contains('amily2-menu-open')) {
+        tableWrapper.style.overflowX = 'visible';
+        tableWrapper.style.position = 'relative';
+        tableWrapper.style.zIndex = '10';
+        targetTd.style.position = 'relative';
+        targetTd.style.zIndex = '100';
+    } else {
+        tableWrapper.style.overflowX = 'auto';
+        tableWrapper.style.position = '';
+        tableWrapper.style.zIndex = '';
+        targetTd.style.position = '';
+        targetTd.style.zIndex = '';
+    }
+
+    const closeMenu = (e) => {
+        if (!targetTd.contains(e.target)) {
+            targetTd.classList.remove('amily2-menu-open');
+            targetTd.style.position = '';
+            targetTd.style.zIndex = '';
+            tableWrapper.style.overflowX = 'auto';
+            tableWrapper.style.position = '';
+            tableWrapper.style.zIndex = '';
+            document.removeEventListener('click', closeMenu, true);
+        }
+    };
+
+    if (targetTd.classList.contains('amily2-menu-open')) {
+        setTimeout(() => {
+            document.addEventListener('click', closeMenu, true);
+        }, 0);
+    }
+}
+
+
+function toggleColumnContextMenu(event) {
+    if (isResizing || event.target.classList.contains('amily2-resizer')) {
+        return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+
+    const targetTh = event.target.closest('th');
+    if (!targetTh) return;
+
+    const tableWrapper = targetTh.closest('.amily2-table-wrapper');
+    if (!tableWrapper) return;
+
+    const isActive = targetTh.classList.contains('amily2-menu-open');
+
+    document.querySelectorAll('th.amily2-menu-open').forEach(openTh => {
+        if (openTh !== targetTh) {
+            openTh.classList.remove('amily2-menu-open');
+            const otherWrapper = openTh.closest('.amily2-table-wrapper');
+            if (otherWrapper) {
+                otherWrapper.style.overflowX = 'auto';
+                otherWrapper.style.zIndex = '';
+                otherWrapper.style.position = '';
+            }
+        }
+    });
+
+    targetTh.classList.toggle('amily2-menu-open');
+
+    if (targetTh.classList.contains('amily2-menu-open')) {
+        tableWrapper.style.overflowX = 'visible';
+        tableWrapper.style.position = 'relative'; 
+        tableWrapper.style.zIndex = '10';
+    } else {
+        tableWrapper.style.overflowX = 'auto';
+        tableWrapper.style.position = '';
+        tableWrapper.style.zIndex = '';
+    }
+
+    const closeMenu = (e) => {
+        if (!targetTh.contains(e.target)) {
+            targetTh.classList.remove('amily2-menu-open');
+            tableWrapper.style.overflowX = 'auto';
+            tableWrapper.style.position = '';
+            tableWrapper.style.zIndex = '';
+            document.removeEventListener('click', closeMenu, true);
+        }
+    };
+
+    // If the menu was opened, set up the listener to close it
+    if (targetTh.classList.contains('amily2-menu-open')) {
+        setTimeout(() => {
+            document.addEventListener('click', closeMenu, true);
+        }, 0);
+    }
+}
+
+
+function toggleHeaderIndexContextMenu(event) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const targetTh = event.target.closest('th.index-col');
+    if (!targetTh) return;
+
+    const menu = targetTh.querySelector('.amily2-context-menu');
+    if (!menu) return;
+
+    const isActive = menu.classList.contains('amily2-menu-active');
+
+    document.querySelectorAll('.amily2-context-menu.amily2-menu-active').forEach(activeMenu => {
+        activeMenu.classList.remove('amily2-menu-active');
+    });
+
+    if (!isActive) {
+        menu.classList.add('amily2-menu-active');
+    }
+
+    const closeMenu = (e) => {
+        if (!menu.contains(e.target)) {
+            menu.classList.remove('amily2-menu-active');
+            document.removeEventListener('click', closeMenu, true);
+        }
+    };
+
+    setTimeout(() => {
+        if (menu.classList.contains('amily2-menu-active')) {
+            document.addEventListener('click', closeMenu, true);
+        }
+    }, 0);
+}
+
+
+function showInputDialog({ title, label, currentValue, placeholder, onSave }) {
+    const dialogHtml = `
+        <dialog class="popup custom-input-dialog">
+            <div class="popup-body">
+                <h4 style="margin-top:0; color: #e0e0e0; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                    <i class="fas fa-edit" style="color: #9e8aff;"></i> ${title}
+                </h4>
+                <div class="popup-content" style="padding: 20px 10px;">
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <label style="color: #ccc; font-weight: bold;">${label}</label>
+                        <input type="text" id="generic-input" class="text_pole" 
+                               value="${currentValue}" 
+                               style="padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.2); color: #fff; font-size: 1em;"
+                               placeholder="${placeholder}">
+                        <small style="color: #aaa; font-style: italic;">提示：输入内容将用于更新项目。</small>
+                    </div>
+                </div>
+                <div class="popup-controls" style="display: flex; gap: 10px; justify-content: flex-end; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <div class="popup-button-cancel menu_button interactable" style="background: rgba(120,120,120,0.2); border-color: rgba(120,120,120,0.4);">
+                        <i class="fas fa-times"></i> 取消
+                    </div>
+                    <div class="popup-button-ok menu_button menu_button_primary interactable" style="background: rgba(158,138,255,0.3); border-color: rgba(158,138,255,0.6);">
+                        <i class="fas fa-check"></i> 确认
+                    </div>
+                </div>
+            </div>
+        </dialog>`;
+
+    const dialogElement = $(dialogHtml).appendTo('body');
+    const input = dialogElement.find('#generic-input');
+
+    const closeDialog = () => {
+        dialogElement[0].close();
+        dialogElement.remove();
+    };
+
+    const save = () => {
+        const newValue = input.val().trim();
+        if (newValue && newValue !== currentValue) {
+            onSave(newValue);
+        } else if (!newValue) {
+            toastr.warning('名称不能为空！');
+            input.focus();
+            return;
+        }
+        closeDialog();
+    };
+
+    dialogElement.find('.popup-button-ok').on('click', save);
+    dialogElement.find('.popup-button-cancel').on('click', closeDialog);
+    input.on('keypress', (e) => { if (e.which === 13) save(); });
+    input.on('keydown', (e) => { if (e.which === 27) closeDialog(); });
+
+    dialogElement[0].showModal();
+    input.focus().select();
+}
+
+
+function showColumnNameEditor(tableIndex, colIndex, currentName) {
+    showInputDialog({
+        title: '编辑列名',
+        label: '列名：',
+        currentValue: currentName,
+        placeholder: '请输入列名...',
+        onSave: (newName) => {
+            TableManager.updateHeader(tableIndex, colIndex, newName);
+            renderTables();
+            toastr.success(`列名已更新为 "${newName}"`);
+        }
+    });
+}
+
+
+function showTableNameEditor(tableIndex, currentName) {
+    showInputDialog({
+        title: '编辑表名',
+        label: '表名：',
+        currentValue: currentName,
+        placeholder: '请输入表名...',
+        onSave: (newName) => {
+            TableManager.renameTable(tableIndex, newName);
+            renderTables();
+            toastr.success(`表名已更新为 "${newName}"`);
+        }
+    });
+}
+
+
+function positionContextMenu(menu, trigger) {
+    menu.style.position = 'absolute';
+    menu.style.zIndex = '10000';
+    menu.style.left = '0';
+    menu.style.right = 'auto';
+    menu.style.marginTop = '';
+    menu.style.marginBottom = '';
+    menu.style.maxHeight = '';
+    menu.style.overflowY = '';
+
+    const viewportHeight = window.innerHeight;
+    const triggerRect = trigger.getBoundingClientRect();
+    const menuHeight = 200; 
+    const scrollContainer = trigger.closest('.hly-scroll');
+    const containerRect = scrollContainer ? scrollContainer.getBoundingClientRect() : { top: 0, bottom: viewportHeight };
+
+    const spaceBelow = Math.min(viewportHeight, containerRect.bottom) - triggerRect.bottom;
+    const spaceAbove = triggerRect.top - Math.max(0, containerRect.top);
+
+    if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
+        menu.style.top = 'auto';
+        menu.style.bottom = '100%';
+        menu.style.marginBottom = '2px';
+    } else {
+        menu.style.top = '100%';
+        menu.style.bottom = 'auto';
+        menu.style.marginTop = '2px';
+    }
+
+    const menuWidth = 160;
+    const table = trigger.closest('table');
+    const tableWrapper = table ? table.closest('div[style*="overflowX"]') : null;
+    
+    if (tableWrapper) {
+        const wrapperRect = tableWrapper.getBoundingClientRect();
+        const triggerLeftInWrapper = triggerRect.left - wrapperRect.left;
+
+        if (triggerLeftInWrapper + menuWidth > wrapperRect.width - 20) {
+            menu.style.left = 'auto';
+            menu.style.right = '0';
+        }
+    }
+}
+
+
+export function renderTables() {
+    let tables = TableManager.getMemoryState();
+    if (!tables) {
+        log('内存状态为空，从聊天记录加载作为后备。', 'warn');
+        tables = TableManager.loadTables();
+    }
+    
+    const container = getAllTablesContainer();
+
+    if (!tables || !container) {
+        console.error('[内存储司-工部] 缺少表格数据或容器，无法渲染。');
+        return;
+    }
+
+    const highlights = TableManager.getHighlights();
+    const updatedTables = TableManager.getUpdatedTables(); // 【V15.2 新增】获取被更新的表格
+    const fragment = document.createDocumentFragment();
+
+    const placeholder = document.getElementById('add-table-placeholder');
+    if (placeholder) {
+        placeholder.remove();
+    }
+
+    tables.forEach((tableData, tableIndex) => {
+        const header = document.createElement('div');
+        header.style.display = 'flex';
+        header.style.justifyContent = 'space-between';
+        header.style.alignItems = 'center';
+        const title = document.createElement('h3');
+        if (updatedTables.has(tableIndex)) {
+            title.classList.add('table-updated'); // 【V15.2 新增】为更新的表格添加高亮
+        }
+        title.innerHTML = `<i class="fas fa-table table-rename-icon" data-table-index="${tableIndex}" title="重命名"></i> ${tableData.name}`;
+        const controls = document.createElement('div');
+        controls.className = 'table-controls';
+
+        const moveUpBtn = tableIndex > 0 ? `<button class="menu_button small_button move-table-up-btn" data-table-index="${tableIndex}" title="上移"><i class="fas fa-arrow-up"></i></button>` : '';
+        const moveDownBtn = tableIndex < tables.length - 1 ? `<button class="menu_button small_button move-table-down-btn" data-table-index="${tableIndex}" title="下移"><i class="fas fa-arrow-down"></i></button>` : '';
+
+        controls.innerHTML = `
+            ${moveUpBtn}
+            ${moveDownBtn}
+            <button class="menu_button small_button edit-rules-btn" data-table-index="${tableIndex}" title="编辑规则"><i class="fa-solid fa-scroll"></i></button>
+            <button class="menu_button small_button danger delete-table-btn" data-table-index="${tableIndex}" title="废黜此表"><i class="fas fa-trash-alt"></i></button>
+        `;
+        header.appendChild(title);
+        header.appendChild(controls);
+        fragment.appendChild(header);
+
+        const tableWrapper = document.createElement('div');
+        tableWrapper.className = 'amily2-table-wrapper';
+
+        const tableElement = document.createElement('table');
+        tableElement.id = `amily2-table-${tableIndex}`;
+        tableElement.dataset.tableIndex = tableIndex;
+
+        const colgroup = document.createElement('colgroup');
+        const indexCol = document.createElement('col');
+        indexCol.style.width = '40px';
+        colgroup.appendChild(indexCol);
+
+        if (tableData.headers) {
+            tableData.headers.forEach((_, colIndex) => {
+                const col = document.createElement('col');
+                // Assign a default width of 120px if none is specified
+                const colWidth = (tableData.columnWidths && tableData.columnWidths[colIndex]) ? tableData.columnWidths[colIndex] : 90;
+                col.style.width = `${colWidth}px`;
+                colgroup.appendChild(col);
+            });
+        }
+        tableElement.appendChild(colgroup);
+
+        // Explicitly calculate and set the total table width to override CSS conflicts
+        let totalWidth = 0;
+        const cols = colgroup.querySelectorAll('col');
+        cols.forEach(col => {
+            totalWidth += parseInt(col.style.width, 10);
+        });
+        tableElement.style.width = `${totalWidth}px`;
+
+        const thead = tableElement.createTHead();
+        const headerRow = thead.insertRow();
+        
+        const indexTh = document.createElement('th');
+        indexTh.className = 'index-col';
+        indexTh.textContent = '#';
+        indexTh.style.cursor = 'pointer';
+        indexTh.title = '点击添加第一行';
+        
+        // 为表头的 # 号添加特殊的上下文菜单（仅在表格为空时显示）
+        if (!tableData.rows || tableData.rows.length === 0) {
+            const headerMenu = document.createElement('div');
+            headerMenu.className = 'amily2-context-menu amily2-header-menu';
+            headerMenu.style.display = 'none';  // 默认隐藏
+            
+            const addRowButton = document.createElement('button');
+            addRowButton.innerHTML = '<i class="fas fa-plus-circle"></i> 创建第一行';
+            addRowButton.className = 'menu_button small_button';
+            addRowButton.addEventListener('click', (e) => {
+                e.stopPropagation();
+                TableManager.addRow(tableIndex);
+                renderTables();
+            });
+            
+            headerMenu.appendChild(addRowButton);
+            indexTh.appendChild(headerMenu);
+            
+            // 为表头添加直接的点击事件监听器
+            indexTh.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Header # clicked for table', tableIndex);
+                
+                // 直接执行添加行操作
+                TableManager.addRow(tableIndex);
+                renderTables();
+                toastr.success('已添加第一行');
+            });
+        }
+        
+        headerRow.appendChild(indexTh);
+
+        tableData.headers.forEach((headerText, colIndex) => {
+            const th = document.createElement('th');
+            th.dataset.colIndex = colIndex;
+            th.style.cursor = 'pointer';
+
+            const headerContent = document.createElement('span');
+            headerContent.className = 'amily2-header-text';
+            headerContent.textContent = headerText;
+            th.appendChild(headerContent);
+
+            const menu = document.createElement('div');
+            menu.className = 'amily2-context-menu';
+
+            const actions = [
+                { label: '向左移动', action: 'move-left', icon: 'fa-arrow-left' },
+                { label: '向右移动', action: 'move-right', icon: 'fa-arrow-right' },
+                { label: '在左加列', action: 'add-left', icon: 'fa-plus-circle' },
+                { label: '在右加列', action: 'add-right', icon: 'fa-plus-circle' },
+                { label: '编辑列名', action: 'rename', icon: 'fa-pen' },
+                { label: '删除该列', action: 'delete', icon: 'fa-trash-alt', isDanger: true }
+            ];
+
+            actions.forEach(({ label, action, icon, isDanger }) => {
+                const button = document.createElement('button');
+                button.textContent = label;
+                button.className = 'menu_button small_button';
+                if (isDanger) button.classList.add('danger');
+                
+                button.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    switch (action) {
+                        case 'move-left':
+                            TableManager.moveColumn(tableIndex, colIndex, 'left');
+                            break;
+                        case 'move-right':
+                            TableManager.moveColumn(tableIndex, colIndex, 'right');
+                            break;
+                        case 'add-left':
+                            TableManager.insertColumn(tableIndex, colIndex, 'left');
+                            break;
+                        case 'add-right':
+                            TableManager.insertColumn(tableIndex, colIndex, 'right');
+                            break;
+                        case 'rename':
+                            showColumnNameEditor(tableIndex, colIndex, headerText);
+                            break;
+                        case 'delete':
+                            if (confirm(`您确定要删除 “${headerText}” 列吗？`)) {
+                                TableManager.deleteColumn(tableIndex, colIndex);
+                            }
+                            break;
+                    }
+                    renderTables(); 
+                });
+                menu.appendChild(button);
+            });
+
+            th.appendChild(menu);
+
+            const resizer = document.createElement('div');
+            resizer.className = 'amily2-resizer';
+            th.appendChild(resizer);
+
+            const startResize = (startEvent) => {
+                startEvent.preventDefault();
+                startEvent.stopPropagation();
+
+                isResizing = true;
+
+                const table = startEvent.target.closest('table');
+                const th = startEvent.target.parentElement;
+                const col = table.querySelector(`colgroup > col:nth-child(${th.cellIndex + 1})`);
+
+                const isTouchEvent = startEvent.type.startsWith('touch');
+                const startX = isTouchEvent ? startEvent.touches[0].clientX : startEvent.clientX;
+                const startWidth = th.offsetWidth;
+
+                const onMove = (moveEvent) => {
+                    const currentX = isTouchEvent ? moveEvent.touches[0].clientX : moveEvent.clientX;
+                    const newWidth = startWidth + (currentX - startX);
+                    if (newWidth > 50) {
+                        col.style.width = `${newWidth}px`;
+                    }
+                };
+
+                const onEnd = () => {
+                    document.removeEventListener('mousemove', onMove);
+                    document.removeEventListener('mouseup', onEnd);
+                    document.removeEventListener('touchmove', onMove);
+                    document.removeEventListener('touchend', onEnd);
+
+                    const finalWidth = parseInt(col.style.width, 10);
+                    TableManager.updateColumnWidth(tableIndex, colIndex, finalWidth);
+
+                    setTimeout(() => { isResizing = false; }, 0);
+                };
+
+                if (isTouchEvent) {
+                    document.addEventListener('touchmove', onMove, { passive: false });
+                    document.addEventListener('touchend', onEnd);
+                } else {
+                    document.addEventListener('mousemove', onMove);
+                    document.addEventListener('mouseup', onEnd);
+                }
+            };
+
+            resizer.addEventListener('mousedown', startResize);
+            resizer.addEventListener('touchstart', startResize, { passive: false });
+
+            headerRow.appendChild(th);
+        });
+
+        const tbody = tableElement.createTBody();
+        if (tableData.rows && tableData.rows.length > 0) {
+            tableData.rows.forEach((rowData, rowIndex) => {
+                const row = tbody.insertRow();
+                row.dataset.rowIndex = rowIndex;
+
+                // 【延迟删除】根据行状态添加样式
+                const rowStatus = tableData.rowStatuses ? tableData.rowStatuses[rowIndex] : 'normal';
+                if (rowStatus === 'pending-deletion') {
+                    row.classList.add('pending-deletion-row');
+                }
+
+                const indexCell = row.insertCell();
+                indexCell.className = 'index-col';
+
+                const rowIndexSpan = document.createElement('span');
+                rowIndexSpan.textContent = rowIndex + 1;
+                indexCell.appendChild(rowIndexSpan);
+
+                const menu = document.createElement('div');
+                menu.className = 'amily2-context-menu amily2-row-context-menu';
+
+                let actions;
+
+                if (rowStatus === 'pending-deletion') {
+                    actions = [
+                        { label: '恢复该行', action: 'restore-row', icon: 'fa-undo', isSuccess: true, btnClass: 'restore-row-btn' }
+                    ];
+                } else {
+                    actions = [
+                        { label: '向上移动', action: 'move-up', icon: 'fa-arrow-up', btnClass: 'move-row-up-btn' },
+                        { label: '向下移动', action: 'move-down', icon: 'fa-arrow-down', btnClass: 'move-row-down-btn' },
+                        { label: '在上加行', action: 'add-above', icon: 'fa-plus-circle', btnClass: 'add-row-above-btn' },
+                        { label: '在下加行', action: 'add-below', icon: 'fa-plus-circle', btnClass: 'add-row-below-btn' },
+                        { label: '删除该行', action: 'delete-row', icon: 'fa-trash-alt', isDanger: true, btnClass: 'delete-row-btn' }
+                    ];
+                }
+
+                actions.forEach(({ label, action, icon, isDanger, isSuccess }) => {
+                    const button = document.createElement('button');
+                    button.innerHTML = `<i class="fas ${icon}"></i> ${label}`;
+                    button.className = 'menu_button small_button';
+                    if (isDanger) button.classList.add('danger');
+                    if (isSuccess) button.classList.add('success'); // Use a success style for restore
+
+                    button.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        
+                        switch (action) {
+                            case 'move-up':
+                                TableManager.moveRow(tableIndex, rowIndex, 'up');
+                                break;
+                            case 'move-down':
+                                TableManager.moveRow(tableIndex, rowIndex, 'down');
+                                break;
+                            case 'add-above':
+                                TableManager.insertRow(tableIndex, rowIndex, 'above');
+                                break;
+                            case 'add-below':
+                                TableManager.insertRow(tableIndex, rowIndex, 'below');
+                                break;
+                            case 'delete-row':
+                                // 【延迟删除】不再需要确认，因为操作是可逆的
+                                TableManager.deleteRow(tableIndex, rowIndex);
+                                break;
+                            case 'restore-row':
+                                TableManager.restoreRow(tableIndex, rowIndex);
+                                break;
+                        }
+                        // For instant feedback, re-render is needed for delete/restore
+                        if (action === 'delete-row' || action === 'restore-row') {
+                            // The manager functions now handle their own re-rendering
+                        } else {
+                            renderTables();
+                        }
+                    });
+                    menu.appendChild(button);
+                });
+                indexCell.appendChild(menu);
+
+                rowData.forEach((cellData, colIndex) => {
+                    const cell = row.insertCell();
+                    
+                    const cellContent = document.createElement('div');
+                    cellContent.className = 'amily2-cell-content';
+                    cellContent.textContent = cellData;
+                    cell.appendChild(cellContent);
+
+                    // 【延迟删除】如果行正在待删除，则禁止编辑
+                    if (rowStatus !== 'pending-deletion' && !isTouchDevice()) {
+                        cell.setAttribute('contenteditable', 'true');
+                    }
+                    cell.dataset.colIndex = colIndex;
+                    cell.dataset.label = tableData.headers[colIndex] || '';
+
+                    const highlightKey = `${tableIndex}-${rowIndex}-${colIndex}`;
+                    if (highlights.has(highlightKey)) {
+                        cell.classList.add('cell-highlight');
+                    }
+                });
+            });
+        }
+        tableWrapper.appendChild(tableElement);
+        fragment.appendChild(tableWrapper);
+    });
+
+    container.innerHTML = '';
+    container.appendChild(fragment);
+
+    if (placeholder) {
+        container.appendChild(placeholder);
+    }
+
+    // Also update the in-chat table whenever the main tables are re-rendered
+    updateOrInsertTableInChat();
+}
+
+
+function openTableRuleEditor() {
+    const settings = extension_settings[extensionName];
+    const tags = settings.table_tags_to_extract || '';
+    const exclusionRules = settings.table_exclusion_rules || [];
+
+    const rulesHtml = exclusionRules.map((rule, index) => `
+        <div class="exclusion-rule-item" data-index="${index}">
+            <input type="text" class="text_pole rule-start" value="${rule.start}" placeholder="起始标记">
+            <span>-</span>
+            <input type="text" class="text_pole rule-end" value="${rule.end}" placeholder="结束标记">
+            <button class="menu_button danger small_button remove-rule-btn"><i class="fas fa-trash-alt"></i></button>
+        </div>
+    `).join('');
+
+    const modalHtml = `
+        <div id="table-rules-editor" style="display: flex; flex-direction: column; gap: 20px;">
+            <div>
+                <label for="table-tags-input"><b>标签提取 (半角逗号分隔)</b></label>
+                <input type="text" id="table-tags-input" class="text_pole" value="${tags}" placeholder="例如: content,game,time">
+                <small class="notes">仅提取指定XML标签的内容，例如填“content”，即提取<content>...</content>中的内容。</small>
+            </div>
+            <div>
+                <label><b>内容排除规则</b></label>
+                <div id="exclusion-rules-list" style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">${rulesHtml}</div>
+                <button id="add-exclusion-rule-btn" class="menu_button small_button" style="margin-top: 10px;"><i class="fas fa-plus"></i> 添加规则</button>
+                <small class="notes">移除所有被起始和结束标记包裹的内容（例如 OOC 部分）。</small>
+            </div>
+        </div>
+    `;
+
+    const dialog = showHtmlModal('配置独立提取规则', modalHtml, {
+        onOk: () => {
+            const newTags = document.getElementById('table-tags-input').value;
+            updateAndSaveTableSetting('table_tags_to_extract', newTags);
+
+            const newExclusionRules = [];
+            document.querySelectorAll('#exclusion-rules-list .exclusion-rule-item').forEach(item => {
+                const start = item.querySelector('.rule-start').value.trim();
+                const end = item.querySelector('.rule-end').value.trim();
+                if (start && end) {
+                    newExclusionRules.push({ start, end });
+                }
+            });
+            updateAndSaveTableSetting('table_exclusion_rules', newExclusionRules);
+            toastr.success('独立提取规则已保存。');
+        },
+        onShow: (dialogElement) => {
+            const rulesList = dialogElement.find('#exclusion-rules-list');
+
+            dialogElement.find('#add-exclusion-rule-btn').on('click', () => {
+                const newIndex = rulesList.children().length;
+                const newItemHtml = `
+                    <div class="exclusion-rule-item" data-index="${newIndex}">
+                        <input type="text" class="text_pole rule-start" value="" placeholder="起始标记">
+                        <span>-</span>
+                        <input type="text" class="text_pole rule-end" value="" placeholder="结束标记">
+                        <button class="menu_button danger small_button remove-rule-btn"><i class="fas fa-trash-alt"></i></button>
+                    </div>`;
+                rulesList.append(newItemHtml);
+            });
+
+            rulesList.on('click', '.remove-rule-btn', function() {
+                $(this).closest('.exclusion-rule-item').remove();
+            });
+        }
+    });
+}
+
+function openRuleEditor(tableIndex) {
+    const tables = TableManager.getMemoryState();
+    if (!tables || !tables[tableIndex]) return;
+    const table = tables[tableIndex];
+
+    // 兼容旧数据结构
+    if (table.charLimitRule && !table.charLimitRules) {
+        table.charLimitRules = {};
+        if (table.charLimitRule.columnIndex !== -1) {
+            table.charLimitRules[table.charLimitRule.columnIndex] = table.charLimitRule.limit;
+        }
+    }
+    const charLimitRules = table.charLimitRules || {};
+
+    const renderCharLimitRules = (rules) => {
+        return Object.entries(rules).map(([colIndex, limit]) => {
+            const header = table.headers[colIndex] || `未知列 (${colIndex})`;
+            return `
+                <div class="char-limit-rule-item" style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(0,0,0,0.1); border-radius: 4px;">
+                    <span><i class="fas fa-file-alt" style="margin-right: 8px; color: #9e8aff;"></i><b>${header}</b>: 不超过 ${limit} 字</span>
+                    <button class="menu_button danger small_button remove-char-limit-rule-btn" data-col-index="${colIndex}" title="删除此规则">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
+                </div>
+            `;
+        }).join('');
+    };
+
+    const getColumnOptions = (rules) => {
+        return table.headers.map((header, index) => {
+            // 如果该列已存在规则，则不应出现在下拉菜单中
+            if (rules[index]) return '';
+            return `<option value="${index}">${header}</option>`;
+        }).join('');
+    };
+
+    const dialogHtml = `
+        <dialog class="popup wide_dialogue_popup large_dialogue_popup">
+          <div class="popup-body">
+            <h4 style="margin-top:0; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">
+                <i class="fa-solid fa-scroll"></i> 编辑 “${table.name}” 的规则
+            </h4>
+            <div class="popup-content" style="height: 70vh; overflow-y: auto;">
+                <div class="rule-editor-form" style="display: flex; flex-direction: column; gap: 15px; padding: 10px;">
+                    
+                    <div class="rule-editor-field" style="border: 1px solid #444; padding: 10px; border-radius: 5px;">
+                        <label style="font-weight: bold; color: #9e8aff;">内容长度限制 (0为禁用)</label>
+                        
+                        <div id="current-char-limit-rules" style="margin-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+                            ${renderCharLimitRules(charLimitRules)}
+                        </div>
+                        
+                        <div id="add-char-limit-rule-area" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #333;">
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <select id="new-rule-column-select" class="text_pole" style="flex: 1;">
+                                    <option value="-1">-- 选择要添加规则的列 --</option>
+                                    ${getColumnOptions(charLimitRules)}
+                                </select>
+                                <input type="number" id="new-rule-limit-input" class="text_pole" min="0" value="0" style="width: 80px;">
+                                <button id="add-char-limit-rule-btn" class="menu_button menu_button_primary small_button">
+                                    <i class="fas fa-plus"></i> 添加
+                                </button>
+                            </div>
+                        </div>
+                        <small class="notes">您可以为多个不同的列添加字符数限制规则。</small>
+                    </div>
+
+                    <div class="rule-editor-field" style="border: 1px solid #444; padding: 10px; border-radius: 5px;">
+                        <label for="rule-row-limit-value" style="font-weight: bold; color: #9e8aff;">表格行数限制 (0为禁用)</label>
+                        <input type="number" id="rule-row-limit-value" class="text_pole" min="0" value="${table.rowLimitRule || 0}" style="width: 100px; margin-top: 10px;">
+                        <small class="notes">当表格总行数超过设定值时，将在表格底部显示警告。</small>
+                    </div>
+
+                    <hr style="border-color: #444; margin: 10px 0;">
+
+                    <div class="rule-editor-field">
+                        <label for="rule-note">【说明】:</label>
+                        <textarea id="rule-note" class="text_pole" rows="5" style="width: 100%;">${table.note || ''}</textarea>
+                    </div>
+                    <div class="rule-editor-field">
+                        <label for="rule-add">【增加】:</label>
+                        <textarea id="rule-add" class="text_pole" rows="3" style="width: 100%;">${table.rule_add || ''}</textarea>
+                    </div>
+                    <div class="rule-editor-field">
+                        <label for="rule-delete">【删除】:</label>
+                        <textarea id="rule-delete" class="text_pole" rows="3" style="width: 100%;">${table.rule_delete || ''}</textarea>
+                    </div>
+                    <div class="rule-editor-field">
+                        <label for="rule-update">【修改】:</label>
+                        <textarea id="rule-update" class="text_pole" rows="3" style="width: 100%;">${table.rule_update || ''}</textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="popup-controls">
+                <div class="popup-button-ok menu_button menu_button_primary interactable">保存</div>
+                <div class="popup-button-cancel menu_button interactable" style="margin-left: 10px;">取消</div>
+            </div>
+          </div>
+        </dialog>`;
+
+    const dialogElement = $(dialogHtml).appendTo('body');
+
+    const closeDialog = () => {
+        dialogElement[0].close();
+        dialogElement.remove();
+    };
+
+    const refreshRuleUI = () => {
+        const currentRules = JSON.parse(dialogElement.find('#current-char-limit-rules').attr('data-rules') || '{}');
+        dialogElement.find('#current-char-limit-rules').html(renderCharLimitRules(currentRules));
+        dialogElement.find('#new-rule-column-select').html(`<option value="-1">-- 选择要添加规则的列 --</option>${getColumnOptions(currentRules)}`);
+    };
+
+    dialogElement.find('#current-char-limit-rules').attr('data-rules', JSON.stringify(charLimitRules));
+
+    dialogElement.on('click', '#add-char-limit-rule-btn', () => {
+        const selectedColumn = parseInt(dialogElement.find('#new-rule-column-select').val(), 10);
+        const limitValue = parseInt(dialogElement.find('#new-rule-limit-input').val(), 10);
+
+        if (selectedColumn === -1) {
+            toastr.warning('请选择一个列。');
+            return;
+        }
+        
+        // 允许输入0，但0意味着“无限制”，所以我们不添加规则。
+        if (isNaN(limitValue) || limitValue < 0) {
+            toastr.warning('请输入一个有效的字数限制（大于等于0）。');
+            return;
+        }
+
+        const currentRules = JSON.parse(dialogElement.find('#current-char-limit-rules').attr('data-rules') || '{}');
+
+        if (limitValue > 0) {
+            // 只有当限制大于0时，才添加或更新规则
+            currentRules[selectedColumn] = limitValue;
+            dialogElement.find('#current-char-limit-rules').attr('data-rules', JSON.stringify(currentRules));
+            refreshRuleUI();
+        } else {
+            // 如果用户输入0，则视为不设置规则
+            toastr.info('字数限制为0表示不设置规则。');
+        }
+    });
+
+    dialogElement.on('click', '.remove-char-limit-rule-btn', function() {
+        const colIndexToRemove = $(this).data('col-index');
+        const currentRules = JSON.parse(dialogElement.find('#current-char-limit-rules').attr('data-rules') || '{}');
+        delete currentRules[colIndexToRemove];
+        dialogElement.find('#current-char-limit-rules').attr('data-rules', JSON.stringify(currentRules));
+        refreshRuleUI();
+    });
+
+    dialogElement.find('.popup-button-ok').on('click', () => {
+        const newCharLimitRules = JSON.parse(dialogElement.find('#current-char-limit-rules').attr('data-rules') || '{}');
+        const rowLimitValue = parseInt(dialogElement.find('#rule-row-limit-value').val(), 10);
+
+        const newRules = {
+            note: dialogElement.find('#rule-note').val(),
+            rule_add: dialogElement.find('#rule-add').val(),
+            rule_delete: dialogElement.find('#rule-delete').val(),
+            rule_update: dialogElement.find('#rule-update').val(),
+            charLimitRules: newCharLimitRules,
+            rowLimitRule: rowLimitValue,
+        };
+        TableManager.updateTableRules(tableIndex, newRules);
+        closeDialog();
+    });
+
+    dialogElement.find('.popup-button-cancel').on('click', closeDialog);
+    dialogElement[0].showModal();
+}
+
+
+function bindInjectionSettings() {
+    const settings = extension_settings[extensionName];
+
+    const masterSwitchCheckbox = document.getElementById('table-system-master-switch');
+    const enabledCheckbox = document.getElementById('table-injection-enabled');
+    const optimizationCheckbox = document.getElementById('context-optimization-enabled'); // 【V144.0】
+    const positionSelect = document.getElementById('table-injection-position');
+    const depthInput = document.getElementById('table-injection-depth');
+    const roleRadioGroup = document.querySelectorAll('input[name="table-injection-role"]');
+
+    if (!masterSwitchCheckbox || !enabledCheckbox || !positionSelect || !depthInput || !roleRadioGroup.length) {
+        return;
+    }
+
+    const updateInjectionUI = () => {
+        const position = positionSelect.value;
+        const masterEnabled = masterSwitchCheckbox.checked;
+ 
+        const isChatInjection = position === '1';
+
+        enabledCheckbox.disabled = !masterEnabled;
+        positionSelect.disabled = !masterEnabled;
+        depthInput.disabled = !masterEnabled || !isChatInjection;
+        roleRadioGroup.forEach(radio => radio.disabled = !masterEnabled || !isChatInjection);
+
+        const enabledOpacity = masterEnabled ? '1' : '0.5';
+        enabledCheckbox.style.opacity = enabledOpacity;
+        if (enabledCheckbox.closest('.control-block-with-switch')) {
+            enabledCheckbox.closest('.control-block-with-switch').style.opacity = enabledOpacity;
+        }
+        
+        positionSelect.style.opacity = enabledOpacity;
+        if (positionSelect.previousElementSibling) {
+            positionSelect.previousElementSibling.style.opacity = enabledOpacity;
+        }
+
+        const depthOpacity = masterEnabled && isChatInjection ? '1' : '0.5';
+        depthInput.style.opacity = depthOpacity;
+        if (depthInput.previousElementSibling) {
+            depthInput.previousElementSibling.style.opacity = depthOpacity;
+        }
+
+        const roleOpacity = masterEnabled && isChatInjection ? '1' : '0.5';
+        const roleGroupContainer = document.getElementById('table-role-system')?.closest('.radio-group');
+        if (roleGroupContainer) {
+            roleGroupContainer.style.opacity = roleOpacity;
+            if (roleGroupContainer.previousElementSibling) {
+                roleGroupContainer.previousElementSibling.style.opacity = roleOpacity;
+            }
+        }
+
+        const fillingModeRadios = document.querySelectorAll('input[name="filling-mode"]');
+        fillingModeRadios.forEach(radio => {
+            radio.disabled = !masterEnabled;
+            const label = radio.closest('label');
+            if (label) {
+                label.style.opacity = masterEnabled ? '1' : '0.5';
+            }
+        });
+
+        const fillButton = document.getElementById('fill-table-now-btn');
+        if (fillButton) {
+            fillButton.disabled = !masterEnabled;
+            fillButton.style.opacity = masterEnabled ? '1' : '0.5';
+        }
+    };
+
+    masterSwitchCheckbox.checked = settings.table_system_enabled !== false;
+    enabledCheckbox.checked = settings.table_injection_enabled;
+    if (optimizationCheckbox) { // 【V144.0】
+        optimizationCheckbox.checked = settings.context_optimization_enabled !== false;
+    }
+    positionSelect.value = settings.injection.position;
+    depthInput.value = settings.injection.depth;
+    roleRadioGroup.forEach(radio => {
+        if (parseInt(radio.value, 10) === settings.injection.role) {
+            radio.checked = true;
+        }
+    });
+
+    updateInjectionUI();
+
+    if (masterSwitchCheckbox.dataset.eventsBound) return;
+
+    masterSwitchCheckbox.addEventListener('change', () => {
+        settings.table_system_enabled = masterSwitchCheckbox.checked;
+        saveSettingsDebounced();
+        updateInjectionUI();
+        
+        const statusText = masterSwitchCheckbox.checked ? '已启用' : '已禁用';
+        toastr.info(`表格系统总开关${statusText}。`);
+        log(`表格系统总开关${statusText}。`, 'info');
+    });
+
+    enabledCheckbox.addEventListener('change', () => {
+        settings.table_injection_enabled = enabledCheckbox.checked;
+        saveSettingsDebounced();
+    });
+
+    // 【V144.0】
+    if (optimizationCheckbox) {
+        optimizationCheckbox.addEventListener('change', () => {
+            settings.context_optimization_enabled = optimizationCheckbox.checked;
+            saveSettingsDebounced();
+            toastr.info(`上下文优化（世界书合并）已${optimizationCheckbox.checked ? '启用' : '禁用'}。`);
+        });
+    }
+
+    positionSelect.addEventListener('change', () => {
+        settings.injection.position = parseInt(positionSelect.value, 10);
+        saveSettingsDebounced();
+
+        updateInjectionUI();
+    });
+
+    depthInput.addEventListener('input', () => {
+        settings.injection.depth = parseInt(depthInput.value, 10);
+        saveSettingsDebounced();
+    });
+
+    roleRadioGroup.forEach(radio => {
+        radio.addEventListener('change', () => {
+            if (radio.checked) {
+                settings.injection.role = parseInt(radio.value, 10);
+                saveSettingsDebounced();
+            }
+        });
+    });
+
+    masterSwitchCheckbox.dataset.eventsBound = 'true';
+    log('表格注入设置已成功绑定。', 'success');
+}
+
+
+function updateAndSaveTableSetting(key, value) {
+    if (!extension_settings[extensionName]) {
+        extension_settings[extensionName] = {};
+    }
+    extension_settings[extensionName][key] = value;
+    saveSettingsDebounced();
+}
+
+function bindWorldBookSettings() {
+    const settings = extension_settings[extensionName];
+
+    if (settings.table_worldbook_enabled === undefined) settings.table_worldbook_enabled = false;
+    if (settings.table_worldbook_char_limit === undefined) settings.table_worldbook_char_limit = 30000;
+    if (settings.table_worldbook_source === undefined) settings.table_worldbook_source = 'character';
+    if (settings.table_selected_worldbooks === undefined) settings.table_selected_worldbooks = [];
+    if (settings.table_selected_entries === undefined) settings.table_selected_entries = {};
+
+    const enabledCheckbox = document.getElementById('table_worldbook_enabled');
+    const limitSlider = document.getElementById('table_worldbook_char_limit');
+    const limitValueSpan = document.getElementById('table_worldbook_char_limit_value');
+    const sourceRadios = document.querySelectorAll('input[name="table_worldbook_source"]');
+    const manualSelectWrapper = document.getElementById('table_worldbook_select_wrapper');
+    const refreshButton = document.getElementById('table_refresh_worldbooks');
+    const bookListContainer = document.getElementById('table_worldbook_checkbox_list');
+    const entryListContainer = document.getElementById('table_worldbook_entry_list');
+
+    if (!enabledCheckbox || !limitSlider || !limitValueSpan || !sourceRadios.length || !manualSelectWrapper || !refreshButton || !bookListContainer || !entryListContainer) {
+        log('无法找到世界书设置的相关UI元素，绑定失败。', 'warn');
+        return;
+    }
+
+    const saveSelectedEntries = () => {
+        const selected = {};
+        entryListContainer.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
+            const book = cb.dataset.book;
+            const uid = cb.dataset.uid;
+            if (!selected[book]) {
+                selected[book] = [];
+            }
+            selected[book].push(uid);
+        });
+        settings.table_selected_entries = selected;
+        saveSettingsDebounced();
+    };
+
+    const renderWorldBookEntries = async () => {
+        entryListContainer.innerHTML = '<p>加载条目中...</p>';
+        const source = settings.table_worldbook_source || 'character';
+        let bookNames = [];
+
+        if (source === 'manual') {
+            bookNames = settings.table_selected_worldbooks || [];
+        } else {
+            if (this_chid !== undefined && this_chid >= 0 && characters[this_chid]) {
+                try {
+                    const charLorebooks = await safeCharLorebooks({ type: 'all' });
+                    if (charLorebooks.primary) bookNames.push(charLorebooks.primary);
+                    if (charLorebooks.additional?.length) bookNames.push(...charLorebooks.additional);
+                } catch (error) {
+                    console.error(`[内存储司] 获取角色世界书失败:`, error);
+                    entryListContainer.innerHTML = '<p class="notes" style="color:red;">获取角色世界书失败。</p>';
+                    return;
+                }
+            } else {
+                entryListContainer.innerHTML = '<p class="notes">请先加载一个角色。</p>';
+                return;
+            }
+        }
+
+        if (bookNames.length === 0) {
+            entryListContainer.innerHTML = '<p class="notes">未选择或绑定世界书。</p>';
+            return;
+        }
+
+        try {
+            const allEntries = [];
+            for (const bookName of bookNames) {
+                const entries = await safeLorebookEntries(bookName);
+                entries.forEach(entry => allEntries.push({ ...entry, bookName }));
+            }
+
+            entryListContainer.innerHTML = '';
+            if (allEntries.length === 0) {
+                entryListContainer.innerHTML = '<p class="notes">所选世界书中没有条目。</p>';
+                return;
+            }
+
+            allEntries.forEach(entry => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                div.title = `世界书: ${entry.bookName}\nUID: ${entry.uid}`;
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `wb-entry-check-${entry.bookName}-${entry.uid}`;
+                checkbox.dataset.book = entry.bookName;
+                checkbox.dataset.uid = entry.uid;
+                
+                const isChecked = settings.table_selected_entries[entry.bookName]?.includes(String(entry.uid));
+                checkbox.checked = !!isChecked;
+
+                const label = document.createElement('label');
+                label.htmlFor = checkbox.id;
+                label.textContent = entry.comment || '无标题条目';
+
+                div.appendChild(checkbox);
+                div.appendChild(label);
+                entryListContainer.appendChild(div);
+            });
+        } catch (error) {
+            console.error(`[内存储司] 加载世界书条目失败:`, error);
+            entryListContainer.innerHTML = '<p class="notes" style="color:red;">加载条目失败。</p>';
+        }
+    };
+
+    const renderWorldBookList = () => {
+        const worldBooks = world_names.map(name => ({ name: name.replace('.json', ''), file_name: name }));
+        bookListContainer.innerHTML = '';
+        if (worldBooks && worldBooks.length > 0) {
+            worldBooks.forEach(book => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                div.title = book.name;
+
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `wb-check-${book.file_name}`;
+                checkbox.value = book.file_name;
+                checkbox.checked = settings.table_selected_worldbooks.includes(book.file_name);
+
+                checkbox.addEventListener('change', () => {
+                    if (checkbox.checked) {
+                        if (!settings.table_selected_worldbooks.includes(book.file_name)) {
+                            settings.table_selected_worldbooks.push(book.file_name);
+                        }
+                    } else {
+                        settings.table_selected_worldbooks = settings.table_selected_worldbooks.filter(name => name !== book.file_name);
+                    }
+                    saveSettingsDebounced();
+                    renderWorldBookEntries();
+                });
+
+                const label = document.createElement('label');
+                label.htmlFor = `wb-check-${book.file_name}`;
+                label.textContent = book.name;
+
+                div.appendChild(checkbox);
+                div.appendChild(label);
+                bookListContainer.appendChild(div);
+            });
+        } else {
+            bookListContainer.innerHTML = '<p class="notes">没有找到世界书。</p>';
+        }
+        renderWorldBookEntries();
+    };
+    
+    const updateManualSelectVisibility = () => {
+        const isManual = settings.table_worldbook_source === 'manual';
+        manualSelectWrapper.style.display = isManual ? 'block' : 'none';
+        renderWorldBookEntries();
+        if (isManual) {
+            renderWorldBookList();
+        }
+    };
+
+    enabledCheckbox.checked = settings.table_worldbook_enabled;
+    limitSlider.value = settings.table_worldbook_char_limit;
+    limitValueSpan.textContent = settings.table_worldbook_char_limit;
+    sourceRadios.forEach(radio => {
+        radio.checked = radio.value === settings.table_worldbook_source;
+    });
+
+    updateManualSelectVisibility();
+
+    if (enabledCheckbox.dataset.eventsBound) return;
+
+    enabledCheckbox.addEventListener('change', () => {
+        settings.table_worldbook_enabled = enabledCheckbox.checked;
+        saveSettingsDebounced();
+    });
+
+    limitSlider.addEventListener('input', () => { limitValueSpan.textContent = limitSlider.value; });
+    limitSlider.addEventListener('change', () => {
+        settings.table_worldbook_char_limit = parseInt(limitSlider.value, 10);
+        saveSettingsDebounced();
+    });
+
+    sourceRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+            if (radio.checked) {
+                settings.table_worldbook_source = radio.value;
+                updateManualSelectVisibility();
+                saveSettingsDebounced();
+            }
+        });
+    });
+
+    refreshButton.addEventListener('click', renderWorldBookList);
+    entryListContainer.addEventListener('change', (event) => {
+        if (event.target.type === 'checkbox') {
+            saveSelectedEntries();
+        }
+    });
+
+    enabledCheckbox.dataset.eventsBound = 'true';
+    log('世界书设置已成功绑定。', 'success');
+}
+
+export function bindTableEvents() {
+    const panel = document.getElementById('amily2_memorisation_forms_panel');
+    if (!panel || panel.dataset.eventsBound) {
+        return;
+    }
+    log('开始为表格视图绑定交互事件...', 'info');
+
+    const fillingModeRadios = panel.querySelectorAll('input[name="filling-mode"]');
+    const contextSliderContainer = document.getElementById('context-reading-slider-container');
+    const contextSlider = document.getElementById('context-reading-slider');
+    const contextValueSpan = document.getElementById('context-reading-value');
+    
+    const delaySliderContainer = document.getElementById('secondary-filler-delay-container');
+    const delaySlider = document.getElementById('secondary-filler-delay-slider');
+    const delayValueSpan = document.getElementById('secondary-filler-delay-value');
+
+    const independentRulesContainer = document.getElementById('table-independent-rules-container');
+    const independentRulesToggle = document.getElementById('table-independent-rules-enabled');
+    const configureRulesBtn = document.getElementById('table-configure-rules-btn');
+    
+    const updateFillingModeUI = () => {
+        const currentMode = extension_settings[extensionName]?.filling_mode || 'main-api';
+        fillingModeRadios.forEach(radio => {
+            radio.checked = (radio.value === currentMode);
+        });
+
+        const isSecondaryMode = currentMode === 'secondary-api';
+
+        if (contextSliderContainer) {
+            contextSliderContainer.style.display = isSecondaryMode ? 'block' : 'none';
+        }
+
+        if (delaySliderContainer) {
+            delaySliderContainer.style.display = isSecondaryMode ? 'block' : 'none';
+        }
+
+        if (independentRulesContainer) {
+            independentRulesContainer.style.display = 'flex';
+        }
+
+        if (independentRulesToggle && configureRulesBtn) {
+            configureRulesBtn.style.display = independentRulesToggle.checked ? 'block' : 'none';
+        }
+    };
+
+    fillingModeRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            const selectedMode = this.value;
+            updateAndSaveTableSetting('filling_mode', selectedMode);
+            
+            let modeName = '原始填表';
+            if (selectedMode === 'secondary-api') modeName = '分步填表';
+            if (selectedMode === 'optimized') modeName = '优化中填表';
+            
+            toastr.info(`填表模式已切换为 ${modeName}。`);
+            updateFillingModeUI(); // 更新UI以确保状态同步
+        });
+    });
+
+    if (contextSlider && contextValueSpan) {
+        const contextReadingValue = extension_settings[extensionName]?.context_reading_level || 4;
+        contextSlider.value = contextReadingValue;
+        contextValueSpan.textContent = contextReadingValue;
+
+        contextSlider.addEventListener('input', function() {
+            contextValueSpan.textContent = this.value;
+        });
+        
+        contextSlider.addEventListener('change', function() {
+            updateAndSaveTableSetting('context_reading_level', parseInt(this.value, 10));
+            toastr.info(`上下文读取级别已设置为 ${this.value}。`);
+        });
+    }
+
+    if (delaySlider && delayValueSpan) {
+        const delayValue = extension_settings[extensionName]?.secondary_filler_delay || 0;
+        delaySlider.value = delayValue;
+        delayValueSpan.textContent = delayValue;
+
+        delaySlider.addEventListener('input', function() {
+            delayValueSpan.textContent = this.value;
+        });
+        
+        delaySlider.addEventListener('change', function() {
+            updateAndSaveTableSetting('secondary_filler_delay', parseInt(this.value, 10));
+            toastr.info(`填表延迟已设置为 ${this.value} 楼层。`);
+        });
+    }
+
+    if (independentRulesToggle) {
+        independentRulesToggle.checked = extension_settings[extensionName]?.table_independent_rules_enabled ?? false;
+        independentRulesToggle.addEventListener('change', () => {
+            updateAndSaveTableSetting('table_independent_rules_enabled', independentRulesToggle.checked);
+            updateFillingModeUI();
+        });
+    }
+
+    updateFillingModeUI();
+
+    if (configureRulesBtn) {
+        configureRulesBtn.addEventListener('click', openTableRuleEditor);
+    }
+
+    const renderAll = () => {
+        renderTables();
+        bindInjectionSettings();
+        bindTemplateEditors(); 
+    };
+
+    renderAll();
+    bindWorldBookSettings();
+    bindBatchFillButton(); // 【新增】绑定批量填表按钮
+    bindFloorFillButtons(); // 【新增】绑定楼层填表按钮
+    bindReorganizeButton(); // 【新增】绑定重新整理按钮
+    bindNccsApiEvents(); // 【新增】绑定Nccs API系统事件
+    bindChatTableDisplaySetting(); // 【新增】绑定聊天内表格显示开关
+
+    const navDeck = document.querySelector('#amily2_memorisation_forms_panel .sinan-navigation-deck');
+    if (navDeck) {
+        navDeck.addEventListener('click', (event) => {
+            const target = event.target.closest('.sinan-nav-item');
+            if (!target) return;
+
+            const tabName = target.dataset.tab;
+            if (!tabName) return;
+
+            const container = target.closest('.settings-group');
+            if (!container) return;
+
+            container.querySelectorAll('.sinan-nav-item').forEach(btn => btn.classList.remove('active'));
+            target.classList.add('active');
+            container.querySelectorAll('.sinan-tab-pane').forEach(pane => pane.classList.remove('active'));
+            const activePane = container.querySelector(`#sinan-${tabName}-tab`);
+            if (activePane) {
+                activePane.classList.add('active');
+            }
+        });
+    }
+
+    const exportBtn = document.getElementById('amily2-export-preset-btn');
+    const exportFullBtn = document.getElementById('amily2-export-preset-full-btn');
+    const importBtn = document.getElementById('amily2-import-preset-btn');
+    const importGlobalBtn = document.getElementById('amily2-import-global-preset-btn');
+    const clearGlobalBtn = document.getElementById('amily2-clear-global-preset-btn');
+
+    if (exportBtn) {
+        exportBtn.addEventListener('click', () => TableManager.exportPreset());
+    }
+    if (exportFullBtn) {
+        exportFullBtn.addEventListener('click', () => TableManager.exportPresetFull());
+    }
+    if (importBtn) {
+        importBtn.addEventListener('click', () => TableManager.importPreset(renderAll));
+    }
+    if (importGlobalBtn) {
+        importGlobalBtn.addEventListener('click', () => {
+
+            const isEmpty = TableManager.isCurrentTablesEmpty();
+            TableManager.importGlobalPreset(() => {
+                if (isEmpty) {
+                    TableManager.loadTables(); 
+                    renderAll();
+                }
+            });
+        });
+    }
+    if (clearGlobalBtn) {
+        clearGlobalBtn.addEventListener('click', () => {
+            const isEmpty = TableManager.isCurrentTablesEmpty();
+            TableManager.clearGlobalPreset();
+            if (isEmpty) {
+                TableManager.loadTables();
+                renderAll();
+            }
+        });
+    }
+
+    const clearAllBtn = document.getElementById('amily2-clear-all-tables-btn');
+    if (clearAllBtn) {
+        clearAllBtn.addEventListener('click', () => {
+            if (confirm('【确认】您确定要清空所有表格的剧情内容吗？此操作将保留表格结构，但会删除所有已填写的行。')) {
+                TableManager.clearAllTables();
+                renderAll();
+            }
+        });
+    }
+
+
+    const addTablePlaceholder = document.getElementById('add-table-placeholder');
+    if (addTablePlaceholder) {
+        addTablePlaceholder.addEventListener('click', () => {
+            const newName = prompt('请输入新表格的名称：', '新表格');
+            if (newName && newName.trim()) {
+                TableManager.addTable(newName.trim());
+                renderAll();
+            }
+        });
+    }
+
+
+    const allTablesContainer = getAllTablesContainer();
+    if (allTablesContainer) {
+        allTablesContainer.addEventListener('click', (event) => {
+            const th = event.target.closest('th');
+            if (th && th.classList.contains('index-col')) {
+                // 处理表头 # 号的点击（用于空表格添加首行）
+                toggleHeaderIndexContextMenu(event);
+                return;
+            }
+            if (th && !th.classList.contains('index-col')) {
+                toggleColumnContextMenu(event);
+                return;
+            }
+
+            const td = event.target.closest('td.index-col');
+            if (td) {
+                toggleRowContextMenu(event);
+                return;
+            }
+
+            const renameIcon = event.target.closest('.table-rename-icon');
+            if (renameIcon) {
+                const tableIndex = parseInt(renameIcon.dataset.tableIndex, 10);
+                const tables = TableManager.getMemoryState();
+                const currentName = tables[tableIndex]?.name || '';
+                showTableNameEditor(tableIndex, currentName);
+                return;
+            }
+
+            const target = event.target.closest('button');
+            if (!target) return;
+
+            const tableIndex = parseInt(target.dataset.tableIndex, 10);
+
+            if (target.matches('.add-row-btn')) {
+                TableManager.addRow(tableIndex);
+                renderAll();
+            } else if (target.matches('.add-col-btn')) {
+                TableManager.addColumn(tableIndex);
+                renderAll();
+            } else if (target.matches('.move-table-up-btn') || target.matches('.move-table-down-btn')) {
+                const direction = target.classList.contains('move-table-up-btn') ? 'up' : 'down';
+                TableManager.moveTable(tableIndex, direction);
+                renderAll();
+            } else if (target.matches('.edit-rules-btn')) {
+                openRuleEditor(tableIndex);
+            } else if (target.matches('.delete-table-btn')) {
+                const tables = TableManager.getMemoryState();
+                const tableName = tables[tableIndex]?.name || '未知表格';
+                if (confirm(`【最终警告】您确定要永久废黜表格 “[${tableName}]” 吗？此操作不可逆！`)) {
+                    TableManager.deleteTable(tableIndex);
+                    renderAll();
+                }
+            }
+        });
+
+        if (isTouchDevice()) {
+            let lastTap = 0;
+            let lastTapTarget = null;
+            allTablesContainer.addEventListener('touchstart', (event) => {
+                const target = event.target.closest('td');
+                if (!target || target.dataset.colIndex === undefined) return;
+
+                const currentTime = new Date().getTime();
+                const tapLength = currentTime - lastTap;
+                if (tapLength < 300 && tapLength > 0 && lastTapTarget === target) {
+                    event.preventDefault();
+                    if (target.getAttribute('contenteditable') !== 'true') {
+                        target.setAttribute('contenteditable', 'true');
+                        setTimeout(() => target.focus(), 0);
+                    }
+                }
+                lastTap = currentTime;
+                lastTapTarget = target;
+            });
+        }
+
+        allTablesContainer.addEventListener('blur', (event) => {
+            const target = event.target;
+            if (target.tagName !== 'TD' || target.getAttribute('contenteditable') !== 'true') return;
+
+            if (isTouchDevice()) {
+                target.setAttribute('contenteditable', 'false');
+            }
+
+            const tableElement = target.closest('table');
+            if (!tableElement) return;
+            
+            const tableIndex = parseInt(tableElement.dataset.tableIndex, 10);
+            const rowIndex = parseInt(target.closest('tr').dataset.rowIndex, 10);
+            const colIndex = parseInt(target.dataset.colIndex, 10);
+            const newValue = target.textContent;
+
+            // Correctly save scroll positions before re-rendering
+            const tableWrapper = tableElement.closest('.amily2-table-wrapper');
+            const hScroll = tableWrapper ? tableWrapper.scrollLeft : 0;
+            const vScroll = allTablesContainer.scrollTop;
+
+            TableManager.addHighlight(tableIndex, rowIndex, colIndex);
+            const dataToUpdate = { [colIndex]: newValue };
+            TableManager.updateRow(tableIndex, rowIndex, dataToUpdate);
+
+            renderAll();
+
+            // Correctly restore scroll positions after re-rendering
+            const newTableWrapper = document.getElementById(`amily2-table-${tableIndex}`)?.closest('.amily2-table-wrapper');
+            if (newTableWrapper) {
+                newTableWrapper.scrollLeft = hScroll;
+            }
+            allTablesContainer.scrollTop = vScroll;
+
+        }, true);
+    }
+    
+    panel.dataset.eventsBound = 'true';
+    log('表格视图交互事件已成功绑定。', 'success');
+
+    eventSource.on(event_types.CHAT_CHANGED, () => {
+        console.log(`[${extensionName}] 检测到角色/聊天切换，正在刷新表格系统UI和世界书设置...`);
+        renderAll();
+
+        setTimeout(() => {
+            const settings = extension_settings[extensionName];
+            if (settings && settings.table_worldbook_enabled) {
+                try {
+                    bindWorldBookSettings();
+                    console.log(`[${extensionName}] 世界书设置已刷新`);
+                } catch (error) {
+                    console.error(`[${extensionName}] 刷新世界书设置时出错:`, error);
+                }
+            }
+        }, 100);
+    });
+}
+
+function bindBatchFillButton() {
+    const fillButton = document.getElementById('fill-table-now-btn');
+    if (fillButton) {
+        if (fillButton.dataset.batchEventBound) return;
+        
+        fillButton.addEventListener('click', (event) => {
+            const settings = extension_settings[extensionName];
+            const tableSystemEnabled = settings.table_system_enabled !== false;
+            
+            if (!tableSystemEnabled) {
+                event.preventDefault();
+                toastr.warning('表格系统总开关已关闭，请先启用总开关。');
+                return;
+            }
+            
+            startBatchFilling();
+        });
+        
+        fillButton.dataset.batchEventBound = 'true';
+        log('"立即填表"按钮已成功绑定。', 'success');
+    }
+}
+
+function bindReorganizeButton() {
+    const reorganizeBtn = document.getElementById('reorganize-table-btn');
+    
+    if (reorganizeBtn) {
+        if (reorganizeBtn.dataset.reorganizeEventBound) return;
+        
+        reorganizeBtn.addEventListener('click', async (event) => {
+            const settings = extension_settings[extensionName];
+            const tableSystemEnabled = settings.table_system_enabled !== false;
+            
+            if (!tableSystemEnabled) {
+                event.preventDefault();
+                toastr.warning('表格系统总开关已关闭，请先启用总开关。');
+                return;
+            }
+
+            try {
+                const { reorganizeTableContent } = await import('../core/table-system/reorganizer.js');
+                await reorganizeTableContent();
+            } catch (error) {
+                console.error('[内存储司] 重新整理功能导入失败:', error);
+                toastr.error('重新整理功能启动失败，请检查系统状态。');
+            }
+        });
+        
+        reorganizeBtn.dataset.reorganizeEventBound = 'true';
+        log('"重新整理"按钮已成功绑定。', 'success');
+    }
+}
+
+
+function bindFloorFillButtons() {
+    const selectedFloorsBtn = document.getElementById('fill-selected-floors-btn');
+    const currentFloorBtn = document.getElementById('fill-current-floor-btn');
+    const rollbackBtn = document.getElementById('rollback-and-refill-btn');
+    
+    if (selectedFloorsBtn) {
+
+        if (selectedFloorsBtn.dataset.floorEventBound) return;
+        
+        selectedFloorsBtn.addEventListener('click', (event) => {
+            const settings = extension_settings[extensionName];
+            const tableSystemEnabled = settings.table_system_enabled !== false;
+            
+            if (!tableSystemEnabled) {
+                event.preventDefault();
+                toastr.warning('表格系统总开关已关闭，请先启用总开关。');
+                return;
+            }
+            
+            const startFloorInput = document.getElementById('floor-start-input');
+            const endFloorInput = document.getElementById('floor-end-input');
+            
+            const startFloor = parseInt(startFloorInput.value, 10);
+            const endFloor = parseInt(endFloorInput.value, 10);
+            
+            if (!startFloor || !endFloor) {
+                toastr.warning('请输入有效的起始楼层和结束楼层。');
+                return;
+            }
+            
+            if (startFloor > endFloor) {
+                toastr.warning('起始楼层不能大于结束楼层。');
+                return;
+            }
+            
+            if (startFloor < 1) {
+                toastr.warning('楼层不能小于1。');
+                return;
+            }
+
+            import('../core/table-system/batch-filler.js').then(module => {
+                module.startFloorRangeFilling(startFloor, endFloor);
+            });
+        });
+        
+        selectedFloorsBtn.dataset.floorEventBound = 'true';
+        log('"选定楼层填表"按钮已成功绑定。', 'success');
+    }
+    
+    if (currentFloorBtn) {
+        if (currentFloorBtn.dataset.currentEventBound) return;
+        
+        currentFloorBtn.addEventListener('click', (event) => {
+            const settings = extension_settings[extensionName];
+            const tableSystemEnabled = settings.table_system_enabled !== false;
+            
+            if (!tableSystemEnabled) {
+                event.preventDefault();
+                toastr.warning('表格系统总开关已关闭，请先启用总开关。');
+                return;
+            }
+
+            import('../core/table-system/batch-filler.js').then(module => {
+                module.startCurrentFloorFilling();
+            });
+        });
+        
+        currentFloorBtn.dataset.currentEventBound = 'true';
+        log('"填当前楼层"按钮已成功绑定。', 'success');
+    }
+
+    if (rollbackBtn) {
+        if (rollbackBtn.dataset.rollbackEventBound) return;
+
+        rollbackBtn.addEventListener('click', async (event) => {
+            const settings = extension_settings[extensionName];
+            const tableSystemEnabled = settings.table_system_enabled !== false;
+            
+            if (!tableSystemEnabled) {
+                event.preventDefault();
+                toastr.warning('表格系统总开关已关闭，请先启用总开关。');
+                return;
+            }
+
+            if (confirm('您确定要将表格状态回退到上一楼，并使用最新消息重新填表吗？')) {
+                try {
+                    await TableManager.rollbackAndRefill();
+                } catch (error) {
+                    console.error('[内存储司] 回退重填功能失败:', error);
+                    toastr.error('回退重填失败，请检查系统状态。');
+                }
+            }
+        });
+
+        rollbackBtn.dataset.rollbackEventBound = 'true';
+        log('"回退重填"按钮已成功绑定。', 'success');
+    }
+}
+
+function bindTemplateEditors() {
+    const ruleEditor = document.getElementById('ai-rule-template-editor');
+    const ruleSaveBtn = document.getElementById('ai-rule-template-save-btn');
+    const ruleRestoreBtn = document.getElementById('ai-rule-template-restore-btn');
+
+    const flowEditor = document.getElementById('ai-flow-template-editor');
+    const flowSaveBtn = document.getElementById('ai-flow-template-save-btn');
+    const flowRestoreBtn = document.getElementById('ai-flow-template-restore-btn');
+
+    if (!ruleEditor || !flowEditor || !ruleSaveBtn || !flowSaveBtn) {
+        log('无法找到指令模板编辑器或其按钮，绑定失败。', 'warn');
+        return;
+    }
+
+    if (ruleSaveBtn.dataset.templateEventsBound) {
+        return;
+    }
+
+    ruleEditor.value = TableManager.getBatchFillerRuleTemplate();
+    flowEditor.value = TableManager.getBatchFillerFlowTemplate();
+
+    ruleSaveBtn.addEventListener('click', () => {
+        TableManager.saveBatchFillerRuleTemplate(ruleEditor.value);
+        toastr.success('规则提示词已保存。');
+        log('批量填表-规则提示词已保存。', 'success');
+    });
+
+    flowSaveBtn.addEventListener('click', () => {
+        TableManager.saveBatchFillerFlowTemplate(flowEditor.value);
+        toastr.success('流程提示词已保存。');
+        log('批量填表-流程提示词已保存。', 'success');
+    });
+
+    ruleRestoreBtn.addEventListener('click', () => {
+        if (confirm('您确定要将规则提示词恢复为默认设置吗？')) {
+            ruleEditor.value = DEFAULT_AI_RULE_TEMPLATE;
+            TableManager.saveBatchFillerRuleTemplate(ruleEditor.value);
+            toastr.info('规则提示词已恢复为默认。');
+            log('批量填表-规则提示词已恢复默认。', 'info');
+        }
+    });
+
+    flowRestoreBtn.addEventListener('click', () => {
+        if (confirm('您确定要将流程提示词恢复为默认设置吗？')) {
+            flowEditor.value = DEFAULT_AI_FLOW_TEMPLATE;
+            TableManager.saveBatchFillerFlowTemplate(flowEditor.value);
+            toastr.info('流程提示词已恢复为默认。');
+            log('批量填表-流程提示词已恢复默认。', 'info');
+        }
+    });
+
+    ruleSaveBtn.dataset.templateEventsBound = 'true';
+    flowSaveBtn.dataset.templateEventsBound = 'true';
+    log('指令模板编辑器已成功绑定。', 'success');
+}
+
+function bindNccsApiEvents() {
+    const settings = extension_settings[extensionName];
+    
+    if (settings.nccsEnabled === undefined) settings.nccsEnabled = false;
+    if (settings.nccsApiMode === undefined) settings.nccsApiMode = 'openai_test';
+    if (settings.nccsApiUrl === undefined) settings.nccsApiUrl = 'https://api.openai.com/v1';
+    if (settings.nccsApiKey === undefined) settings.nccsApiKey = '';
+    if (settings.nccsModel === undefined) settings.nccsModel = '';
+    if (settings.nccsMaxTokens === undefined) settings.nccsMaxTokens = 2000;
+    if (settings.nccsTemperature === undefined) settings.nccsTemperature = 0.7;
+    if (settings.nccsTavernProfile === undefined) settings.nccsTavernProfile = '';
+
+    const enabledToggle = document.getElementById('nccs-api-enabled');
+    const configDiv = document.getElementById('nccs-api-config');
+    const modeSelect = document.getElementById('nccs-api-mode');
+    const urlInput = document.getElementById('nccs-api-url');
+    const keyInput = document.getElementById('nccs-api-key');
+    const modelInput = document.getElementById('nccs-api-model');
+    const maxTokensSlider = document.getElementById('nccs-max-tokens');
+    const maxTokensValue = document.getElementById('nccs-max-tokens-value');
+    const temperatureSlider = document.getElementById('nccs-temperature');
+    const temperatureValue = document.getElementById('nccs-temperature-value');
+    const presetSelect = document.getElementById('nccs-sillytavern-preset');
+    const testButton = document.getElementById('nccs-test-connection');
+    const fetchModelsButton = document.getElementById('nccs-fetch-models');
+
+    if (!enabledToggle || !configDiv) return;
+
+    enabledToggle.checked = settings.nccsEnabled;
+    if (modeSelect) modeSelect.value = settings.nccsApiMode;
+    if (urlInput) urlInput.value = settings.nccsApiUrl;
+    if (keyInput) keyInput.value = settings.nccsApiKey;
+    if (modelInput) modelInput.value = settings.nccsModel;
+    if (maxTokensSlider) {
+        maxTokensSlider.value = settings.nccsMaxTokens;
+        if (maxTokensValue) maxTokensValue.textContent = settings.nccsMaxTokens;
+    }
+    if (temperatureSlider) {
+        temperatureSlider.value = settings.nccsTemperature;
+        if (temperatureValue) temperatureValue.textContent = settings.nccsTemperature;
+    }
+    if (presetSelect) presetSelect.value = settings.nccsTavernProfile || '';
+
+    const updateConfigVisibility = () => {
+        configDiv.style.display = enabledToggle.checked ? 'block' : 'none';
+    };
+    updateConfigVisibility();
+
+    const updateModeBasedVisibility = () => {
+        if (!modeSelect) return;
+        const isSillyTavernMode = modeSelect.value === 'sillytavern_preset';
+        const isOpenAIMode = modeSelect.value === 'openai_test';
+
+        const presetContainer = presetSelect?.closest('.amily2_opt_settings_block');
+        if (presetContainer) {
+            presetContainer.style.display = isSillyTavernMode ? 'block' : 'none';
+        }
+
+        const fieldsToHideInPresetMode = [
+            { element: urlInput, containerId: null },
+            { element: keyInput, containerId: null },
+            { element: modelInput, containerId: null },
+            { element: maxTokensSlider, containerId: null },
+            { element: temperatureSlider, containerId: null }
+        ];
+
+        fieldsToHideInPresetMode.forEach(({ element }) => {
+            if (element) {
+                const container = element.closest('.amily2_opt_settings_block');
+                if (container) {
+                    container.style.display = isSillyTavernMode ? 'none' : 'block';
+                }
+            }
+        });
+
+        const buttonsContainer = testButton?.closest('.nccs-button-row');
+        if (buttonsContainer) {
+            buttonsContainer.style.display = 'flex'; 
+        }
+    };
+    updateModeBasedVisibility();
+
+    enabledToggle.addEventListener('change', () => {
+        settings.nccsEnabled = enabledToggle.checked;
+        saveSettingsDebounced();
+        updateConfigVisibility();
+        log(`Nccs API ${enabledToggle.checked ? '已启用' : '已禁用'}`, 'info');
+    });
+
+    if (modeSelect) {
+        modeSelect.addEventListener('change', () => {
+            settings.nccsApiMode = modeSelect.value;
+            saveSettingsDebounced();
+            updateModeBasedVisibility();
+            log(`Nccs API模式已切换为: ${modeSelect.value}`, 'info');
+        });
+    }
+
+    if (urlInput) {
+        const saveUrl = () => {
+            settings.nccsApiUrl = urlInput.value;
+            saveSettingsDebounced();
+        };
+        
+        urlInput.addEventListener('blur', saveUrl);
+    }
+
+    if (keyInput) {
+        const saveKey = () => {
+            settings.nccsApiKey = keyInput.value;
+            saveSettingsDebounced();
+        };
+        
+        keyInput.addEventListener('blur', saveKey);
+    }
+
+    if (modelInput) {
+        const saveModel = () => {
+            settings.nccsModel = modelInput.value;
+            saveSettingsDebounced();
+        };
+        
+        modelInput.addEventListener('blur', saveModel);
+        modelInput.addEventListener('input', saveModel);
+    }
+
+    if (maxTokensSlider && maxTokensValue) {
+        maxTokensSlider.addEventListener('input', () => {
+            maxTokensValue.textContent = maxTokensSlider.value;
+        });
+        maxTokensSlider.addEventListener('change', () => {
+            settings.nccsMaxTokens = parseInt(maxTokensSlider.value);
+            saveSettingsDebounced();
+        });
+    }
+
+    if (temperatureSlider && temperatureValue) {
+        temperatureSlider.addEventListener('input', () => {
+            temperatureValue.textContent = temperatureSlider.value;
+        });
+        temperatureSlider.addEventListener('change', () => {
+            settings.nccsTemperature = parseFloat(temperatureSlider.value);
+            saveSettingsDebounced();
+        });
+    }
+
+    if (presetSelect) {
+        presetSelect.addEventListener('change', () => {
+            settings.nccsTavernProfile = presetSelect.value;
+            saveSettingsDebounced();
+        });
+    }
+
+    if (testButton) {
+        testButton.addEventListener('click', async () => {
+            testButton.disabled = true;
+            testButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 测试中...';
+            
+            try {
+                const success = await testNccsApiConnection();
+                if (success) {
+                    toastr.success('Nccs API连接测试成功！');
+                    log('Nccs API连接测试成功', 'success');
+                } else {
+                    toastr.error('Nccs API连接测试失败，请检查配置');
+                    log('Nccs API连接测试失败', 'error');
+                }
+            } catch (error) {
+                toastr.error('Nccs API连接测试出错：' + error.message);
+                log('Nccs API连接测试出错：' + error.message, 'error');
+            } finally {
+                testButton.disabled = false;
+                testButton.innerHTML = '<i class="fas fa-plug"></i> 测试连接';
+            }
+        });
+    }
+
+    if (fetchModelsButton) {
+        fetchModelsButton.addEventListener('click', async () => {
+            fetchModelsButton.disabled = true;
+            fetchModelsButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 获取中...';
+
+            if (urlInput) {
+                settings.nccsApiUrl = urlInput.value;
+            }
+            if (keyInput) {
+                settings.nccsApiKey = keyInput.value;
+            }
+            saveSettingsDebounced();
+            
+            try {
+                const models = await fetchNccsModels();
+                if (models && models.length > 0) {
+                    let modelSelect = document.getElementById('nccs-api-model-select');
+                    if (!modelSelect) {
+                        modelSelect = document.createElement('select');
+                        modelSelect.id = 'nccs-api-model-select';
+                        modelSelect.className = 'text_pole';
+                        modelInput.parentNode.insertBefore(modelSelect, modelInput.nextSibling);
+                    }
+
+                    modelSelect.innerHTML = '<option value="">-- 请选择模型 --</option>';
+                    models.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model.id || model.name;
+                        option.textContent = model.name || model.id;
+                        if ((model.id || model.name) === settings.nccsModel) {
+                            option.selected = true;
+                        }
+                        modelSelect.appendChild(option);
+                    });
+
+                    modelInput.style.display = 'none';
+                    modelSelect.style.display = 'block';
+
+                    modelSelect.addEventListener('change', () => {
+                        const selectedModel = modelSelect.value;
+                        settings.nccsModel = selectedModel;
+                        modelInput.value = selectedModel;
+                        saveSettingsDebounced();
+                    });
+
+                    toastr.success(`成功获取 ${models.length} 个模型`);
+                    log(`Nccs API获取到 ${models.length} 个模型`, 'success');
+                } else {
+                    toastr.warning('未获取到可用模型');
+                    log('Nccs API未获取到可用模型', 'warn');
+                }
+            } catch (error) {
+                toastr.error('获取模型失败：' + error.message);
+                log('Nccs API获取模型失败：' + error.message, 'error');
+            } finally {
+                fetchModelsButton.disabled = false;
+                fetchModelsButton.innerHTML = '<i class="fas fa-download"></i> 获取模型';
+            }
+        });
+    }
+
+    const loadSillyTavernPresets = async () => {
+        if (!presetSelect) return;
+        try {
+            const context = getContext();
+            if (!context?.extensionSettings?.connectionManager?.profiles) {
+                throw new Error('无法获取SillyTavern配置文件列表');
+            }
+            
+            const profiles = context.extensionSettings.connectionManager.profiles;
+
+            const currentProfileId = settings.nccsTavernProfile;
+
+            presetSelect.innerHTML = '';
+            presetSelect.appendChild(new Option('选择预设', '', false, false));
+            
+            if (profiles && profiles.length > 0) {
+                profiles.forEach(profile => {
+                    const isSelected = profile.id === currentProfileId;
+                    const option = new Option(profile.name, profile.id, isSelected, isSelected);
+                    presetSelect.appendChild(option);
+                });
+                log(`成功加载 ${profiles.length} 个SillyTavern配置文件`, 'success');
+            } else {
+                log('未找到可用的SillyTavern配置文件', 'warn');
+            }
+        } catch (error) {
+            log('加载SillyTavern预设失败：' + error.message, 'error');
+        }
+    };
+
+    if (modeSelect && presetSelect) {
+        modeSelect.addEventListener('change', () => {
+            if (modeSelect.value === 'sillytavern_preset') {
+                loadSillyTavernPresets();
+            }
+        });
+
+        if (settings.nccsApiMode === 'sillytavern_preset') {
+            loadSillyTavernPresets();
+        }
+    }
+
+    log('Nccs API事件绑定完成', 'success');
+}
+
+function bindChatTableDisplaySetting() {
+    const settings = extension_settings[extensionName];
+    const showInChatToggle = document.getElementById('show-table-in-chat-toggle');
+    const continuousRenderToggle = document.getElementById('render-on-every-message-toggle');
+
+    if (!showInChatToggle || !continuousRenderToggle) {
+        log('找不到聊天内表格相关的开关，绑定失败。', 'warn');
+        return;
+    }
+
+    // Initialize states from settings
+    showInChatToggle.checked = settings.show_table_in_chat === true;
+    continuousRenderToggle.checked = settings.render_on_every_message === true;
+
+    // Function to update the dependency
+    const updateContinuousRenderState = () => {
+        if (showInChatToggle.checked) {
+            continuousRenderToggle.disabled = false;
+            continuousRenderToggle.closest('.control-block-with-switch').style.opacity = '1';
+        } else {
+            continuousRenderToggle.disabled = true;
+            continuousRenderToggle.closest('.control-block-with-switch').style.opacity = '0.5';
+        }
+    };
+
+    // Initial state update
+    updateContinuousRenderState();
+
+    // Event listener for the main toggle
+    showInChatToggle.addEventListener('change', () => {
+        settings.show_table_in_chat = showInChatToggle.checked;
+        saveSettingsDebounced();
+        toastr.info(`聊天内表格显示已${showInChatToggle.checked ? '开启' : '关闭'}。`);
+        updateContinuousRenderState();
+    });
+
+    // Event listener for the continuous render toggle
+    continuousRenderToggle.addEventListener('change', () => {
+        settings.render_on_every_message = continuousRenderToggle.checked;
+        saveSettingsDebounced();
+        toastr.info(`持续渲染最新消息功能已${continuousRenderToggle.checked ? '开启' : '关闭'}。请切换聊天以应用更改。`);
+    });
+
+    log('聊天内表格显示设置及其依赖关系已成功绑定。', 'success');
+}
