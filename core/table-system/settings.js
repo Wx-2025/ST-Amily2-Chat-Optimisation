@@ -147,4 +147,5 @@ export const tableSystemDefaultSettings = {
     batch_filler_flow_template: DEFAULT_AI_FLOW_TEMPLATE,
 
     filling_mode: 'main-api',
+    context_optimization_enabled: true, // 【V144.0】上下文优化（世界书合并）开关
 };
