@@ -156,9 +156,14 @@
 <fieldset class="settings-group">
     <legend style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
         <span><i class="fas fa-cog"></i> Amily中枢</span>
-        <button id="amily2_open_tutorial" class="menu_button small_button interactable" title="查看使用教程">
-            教程
-        </button>
+        <div style="display: flex; gap: 5px;">
+            <button id="amily2_reset_auth" class="menu_button small_button interactable" title="清除授权">
+                <i class="fas fa-sign-out-alt"></i>
+            </button>
+            <button id="amily2_open_tutorial" class="menu_button small_button interactable" title="查看使用教程">
+                教程
+            </button>
+        </div>
     </legend>
 </fieldset>
 
@@ -179,6 +184,13 @@
         <button id="amily2_open_world_editor" class="menu_button wide_button"><i class="fas fa-globe"></i> 世界编辑</button>
         <button id="amily2_open_glossary" class="menu_button wide_button"><i class="fas fa-book"></i> 术语表单</button>
         <button id="amily2_open_renderer" class="menu_button wide_button"><i class="fas fa-paint-brush"></i> 前端渲染</button>
+    </div>
+</fieldset>
+
+<fieldset class="settings-group">
+    <legend><i class="fas fa-flask"></i> 内测功能</legend>
+    <div class="button-group" style="display: flex; justify-content: space-between; gap: 8px;">
+        <button id="amily2_open_super_memory" class="menu_button wide_button"><i class="fas fa-brain"></i> 超级记忆</button>
     </div>
 </fieldset>
  
