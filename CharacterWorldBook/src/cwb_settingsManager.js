@@ -23,7 +23,7 @@ function updateControlsLockState() {
     const settings = getSettings();
     const isMasterEnabled = settings.cwb_master_enabled;
 
-    const $controlsToToggle = $panel.find('input, textarea, select, button').not('#cwb_master_enabled-checkbox, #amily2_back_to_main_from_cwb');
+    const $controlsToToggle = $panel.find('input, textarea, select, button').not('#cwb_master_enabled-checkbox, #amily2_back_to_main_from_cwb, .sinan-nav-item');
 
     if (isMasterEnabled) {
         $controlsToToggle.prop('disabled', false);
@@ -536,10 +536,13 @@ export function loadSettings() {
     console.log('[CWB] Loading settings...');
     
     const settings = getSettings();
+    
+    // Initialize settings with defaults if not present
     if (!settings) {
         extension_settings[extensionName] = { ...cwbCompleteDefaultSettings };
         console.log('[CWB] Initialized default settings');
     } else {
+        // Ensure all default settings exist
         Object.keys(cwbCompleteDefaultSettings).forEach(key => {
             if (settings[key] === undefined || settings[key] === null) {
                 settings[key] = cwbCompleteDefaultSettings[key];
@@ -548,6 +551,8 @@ export function loadSettings() {
     }
 
     const finalSettings = getSettings();
+    
+    // Apply localStorage overrides
     const overrides = JSON.parse(localStorage.getItem(CWB_BOOLEAN_SETTINGS_OVERRIDE_KEY) || '{}');
     if (overrides.cwb_master_enabled !== undefined) {
         finalSettings.cwb_master_enabled = overrides.cwb_master_enabled;
