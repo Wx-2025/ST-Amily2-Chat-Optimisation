@@ -1,7 +1,7 @@
 import { extensionName } from "../../utils/settings.js";
 import { extension_settings } from "/scripts/extensions.js";
 import { saveSettingsDebounced } from "/script.js";
-import { initializeSuperMemory } from "./manager.js";
+import { initializeSuperMemory, purgeSuperMemory } from "./manager.js";
 
 export function bindSuperMemoryEvents() {
     const panel = $('#amily2_super_memory_panel');
@@ -33,25 +33,6 @@ export function bindSuperMemoryEvents() {
         }
     });
 
-    panel.on('change', 'input[type="number"], input[type="text"]', function() {
-        if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
-        
-        const id = this.id;
-        let key = null;
-
-        if (id === 'sm-index-depth') key = 'superMemory_indexDepth';
-        if (id === 'sm-detail-depth') key = 'superMemory_detailDepth';
-
-        if (key) {
-            let value = this.value;
-            if (this.type === 'number') value = parseInt(value, 10);
-            
-            extension_settings[extensionName][key] = value;
-            saveSettingsDebounced();
-            console.log(`[Amily2-SuperMemory] Setting updated: ${key} = ${value}`);
-        }
-    });
-
     loadSuperMemorySettings();
     
     console.log('[Amily2-SuperMemory] Events bound successfully.');
@@ -62,9 +43,6 @@ function loadSuperMemorySettings() {
     
     $('#sm-system-enabled').prop('checked', settings.super_memory_enabled ?? false); 
     $('#sm-bridge-enabled').prop('checked', settings.superMemory_bridgeEnabled ?? false); 
-
-    $('#sm-index-depth').val(settings.superMemory_indexDepth ?? 0);
-    $('#sm-detail-depth').val(settings.superMemory_detailDepth ?? 2);
 }
 
 window.sm_initializeSystem = async function() {
@@ -81,9 +59,10 @@ window.sm_initializeSystem = async function() {
     }
 };
 
-window.sm_purgeMemory = function() {
-    if (confirm('您确定要清空所有超级记忆数据吗？')) {
-        toastr.warning('记忆已清空。');
-        $('#sm-system-status').text('未初始化').css('color', '#ffc107');
+window.sm_purgeMemory = async function() {
+    if (confirm('您确定要清空所有由Amily2管理的超级记忆数据吗？\n这将删除世界书中所有以表格世界书的条目。')) {
+        toastr.info('正在清空记忆...');
+        await purgeSuperMemory();
+        $('#sm-system-status').text('已清空').css('color', '#ffc107');
     }
 };
