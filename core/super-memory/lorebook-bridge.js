@@ -3,7 +3,7 @@ import { extension_settings, getContext } from "/scripts/extensions.js";
 import { extensionName } from "../../utils/settings.js";
 import { this_chid, characters } from "/script.js";
 
-function getMemoryBookName() {
+export function getMemoryBookName() {
     let charName = "Global";
     const context = getContext();
     
@@ -35,7 +35,7 @@ export async function syncToLorebook(tableName, data, indexText, role, headers, 
         if (existingEntry) {
             existingEntry.content = content;
             existingEntry.key = keys;
-            existingEntry.order = depth; 
+            // existingEntry.order = depth; // 【V153.0】不再覆盖用户的深度/排序设置
             
             if (type === 'constant') {
                 existingEntry.constant = true;
@@ -76,9 +76,12 @@ export async function syncToLorebook(tableName, data, indexText, role, headers, 
     data.forEach((row, index) => {
         if (!row || row.length === 0) return;
         
-        const primaryVal = row[0]; 
-        
-        if (!primaryVal) return;
+        const rawVal = row[0]; 
+        // 【V152.0】修复Falsy检查漏洞 (支持数字0作为主键)
+        if (rawVal === undefined || rawVal === null) return;
+
+        const primaryVal = String(rawVal).trim();
+        if (primaryVal === '') return;
 
         const isPendingDeletion = rowStatuses && rowStatuses[index] === 'pending-deletion';
         const isEnabled = !isPendingDeletion;
@@ -125,13 +128,26 @@ export async function syncToLorebook(tableName, data, indexText, role, headers, 
     
     const activeKeys = new Set();
     for(const row of data) {
-        if(row && row[0]) activeKeys.add(row[0]);
+        // 【V152.0】修复Falsy检查漏洞 (支持数字0作为主键)
+        if(row && row.length > 0) {
+            const rVal = row[0];
+            if (rVal !== undefined && rVal !== null) {
+                const sVal = String(rVal).trim();
+                if (sVal !== '') {
+                    activeKeys.add(sVal);
+                }
+            }
+        }
     }
+
+    console.log(`[Amily2-Bridge-GC] ${tableName} 的活跃主键 (Active Keys):`, Array.from(activeKeys));
 
     for (const entry of entries) {
         if (entry.comment && entry.comment.startsWith(tablePrefix)) {
             const entryKey = entry.comment.substring(tablePrefix.length).trim();
+            
             if (!activeKeys.has(entryKey)) {
+                console.log(`[Amily2-Bridge-GC] 发现残留条目 (将删除): ${entry.comment} (Key: ${entryKey})`);
                 entriesToDelete.push(entry.uid);
             }
         }
