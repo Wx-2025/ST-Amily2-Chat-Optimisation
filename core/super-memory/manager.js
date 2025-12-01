@@ -2,7 +2,7 @@ import { extension_settings, getContext } from "/scripts/extensions.js";
 import { extensionName } from "../../utils/settings.js";
 import { amilyHelper } from "../tavern-helper/main.js";
 import { generateIndex } from "./smart-indexer.js";
-import { syncToLorebook, ensureMemoryBook, updateTransientHint } from "./lorebook-bridge.js";
+import { syncToLorebook, ensureMemoryBook, updateTransientHint, getMemoryBookName } from "./lorebook-bridge.js";
 import { getMemoryState, loadMemoryState, saveMemoryState } from "../table-system/manager.js";
 import { eventSource, event_types } from "/script.js";
 
@@ -82,8 +82,28 @@ async function processQueue() {
 
     try {
         while (updateQueue.length > 0) {
-            const task = updateQueue.shift();
-            await processUpdateTask(task);
+            // 【V153.1 性能优化】合并同类项
+            // 批量填表可能会在短时间内触发大量同表的更新事件。
+            // 我们只需要处理每个表格在该批次中的最后一次（最新）状态即可。
+            const consolidatedTasks = new Map();
+            
+            // 取出当前队列中的所有任务
+            const currentBatch = [...updateQueue];
+            updateQueue.length = 0; // 清空队列
+            
+            for (const task of currentBatch) {
+                // 后面的任务会覆盖前面的任务，确保只保留最新状态
+                consolidatedTasks.set(task.tableName, task);
+            }
+            
+            if (currentBatch.length > consolidatedTasks.size) {
+                console.log(`[Amily2-SuperMemory] 队列优化: 将 ${currentBatch.length} 个事件合并为 ${consolidatedTasks.size} 个操作。`);
+            }
+
+            // 执行合并后的任务
+            for (const task of consolidatedTasks.values()) {
+                await processUpdateTask(task);
+            }
         }
         
         await saveStateToMetadata();
@@ -92,6 +112,10 @@ async function processQueue() {
         console.error('[Amily2-SuperMemory] 处理更新队列失败:', error);
     } finally {
         isProcessing = false;
+        // 如果在处理期间又有新任务进入队列，重新触发处理
+        if (updateQueue.length > 0) {
+            processQueue();
+        }
     }
 }
 
@@ -200,4 +224,40 @@ export async function forceSyncAll() {
     
     await processQueue();
     console.log('[Amily2-SuperMemory] 全量同步完成。');
+}
+
+export async function purgeSuperMemory() {
+    try {
+        console.log('[Amily2-SuperMemory] 开始清空记忆...');
+        const bookName = getMemoryBookName();
+        const entries = await amilyHelper.getLorebookEntries(bookName);
+        
+        if (!entries || entries.length === 0) {
+            console.log('[Amily2-SuperMemory] 世界书为空，无需清理。');
+            return;
+        }
+
+        const entriesToDelete = [];
+        const prefixes = ['[Amily2]', '【Amily2']; 
+
+        for (const entry of entries) {
+            if (entry.comment && prefixes.some(p => entry.comment.startsWith(p))) {
+                entriesToDelete.push(entry.uid);
+            }
+        }
+
+        if (entriesToDelete.length > 0) {
+            await amilyHelper.deleteLorebookEntries(bookName, entriesToDelete);
+            console.log(`[Amily2-SuperMemory] 已清空 ${entriesToDelete.length} 个条目。`);
+            if (window.toastr) toastr.success(`已清空 ${entriesToDelete.length} 条记忆数据`);
+        } else {
+            if (window.toastr) toastr.info('没有发现需要清空的Amily2记忆数据');
+        }
+        
+        updateDashboardCounters();
+
+    } catch (error) {
+        console.error('[Amily2-SuperMemory] 清空失败:', error);
+        if (window.toastr) toastr.error('清空失败: ' + error.message);
+    }
 }
