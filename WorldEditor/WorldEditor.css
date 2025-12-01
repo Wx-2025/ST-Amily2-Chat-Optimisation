@@ -570,6 +570,12 @@
     #world-editor-container .world-editor-entry-content {
         white-space: normal;
         max-width: 100%;
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        word-break: break-word;
     }
 
     #world-editor-container .world-editor-batch-actions {
