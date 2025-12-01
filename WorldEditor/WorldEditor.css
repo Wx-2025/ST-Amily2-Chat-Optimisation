@@ -525,7 +525,27 @@
     }
 
     #world-editor-container .world-editor-entries-header {
-        display: none; /* 在移动端隐藏表头 */
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        background-color: #333;
+        border-bottom: 1px solid #444;
+    }
+
+    #world-editor-container .world-editor-entries-header > div {
+        display: none;
+    }
+
+    #world-editor-container .world-editor-entries-header > div:first-child {
+        display: flex;
+        align-items: center;
+    }
+
+    #world-editor-container .world-editor-entries-header > div:first-child::after {
+        content: "全选";
+        margin-left: 10px;
+        color: #ccc;
+        font-size: 14px;
     }
 
     #world-editor-container .world-editor-entry-row {
