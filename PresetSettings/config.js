@@ -433,9 +433,9 @@ export const defaultMixedOrder = {
         { type: 'prompt', index: 5 },
         { type: 'prompt', index: 6 },
         { type: 'conditional', id: 'worldbook' },
+        { type: 'conditional', id: 'coreContent' },
         { type: 'conditional', id: 'ruleTemplate' },
         { type: 'conditional', id: 'flowTemplate' },
-        { type: 'conditional', id: 'coreContent' },
         { type: 'prompt', index: 7 }
     ],
     secondary_filler: [
