@@ -95,25 +95,9 @@ export async function injectTableData(chat, contextSize, abort, type) {
     try {
         let injectionContent = generateTableContent();
 
-        const optimizationEnabled = settings.context_optimization_enabled !== false; // 默认为 true
-        
-        if (optimizationEnabled) {
-            // 宏 Amily2Flush 会检查缓冲区，如果有内容则输出合并后的表格，否则输出空字符串
-            if (!injectionContent.includes('{{Amily2Flush}}')) {
-                 // 确保有换行符分隔
-                injectionContent += '\n{{Amily2Flush}}';
-            }
-        }
-
         if (!settings.table_injection_enabled) {
-             if (optimizationEnabled) {
-                 // 如果禁用了表格注入，但启用了上下文优化，则仅注入宏
-                 injectionContent = '{{Amily2Flush}}';
-             } else {
-                 // 如果都禁用了，则清空 Prompt
-                 setExtensionPrompt(INJECTION_KEY, '', 0, 0, false, 'SYSTEM');
-                 return;
-             }
+            setExtensionPrompt(INJECTION_KEY, '', 0, 0, false, 'SYSTEM');
+            return;
         }
 
         if (!injectionContent || injectionContent.trim() === '') {
