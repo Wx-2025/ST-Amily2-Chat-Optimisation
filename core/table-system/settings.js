@@ -148,4 +148,11 @@ export const tableSystemDefaultSettings = {
 
     filling_mode: 'main-api',
     context_optimization_enabled: true, // 【V144.0】上下文优化（世界书合并）开关
+
+    // 【V146.5】分步填表相关设置
+    context_reading_level: 4,
+    secondary_filler_delay: 0,
+    table_independent_rules_enabled: false,
+    table_tags_to_extract: '',
+    table_exclusion_rules: [],
 };
