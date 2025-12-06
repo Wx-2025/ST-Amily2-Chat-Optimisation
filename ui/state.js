@@ -69,10 +69,7 @@ export function populateModelDropdown() {
 
 
 export function updateUI() {
-  if (!pluginAuthStatus.authorized) {
-    $("#auth_panel").show();
-    $(".plugin-features").hide();
-  } else {
+    // Always show features
     $("#auth_panel").hide();
     $(".plugin-features").show();
 
@@ -179,7 +176,6 @@ export function updateUI() {
             icon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
         }
     });
-}
 }
 
 

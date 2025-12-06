@@ -3,11 +3,6 @@ import { slideToggle } from '/lib.js';
 import { extension_settings, renderExtensionTemplateAsync } from "/scripts/extensions.js";
 import { extensionName, defaultSettings } from "../utils/settings.js";
 import {
-  checkAuthorization,
-  displayExpiryInfo,
-  pluginAuthStatus,
-} from "../utils/auth.js";
-import {
   updateUI,
   setAvailableModels,
   populateModelDropdown,
@@ -31,21 +26,21 @@ async function loadSettings() {
   };
 
 
-  checkAuthorization();
+  // checkAuthorization();
 
 
-  const autoLogin = localStorage.getItem("plugin_auto_login") === "true";
-  console.log(
-    `[Amily2-调试] 授权状态: ${pluginAuthStatus.authorized}, 自动登录标志: ${autoLogin}`,
-  );
-  if (autoLogin && pluginAuthStatus.authorized) {
-    console.log("[Amily2号] 检测到有效授权，将执行自动UI更新。");
-  }
+  // const autoLogin = localStorage.getItem("plugin_auto_login") === "true";
+  // console.log(
+  //   `[Amily2-调试] 授权状态: ${pluginAuthStatus.authorized}, 自动登录标志: ${autoLogin}`,
+  // );
+  // if (autoLogin && pluginAuthStatus.authorized) {
+  //   console.log("[Amily2号] 检测到有效授权，将执行自动UI更新。");
+  // }
 
-  $("#expiry_info").html(displayExpiryInfo());
+  // $("#expiry_info").html(displayExpiryInfo());
   updateUI();
 
-  if (pluginAuthStatus.authorized && extension_settings[extensionName].apiUrl) {
+  if (/*pluginAuthStatus.authorized && */ extension_settings[extensionName].apiUrl) {
     const cachedModels = localStorage.getItem("cached_models_amily2");
     if (cachedModels) {
       const models = JSON.parse(cachedModels);

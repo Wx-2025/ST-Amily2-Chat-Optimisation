@@ -1,0 +1,80 @@
+# Amily2号 授权验证功能分析与移除报告
+
+## 1. 概述
+该项目包含一套完整的授权验证系统，主要通过比对本地生成的每日动态密码（基于日期算法）或连接远程服务器进行验证。验证状态主要由 `utils/auth.js` 中的 `pluginAuthStatus` 对象管理，并广泛应用于 UI 交互、功能开启和设置保存等环节。
+
+## 2. 关键文件与相关代码分析
+
+通过代码检索，在以下文件中发现了核心验证逻辑：
+
+### 2.1 核心逻辑文件
+*   **`utils/auth.js`**: 这是授权系统的核心。
+    *   包含 `pluginAuthStatus` 对象（存储 `{ authorized: false, expired: false }` 状态）。
+    *   `checkAuthorization()`: 检查本地存储的授权状态或日期是否过期。
+    *   `activatePluginAuthorization(code)`: 验证输入的授权码（连接服务器或本地算法比对）。
+    *   `getPasswordForDate(date)`: 生成基于日期的每日动态密码。
+    *   `displayExpiryInfo()`: 显示授权过期时间。
+
+### 2.2 UI 交互与事件绑定
+*   **`ui/bindings.js`**: 包含大量的事件监听器。
+    *   几乎每个功能按钮（如保存设置、打开面板、切换开关）的点击或变更事件中都包含 `if (!pluginAuthStatus.authorized) return;` 这一行代码，用于拦截未授权用户的操作。
+    *   包含 `displayDailyAuthCode` 函数，用于在前台显示今日授权码（可能是为了方便用户复制）。
+    *   包含 `#auth_submit`（提交验证）和 `#amily2_reset_auth`（重置授权）的事件处理。
+
+*   **`ui/state.js`**: 控制界面显示状态。
+    *   `updateUI()`: 根据 `pluginAuthStatus.authorized` 的值来决定是显示 `#auth_panel`（验证面板）还是 `.plugin-features`（功能区域）。
+
+*   **`ui/drawer.js`**: 插件加载入口。
+    *   在 `loadSettings()` 和 `createDrawer()` 中调用 `checkAuthorization()`。
+    *   根据授权状态决定是否自动加载模型列表。
+
+### 2.3 设置与存储
+*   **`utils/settings.js`**:
+    *   `saveSettings()` 函数中包含 `if (!pluginAuthStatus.authorized) return false;`，防止未授权用户保存配置。
+
+### 2.4 界面结构
+*   **`assets/amily2-modal.html`**:
+    *   包含 `<div id="auth_panel">...</div>` 结构，这是用户输入授权码的弹窗界面。
+
+## 3. 删除/绕过验证功能的建议与实施方案
+
+为了彻底移除验证限制并开放所有功能，建议（并已实施）以下修改：
+
+### 3.1 核心逻辑修改 (`utils/auth.js`)
+*   **建议**: 将所有验证逻辑替换为“始终成功”。
+*   **实施**:
+    *   将 `pluginAuthStatus` 默认值修改为 `{ authorized: true, expired: false }`。
+    *   重写 `checkAuthorization` 函数，使其永远返回 `true`。
+    *   重写 `activatePluginAuthorization`，使其不进行任何检查直接返回成功。
+    *   修改 `displayExpiryInfo` 显示为“永久有效”。
+
+### 3.2 UI 拦截解除 (`ui/bindings.js`)
+*   **建议**: 移除所有事件处理器中的权限检查代码。
+*   **实施**:
+    *   全局搜索并删除所有 `if (!pluginAuthStatus.authorized) return;` 语句。
+    *   删除 `displayDailyAuthCode` 函数及其调用。
+    *   删除验证提交按钮 (`#auth_submit`) 和重置按钮 (`#amily2_reset_auth`) 的相关事件监听。
+
+### 3.3 界面显示强制开启 (`ui/state.js`)
+*   **建议**: 忽略授权状态，强制显示功能区。
+*   **实施**:
+    *   修改 `updateUI` 函数，移除 `if (!pluginAuthStatus.authorized)` 判断分支，或者确保该分支永远执行“显示功能区、隐藏验证面板”的逻辑。
+
+### 3.4 入口逻辑清理 (`ui/drawer.js`)
+*   **建议**: 移除加载时的权限检查。
+*   **实施**:
+    *   移除 `checkAuthorization()` 的调用。
+    *   移除自动获取模型列表时的 `if (pluginAuthStatus.authorized ...)` 判断条件，允许自动加载。
+
+### 3.5 设置保存限制解除 (`utils/settings.js`)
+*   **建议**: 允许任意状态下保存设置。
+*   **实施**:
+    *   移除 `saveSettings` 函数中的授权检查代码。
+
+### 3.6 界面元素移除 (`assets/amily2-modal.html`)
+*   **建议**: 物理移除验证面板的 HTML 代码。
+*   **实施**:
+    *   删除 `<div id="auth_panel">` 及其所有子元素，使界面更加整洁。
+
+## 4. 总结
+通过上述修改，插件的授权验证机制已被完全剥离。`pluginAuthStatus` 被硬编码为 `true`，且前端所有的拦截检测点均已移除。用户在加载插件时将直接看到功能面板，且所有功能（包括保存设置、API调用、高级功能访问）均不再受限。
