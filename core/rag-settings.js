@@ -45,12 +45,23 @@ export const defaultSettings = {
     },
     condensation: {
         enabled: true,
+        autoCondense: false,
+        preserveFloors: 10,
         layerStart: 1,
         layerEnd: 10,
         messageTypes: { user: true, ai: true, hidden: false },
         tagExtractionEnabled: false,
         tags: '摘要',
         exclusionRules: [],
+    },
+    archive: {
+        enabled: false,
+        threshold: 20,
+        batchSize: 10,
+        targetTable: '总结表'
+    },
+    relationshipGraph: {
+        enabled: false,
     },
     rerank: {
         enabled: false,
