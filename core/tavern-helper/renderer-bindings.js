@@ -6,21 +6,21 @@ import { saveSettingsDebounced } from "/script.js";
 let isRendererInitialized = false;
 
 export function initializeRendererBindings() {
-    const container = $("#amily2_drawer_content").length 
-        ? $("#amily2_drawer_content") 
+    const container = $("#amily2_drawer_content").length
+        ? $("#amily2_drawer_content")
         : $("#amily2_chat_optimiser");
 
     if (!container.length) {
         console.warn("[Amily2-Renderer] Could not find the settings container.");
         return;
     }
-    container.on('change', '#render-enable-toggle-amily', function () {
+    container.on('change', '#amily-render-enable-toggle', function () {
         const isChecked = this.checked;
 
         if (!extension_settings[extensionName]) {
             extension_settings[extensionName] = {};
         }
-        extension_settings[extensionName].render_enabled = isChecked;
+        extension_settings[extensionName].amily_render_enabled = isChecked;
         saveSettingsDebounced();
 
         if (isChecked && !isRendererInitialized) {
@@ -36,7 +36,7 @@ export function initializeRendererBindings() {
         }
     });
 
-    container.on('change', '#render-depth', function() {
+    container.on('change', '#render-depth', function () {
         const depth = parseInt(this.value, 10);
         if (!extension_settings[extensionName]) {
             extension_settings[extensionName] = {};

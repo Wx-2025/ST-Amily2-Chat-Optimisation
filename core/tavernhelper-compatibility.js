@@ -4,12 +4,25 @@ import {
     loadWorldInfo,
     createNewWorldInfo,
     createWorldInfoEntry,
-    saveWorldInfo,
-    reloadEditor
+    saveWorldInfo
 } from "/scripts/world-info.js";
+
+let reloadEditor = () => {
+    console.warn("[Amily助手 - 兼容性] reloadEditor 函数不可用，可能是旧版本。已使用空函数代替。");
+};
+(async () => {
+    try {
+        const { reloadEditor: importedReloadEditor } = await import("/scripts/world-info.js");
+        if (importedReloadEditor) {
+            reloadEditor = importedReloadEditor;
+            console.log("[Amily助手 - 兼容性] 已成功动态导入 reloadEditor。");
+        }
+    } catch (error) {
+        console.warn("[Amily助手 - 兼容性] 动态导入 reloadEditor 失败，将使用空函数。错误信息：", error.message);
+    }
+})();
 import { refreshWorldbookListOnly } from './lore.js';
 
-// 检查我们自己的 amilyHelper 是否存在
 export function isTavernHelperAvailable() {
     return typeof amilyHelper !== 'undefined' && amilyHelper !== null;
 }
@@ -37,7 +50,6 @@ export async function safeUpdateLorebookEntries(bookName, entries) {
 export async function compatibleWriteToLorebook(targetLorebookName, entryComment, contentUpdateCallback, options = {}) {
     console.log('[兼容写入模块] 接收到的写入选项:', options);
 
-    // 优先使用 AmilyHelper
     if (isTavernHelperAvailable()) {
         try {
             console.log('[兼容写入模块] 检测到 AmilyHelper，优先使用新逻辑...');
@@ -65,9 +77,8 @@ export async function compatibleWriteToLorebook(targetLorebookName, entryComment
             }
             console.log(`[Amily助手] 成功将条目 "${entryComment}" 写入《${targetLorebookName}》。`);
             
-            // 派发被证明有效的自定义刷新事件
             document.dispatchEvent(new CustomEvent('amily-lorebook-created', { detail: { bookName: targetLorebookName } }));
-            refreshWorldbookListOnly(); // 刷新UI
+            refreshWorldbookListOnly();
             return true;
         } catch (error) {
             console.error(`[Amily助手] 写入失败，将尝试回退到传统逻辑。错误:`, error);
@@ -75,7 +86,6 @@ export async function compatibleWriteToLorebook(targetLorebookName, entryComment
         }
     }
 
-    // AmilyHelper 不可用或失败时的后备传统逻辑
     try {
         console.log('[兼容写入模块] AmilyHelper 不可用或失败，使用传统逻辑...');
         let bookData = await loadWorldInfo(targetLorebookName);
@@ -116,10 +126,7 @@ export async function compatibleWriteToLorebook(targetLorebookName, entryComment
         await saveWorldInfo(targetLorebookName, bookData, true);
         console.log(`[传统逻辑] 成功将条目 "${entryComment}" 写入《${targetLorebookName}》。`);
 
-        // 刷新编辑器（如果正在查看）
         reloadEditor(targetLorebookName);
-
-        // 派发被证明有效的自定义刷新事件
         document.dispatchEvent(new CustomEvent('amily-lorebook-created', { detail: { bookName: targetLorebookName } }));
         return true;
     } catch (error) {

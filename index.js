@@ -420,7 +420,7 @@ jQuery(async () => {
   if (!extension_settings[extensionName]) {
     extension_settings[extensionName] = {};
   }
-  const combinedDefaultSettings = { ...defaultSettings, ...tableSystemDefaultSettings, ...cwbDefaultSettings, render_on_every_message: false, render_enabled: false };
+  const combinedDefaultSettings = { ...defaultSettings, ...tableSystemDefaultSettings, ...cwbDefaultSettings, render_on_every_message: false, amily_render_enabled: false };
 
   for (const key in combinedDefaultSettings) {
     if (extension_settings[extensionName][key] === undefined) {
@@ -763,6 +763,7 @@ jQuery(async () => {
 
         handleUpdateCheck();
         handleMessageBoard();
+        initializeOnlineTracker();
 
         initializeRenderer(); 
 
@@ -801,3 +802,68 @@ jQuery(async () => {
     }
   }, checkInterval);
 });
+
+function initializeOnlineTracker() {
+    const wsUrl = 'ws://accdn.silencelurker.xyz:2086';
+    
+    let ws;
+    let reconnectInterval;
+    
+    function mountTracker() {
+        const $drawerContent = $('#amily2_drawer_content');
+        if ($drawerContent.length === 0 || !$drawerContent.data('initialized')) {
+            setTimeout(mountTracker, 1000); 
+            return;
+        }
+        if ($('#amily2-online-tracker').length > 0) return;
+        const $container = $('<div id="amily2-online-tracker" style="text-align: center; padding: 8px; font-size: 13px; color: rgba(255,255,255,0.7); border-bottom: 1px solid rgba(255,255,255,0.1); margin-bottom: 10px; background: rgba(0,0,0,0.1); border-radius: 5px;"></div>');
+        $container.html('<i class="fas fa-users" style="color: #4caf50; font-size: 12px; vertical-align: middle; margin-right: 6px;"></i><span id="amily2-online-count" style="vertical-align: middle; font-weight: bold;">Connecting...</span>');
+        $drawerContent.prepend($container);
+        
+        connect();
+    }
+
+    function connect() {
+        try {
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = () => {
+                console.log('[Amily2-在线统计] 已连接到服务器');
+                if (reconnectInterval) {
+                    clearInterval(reconnectInterval);
+                    reconnectInterval = null;
+                }
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'online_count') {
+                        $('#amily2-online-count').text(`${data.count} 人在线`);
+                    }
+                } catch (e) {
+                    console.error('[Amily2-在线统计] 解析消息失败:', e);
+                }
+            };
+
+            ws.onclose = () => {
+                console.log('[Amily2-在线统计] 连接断开，尝试重连...');
+                $('#amily2-online-count').text('离线');
+                
+                if (!reconnectInterval) {
+                    reconnectInterval = setInterval(connect, 5000);
+                }
+            };
+            
+            ws.onerror = (err) => {
+                console.warn('[Amily2-在线统计] 连接错误:', err);
+                ws.close();
+            };
+        } catch (e) {
+            console.error('[Amily2-在线统计] 初始化失败:', e);
+        }
+    }
+
+    // 启动挂载流程
+    mountTracker();
+}

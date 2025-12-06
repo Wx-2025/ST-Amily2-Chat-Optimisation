@@ -10,23 +10,23 @@ let latestUpdateInfo = null;
 let newVersionAvailable = false;
 
 export function setUpdateInfo(isNew, updateInfo) {
-    newVersionAvailable = isNew;
-    latestUpdateInfo = updateInfo;
+  newVersionAvailable = isNew;
+  latestUpdateInfo = updateInfo;
 }
 
 
 export function applyUpdateIndicator() {
-    if (newVersionAvailable) {
-        $('#amily2_update_indicator').show();
-        $('#amily2_update_button_new').show();
-    } else {
-        $('#amily2_update_indicator').hide();
-        $('#amily2_update_button_new').hide();
-    }
+  if (newVersionAvailable) {
+    $('#amily2_update_indicator').show();
+    $('#amily2_update_button_new').show();
+  } else {
+    $('#amily2_update_indicator').hide();
+    $('#amily2_update_button_new').hide();
+  }
 }
 
 export function getLatestUpdateInfo() {
-    return latestUpdateInfo;
+  return latestUpdateInfo;
 }
 
 export function setAvailableModels(models) {
@@ -77,7 +77,7 @@ export function updateUI() {
     $(".plugin-features").show();
 
     const settings = extension_settings[extensionName];
-    if (!settings) return; 
+    if (!settings) return;
 
     $("#amily2_api_provider").val(settings.apiProvider || 'openai');
     $("#amily2_api_url").val(settings.apiUrl);
@@ -95,7 +95,7 @@ export function updateUI() {
     $("#amily2_temperature_value").text(settings.temperature);
     $("#amily2_context_messages").val(settings.contextMessages);
     $("#amily2_context_messages_value").text(settings.contextMessages);
-	$("#amily2_optimization_target_tag").val(settings.optimizationTargetTag);
+    $("#amily2_optimization_target_tag").val(settings.optimizationTargetTag);
 
 
     $(
@@ -135,51 +135,51 @@ export function updateUI() {
     $("#amily2_auto_hide_summarized_enabled").prop("checked", settings.autoHideSummarizedEnabled);
     $("#amily2_auto_hide_threshold").val(settings.autoHideThreshold);
     $("#amily2_auto_hide_threshold_value").text(settings.autoHideThreshold);
-        $('#amily2_lore_activation_mode').val(settings.loreActivationMode);
-        $('#amily2_lore_insertion_position').val(settings.loreInsertionPosition);
-        $('#amily2_lore_depth_input').val(settings.loreDepth);
-        if (settings.loreInsertionPosition === 'at_depth') {
-            $('#amily2_lore_depth_container').show();
-        } else {
-            $('#amily2_lore_depth_container').hide(); 
-        }
+    $('#amily2_lore_activation_mode').val(settings.loreActivationMode);
+    $('#amily2_lore_insertion_position').val(settings.loreInsertionPosition);
+    $('#amily2_lore_depth_input').val(settings.loreDepth);
+    if (settings.loreInsertionPosition === 'at_depth') {
+      $('#amily2_lore_depth_container').show();
+    } else {
+      $('#amily2_lore_depth_container').hide();
+    }
     if (settings.historiographySmallAutoEnable !== undefined) {
-        $('#amily2_mhb_small_auto_enabled').prop('checked', settings.historiographySmallAutoEnable);
+      $('#amily2_mhb_small_auto_enabled').prop('checked', settings.historiographySmallAutoEnable);
     }
     if (settings.historiographySmallTriggerThreshold !== undefined) {
-        $('#amily2_mhb_small_trigger_count').val(settings.historiographySmallTriggerThreshold);
+      $('#amily2_mhb_small_trigger_count').val(settings.historiographySmallTriggerThreshold);
     }
     // 同步渲染器开关状态
-    if (settings.render_enabled !== undefined) {
-      $('#render-enable-toggle-amily').prop('checked', settings.render_enabled);
-  }
-  
-  // 同步渲染深度设置
-  if (settings.render_depth !== undefined) {
+    if (settings.amily_render_enabled !== undefined) {
+      $('#amily-render-enable-toggle').prop('checked', settings.amily_render_enabled);
+    }
+
+    // 同步渲染深度设置
+    if (settings.render_depth !== undefined) {
       $('#render-depth').val(settings.render_depth);
-  }
-  
-  populateModelDropdown();
-  updatePlotOptimizationUI(); 
+    }
+
+    populateModelDropdown();
+    updatePlotOptimizationUI();
 
     // Restore collapsible sections state
-    $('.collapsible').each(function() {
-        const section = $(this);
-        const legend = section.find('.collapsible-legend');
-        const content = section.find('.collapsible-content');
-        const icon = legend.find('.collapse-icon');
-        const sectionId = legend.text().trim(); 
-        const isCollapsed = extension_settings[extensionName][`collapsible_${sectionId}_collapsed`] ?? true;
+    $('.collapsible').each(function () {
+      const section = $(this);
+      const legend = section.find('.collapsible-legend');
+      const content = section.find('.collapsible-content');
+      const icon = legend.find('.collapse-icon');
+      const sectionId = legend.text().trim();
+      const isCollapsed = extension_settings[extensionName][`collapsible_${sectionId}_collapsed`] ?? true;
 
-        if (isCollapsed) {
-            content.hide();
-            icon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
-        } else {
-            content.show();
-            icon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
-        }
+      if (isCollapsed) {
+        content.hide();
+        icon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+      } else {
+        content.show();
+        icon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+      }
     });
-}
+  }
 }
 
 
@@ -188,55 +188,55 @@ export function updateUI() {
 // =====================================================================
 
 function getMergedPlotOptSettings() {
-    const character = (characters && typeof this_chid !== 'undefined' && characters[this_chid]) ? characters[this_chid] : null;
-    const globalSettings = extension_settings[extensionName] || defaultSettings;
-    const characterSettings = character?.data?.extensions?.[extensionName] || {};
-    
-    return { ...globalSettings, ...characterSettings };
+  const character = (characters && typeof this_chid !== 'undefined' && characters[this_chid]) ? characters[this_chid] : null;
+  const globalSettings = extension_settings[extensionName] || defaultSettings;
+  const characterSettings = character?.data?.extensions?.[extensionName] || {};
+
+  return { ...globalSettings, ...characterSettings };
 }
 
 
 export function updatePlotOptimizationUI() {
-    const settings = getMergedPlotOptSettings();
-    if (!settings) return;
+  const settings = getMergedPlotOptSettings();
+  if (!settings) return;
 
-    $('#amily2_opt_enabled').prop('checked', settings.plotOpt_enabled);
-    $('#amily2_opt_ejs_enabled').prop('checked', settings.plotOpt_ejsEnabled);
-    $('#amily2_opt_worldbook_enabled').prop('checked', settings.plotOpt_worldbook_enabled);
-    $('#amily2_opt_table_enabled').prop('checked', settings.plotOpt_tableEnabled);
+  $('#amily2_opt_enabled').prop('checked', settings.plotOpt_enabled);
+  $('#amily2_opt_ejs_enabled').prop('checked', settings.plotOpt_ejsEnabled);
+  $('#amily2_opt_worldbook_enabled').prop('checked', settings.plotOpt_worldbook_enabled);
+  $('#amily2_opt_table_enabled').prop('checked', settings.plotOpt_tableEnabled);
 
-    $('#amily2_opt_main_prompt').val(settings.plotOpt_mainPrompt);
-    $('#amily2_opt_system_prompt').val(settings.plotOpt_systemPrompt);
-    $('#amily2_opt_final_system_directive').val(settings.plotOpt_finalSystemDirective);
+  $('#amily2_opt_main_prompt').val(settings.plotOpt_mainPrompt);
+  $('#amily2_opt_system_prompt').val(settings.plotOpt_systemPrompt);
+  $('#amily2_opt_final_system_directive').val(settings.plotOpt_finalSystemDirective);
 
-    $('#amily2_opt_rate_main').val(settings.plotOpt_rateMain);
-    $('#amily2_opt_rate_personal').val(settings.plotOpt_ratePersonal);
-    $('#amily2_opt_rate_erotic').val(settings.plotOpt_rateErotic);
-    $('#amily2_opt_rate_cuckold').val(settings.plotOpt_rateCuckold);
+  $('#amily2_opt_rate_main').val(settings.plotOpt_rateMain);
+  $('#amily2_opt_rate_personal').val(settings.plotOpt_ratePersonal);
+  $('#amily2_opt_rate_erotic').val(settings.plotOpt_rateErotic);
+  $('#amily2_opt_rate_cuckold').val(settings.plotOpt_rateCuckold);
 
-    const sliders = {
-        '#amily2_opt_context_limit': 'plotOpt_contextLimit',
-        '#amily2_opt_worldbook_char_limit': 'plotOpt_worldbookCharLimit',
-    };
+  const sliders = {
+    '#amily2_opt_context_limit': 'plotOpt_contextLimit',
+    '#amily2_opt_worldbook_char_limit': 'plotOpt_worldbookCharLimit',
+  };
 
-    for (const sliderId in sliders) {
-        const key = sliders[sliderId];
-        const value = settings[key];
-        const valueDisplayId = `${sliderId}_value`;
+  for (const sliderId in sliders) {
+    const key = sliders[sliderId];
+    const value = settings[key];
+    const valueDisplayId = `${sliderId}_value`;
 
-        if (value !== undefined) {
-            $(sliderId).val(value);
-            $(valueDisplayId).text(value);
-        }
+    if (value !== undefined) {
+      $(sliderId).val(value);
+      $(valueDisplayId).text(value);
     }
+  }
 
-    const worldbookSource = settings.plotOpt_worldbookSource || 'character';
-    $(`input[name="amily2_opt_worldbook_source"][value="${worldbookSource}"]`).prop('checked', true);
+  const worldbookSource = settings.plotOpt_worldbookSource || 'character';
+  $(`input[name="amily2_opt_worldbook_source"][value="${worldbookSource}"]`).prop('checked', true);
 
-    const lastUsedPresetName = settings.plotOpt_lastUsedPresetName;
-    if (lastUsedPresetName && $('#amily2_opt_prompt_preset_select option[value="' + lastUsedPresetName + '"]').length > 0) {
-        $('#amily2_opt_prompt_preset_select').val(lastUsedPresetName);
-    }
-    
-    console.log(`[${extensionName}] (state.js) 剧情优化UI已根据合并设置更新。`);
+  const lastUsedPresetName = settings.plotOpt_lastUsedPresetName;
+  if (lastUsedPresetName && $('#amily2_opt_prompt_preset_select option[value="' + lastUsedPresetName + '"]').length > 0) {
+    $('#amily2_opt_prompt_preset_select').val(lastUsedPresetName);
+  }
+
+  console.log(`[${extensionName}] (state.js) 剧情优化UI已根据合并设置更新。`);
 }
