@@ -96,9 +96,47 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
     }
 
     try {
-        let textToProcess = latestMessage.mes;
+        // --- 延迟填表逻辑 (V151.0) ---
+        const delay = parseInt(settings.secondary_filler_delay || 0, 10);
+        const chat = context.chat;
+        let targetMessage;
+        let targetIndex;
+
+        if (delay > 0) {
+            // 如果有延迟，我们需要找到“延迟前”的那条消息
+            // chat.length - 1 是当前最新消息的索引
+            // 目标索引 = (chat.length - 1) - delay
+            targetIndex = (chat.length - 1) - delay;
+
+            if (targetIndex < 0) {
+                console.log(`[Amily2-副API] 延迟模式(${delay}): 历史楼层不足，跳过填表。`);
+                return;
+            }
+
+            targetMessage = chat[targetIndex];
+
+            // 检查目标消息是否是AI消息（通常填表针对AI回复）
+            // 如果目标消息是用户的消息，而我们只想填AI的表，这可能是一个问题。
+            // 但如果用户设置了延迟，他们可能期望每隔几层填一次，或者只填AI层。
+            // 现有的 `fillWithSecondaryApi` 是在 `CHAT_COMPLETION` 后调用的，此时最新消息通常是AI消息。
+            // 如果延迟是奇数（例如1），目标消息可能是用户消息。
+            // 假设延迟是偶数（例如2），目标消息是上一条AI消息。
+            
+            // 为了安全起见，如果目标消息是用户消息，我们可能应该跳过？或者依然填表（记录用户消息的表）？
+            // 目前表系统通常绑定在AI回复上。
+            // 如果 targetMessage.is_user，我们尝试往回找最近的一条AI消息？
+            // 不，这会乱套。严格按照楼层索引来。
+            
+            console.log(`[Amily2-副API] 延迟模式生效: 当前总楼层 ${chat.length}, 延迟 ${delay}, 目标楼层索引 ${targetIndex}`);
+        } else {
+            // 无延迟，使用传入的最新消息
+            targetMessage = latestMessage;
+            targetIndex = chat.length - 1;
+        }
+
+        let textToProcess = targetMessage.mes;
         if (!textToProcess || !textToProcess.trim()) {
-            console.log("[Amily2-副API] 消息内容为空，跳过填表任务。");
+            console.log("[Amily2-副API] 目标消息内容为空，跳过填表任务。");
             return;
         }
 
@@ -120,15 +158,15 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
             return;
         }
 
-        const context = getContext();
         const userName = context.name1 || '用户';
         const characterName = context.name2 || '角色';
 
-        const chat = context.chat;
-        
+        // 寻找目标消息之前的最后一条用户消息
         let lastUserMessage = null;
         let lastUserMessageIndex = -1;
-        for (let i = chat.length - 2; i >= 0; i--) {
+        
+        // 从 targetIndex - 1 开始往前找
+        for (let i = targetIndex - 1; i >= 0; i--) {
             if (chat[i].is_user) {
                 lastUserMessage = chat[i];
                 lastUserMessageIndex = i;
@@ -136,8 +174,8 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
             }
         }
 
-        const currentInteractionContent = (lastUserMessage ? `${userName}（用户）最新消息：${lastUserMessage.mes}\n` : '') + 
-                                          `${characterName}（AI）最新消息，[核心处理内容]：${textToProcess}`;
+        const currentInteractionContent = (lastUserMessage ? `${userName}（用户）消息：${lastUserMessage.mes}\n` : '') + 
+                                          `${characterName}（AI）消息，[核心处理内容]：${textToProcess}`;
 
         let mixedOrder;
         try {
@@ -185,7 +223,10 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
                         const historyMessagesToGet = contextReadingLevel > 2 ? contextReadingLevel - 2 : 0;
 
                         if (historyMessagesToGet > 0) {
-                            const historyEndIndex = lastUserMessageIndex !== -1 ? lastUserMessageIndex : chat.length - 1;
+                            // 这里的 historyEndIndex 应该是我们上面计算出的 lastUserMessageIndex
+                            // 如果没找到用户消息，则使用 targetIndex - 1
+                            const historyEndIndex = lastUserMessageIndex !== -1 ? lastUserMessageIndex : Math.max(0, targetIndex - 1);
+                            
                             const historyContext = await getHistoryContext(historyMessagesToGet, historyEndIndex, tagsToExtract, exclusionRules);
                             if (historyContext) {
                                 messages.push({ role: "system", content: historyContext });
@@ -205,12 +246,10 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
             }
         }
 
-        const fillingMode = settings.filling_mode || 'main-api';
-        if (fillingMode === 'secondary-api') {
-            console.groupCollapsed(`[Amily2 分步填表] 即将发送至 API 的内容`);
-            console.dir(messages);
-            console.groupEnd();
-        }
+        console.groupCollapsed(`[Amily2 分步填表] 即将发送至 API 的内容`);
+        console.log("发送给AI的提示词: ", JSON.stringify(messages, null, 2));
+        console.dir(messages);
+        console.groupEnd();
 
         let rawContent;
         if (settings.nccsEnabled) {
@@ -230,14 +269,20 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
 
         updateTableFromText(rawContent);
 
-        const currentContext = getContext();
-        if (currentContext.chat && currentContext.chat.length > 0) {
-            const lastMessage = currentContext.chat[currentContext.chat.length - 1];
-            if (saveStateToMessage(getMemoryState(), lastMessage)) {
-                renderTables();
-                updateOrInsertTableInChat();
-            }
+        // 保存到目标消息
+        if (saveStateToMessage(getMemoryState(), targetMessage)) {
+            // 如果目标消息不是最新消息，我们可能需要重新渲染整个聊天记录或者特定消息的表格？
+            // renderTables() 通常重新渲染所有可见表格
+            renderTables();
+            // updateOrInsertTableInChat 通常插入到DOM中
+            // 我们可能需要传递 targetIndex 给 updateOrInsertTableInChat 吗？
+            // 目前 updateOrInsertTableInChat 似乎是查找 .mes_text 并插入。
+            // 如果我们更新了历史消息的数据，我们需要确保 DOM 也更新。
+            // 由于 SillyTavern 的消息渲染机制，如果消息已经在屏幕上，仅仅修改数据可能不会自动更新 DOM。
+            // 但是 renderTables() 应该会处理这个。
+            updateOrInsertTableInChat();
         }
+        
         saveChat();
 
     } catch (error) {

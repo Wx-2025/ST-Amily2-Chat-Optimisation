@@ -1,0 +1,194 @@
+#sm-modal-container {
+    color: #e0e0e0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    padding: 10px;
+    height: calc(100% - 60px); /* Adjust based on header height */
+    display: flex;
+    flex-direction: column;
+}
+
+.sm-intro-box {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.sm-intro-box h3 {
+    margin-top: 0;
+    color: #05c3f3; /* Amily Blue */
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 5px;
+}
+
+.sm-navigation-deck {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 5px;
+}
+
+.sm-nav-item {
+    background: transparent;
+    border: none;
+    color: #888;
+    padding: 8px 15px;
+    cursor: pointer;
+    border-radius: 5px 5px 0 0;
+    transition: all 0.2s;
+}
+
+.sm-nav-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #ccc;
+}
+
+.sm-nav-item.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: #05c3f3;
+    border-bottom: 2px solid #05c3f3;
+}
+
+.sm-scroll {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-right: 5px;
+}
+
+.sm-tab-pane {
+    display: none;
+    animation: fadeIn 0.3s ease;
+}
+
+.sm-tab-pane.active {
+    display: block;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(5px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.sm-settings-group {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.sm-settings-group legend {
+    color: #05c3f3;
+    font-weight: bold;
+    padding: 0 5px;
+}
+
+.sm-control-block {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 5px 0;
+    border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+}
+
+.sm-control-block:last-child {
+    border-bottom: none;
+}
+
+.sm-input {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding: 5px 8px;
+    border-radius: 4px;
+    width: 80px;
+    text-align: center;
+}
+
+.sm-button-group {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.sm-action-button {
+    flex: 1;
+    padding: 8px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.2s;
+    background: #4a4a4a;
+    color: #fff;
+}
+
+.sm-action-button.success {
+    background: #28a745;
+}
+
+.sm-action-button.success:hover {
+    background: #218838;
+}
+
+.sm-action-button.danger {
+    background: #dc3545;
+}
+
+.sm-action-button.danger:hover {
+    background: #c82333;
+}
+
+.sm-status-indicator {
+    font-weight: bold;
+    color: #ffc107; /* Warning yellow */
+}
+
+/* Toggle Switch */
+.sm-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+}
+
+.sm-toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.sm-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 20px;
+}
+
+.sm-slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .sm-slider {
+    background-color: #05c3f3;
+}
+
+input:checked + .sm-slider:before {
+    transform: translateX(20px);
+}

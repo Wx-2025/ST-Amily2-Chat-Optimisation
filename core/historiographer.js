@@ -18,6 +18,21 @@ import { callAI, generateRandomSeed } from "./api.js";
 import { callNgmsAI } from "./api/Ngms_api.js";
 import { executeAutoHide } from "./autoHideManager.js";
 
+let reloadEditor = () => {
+    console.warn("[大史官] reloadEditor 函数不可用，可能是旧版本。已使用空函数代替。");
+};
+(async () => {
+    try {
+        const { reloadEditor: importedReloadEditor } = await import("/scripts/world-info.js");
+        if (importedReloadEditor) {
+            reloadEditor = importedReloadEditor;
+            console.log("[大史官] 已成功动态导入 reloadEditor。");
+        }
+    } catch (error) {
+        console.warn("[大史官] 动态导入 reloadEditor 失败，将使用空函数。错误信息：", error.message);
+    }
+})();
+
 let isExpeditionRunning = false; 
 let manualStopRequested = false; 
 
@@ -105,6 +120,16 @@ export async function getLoresForWorldbook(bookName) {
   }
 }
 
+function escapeHtml(text) {
+    if (!text) return '';
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 export async function executeManualSummary(startFloor, endFloor, isAuto = false) {
     return new Promise(async (resolve) => {
         const toastTitle = isAuto ? "微言录 (自动)" : "微言录 (手动)";
@@ -154,9 +179,9 @@ export async function executeManualSummary(startFloor, endFloor, isAuto = false)
         const generateModalHtml = (msgList) => {
             const messageHtml = msgList.map(msg => `
                 <details class="historiography-message-item" data-author-type="${msg.authorType}">
-                    <summary>【第 ${msg.floor} 楼】 ${msg.author}</summary>
+                    <summary>【第 ${msg.floor} 楼】 ${escapeHtml(msg.author)}</summary>
                     <div class="historiography-editor-container">
-                        <textarea class="text_pole" data-floor="${msg.floor}">${msg.content}</textarea>
+                        <textarea class="text_pole" data-floor="${msg.floor}">${escapeHtml(msg.content)}</textarea>
                     </div>
                 </details>
             `).join('');
@@ -613,6 +638,7 @@ export async function executeRefinement(worldbook, loreKey) {
 
                     entry.content = finalContent;
                     await saveWorldInfo(worldbook, bookData, true);
+                    reloadEditor(worldbook);
                     toastr.success(`史册已成功重铸，并保存于《${worldbook}》！`, "宏史卷重铸完毕");
                 },
                 onRegenerate: async (dialog) => {
@@ -814,5 +840,137 @@ export async function executeCompilation(worldbook, loreKeys) {
         console.error("[翰林院] 批量条目入库失败:", error);
         toastr.error(`批量入库失败: ${error.message}`, "翰林院");
         return { success: false, error: error.message };
+    }
+}
+
+// ========== 史册归档与回溯系统 ==========
+
+async function getTargetLorebookName() {
+    const settings = extension_settings[extensionName];
+    const context = getContext();
+    let targetLorebookName = null;
+    switch (settings.lorebookTarget) {
+        case "character_main":
+            targetLorebookName = characters[context.characterId]?.data?.extensions?.world;
+            break;
+        case "dedicated":
+            const chatIdentifier = await getChatIdentifier();
+            targetLorebookName = `Amily2-Lore-${chatIdentifier}`;
+            break;
+    }
+    return targetLorebookName;
+}
+
+export async function archiveCurrentLedger() {
+    try {
+        const targetLorebookName = await getTargetLorebookName();
+        if (!targetLorebookName) {
+            toastr.error("无法确定目标世界书，归档失败。", "圣谕不明");
+            return false;
+        }
+
+        const bookData = await loadWorldInfo(targetLorebookName);
+        if (!bookData || !bookData.entries) {
+            toastr.error(`无法读取世界书《${targetLorebookName}》。`, "国史馆");
+            return false;
+        }
+
+        const ledgerEntryKey = Object.keys(bookData.entries).find(
+            (key) => bookData.entries[key].comment === RUNNING_LOG_COMMENT && !bookData.entries[key].disable
+        );
+
+        if (!ledgerEntryKey) {
+            toastr.info("当前没有活跃的【对话流水总帐】，无需归档。", "国史馆");
+            return false;
+        }
+
+        const entry = bookData.entries[ledgerEntryKey];
+        const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+        const newComment = `${RUNNING_LOG_COMMENT}_归档_${timestamp}`;
+
+        entry.comment = newComment;
+        entry.disable = true;
+
+        await saveWorldInfo(targetLorebookName, bookData, true);
+        reloadEditor(targetLorebookName);
+        toastr.success(`已将当前流水总帐归档为：\n${newComment}`, "归档成功");
+        return true;
+
+    } catch (error) {
+        console.error("[大史官] 归档失败:", error);
+        toastr.error(`归档失败: ${error.message}`, "国史馆");
+        return false;
+    }
+}
+
+export async function getArchivedLedgers() {
+    try {
+        const targetLorebookName = await getTargetLorebookName();
+        if (!targetLorebookName) return [];
+
+        const bookData = await loadWorldInfo(targetLorebookName);
+        if (!bookData || !bookData.entries) return [];
+
+        const archivedLedgers = Object.entries(bookData.entries)
+            .filter(([, entry]) => entry.comment && entry.comment.startsWith(`${RUNNING_LOG_COMMENT}_归档_`))
+            .map(([key, entry]) => ({
+                key: key,
+                comment: entry.comment
+            }))
+            .sort((a, b) => b.comment.localeCompare(a.comment)); // 按时间倒序排列
+
+        return archivedLedgers;
+
+    } catch (error) {
+        console.error("[大史官] 获取归档列表失败:", error);
+        return [];
+    }
+}
+
+export async function restoreArchivedLedger(targetLoreKey) {
+    try {
+        const targetLorebookName = await getTargetLorebookName();
+        if (!targetLorebookName) {
+            toastr.error("无法确定目标世界书，回溯失败。", "圣谕不明");
+            return false;
+        }
+
+        const bookData = await loadWorldInfo(targetLorebookName);
+        if (!bookData || !bookData.entries) {
+            toastr.error(`无法读取世界书《${targetLorebookName}》。`, "国史馆");
+            return false;
+        }
+
+        const targetEntry = bookData.entries[targetLoreKey];
+        if (!targetEntry) {
+            toastr.error("找不到指定的归档史册。", "圣谕有误");
+            return false;
+        }
+
+        const currentActiveKey = Object.keys(bookData.entries).find(
+            (key) => bookData.entries[key].comment === RUNNING_LOG_COMMENT && !bookData.entries[key].disable
+        );
+
+        if (currentActiveKey) {
+            if (currentActiveKey !== targetLoreKey) {
+                const activeEntry = bookData.entries[currentActiveKey];
+                const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+                activeEntry.comment = `${RUNNING_LOG_COMMENT}_归档_${timestamp}`;
+                activeEntry.disable = true;
+                toastr.info(`已自动归档原有的活跃史册为: ${activeEntry.comment}`, "自动归档");
+            }
+        }
+        targetEntry.comment = RUNNING_LOG_COMMENT;
+        targetEntry.disable = false;
+
+        await saveWorldInfo(targetLorebookName, bookData, true);
+        reloadEditor(targetLorebookName);
+        toastr.success("史册回溯成功！时光已倒流，旧史重现。", "回溯成功");
+        return true;
+
+    } catch (error) {
+        console.error("[大史官] 回溯失败:", error);
+        toastr.error(`回溯失败: ${error.message}`, "国史馆");
+        return false;
     }
 }

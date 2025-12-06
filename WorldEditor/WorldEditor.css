@@ -525,51 +525,95 @@
     }
 
     #world-editor-container .world-editor-entries-header {
-        display: none; /* 在移动端隐藏表头 */
-    }
-
-    #world-editor-container .world-editor-entry-row {
-        grid-template-columns: 40px 1fr; /* 简化为两列：复选框和内容 */
+        display: flex;
+        align-items: center;
         padding: 10px;
+        background-color: #333;
         border-bottom: 1px solid #444;
     }
 
-    #world-editor-container .world-editor-entry-row > div:not(:nth-child(1)):not(:nth-child(2)) {
-        display: none; /* 隐藏除复选框和主要内容外的所有列 */
+    #world-editor-container .world-editor-entries-header > div {
+        display: none;
+    }
+
+    #world-editor-container .world-editor-entries-header > div:first-child {
+        display: flex;
+        align-items: center;
+    }
+
+    #world-editor-container .world-editor-entries-header > div:first-child::after {
+        content: "全选";
+        margin-left: 10px;
+        color: #ccc;
+        font-size: 14px;
     }
 
     #world-editor-container .world-editor-entry-row {
         display: grid;
-        grid-template-columns: auto 1fr; /* 复选框和内容区 */
-        gap: 10px;
+        grid-template-columns: 40px 1fr; /* 复选框和内容区 */
+        gap: 5px;
         padding: 10px;
+        border-bottom: 1px solid #444;
+        height: auto;
     }
 
     #world-editor-container .world-editor-entry-row > div {
-        display: block !important; /* 确保所有单元格都可见 */
         text-align: left;
-        padding: 5px 0;
+        padding: 2px 0;
     }
 
-    #world-editor-container .world-editor-entry-row::before {
-        display: block;
+    /* Add labels for mobile view */
+    #world-editor-container .world-editor-entry-row > div::before {
+        content: attr(data-label) ": ";
         font-weight: bold;
         color: #888;
+        display: inline-block;
+        margin-right: 5px;
+    }
+    
+    /* Hide label for checkbox */
+    #world-editor-container .world-editor-entry-row > div:nth-child(1)::before {
+        display: none;
     }
 
-    #world-editor-container .world-editor-entry-checkbox { grid-row: 1 / span 5; align-self: center; }
-    #world-editor-container .world-editor-entry-status { grid-column: 2; }
-    #world-editor-container .world-editor-entry-activation { grid-column: 2; }
-    #world-editor-container .world-editor-entry-keys { grid-column: 2; }
-    #world-editor-container .world-editor-entry-content { grid-column: 2; }
-    #world-editor-container .world-editor-entry-position { grid-column: 2; }
-    #world-editor-container .world-editor-entry-depth { grid-column: 2; }
-    #world-editor-container .world-editor-entry-order { grid-column: 2; }
+    /* Checkbox positioning - Target the WRAPPER div */
+    #world-editor-container .world-editor-entry-checkbox { 
+        grid-row: 1 / span 8; 
+        align-self: start; 
+        margin-top: 5px;
+    }
 
+    /* Stack other elements in the second column */
+    #world-editor-container .world-editor-entry-status,
+    #world-editor-container .world-editor-entry-activation,
+    #world-editor-container .world-editor-entry-keys,
+    #world-editor-container .world-editor-entry-content,
+    #world-editor-container .world-editor-entry-position,
+    #world-editor-container .world-editor-entry-depth,
+    #world-editor-container .world-editor-entry-order,
+    #world-editor-container .world-editor-entry-row > div[data-label="条目"] {
+        grid-column: 2;
+        width: 100%;
+    }
+
+    /* Truncation for keys and content */
     #world-editor-container .world-editor-entry-keys,
     #world-editor-container .world-editor-entry-content {
         white-space: normal;
         max-width: 100%;
+        display: -webkit-box !important;
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        word-break: break-word;
+    }
+    
+    /* Ensure inline edits take full width on mobile */
+    #world-editor-container .inline-edit {
+        width: calc(100% - 60px); /* Adjust for label width roughly */
+        display: inline-block;
     }
 
     #world-editor-container .world-editor-batch-actions {

@@ -19,6 +19,10 @@ export const defaultSettings = {
   contextMessages: 2,
   promptPresets: [],
   lastUsedPresetName: '',
+  super_memory_enabled: false, // 【V150.0】Amily2 Super Memory 总开关 (Default OFF)
+  superMemory_bridgeEnabled: false, // 【V150.0】世界书桥接 (Default OFF)
+  superMemory_autoBind: false, // 【V151.9】是否自动绑定到角色 (Default OFF)
+  secondary_filler_delay: 0, // 【V151.0】分步填表延迟
   plotOpt_enabled: false,
   plotOpt_max_tokens: 20000,
   plotOpt_temperature: 0.7,

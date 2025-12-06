@@ -10,7 +10,8 @@ import { applyExclusionRules, extractBlocksByTags } from '../core/utils/rag-tag-
 import {
   getAvailableWorldbooks, getLoresForWorldbook,
   executeManualSummary, executeRefinement,
-  executeExpedition, stopExpedition 
+  executeExpedition, stopExpedition,
+  archiveCurrentLedger, getArchivedLedgers, restoreArchivedLedger
 } from "../core/historiographer.js";
 
 import { getNgmsApiSettings, testNgmsApiConnection, fetchNgmsModels } from "../core/api/Ngms_api.js";
@@ -264,6 +265,51 @@ export function bindHistoriographyEvents() {
     });
 
     updateExpeditionButtonUI('idle');
+
+    // ========== 📚 史册归档与回溯 绑定 ==========
+    const archiveCurrentBtn = document.getElementById("amily2_mhb_archive_current");
+    const archiveSelector = document.getElementById("amily2_mhb_archive_selector");
+    const refreshArchivesBtn = document.getElementById("amily2_mhb_refresh_archives");
+    const restoreArchiveBtn = document.getElementById("amily2_mhb_restore_archive");
+
+    const updateArchiveList = async () => {
+        archiveSelector.innerHTML = '<option value="">正在翻阅旧档...</option>';
+        const archives = await getArchivedLedgers();
+        archiveSelector.innerHTML = ""; // 清空
+        if (archives && archives.length > 0) {
+            archives.forEach((arch) => {
+                const option = document.createElement("option");
+                option.value = arch.key;
+                option.textContent = arch.comment;
+                archiveSelector.appendChild(option);
+            });
+        } else {
+            archiveSelector.innerHTML = '<option value="">未发现归档史册</option>';
+        }
+    };
+
+    archiveCurrentBtn.addEventListener("click", async () => {
+        if (confirm("确定要归档当前的【对话流水总帐】并停用它吗？\n这将允许您开始一段全新的历史记录。")) {
+            const success = await archiveCurrentLedger();
+            if (success) {
+                updateArchiveList(); // 归档成功后刷新列表
+            }
+        }
+    });
+
+    refreshArchivesBtn.addEventListener("click", updateArchiveList);
+
+    restoreArchiveBtn.addEventListener("click", async () => {
+        const selectedKey = archiveSelector.value;
+        if (!selectedKey) {
+            toastr.warning("请先选择一个要回溯的史册！", "圣谕不明");
+            return;
+        }
+        if (confirm("确定要回溯选中的史册吗？\n当前的活跃史册（如果有）将被自动归档。")) {
+            await restoreArchivedLedger(selectedKey);
+            updateArchiveList(); // 回溯后刷新列表
+        }
+    });
 
   // ========== 💎 宏史卷 (史册精炼) 绑定 ==========
   const largeWbSelector = document.getElementById(

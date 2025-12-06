@@ -1,6 +1,6 @@
 import { getContext } from '/scripts/extensions.js';
 import { state, SCRIPT_ID_PREFIX } from './cwb_state.js';
-import { logDebug, logError, showToastr, escapeHtml, cleanChatName, parseCustomFormat, isCwbEnabled } from './cwb_utils.js';
+import { logDebug, logError, showToastr, escapeHtml, cleanChatName, parseCustomFormat, buildCustomFormat, isCwbEnabled } from './cwb_utils.js';
 import { callCustomOpenAI } from './cwb_apiService.js';
 import { saveDescriptionToLorebook, updateCharacterRosterLorebookEntry, manageAutoCardUpdateLorebookEntry, getTargetWorldBook } from './cwb_lorebookManager.js';
 import { extractBlocksByTags, applyExclusionRules } from '../../core/utils/rag-tag-extractor.js';
@@ -9,6 +9,7 @@ import { getPresetPrompts, getMixedOrder } from '../../PresetSettings/index.js';
 import { generateRandomSeed } from '../../core/api.js';
 import { getChatIdentifier } from '../../core/lore.js';
 import { safeLorebookEntries } from '../../core/tavernhelper-compatibility.js';
+import { amilyHelper } from '../../core/tavern-helper/main.js';
 
 const { SillyTavern, jQuery, characters } = window;
 
@@ -190,7 +191,12 @@ async function proceedWithCardUpdate($panel, messagesToUse) {
                 if (bookName) {
                     const entries = (await safeLorebookEntries(bookName)) || [];
                     let chatIdentifier = state.currentChatFileIdentifier.replace(/ imported/g, '');
-                    
+                    const messagesText = messagesToUse.map(m => {
+                        const name = m.name || '';
+                        const content = m.message || '';
+                        return `${name}\n${content}`;
+                    }).join('\n').toLowerCase();
+
                     const characterEntries = entries.filter(e => 
                         e.enabled &&
                         Array.isArray(e.keys) &&
@@ -200,16 +206,28 @@ async function proceedWithCardUpdate($panel, messagesToUse) {
 
                     for (const entry of characterEntries) {
                         try {
-                            const parsedData = parseCustomFormat(entry.content);
-                            const entryCharName = parsedData?.name?.trim() || parsedData?.core_identity?.name?.trim();
-                            if (entryCharName) {
-                                existingData[entryCharName] = entry.content;
+                            const keysToCheck = entry.keys.filter(k => k !== chatIdentifier);
+                            if (entry.secondary_keys && Array.isArray(entry.secondary_keys)) {
+                                keysToCheck.push(...entry.secondary_keys);
+                            }
+                            
+                            let isTriggered = false;
+                            if (keysToCheck.length > 0) {
+                                isTriggered = keysToCheck.some(key => messagesText.includes(key.toLowerCase()));
+                            }
+
+                            if (isTriggered) {
+                                const parsedData = parseCustomFormat(entry.content);
+                                const entryCharName = parsedData?.name?.trim() || parsedData?.CI?.name?.trim() || parsedData?.core_identity?.name?.trim();
+                                if (entryCharName) {
+                                    existingData[entryCharName] = entry.content;
+                                }
                             }
                         } catch (parseError) {
                             logError(`解析现有角色条目时出错 (UID: ${entry.uid}):`, parseError);
                         }
                     }
-                    logDebug(`为 '${chatIdentifier}' 找到了 ${Object.keys(existingData).length} 个现有角色条目。`);
+                    logDebug(`为 '${chatIdentifier}' 找到了 ${Object.keys(existingData).length} 个被触发的现有角色条目。`);
                 }
             } catch (e) {
                 logError('在增量更新中获取现有角色数据时出错:', e);
@@ -290,7 +308,7 @@ async function proceedWithCardUpdate($panel, messagesToUse) {
             if (!trimmedBlock) continue;
 
             const parsedData = parseCustomFormat(trimmedBlock);
-            const charName = (parsedData?.core_identity?.name?.trim() || parsedData?.name?.trim()) || 'UnknownCharacter';
+            const charName = (parsedData?.name?.trim() || parsedData?.CI?.name?.trim() || parsedData?.core_identity?.name?.trim()) || 'UnknownCharacter';
 
             if (charName === 'UnknownCharacter') {
                 logError('无法在块中找到角色名:', trimmedBlock);
@@ -666,7 +684,8 @@ export async function manualUpdateLogic($panel = null) {
 
     isUpdatingCard = true;
     await loadAllChatMessages($panel);
-    const messagesToProcess = state.allChatMessages.slice(-state.autoUpdateThreshold);
+    const depth = state.scanDepth || state.autoUpdateThreshold || 6;
+    const messagesToProcess = state.allChatMessages.slice(-depth);
     await proceedWithCardUpdate($panel, messagesToProcess);
     isUpdatingCard = false;
 
@@ -678,6 +697,164 @@ export async function handleManualUpdateCard($panel) {
     $button.prop('disabled', true).text('更新中...');
     await manualUpdateLogic($panel);
     $button.prop('disabled', false).text('立即更新角色描述');
+}
+
+export async function handleLegacyFormatConversion($panel) {
+    if (!isCwbEnabled()) {
+        showToastr('warning', 'CharacterWorldBook总开关已关闭。');
+        return;
+    }
+
+    const $button = $panel.find('#cwb-legacy-auto-update');
+    $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 转换中...');
+
+    try {
+        const bookName = await getTargetWorldBook();
+        if (!bookName) {
+            showToastr('warning', '未找到目标世界书。');
+            return;
+        }
+
+        const entries = await safeLorebookEntries(bookName);
+        let updatedCount = 0;
+        const entriesToUpdate = [];
+
+        for (const entry of entries) {
+            if (!entry.content || !entry.content.includes('[--Amily2::CHAR_START--]')) continue;
+
+            try {
+                const parsed = parseCustomFormat(entry.content);
+                if (!parsed || Object.keys(parsed).length === 0) continue;
+
+                let hasChanges = false;
+                const newData = {};
+
+                // Helper to rename keys
+                const renameKey = (obj, oldKey, newKey) => {
+                    if (obj[oldKey] !== undefined) {
+                        obj[newKey] = obj[oldKey];
+                        delete obj[oldKey];
+                        return true;
+                    }
+                    return false;
+                };
+
+                // Helper to rename sub-keys
+                const renameSubKeys = (parentObj, parentKey, mapping) => {
+                    if (parentObj[parentKey]) {
+                        let subChanged = false;
+                        for (const [oldSub, newSub] of Object.entries(mapping)) {
+                            if (renameKey(parentObj[parentKey], oldSub, newSub)) {
+                                subChanged = true;
+                            }
+                        }
+                        return subChanged;
+                    }
+                    return false;
+                };
+
+                // Copy parsed data to newData to avoid mutating original if needed (though parseCustomFormat returns new obj)
+                Object.assign(newData, JSON.parse(JSON.stringify(parsed)));
+
+                // 1. Rename Top Level Modules
+                if (renameKey(newData, 'core_identity', 'CI')) hasChanges = true;
+                if (renameKey(newData, 'physical_imprint', 'PI')) hasChanges = true;
+                if (renameKey(newData, 'psyche_profile', 'PP')) hasChanges = true;
+                if (renameKey(newData, 'social_matrix', 'SM')) hasChanges = true;
+                if (renameKey(newData, 'narrative_essence', 'NE')) hasChanges = true;
+
+                // 2. Rename Sub-keys
+                // CI
+                if (renameSubKeys(newData, 'CI', {
+                    'archetype': 'arch',
+                    'gender': 'gen',
+                    'current_status': 'status'
+                })) hasChanges = true;
+
+                // PI
+                if (renameSubKeys(newData, 'PI', {
+                    'first_impression': 'first',
+                    'key_features': 'feat',
+                    'mannerisms': 'manner'
+                })) hasChanges = true;
+
+                // PP
+                if (renameSubKeys(newData, 'PP', {
+                    'description': 'desc',
+                    'motivation': 'mot',
+                    'values': 'val',
+                    'inner_conflict': 'conf'
+                })) hasChanges = true;
+
+                // SM
+                if (renameSubKeys(newData, 'SM', {
+                    'interaction_style': 'style',
+                    'skills': 'skill',
+                    'reputation': 'rep'
+                })) hasChanges = true;
+
+                // NE
+                if (newData.NE) {
+                    // core_traits -> trait
+                    if (newData.NE.core_traits) {
+                        newData.NE.trait = newData.NE.core_traits.map(t => {
+                            const newT = { ...t };
+                            renameKey(newT, 'definition', 'def');
+                            renameKey(newT, 'evidence', 'evid');
+                            return newT;
+                        });
+                        delete newData.NE.core_traits;
+                        hasChanges = true;
+                    }
+
+                    // verbal_patterns -> verb
+                    if (newData.NE.verbal_patterns) {
+                        newData.NE.verb = { ...newData.NE.verbal_patterns };
+                        delete newData.NE.verbal_patterns;
+                        renameKey(newData.NE.verb, 'style_summary', 'style');
+                        renameKey(newData.NE.verb, 'quotes', 'quote');
+                        hasChanges = true;
+                    }
+
+                    // key_relationships -> rel
+                    if (newData.NE.key_relationships) {
+                        newData.NE.rel = newData.NE.key_relationships.map(r => {
+                            const newR = { ...r };
+                            renameKey(newR, 'summary', 'sum');
+                            return newR;
+                        });
+                        delete newData.NE.key_relationships;
+                        hasChanges = true;
+                    }
+                }
+
+                if (hasChanges) {
+                    const newContent = buildCustomFormat(newData);
+                    entriesToUpdate.push({
+                        uid: entry.uid,
+                        content: newContent
+                    });
+                    updatedCount++;
+                }
+
+            } catch (e) {
+                logError(`转换条目失败 (UID: ${entry.uid}):`, e);
+            }
+        }
+
+        if (updatedCount > 0) {
+            await amilyHelper.setLorebookEntries(bookName, entriesToUpdate);
+            showToastr('success', `成功转换了 ${updatedCount} 个旧版格式条目！`);
+        } else {
+            showToastr('info', '没有发现需要转换的旧版格式条目。');
+        }
+
+    } catch (error) {
+        logError('旧版格式转换失败:', error);
+        showToastr('error', `转换失败: ${error.message}`);
+    } finally {
+        $button.prop('disabled', false).html('<i class="fa-solid fa-history"></i> 旧版格式转换');
+    }
 }
 
 export async function initializeCore($panel) {

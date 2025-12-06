@@ -31,7 +31,9 @@ import {
     name2,
     addOneMessage,
     messageFormatting,
-    substituteParamsExtended
+    substituteParamsExtended,
+    saveCharacterDebounced,
+    this_chid
 } from "/script.js";
 import { getContext } from "/scripts/extensions.js";
 import { executeSlashCommandsWithOptions } from '/scripts/slash-commands.js';
@@ -430,6 +432,7 @@ class AmilyHelper {
                         existingEntry.position = positionMap[entryUpdate.position] ?? 4;
                     }
                     if (entryUpdate.depth !== undefined) existingEntry.depth = entryUpdate.depth;
+                    if (entryUpdate.scanDepth !== undefined) existingEntry.scanDepth = entryUpdate.scanDepth;
                     if (entryUpdate.order !== undefined) existingEntry.order = entryUpdate.order;
                     if (entryUpdate.exclude_recursion !== undefined) existingEntry.excludeRecursion = entryUpdate.exclude_recursion;
                     if (entryUpdate.prevent_recursion !== undefined) existingEntry.preventRecursion = entryUpdate.prevent_recursion;
@@ -474,6 +477,7 @@ class AmilyHelper {
                     constant: newEntryData.type === 'constant' ? true : (newEntryData.constant || false),
                     position: typeof newEntryData.position === 'string' ? (positionMap[newEntryData.position] ?? 4) : (newEntryData.position ?? 4),
                     depth: newEntryData.depth ?? 998,
+                    scanDepth: newEntryData.scanDepth ?? null,
                     disable: !(newEntryData.enabled ?? true),
                 });
                 if (newEntryData.type === 'selective') newEntry.constant = false;
@@ -483,6 +487,34 @@ class AmilyHelper {
             return true;
         } catch (error) {
             console.error(`[Amily助手] 在世界书《${bookName}》中创建新条目时出错:`, error);
+            return false;
+        }
+    }
+
+    async deleteLorebookEntries(bookName, uids) {
+        try {
+            const bookData = await loadWorldInfo(bookName);
+            if (!bookData || !bookData.entries) {
+                return false;
+            }
+            
+            let deletedCount = 0;
+            for (const uid of uids) {
+                if (bookData.entries[uid]) {
+                    delete bookData.entries[uid];
+                    deletedCount++;
+                }
+            }
+            
+            if (deletedCount > 0) {
+                await saveWorldInfo(bookName, bookData, true);
+                reloadEditor(bookName);
+                console.log(`[Amily助手] 已从世界书《${bookName}》删除 ${deletedCount} 个条目`);
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error(`[Amily助手] 删除世界书《${bookName}》条目时出错:`, error);
             return false;
         }
     }
@@ -534,6 +566,42 @@ class AmilyHelper {
 
     getLastMessageId() {
         return chat.length - 1;
+    }
+
+    /**
+     * 将指定世界书绑定到当前角色
+     * @param {string} bookName 世界书名称
+     */
+    async bindLorebookToCharacter(bookName) {
+        if (this_chid === undefined || !characters[this_chid]) {
+            console.warn('[Amily助手] 无法绑定世界书：未选中角色');
+            return false;
+        }
+
+        const char = characters[this_chid];
+        if (!char.data) char.data = {};
+        if (!char.data.extensions) char.data.extensions = {};
+        
+        // 确保 world 字段是数组
+        let worlds = char.data.extensions.world;
+        if (!Array.isArray(worlds)) {
+            worlds = worlds ? [worlds] : [];
+        }
+
+        if (!worlds.includes(bookName)) {
+            worlds.push(bookName);
+            char.data.extensions.world = worlds;
+            console.log(`[Amily助手] 已将世界书《${bookName}》绑定到角色 ${char.name}`);
+            
+            if (typeof saveCharacterDebounced === 'function') {
+                saveCharacterDebounced();
+                return true;
+            } else {
+                console.warn('[Amily助手] 无法保存角色数据：saveCharacterDebounced 不可用');
+                return false;
+            }
+        }
+        return true; // 已经绑定
     }
 }
 

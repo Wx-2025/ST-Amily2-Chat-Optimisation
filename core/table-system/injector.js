@@ -90,15 +90,18 @@ export async function injectTableData(chat, contextSize, abort, type) {
         return;
     }
 
-    if (!settings.table_injection_enabled) {
-        setExtensionPrompt(INJECTION_KEY, '', 0, 0, false, 'SYSTEM');
-        return;
-    }
+
 
     try {
-        const injectionContent = generateTableContent();
+        let injectionContent = generateTableContent();
 
-        if (!injectionContent) {
+        if (!settings.table_injection_enabled) {
+            setExtensionPrompt(INJECTION_KEY, '', 0, 0, false, 'SYSTEM');
+            return;
+        }
+
+        if (!injectionContent || injectionContent.trim() === '') {
+             // 理论上不会走到这里，除非宏都没了
             setExtensionPrompt(INJECTION_KEY, '', 0, 0, false, 'SYSTEM');
             return;
         }
