@@ -2,6 +2,17 @@ import { extensionName } from "../../utils/settings.js";
 import { extension_settings } from "/scripts/extensions.js";
 import { saveSettingsDebounced } from "/script.js";
 import { initializeSuperMemory, purgeSuperMemory } from "./manager.js";
+import { defaultSettings as ragDefaultSettings } from "../rag-settings.js";
+
+const RAG_MODULE_NAME = 'hanlinyuan-rag-core';
+
+function getRagSettings() {
+    if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
+    if (!extension_settings[extensionName][RAG_MODULE_NAME]) {
+        extension_settings[extensionName][RAG_MODULE_NAME] = structuredClone(ragDefaultSettings);
+    }
+    return extension_settings[extensionName][RAG_MODULE_NAME];
+}
 
 export function bindSuperMemoryEvents() {
     const panel = $('#amily2_super_memory_panel');
@@ -17,20 +28,58 @@ export function bindSuperMemoryEvents() {
         panel.find(`#sm-${tab}-tab`).addClass('active');
     });
 
+    // 处理 Checkbox 变更
     panel.on('change', 'input[type="checkbox"]', function() {
         if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
         
         const id = this.id;
-        let key = null;
         
-        if (id === 'sm-system-enabled') key = 'super_memory_enabled'; 
-        if (id === 'sm-bridge-enabled') key = 'superMemory_bridgeEnabled';
-
-        if (key) {
-            extension_settings[extensionName][key] = this.checked;
+        // Super Memory 自身设置
+        if (id === 'sm-system-enabled') {
+            extension_settings[extensionName]['super_memory_enabled'] = this.checked;
             saveSettingsDebounced();
-            console.log(`[Amily2-SuperMemory] Setting updated: ${key} = ${this.checked}`);
+            return;
         }
+        if (id === 'sm-bridge-enabled') {
+            extension_settings[extensionName]['superMemory_bridgeEnabled'] = this.checked;
+            saveSettingsDebounced();
+            return;
+        }
+
+        // RAG 设置 (归档 & 关联图谱)
+        const ragSettings = getRagSettings();
+        
+        if (id === 'sm-archive-enabled') {
+            if (!ragSettings.archive) ragSettings.archive = {};
+            ragSettings.archive.enabled = this.checked;
+        }
+        else if (id === 'sm-relationship-graph-enabled') {
+            if (!ragSettings.relationshipGraph) ragSettings.relationshipGraph = {};
+            ragSettings.relationshipGraph.enabled = this.checked;
+        }
+
+        saveSettingsDebounced();
+        console.log(`[Amily2-SuperMemory] Checkbox updated: ${id} = ${this.checked}`);
+    });
+
+    // 处理 Input 变更 (归档阈值等)
+    panel.on('change', 'input[type="number"], input[type="text"]', function() {
+        const id = this.id;
+        const ragSettings = getRagSettings();
+        if (!ragSettings.archive) ragSettings.archive = {};
+
+        if (id === 'sm-archive-threshold') {
+            ragSettings.archive.threshold = parseInt(this.value, 10);
+        }
+        else if (id === 'sm-archive-batch-size') {
+            ragSettings.archive.batchSize = parseInt(this.value, 10);
+        }
+        else if (id === 'sm-archive-target-table') {
+            ragSettings.archive.targetTable = this.value;
+        }
+
+        saveSettingsDebounced();
+        console.log(`[Amily2-SuperMemory] Input updated: ${id} = ${this.value}`);
     });
 
     loadSuperMemorySettings();
@@ -40,9 +89,24 @@ export function bindSuperMemoryEvents() {
 
 function loadSuperMemorySettings() {
     const settings = extension_settings[extensionName] || {};
+    const ragSettings = getRagSettings();
     
+    // Super Memory 设置
     $('#sm-system-enabled').prop('checked', settings.super_memory_enabled ?? false); 
     $('#sm-bridge-enabled').prop('checked', settings.superMemory_bridgeEnabled ?? false); 
+
+    // 归档设置
+    if (ragSettings.archive) {
+        $('#sm-archive-enabled').prop('checked', ragSettings.archive.enabled ?? false);
+        $('#sm-archive-threshold').val(ragSettings.archive.threshold ?? 20);
+        $('#sm-archive-batch-size').val(ragSettings.archive.batchSize ?? 10);
+        $('#sm-archive-target-table').val(ragSettings.archive.targetTable ?? '总结表');
+    }
+
+    // 关联图谱设置
+    if (ragSettings.relationshipGraph) {
+        $('#sm-relationship-graph-enabled').prop('checked', ragSettings.relationshipGraph.enabled ?? false);
+    }
 }
 
 window.sm_initializeSystem = async function() {
