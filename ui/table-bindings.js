@@ -11,6 +11,7 @@ import { world_names, loadWorldInfo } from '/scripts/world-info.js';
 import { safeCharLorebooks, safeLorebookEntries } from '../core/tavernhelper-compatibility.js';
 import { characters, this_chid, eventSource, event_types } from "/script.js";
 import { fetchNccsModels, testNccsApiConnection } from '../core/api/NccsApi.js';
+import { showGraphVisualization } from '../core/relationship-graph/visualizer.js';
 
 const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches;
 const getAllTablesContainer = () => document.getElementById('all-tables-container');
@@ -1247,13 +1248,14 @@ export function bindTableEvents() {
     log('开始为表格视图绑定交互事件...', 'info');
 
     const fillingModeRadios = panel.querySelectorAll('input[name="filling-mode"]');
-    const contextSliderContainer = document.getElementById('context-reading-slider-container');
-    const contextSlider = document.getElementById('context-reading-slider');
-    const contextValueSpan = document.getElementById('context-reading-value');
     
-    const delaySliderContainer = document.getElementById('secondary-filler-delay-container');
-    const delaySlider = document.getElementById('secondary-filler-delay-slider');
-    const delayValueSpan = document.getElementById('secondary-filler-delay-value');
+    // 获取新的分步填表控制容器
+    const secondaryFillerControls = document.getElementById('secondary-filler-controls');
+    
+    // 获取新的滑块元素
+    const contextSlider = document.getElementById('secondary-filler-context');
+    const batchSlider = document.getElementById('secondary-filler-batch');
+    const bufferSlider = document.getElementById('secondary-filler-buffer');
 
     const independentRulesContainer = document.getElementById('table-independent-rules-container');
     const independentRulesToggle = document.getElementById('table-independent-rules-enabled');
@@ -1267,12 +1269,8 @@ export function bindTableEvents() {
 
         const isSecondaryMode = currentMode === 'secondary-api';
 
-        if (contextSliderContainer) {
-            contextSliderContainer.style.display = isSecondaryMode ? 'block' : 'none';
-        }
-
-        if (delaySliderContainer) {
-            delaySliderContainer.style.display = isSecondaryMode ? 'block' : 'none';
+        if (secondaryFillerControls) {
+            secondaryFillerControls.style.display = isSecondaryMode ? 'block' : 'none';
         }
 
         if (independentRulesContainer) {
@@ -1298,33 +1296,36 @@ export function bindTableEvents() {
         });
     });
 
-    if (contextSlider && contextValueSpan) {
-        const contextReadingValue = extension_settings[extensionName]?.context_reading_level || 4;
-        contextSlider.value = contextReadingValue;
-        contextValueSpan.textContent = contextReadingValue;
-
-        contextSlider.addEventListener('input', function() {
-            contextValueSpan.textContent = this.value;
-        });
+    // 绑定上下文深度输入框
+    if (contextSlider) {
+        const value = extension_settings[extensionName]?.secondary_filler_context || 2;
+        contextSlider.value = value;
         
         contextSlider.addEventListener('change', function() {
-            updateAndSaveTableSetting('context_reading_level', parseInt(this.value, 10));
-            toastr.info(`上下文读取级别已设置为 ${this.value}。`);
+            updateAndSaveTableSetting('secondary_filler_context', parseInt(this.value, 10));
+            toastr.info(`上下文深度已设置为 ${this.value}。`);
         });
     }
 
-    if (delaySlider && delayValueSpan) {
-        const delayValue = extension_settings[extensionName]?.secondary_filler_delay || 0;
-        delaySlider.value = delayValue;
-        delayValueSpan.textContent = delayValue;
-
-        delaySlider.addEventListener('input', function() {
-            delayValueSpan.textContent = this.value;
-        });
+    // 绑定填表批次输入框
+    if (batchSlider) {
+        const value = extension_settings[extensionName]?.secondary_filler_batch || 0;
+        batchSlider.value = value;
         
-        delaySlider.addEventListener('change', function() {
-            updateAndSaveTableSetting('secondary_filler_delay', parseInt(this.value, 10));
-            toastr.info(`填表延迟已设置为 ${this.value} 楼层。`);
+        batchSlider.addEventListener('change', function() {
+            updateAndSaveTableSetting('secondary_filler_batch', parseInt(this.value, 10));
+            toastr.info(`填表批次已设置为 ${this.value}。`);
+        });
+    }
+
+    // 绑定保留楼层输入框
+    if (bufferSlider) {
+        const value = extension_settings[extensionName]?.secondary_filler_buffer || 0;
+        bufferSlider.value = value;
+        
+        bufferSlider.addEventListener('change', function() {
+            updateAndSaveTableSetting('secondary_filler_buffer', parseInt(this.value, 10));
+            toastr.info(`保留楼层已设置为 ${this.value}。`);
         });
     }
 
@@ -1378,11 +1379,18 @@ export function bindTableEvents() {
         });
     }
 
+    const openGraphBtn = document.getElementById('amily2-open-relationship-graph-btn');
     const exportBtn = document.getElementById('amily2-export-preset-btn');
     const exportFullBtn = document.getElementById('amily2-export-preset-full-btn');
     const importBtn = document.getElementById('amily2-import-preset-btn');
     const importGlobalBtn = document.getElementById('amily2-import-global-preset-btn');
     const clearGlobalBtn = document.getElementById('amily2-clear-global-preset-btn');
+
+    if (openGraphBtn) {
+        openGraphBtn.addEventListener('click', () => {
+            showGraphVisualization();
+        });
+    }
 
     if (exportBtn) {
         exportBtn.addEventListener('click', () => TableManager.exportPreset());
@@ -2076,11 +2084,9 @@ function bindChatTableDisplaySetting() {
         return;
     }
 
-    // Initialize states from settings
     showInChatToggle.checked = settings.show_table_in_chat === true;
     continuousRenderToggle.checked = settings.render_on_every_message === true;
 
-    // Function to update the dependency
     const updateContinuousRenderState = () => {
         if (showInChatToggle.checked) {
             continuousRenderToggle.disabled = false;
@@ -2091,10 +2097,8 @@ function bindChatTableDisplaySetting() {
         }
     };
 
-    // Initial state update
     updateContinuousRenderState();
 
-    // Event listener for the main toggle
     showInChatToggle.addEventListener('change', () => {
         settings.show_table_in_chat = showInChatToggle.checked;
         saveSettingsDebounced();
@@ -2102,7 +2106,6 @@ function bindChatTableDisplaySetting() {
         updateContinuousRenderState();
     });
 
-    // Event listener for the continuous render toggle
     continuousRenderToggle.addEventListener('change', () => {
         settings.render_on_every_message = continuousRenderToggle.checked;
         saveSettingsDebounced();
