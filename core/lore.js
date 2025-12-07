@@ -399,7 +399,11 @@ export async function getPlotOptimizedWorldbookContent(context, apiSettings) {
             pendingGreenLights = nextPendingGreenLights;
         }
 
-        const finalContent = Array.from(triggeredEntries).map(entry => entry.content).filter(Boolean);
+        const finalContent = Array.from(triggeredEntries).map(entry => {
+            const keys = [...new Set([...(entry.key || []), ...(entry.keys || [])])].filter(Boolean).join('、');
+            const displayName = entry.comment || `Entry ${entry.uid}`;
+            return `【世界书条目：${displayName}。绿灯触发关键词：${keys}】\n内容：${entry.content}`;
+        }).filter(Boolean);
         if (finalContent.length === 0) return '';
 
         const combinedContent = finalContent.join('\n\n---\n\n');
