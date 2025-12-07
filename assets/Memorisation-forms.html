@@ -220,18 +220,29 @@
                         </div>
                     </div>
                     
-                    <!-- 上下文读取滑块 - 仅在分步模式下显示 -->
-                    <div id="context-reading-slider-container" class="control-block-with-switch" style="margin-bottom: 10px; display: none;">
-                        <label for="context-reading-slider">上下文读取: <span id="context-reading-value">4</span></label>
-                        <input type="range" id="context-reading-slider" min="0" max="10" step="1" value="4" class="text_pole" style="width: 100%; margin-top: 5px;">
-                        <small class="notes" style="margin-top: 5px; display: block;">默认使用微言录的标签提取与内容排除规则。</small>
-                    </div>
+                    <!-- 分步填表高级控制 - 仅在分步模式下显示 -->
+                    <div id="secondary-filler-controls" style="display: none; border-left: 2px solid #4a9eff; padding-left: 10px; margin-bottom: 10px;">
+                        
+                        <!-- 上下文深度 -->
+                        <div class="control-block-with-switch" style="margin-bottom: 10px; flex-direction: column; align-items: flex-start;">
+                            <label for="secondary-filler-context">上下文深度</label>
+                            <input type="number" id="secondary-filler-context" min="0" max="20" step="1" value="2" class="text_pole" style="width: 80px; margin-top: 5px;">
+                            <small class="notes" style="margin-top: 5px; display: block;">填表时参考的历史上下文消息数量。</small>
+                        </div>
 
-                    <!-- 分步填表延迟滑块 - 仅在分步模式下显示 -->
-                    <div id="secondary-filler-delay-container" class="control-block-with-switch" style="margin-bottom: 10px; display: none;">
-                        <label for="secondary-filler-delay-slider">填表延迟 (楼层): <span id="secondary-filler-delay-value">0</span></label>
-                        <input type="range" id="secondary-filler-delay-slider" min="0" max="10" step="1" value="0" class="text_pole" style="width: 100%; margin-top: 5px;">
-                        <small class="notes" style="margin-top: 5px; display: block;">设置延迟多少楼层后才进行填表（防并发冲突、超级记忆功能专用，默认为0）。</small>
+                        <!-- 填表批次 -->
+                        <div class="control-block-with-switch" style="margin-bottom: 10px; flex-direction: column; align-items: flex-start;">
+                            <label for="secondary-filler-batch">填表批次 (Batch)</label>
+                            <input type="number" id="secondary-filler-batch" min="0" max="20" step="1" value="0" class="text_pole" style="width: 80px; margin-top: 5px;">
+                            <small class="notes" style="margin-top: 5px; display: block;">单次填表处理的消息数量 (0 = 实时单条模式)。</small>
+                        </div>
+
+                        <!-- 保留楼层 -->
+                        <div class="control-block-with-switch" style="margin-bottom: 10px; flex-direction: column; align-items: flex-start;">
+                            <label for="secondary-filler-buffer">保留楼层 (Buffer)</label>
+                            <input type="number" id="secondary-filler-buffer" min="0" max="10" step="1" value="0" class="text_pole" style="width: 80px; margin-top: 5px;">
+                            <small class="notes" style="margin-top: 5px; display: block;">始终保留不填表的最新消息数量 (缓冲防抖)。</small>
+                        </div>
                     </div>
                     
                     <div id="table-independent-rules-container" class="control-block-with-switch" style="margin-bottom: 10px; display: none; flex-direction: column; align-items: flex-start; gap: 8px;">
@@ -246,6 +257,7 @@
                         <small class="notes">启用后，分步填表和批量填表将使用下方配置的专属规则，而非微言录的规则。</small>
                     </div>
                     <div class="action-center-buttons" style="gap: 8px;">
+                        <button id="amily2-open-relationship-graph-btn" class="menu_button accent small_button interactable"><i class="fas fa-project-diagram"></i> 关系图谱</button>
                         <button id="amily2-export-preset-btn" class="menu_button primary small_button interactable"><i class="fas fa-file-export"></i> 导出预设</button>
                         <button id="amily2-export-preset-full-btn" class="menu_button primary small_button interactable"><i class="fas fa-file-archive"></i> 导出备份</button>
                         <button id="amily2-import-preset-btn" class="menu_button secondary small_button interactable"><i class="fas fa-file-upload"></i> 导入预设</button>
