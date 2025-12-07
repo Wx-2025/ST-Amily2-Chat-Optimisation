@@ -479,6 +479,8 @@ class AmilyHelper {
                     depth: newEntryData.depth ?? 998,
                     scanDepth: newEntryData.scanDepth ?? null,
                     disable: !(newEntryData.enabled ?? true),
+                    excludeRecursion: newEntryData.excludeRecursion ?? newEntryData.exclude_recursion ?? false,
+                    preventRecursion: newEntryData.preventRecursion ?? newEntryData.prevent_recursion ?? false,
                 });
                 if (newEntryData.type === 'selective') newEntry.constant = false;
             }
