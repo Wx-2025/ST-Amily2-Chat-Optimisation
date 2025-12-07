@@ -96,49 +96,94 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
     }
 
     try {
-        // --- 延迟填表逻辑 (V151.0) ---
-        const delay = parseInt(settings.secondary_filler_delay || 0, 10);
+        // --- 分步/批量填表逻辑 (重构版) ---
+        const bufferSize = parseInt(settings.secondary_filler_buffer || 0, 10);
+        const batchSize = parseInt(settings.secondary_filler_batch || 0, 10); // 0 = 实时/单条模式
+        const contextLimit = parseInt(settings.secondary_filler_context || 2, 10);
+
         const chat = context.chat;
-        let targetMessage;
-        let targetIndex;
+        const totalMessages = chat.length;
+        
+        // 计算有效填表区域的终点（排除 Buffer）
+        // 例如：总长10，Buffer 2。ValidEnd = 10 - 1 - 2 = 7。
+        // 即 index 8, 9 在 Buffer 内，不能填。
+        const validEndIndex = totalMessages - 1 - bufferSize;
 
-        if (delay > 0) {
-            // 如果有延迟，我们需要找到“延迟前”的那条消息
-            // chat.length - 1 是当前最新消息的索引
-            // 目标索引 = (chat.length - 1) - delay
-            targetIndex = (chat.length - 1) - delay;
-
-            if (targetIndex < 0) {
-                console.log(`[Amily2-副API] 延迟模式(${delay}): 历史楼层不足，跳过填表。`);
-                return;
-            }
-
-            targetMessage = chat[targetIndex];
-
-            // 检查目标消息是否是AI消息（通常填表针对AI回复）
-            // 如果目标消息是用户的消息，而我们只想填AI的表，这可能是一个问题。
-            // 但如果用户设置了延迟，他们可能期望每隔几层填一次，或者只填AI层。
-            // 现有的 `fillWithSecondaryApi` 是在 `CHAT_COMPLETION` 后调用的，此时最新消息通常是AI消息。
-            // 如果延迟是奇数（例如1），目标消息可能是用户消息。
-            // 假设延迟是偶数（例如2），目标消息是上一条AI消息。
-            
-            // 为了安全起见，如果目标消息是用户消息，我们可能应该跳过？或者依然填表（记录用户消息的表）？
-            // 目前表系统通常绑定在AI回复上。
-            // 如果 targetMessage.is_user，我们尝试往回找最近的一条AI消息？
-            // 不，这会乱套。严格按照楼层索引来。
-            
-            console.log(`[Amily2-副API] 延迟模式生效: 当前总楼层 ${chat.length}, 延迟 ${delay}, 目标楼层索引 ${targetIndex}`);
-        } else {
-            // 无延迟，使用传入的最新消息
-            targetMessage = latestMessage;
-            targetIndex = chat.length - 1;
-        }
-
-        let textToProcess = targetMessage.mes;
-        if (!textToProcess || !textToProcess.trim()) {
-            console.log("[Amily2-副API] 目标消息内容为空，跳过填表任务。");
+        if (validEndIndex < 0) {
+            console.log(`[Amily2-副API] 消息数量不足以超出保留区(${bufferSize})，跳过。`);
             return;
         }
+
+        // 收集需要填表的目标消息
+        let targetMessages = [];
+        let needsProcessing = false;
+
+        // 简单的内容哈希生成器
+        const getContentHash = (content) => {
+            let hash = 0, i, chr;
+            if (content.length === 0) return hash;
+            for (i = 0; i < content.length; i++) {
+                chr = content.charCodeAt(i);
+                hash = ((hash << 5) - hash) + chr;
+                hash |= 0; // Convert to 32bit integer
+            }
+            return hash;
+        };
+
+        // 从 ValidEndIndex 往前扫描，寻找未处理或已变更的消息
+        for (let i = validEndIndex; i >= 0; i--) {
+            const msg = chat[i];
+            
+            // 默认只处理 AI 消息用于填表核心（用户消息作为上下文）
+            // 如果以后需要处理用户消息填表，这里需要调整
+            if (msg.is_user) continue;
+
+            // 检查状态
+            const currentHash = getContentHash(msg.mes);
+            const savedHash = msg.metadata?.Amily2_Process_Hash;
+            
+            const isUnprocessed = !savedHash;
+            const isChanged = savedHash && savedHash !== currentHash;
+
+            if (isUnprocessed || isChanged) {
+                targetMessages.unshift({ index: i, msg: msg, hash: currentHash });
+                
+                // 如果是 Batch 模式，且攒够了
+                if (batchSize > 0 && targetMessages.length >= batchSize) {
+                    needsProcessing = true;
+                    break;
+                }
+            } else {
+                // 如果遇到一个已经处理且没变的消息
+                // 在 Batch 模式下，我们要保持连续性吗？
+                // 假设我们只处理最新的一批未处理消息。
+                // 如果中间夹杂了已处理的，我们可能应该停止扫描？
+                // 简化逻辑：只要遇到已处理的，就认为之前的都处理好了（除非用户回删）。
+                // 为稳健起见，我们只向回扫描直到遇到已处理消息，或者扫完。
+                break;
+            }
+        }
+
+        // 决策逻辑
+        if (targetMessages.length === 0) {
+            console.log("[Amily2-副API] 没有发现需要处理的消息。");
+            return;
+        }
+
+        if (batchSize > 0) {
+            // 批量模式
+            if (targetMessages.length < batchSize) {
+                console.log(`[Amily2-副API] 批量模式: 累积 ${targetMessages.length}/${batchSize} 条，暂不触发。`);
+                return;
+            }
+        } else {
+            // 实时模式 (Batch=0)
+            // 仅处理最新的一条有效消息（通常是 ValidEndIndex 那条，或者是刚重Roll的那条）
+            // 如果扫描出多条（比如之前关了插件），为避免瞬间大量请求，我们只取最后一条（最新的）。
+            targetMessages = [targetMessages[targetMessages.length - 1]];
+        }
+
+        console.log(`[Amily2-副API] 触发填表: 处理 ${targetMessages.length} 条消息。索引范围: ${targetMessages[0].index} - ${targetMessages[targetMessages.length-1].index}`);
 
         let tagsToExtract = [];
         let exclusionRules = [];
@@ -147,35 +192,42 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
             exclusionRules = settings.table_exclusion_rules || [];
         }
 
-        if (tagsToExtract.length > 0) {
-            const blocks = extractBlocksByTags(textToProcess, tagsToExtract);
-            textToProcess = blocks.join('\n\n');
-        }
-        textToProcess = applyExclusionRules(textToProcess, exclusionRules);
-
-        if (!textToProcess.trim()) {
-            console.log("[Amily2-副API] 规则处理后消息内容为空，跳过填表任务。");
-            return;
-        }
-
+        // 构建核心处理内容 (Core Content)
+        let coreContentText = "";
         const userName = context.name1 || '用户';
         const characterName = context.name2 || '角色';
 
-        // 寻找目标消息之前的最后一条用户消息
-        let lastUserMessage = null;
-        let lastUserMessageIndex = -1;
-        
-        // 从 targetIndex - 1 开始往前找
-        for (let i = targetIndex - 1; i >= 0; i--) {
-            if (chat[i].is_user) {
-                lastUserMessage = chat[i];
-                lastUserMessageIndex = i;
-                break;
+        for (const target of targetMessages) {
+            let textToProcess = target.msg.mes;
+            
+            if (tagsToExtract.length > 0) {
+                const blocks = extractBlocksByTags(textToProcess, tagsToExtract);
+                textToProcess = blocks.join('\n\n');
             }
+            textToProcess = applyExclusionRules(textToProcess, exclusionRules);
+            
+            if (!textToProcess.trim()) continue;
+
+            coreContentText += `\n【第 ${target.index + 1} 楼】${characterName}（AI）消息：\n${textToProcess}\n`;
         }
 
-        const currentInteractionContent = (lastUserMessage ? `${userName}（用户）消息：${lastUserMessage.mes}\n` : '') + 
-                                          `${characterName}（AI）消息，[核心处理内容]：${textToProcess}`;
+        if (!coreContentText.trim()) {
+            console.log("[Amily2-副API] 目标内容处理后为空，跳过。");
+            return;
+        }
+
+        // 构建上下文 (History Context)
+        // 上下文应该截止到 targetMessages 第一条消息的前面
+        const historyEndIndex = targetMessages[0].index - 1;
+        // 使用用户设置的 history_limit (contextLimit)
+        
+        let historyContextStr = "";
+        if (contextLimit > 0 && historyEndIndex >= 0) {
+            historyContextStr = await getHistoryContext(contextLimit, historyEndIndex, tagsToExtract, exclusionRules) || "";
+        }
+
+        const currentInteractionContent = (historyContextStr ? `${historyContextStr}\n\n` : '') + 
+                                          `<核心填表内容>\n${coreContentText}\n</核心填表内容>`;
 
         let mixedOrder;
         try {
@@ -187,10 +239,7 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
             console.error("[副API填表] 加载混合顺序失败:", e);
         }
 
-
         const order = getMixedOrder('secondary_filler') || [];
-
-
         const presetPrompts = await getPresetPrompts('secondary_filler');
         
         const messages = [
@@ -219,18 +268,12 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
                         }
                         break;
                     case 'contextHistory':
-                        const contextReadingLevel = settings.context_reading_level || 4;
-                        const historyMessagesToGet = contextReadingLevel > 2 ? contextReadingLevel - 2 : 0;
-
-                        if (historyMessagesToGet > 0) {
-                            // 这里的 historyEndIndex 应该是我们上面计算出的 lastUserMessageIndex
-                            // 如果没找到用户消息，则使用 targetIndex - 1
-                            const historyEndIndex = lastUserMessageIndex !== -1 ? lastUserMessageIndex : Math.max(0, targetIndex - 1);
-                            
-                            const historyContext = await getHistoryContext(historyMessagesToGet, historyEndIndex, tagsToExtract, exclusionRules);
-                            if (historyContext) {
-                                messages.push({ role: "system", content: historyContext });
-                            }
+                        // 旧的 contextHistory 逻辑已被上面的 historyContextStr 替代并整合进 coreContent
+                        // 但为了兼容 Preset 顺序，我们可以把 historyContextStr 放在这里单独发，
+                        // 或者上面的 coreContent 只放核心内容。
+                        // 修正：将 historyContextStr 作为 System 消息在这里发送，currentInteractionContent 只包含 coreContent
+                        if (historyContextStr) {
+                             messages.push({ role: "system", content: historyContextStr });
                         }
                         break;
                     case 'ruleTemplate':
@@ -240,7 +283,7 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
                         messages.push({ role: "system", content: finalFlowPrompt });
                         break;
                     case 'coreContent':
-                        messages.push({ role: 'user', content: `请严格根据以下"最新消息"中的内容进行填写表格，并按照指定的格式输出，不要添加任何额外信息。\n\n<最新消息>\n${currentInteractionContent}\n</最新消息>` });
+                        messages.push({ role: 'user', content: `请严格根据以下"核心填表内容"进行填写表格，并按照指定的格式输出，不要添加任何额外信息。\n\n<核心填表内容>\n${coreContentText}\n</核心填表内容>` });
                         break;
                 }
             }
@@ -269,17 +312,23 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
 
         updateTableFromText(rawContent);
 
-        // 保存到目标消息
-        if (saveStateToMessage(getMemoryState(), targetMessage)) {
-            // 如果目标消息不是最新消息，我们可能需要重新渲染整个聊天记录或者特定消息的表格？
-            // renderTables() 通常重新渲染所有可见表格
+        // 保存状态到最后一条处理的消息（或者所有处理的消息？）
+        // 通常表格数据是依附在最后一条消息上的。
+        // 但我们需要标记所有 processed 的消息，防止重复处理。
+        const memoryState = getMemoryState();
+        
+        // 我们需要把状态保存到 targetMessages 的最后一条（时间最近的一条）
+        const lastProcessedMsg = targetMessages[targetMessages.length - 1].msg;
+        
+        // 标记所有已处理消息
+        for (const target of targetMessages) {
+            if (!target.msg.metadata) target.msg.metadata = {};
+            target.msg.metadata.Amily2_Process_Hash = target.hash;
+        }
+
+        // 保存 MemoryState 到最后一条
+        if (saveStateToMessage(memoryState, lastProcessedMsg)) {
             renderTables();
-            // updateOrInsertTableInChat 通常插入到DOM中
-            // 我们可能需要传递 targetIndex 给 updateOrInsertTableInChat 吗？
-            // 目前 updateOrInsertTableInChat 似乎是查找 .mes_text 并插入。
-            // 如果我们更新了历史消息的数据，我们需要确保 DOM 也更新。
-            // 由于 SillyTavern 的消息渲染机制，如果消息已经在屏幕上，仅仅修改数据可能不会自动更新 DOM。
-            // 但是 renderTables() 应该会处理这个。
             updateOrInsertTableInChat();
         }
         
