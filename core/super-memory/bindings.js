@@ -3,6 +3,7 @@ import { extension_settings } from "/scripts/extensions.js";
 import { saveSettingsDebounced } from "/script.js";
 import { initializeSuperMemory, purgeSuperMemory } from "./manager.js";
 import { defaultSettings as ragDefaultSettings } from "../rag-settings.js";
+import { getMemoryState } from "../table-system/manager.js";
 
 const RAG_MODULE_NAME = 'hanlinyuan-rag-core';
 
@@ -30,6 +31,8 @@ export function bindSuperMemoryEvents() {
 
     // 处理 Checkbox 变更
     panel.on('change', 'input[type="checkbox"]', function() {
+        if ($(this).hasClass('sm-table-setting-check')) return; // Skip table settings checks here
+
         if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
         
         const id = this.id;
@@ -82,9 +85,81 @@ export function bindSuperMemoryEvents() {
         console.log(`[Amily2-SuperMemory] Input updated: ${id} = ${this.value}`);
     });
 
+    // 绑定刷新表格列表按钮
+    panel.on('click', '#sm-refresh-table-list', function() {
+        renderTableSettingsList();
+    });
+
+    // 绑定表格专属配置的 Checkbox
+    panel.on('change', '.sm-table-setting-check', function() {
+        if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
+        if (!extension_settings[extensionName].superMemory_tableSettings) {
+            extension_settings[extensionName].superMemory_tableSettings = {};
+        }
+
+        const tableName = $(this).data('table');
+        const type = $(this).data('type'); // 'sync' or 'constant'
+        const checked = this.checked;
+
+        if (!extension_settings[extensionName].superMemory_tableSettings[tableName]) {
+            extension_settings[extensionName].superMemory_tableSettings[tableName] = {};
+        }
+
+        extension_settings[extensionName].superMemory_tableSettings[tableName][type] = checked;
+        saveSettingsDebounced();
+        console.log(`[Amily2-SuperMemory] Table setting updated: ${tableName}.${type} = ${checked}`);
+    });
+
     loadSuperMemorySettings();
     
     console.log('[Amily2-SuperMemory] Events bound successfully.');
+}
+
+function renderTableSettingsList() {
+    const container = $('#sm-table-settings-list');
+    container.html('<div style="text-align: center; color: #888; padding: 20px;">正在加载...</div>');
+
+    const tables = getMemoryState();
+    if (!tables || tables.length === 0) {
+        container.html('<div style="text-align: center; color: #888; padding: 20px;">暂无表格数据。请先在聊天中使用表格功能。</div>');
+        return;
+    }
+
+    const settings = extension_settings[extensionName]?.superMemory_tableSettings || {};
+    
+    let html = '';
+    tables.forEach(table => {
+        const tableName = table.name;
+        const tableConfig = settings[tableName] || {};
+        
+        // Default values: Sync=True, Constant=True
+        const isSyncEnabled = tableConfig.sync !== false; 
+        const isConstant = tableConfig.constant !== false;
+
+        html += `
+            <div class="sm-control-block" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 10px;">
+                <div style="font-weight: bold; margin-bottom: 5px; color: #e0e0e0;">${tableName}</div>
+                <div style="display: flex; justify-content: space-between;">
+                    <div style="display: flex; align-items: center;">
+                        <label class="sm-toggle-switch" style="transform: scale(0.8); margin-right: 5px;">
+                            <input type="checkbox" class="sm-table-setting-check" data-table="${tableName}" data-type="sync" ${isSyncEnabled ? 'checked' : ''}>
+                            <span class="sm-slider"></span>
+                        </label>
+                        <span style="font-size: 0.9em; color: #ccc;">写入世界书</span>
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <label class="sm-toggle-switch" style="transform: scale(0.8); margin-right: 5px;">
+                            <input type="checkbox" class="sm-table-setting-check" data-table="${tableName}" data-type="constant" ${isConstant ? 'checked' : ''}>
+                            <span class="sm-slider"></span>
+                        </label>
+                        <span style="font-size: 0.9em; color: #ccc;">索引绿灯(常驻)</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    container.html(html);
 }
 
 function loadSuperMemorySettings() {
@@ -107,6 +182,9 @@ function loadSuperMemorySettings() {
     if (ragSettings.relationshipGraph) {
         $('#sm-relationship-graph-enabled').prop('checked', ragSettings.relationshipGraph.enabled ?? false);
     }
+
+    // 渲染表格列表
+    renderTableSettingsList();
 }
 
 window.sm_initializeSystem = async function() {
