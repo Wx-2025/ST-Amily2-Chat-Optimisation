@@ -41,6 +41,7 @@ export const defaultSettings = {
   plotOpt_rateErotic: 0.2,
   plotOpt_rateCuckold: 0.2,
   plotOpt_selectedWorldbooks: [],
+  plotOpt_autoSelectWorldbooks: [],
   plotOpt_enabledWorldbookEntries: {},
   plotOpt_mainPrompt: `// 0.  **[最高行为准则] 角色、输入与输出限定 (Role, Input & Output Limitation)**: 这是你的身份和使命，其优先级高于一切。
 //     *   **你的角色**: 你是一个“剧情分析与规划引擎”。
