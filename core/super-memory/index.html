@@ -66,6 +66,18 @@
             </fieldset>
 
             <fieldset class="sm-settings-group">
+                <legend><i class="fas fa-list-alt"></i> 表格专属配置</legend>
+                <div class="sm-control-block" style="display: block;">
+                    <p style="font-size: 0.9em; color: #aaa; margin-bottom: 10px;">在此处配置特定表格的同步策略。</p>
+                    <div id="sm-table-settings-list" style="max-height: 300px; overflow-y: auto; padding-right: 5px;">
+                        <!-- Table items will be injected here -->
+                        <div style="text-align: center; color: #888; padding: 20px;">正在加载表格列表...</div>
+                    </div>
+                    <button id="sm-refresh-table-list" class="sm-action-button secondary" style="width: 100%; margin-top: 10px;">刷新表格列表</button>
+                </div>
+            </fieldset>
+
+            <fieldset class="sm-settings-group">
                 <legend><i class="fas fa-archive"></i> 历史归档配置</legend>
                 <div class="sm-control-block">
                     <label>启用自动归档:</label>
