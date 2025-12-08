@@ -4,7 +4,7 @@ import { world_info } from "/scripts/world-info.js";
 import { extensionName } from "../utils/settings.js";
 import { extractContentByTag, replaceContentByTag, extractFullTagBlock } from '../utils/tagProcessor.js';
 import { isGoogleEndpoint, convertToGoogleRequest, parseGoogleResponse, buildGoogleApiUrl, buildPlotOptimizationGoogleRequest, parsePlotOptimizationGoogleResponse } from './utils/googleAdapter.js';
-import { applyExclusionRules } from './utils/rag-tag-extractor.js';
+import { applyExclusionRules, extractBlocksByTags } from './utils/rag-tag-extractor.js';
 import {
   getCombinedWorldbookContent, getPlotOptimizedWorldbookContent, getOptimizationWorldbookContent,
 } from "./lore.js";
@@ -353,12 +353,29 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
         const contextLimit = settings.plotOpt_contextLimit || 0;
         if (contextLimit > 0 && contextMessages.length > 0) {
             const historyMessages = contextMessages.slice(-contextLimit);
+            
+            // 复刻 Historiographer 的标签提取与内容排除逻辑
+            const useTagExtraction = settings.historiographyTagExtractionEnabled ?? false;
+            const tagsToExtract = useTagExtraction ? (settings.historiographyTags || '').split(',').map(t => t.trim()).filter(Boolean) : [];
+            const exclusionRules = settings.historiographyExclusionRules || [];
+
             history = historyMessages
                 .map(msg => {
                     if (msg.mes && msg.mes.trim()) {
-                        const commentExclusionRules = [{ start: '<!--', end: '-->' }];
-                        const cleanedMessage = applyExclusionRules(msg.mes.trim(), commentExclusionRules);
-                        return cleanedMessage ? `${msg.is_user ? userName : charName}: ${cleanedMessage}` : null;
+                        let content = msg.mes.trim();
+
+                        // 1. 标签提取
+                        if (useTagExtraction && tagsToExtract.length > 0) {
+                            const blocks = extractBlocksByTags(content, tagsToExtract);
+                            if (blocks.length > 0) {
+                                content = blocks.join('\n\n');
+                            }
+                        }
+
+                        // 2. 内容排除
+                        content = applyExclusionRules(content, exclusionRules);
+
+                        return content ? `${msg.is_user ? userName : charName}: ${content}` : null;
                     }
                     return null;
                 })
@@ -404,9 +421,6 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
                         break;
                     case 'coreContent':
                         messages.push({ role: 'user', content: `[核心处理内容]:\n${currentUserMessage.mes}` });
-                        break;
-                    case 'plotTag':
-                        messages.push({ role: 'assistant', content: '<plot>' });
                         break;
                 }
             }
