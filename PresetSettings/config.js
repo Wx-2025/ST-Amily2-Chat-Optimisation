@@ -19,8 +19,7 @@ export const conditionalBlocks = {
         { id: 'worldbook', name: '世界书', description: '固定格式：<世界书内容>${worldbookContent.trim()}</世界书内容>' },
         { id: 'tableEnabled', name: '表格内容', description: '固定格式：##以下内容是故事发生的剧情中提取出的内容，已经转化为表格形式呈现给你，请将以下内容作为后续剧情的一部分参考：<表格内容>{{{Amily2TableDataContent}}}</表格内容>' },
         { id: 'contextLimit', name: '聊天上下文', description: '固定格式：<前文内容>${history}</前文内容>' },
-        { id: 'coreContent', name: '核心处理内容', description: '固定格式：用户发送的最新消息' },
-        { id: 'plotTag', name: '引导标签', description: '固定格式： <plot>' }
+        { id: 'coreContent', name: '核心处理内容', description: '固定格式：用户发送的最新消息' }
     ],
     small_summary: [
         { id: 'jailbreakPrompt', name: '破限提示词', description: '小总结的破限提示词' },
@@ -395,7 +394,6 @@ export const defaultMixedOrder = {
         { type: 'conditional', id: 'tableEnabled' },
         { type: 'conditional', id: 'contextLimit' },
         { type: 'conditional', id: 'coreContent' },
-        { type: 'conditional', id: 'plotTag' },
         { type: 'prompt', index: 7 }
     ],
     small_summary: [
