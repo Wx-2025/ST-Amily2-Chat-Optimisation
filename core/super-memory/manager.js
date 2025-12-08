@@ -1,1 +1,276 @@
-(function(_0x394d3a,_0x48b7e4){const _0x7f35d2=_0x2c94,_0x1f43cd=_0x394d3a();while(!![]){try{const _0x2b61b1=parseInt(_0x7f35d2(0x136))/0x1*(-parseInt(_0x7f35d2(0x102))/0x2)+parseInt(_0x7f35d2(0x112))/0x3+parseInt(_0x7f35d2(0x150))/0x4+-parseInt(_0x7f35d2(0x139))/0x5+parseInt(_0x7f35d2(0x104))/0x6+parseInt(_0x7f35d2(0x141))/0x7+parseInt(_0x7f35d2(0x146))/0x8*(-parseInt(_0x7f35d2(0x13a))/0x9);if(_0x2b61b1===_0x48b7e4)break;else _0x1f43cd['push'](_0x1f43cd['shift']());}catch(_0x5da001){_0x1f43cd['push'](_0x1f43cd['shift']());}}}(_0x285f,0x7c9dc));function _0x285f(){const _0x522507=['some','世界钟','\x20个索引','push','4190032amfVWx','\x20条记忆数据','\x20个详情','includes','plugin_user_type','128mwrkso','getLorebookEntries','Log','toastr','[Amily2-SuperMemory]\x20没有可同步的表格数据。','\x20(Role:\x20','addEventListener','#sm-index-count','chat','error','1736332fROHBS','[Amily2-SuperMemory]\x20未在聊天记录中发现历史状态，使用默认/当前状态。','[Amily2-SuperMemory]\x20致命错误：AmilyHelper\x20未就绪。','getItem','[Amily2-SuperMemory]\x20权限不足\x20(Type\x20<\x202)，拒绝初始化超级记忆系统。','1052806LfMSkP','set','4342836syKqoQ','已清空\x20','[Amily2]','startsWith','\x20个事件合并为\x20','已禁用','info','length','[Amily2-SuperMemory]\x20功能已禁用\x20(super_memory_enabled\x20=\x20false)。','[Amily2-SuperMemory]\x20队列优化:\x20将\x20','[Amily2-SuperMemory]\x20应用主动记忆提示:\x20','findIndex','name','text','1616835GZLHUW','[Amily2-SuperMemory]\x20世界书为空，无需清理。','headers','rowStatuses','deleteLorebookEntries','function','[Amily2-SuperMemory]\x20正在执行全量同步...','[Amily2-SuperMemory]\x20table-system\x20缺少\x20loadMemoryState\x20方法，无法恢复状态。','css','red','pending-deletion','[Amily2-SuperMemory]\x20清空失败:','comment','size','rows','stringify','CHAT_CHANGED','anchor','message','没有发现需要清空的Amily2记忆数据','运行中','#4caf50','[Amily2-SuperMemory]\x20检测到表格更新:\x20','metadata','super_memory_enabled','#sm-system-status','values','color','[Amily2-SuperMemory]\x20处理更新队列失败:','[Amily2-SuperMemory]\x20检测到聊天切换，正在刷新记忆状态...','success','log','[Amily2-SuperMemory]\x20任务完成:\x20','reduce','#sm-detail-count','uid','1VbWbFQ','tableName','saveChat','4983375QuohuO','147321qfvjtl','【Amily2','filter'];_0x285f=function(){return _0x522507;};return _0x285f();}function _0x2c94(_0x2be1ea,_0x481382){_0x2be1ea=_0x2be1ea-0x100;const _0x285f1c=_0x285f();let _0x2c944f=_0x285f1c[_0x2be1ea];return _0x2c944f;}import{extension_settings,getContext}from'/scripts/extensions.js';import{extensionName}from'../../utils/settings.js';import{amilyHelper}from'../tavern-helper/main.js';import{generateIndex}from'./smart-indexer.js';import{syncToLorebook,ensureMemoryBook,updateTransientHint,getMemoryBookName}from'./lorebook-bridge.js';import{getMemoryState,loadMemoryState,saveMemoryState}from'../table-system/manager.js';import{eventSource,event_types}from'/script.js';let isInitialized=![],updateQueue=[],isProcessing=![],lastChatId=null;const METADATA_KEY='Amily2_Memory_Data';export async function initializeSuperMemory(){const _0x21aec1=_0x2c94,_0x2d9b38=parseInt(localStorage[_0x21aec1(0x100)](_0x21aec1(0x145))||'0');if(_0x2d9b38<0x2){console['warn'](_0x21aec1(0x101));if(window['$'])$(_0x21aec1(0x12b))[_0x21aec1(0x111)]('未授权')['css'](_0x21aec1(0x12d),_0x21aec1(0x11b));return;}const _0x4ddb4e=extension_settings[extensionName]||{};if(_0x4ddb4e[_0x21aec1(0x12a)]===![]){console[_0x21aec1(0x131)](_0x21aec1(0x10c));if(window['$'])$(_0x21aec1(0x12b))[_0x21aec1(0x111)](_0x21aec1(0x109))[_0x21aec1(0x11a)](_0x21aec1(0x12d),'gray');return;}if(isInitialized){if(window['$'])$(_0x21aec1(0x12b))[_0x21aec1(0x111)](_0x21aec1(0x126))[_0x21aec1(0x11a)]('color',_0x21aec1(0x127));return;}console[_0x21aec1(0x131)]('[Amily2-SuperMemory]\x20初始化核心管理器...');if(!amilyHelper){console['error'](_0x21aec1(0x152));return;}document[_0x21aec1(0x14c)]('AMILY2_TABLE_UPDATED',handleTableUpdate),eventSource['on'](event_types[_0x21aec1(0x122)],async()=>{const _0xd1da9b=_0x21aec1,_0x45c940=extension_settings[extensionName]||{};if(_0x45c940[_0xd1da9b(0x12a)]===![])return;console[_0xd1da9b(0x131)](_0xd1da9b(0x12f)),await checkWorldBookStatus(),await tryRestoreStateFromMetadata(),await forceSyncAll();}),await checkWorldBookStatus(),await tryRestoreStateFromMetadata(),await forceSyncAll(),isInitialized=!![],console[_0x21aec1(0x131)]('[Amily2-SuperMemory]\x20核心管理器初始化完成。'),window['$']&&$('#sm-system-status')[_0x21aec1(0x111)](_0x21aec1(0x126))[_0x21aec1(0x11a)]('color',_0x21aec1(0x127));}async function checkWorldBookStatus(){const _0x1c3569=_0x2c94;try{await ensureMemoryBook();}catch(_0x25792b){console[_0x1c3569(0x14f)]('[Amily2-SuperMemory]\x20检查世界书状态失败:',_0x25792b);}}function handleTableUpdate(_0x237276){const _0x5a6a65=_0x2c94,_0x42e2f9=extension_settings[extensionName]||{};if(_0x42e2f9[_0x5a6a65(0x12a)]===![])return;const {tableName:_0x3ba038,data:_0x3f385d,role:_0x1fe4bb,hint:_0x43a11a,headers:_0x5759af,rowStatuses:_0x3d9625}=_0x237276['detail'];console[_0x5a6a65(0x131)](_0x5a6a65(0x128)+_0x3ba038+_0x5a6a65(0x14b)+_0x1fe4bb+')'),updateQueue[_0x5a6a65(0x140)]({'tableName':_0x3ba038,'data':_0x3f385d,'role':_0x1fe4bb,'hint':_0x43a11a,'headers':_0x5759af,'rowStatuses':_0x3d9625}),processQueue();}async function processQueue(){const _0x113ca8=_0x2c94;if(isProcessing||updateQueue[_0x113ca8(0x10b)]===0x0)return;isProcessing=!![];try{while(updateQueue[_0x113ca8(0x10b)]>0x0){const _0x50c396=new Map(),_0x1f140f=[...updateQueue];updateQueue[_0x113ca8(0x10b)]=0x0;for(const _0x363c7d of _0x1f140f){_0x50c396[_0x113ca8(0x103)](_0x363c7d[_0x113ca8(0x137)],_0x363c7d);}_0x1f140f['length']>_0x50c396['size']&&console[_0x113ca8(0x131)](_0x113ca8(0x10d)+_0x1f140f['length']+_0x113ca8(0x108)+_0x50c396[_0x113ca8(0x11f)]+'\x20个操作。');for(const _0x398c6c of _0x50c396[_0x113ca8(0x12c)]()){await processUpdateTask(_0x398c6c);}}await saveStateToMetadata();}catch(_0x338ae2){console['error'](_0x113ca8(0x12e),_0x338ae2);}finally{isProcessing=![],updateQueue[_0x113ca8(0x10b)]>0x0&&processQueue();}}async function processUpdateTask(_0x118e1c){const _0x402585=_0x2c94,{tableName:_0x22b1b8,data:_0x314cb7,role:_0x1d45a0,hint:_0x4e5fa0,headers:_0x3d658c,rowStatuses:_0x5a43cb}=_0x118e1c,_0x331bcf=_0x314cb7[_0x402585(0x13c)]((_0x20dfee,_0x5b05e5)=>!_0x5a43cb||_0x5a43cb[_0x5b05e5]!==_0x402585(0x11c)),_0x3c28fc=generateIndex(_0x331bcf,_0x3d658c,_0x1d45a0,_0x22b1b8),_0x5e4de3=getMemoryState(),_0x4c9329=_0x5e4de3[_0x402585(0x10f)](_0x2189cb=>_0x2189cb['name']===_0x22b1b8),_0x1158e2=0x1f41+(_0x4c9329>=0x0?_0x4c9329:0x63);await syncToLorebook(_0x22b1b8,_0x314cb7,_0x3c28fc,_0x1d45a0,_0x3d658c,_0x5a43cb,_0x1158e2),_0x4e5fa0&&(console['log'](_0x402585(0x10e)+_0x4e5fa0),await updateTransientHint(_0x4e5fa0)),console[_0x402585(0x131)](_0x402585(0x132)+_0x22b1b8),updateDashboardCounters();}async function saveStateToMetadata(){const _0x578620=_0x2c94,_0x46feae=getContext();if(!_0x46feae['chat']||_0x46feae[_0x578620(0x14e)][_0x578620(0x10b)]===0x0)return;const _0x35428d=_0x46feae[_0x578620(0x14e)][_0x578620(0x10b)]-0x1,_0x181347=_0x46feae[_0x578620(0x14e)][_0x35428d],_0x2602a8=getMemoryState();if(!_0x181347[_0x578620(0x129)])_0x181347[_0x578620(0x129)]={};_0x181347['metadata'][METADATA_KEY]=JSON['parse'](JSON[_0x578620(0x121)](_0x2602a8)),_0x46feae['saveChat']&&await _0x46feae[_0x578620(0x138)](),console[_0x578620(0x131)]('[Amily2-SuperMemory]\x20状态已保存至消息\x20#'+_0x35428d);}export async function tryRestoreStateFromMetadata(){const _0x4aa4b1=_0x2c94,_0x18c117=getContext();if(!_0x18c117[_0x4aa4b1(0x14e)]||_0x18c117[_0x4aa4b1(0x14e)][_0x4aa4b1(0x10b)]===0x0)return;let _0x4cac8b=null,_0x1480b5=-0x1;for(let _0x4681d3=_0x18c117[_0x4aa4b1(0x14e)][_0x4aa4b1(0x10b)]-0x1;_0x4681d3>=0x0;_0x4681d3--){const _0x3c81f=_0x18c117['chat'][_0x4681d3];if(_0x3c81f[_0x4aa4b1(0x129)]&&_0x3c81f['metadata'][METADATA_KEY]){_0x4cac8b=_0x3c81f[_0x4aa4b1(0x129)][METADATA_KEY],_0x1480b5=_0x4681d3;break;}}_0x4cac8b?(console[_0x4aa4b1(0x131)]('[Amily2-SuperMemory]\x20发现历史状态\x20(Msg\x20#'+_0x1480b5+')，正在恢复...'),typeof loadMemoryState===_0x4aa4b1(0x117)?(loadMemoryState(_0x4cac8b),await forceSyncAll()):console['warn'](_0x4aa4b1(0x119))):console[_0x4aa4b1(0x131)](_0x4aa4b1(0x151));}function updateDashboardCounters(){const _0x22ddad=_0x2c94,_0x42f8a8=getMemoryState();if(_0x42f8a8&&window['$']){$(_0x22ddad(0x14d))[_0x22ddad(0x111)](_0x42f8a8[_0x22ddad(0x10b)]+_0x22ddad(0x13f));const _0x4a4c85=_0x42f8a8[_0x22ddad(0x133)]((_0x4187d1,_0x11e94f)=>_0x4187d1+(_0x11e94f[_0x22ddad(0x120)]?_0x11e94f['rows'][_0x22ddad(0x10b)]:0x0),0x0);$(_0x22ddad(0x134))[_0x22ddad(0x111)](_0x4a4c85+_0x22ddad(0x143));}}export async function forceSyncAll(){const _0x15f5ce=_0x2c94;console[_0x15f5ce(0x131)](_0x15f5ce(0x118));const _0x5799ed=getMemoryState();if(!_0x5799ed||_0x5799ed[_0x15f5ce(0x10b)]===0x0){console['warn'](_0x15f5ce(0x14a));return;}for(const _0xe7572e of _0x5799ed){let _0x47a019='database';if(_0xe7572e['name'][_0x15f5ce(0x144)]('时空')||_0xe7572e[_0x15f5ce(0x110)][_0x15f5ce(0x144)](_0x15f5ce(0x13e)))_0x47a019=_0x15f5ce(0x123);if(_0xe7572e[_0x15f5ce(0x110)][_0x15f5ce(0x144)]('日志')||_0xe7572e['name'][_0x15f5ce(0x144)](_0x15f5ce(0x148)))_0x47a019='log';updateQueue[_0x15f5ce(0x140)]({'tableName':_0xe7572e[_0x15f5ce(0x110)],'data':_0xe7572e[_0x15f5ce(0x120)],'headers':_0xe7572e[_0x15f5ce(0x114)],'rowStatuses':_0xe7572e[_0x15f5ce(0x115)]||[],'role':_0x47a019});}await processQueue(),console[_0x15f5ce(0x131)]('[Amily2-SuperMemory]\x20全量同步完成。');}export async function purgeSuperMemory(){const _0x1aef44=_0x2c94;try{console[_0x1aef44(0x131)]('[Amily2-SuperMemory]\x20开始清空记忆...');const _0x55c843=getMemoryBookName(),_0x42f86c=await amilyHelper[_0x1aef44(0x147)](_0x55c843);if(!_0x42f86c||_0x42f86c[_0x1aef44(0x10b)]===0x0){console[_0x1aef44(0x131)](_0x1aef44(0x113));return;}const _0x1f68ac=[],_0x12abe1=[_0x1aef44(0x106),_0x1aef44(0x13b)];for(const _0x950aca of _0x42f86c){_0x950aca[_0x1aef44(0x11e)]&&_0x12abe1[_0x1aef44(0x13d)](_0x16a87e=>_0x950aca['comment'][_0x1aef44(0x107)](_0x16a87e))&&_0x1f68ac[_0x1aef44(0x140)](_0x950aca[_0x1aef44(0x135)]);}if(_0x1f68ac[_0x1aef44(0x10b)]>0x0){await amilyHelper[_0x1aef44(0x116)](_0x55c843,_0x1f68ac),console[_0x1aef44(0x131)]('[Amily2-SuperMemory]\x20已清空\x20'+_0x1f68ac['length']+'\x20个条目。');if(window[_0x1aef44(0x149)])toastr[_0x1aef44(0x130)](_0x1aef44(0x105)+_0x1f68ac[_0x1aef44(0x10b)]+_0x1aef44(0x142));}else{if(window[_0x1aef44(0x149)])toastr[_0x1aef44(0x10a)](_0x1aef44(0x125));}updateDashboardCounters();}catch(_0x1a556c){console['error'](_0x1aef44(0x11d),_0x1a556c);if(window[_0x1aef44(0x149)])toastr[_0x1aef44(0x14f)]('清空失败:\x20'+_0x1a556c[_0x1aef44(0x124)]);}}
+import { extension_settings, getContext } from "/scripts/extensions.js";
+import { extensionName } from "../../utils/settings.js";
+import { amilyHelper } from "../tavern-helper/main.js";
+import { generateIndex } from "./smart-indexer.js";
+import { syncToLorebook, ensureMemoryBook, updateTransientHint, getMemoryBookName } from "./lorebook-bridge.js";
+import { getMemoryState, loadMemoryState, saveMemoryState } from "../table-system/manager.js";
+import { eventSource, event_types } from "/script.js";
+
+let isInitialized = false;
+let updateQueue = [];
+let isProcessing = false;
+let lastChatId = null;
+
+const METADATA_KEY = 'Amily2_Memory_Data';
+
+export async function initializeSuperMemory() {
+    const userType = parseInt(localStorage.getItem("plugin_user_type") || "0");
+    if (userType < 2) {
+        console.warn('[Amily2-SuperMemory] 权限不足 (Type < 2)，拒绝初始化超级记忆系统。');
+        if (window.$) $('#sm-system-status').text('未授权').css('color', 'red');
+        return;
+    }
+
+    const settings = extension_settings[extensionName] || {};
+    if (settings.super_memory_enabled === false) {
+        console.log('[Amily2-SuperMemory] 功能已禁用 (super_memory_enabled = false)。');
+        if (window.$) $('#sm-system-status').text('已禁用').css('color', 'gray');
+        return;
+    }
+
+    if (isInitialized) {
+        if (window.$) $('#sm-system-status').text('运行中').css('color', '#4caf50');
+        return;
+    }
+    console.log('[Amily2-SuperMemory] 初始化核心管理器...');
+    
+    if (!amilyHelper) {
+        console.error('[Amily2-SuperMemory] 致命错误：AmilyHelper 未就绪。');
+        return;
+    }
+
+    document.addEventListener('AMILY2_TABLE_UPDATED', handleTableUpdate);
+    
+    eventSource.on(event_types.CHAT_CHANGED, async () => {
+        const settings = extension_settings[extensionName] || {};
+        if (settings.super_memory_enabled === false) return;
+
+        console.log('[Amily2-SuperMemory] 检测到聊天切换，正在刷新记忆状态...');
+        await checkWorldBookStatus();
+        
+        await tryRestoreStateFromMetadata();
+        
+        await forceSyncAll();
+    });
+    
+    await checkWorldBookStatus();
+    
+    await tryRestoreStateFromMetadata();
+    
+    await forceSyncAll(); 
+
+    isInitialized = true;
+    console.log('[Amily2-SuperMemory] 核心管理器初始化完成。');
+    
+    if (window.$) {
+        $('#sm-system-status').text('运行中').css('color', '#4caf50');
+    }
+}
+
+async function checkWorldBookStatus() {
+    try {
+        await ensureMemoryBook();
+    } catch (error) {
+        console.error('[Amily2-SuperMemory] 检查世界书状态失败:', error);
+    }
+}
+
+function handleTableUpdate(event) {
+    const settings = extension_settings[extensionName] || {};
+    if (settings.super_memory_enabled === false) return;
+
+    const { tableName, data, role, hint, headers, rowStatuses } = event.detail; 
+    console.log(`[Amily2-SuperMemory] 检测到表格更新: ${tableName} (Role: ${role})`);
+    
+    updateQueue.push({ tableName, data, role, hint, headers, rowStatuses });
+    processQueue();
+}
+
+async function processQueue() {
+    if (isProcessing || updateQueue.length === 0) return;
+    isProcessing = true;
+
+    try {
+        while (updateQueue.length > 0) {
+
+            const consolidatedTasks = new Map();
+            const currentBatch = [...updateQueue];
+            updateQueue.length = 0; // 清空队列
+            
+            for (const task of currentBatch) {
+                consolidatedTasks.set(task.tableName, task);
+            }
+            
+            if (currentBatch.length > consolidatedTasks.size) {
+                console.log(`[Amily2-SuperMemory] 队列优化: 将 ${currentBatch.length} 个事件合并为 ${consolidatedTasks.size} 个操作。`);
+            }
+
+            for (const task of consolidatedTasks.values()) {
+                await processUpdateTask(task);
+            }
+        }
+        
+        await saveStateToMetadata();
+        
+    } catch (error) {
+        console.error('[Amily2-SuperMemory] 处理更新队列失败:', error);
+    } finally {
+        isProcessing = false;
+        if (updateQueue.length > 0) {
+            processQueue();
+        }
+    }
+}
+
+async function processUpdateTask(task) {
+    const { tableName, data, role, hint, headers, rowStatuses } = task;
+
+    const settings = extension_settings[extensionName] || {};
+    const tableSettings = settings.superMemory_tableSettings?.[tableName] || {};
+
+    if (tableSettings.sync === false) {
+        console.log(`[Amily2-SuperMemory] 表格 ${tableName} 已配置为不写入世界书，跳过同步。`);
+        return;
+    }
+
+    const isIndexConstant = tableSettings.constant !== false;
+
+    const activeData = data.filter((_, i) => !rowStatuses || rowStatuses[i] !== 'pending-deletion');
+    const indexText = generateIndex(activeData, headers, role, tableName);
+    
+    const allTables = getMemoryState();
+    const tableIndex = allTables.findIndex(t => t.name === tableName);
+    const depth = 8001 + (tableIndex >= 0 ? tableIndex : 99);
+
+    await syncToLorebook(tableName, data, indexText, role, headers, rowStatuses, depth, isIndexConstant);
+
+    if (hint) {
+        console.log(`[Amily2-SuperMemory] 应用主动记忆提示: ${hint}`);
+        await updateTransientHint(hint);
+    }
+    
+    console.log(`[Amily2-SuperMemory] 任务完成: ${tableName}`);
+    
+    updateDashboardCounters();
+}
+
+async function saveStateToMetadata() {
+    const context = getContext();
+    if (!context.chat || context.chat.length === 0) return;
+
+    const lastMsgIndex = context.chat.length - 1;
+    const lastMsg = context.chat[lastMsgIndex];
+    
+    const currentState = getMemoryState();
+    
+    if (!lastMsg.metadata) lastMsg.metadata = {};
+    
+    lastMsg.metadata[METADATA_KEY] = JSON.parse(JSON.stringify(currentState));
+    
+    if (context.saveChat) {
+        await context.saveChat(); 
+    }
+    
+    console.log(`[Amily2-SuperMemory] 状态已保存至消息 #${lastMsgIndex}`);
+}
+
+export async function tryRestoreStateFromMetadata() {
+    const context = getContext();
+    if (!context.chat || context.chat.length === 0) return;
+
+    let foundState = null;
+    let foundIndex = -1;
+
+    for (let i = context.chat.length - 1; i >= 0; i--) {
+        const msg = context.chat[i];
+        if (msg.metadata && msg.metadata[METADATA_KEY]) {
+            foundState = msg.metadata[METADATA_KEY];
+            foundIndex = i;
+            break;
+        }
+    }
+
+    if (foundState) {
+        console.log(`[Amily2-SuperMemory] 发现历史状态 (Msg #${foundIndex})，正在恢复...`);
+        if (typeof loadMemoryState === 'function') {
+            loadMemoryState(foundState);
+            await forceSyncAll();
+        } else {
+            console.warn('[Amily2-SuperMemory] table-system 缺少 loadMemoryState 方法，无法恢复状态。');
+        }
+    } else {
+        console.log('[Amily2-SuperMemory] 未在聊天记录中发现历史状态，使用默认/当前状态。');
+    }
+}
+
+function updateDashboardCounters() {
+    const tables = getMemoryState();
+    if (tables && window.$) {
+        $('#sm-index-count').text(`${tables.length} 个索引`);
+        const totalRows = tables.reduce((acc, t) => acc + (t.rows ? t.rows.length : 0), 0);
+        $('#sm-detail-count').text(`${totalRows} 个详情`);
+    }
+}
+
+export async function forceSyncAll() {
+    console.log('[Amily2-SuperMemory] 正在执行全量同步...');
+    const tables = getMemoryState();
+    
+    if (!tables || tables.length === 0) {
+        console.warn('[Amily2-SuperMemory] 没有可同步的表格数据。');
+        return;
+    }
+
+    for (const table of tables) {
+        let role = 'database';
+        if (table.name.includes('时空') || table.name.includes('世界钟')) role = 'anchor';
+        if (table.name.includes('日志') || table.name.includes('Log')) role = 'log';
+
+        updateQueue.push({
+            tableName: table.name,
+            data: table.rows,
+            headers: table.headers, 
+            rowStatuses: table.rowStatuses || [], 
+            role: role
+        });
+    }
+    
+    await processQueue();
+    console.log('[Amily2-SuperMemory] 全量同步完成。');
+}
+
+export async function purgeSuperMemory() {
+    try {
+        console.log('[Amily2-SuperMemory] 开始清空记忆...');
+        const bookName = getMemoryBookName();
+        const entries = await amilyHelper.getLorebookEntries(bookName);
+        
+        if (!entries || entries.length === 0) {
+            console.log('[Amily2-SuperMemory] 世界书为空，无需清理。');
+            return;
+        }
+
+        const entriesToDelete = [];
+        const prefixes = ['[Amily2]', '【Amily2']; 
+
+        for (const entry of entries) {
+            if (entry.comment && prefixes.some(p => entry.comment.startsWith(p))) {
+                entriesToDelete.push(entry.uid);
+            }
+        }
+
+        if (entriesToDelete.length > 0) {
+            await amilyHelper.deleteLorebookEntries(bookName, entriesToDelete);
+            console.log(`[Amily2-SuperMemory] 已清空 ${entriesToDelete.length} 个条目。`);
+            if (window.toastr) toastr.success(`已清空 ${entriesToDelete.length} 条记忆数据`);
+        } else {
+            if (window.toastr) toastr.info('没有发现需要清空的Amily2记忆数据');
+        }
+        
+        updateDashboardCounters();
+
+    } catch (error) {
+        console.error('[Amily2-SuperMemory] 清空失败:', error);
+        if (window.toastr) toastr.error('清空失败: ' + error.message);
+    }
+}
