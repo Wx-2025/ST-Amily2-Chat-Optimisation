@@ -17,8 +17,8 @@ export function getMemoryBookName() {
     return `Amily2_Memory_${safeCharName}`;
 }
 
-export async function syncToLorebook(tableName, data, indexText, role, headers, rowStatuses, depth = 100) {
-    console.log(`[Amily2-Bridge] 开始同步表格: ${tableName} (Depth: ${depth})`);
+export async function syncToLorebook(tableName, data, indexText, role, headers, rowStatuses, depth = 100, isIndexConstant = true) {
+    console.log(`[Amily2-Bridge] 开始同步表格: ${tableName} (Depth: ${depth}, IndexConstant: ${isIndexConstant})`);
 
     await ensureMemoryBook();
 
@@ -43,9 +43,8 @@ export async function syncToLorebook(tableName, data, indexText, role, headers, 
 
             if (specificOrder !== null) {
                 existingEntry.order = specificOrder;
-                existingEntry.position = 4; // 【V154.2】索引条目强制位置为 4 (@D)
+                existingEntry.position = 4; 
             }
-            // 【V154.4】如果是索引条目，强制修正Depth为0
             if (specificDepth !== null) {
                 existingEntry.depth = specificDepth; 
             }
@@ -55,7 +54,6 @@ export async function syncToLorebook(tableName, data, indexText, role, headers, 
             } else {
                 existingEntry.constant = false;
             }
-            // 【V154.8】回归WorldEditor逻辑：仅使用 enabled 属性，移除 disable 属性以交给 helper 处理
             existingEntry.enabled = enabled;
             delete existingEntry.disable;
             delete existingEntry.disabled;
@@ -67,11 +65,10 @@ export async function syncToLorebook(tableName, data, indexText, role, headers, 
                 keys: keys, 
                 content: content,
                 type: type, 
-                position: 4, // 【V154.2】默认为 4 (@D/D+)
-                order: specificOrder !== null ? specificOrder : depth, // 这里使用的是传入的 8001+ (Order)
-                depth: specificDepth !== null ? specificDepth : depth, // 【V154.5】普通条目深度也使用传入的 8001+ (实现深层扫描)
-                enabled: enabled, // 【V154.8】恢复 enabled 属性
-                // disable: !enabled, // 移除 disable
+                position: 4,
+                order: specificOrder !== null ? specificOrder : depth, 
+                depth: specificDepth !== null ? specificDepth : depth,
+                enabled: enabled,
                 exclude_recursion: excludeRecursion, 
                 prevent_recursion: excludeRecursion,
                 excludeRecursion: excludeRecursion, 
@@ -89,7 +86,8 @@ export async function syncToLorebook(tableName, data, indexText, role, headers, 
             indexContent += `\n<system_note>\n【Amily2-前瞻性预测指令】\n为了实现“提前一轮触发绿灯世界书”的高级记忆回流，请在生成本轮回复时，根据当前剧情走向，**大胆预测并自然提及**下一轮可能出现的索引编码。可自行增加一个标签并使用<!--到-->html注释掉该编码。这将激活系统的预加载机制，确保剧情发展的连贯性。\n</system_note>`;
         }
 
-        processEntry(indexComment, indexKey, indexContent, 'constant', true, true, 0, 0);
+        const indexType = isIndexConstant ? 'constant' : 'selective';
+        processEntry(indexComment, indexKey, indexContent, indexType, true, true, 0, 0);
     }
 
     data.forEach((row, index) => {
