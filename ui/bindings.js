@@ -22,7 +22,7 @@ function displayDailyAuthCode() {
         displayEl.textContent = todayCode;
 
         if(copyBtn) copyBtn.style.display = 'inline-block';
-        
+
         copyBtn.onclick = () => {
             navigator.clipboard.writeText(todayCode).then(() => {
                 toastr.success('授权码已复制到剪贴板！');
@@ -1263,6 +1263,7 @@ async function opt_loadTavernApiProfiles(panel) {
 const opt_characterSpecificSettings = [
     'plotOpt_worldbookSource',
     'plotOpt_selectedWorldbooks',
+    'plotOpt_autoSelectWorldbooks',
     'plotOpt_enabledWorldbookEntries'
 ];
 
@@ -1357,10 +1358,21 @@ async function opt_loadWorldbooks(panel) {
         lorebooks.forEach(name => {
             const bookId = `amily2-opt-wb-check-${name.replace(/[^a-zA-Z0-9]/g, '-')}`;
             const isChecked = currentSelection.includes(name);
+            
+            // Auto Select Logic
+            const autoId = `amily2-opt-wb-auto-${name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+            const isAuto = (settings.plotOpt_autoSelectWorldbooks || []).includes(name);
+
             const item = $(`
-                <div class="amily2_opt_worldbook_list_item" style="display: flex; align-items: center;">
-                    <input type="checkbox" id="${bookId}" value="${name}" ${isChecked ? 'checked' : ''} style="margin-right: 5px;">
-                    <label for="${bookId}" style="margin-bottom: 0;">${name}</label>
+                <div class="amily2_opt_worldbook_list_item" style="display: flex; align-items: center; justify-content: space-between; padding-right: 5px;">
+                    <div style="display: flex; align-items: center;">
+                        <input type="checkbox" id="${bookId}" value="${name}" ${isChecked ? 'checked' : ''} style="margin-right: 5px;">
+                        <label for="${bookId}" style="margin-bottom: 0;">${name}</label>
+                    </div>
+                     <div style="display: flex; align-items: center;" title="开启后自动加载该世界书所有条目（包括新增）">
+                        <input type="checkbox" class="amily2_opt_wb_auto_check" id="${autoId}" data-book="${name}" ${isAuto ? 'checked' : ''} style="margin-right: 5px;">
+                        <label for="${autoId}" style="margin-bottom: 0; font-size: 0.9em; opacity: 0.8; cursor: pointer;">全选</label>
+                    </div>
                 </div>
             `);
             container.append(item);
@@ -1463,12 +1475,16 @@ async function opt_loadWorldbookEntries(panel) {
 
         enabledOnlyEntries.sort((a, b) => (a.comment || '').localeCompare(b.comment || '')).forEach(entry => {
             const entryId = `amily2-opt-entry-${entry.bookName.replace(/[^a-zA-Z0-9]/g, '-')}-${entry.uid}`;
-            const isEnabled = enabledEntries[entry.bookName]?.includes(entry.uid) ?? true;
+            
+            const isAuto = (settings.plotOpt_autoSelectWorldbooks || []).includes(entry.bookName);
+            // If auto is enabled, the entry is forced enabled in logic, so show checked and disabled
+            const isChecked = isAuto || (enabledEntries[entry.bookName]?.includes(entry.uid) ?? true);
+            const isDisabled = isAuto;
 
             const item = $(`
                 <div class="amily2_opt_worldbook_entry_item" style="display: flex; align-items: center;">
-                    <input type="checkbox" id="${entryId}" data-book="${entry.bookName}" data-uid="${entry.uid}" ${isEnabled ? 'checked' : ''} style="margin-right: 5px;">
-                    <label for="${entryId}" title="世界书: ${entry.bookName}\nUID: ${entry.uid}" style="margin-bottom: 0;">${entry.comment || '无标题条目'}</label>
+                    <input type="checkbox" id="${entryId}" data-book="${entry.bookName}" data-uid="${entry.uid}" ${isChecked ? 'checked' : ''} ${isDisabled ? 'disabled' : ''} style="margin-right: 5px;">
+                    <label for="${entryId}" title="世界书: ${entry.bookName}\nUID: ${entry.uid}" style="margin-bottom: 0; ${isDisabled ? 'opacity:0.7;' : ''}">${entry.comment || '无标题条目'} ${isAuto ? '<span style="font-size:0.8em; opacity:0.6;">(全选生效中)</span>' : ''}</label>
                 </div>
             `);
             container.append(item);
@@ -2048,13 +2064,25 @@ export function initializePlotOptimizationBindings() {
     });
 
 
-    panel.on('change.amily2_opt', '#amily2_opt_worldbook_checkbox_list input[type="checkbox"]', async function() {
+    // Manual Selection Change
+    panel.on('change.amily2_opt', '#amily2_opt_worldbook_checkbox_list input[type="checkbox"]:not(.amily2_opt_wb_auto_check)', async function() {
         const selected = [];
-        panel.find('#amily2_opt_worldbook_checkbox_list input:checked').each(function() {
+        panel.find('#amily2_opt_worldbook_checkbox_list input[type="checkbox"]:not(.amily2_opt_wb_auto_check):checked').each(function() {
             selected.push($(this).val());
         });
 
         await opt_saveSetting('plotOpt_selectedWorldbooks', selected);
+        await opt_loadWorldbookEntries(panel);
+    });
+
+    // Auto Selection Change
+    panel.on('change.amily2_opt', '#amily2_opt_worldbook_checkbox_list input.amily2_opt_wb_auto_check', async function() {
+        const autoSelected = [];
+        panel.find('#amily2_opt_worldbook_checkbox_list input.amily2_opt_wb_auto_check:checked').each(function() {
+            autoSelected.push($(this).data('book'));
+        });
+
+        await opt_saveSetting('plotOpt_autoSelectWorldbooks', autoSelected);
         await opt_loadWorldbookEntries(panel);
     });
 
