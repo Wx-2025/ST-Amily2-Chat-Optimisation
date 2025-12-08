@@ -577,7 +577,7 @@ export async function executeRefinement(worldbook, loreKey) {
                         }
                         break;
                     case 'coreContent':
-                        messages.push({ role: "user", content: `请将以下多个零散的"详细总结记录"提炼并融合成一段连贯的章节历史。原文如下：\n\n${contentToRefine}` });
+                        messages.push({ role: "user", content: `<核心处理内容>\n\n${contentToRefine}\n\n</核心处理内容>` });
                         break;
                 }
             }
