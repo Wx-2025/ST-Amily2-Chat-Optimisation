@@ -331,9 +331,7 @@ export function renderTables() {
 
     tables.forEach((tableData, tableIndex) => {
         const header = document.createElement('div');
-        header.style.display = 'flex';
-        header.style.justifyContent = 'space-between';
-        header.style.alignItems = 'center';
+        header.className = 'amily2-table-header-container';
         const title = document.createElement('h3');
         if (updatedTables.has(tableIndex)) {
             title.classList.add('table-updated'); // 【V15.2 新增】为更新的表格添加高亮
@@ -378,13 +376,17 @@ export function renderTables() {
         }
         tableElement.appendChild(colgroup);
 
-        // Explicitly calculate and set the total table width to override CSS conflicts
         let totalWidth = 0;
         const cols = colgroup.querySelectorAll('col');
         cols.forEach(col => {
             totalWidth += parseInt(col.style.width, 10);
         });
-        tableElement.style.width = `${totalWidth}px`;
+        tableElement.style.minWidth = '100%';
+        if (totalWidth > 0) {
+             tableElement.style.width = `${Math.max(totalWidth, 0)}px`;
+             tableElement.style.minWidth = `${totalWidth}px`;
+             tableElement.style.width = '100%';
+        }
 
         const thead = tableElement.createTHead();
         const headerRow = thead.insertRow();
@@ -2096,9 +2098,7 @@ function bindChatTableDisplaySetting() {
             continuousRenderToggle.closest('.control-block-with-switch').style.opacity = '0.5';
         }
     };
-
     updateContinuousRenderState();
-
     showInChatToggle.addEventListener('change', () => {
         settings.show_table_in_chat = showInChatToggle.checked;
         saveSettingsDebounced();
