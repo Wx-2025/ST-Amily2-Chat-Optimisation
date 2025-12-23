@@ -376,14 +376,21 @@ export function renderTables() {
         }
         tableElement.appendChild(colgroup);
 
+        // Explicitly calculate and set the total table width to override CSS conflicts
         let totalWidth = 0;
         const cols = colgroup.querySelectorAll('col');
         cols.forEach(col => {
             totalWidth += parseInt(col.style.width, 10);
         });
+        // Set min-width instead of fixed width to allow expansion
         tableElement.style.minWidth = '100%';
         if (totalWidth > 0) {
+             // Only set explicit width if it exceeds the container (handled by min-width: 100% usually, 
+             // but here we set it as a base to ensure columns don't shrink below their defined width)
              tableElement.style.width = `${Math.max(totalWidth, 0)}px`;
+             // Actually, to allow full width expansion, we should just use min-width and let CSS handle the rest
+             // unless we want to force scrolling.
+             // Let's try setting min-width to the calculated total, and width to 100%.
              tableElement.style.minWidth = `${totalWidth}px`;
              tableElement.style.width = '100%';
         }
@@ -801,6 +808,12 @@ function openRuleEditor(tableIndex) {
                         <small class="notes">当表格总行数超过设定值时，将在表格底部显示警告。</small>
                     </div>
 
+                    <div class="rule-editor-field" style="border: 1px solid #444; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                        <label for="rule-simplify-threshold" style="font-weight: bold; color: #ffcc00;">【实验性】历史内容简化阈值 (0为禁用)</label>
+                        <input type="number" id="rule-simplify-threshold" class="text_pole" min="0" value="${table.simplifyRowThreshold || 0}" style="width: 100px; margin-top: 10px;">
+                        <small class="notes">设置一个行号 X。在填表时，第 0 行到第 X-1 行的内容将被省略并替换为“已锁定”提示。这可以节省 Token 并防止 AI 修改旧数据。</small>
+                    </div>
+
                     <hr style="border-color: #444; margin: 10px 0;">
 
                     <div class="rule-editor-field">
@@ -882,6 +895,7 @@ function openRuleEditor(tableIndex) {
     dialogElement.find('.popup-button-ok').on('click', () => {
         const newCharLimitRules = JSON.parse(dialogElement.find('#current-char-limit-rules').attr('data-rules') || '{}');
         const rowLimitValue = parseInt(dialogElement.find('#rule-row-limit-value').val(), 10);
+        const simplifyThresholdValue = parseInt(dialogElement.find('#rule-simplify-threshold').val(), 10);
 
         const newRules = {
             note: dialogElement.find('#rule-note').val(),
@@ -890,6 +904,7 @@ function openRuleEditor(tableIndex) {
             rule_update: dialogElement.find('#rule-update').val(),
             charLimitRules: newCharLimitRules,
             rowLimitRule: rowLimitValue,
+            simplifyRowThreshold: simplifyThresholdValue, // 保存新设置
         };
         TableManager.updateTableRules(tableIndex, newRules);
         closeDialog();
@@ -1356,6 +1371,7 @@ export function bindTableEvents() {
     bindBatchFillButton(); // 【新增】绑定批量填表按钮
     bindFloorFillButtons(); // 【新增】绑定楼层填表按钮
     bindReorganizeButton(); // 【新增】绑定重新整理按钮
+    bindClearRecordsButton(); // 【新增】绑定清除记录按钮
     bindNccsApiEvents(); // 【新增】绑定Nccs API系统事件
     bindChatTableDisplaySetting(); // 【新增】绑定聊天内表格显示开关
 
@@ -1623,17 +1639,98 @@ function bindReorganizeButton() {
                 return;
             }
 
-            try {
-                const { reorganizeTableContent } = await import('../core/table-system/reorganizer.js');
-                await reorganizeTableContent();
-            } catch (error) {
-                console.error('[内存储司] 重新整理功能导入失败:', error);
-                toastr.error('重新整理功能启动失败，请检查系统状态。');
+            const tables = TableManager.getMemoryState();
+            if (!tables || tables.length === 0) {
+                toastr.warning('当前没有表格可供整理。');
+                return;
             }
+
+            // 构建表格选择列表 HTML
+            const tableListHtml = tables.map((table, index) => `
+                <div class="checkbox-item" style="margin-bottom: 8px; display: flex; align-items: center;">
+                    <input type="checkbox" id="reorg-table-${index}" value="${index}">
+                    <label for="reorg-table-${index}" style="margin-left: 8px; cursor: pointer;">${table.name}</label>
+                </div>
+            `).join('');
+
+            const modalHtml = `
+                <div style="display: flex; flex-direction: column; gap: 15px;">
+                    <p class="notes" style="color: #ffcc00;">建议：最好一次只选择一个表格，或少数几个相关联的表格进行整理。一次性处理过多表格可能会导致AI混淆或遗漏信息。</p>
+                    <p class="notes">请勾选需要AI重新整理和去重的表格：</p>
+                    <div style="max-height: 300px; overflow-y: auto; border: 1px solid #444; padding: 10px; border-radius: 5px; background: rgba(0,0,0,0.2);">
+                        ${tableListHtml}
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="reorg-select-all" class="menu_button small_button">全选</button>
+                        <button id="reorg-deselect-all" class="menu_button small_button">全不选</button>
+                    </div>
+                </div>
+            `;
+
+            showHtmlModal('选择要整理的表格', modalHtml, {
+                onOk: async (dialogElement) => {
+                    const selectedIndices = [];
+                    dialogElement.find('input[type="checkbox"]:checked').each(function() {
+                        selectedIndices.push(parseInt($(this).val(), 10));
+                    });
+
+                    if (selectedIndices.length === 0) {
+                        toastr.warning('请至少选择一个表格。');
+                        return false; // 阻止关闭弹窗
+                    }
+
+                    try {
+                        const { reorganizeTableContent } = await import('../core/table-system/reorganizer.js');
+                        await reorganizeTableContent(selectedIndices);
+                    } catch (error) {
+                        console.error('[内存储司] 重新整理功能导入失败:', error);
+                        toastr.error('重新整理功能启动失败，请检查系统状态。');
+                    }
+                },
+                onShow: (dialogElement) => {
+                    dialogElement.find('#reorg-select-all').on('click', () => {
+                        dialogElement.find('input[type="checkbox"]').prop('checked', true);
+                    });
+                    dialogElement.find('#reorg-deselect-all').on('click', () => {
+                        dialogElement.find('input[type="checkbox"]').prop('checked', false);
+                    });
+                }
+            });
         });
         
         reorganizeBtn.dataset.reorganizeEventBound = 'true';
         log('"重新整理"按钮已成功绑定。', 'success');
+    }
+}
+
+function bindClearRecordsButton() {
+    const clearBtn = document.getElementById('clear-records-btn');
+    const floorInput = document.getElementById('clear-records-before-floor');
+
+    if (clearBtn && floorInput) {
+        if (clearBtn.dataset.clearEventBound) return;
+
+        clearBtn.addEventListener('click', async () => {
+            const floorIndex = parseInt(floorInput.value, 10);
+            if (isNaN(floorIndex) || floorIndex < 0) {
+                toastr.warning('请输入有效的楼层号。');
+                return;
+            }
+
+            if (confirm(`【警告】您确定要清除第 ${floorIndex} 楼之前的所有表格记录吗？\n\n此操作将永久删除这些消息中存储的表格快照，无法恢复。当前最新的表格状态不会受影响。`)) {
+                try {
+                    const { clearTableRecordsBefore } = await import('../core/table-system/cleaner.js');
+                    const count = await clearTableRecordsBefore(floorIndex);
+                    toastr.success(`已成功清除 ${count} 条消息中的表格记录。`);
+                } catch (error) {
+                    console.error('[内存储司] 清除记录失败:', error);
+                    toastr.error('清除记录失败，请检查控制台日志。');
+                }
+            }
+        });
+
+        clearBtn.dataset.clearEventBound = 'true';
+        log('"清除记录"按钮已成功绑定。', 'success');
     }
 }
 
@@ -2098,14 +2195,15 @@ function bindChatTableDisplaySetting() {
             continuousRenderToggle.closest('.control-block-with-switch').style.opacity = '0.5';
         }
     };
+
     updateContinuousRenderState();
+
     showInChatToggle.addEventListener('change', () => {
         settings.show_table_in_chat = showInChatToggle.checked;
         saveSettingsDebounced();
         toastr.info(`聊天内表格显示已${showInChatToggle.checked ? '开启' : '关闭'}。`);
         updateContinuousRenderState();
     });
-
     continuousRenderToggle.addEventListener('change', () => {
         settings.render_on_every_message = continuousRenderToggle.checked;
         saveSettingsDebounced();
