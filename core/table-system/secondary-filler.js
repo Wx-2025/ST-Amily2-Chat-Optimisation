@@ -162,6 +162,7 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
         }
 
         console.log(`[Amily2-副API] 触发填表: 处理 ${targetMessages.length} 条消息。索引范围: ${targetMessages[0].index} - ${targetMessages[targetMessages.length-1].index}`);
+        toastr.info(`分步填表正在执行，正在填写 ${targetMessages[0].index + 1} 楼至 ${targetMessages[targetMessages.length-1].index + 1} 楼的内容`, "Amily2-分步填表");
 
         let tagsToExtract = [];
         let exclusionRules = [];
@@ -297,6 +298,7 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
         }
         
         saveChat();
+        toastr.success("分步填表执行完毕。", "Amily2-分步填表");
 
     } catch (error) {
         console.error(`[Amily2-副API] 发生严重错误:`, error);
