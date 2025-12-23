@@ -726,7 +726,7 @@ export function bindModalEvents() {
     container
         .off("click.amily2.chamber_nav")
         .on("click.amily2.chamber_nav",
-             "#amily2_open_plot_optimization, #amily2_open_additional_features, #amily2_open_rag_palace, #amily2_open_memorisation_forms, #amily2_open_character_world_book, #amily2_open_world_editor, #amily2_open_glossary, #amily2_open_renderer, #amily2_open_super_memory, #amily2_open_auto_char_card, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan, #amily2_back_to_main_from_forms, #amily2_back_to_main_from_optimization, #amily2_back_to_main_from_cwb, #amily2_back_to_main_from_world_editor, #amily2_back_to_main_from_glossary, #amily2_renderer_back_button, #amily2_back_to_main_from_super_memory", function () {
+             "#amily2_open_text_optimization, #amily2_open_plot_optimization, #amily2_open_additional_features, #amily2_open_rag_palace, #amily2_open_memorisation_forms, #amily2_open_character_world_book, #amily2_open_world_editor, #amily2_open_glossary, #amily2_open_renderer, #amily2_open_super_memory, #amily2_open_auto_char_card, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan, #amily2_back_to_main_from_forms, #amily2_back_to_main_from_optimization, #amily2_back_to_main_from_text_optimization, #amily2_back_to_main_from_cwb, #amily2_back_to_main_from_world_editor, #amily2_back_to_main_from_glossary, #amily2_renderer_back_button, #amily2_back_to_main_from_super_memory", function () {
         if (!pluginAuthStatus.authorized) return;
 
         const mainPanel = container.find('.plugin-features');
@@ -734,6 +734,7 @@ export function bindModalEvents() {
         const hanlinyuanPanel = container.find('#amily2_hanlinyuan_panel');
         const memorisationFormsPanel = container.find('#amily2_memorisation_forms_panel');
         const plotOptimizationPanel = container.find('#amily2_plot_optimization_panel');
+        const textOptimizationPanel = container.find('#amily2_text_optimization_panel');
         const characterWorldBookPanel = container.find('#amily2_character_world_book_panel');
         const worldEditorPanel = container.find('#amily2_world_editor_panel');
         const glossaryPanel = container.find('#amily2_glossary_panel');
@@ -745,6 +746,7 @@ export function bindModalEvents() {
         hanlinyuanPanel.hide();
         memorisationFormsPanel.hide();
         plotOptimizationPanel.hide();
+        textOptimizationPanel.hide();
         characterWorldBookPanel.hide();
         worldEditorPanel.hide();
         glossaryPanel.hide();
@@ -752,6 +754,9 @@ export function bindModalEvents() {
         superMemoryPanel.hide();
 
         switch (this.id) {
+            case 'amily2_open_text_optimization':
+                textOptimizationPanel.show();
+                break;
             case 'amily2_open_super_memory':
                 const userType = parseInt(localStorage.getItem("plugin_user_type") || "0");
                 if (userType < 2) {
@@ -795,6 +800,7 @@ export function bindModalEvents() {
             case 'amily2_back_to_main_from_hanlinyuan':
             case 'amily2_back_to_main_from_forms':
             case 'amily2_back_to_main_from_optimization':
+            case 'amily2_back_to_main_from_text_optimization':
             case 'amily2_back_to_main_from_cwb':
             case 'amily2_back_to_main_from_world_editor':
             case 'amily2_back_to_main_from_glossary':
