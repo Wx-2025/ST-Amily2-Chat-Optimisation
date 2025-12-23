@@ -156,6 +156,8 @@
 <fieldset class="settings-group">
     <legend style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
         <span><i class="fas fa-cog"></i> Amily中枢</span>
+
+        
         <div style="display: flex; gap: 5px;">
             <button id="amily2_reset_auth" class="menu_button small_button interactable" title="清除授权">
                 <i class="fas fa-sign-out-alt"></i>
@@ -164,44 +166,23 @@
                 教程
             </button>
         </div>
+        
     </legend>
 </fieldset>
 
-<fieldset class="settings-group">
-    <legend><i class="fas fa-plus-circle"></i> 记忆增强</legend>
-    <div class="button-group" style="display: flex; justify-content: space-between; gap: 8px;">
-        <button id="amily2_open_additional_features" class="menu_button wide_button"><i class="fas fa-landmark-dome"></i> 总结模块</button>
-        <button id="amily2_open_rag_palace" class="menu_button wide_button"><i class="fas fa-brain"></i> 向量模块</button>
-        <button id="amily2_open_memorisation_forms" class="menu_button wide_button"><i class="fas fa-table"></i> 表格模块</button>
-        <button id="amily2_open_character_world_book" class="menu_button wide_button"><i class="fa-solid fa-book-atlas"></i> 角色世界</button>
-    </div>
-</fieldset>
- 
-<fieldset class="settings-group">
-    <legend><i class="fas fa-puzzle-piece"></i> 附加功能</legend>
-    <div class="button-group" style="display: flex; justify-content: space-between; gap: 8px;">
-        <button id="amily2_open_plot_optimization" class="menu_button wide_button"><i class="fas fa-feather-alt"></i> 剧情优化</button>
-        <button id="amily2_open_world_editor" class="menu_button wide_button"><i class="fas fa-globe"></i> 世界编辑</button>
-        <button id="amily2_open_glossary" class="menu_button wide_button"><i class="fas fa-book"></i> 术语表单</button>
-        <button id="amily2_open_renderer" class="menu_button wide_button"><i class="fas fa-paint-brush"></i> 前端渲染</button>
-    </div>
-</fieldset>
+<div class="disclaimer-box">
+    <p class="disclaimer-emo">“我也想过琴棋书画诗酒花，奈何生活只有柴米油盐酱醋茶。”</p>
+    <p class="disclaimer-text">
+        <strong>免责声明：</strong>本插件仅供个人学习与技术交流使用，严禁用于任何商业目的或非法活动。使用者需自行承担因使用本插件而产生的一切风险与法律责任，开发者对此不承担任何责任。
+    </p>
+</div>
 
-<fieldset class="settings-group">
-    <legend><i class="fas fa-flask"></i> 内测功能</legend>
-    <div class="button-group" style="display: flex; justify-content: space-between; gap: 8px;">
-        <button id="amily2_open_super_memory" class="menu_button wide_button"><i class="fas fa-brain"></i> 超级记忆</button>
-        <button id="amily2_open_auto_char_card" class="menu_button wide_button"><i class="fas fa-robot"></i> 一键生卡</button>
-    </div>
-</fieldset>
- 
 <fieldset class="settings-group">
     <legend><i class="fas fa-bullhorn"></i> 作者留言</legend>
     <div id="amily2_message_board" style="display: flex; justify-content: center; align-items: center; padding: 8px; background-color: rgba(255, 255, 255, 0.05); border-radius: 5px; min-height: 40px;">
         <div id="amily2_message_content" style="color: #adb6e6; font-size: 13px; line-height: 1.5; text-align: center;"></div>
     </div>
 </fieldset>
-
 <fieldset class="settings-group">
     <legend><i class="fas fa-code-branch"></i> 版本信息</legend>
     <div class="version-info-container">
@@ -225,260 +206,37 @@
     </div>
 </fieldset>
 
-<div class="disclaimer-box">
-    <p class="disclaimer-emo">“我也想过琴棋书画诗酒花，奈何生活只有柴米油盐酱醋茶。”</p>
-    <p class="disclaimer-text">
-        <strong>免责声明：</strong>本插件仅供个人学习与技术交流使用，严禁用于任何商业目的或非法活动。使用者需自行承担因使用本插件而产生的一切风险与法律责任，开发者对此不承担任何责任。
-    </p>
-</div>
+<fieldset class="settings-group">
+    <legend><i class="fas fa-plus-circle"></i> 记忆增强</legend>
+    <div class="button-group" style="display: flex; justify-content: space-between; gap: 8px;">
+        <button id="amily2_open_additional_features" class="menu_button wide_button"><i class="fas fa-landmark-dome"></i> 总结模块</button>
+        <button id="amily2_open_rag_palace" class="menu_button wide_button"><i class="fas fa-brain"></i> 向量模块</button>
+        <button id="amily2_open_memorisation_forms" class="menu_button wide_button"><i class="fas fa-table"></i> 表格模块</button>
+        <button id="amily2_open_character_world_book" class="menu_button wide_button"><i class="fa-solid fa-book-atlas"></i> 角色世界</button>
+    </div>
+</fieldset>
+ 
+<fieldset class="settings-group">
+    <legend><i class="fas fa-puzzle-piece"></i> 附加功能</legend>
+    <div class="button-group" style="display: flex; justify-content: space-between; gap: 8px;">
+        <button id="amily2_open_plot_optimization" class="menu_button wide_button"><i class="fas fa-feather-alt"></i> 剧情优化</button>
+        <button id="amily2_open_text_optimization" class="menu_button wide_button"><i class="fas fa-cogs"></i> 正文优化</button>
+        <button id="amily2_open_world_editor" class="menu_button wide_button"><i class="fas fa-globe"></i> 世界编辑</button>
+        <button id="amily2_open_glossary" class="menu_button wide_button"><i class="fas fa-book"></i> 术语表单</button>
+        <button id="amily2_open_renderer" class="menu_button wide_button"><i class="fas fa-paint-brush"></i> 前端渲染</button>
+    </div>
+</fieldset>
+
+<fieldset class="settings-group">
+    <legend><i class="fas fa-flask"></i> 内测功能</legend>
+    <div class="button-group" style="display: flex; justify-content: space-between; gap: 8px;">
+        <button id="amily2_open_super_memory" class="menu_button wide_button"><i class="fas fa-brain"></i> 超级记忆</button>
+        <button id="amily2_open_auto_char_card" class="menu_button wide_button"><i class="fas fa-robot"></i> 一键生卡</button>
+    </div>
+</fieldset>
 
 <hr class="header-divider">
 
-            <fieldset class="settings-group collapsible">
-                <legend class="collapsible-legend"><i class="fas fa-cogs"></i> 正文优化 <i class="fas fa-chevron-down collapse-icon"></i></legend>
-                <div class="collapsible-content">
-
-                <div class="control-pair-container" style="justify-content: space-around;">
-                    <div class="amily2_settings_block">
-                        <label for="amily2_optimization_enabled">启动优化</label>
-                        <label class="toggle-switch">
-                            <input id="amily2_optimization_enabled" type="checkbox" />
-                            <span class="slider"></span>
-                        </label>
-                        <small class="notes">正文优化功能开关</small>
-                    </div>
-                    <div class="amily2_settings_block">
-                        <label for="amily2_optimization_exclusion_enabled">内容排除</label>
-                        <label class="toggle-switch">
-                            <input id="amily2_optimization_exclusion_enabled" type="checkbox" />
-                            <span class="slider"></span>
-                        </label>
-                        <small class="notes">正文优化排除开关</small>
-                    </div>
-                    <div class="amily2_settings_block">
-                        <label for="amily2_greeting_optimization_enabled">暂未完成</label>
-                        <label class="toggle-switch">
-                            <input id="amily2_greeting_optimization_enabled" type="checkbox" disabled />
-                            <span class="slider"></span>
-                        </label>
-                        <small class="notes">当前功能正在重构</small>
-                    </div>
-                </div>
-
-                <hr style="border-style: dashed; margin: 10px 0;">
-
-                <div class="amily2_settings_block">
-                    <label for="amily2_optimization_target_tag">御定优化标签</label>
-                    <input id="amily2_optimization_target_tag" type="text" class="text_pole" placeholder="例如: content, 正文" />
-                    <small class="notes">指定Amily2号精准优化的唯一XML标签名。若留空或未找到，则不执行优化。</small>
-                </div>
-
-
-                <div class="amily2_settings_block">
-                    <input id="amily2_show_optimization_toast" type="checkbox">
-                    <label for="amily2_show_optimization_toast">显示优化通知</label>
-                    <small class="notes">启用后，将在优化完成后弹出通知。</small>
-                </div>
-
-                <div class="amily2_settings_block">
-                    <label>优化模式选择:</label>
-                    <div class="radio-toggle-group">
-                        <input type="radio" id="amily2_mode_intercept" name="amily2_optimization_mode" value="intercept" checked>
-                        <label for="amily2_mode_intercept">无感优化</label>
-                        <input type="radio" id="amily2_mode_refresh" name="amily2_optimization_mode" value="refresh">
-                        <label for="amily2_mode_refresh">刷新优化</label>
-                    </div>
-                    <small class="notes">无感优化：直接替换文本，速度更快但要关流式，高楼层推荐。刷新优化：重载聊天界面，更加稳定无需关流式，低楼层推荐。</small>
-                </div>
-                </div>
-            </fieldset>
-
-            <fieldset class="settings-group collapsible">
-                <legend class="collapsible-legend"><i class="fas fa-network-wired"></i> API与模型配置 <i class="fas fa-chevron-down collapse-icon"></i></legend>
-                <div class="collapsible-content">
-                <div class="amily2_settings_block">
-                    <label for="amily2_api_provider">API 提供商</label>
-                    <select id="amily2_api_provider" class="text_pole">
-                        <option value="openai">OpenAI 自定义兼容</option>
-                        <option value="openai_test">实验性全兼容</option>
-                        <option value="google">Google 直连</option>
-                        <option value="sillytavern_backend">SillyTavern 后端</option>
-                        <option value="sillytavern_preset">SillyTavern 预设</option>
-                    </select>
-                </div>
-                
-                <!-- OpenAI兼容：需要API URL和API Key -->
-                <div class="amily2_settings_block" id="amily2_api_url_wrapper">
-                    <label for="amily2_api_url">API URL</label>
-                    <input id="amily2_api_url" type="text" class="text_pole" placeholder="http://localhost:3000/v1" />
-                </div>
-                
-                <!-- API Key字段（OpenAI兼容和Google直连需要） -->
-                <div class="amily2_settings_block" id="amily2_api_key_wrapper">
-                    <label for="amily2_api_key">API Key</label>
-                    <input id="amily2_api_key" type="password" class="text_pole" placeholder="sk-..." />
-                </div>
-                
-                <!-- SillyTavern预设选择器 -->
-                <div class="amily2_settings_block" id="amily2_preset_wrapper" style="display: none;">
-                    <label for="amily2_preset_selector">选择预设</label>
-                    <select id="amily2_preset_selector" class="text_pole">
-                        <option value="">请选择预设...</option>
-                    </select>
-                </div>
-
-<div class="amily2_settings_block">
-    <label for="amily2_model_selector">模型</label>
-    <div class="flex-container" id="amily2_model_selector">
-
-        <div id="amily2_model_autofetch_wrapper" style="display: flex; flex: 1; gap: 5px;">
-            <select id="amily2_model" class="text_pole" style="flex: 1;"></select>
-            <button id="amily2_refresh_models" class="menu_button interactable"><i class="fas fa-sync-alt"></i> 刷新</button>
-        </div>
-
-        <input id="amily2_manual_model_input" type="text" class="text_pole" style="flex: 1; display: none;" placeholder="请在此手动输入并保存模型ID"/>
-    </div>
-    <div id="amily2_model_notes" class="notes"></div>
-</div>
-
-
-                <div class="amily2_settings_block">
-                    <label for="amily2_max_tokens">最大Token数: <span id="amily2_max_tokens_value"></span></label>
-                    <input id="amily2_max_tokens" type="range" min="100" max="100000" step="50" />
-                </div>
-                <div class="amily2_settings_block">
-                    <label for="amily2_temperature">思考活跃度: <span id="amily2_temperature_value"></span></label>
-                    <input id="amily2_temperature" type="range" min="0" max="2" step="0.1" />
-                </div>
-                <div class="amily2_settings_block">
-                    <label for="amily2_context_messages">上下文参考数: <span id="amily2_context_messages_value"></span></label>
-                    <input id="amily2_context_messages" type="range" min="0" max="10" step="1" />
-                </div>
-                </div>
-            </fieldset>
-
-            <fieldset class="settings-group collapsible">
-                <legend class="collapsible-legend"><i class="fas fa-edit"></i> 统一提示词编辑器 <i class="fas fa-chevron-down collapse-icon"></i></legend>
-                <div class="collapsible-content">
-
-                <div class="amily2_settings_block">
-                    <div class="label-with-button">
-                        <label for="amily2_prompt_selector">选择要编辑的设定:</label>
-                        <i id="amily2_expand_editor" class="editor_maximize fa-solid fa-maximize right_menu_button interactable" title="展开编辑器" tabindex="0"></i>
-                    </div>
-                    <select id="amily2_prompt_selector" class="text_pole">
-                        <option value="mainPrompt">破限提示词 (最高优先级)</option>
-                        <option value="systemPrompt">预设提示词（任务规则）</option>
-                        <option value="outputFormatPrompt">格式提示词 </option>
-                    </select>
-                </div>
-
-                <div class="amily2_settings_block prompt-editor-area">
-                    <textarea id="amily2_unified_editor" class="text_pole" rows="4"></textarea>
-                    <div class="editor-buttons-panel">
-                        <button id="amily2_unified_save_button" class="menu_button accent small_button interactable"><i class="fas fa-save"></i> 保存当前</button>
-                        <button id="amily2_unified_restore_button" class="menu_button secondary small_button interactable"><i class="fas fa-undo"></i> 恢复默认</button>
-                    </div>
-                </div>
-                </div>
-            </fieldset>
-
-<fieldset class="settings-group collapsible">
-    <legend class="collapsible-legend"><i class="fas fa-book-open"></i> 世界书档案司 <i class="fas fa-chevron-down collapse-icon"></i></legend>
-    <div class="collapsible-content">
-    <div class="amily2_settings_block">
-        <label for="amily2_wb_enabled">启用世界书</label>
-        <label class="toggle-switch">
-            <input id="amily2_wb_enabled" type="checkbox">
-            <span class="slider"></span>
-        </label>
-        <small class="notes">启用后，将根据下方配置读取世界书内容作为参考。</small>
-    </div>
-
-    <div id="amily2_wb_options_container" style="display: none;">
-        <hr style="border-style: dashed; margin: 10px 0;">
-        <div class="amily2_settings_block">
-            <label>世界书来源:</label>
-            <div class="radio-group">
-                <input type="radio" id="amily2_wb_source_character" name="amily2_wb_source" value="character" checked>
-                <label for="amily2_wb_source_character">角色世界书</label>
-                <input type="radio" id="amily2_wb_source_manual" name="amily2_wb_source" value="manual">
-                <label for="amily2_wb_source_manual">手动选择</label>
-            </div>
-        </div>
-
-        <div id="amily2_wb_select_wrapper" style="display: none;">
-            <div class="amily2_settings_block">
-                <label>选择世界书:</label>
-                <div style="display: flex; gap: 5px; margin-bottom: 5px; margin-top: 5px;">
-                    <input type="text" id="amily2_wb_book_search" class="text_pole" placeholder="搜索世界书..." style="flex-grow: 1;">
-                    <button id="amily2_wb_book_select_all" class="menu_button small_button" style="writing-mode: horizontal-tb;">全</button>
-                    <button id="amily2_wb_book_deselect_all" class="menu_button small_button" style="writing-mode: horizontal-tb;">禁</button>
-                </div>
-                <div id="amily2_wb_checkbox_list" class="checkbox-list-container" style="max-height: 120px; overflow-y: auto; border: 1px solid #444; padding: 5px; border-radius: 5px;">
-                    <!-- World book list will be populated here -->
-                </div>
-            </div>
-        </div>
-
-        <div class="amily2_settings_block">
-            <label>选择条目:</label>
-            <div style="display: flex; gap: 5px; margin-bottom: 5px; margin-top: 5px;">
-                <input type="text" id="amily2_wb_entry_search" class="text_pole" placeholder="搜索条目..." style="flex-grow: 1;">
-                <button id="amily2_wb_entry_select_all" class="menu_button small_button" style="writing-mode: horizontal-tb;">全</button>
-                <button id="amily2_wb_entry_deselect_all" class="menu_button small_button" style="writing-mode: horizontal-tb;">禁</button>
-            </div>
-            <div id="amily2_wb_entry_list" class="checkbox-list-container" style="max-height: 150px; overflow-y: auto; border: 1px solid #444; padding: 5px; border-radius: 5px;">
-                <!-- Entry list will be populated here -->
-            </div>
-        </div>
-    </div>
-    </div>
-</fieldset>
-<fieldset class="settings-group">
-    <legend><i class="fas fa-gavel"></i> 总结与律法</legend>
-    <div class="lore-config-grid">
-        <!-- Left Column -->
-        <div class="amily2_settings_block grid-left-col">
-            <label>总结写入目标:</label>
-            <div class="radio-group vertical">
-                <input type="radio" id="amily2_target_main" name="amily2_lorebook_target" value="character_main" checked>
-                <label for="amily2_target_main">写入【主世界书】</label>
-                <input type="radio" id="amily2_target_dedicated" name="amily2_lorebook_target" value="dedicated">
-                <label for="amily2_target_dedicated">写入【独立档案】</label>
-            </div>
-            <small class="notes">此设置仅在“启用即时总结”开启时生效。</small>
-        </div>
-        <!-- Right Column -->
-        <div class="grid-right-col">
-            <div class="amily2_settings_block">
-                <label for="amily2_lore_activation_mode">默认激活模式:</label>
-                <select id="amily2_lore_activation_mode" class="text_pole">
-                    <option value="always">🔵 蓝灯 (始终激活)</option>
-                    <option value="keyed">🟢 绿灯 (关键词触发)</option>
-                </select>
-            </div>
-            <div class="amily2_settings_block">
-                <label for="amily2_lore_insertion_position">默认插入位置:</label>
-                <select id="amily2_lore_insertion_position" class="text_pole">
-                    <option value="before_char">角色定义之前</option>
-                    <option value="after_char">角色定义之后</option>
-                    <option value="before_an">作者注释之前</option>
-                    <option value="after_an">作者注释之后</option>
-                    <option value="at_depth">@D 注入指定深度</option>
-                </select>
-            </div>
-            <div id="amily2_lore_depth_container" class="amily2_settings_block" style="display: none;">
-                <label for="amily2_lore_depth_input">注入深度:</label>
-                <input id="amily2_lore_depth_input" title="深度" class="text_pole" type="number" name="depth" placeholder="2" min="0" max="9999">
-            </div>
-            <div class="amily2_settings_block">
-                <button id="amily2_save_lore_settings" class="menu_button"><i class="fas fa-save"></i> 确认敕令</button>
-                <small id="amily2_lore_save_status" class="notes" style="text-align: center; width: 100%;"></small>
-            </div>
-        </div>
-    </div>
-</fieldset>
 
 			 
 			<fieldset class="settings-group collapsible">
