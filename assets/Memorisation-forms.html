@@ -268,6 +268,25 @@
                     <p class="notes" style="margin-top: 8px; margin-bottom: 10px;">说明：可以导出不含剧情的"纯净预设"用于分享，或导出包含剧情的"完整备份"用于存档。</p>
                     
                     <hr class="section-divider" style="margin: 10px 0;">
+
+                    <!-- 历史记录清理区域 -->
+                    <fieldset class="settings-group" style="border-style: dashed; padding: 8px; margin-bottom: 10px;">
+                        <legend><i class="fas fa-trash-alt"></i> 历史记录清理</legend>
+                        <div class="control-block-with-switch" style="margin-bottom: 10px; flex-direction: column; align-items: flex-start;">
+                            <label for="clear-records-before-floor">清除此楼层前的表格记录</label>
+                            <div style="display: flex; gap: 10px; align-items: center; width: 100%; margin-top: 5px;">
+                                <input type="number" id="clear-records-before-floor" class="text_pole" style="flex: 1;" placeholder="输入楼层号 (例如: 100)">
+                                <button id="clear-records-btn" class="menu_button danger small_button interactable">
+                                    <i class="fas fa-eraser"></i> 一键清除
+                                </button>
+                            </div>
+                            <small class="notes" style="margin-top: 5px; display: block;">
+                                警告：此操作将永久删除指定楼层之前所有消息中存储的表格快照。这可以显著减小聊天记录文件的大小，但会导致无法回退到这些楼层的表格状态。当前最新的表格状态不会受影响。
+                            </small>
+                        </div>
+                    </fieldset>
+                    
+                    <hr class="section-divider" style="margin: 10px 0;">
                     
                     <!-- Nccs API 控制区域 -->
                     <fieldset class="settings-group" style="border-style: dashed; padding: 8px; margin-bottom: 10px;">
