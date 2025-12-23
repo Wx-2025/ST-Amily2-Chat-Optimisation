@@ -12,6 +12,7 @@ import { createDrawer } from '../ui/drawer.js';
 import { messageFormatting } from '/script.js';
 import { executeManualCommand } from '../core/autoHideManager.js';
 import { showContentModal, showHtmlModal } from './page-window.js';
+import { openAutoCharCardWindow } from '../core/auto-char-card/ui-bindings.js';
 
 function displayDailyAuthCode() {
     const displayEl = document.getElementById('amily2_daily_code_display');
@@ -722,10 +723,10 @@ export function bindModalEvents() {
             }
         );	
 		
-container
-    .off("click.amily2.chamber_nav")
-    .on("click.amily2.chamber_nav",
-         "#amily2_open_plot_optimization, #amily2_open_additional_features, #amily2_open_rag_palace, #amily2_open_memorisation_forms, #amily2_open_character_world_book, #amily2_open_world_editor, #amily2_open_glossary, #amily2_open_renderer, #amily2_open_super_memory, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan, #amily2_back_to_main_from_forms, #amily2_back_to_main_from_optimization, #amily2_back_to_main_from_cwb, #amily2_back_to_main_from_world_editor, #amily2_back_to_main_from_glossary, #amily2_renderer_back_button, #amily2_back_to_main_from_super_memory", function () {
+    container
+        .off("click.amily2.chamber_nav")
+        .on("click.amily2.chamber_nav",
+             "#amily2_open_plot_optimization, #amily2_open_additional_features, #amily2_open_rag_palace, #amily2_open_memorisation_forms, #amily2_open_character_world_book, #amily2_open_world_editor, #amily2_open_glossary, #amily2_open_renderer, #amily2_open_super_memory, #amily2_open_auto_char_card, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan, #amily2_back_to_main_from_forms, #amily2_back_to_main_from_optimization, #amily2_back_to_main_from_cwb, #amily2_back_to_main_from_world_editor, #amily2_back_to_main_from_glossary, #amily2_renderer_back_button, #amily2_back_to_main_from_super_memory", function () {
         if (!pluginAuthStatus.authorized) return;
 
         const mainPanel = container.find('.plugin-features');
@@ -760,6 +761,12 @@ container
                 }
                 superMemoryPanel.show();
                 break;
+            case 'amily2_open_auto_char_card':
+                openAutoCharCardWindow();
+                // 自动构建器是独立窗口，不需要隐藏主面板，或者根据需求决定
+                // 这里我们保持主面板显示，因为它是全屏覆盖的
+                mainPanel.show(); 
+                return; 
             case 'amily2_open_renderer':
                 rendererPanel.show();
                 break;
