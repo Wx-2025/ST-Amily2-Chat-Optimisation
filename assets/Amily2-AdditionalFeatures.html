@@ -49,6 +49,81 @@
         <small class="notes">设定始终在你的上下文中保留的最新消息数量。</small>
     </div>
 </fieldset>
+<fieldset class="settings-group">
+    <legend><i class="fas fa-pen-ruler"></i> 手动敕令司</legend>
+
+
+    <div class="manual-command-block">
+        <label>隐藏范围:</label>
+        <input type="number" id="amily2_manual_hide_from" class="manual-input" placeholder="起始层">
+        <span class="manual-command-divider">-</span>
+        <input type="number" id="amily2_manual_hide_to" class="manual-input" placeholder="结束层">
+        <button id="amily2_manual_hide_confirm" class="menu_button primary small_button interactable">
+            <i class="fas fa-eye-slash"></i> 确认隐藏
+        </button>
+    </div>
+
+    <div class="manual-command-block">
+        <label>取消隐藏:</label>
+        <input type="number" id="amily2_manual_unhide_from" class="manual-input" placeholder="起始层">
+        <span class="manual-command-divider">-</span>
+        <input type="number" id="amily2_manual_unhide_to" class="manual-input" placeholder="结束层">
+        <button id="amily2_manual_unhide_confirm" class="menu_button accent small_button interactable">
+            <i class="fas fa-eye"></i> 确认取消
+        </button>
+    </div>
+
+    <small class="notes" style="text-align: center; display: block; margin-top: 10px;">
+        提示：若“起始层”留空，则仅操作“结束层”所指定的单层。
+    </small>
+</fieldset>
+
+
+<fieldset class="settings-group">
+    <legend><i class="fas fa-gavel"></i> 总结与律法</legend>
+    <div class="lore-config-grid">
+        <!-- Left Column -->
+        <div class="amily2_settings_block grid-left-col">
+            <label>总结写入目标:</label>
+            <div class="radio-group vertical">
+                <input type="radio" id="amily2_target_main" name="amily2_lorebook_target" value="character_main" checked>
+                <label for="amily2_target_main">写入【主世界书】</label>
+                <input type="radio" id="amily2_target_dedicated" name="amily2_lorebook_target" value="dedicated">
+                <label for="amily2_target_dedicated">写入【独立档案】</label>
+            </div>
+            <small class="notes">更推荐使用独立档案，会生成一个新的世界书执行总结逻辑。</small>
+        </div>
+        <!-- Right Column -->
+        <div class="grid-right-col">
+            <div class="amily2_settings_block">
+                <label for="amily2_lore_activation_mode">默认激活模式:</label>
+                <select id="amily2_lore_activation_mode" class="text_pole">
+                    <option value="always">🔵 蓝灯 (始终激活)</option>
+                    <option value="keyed">🟢 绿灯 (关键词触发)</option>
+                </select>
+            </div>
+            <div class="amily2_settings_block">
+                <label for="amily2_lore_insertion_position">默认插入位置:</label>
+                <select id="amily2_lore_insertion_position" class="text_pole">
+                    <option value="before_char">角色定义之前</option>
+                    <option value="after_char">角色定义之后</option>
+                    <option value="before_an">作者注释之前</option>
+                    <option value="after_an">作者注释之后</option>
+                    <option value="at_depth">@D 注入指定深度</option>
+                </select>
+            </div>
+            <div id="amily2_lore_depth_container" class="amily2_settings_block" style="display: none;">
+                <label for="amily2_lore_depth_input">注入深度:</label>
+                <input id="amily2_lore_depth_input" title="深度" class="text_pole" type="number" name="depth" placeholder="2" min="0" max="9999">
+            </div>
+            <div class="amily2_settings_block">
+                <button id="amily2_save_lore_settings" class="menu_button"><i class="fas fa-save"></i> 确认敕令</button>
+                <small id="amily2_lore_save_status" class="notes" style="text-align: center; width: 100%;"></small>
+            </div>
+        </div>
+    </div>
+</fieldset>
+
 
 <fieldset class="settings-group">
     <legend><i class="fas fa-satellite-dish"></i> Ngms API 调用系统</legend>
@@ -126,37 +201,6 @@
             </div>
         </div>
     </div>
-</fieldset>
-
-
-
-<fieldset class="settings-group">
-    <legend><i class="fas fa-pen-ruler"></i> 手动敕令司</legend>
-
-
-    <div class="manual-command-block">
-        <label>隐藏范围:</label>
-        <input type="number" id="amily2_manual_hide_from" class="manual-input" placeholder="起始层">
-        <span class="manual-command-divider">-</span>
-        <input type="number" id="amily2_manual_hide_to" class="manual-input" placeholder="结束层">
-        <button id="amily2_manual_hide_confirm" class="menu_button primary small_button interactable">
-            <i class="fas fa-eye-slash"></i> 确认隐藏
-        </button>
-    </div>
-
-    <div class="manual-command-block">
-        <label>取消隐藏:</label>
-        <input type="number" id="amily2_manual_unhide_from" class="manual-input" placeholder="起始层">
-        <span class="manual-command-divider">-</span>
-        <input type="number" id="amily2_manual_unhide_to" class="manual-input" placeholder="结束层">
-        <button id="amily2_manual_unhide_confirm" class="menu_button accent small_button interactable">
-            <i class="fas fa-eye"></i> 确认取消
-        </button>
-    </div>
-
-    <small class="notes" style="text-align: center; display: block; margin-top: 10px;">
-        提示：若“起始层”留空，则仅操作“结束层”所指定的单层。
-    </small>
 </fieldset>
 
 <fieldset class="settings-group" id="amily2_manual_historiography_bureau">
