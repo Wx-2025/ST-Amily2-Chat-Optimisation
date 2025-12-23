@@ -79,6 +79,10 @@ async function initializePanel(contentPanel, errorContainer) {
             const additionalPanelHtml = `<div id="amily2_additional_features_panel" style="display: none;">${additionalFeaturesContent}</div>`;
             mainContainer.append(additionalPanelHtml);
 
+            const textOptimizationContent = await $.get(`${extensionFolderPath}/assets/Amily2-TextOptimization.html`);
+            const textOptimizationPanelHtml = `<div id="amily2_text_optimization_panel" style="display: none;">${textOptimizationContent}</div>`;
+            mainContainer.append(textOptimizationPanelHtml);
+
             const hanlinyuanContent = await $.get(`${extensionFolderPath}/assets/hanlinyuan.html`);
             const hanlinyuanPanelHtml = `<div id="amily2_hanlinyuan_panel" style="display: none;">${hanlinyuanContent}</div>`;
             mainContainer.append(hanlinyuanPanelHtml);
