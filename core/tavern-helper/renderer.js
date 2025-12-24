@@ -565,11 +565,11 @@ function renderHtmlInIframe(htmlContent, container, preElement) {
         iframe.setAttribute('frameborder', '0');
         iframe.setAttribute('scrolling', 'no');
         iframe.loading = 'eager';
-        if (settings.sandboxMode) {
-            iframe.setAttribute('sandbox', 'allow-scripts allow-modals');
-        } else {
-            iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-modals allow-popups');
-        }
+        // 始终使用严格的沙箱策略，移除 allow-same-origin 以防止XSS攻击。
+        // 仅允许脚本、表单、弹窗和模态框。
+        // allow-popups-to-escape-sandbox 允许弹窗（如新标签页）摆脱沙箱限制，这对于外部链接是必要的。
+        // allow-downloads 允许文件下载。
+        iframe.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-downloads');
         
         if (needsVh) {
             iframe.dataset.needsVh = 'true';
