@@ -493,6 +493,12 @@ function registerIframeMapping(iframe, wrapper) {
 }
 
 function handleIframeMessage(event) {
+    // 安全修复：严格验证消息来源，只处理来自已知 iframe 的消息
+    // 即使是同源，也必须是我们自己创建的 iframe
+    if (!winMap.has(event.source)) {
+        return;
+    }
+
     const data = event.data || {};
     let rec = winMap.get(event.source);
     if (!rec || !rec.iframe) {

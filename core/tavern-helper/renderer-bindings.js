@@ -20,20 +20,21 @@ export function initializeRendererBindings() {
         if (!extension_settings[extensionName]) {
             extension_settings[extensionName] = {};
         }
-        extension_settings[extensionName].amily_render_enabled = isChecked;
-        saveSettingsDebounced();
+        const wasEnabled = extension_settings[extensionName].amily_render_enabled;
+        const isEnabled = this.checked;
+        extension_settings[extensionName].amily_render_enabled = isEnabled;
 
-        if (isChecked && !isRendererInitialized) {
-            initializeRenderer();
-            isRendererInitialized = true;
-            console.log("[Amily2-Renderer] Renderer has been initialized on-demand.");
-        }
-
-        if (isChecked) {
-            renderAllIframes();
-        } else {
-            clearAllIframes();
-        }
+        // 使用防抖保存，避免频繁操作
+        saveSettingsDebounced().then(() => {
+            // 仅在状态实际发生变化时执行渲染或清理
+            if (wasEnabled !== isEnabled) {
+                if (isEnabled) {
+                    renderAllIframes();
+                } else {
+                    clearAllIframes();
+                }
+            }
+        });
     });
 
     container.on('change', '#render-depth', function () {

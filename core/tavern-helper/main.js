@@ -687,6 +687,13 @@ export function initializeApiListener() {
             return;
         }
 
+        // 终极安全修复：验证消息源窗口是否为已知的、由 renderer.js 创建的 iframe
+        // 这是防止来自控制台或恶意扩展的同源攻击的关键
+        if (!window.Amily2Renderer?.winMap?.has(event.source)) {
+            console.warn('[Amily2-Security] 收到来自未知源窗口的消息，已忽略。', event.source);
+            return;
+        }
+
         const handler = apiHandlers.get(data.request);
         const callbackRequest = `${data.request}_callback`;
 
