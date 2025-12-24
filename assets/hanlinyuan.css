@@ -4,10 +4,6 @@
     --amily2-text-color: #E0E0E0;
 }
 
-/* =====================================================================
- * =========== 【翰林院】御用样式 - 确保界面威严 v4.0 ===========
- * ===========        Amily 奉旨重铸，确保观感统一       =============
- * ===================================================================== */
 
 /* ------------------ 整体模态窗口布局 ------------------ */
 #hly-modal-container {
@@ -33,10 +29,7 @@
     gap: 15px;
 }
 
-/* ------------------ 滚动条美化 ------------------ */
-/* ST核心脚本 `dynamic-styles.js` 可能会尝试为此处的滚动条规则动态添加 `:focus-visible` 伪类，
- * 但 `::-webkit-scrollbar-thumb` 伪元素不支持 `:focus-visible`，从而导致控制台出现CSS解析错误。
- * 这是一个已知的上游问题，需要等待ST方面修复。此问题不影响功能，仅为日志错误。*/
+
 #hly-modal-container .hly-scroll::-webkit-scrollbar {
     width: 8px;
 }
@@ -747,4 +740,64 @@
         width: 100%;
         justify-content: space-around; /* 让按钮均匀分布 */
     }
+}
+
+/* ------------------ 知识库分组样式 ------------------ */
+#hly-modal-container .hly-kb-group-item {
+    margin-bottom: 8px;
+    border: 1px solid #484848;
+    border-radius: 4px;
+    background-color: #333;
+    overflow: hidden;
+}
+
+#hly-modal-container .hly-kb-group-summary {
+    padding: 10px 12px;
+    background-color: #3a3a3a;
+    cursor: pointer;
+    list-style: none; /* 移除默认三角 */
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+    color: #DDD;
+    transition: background-color 0.2s;
+}
+
+#hly-modal-container .hly-kb-group-summary:hover {
+    background-color: #454545;
+}
+
+/* 自定义三角图标 */
+#hly-modal-container .hly-kb-group-summary::-webkit-details-marker {
+    display: none;
+}
+#hly-modal-container .hly-kb-group-summary::before {
+    content: '▶';
+    font-size: 0.8em;
+    margin-right: 8px;
+    transition: transform 0.2s;
+    display: inline-block;
+}
+#hly-modal-container .hly-kb-group-details[open] .hly-kb-group-summary::before {
+    transform: rotate(90deg);
+}
+
+#hly-modal-container .hly-kb-group-title i {
+    margin-right: 5px;
+    color: #8A2BE2;
+}
+
+#hly-modal-container .hly-kb-group-content {
+    padding: 5px;
+    background-color: #2c2c2c;
+    border-top: 1px solid #444;
+}
+
+/* 组内的列表项稍微缩进 */
+#hly-modal-container .hly-kb-group-content .hly-kb-list-item {
+    margin-bottom: 5px;
+    border-left: 3px solid #8A2BE2; /* 视觉区分 */
+}
+#hly-modal-container .hly-kb-group-content .hly-kb-list-item:last-child {
+    margin-bottom: 0;
 }

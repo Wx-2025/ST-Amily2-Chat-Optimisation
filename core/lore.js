@@ -281,10 +281,15 @@ export async function getPlotOptimizedWorldbookContent(context, apiSettings) {
         
         liveSettings.selectedWorldbooks = [];
         if (liveSettings.worldbookSource === 'manual') {
-            panel.find('#amily2_opt_worldbook_checkbox_list input[type="checkbox"]:checked').each(function() {
+            panel.find('#amily2_opt_worldbook_checkbox_list input[type="checkbox"]:not(.amily2_opt_wb_auto_check):checked').each(function() {
                 liveSettings.selectedWorldbooks.push($(this).val());
             });
         }
+
+        liveSettings.autoSelectWorldbooks = [];
+        panel.find('#amily2_opt_worldbook_checkbox_list input.amily2_opt_wb_auto_check:checked').each(function() {
+            liveSettings.autoSelectWorldbooks.push($(this).data('book'));
+        });
 
         liveSettings.worldbookCharLimit = parseInt(panel.find('#amily2_opt_worldbook_char_limit').val(), 10) || 60000;
 
@@ -311,6 +316,7 @@ export async function getPlotOptimizedWorldbookContent(context, apiSettings) {
             worldbookEnabled: apiSettings.plotOpt_worldbook_enabled,
             worldbookSource: apiSettings.plotOpt_worldbook_source || 'character', // Default to 'character'
             selectedWorldbooks: apiSettings.plotOpt_worldbook_selected_worldbooks,
+            autoSelectWorldbooks: apiSettings.plotOpt_autoSelectWorldbooks || [],
             worldbookCharLimit: apiSettings.plotOpt_worldbook_char_limit,
             enabledWorldbookEntries: apiSettings.plotOpt_worldbook_selected_entries,
         };
@@ -351,11 +357,23 @@ export async function getPlotOptimizedWorldbookContent(context, apiSettings) {
         if (allEntries.length === 0) return '';
         
         const enabledEntriesMap = liveSettings.enabledWorldbookEntries || {};
+        const autoSelectedBooks = liveSettings.autoSelectWorldbooks || [];
+
         const userEnabledEntries = allEntries.filter(entry => {
             if (!entry.enabled) return false;
+
+            // 检查是否在UI中被勾选（或被自动全选）
+            const isAuto = autoSelectedBooks.includes(entry.bookName);
             const bookConfig = enabledEntriesMap[entry.bookName];
-            // 同时检查数字和字符串类型的UID，以兼容从实时UI（数字）和已保存设置（可能为字符串）中读取的配置
-            return bookConfig ? (bookConfig.includes(entry.uid) || bookConfig.includes(String(entry.uid))) : false;
+            const isChecked = isAuto || (bookConfig ? (bookConfig.includes(entry.uid) || bookConfig.includes(String(entry.uid))) : false);
+
+            if (isChecked) {
+                // 勾选状态下必读 (强制设为 Constant)
+                entry.constant = true;
+            }
+            // 不勾选则依靠蓝绿灯 (保持原样，不返回 false)
+            
+            return true;
         });
 
         if (userEnabledEntries.length === 0) return '';
@@ -399,7 +417,11 @@ export async function getPlotOptimizedWorldbookContent(context, apiSettings) {
             pendingGreenLights = nextPendingGreenLights;
         }
 
-        const finalContent = Array.from(triggeredEntries).map(entry => entry.content).filter(Boolean);
+        const finalContent = Array.from(triggeredEntries).map(entry => {
+            const keys = [...new Set([...(entry.key || []), ...(entry.keys || [])])].filter(Boolean).join('、');
+            const displayName = entry.comment || `Entry ${entry.uid}`;
+            return `【世界书条目：${displayName}。绿灯触发关键词：${keys}】\n内容：${entry.content}`;
+        }).filter(Boolean);
         if (finalContent.length === 0) return '';
 
         const combinedContent = finalContent.join('\n\n---\n\n');

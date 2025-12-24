@@ -2,14 +2,12 @@
     --amily2-bg-color: #2C2C2C;
     --amily2-button-color: #4A4A4A;
     --amily2-text-color: #E0E0E0;
-}
 
-#amily2_memorisation_forms_panel {
-
+    /* Global Table Variables */
     --am2-gap-main: 10px;
     --am2-padding-main: 8px 5px;
     
-    --am2-container-bg: var(--amily2-bg-color);
+    --am2-container-bg: rgba(0, 0, 0, 0.2);
     --am2-container-border: 1px solid rgba(255, 255, 255, 0.2);
     --am2-container-border-radius: 12px;
     --am2-container-padding: 10px 5px;
@@ -23,12 +21,14 @@
     --am2-title-icon-color: #9e8aff;
     --am2-title-icon-margin: 10px;
 
-    --am2-table-bg: rgba(0,0,0,0.2);
-    --am2-table-border: 1px solid rgba(255, 255, 255, 0.25);
-    --am2-table-cell-padding: 3px 6px;
+    --am2-table-bg: rgba(40, 40, 45, 0.8);
+    --am2-table-border: 1px solid rgba(255, 255, 255, 0.15);
+    --am2-table-cell-padding: 4px 6px;
     
-    --am2-header-bg: var(--amily2-button-color);
-    --am2-header-color: var(--amily2-text-color);
+    --am2-header-bg: rgba(255, 255, 255, 0.1);
+    --am2-header-color: #ececec;
+    --am2-row-even-bg: rgba(0, 0, 0, 0.15);
+    --am2-row-hover-bg: rgba(255, 255, 255, 0.1);
     --am2-header-editable-bg: rgba(172, 216, 255, 0.1);
     --am2-header-editable-focus-bg: rgba(172, 216, 255, 0.25);
     --am2-header-editable-focus-outline: 1px solid #79b8ff;
@@ -37,17 +37,16 @@
     --am2-cell-editable-focus-bg: rgba(255, 255, 172, 0.25);
     --am2-cell-editable-focus-outline: 1px solid #ffc107;
 
-    --am2-index-col-bg: var(--amily2-bg-color) !important;
-    --am2-index-col-color: var(--amily2-text-color) !important;
+    --am2-index-col-bg: rgba(0, 0, 0, 0.2);
+    --am2-index-col-color: #9e8aff;
     --am2-index-col-width: 40px;
-    --am2-index-col-padding: 10px 5px !important;
+    --am2-index-col-padding: 4px 5px;
 
     --am2-controls-gap: 5px;
     --am2-controls-margin-bottom: 10px;
 
     --am2-cell-highlight-bg: rgba(144, 238, 144, 0.3);
 }
-
 
 #amily2_memorisation_forms_panel {
     width: 100%;
@@ -72,64 +71,114 @@
     box-shadow: var(--am2-container-shadow);
 }
 
+.amily2-table-header-container {
+    background-color: rgba(50, 50, 55, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px 8px 0 0;
+    padding: 8px 12px;
+    margin-bottom: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
 #amily2_memorisation_forms_panel #all-tables-container h3 {
-    font-size: var(--am2-title-font-size);
-    font-weight: var(--am2-title-font-weight);
-    padding: 0 10px;
+    font-size: 1em;
+    font-weight: bold;
+    padding: 0;
     margin: 0;
-    background: linear-gradient(to right, var(--am2-title-gradient-start), var(--am2-title-gradient-end));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    text-shadow: var(--am2-title-text-shadow);
+    color: #e0e0e0;
+    text-shadow: none;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 #amily2_memorisation_forms_panel #all-tables-container h3 > i {
-    margin-right: var(--am2-title-icon-margin);
-    color: var(--am2-title-icon-color); 
+    margin-right: 8px;
+    color: #9e8aff; 
 }
 
 #amily2_memorisation_forms_panel .table-controls {
     display: flex;
     flex-direction: row;
-    gap: var(--am2-controls-gap);
+    gap: 5px;
     justify-content: flex-end;
-    margin-bottom: var(--am2-controls-margin-bottom);
-}
-
-.amily2-table-wrapper {
-    overflow-x: auto;
-    margin-bottom: 20px;
-}
-
-#amily2_memorisation_forms_panel table[id^="amily2-table-"] {
-    border-collapse: collapse;
-    background-color: transparent;
+    margin-bottom: 0;
     transition: box-shadow 0.5s ease-in-out;
     table-layout: fixed;
+    width: 100%;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+#amily2_memorisation_forms_panel table[id^="amily2-table-"] tr:nth-child(even) {
+    background-color: var(--am2-row-even-bg);
+}
+
+#amily2_memorisation_forms_panel table[id^="amily2-table-"] tr:hover {
+    background-color: var(--am2-row-hover-bg);
+}
 
 #amily2_memorisation_forms_panel table[id^="amily2-table-"] th,
 #amily2_memorisation_forms_panel table[id^="amily2-table-"] td {
-    border: var(--am2-table-border);
-    padding: 0; /* Padding will be on the inner div */
+    border-right: var(--am2-table-border);
+    border-bottom: var(--am2-table-border);
+    padding: 0;
     text-align: left;
-    vertical-align: top; /* Align content to the top */
+    vertical-align: middle;
+}
+
+#amily2_memorisation_forms_panel table[id^="amily2-table-"] th:last-child,
+#amily2_memorisation_forms_panel table[id^="amily2-table-"] td:last-child {
+    border-right: none;
+}
+
+#amily2_memorisation_forms_panel table[id^="amily2-table-"] tr:last-child td {
+    border-bottom: none;
 }
 
 .amily2-cell-content {
     padding: var(--am2-table-cell-padding);
     white-space: normal;
-    word-break: break-all; /* Use a strong break rule as default */
-    height: auto; /* Allow height to grow by default */
+    word-break: break-word;
+    height: auto;
+    max-height: 120px; /* Limit cell height */
+    overflow-y: auto; /* Allow scrolling for long content */
+    line-height: 1.3;
+}
+
+/* Custom scrollbar for cell content */
+.amily2-cell-content::-webkit-scrollbar {
+    width: 4px;
+}
+
+.amily2-cell-content::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.amily2-cell-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 2px;
+}
+
+.amily2-cell-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
 }
 
 #amily2_memorisation_forms_panel table[id^="amily2-table-"] th {
-    background-color: transparent;
+    background-color: var(--am2-header-bg);
     color: var(--am2-header-color);
-    font-weight: bold;
-    position: relative; 
+    font-weight: 600;
+    position: relative;
+    font-size: 0.95em;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid rgba(158, 138, 255, 0.4) !important; /* Accent color border */
+    padding: 6px 8px; /* Direct padding for th */
 }
 
 #amily2_memorisation_forms_panel .amily2-resizer {
@@ -150,14 +199,17 @@
 }
 
 #amily2_memorisation_forms_panel .index-col {
-    background-color: transparent;
+    background-color: var(--am2-index-col-bg);
     text-align: center !important;
     font-weight: bold;
     color: var(--am2-index-col-color);
-    padding: var(--am2-table-cell-padding); 
+    padding: var(--am2-table-cell-padding);
     word-break: normal;
-    position: relative; 
-    cursor: pointer; 
+    position: relative;
+    cursor: pointer;
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+    font-family: monospace;
+    font-size: 1.1em;
 }
 
 #amily2_memorisation_forms_panel th[contenteditable="true"] {
@@ -726,7 +778,9 @@ th.amily2-menu-open .amily2-context-menu {
     padding: 10px;
     border: 1px solid var(--am2-container-border, rgba(255, 255, 255, 0.2));
     border-radius: 8px;
-    background-color: var(--am2-container-bg, rgba(0,0,0,0.1));
+    background-color: rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
     overflow-x: auto; /* Ensure horizontal scrolling on small screens */
 }
 
@@ -755,15 +809,16 @@ th.amily2-menu-open .amily2-context-menu {
 
 .amily2-chat-table th,
 .amily2-chat-table td {
-    border: 1px solid var(--am2-table-border, rgba(255, 255, 255, 0.25));
+    border: 1px solid rgba(255, 255, 255, 0.2);
     padding: 5px 8px;
     text-align: left;
-    /* white-space: nowrap; will be applied via media query for mobile only */
+    vertical-align: top;
 }
 
 .amily2-chat-table th {
-    background-color: var(--am2-header-bg, rgba(255, 255, 255, 0.1));
+    background-color: rgba(255, 255, 255, 0.1);
     font-weight: bold;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 /* Styles for collapsible in-chat tables */
@@ -805,9 +860,10 @@ th.amily2-menu-open .amily2-context-menu {
     }
 
     #amily2-chat-table-container {
-        padding: 5px; 
+        padding: 5px; /* Reduce container padding on mobile */
     }
 
+    /* On mobile, allow text wrapping to prevent overflow */
     .amily2-chat-table th,
     .amily2-chat-table td {
         white-space: normal;
@@ -837,9 +893,8 @@ th.amily2-menu-open .amily2-context-menu {
 .pending-deletion-row td {
     opacity: 0.7; 
 }
-
 h3.table-updated {
-    color: #87CEFA !important; 
+    color: #87CEFA !important;
     text-shadow: 0 0 8px #00BFFF, 0 0 12px rgba(0, 191, 255, 0.5);
     transition: color 0.4s ease-in-out, text-shadow 0.4s ease-in-out;
 }

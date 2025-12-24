@@ -224,6 +224,17 @@
                         <span class="slider"></span>
                     </label>
                 </div>
+                <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
+                    <label for="hly-auto-condense-toggle" title="启用后，AI回复后将自动对历史消息进行凝识。">自动凝识</label>
+                    <label class="hly-toggle-switch">
+                        <input type="checkbox" id="hly-auto-condense-toggle" data-setting-key="condensation.autoCondense" data-type="boolean">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="hly-control-block">
+                    <label for="hly-preserve-floors" title="自动凝识时，保留最近的X层楼不进行凝识。">保留楼层 (自动凝识):</label>
+                    <input type="number" id="hly-preserve-floors" class="hly-imperial-brush" value="10" data-setting-key="condensation.preserveFloors" data-type="integer">
+                </div>
                 <div class="hly-control-block">
                     <label>凝识范围 (聊天楼层):</label>
                     <div style="display: flex; gap: 10px; align-items: center;">

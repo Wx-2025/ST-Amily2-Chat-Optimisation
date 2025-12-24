@@ -2,12 +2,12 @@ import { getContext, extension_settings } from "/scripts/extensions.js";
 import { saveChat } from "/script.js";
 import { renderTables } from '../../ui/table-bindings.js';
 import { extensionName } from "../../utils/settings.js";
-import { convertTablesToCsvString, saveStateToMessage, getMemoryState, updateTableFromText, getBatchFillerRuleTemplate, getBatchFillerFlowTemplate } from './manager.js';
+import { convertTablesToCsvString, convertSelectedTablesToCsvString, saveStateToMessage, getMemoryState, updateTableFromText, getBatchFillerRuleTemplate, getBatchFillerFlowTemplate } from './manager.js';
 import { getPresetPrompts, getMixedOrder } from '../../PresetSettings/index.js';
 import { callAI, generateRandomSeed } from '../api.js';
 import { callNccsAI } from '../api/NccsApi.js';
 
-export async function reorganizeTableContent() {
+export async function reorganizeTableContent(selectedTableIndices) {
     const settings = extension_settings[extensionName];
 
     if (window.AMILY2_SYSTEM_PARALYZED === true) {
@@ -24,7 +24,13 @@ export async function reorganizeTableContent() {
     try {
         toastr.info('正在重新整理表格内容...', 'Amily2-重新整理');
         
-        const currentTableDataString = convertTablesToCsvString();
+        let currentTableDataString;
+        if (selectedTableIndices && Array.isArray(selectedTableIndices) && selectedTableIndices.length > 0) {
+            currentTableDataString = convertSelectedTablesToCsvString(selectedTableIndices);
+        } else {
+            currentTableDataString = convertTablesToCsvString();
+        }
+
         if (!currentTableDataString.trim()) {
             toastr.warning('当前没有表格内容需要整理。', 'Amily2-重新整理');
             return;

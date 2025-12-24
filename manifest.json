@@ -1,7 +1,7 @@
 {
     "name": "Amily2号聊天优化助手",
     "display_name": "Amily2号助手",
-    "version": "1.6.8",
+    "version": "1.7.5",
     "author": "Wx-2025",
     "description": "一个拥有独立UI的智能引擎，正文优化、自动总结、记忆表格、rag向量、隐藏楼层、剧情推进等多功能整合。",
     "minSillyTavernVersion": "1.10.0",
@@ -11,6 +11,13 @@
     "js": "index.js",
     "styles": ["style.css"]
 }
+
+
+
+
+
+
+
 
 
 

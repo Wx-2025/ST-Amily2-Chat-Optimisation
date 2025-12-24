@@ -1,36 +1,35 @@
-export function generateIndex(data, role, tableName = "") {
-    if (!Array.isArray(data) || data.length === 0) {
+export function generateIndex(data, headers, role, tableName = "") {
+    if (!Array.isArray(data) || data.length === 0 || !Array.isArray(headers) || headers.length === 0) {
         return "";
     }
 
-    const headers = Object.keys(data[0]);
-    if (headers.length === 0) return "";
-
-    const indexColumns = identifyIndexColumns(data, headers);
+    const indexColumnIndices = identifyIndexColumns(data, headers);
+    const indexColumnHeaders = indexColumnIndices.map(i => headers[i]);
 
     let indexLines = [];
-    indexLines.push(`| ${indexColumns.join(' | ')} |`);
-    indexLines.push(`| ${indexColumns.map(() => '---').join(' | ')} |`);
+    indexLines.push(`| ${indexColumnHeaders.join(' | ')} |`);
+    indexLines.push(`| ${indexColumnHeaders.map(() => '---').join(' | ')} |`);
 
     let processedData = [...data];
 
-    const firstColKey = headers[0];
-    const firstColVal = data[0] ? data[0][firstColKey] : '';
-    const isIndexCol = (firstColKey && (firstColKey.includes('索引') || firstColKey.includes('Index'))) ||
+    const firstColIndex = 0;
+    const firstColHeader = headers[firstColIndex];
+    const firstColVal = data[0] ? data[0][firstColIndex] : '';
+    const isIndexCol = (firstColHeader && (firstColHeader.includes('索引') || firstColHeader.includes('Index'))) ||
                        (typeof firstColVal === 'string' && /^\s*M\d+/.test(firstColVal)) ||
                        (tableName && (tableName.includes('总结') || tableName.includes('大纲')));
 
     if (isIndexCol) {
         processedData.sort((a, b) => {
-            const valA = String(a[firstColKey] || '');
-            const valB = String(b[firstColKey] || '');
+            const valA = String(a[firstColIndex] || '');
+            const valB = String(b[firstColIndex] || '');
             return valA.localeCompare(valB, undefined, { numeric: true });
         });
     }
 
     for (const row of processedData) {
-        const lineParts = indexColumns.map(col => {
-            let val = row[col];
+        const lineParts = indexColumnIndices.map(colIndex => {
+            let val = row[colIndex];
             if (val === undefined || val === null) return "";
             val = String(val).trim();
             if (val.length > 15) val = val.substring(0, 12) + "...";
@@ -43,19 +42,20 @@ export function generateIndex(data, role, tableName = "") {
 }
 
 function identifyIndexColumns(data, headers) {
-    if (headers.length <= 2) return headers;
+    if (headers.length <= 2) return headers.map((_, i) => i);
 
     const candidates = [];
     const maxColumns = 3;
 
-    for (const header of headers) {
+    for (let i = 0; i < headers.length; i++) {
         if (candidates.length >= maxColumns) break;
 
+        const header = headers[i];
         let totalLen = 0;
         let count = 0;
         for (const row of data) {
-            if (row[header]) {
-                totalLen += String(row[header]).length;
+            if (row[i]) {
+                totalLen += String(row[i]).length;
                 count++;
             }
         }
@@ -65,12 +65,12 @@ function identifyIndexColumns(data, headers) {
         const isBlacklisted = /desc|bio|detail|history|经历|描述|详情/i.test(header);
 
         if (!isLongText && !isBlacklisted) {
-            candidates.push(header);
+            candidates.push(i);
         }
     }
 
     if (candidates.length === 0) {
-        return headers.slice(0, Math.min(headers.length, maxColumns));
+        return headers.map((_, i) => i).slice(0, Math.min(headers.length, maxColumns));
     }
 
     return candidates;

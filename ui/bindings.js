@@ -12,6 +12,7 @@ import { createDrawer } from '../ui/drawer.js';
 import { messageFormatting } from '/script.js';
 import { executeManualCommand } from '../core/autoHideManager.js';
 import { showContentModal, showHtmlModal } from './page-window.js';
+import { openAutoCharCardWindow } from '../core/auto-char-card/ui-bindings.js';
 
 function displayDailyAuthCode() {
     const displayEl = document.getElementById('amily2_daily_code_display');
@@ -22,7 +23,7 @@ function displayDailyAuthCode() {
         displayEl.textContent = todayCode;
 
         if(copyBtn) copyBtn.style.display = 'inline-block';
-        
+
         copyBtn.onclick = () => {
             navigator.clipboard.writeText(todayCode).then(() => {
                 toastr.success('授权码已复制到剪贴板！');
@@ -722,10 +723,10 @@ export function bindModalEvents() {
             }
         );	
 		
-container
-    .off("click.amily2.chamber_nav")
-    .on("click.amily2.chamber_nav",
-         "#amily2_open_plot_optimization, #amily2_open_additional_features, #amily2_open_rag_palace, #amily2_open_memorisation_forms, #amily2_open_character_world_book, #amily2_open_world_editor, #amily2_open_glossary, #amily2_open_renderer, #amily2_open_super_memory, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan, #amily2_back_to_main_from_forms, #amily2_back_to_main_from_optimization, #amily2_back_to_main_from_cwb, #amily2_back_to_main_from_world_editor, #amily2_back_to_main_from_glossary, #amily2_renderer_back_button, #amily2_back_to_main_from_super_memory", function () {
+    container
+        .off("click.amily2.chamber_nav")
+        .on("click.amily2.chamber_nav",
+             "#amily2_open_text_optimization, #amily2_open_plot_optimization, #amily2_open_additional_features, #amily2_open_rag_palace, #amily2_open_memorisation_forms, #amily2_open_character_world_book, #amily2_open_world_editor, #amily2_open_glossary, #amily2_open_renderer, #amily2_open_super_memory, #amily2_open_auto_char_card, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan, #amily2_back_to_main_from_forms, #amily2_back_to_main_from_optimization, #amily2_back_to_main_from_text_optimization, #amily2_back_to_main_from_cwb, #amily2_back_to_main_from_world_editor, #amily2_back_to_main_from_glossary, #amily2_renderer_back_button, #amily2_back_to_main_from_super_memory", function () {
         if (!pluginAuthStatus.authorized) return;
 
         const mainPanel = container.find('.plugin-features');
@@ -733,6 +734,7 @@ container
         const hanlinyuanPanel = container.find('#amily2_hanlinyuan_panel');
         const memorisationFormsPanel = container.find('#amily2_memorisation_forms_panel');
         const plotOptimizationPanel = container.find('#amily2_plot_optimization_panel');
+        const textOptimizationPanel = container.find('#amily2_text_optimization_panel');
         const characterWorldBookPanel = container.find('#amily2_character_world_book_panel');
         const worldEditorPanel = container.find('#amily2_world_editor_panel');
         const glossaryPanel = container.find('#amily2_glossary_panel');
@@ -744,6 +746,7 @@ container
         hanlinyuanPanel.hide();
         memorisationFormsPanel.hide();
         plotOptimizationPanel.hide();
+        textOptimizationPanel.hide();
         characterWorldBookPanel.hide();
         worldEditorPanel.hide();
         glossaryPanel.hide();
@@ -751,6 +754,9 @@ container
         superMemoryPanel.hide();
 
         switch (this.id) {
+            case 'amily2_open_text_optimization':
+                textOptimizationPanel.show();
+                break;
             case 'amily2_open_super_memory':
                 const userType = parseInt(localStorage.getItem("plugin_user_type") || "0");
                 if (userType < 2) {
@@ -760,6 +766,12 @@ container
                 }
                 superMemoryPanel.show();
                 break;
+            case 'amily2_open_auto_char_card':
+                openAutoCharCardWindow();
+                // 自动构建器是独立窗口，不需要隐藏主面板，或者根据需求决定
+                // 这里我们保持主面板显示，因为它是全屏覆盖的
+                mainPanel.show(); 
+                return; 
             case 'amily2_open_renderer':
                 rendererPanel.show();
                 break;
@@ -788,6 +800,7 @@ container
             case 'amily2_back_to_main_from_hanlinyuan':
             case 'amily2_back_to_main_from_forms':
             case 'amily2_back_to_main_from_optimization':
+            case 'amily2_back_to_main_from_text_optimization':
             case 'amily2_back_to_main_from_cwb':
             case 'amily2_back_to_main_from_world_editor':
             case 'amily2_back_to_main_from_glossary':
@@ -1263,6 +1276,7 @@ async function opt_loadTavernApiProfiles(panel) {
 const opt_characterSpecificSettings = [
     'plotOpt_worldbookSource',
     'plotOpt_selectedWorldbooks',
+    'plotOpt_autoSelectWorldbooks',
     'plotOpt_enabledWorldbookEntries'
 ];
 
@@ -1357,10 +1371,21 @@ async function opt_loadWorldbooks(panel) {
         lorebooks.forEach(name => {
             const bookId = `amily2-opt-wb-check-${name.replace(/[^a-zA-Z0-9]/g, '-')}`;
             const isChecked = currentSelection.includes(name);
+            
+            // Auto Select Logic
+            const autoId = `amily2-opt-wb-auto-${name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+            const isAuto = (settings.plotOpt_autoSelectWorldbooks || []).includes(name);
+
             const item = $(`
-                <div class="amily2_opt_worldbook_list_item" style="display: flex; align-items: center;">
-                    <input type="checkbox" id="${bookId}" value="${name}" ${isChecked ? 'checked' : ''} style="margin-right: 5px;">
-                    <label for="${bookId}" style="margin-bottom: 0;">${name}</label>
+                <div class="amily2_opt_worldbook_list_item" style="display: flex; align-items: center; justify-content: space-between; padding-right: 5px;">
+                    <div style="display: flex; align-items: center;">
+                        <input type="checkbox" id="${bookId}" value="${name}" ${isChecked ? 'checked' : ''} style="margin-right: 5px;">
+                        <label for="${bookId}" style="margin-bottom: 0;">${name}</label>
+                    </div>
+                     <div style="display: flex; align-items: center;" title="开启后自动加载该世界书所有条目（包括新增）">
+                        <input type="checkbox" class="amily2_opt_wb_auto_check" id="${autoId}" data-book="${name}" ${isAuto ? 'checked' : ''} style="margin-right: 5px;">
+                        <label for="${autoId}" style="margin-bottom: 0; font-size: 0.9em; opacity: 0.8; cursor: pointer;">全选</label>
+                    </div>
                 </div>
             `);
             container.append(item);
@@ -1463,12 +1488,16 @@ async function opt_loadWorldbookEntries(panel) {
 
         enabledOnlyEntries.sort((a, b) => (a.comment || '').localeCompare(b.comment || '')).forEach(entry => {
             const entryId = `amily2-opt-entry-${entry.bookName.replace(/[^a-zA-Z0-9]/g, '-')}-${entry.uid}`;
-            const isEnabled = enabledEntries[entry.bookName]?.includes(entry.uid) ?? true;
+            
+            const isAuto = (settings.plotOpt_autoSelectWorldbooks || []).includes(entry.bookName);
+            // If auto is enabled, the entry is forced enabled in logic, so show checked and disabled
+            const isChecked = isAuto || (enabledEntries[entry.bookName]?.includes(entry.uid) ?? true);
+            const isDisabled = isAuto;
 
             const item = $(`
                 <div class="amily2_opt_worldbook_entry_item" style="display: flex; align-items: center;">
-                    <input type="checkbox" id="${entryId}" data-book="${entry.bookName}" data-uid="${entry.uid}" ${isEnabled ? 'checked' : ''} style="margin-right: 5px;">
-                    <label for="${entryId}" title="世界书: ${entry.bookName}\nUID: ${entry.uid}" style="margin-bottom: 0;">${entry.comment || '无标题条目'}</label>
+                    <input type="checkbox" id="${entryId}" data-book="${entry.bookName}" data-uid="${entry.uid}" ${isChecked ? 'checked' : ''} ${isDisabled ? 'disabled' : ''} style="margin-right: 5px;">
+                    <label for="${entryId}" title="世界书: ${entry.bookName}\nUID: ${entry.uid}" style="margin-bottom: 0; ${isDisabled ? 'opacity:0.7;' : ''}">${entry.comment || '无标题条目'} ${isAuto ? '<span style="font-size:0.8em; opacity:0.6;">(全选生效中)</span>' : ''}</label>
                 </div>
             `);
             container.append(item);
@@ -2048,13 +2077,25 @@ export function initializePlotOptimizationBindings() {
     });
 
 
-    panel.on('change.amily2_opt', '#amily2_opt_worldbook_checkbox_list input[type="checkbox"]', async function() {
+    // Manual Selection Change
+    panel.on('change.amily2_opt', '#amily2_opt_worldbook_checkbox_list input[type="checkbox"]:not(.amily2_opt_wb_auto_check)', async function() {
         const selected = [];
-        panel.find('#amily2_opt_worldbook_checkbox_list input:checked').each(function() {
+        panel.find('#amily2_opt_worldbook_checkbox_list input[type="checkbox"]:not(.amily2_opt_wb_auto_check):checked').each(function() {
             selected.push($(this).val());
         });
 
         await opt_saveSetting('plotOpt_selectedWorldbooks', selected);
+        await opt_loadWorldbookEntries(panel);
+    });
+
+    // Auto Selection Change
+    panel.on('change.amily2_opt', '#amily2_opt_worldbook_checkbox_list input.amily2_opt_wb_auto_check', async function() {
+        const autoSelected = [];
+        panel.find('#amily2_opt_worldbook_checkbox_list input.amily2_opt_wb_auto_check:checked').each(function() {
+            autoSelected.push($(this).data('book'));
+        });
+
+        await opt_saveSetting('plotOpt_autoSelectWorldbooks', autoSelected);
         await opt_loadWorldbookEntries(panel);
     });
 

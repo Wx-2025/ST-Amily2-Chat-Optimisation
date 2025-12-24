@@ -17,8 +17,8 @@ export function getMemoryBookName() {
     return `Amily2_Memory_${safeCharName}`;
 }
 
-export async function syncToLorebook(tableName, data, indexText, role, headers, rowStatuses, depth = 100) {
-    console.log(`[Amily2-Bridge] 开始同步表格: ${tableName} (Depth: ${depth})`);
+export async function syncToLorebook(tableName, data, indexText, role, headers, rowStatuses, depth = 100, isIndexConstant = true) {
+    console.log(`[Amily2-Bridge] 开始同步表格: ${tableName} (Depth: ${depth}, IndexConstant: ${isIndexConstant})`);
 
     await ensureMemoryBook();
 
@@ -30,23 +30,34 @@ export async function syncToLorebook(tableName, data, indexText, role, headers, 
     const entriesToUpdate = [];
     const entriesToCreate = [];
 
-    const processEntry = (comment, keys, content, type = 'selective', enabled = true) => {
+    const processEntry = (comment, keys, content, type = 'selective', enabled = true, excludeRecursion = false, specificOrder = null, specificDepth = null) => {
         const existingEntry = entries.find(e => e.comment === comment);
         if (existingEntry) {
             existingEntry.content = content;
             existingEntry.key = keys;
-            // existingEntry.order = depth; // 【V153.0】不再覆盖用户的深度/排序设置
+
+            existingEntry.exclude_recursion = excludeRecursion; 
+            existingEntry.prevent_recursion = excludeRecursion;
+            existingEntry.excludeRecursion = excludeRecursion; 
+            existingEntry.preventRecursion = excludeRecursion; 
+
+            if (specificOrder !== null) {
+                existingEntry.order = specificOrder;
+                existingEntry.position = 4; 
+            }
+            if (specificDepth !== null) {
+                existingEntry.depth = specificDepth; 
+            }
             
             if (type === 'constant') {
                 existingEntry.constant = true;
             } else {
                 existingEntry.constant = false;
             }
-            if (existingEntry.enabled !== undefined) {
-                 existingEntry.enabled = enabled;
-            } else {
-                 existingEntry.disable = !enabled;
-            }
+            existingEntry.enabled = enabled;
+            delete existingEntry.disable;
+            delete existingEntry.disabled;
+            
             entriesToUpdate.push(existingEntry);
         } else {
             entriesToCreate.push({
@@ -54,15 +65,20 @@ export async function syncToLorebook(tableName, data, indexText, role, headers, 
                 keys: keys, 
                 content: content,
                 type: type, 
-                position: 1, 
-                order: depth, 
-                enabled: enabled 
+                position: 4,
+                order: specificOrder !== null ? specificOrder : depth, 
+                depth: specificDepth !== null ? specificDepth : depth,
+                enabled: enabled,
+                exclude_recursion: excludeRecursion, 
+                prevent_recursion: excludeRecursion,
+                excludeRecursion: excludeRecursion, 
+                preventRecursion: excludeRecursion 
             });
         }
     };
 
     if (role === 'database') {
-        const indexKey = [`Amily_Index_${tableName}`];
+        const indexKey = [`Amily_Index_${tableName}`,'索引'];
         const indexComment = `[Amily2] Index for ${tableName}`;
         let indexContent = `【${tableName} 索引】\n${indexText.trim()}`;
 
@@ -70,14 +86,14 @@ export async function syncToLorebook(tableName, data, indexText, role, headers, 
             indexContent += `\n<system_note>\n【Amily2-前瞻性预测指令】\n为了实现“提前一轮触发绿灯世界书”的高级记忆回流，请在生成本轮回复时，根据当前剧情走向，**大胆预测并自然提及**下一轮可能出现的索引编码。可自行增加一个标签并使用<!--到-->html注释掉该编码。这将激活系统的预加载机制，确保剧情发展的连贯性。\n</system_note>`;
         }
 
-        processEntry(indexComment, indexKey, indexContent, 'constant');
+        const indexType = isIndexConstant ? 'constant' : 'selective';
+        processEntry(indexComment, indexKey, indexContent, indexType, true, true, 0, 0);
     }
 
     data.forEach((row, index) => {
         if (!row || row.length === 0) return;
         
         const rawVal = row[0]; 
-        // 【V152.0】修复Falsy检查漏洞 (支持数字0作为主键)
         if (rawVal === undefined || rawVal === null) return;
 
         const primaryVal = String(rawVal).trim();
@@ -128,7 +144,6 @@ export async function syncToLorebook(tableName, data, indexText, role, headers, 
     
     const activeKeys = new Set();
     for(const row of data) {
-        // 【V152.0】修复Falsy检查漏洞 (支持数字0作为主键)
         if(row && row.length > 0) {
             const rVal = row[0];
             if (rVal !== undefined && rVal !== null) {
