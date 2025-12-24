@@ -25,16 +25,16 @@ export function initializeRendererBindings() {
         extension_settings[extensionName].amily_render_enabled = isEnabled;
 
         // 使用防抖保存，避免频繁操作
-        saveSettingsDebounced().then(() => {
-            // 仅在状态实际发生变化时执行渲染或清理
-            if (wasEnabled !== isEnabled) {
-                if (isEnabled) {
-                    renderAllIframes();
-                } else {
-                    clearAllIframes();
-                }
+        saveSettingsDebounced();
+
+        // 仅在状态实际发生变化时执行渲染或清理
+        if (wasEnabled !== isEnabled) {
+            if (isEnabled) {
+                renderAllIframes();
+            } else {
+                clearAllIframes();
             }
-        });
+        }
     });
 
     container.on('change', '#render-depth', function () {
