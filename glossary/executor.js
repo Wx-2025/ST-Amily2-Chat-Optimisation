@@ -5,6 +5,7 @@ import { getPresetPrompts, getMixedOrder } from '../PresetSettings/index.js';
 import { generateRandomSeed } from '../core/api.js';
 import { safeLorebookEntries, safeUpdateLorebookEntries, compatibleWriteToLorebook } from '../core/tavernhelper-compatibility.js';
 import { loadWorldInfo, saveWorldInfo, createWorldInfoEntry } from "/scripts/world-info.js";
+import { escapeHTML } from '../utils/utils.js';
 
 function buildContextFromEntries(entries) {
     if (!entries || entries.length === 0) {
@@ -310,7 +311,7 @@ export async function loadDatabaseFiles() {
                 document.dispatchEvent(event);
 
                 container.style.display = 'none';
-                document.getElementById('select-from-database-button').innerHTML = `<i class="fas fa-check"></i> 已选择: ${file.name}`;
+                document.getElementById('select-from-database-button').innerHTML = `<i class="fas fa-check"></i> 已选择: ${escapeHTML(file.name)}`;
 
             } catch (error) {
                 console.error(`Error processing file ${file.name}:`, error);

@@ -12,6 +12,7 @@ import { safeCharLorebooks, safeLorebookEntries } from '../core/tavernhelper-com
 import { characters, this_chid, eventSource, event_types } from "/script.js";
 import { fetchNccsModels, testNccsApiConnection } from '../core/api/NccsApi.js';
 import { showGraphVisualization } from '../core/relationship-graph/visualizer.js';
+import { escapeHTML } from '../utils/utils.js';
 
 const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches;
 const getAllTablesContainer = () => document.getElementById('all-tables-container');
@@ -129,7 +130,6 @@ function toggleColumnContextMenu(event) {
         }
     };
 
-    // If the menu was opened, set up the listener to close it
     if (targetTh.classList.contains('amily2-menu-open')) {
         setTimeout(() => {
             document.addEventListener('click', closeMenu, true);
@@ -178,15 +178,15 @@ function showInputDialog({ title, label, currentValue, placeholder, onSave }) {
         <dialog class="popup custom-input-dialog">
             <div class="popup-body">
                 <h4 style="margin-top:0; color: #e0e0e0; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px; display: flex; align-items: center; gap: 8px;">
-                    <i class="fas fa-edit" style="color: #9e8aff;"></i> ${title}
+                    <i class="fas fa-edit" style="color: #9e8aff;"></i> ${escapeHTML(title)}
                 </h4>
                 <div class="popup-content" style="padding: 20px 10px;">
                     <div style="display: flex; flex-direction: column; gap: 12px;">
-                        <label style="color: #ccc; font-weight: bold;">${label}</label>
+                        <label style="color: #ccc; font-weight: bold;">${escapeHTML(label)}</label>
                         <input type="text" id="generic-input" class="text_pole" 
-                               value="${currentValue}" 
+                               value="${escapeHTML(currentValue)}" 
                                style="padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.2); color: #fff; font-size: 1em;"
-                               placeholder="${placeholder}">
+                               placeholder="${escapeHTML(placeholder)}">
                         <small style="color: #aaa; font-style: italic;">提示：输入内容将用于更新项目。</small>
                     </div>
                 </div>
@@ -321,7 +321,7 @@ export function renderTables() {
     }
 
     const highlights = TableManager.getHighlights();
-    const updatedTables = TableManager.getUpdatedTables(); // 【V15.2 新增】获取被更新的表格
+    const updatedTables = TableManager.getUpdatedTables();
     const fragment = document.createDocumentFragment();
 
     const placeholder = document.getElementById('add-table-placeholder');
@@ -334,9 +334,9 @@ export function renderTables() {
         header.className = 'amily2-table-header-container';
         const title = document.createElement('h3');
         if (updatedTables.has(tableIndex)) {
-            title.classList.add('table-updated'); // 【V15.2 新增】为更新的表格添加高亮
+            title.classList.add('table-updated'); 
         }
-        title.innerHTML = `<i class="fas fa-table table-rename-icon" data-table-index="${tableIndex}" title="重命名"></i> ${tableData.name}`;
+        title.innerHTML = `<i class="fas fa-table table-rename-icon" data-table-index="${tableIndex}" title="重命名"></i> ${escapeHTML(tableData.name)}`;
         const controls = document.createElement('div');
         controls.className = 'table-controls';
 
@@ -368,7 +368,6 @@ export function renderTables() {
         if (tableData.headers) {
             tableData.headers.forEach((_, colIndex) => {
                 const col = document.createElement('col');
-                // Assign a default width of 120px if none is specified
                 const colWidth = (tableData.columnWidths && tableData.columnWidths[colIndex]) ? tableData.columnWidths[colIndex] : 90;
                 col.style.width = `${colWidth}px`;
                 colgroup.appendChild(col);
@@ -376,21 +375,14 @@ export function renderTables() {
         }
         tableElement.appendChild(colgroup);
 
-        // Explicitly calculate and set the total table width to override CSS conflicts
         let totalWidth = 0;
         const cols = colgroup.querySelectorAll('col');
         cols.forEach(col => {
             totalWidth += parseInt(col.style.width, 10);
         });
-        // Set min-width instead of fixed width to allow expansion
         tableElement.style.minWidth = '100%';
         if (totalWidth > 0) {
-             // Only set explicit width if it exceeds the container (handled by min-width: 100% usually, 
-             // but here we set it as a base to ensure columns don't shrink below their defined width)
              tableElement.style.width = `${Math.max(totalWidth, 0)}px`;
-             // Actually, to allow full width expansion, we should just use min-width and let CSS handle the rest
-             // unless we want to force scrolling.
-             // Let's try setting min-width to the calculated total, and width to 100%.
              tableElement.style.minWidth = `${totalWidth}px`;
              tableElement.style.width = '100%';
         }
@@ -403,8 +395,7 @@ export function renderTables() {
         indexTh.textContent = '#';
         indexTh.style.cursor = 'pointer';
         indexTh.title = '点击添加第一行';
-        
-        // 为表头的 # 号添加特殊的上下文菜单（仅在表格为空时显示）
+
         if (!tableData.rows || tableData.rows.length === 0) {
             const headerMenu = document.createElement('div');
             headerMenu.className = 'amily2-context-menu amily2-header-menu';
@@ -422,13 +413,11 @@ export function renderTables() {
             headerMenu.appendChild(addRowButton);
             indexTh.appendChild(headerMenu);
             
-            // 为表头添加直接的点击事件监听器
             indexTh.addEventListener('click', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
                 console.log('Header # clicked for table', tableIndex);
-                
-                // 直接执行添加行操作
+
                 TableManager.addRow(tableIndex);
                 renderTables();
                 toastr.success('已添加第一行');
@@ -444,7 +433,7 @@ export function renderTables() {
 
             const headerContent = document.createElement('span');
             headerContent.className = 'amily2-header-text';
-            headerContent.textContent = headerText;
+            headerContent.textContent = headerText; // textContent is safe
             th.appendChild(headerContent);
 
             const menu = document.createElement('div');
@@ -611,16 +600,13 @@ export function renderTables() {
                                 TableManager.insertRow(tableIndex, rowIndex, 'below');
                                 break;
                             case 'delete-row':
-                                // 【延迟删除】不再需要确认，因为操作是可逆的
                                 TableManager.deleteRow(tableIndex, rowIndex);
                                 break;
                             case 'restore-row':
                                 TableManager.restoreRow(tableIndex, rowIndex);
                                 break;
                         }
-                        // For instant feedback, re-render is needed for delete/restore
                         if (action === 'delete-row' || action === 'restore-row') {
-                            // The manager functions now handle their own re-rendering
                         } else {
                             renderTables();
                         }
@@ -634,10 +620,9 @@ export function renderTables() {
                     
                     const cellContent = document.createElement('div');
                     cellContent.className = 'amily2-cell-content';
-                    cellContent.textContent = cellData;
+                    cellContent.textContent = cellData; 
                     cell.appendChild(cellContent);
 
-                    // 【延迟删除】如果行正在待删除，则禁止编辑
                     if (rowStatus !== 'pending-deletion' && !isTouchDevice()) {
                         cell.setAttribute('contenteditable', 'true');
                     }
@@ -662,7 +647,6 @@ export function renderTables() {
         container.appendChild(placeholder);
     }
 
-    // Also update the in-chat table whenever the main tables are re-rendered
     updateOrInsertTableInChat();
 }
 
@@ -740,7 +724,6 @@ function openRuleEditor(tableIndex) {
     if (!tables || !tables[tableIndex]) return;
     const table = tables[tableIndex];
 
-    // 兼容旧数据结构
     if (table.charLimitRule && !table.charLimitRules) {
         table.charLimitRules = {};
         if (table.charLimitRule.columnIndex !== -1) {
@@ -754,7 +737,7 @@ function openRuleEditor(tableIndex) {
             const header = table.headers[colIndex] || `未知列 (${colIndex})`;
             return `
                 <div class="char-limit-rule-item" style="display: flex; justify-content: space-between; align-items: center; padding: 8px; background: rgba(0,0,0,0.1); border-radius: 4px;">
-                    <span><i class="fas fa-file-alt" style="margin-right: 8px; color: #9e8aff;"></i><b>${header}</b>: 不超过 ${limit} 字</span>
+                    <span><i class="fas fa-file-alt" style="margin-right: 8px; color: #9e8aff;"></i><b>${escapeHTML(header)}</b>: 不超过 ${limit} 字</span>
                     <button class="menu_button danger small_button remove-char-limit-rule-btn" data-col-index="${colIndex}" title="删除此规则">
                         <i class="fas fa-trash-alt"></i>
                     </button>
@@ -765,9 +748,8 @@ function openRuleEditor(tableIndex) {
 
     const getColumnOptions = (rules) => {
         return table.headers.map((header, index) => {
-            // 如果该列已存在规则，则不应出现在下拉菜单中
             if (rules[index]) return '';
-            return `<option value="${index}">${header}</option>`;
+            return `<option value="${index}">${escapeHTML(header)}</option>`;
         }).join('');
     };
 
@@ -775,7 +757,7 @@ function openRuleEditor(tableIndex) {
         <dialog class="popup wide_dialogue_popup large_dialogue_popup">
           <div class="popup-body">
             <h4 style="margin-top:0; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">
-                <i class="fa-solid fa-scroll"></i> 编辑 “${table.name}” 的规则
+                <i class="fa-solid fa-scroll"></i> 编辑 “${escapeHTML(table.name)}” 的规则
             </h4>
             <div class="popup-content" style="height: 70vh; overflow-y: auto;">
                 <div class="rule-editor-form" style="display: flex; flex-direction: column; gap: 15px; padding: 10px;">
@@ -864,8 +846,7 @@ function openRuleEditor(tableIndex) {
             toastr.warning('请选择一个列。');
             return;
         }
-        
-        // 允许输入0，但0意味着“无限制”，所以我们不添加规则。
+
         if (isNaN(limitValue) || limitValue < 0) {
             toastr.warning('请输入一个有效的字数限制（大于等于0）。');
             return;
@@ -874,12 +855,10 @@ function openRuleEditor(tableIndex) {
         const currentRules = JSON.parse(dialogElement.find('#current-char-limit-rules').attr('data-rules') || '{}');
 
         if (limitValue > 0) {
-            // 只有当限制大于0时，才添加或更新规则
             currentRules[selectedColumn] = limitValue;
             dialogElement.find('#current-char-limit-rules').attr('data-rules', JSON.stringify(currentRules));
             refreshRuleUI();
         } else {
-            // 如果用户输入0，则视为不设置规则
             toastr.info('字数限制为0表示不设置规则。');
         }
     });
@@ -1152,7 +1131,7 @@ function bindWorldBookSettings() {
 
                 const label = document.createElement('label');
                 label.htmlFor = checkbox.id;
-                label.textContent = entry.comment || '无标题条目';
+                label.textContent = entry.comment || '无标题条目'; // textContent is safe
 
                 div.appendChild(checkbox);
                 div.appendChild(label);
@@ -1193,7 +1172,7 @@ function bindWorldBookSettings() {
 
                 const label = document.createElement('label');
                 label.htmlFor = `wb-check-${book.file_name}`;
-                label.textContent = book.name;
+                label.textContent = book.name; // textContent is safe
 
                 div.appendChild(checkbox);
                 div.appendChild(label);
@@ -1265,11 +1244,8 @@ export function bindTableEvents() {
     log('开始为表格视图绑定交互事件...', 'info');
 
     const fillingModeRadios = panel.querySelectorAll('input[name="filling-mode"]');
-    
-    // 获取新的分步填表控制容器
     const secondaryFillerControls = document.getElementById('secondary-filler-controls');
-    
-    // 获取新的滑块元素
+
     const contextSlider = document.getElementById('secondary-filler-context');
     const batchSlider = document.getElementById('secondary-filler-batch');
     const bufferSlider = document.getElementById('secondary-filler-buffer');
@@ -1309,11 +1285,10 @@ export function bindTableEvents() {
             if (selectedMode === 'optimized') modeName = '优化中填表';
             
             toastr.info(`填表模式已切换为 ${modeName}。`);
-            updateFillingModeUI(); // 更新UI以确保状态同步
+            updateFillingModeUI();
         });
     });
 
-    // 绑定上下文深度输入框
     if (contextSlider) {
         const value = extension_settings[extensionName]?.secondary_filler_context || 2;
         contextSlider.value = value;
@@ -1324,7 +1299,6 @@ export function bindTableEvents() {
         });
     }
 
-    // 绑定填表批次输入框
     if (batchSlider) {
         const value = extension_settings[extensionName]?.secondary_filler_batch || 0;
         batchSlider.value = value;
@@ -1335,7 +1309,6 @@ export function bindTableEvents() {
         });
     }
 
-    // 绑定保留楼层输入框
     if (bufferSlider) {
         const value = extension_settings[extensionName]?.secondary_filler_buffer || 0;
         bufferSlider.value = value;
@@ -1470,7 +1443,6 @@ export function bindTableEvents() {
         allTablesContainer.addEventListener('click', (event) => {
             const th = event.target.closest('th');
             if (th && th.classList.contains('index-col')) {
-                // 处理表头 # 号的点击（用于空表格添加首行）
                 toggleHeaderIndexContextMenu(event);
                 return;
             }
@@ -1649,7 +1621,7 @@ function bindReorganizeButton() {
             const tableListHtml = tables.map((table, index) => `
                 <div class="checkbox-item" style="margin-bottom: 8px; display: flex; align-items: center;">
                     <input type="checkbox" id="reorg-table-${index}" value="${index}">
-                    <label for="reorg-table-${index}" style="margin-left: 8px; cursor: pointer;">${table.name}</label>
+                    <label for="reorg-table-${index}" style="margin-left: 8px; cursor: pointer;">${escapeHTML(table.name)}</label>
                 </div>
             `).join('');
 
@@ -2204,6 +2176,7 @@ function bindChatTableDisplaySetting() {
         toastr.info(`聊天内表格显示已${showInChatToggle.checked ? '开启' : '关闭'}。`);
         updateContinuousRenderState();
     });
+
     continuousRenderToggle.addEventListener('change', () => {
         settings.render_on_every_message = continuousRenderToggle.checked;
         saveSettingsDebounced();
