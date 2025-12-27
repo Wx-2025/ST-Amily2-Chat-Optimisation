@@ -6,6 +6,7 @@ import { testSybdApiConnection, fetchSybdModels } from '../core/api/SybdApi.js';
 import { handleFileUpload, processNovel } from './index.js';
 import { reorganizeEntriesByHeadings, loadDatabaseFiles } from './executor.js';
 import { SETTINGS_KEY as PRESET_SETTINGS_KEY } from '../PresetSettings/config.js';
+import { escapeHTML } from '../utils/utils.js';
 
 const moduleState = {
     selectedWorldBook: '',
@@ -267,12 +268,12 @@ async function renderWorldBookEntries() {
                             }
 
                             if (source && target) {
-                                body += `<tr><td>${source.trim()}</td><td>${rel.trim()}</td><td>${target.trim().replace(';','')}</td></tr>`;
+                                body += `<tr><td>${escapeHTML(source.trim())}</td><td>${escapeHTML(rel.trim())}</td><td>${escapeHTML(target.trim().replace(';',''))}</td></tr>`;
                             }
                         });
                         return `<table class="table-render"><thead><tr><th>源头</th><th>关系</th><th>目标</th></tr></thead><tbody>${body}</tbody></table>`;
                     } catch {
-                        return `<pre>${content}</pre>`;
+                        return `<pre>${escapeHTML(content)}</pre>`;
                     }
                 }
                 if (trimmedContent.includes('|') && trimmedContent.includes('\n')) {
@@ -283,7 +284,7 @@ async function renderWorldBookEntries() {
                         let isHeaderRow = true;
                         rows.forEach(rowStr => {
                             if (rowStr.includes('---')) return;
-                            const cells = rowStr.split('|').filter(c => c.trim()).map(cell => `<td>${cell.trim()}</td>`).join('');
+                            const cells = rowStr.split('|').filter(c => c.trim()).map(cell => `<td>${escapeHTML(cell.trim())}</td>`).join('');
                             if (isHeaderRow) {
                                 header += `<tr>${cells.replace(/<td>/g, '<th>').replace(/<\/td>/g, '</th>')}</tr>`;
                                 isHeaderRow = false;
@@ -293,15 +294,15 @@ async function renderWorldBookEntries() {
                         });
                         return `<table class="table-render"><thead>${header}</thead><tbody>${body}</tbody></table>`;
                     } catch {
-                        return `<pre>${content}</pre>`;
+                        return `<pre>${escapeHTML(content)}</pre>`;
                     }
                 }
-                return `<pre>${content}</pre>`;
+                return `<pre>${escapeHTML(content)}</pre>`;
             };
 
             entryElement.innerHTML = `
                 <div class="entry-header">
-                    <strong class="entry-title">${title}</strong>
+                    <strong class="entry-title">${escapeHTML(title)}</strong>
                     <div class="entry-actions">
                         <button class="menu_button primary small_button save-entry-btn" style="display: none;"><i class="fas fa-save"></i> 保存</button>
                         <button class="menu_button danger small_button cancel-entry-btn" style="display: none;"><i class="fas fa-times"></i> 取消</button>
@@ -484,7 +485,7 @@ function bindNovelProcessEvents() {
 
         chunkCountEl.textContent = newChunks.length;
         chunkPreviewEl.innerHTML = newChunks.map((chunk, index) =>
-            `<div class="chunk-preview-item"><b>块 ${index + 1}:</b> ${chunk.content.substring(0, 100)}...</div>`
+            `<div class="chunk-preview-item"><b>块 ${index + 1}:</b> ${escapeHTML(chunk.content.substring(0, 100))}...</div>`
         ).join('');
         
         resetProcessing();
@@ -563,7 +564,7 @@ function bindNovelProcessEvents() {
         fileInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (!file) return;
-            fileLabel.innerHTML = `<i class="fas fa-check"></i> 已选择: ${file.name}`;
+            fileLabel.innerHTML = `<i class="fas fa-check"></i> 已选择: ${escapeHTML(file.name)}`;
             handleFileUpload(file, (content) => {
                 fileContent = content;
                 updateChunks();
