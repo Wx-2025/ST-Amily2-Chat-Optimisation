@@ -644,12 +644,13 @@ export function makeRequest(request, data) {
             reject(new Error(`请求 '${request}' 超时 (30秒)`));
         }, 30000);
 
+        const targetOrigin = window.location.origin === 'null' ? '*' : window.location.origin;
         window.parent.postMessage({
             source: 'amily2-iframe-request',
             request: request,
             uid: uid,
             data: data
-        }, '*');
+        }, targetOrigin);
     });
 }
 
@@ -668,6 +669,12 @@ export function registerApiHandler(request, handler) {
 
 export function initializeApiListener() {
     window.addEventListener('message', async (event) => {
+
+        if (window.location.origin !== 'null' && event.origin !== window.location.origin) {
+            console.warn(`[Amily2-IframeAPI] 拒绝来自未知来源的请求: ${event.origin}`);
+            return;
+        }
+
         const data = event.data || {};
         if (data.source !== 'amily2-iframe-request' || !data.request || data.uid === undefined) {
             return;
@@ -675,6 +682,7 @@ export function initializeApiListener() {
 
         const handler = apiHandlers.get(data.request);
         const callbackRequest = `${data.request}_callback`;
+        const targetOrigin = event.origin === 'null' ? '*' : event.origin;
 
         if (!handler) {
             console.error(`[Amily2-IframeAPI] 收到未知请求: ${data.request}`);
@@ -682,7 +690,7 @@ export function initializeApiListener() {
                 request: callbackRequest,
                 uid: data.uid,
                 error: `未注册请求 '${data.request}' 的处理器`
-            }, '*');
+            }, targetOrigin);
             return;
         }
 
@@ -692,15 +700,15 @@ export function initializeApiListener() {
                 request: callbackRequest,
                 uid: data.uid,
                 result: result
-            }, '*');
+            }, targetOrigin);
         } catch (error) {
             console.error(`[Amily2-IframeAPI] 执行处理器 '${data.request}' 时出错:`, error);
             event.source.postMessage({
                 request: callbackRequest,
                 uid: data.uid,
                 error: error.message || String(error)
-            }, '*');
+            }, targetOrigin);
         }
     });
-    console.log('[Amily2-IframeAPI] 主窗口监听器已初始化');
+    console.log('[Amily2-IframeAPI] 主窗口监听器已初始化 (已启用安全验证)');
 }
