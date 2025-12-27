@@ -31,7 +31,7 @@ import { initializeApiListener, registerApiHandler, amilyHelper, initializeAmily
 import { registerContextOptimizerMacros, resetContextBuffer } from './core/context-optimizer.js';
 import { initializeSuperMemory } from './core/super-memory/manager.js';
 
-const DOMPURIFY_CDN = "https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.8/purify.min.js";
+const DOMPURIFY_CDN = "https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.7/purify.min.js";
 
 function loadExternalScript(url, globalName) {
     return new Promise((resolve, reject) => {

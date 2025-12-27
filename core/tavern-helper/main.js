@@ -1,8 +1,8 @@
-import { 
-    world_names, 
-    loadWorldInfo, 
-    saveWorldInfo, 
-    createNewWorldInfo, 
+import {
+    world_names,
+    loadWorldInfo,
+    saveWorldInfo,
+    createNewWorldInfo,
     createWorldInfoEntry
 } from "/scripts/world-info.js";
 
@@ -20,9 +20,9 @@ let reloadEditor = () => {
         console.warn("[Amily助手] 动态导入 reloadEditor 失败，将使用空函数。错误信息：", error.message);
     }
 })();
-import { 
-    characters, 
-    eventSource, 
+import {
+    characters,
+    eventSource,
     event_types,
     chat,
     reloadCurrentChat,
@@ -46,14 +46,14 @@ class AmilyHelper {
     getChatMessages(range, options = {}) {
         const { role = 'all', hide_state = 'all', include_swipes = false, include_swipe = false } = options;
         const includeSwipes = include_swipes || include_swipe;
-        
+
         if (!chat || !Array.isArray(chat)) {
             throw new Error('聊天数组不可用');
         }
 
         let start, end;
         const rangeStr = String(range);
-        
+
         if (rangeStr.match(/^(-?\d+)$/)) {
             const value = Number(rangeStr);
             start = end = value < 0 ? chat.length + value : value;
@@ -186,7 +186,7 @@ class AmilyHelper {
         refresh = 'display_and_render_current'
     } = {}) {
         field_values = typeof field_values === 'string' ? { message: field_values } : field_values;
-        
+
         if (typeof swipe_id !== 'number' && swipe_id !== 'current') {
             throw new Error(`提供的 swipe_id 无效, 请提供 'current' 或序号, 你提供的是: ${swipe_id}`);
         }
@@ -279,7 +279,7 @@ class AmilyHelper {
         const should_update_swipe = add_swipes_if_required();
         update_chat_message();
         await saveChatConditional();
-        
+
         if (refresh == 'all') {
             await reloadCurrentChat();
         } else {
@@ -378,12 +378,12 @@ class AmilyHelper {
             if (!bookData || !bookData.entries) {
                 return [];
             }
-            const positionMap = { 
-                0: 'before_character_definition', 
-                1: 'after_character_definition', 
-                2: 'before_author_note', 
-                3: 'after_author_note', 
-                4: 'at_depth_as_system' 
+            const positionMap = {
+                0: 'before_character_definition',
+                1: 'after_character_definition',
+                2: 'before_author_note',
+                3: 'after_author_note',
+                4: 'at_depth_as_system'
             };
             return Object.entries(bookData.entries).map(([uid, entry]) => ({
                 uid: parseInt(uid),
@@ -393,7 +393,7 @@ class AmilyHelper {
                 keys: entry.key || [],
                 enabled: !entry.disable,
                 constant: entry.constant || false,
-                position: positionMap[entry.position] || 'at_depth_as_system', 
+                position: positionMap[entry.position] || 'at_depth_as_system',
                 depth: entry.depth || 998,
             }));
         } catch (error) {
@@ -421,13 +421,13 @@ class AmilyHelper {
                     if (entryUpdate.type === 'constant') existingEntry.constant = true;
                     if (entryUpdate.type === 'selective') existingEntry.constant = false;
                     if (entryUpdate.position !== undefined) {
-                        const positionMap = { 
-                            'before_character_definition': 0, 
-                            'after_character_definition': 1, 
-                            'before_author_note': 2, 
-                            'after_author_note': 3, 
-                            'at_depth': 4, 
-                            'at_depth_as_system': 4 
+                        const positionMap = {
+                            'before_character_definition': 0,
+                            'after_character_definition': 1,
+                            'before_author_note': 2,
+                            'after_author_note': 3,
+                            'at_depth': 4,
+                            'at_depth_as_system': 4
                         };
                         existingEntry.position = positionMap[entryUpdate.position] ?? 4;
                     }
@@ -462,13 +462,13 @@ class AmilyHelper {
 
             for (const newEntryData of entries) {
                 const newEntry = createWorldInfoEntry(bookName, bookData);
-                const positionMap = { 
-                    'before_character_definition': 0, 
-                    'after_character_definition': 1, 
-                    'before_author_note': 2, 
-                    'after_author_note': 3, 
-                    'at_depth': 4, 
-                    'at_depth_as_system': 4 
+                const positionMap = {
+                    'before_character_definition': 0,
+                    'after_character_definition': 1,
+                    'before_author_note': 2,
+                    'after_author_note': 3,
+                    'at_depth': 4,
+                    'at_depth_as_system': 4
                 };
                 Object.assign(newEntry, {
                     comment: newEntryData.comment || '新条目',
@@ -499,7 +499,7 @@ class AmilyHelper {
             if (!bookData || !bookData.entries) {
                 return false;
             }
-            
+
             let deletedCount = 0;
             for (const uid of uids) {
                 if (bookData.entries[uid]) {
@@ -507,7 +507,7 @@ class AmilyHelper {
                     deletedCount++;
                 }
             }
-            
+
             if (deletedCount > 0) {
                 await saveWorldInfo(bookName, bookData, true);
                 reloadEditor(bookName);
@@ -583,7 +583,7 @@ class AmilyHelper {
         const char = characters[this_chid];
         if (!char.data) char.data = {};
         if (!char.data.extensions) char.data.extensions = {};
-        
+
         // 确保 world 字段是数组
         let worlds = char.data.extensions.world;
         if (!Array.isArray(worlds)) {
@@ -594,7 +594,7 @@ class AmilyHelper {
             worlds.push(bookName);
             char.data.extensions.world = worlds;
             console.log(`[Amily助手] 已将世界书《${bookName}》绑定到角色 ${char.name}`);
-            
+
             if (typeof saveCharacterDebounced === 'function') {
                 saveCharacterDebounced();
                 return true;
@@ -626,7 +626,15 @@ export function makeRequest(request, data) {
         const callbackRequest = `${request}_callback`;
 
         function handleMessage(event) {
+            // 安全修复：验证消息来源
+            if (event.origin !== window.location.origin && event.origin !== 'null') {
+                return;
+            }
+
             const msgData = event.data || {};
+            // 安全修复：确保消息源是我们期望的
+            if (msgData.source !== 'amily2-iframe-request') return;
+
             if (msgData.request === callbackRequest && msgData.uid === uid) {
                 window.removeEventListener('message', handleMessage);
                 if (msgData.error) {
@@ -677,6 +685,13 @@ export function initializeApiListener() {
 
         const data = event.data || {};
         if (data.source !== 'amily2-iframe-request' || !data.request || data.uid === undefined) {
+            return;
+        }
+
+        // 终极安全修复：验证消息源窗口是否为已知的、由 renderer.js 创建的 iframe
+        // 这是防止来自控制台或恶意扩展的同源攻击的关键
+        if (!window.Amily2Renderer?.winMap?.has(event.source)) {
+            console.warn('[Amily2-Security] 收到来自未知源窗口的消息，已忽略。', event.source);
             return;
         }
 
