@@ -4,6 +4,7 @@ import { eventSource, event_types } from '/script.js';
 import { showHtmlModal } from '/scripts/extensions/third-party/ST-Amily2-Chat-Optimisation/ui/page-window.js';
 import { safeLorebooks, safeLorebookEntries, safeUpdateLorebookEntries, compatibleWriteToLorebook } from '../core/tavernhelper-compatibility.js';
 import { amilyHelper } from '../core/tavern-helper/main.js';
+import { escapeHTML } from '../utils/utils.js';
 const { SillyTavern } = window;
 
 class WorldEditor {
@@ -159,7 +160,7 @@ class WorldEditor {
             row.dataset.bookName = book.name;
             row.innerHTML = `
                 <input type="checkbox" class="world-book-checkbox" ${isSelected ? 'checked' : ''}>
-                <span class="world-book-name">${book.name}</span>
+                <span class="world-book-name">${escapeHTML(book.name)}</span>
                 <div class="world-book-actions">
                     <button class="world-editor-btn small-btn" data-action="edit"><i class="fas fa-pencil-alt"></i> 编辑</button>
                     <button class="world-editor-btn small-btn" data-action="rename"><i class="fas fa-i-cursor"></i> 重命名</button>
@@ -400,8 +401,8 @@ class WorldEditor {
                 <div data-label="选择"><input type="checkbox" class="world-editor-entry-checkbox" ${this.selectedEntries.has(entry.uid) ? 'checked' : ''}></div>
                 <div data-label="状态" class="inline-toggle" data-field="enabled" data-uid="${entry.uid}"><i class="fas ${entry.enabled ? 'fa-toggle-on' : 'fa-toggle-off'}"></i></div>
                 <div data-label="灯色" class="inline-toggle" data-field="type" data-uid="${entry.uid}">${entry.type === 'constant' ? '🔵' : '🟢'}</div>
-                <div data-label="条目"><input type="text" class="inline-edit" data-field="comment" data-uid="${entry.uid}" value="${entry.comment || ''}" placeholder="点击填写条目名"></div>
-                <div data-label="内容" class="world-editor-entry-content" data-action="open-editor" data-uid="${entry.uid}" title="${entry.content || ''}">${entry.content || ''}</div>
+                <div data-label="条目"><input type="text" class="inline-edit" data-field="comment" data-uid="${entry.uid}" value="${escapeHTML(entry.comment || '')}" placeholder="点击填写条目名"></div>
+                <div data-label="内容" class="world-editor-entry-content" data-action="open-editor" data-uid="${entry.uid}" title="${escapeHTML(entry.content || '')}">${escapeHTML(entry.content || '')}</div>
                 <div data-label="位置">${positionSelect}</div>
                 <div data-label="深度"><input type="number" class="inline-edit" data-field="depth" data-uid="${entry.uid}" value="${entry.depth != null ? entry.depth : ''}" ${!String(entry.position)?.startsWith('at_depth') ? 'disabled' : ''}></div>
                 <div data-label="顺序"><input type="number" class="inline-edit" data-field="order" data-uid="${entry.uid}" value="${entry.order}"></div>
@@ -541,7 +542,7 @@ class WorldEditor {
             <div class="copy-dialog">
                 <label for="target-worldbook">选择目标世界书：</label>
                 <select id="target-worldbook" class="form-control">
-                    ${availableBooks.map(name => `<option value="${name}" ${name === this.currentWorldBook ? 'selected' : ''}>${name}${name === this.currentWorldBook ? ' (当前)' : ''}</option>`).join('')}
+                    ${availableBooks.map(name => `<option value="${escapeHTML(name)}" ${name === this.currentWorldBook ? 'selected' : ''}>${escapeHTML(name)}${name === this.currentWorldBook ? ' (当前)' : ''}</option>`).join('')}
                 </select>
                 <div class="info">
                     将复制 ${this.selectedEntries.size} 个条目到目标世界书
