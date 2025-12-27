@@ -47,6 +47,8 @@ const UPDATE_CHECK_URL =
 
 const MESSAGE_BOARD_URL =
   "https://amilyservice.amily49.cc/amily2_message_board.json";
+
+let lastMessageId = null;
  
 export async function fetchMessageBoardContent() {
     if (!MESSAGE_BOARD_URL) {
@@ -54,11 +56,28 @@ export async function fetchMessageBoardContent() {
         return null;
     }
     try {
-        const response = await fetch(MESSAGE_BOARD_URL, { cache: 'no-store' });
+        let url = MESSAGE_BOARD_URL;
+        if (lastMessageId) {
+            const separator = url.includes('?') ? '&' : '?';
+            url += `${separator}nowId=${encodeURIComponent(lastMessageId)}`;
+        }
+
+        const response = await fetch(url, { cache: 'no-store' });
+
+        if (response.status === 304) {
+            console.log('[Amily2号-内务府] 留言板内容未变更 (304)。');
+            return null;
+        }
+
         if (!response.ok) {
             throw new Error(`服务器响应异常: ${response.status}`);
         }
         const data = await response.json();
+        
+        if (data && data.id) {
+            lastMessageId = data.id;
+        }
+
         return data;
     } catch (error) {
         console.error('[Amily2号-内务府] 获取留言板内容失败:', error);
