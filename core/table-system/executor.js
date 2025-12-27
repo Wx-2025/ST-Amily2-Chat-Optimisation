@@ -1,1 +1,217 @@
-(function(_0xe3abef,_0xd086cd){const _0x3442eb=_0x2901,_0x33dea1=_0xe3abef();while(!![]){try{const _0x24e7eb=-parseInt(_0x3442eb(0x122))/0x1+parseInt(_0x3442eb(0x107))/0x2*(parseInt(_0x3442eb(0xf7))/0x3)+parseInt(_0x3442eb(0xfa))/0x4+parseInt(_0x3442eb(0x110))/0x5*(-parseInt(_0x3442eb(0xf9))/0x6)+-parseInt(_0x3442eb(0x102))/0x7+-parseInt(_0x3442eb(0xfd))/0x8+parseInt(_0x3442eb(0x111))/0x9;if(_0x24e7eb===_0xd086cd)break;else _0x33dea1['push'](_0x33dea1['shift']());}catch(_0x48e8a8){_0x33dea1['push'](_0x33dea1['shift']());}}}(_0x1e36,0xe14ef));import{log}from'./logger.js';function _0x1e36(){const _0x1230cb=['updateRow(','replace','stringify','info','insertRow(','split','update','success','startsWith','deleteRow(','forEach','message','推演指令\x20\x22','1250929sUIykP','args','changes','6393gwvnzE','rows','3245676SLwLCL','6244944GEsIGP','warn','concat','7981600lUpBvu','match','检测到AI指令块，开始推演...','rowStatuses','pending-deletion','5189982eddZWR','AI指令错误：尝试删除不存在的表格\x20','trim','AI指令错误：尝试在不存在的表格索引\x20','\x22\x20时发生运行时错误:\x20','1662eDcvjO','length','\x22。已阻止执行。','headers','AI指令错误：尝试更新不存在的表格\x20','delete','error','\x22\x20的参数时出错:\x20','push','10qyacDU','14964417dzThLp','normal','检测到非法函数调用:\x20\x22','fill'];_0x1e36=function(){return _0x1230cb;};return _0x1e36();}function insertRow(_0x2d0e8a,_0x4a4c83,_0x1f2eee){const _0x516a39=_0x2901;if(!_0x2d0e8a[_0x4a4c83])return log(_0x516a39(0x105)+_0x4a4c83+'\x20中插入行。',_0x516a39(0x10d)),{'state':_0x2d0e8a,'changes':[]};const _0x5d1bab=_0x2d0e8a[_0x4a4c83],_0x332490=_0x5d1bab[_0x516a39(0x10a)][_0x516a39(0x108)],_0xfbd250=Array(_0x332490)[_0x516a39(0x114)](''),_0x228568=[],_0x210287=_0x5d1bab['rows']['length'];for(const _0x176933 in _0x1f2eee){const _0x906c0c=parseInt(_0x176933,0xa);_0x906c0c<_0x332490&&(_0xfbd250[_0x906c0c]=_0x1f2eee[_0x176933],_0x228568[_0x516a39(0x10f)]({'type':_0x516a39(0x11b),'tableIndex':_0x4a4c83,'rowIndex':_0x210287,'colIndex':_0x906c0c}));}return _0x5d1bab[_0x516a39(0xf8)][_0x516a39(0x10f)](_0xfbd250),{'state':_0x2d0e8a,'changes':_0x228568};}function updateRow(_0x267e8c,_0x5a9b66,_0x2cb94a,_0x412a41){const _0x1b3329=_0x2901;if(!_0x267e8c[_0x5a9b66])return log(_0x1b3329(0x10b)+_0x5a9b66+'。',_0x1b3329(0x10d)),{'state':_0x267e8c,'changes':[]};const _0x575311=_0x267e8c[_0x5a9b66];if(_0x2cb94a>=_0x575311['rows'][_0x1b3329(0x108)])return log('AI指令修正：updateRow\x20的行索引\x20'+_0x2cb94a+'\x20超出范围，自动转换为\x20insertRow。',_0x1b3329(0xfb)),insertRow(_0x267e8c,_0x5a9b66,_0x412a41);const _0x219432=_0x575311['rows'][_0x2cb94a],_0x3f38d0=[];for(const _0xd80b23 in _0x412a41){const _0xfdbb83=parseInt(_0xd80b23,0xa);_0xfdbb83<_0x219432[_0x1b3329(0x108)]&&(_0x219432[_0xfdbb83]=_0x412a41[_0xd80b23],_0x3f38d0[_0x1b3329(0x10f)]({'type':_0x1b3329(0x11b),'tableIndex':_0x5a9b66,'rowIndex':_0x2cb94a,'colIndex':_0xfdbb83}));}return{'state':_0x267e8c,'changes':_0x3f38d0};}function deleteRow(_0x54a174,_0x113aca,_0x3c4736){const _0x197b8f=_0x2901,_0x3f0cb3=_0x54a174[_0x113aca];if(!_0x3f0cb3||!_0x3f0cb3[_0x197b8f(0xf8)][_0x3c4736])return log(_0x197b8f(0x103)+_0x113aca+'\x20或行\x20'+_0x3c4736+'。',_0x197b8f(0x10d)),{'state':_0x54a174,'changes':[]};!_0x3f0cb3[_0x197b8f(0x100)]&&(_0x3f0cb3[_0x197b8f(0x100)]=Array(_0x3f0cb3['rows'][_0x197b8f(0x108)])[_0x197b8f(0x114)](_0x197b8f(0x112)));if(_0x3f0cb3[_0x197b8f(0x100)][_0x3c4736]!==_0x197b8f(0x101)){_0x3f0cb3[_0x197b8f(0x100)][_0x3c4736]='pending-deletion';const _0x533d8c=[{'type':_0x197b8f(0x10c),'tableIndex':_0x113aca,'rowIndex':_0x3c4736}];return{'state':_0x54a174,'changes':_0x533d8c};}return{'state':_0x54a174,'changes':[]};}const allowedFunctions={'insertRow':insertRow,'updateRow':updateRow,'deleteRow':deleteRow};function _0x2901(_0x529a58,_0x5b6b90){const _0x1e3688=_0x1e36();return _0x2901=function(_0x2901c9,_0x41eb10){_0x2901c9=_0x2901c9-0xf7;let _0x4729a4=_0x1e3688[_0x2901c9];return _0x4729a4;},_0x2901(_0x529a58,_0x5b6b90);}function parseFunctionCall(_0x1b1720){const _0x37769d=_0x2901,_0x4a58ae=_0x1b1720[_0x37769d(0x104)]()[_0x37769d(0xfe)](/(\w+)\((.*)\)/);if(!_0x4a58ae)return log('指令格式错误，无法解析:\x20\x22'+_0x1b1720+'\x22','error'),null;const _0x33abc5=_0x4a58ae[0x1],_0x4a9349=_0x4a58ae[0x2];if(!allowedFunctions[_0x33abc5])return log(_0x37769d(0x113)+_0x33abc5+_0x37769d(0x109),_0x37769d(0x10d)),null;try{const _0x51002f=new Function('return\x20['+_0x4a9349+']')();return{'name':_0x33abc5,'args':_0x51002f};}catch(_0x533dd8){return log('解析函数\x20\x22'+_0x33abc5+_0x37769d(0x10e)+_0x533dd8[_0x37769d(0x120)],_0x37769d(0x10d)),null;}}export function executeCommands(_0x3198f0,_0xfa713f){const _0x53c98d=_0x2901,_0x46f422=/<Amily2Edit>([\s\S]*?)<\/Amily2Edit>/,_0x3c8bc1=_0x3198f0[_0x53c98d(0xfe)](_0x46f422);if(!_0x3c8bc1)return{'finalState':_0xfa713f,'hasChanges':![],'changes':[]};log(_0x53c98d(0xff),_0x53c98d(0x118));const _0x2b2110=_0x3c8bc1[0x1][_0x53c98d(0x116)](/<!--|-->/g,'')[_0x53c98d(0x104)]();if(!_0x2b2110)return{'finalState':_0xfa713f,'hasChanges':![],'changes':[]};const _0x179900=_0x2b2110[_0x53c98d(0x11a)]('\x0a')['filter'](_0x20638c=>_0x20638c[_0x53c98d(0x104)]()!=='');if(_0x179900[_0x53c98d(0x108)]===0x0)return{'finalState':_0xfa713f,'hasChanges':![],'changes':[]};let _0x51c825=JSON['parse'](JSON[_0x53c98d(0x117)](_0xfa713f)),_0x213103=[];_0x179900[_0x53c98d(0x11f)](_0x3d6c11=>{const _0x4c2fa5=_0x53c98d,_0x4c4cca=_0x3d6c11[_0x4c2fa5(0x104)]();if(_0x4c4cca[_0x4c2fa5(0x11d)](_0x4c2fa5(0x119))||_0x4c4cca[_0x4c2fa5(0x11d)](_0x4c2fa5(0x11e))||_0x4c4cca[_0x4c2fa5(0x11d)](_0x4c2fa5(0x115))){const _0x5a50e5=parseFunctionCall(_0x4c4cca);if(_0x5a50e5)try{const _0x3edeec=allowedFunctions[_0x5a50e5['name']](_0x51c825,..._0x5a50e5[_0x4c2fa5(0x123)]);_0x51c825=_0x3edeec['state'],_0x3edeec[_0x4c2fa5(0x124)]&&_0x3edeec['changes'][_0x4c2fa5(0x108)]>0x0&&(_0x213103=_0x213103[_0x4c2fa5(0xfc)](_0x3edeec[_0x4c2fa5(0x124)])),log('成功推演指令:\x20'+_0x3d6c11,_0x4c2fa5(0x11c));}catch(_0x22d10d){log(_0x4c2fa5(0x121)+_0x3d6c11+_0x4c2fa5(0x106)+_0x22d10d[_0x4c2fa5(0x120)],_0x4c2fa5(0x10d));}}});const _0x205b4d=_0x213103[_0x53c98d(0x108)]>0x0;return{'finalState':_0x51c825,'hasChanges':_0x205b4d,'changes':_0x213103};}
+
+import { log } from './logger.js';
+
+function insertRow(state, tableIndex, data) {
+    if (!state[tableIndex]) {
+        log(`AI指令错误：尝试在不存在的表格索引 ${tableIndex} 中插入行。`, 'error');
+        return { state, changes: [] };
+    }
+    const table = state[tableIndex];
+    const colCount = table.headers.length;
+    const newRow = Array(colCount).fill('');
+    const changes = [];
+    const newRowIndex = table.rows.length;
+
+    for (const colIndex in data) {
+        const cIndex = parseInt(colIndex, 10);
+        if (cIndex < colCount) {
+            newRow[cIndex] = data[colIndex];
+            changes.push({ type: 'update', tableIndex, rowIndex: newRowIndex, colIndex: cIndex });
+        }
+    }
+    table.rows.push(newRow);
+    return { state, changes };
+}
+
+function updateRow(state, tableIndex, rowIndex, data) {
+    if (!state[tableIndex]) {
+        log(`AI指令错误：尝试更新不存在的表格 ${tableIndex}。`, 'error');
+        return { state, changes: [] };
+    }
+
+    const table = state[tableIndex];
+
+    if (rowIndex >= table.rows.length) {
+        log(`AI指令修正：updateRow 的行索引 ${rowIndex} 超出范围，自动转换为 insertRow。`, 'warn');
+        return insertRow(state, tableIndex, data);
+    }
+
+    const row = table.rows[rowIndex];
+    const changes = [];
+    for (const colIndex in data) {
+        const cIndex = parseInt(colIndex, 10);
+        if (cIndex < row.length) {
+            row[cIndex] = data[colIndex];
+            changes.push({ type: 'update', tableIndex, rowIndex, colIndex: cIndex });
+        }
+    }
+    return { state, changes };
+}
+
+
+function deleteRow(state, tableIndex, rowIndex) {
+    const table = state[tableIndex];
+    if (!table || !table.rows[rowIndex]) {
+        log(`AI指令错误：尝试删除不存在的表格 ${tableIndex} 或行 ${rowIndex}。`, 'error');
+        return { state, changes: [] };
+    }
+
+    if (!table.rowStatuses) {
+        table.rowStatuses = Array(table.rows.length).fill('normal');
+    }
+    
+    if (table.rowStatuses[rowIndex] !== 'pending-deletion') {
+        table.rowStatuses[rowIndex] = 'pending-deletion';
+        const changes = [{ type: 'delete', tableIndex, rowIndex }];
+        return { state, changes };
+    }
+
+    return { state, changes: [] };
+}
+
+
+const allowedFunctions = {
+    insertRow,
+    updateRow,
+    deleteRow,
+};
+
+function parseFunctionCall(callString) {
+    const match = callString.trim().match(/(\w+)\((.*)\)/);
+    if (!match) {
+        log(`指令格式错误，无法解析: "${callString}"`, 'error');
+        return null;
+    }
+
+    const functionName = match[1];
+    const argsString = match[2];
+
+    if (!allowedFunctions[functionName]) {
+        log(`检测到非法函数调用: "${functionName}"。已阻止执行。`, 'error');
+        return null;
+    }
+
+    try {
+
+        const args = [];
+        let currentArg = '';
+        let inQuote = false;
+        let quoteChar = '';
+        let braceDepth = 0; 
+        
+        for (let i = 0; i < argsString.length; i++) {
+            const char = argsString[i];
+            
+            if ((char === '"' || char === "'") && (i === 0 || argsString[i-1] !== '\\')) {
+                if (!inQuote) {
+                    inQuote = true;
+                    quoteChar = char;
+                } else if (char === quoteChar) {
+                    inQuote = false;
+                }
+                currentArg += char;
+            } else if (!inQuote) {
+                if (char === '{' || char === '[') {
+                    braceDepth++;
+                    currentArg += char;
+                } else if (char === '}' || char === ']') {
+                    braceDepth--;
+                    currentArg += char;
+                } else if (char === ',' && braceDepth === 0) {
+                    args.push(parseValue(currentArg));
+                    currentArg = '';
+                } else {
+                    currentArg += char;
+                }
+            } else {
+                currentArg += char;
+            }
+        }
+        if (currentArg.trim()) {
+            args.push(parseValue(currentArg));
+        }
+
+        return { name: functionName, args: args };
+    } catch (e) {
+        log(`解析函数 "${functionName}" 的参数时出错: ${e.message}`, 'error');
+        return null;
+    }
+}
+
+function parseValue(val) {
+    val = val.trim();
+    if (val === 'true') return true;
+    if (val === 'false') return false;
+    if (val === 'null') return null;
+    if (val === 'undefined') return undefined;
+    if (!isNaN(Number(val)) && val !== '') return Number(val);
+    
+    if (val.startsWith('"') && val.endsWith('"')) {
+         try { return JSON.parse(val); } catch (e) { return val.slice(1, -1); }
+    }
+    if (val.startsWith("'") && val.endsWith("'")) {
+        return val.slice(1, -1);
+    }
+
+    if ((val.startsWith('{') && val.endsWith('}')) || (val.startsWith('[') && val.endsWith(']'))) {
+        try {
+            return JSON.parse(val);
+        } catch (e) {
+            try {
+                return JSON.parse(val.replace(/'/g, '"'));
+            } catch (e2) {
+                return val;
+            }
+        }
+    }
+    return val;
+}
+
+
+export function executeCommands(aiResponseText, initialState) {
+    const commandBlockRegex = /<Amily2Edit>([\s\S]*?)<\/Amily2Edit>/;
+    const match = aiResponseText.match(commandBlockRegex);
+
+    if (!match) {
+        return { finalState: initialState, hasChanges: false, changes: [] };
+    }
+
+    log('检测到AI指令块，开始推演...', 'info');
+    const commandBlock = match[1].replace(/<!--|-->/g, '').trim();
+    if (!commandBlock) {
+        return { finalState: initialState, hasChanges: false, changes: [] };
+    }
+
+    const commands = commandBlock.split('\n').filter(line => line.trim() !== '');
+    if (commands.length === 0) {
+        return { finalState: initialState, hasChanges: false, changes: [] };
+    }
+
+    let currentState = JSON.parse(JSON.stringify(initialState));
+    let allChanges = [];
+
+    commands.forEach(commandString => {
+        const trimmedCommand = commandString.trim();
+        if (trimmedCommand.startsWith('insertRow(') || 
+            trimmedCommand.startsWith('deleteRow(') || 
+            trimmedCommand.startsWith('updateRow(')) 
+        {
+            const parsed = parseFunctionCall(trimmedCommand);
+            if (parsed) {
+                try {
+                    const result = allowedFunctions[parsed.name](currentState, ...parsed.args);
+                    currentState = result.state;
+                    if (result.changes && result.changes.length > 0) {
+                        allChanges = allChanges.concat(result.changes);
+                    }
+                    log(`成功推演指令: ${commandString}`, 'success');
+                } catch (e) {
+                    log(`推演指令 "${commandString}" 时发生运行时错误: ${e.message}`, 'error');
+                }
+            }
+        }
+    });
+
+    const hasChanges = allChanges.length > 0;
+    return { finalState: currentState, hasChanges, changes: allChanges };
+}
