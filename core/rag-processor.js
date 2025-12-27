@@ -1,1 +1,1756 @@
-'use strict';const _0x1f6706=_0x21b6;(function(_0x5025a9,_0x46976e){const _0xac7039=_0x21b6,_0x54c3f0=_0x5025a9();while(!![]){try{const _0xf6e7ae=-parseInt(_0xac7039(0x2ef))/0x1+-parseInt(_0xac7039(0x231))/0x2+parseInt(_0xac7039(0x31c))/0x3+-parseInt(_0xac7039(0x2cc))/0x4+-parseInt(_0xac7039(0x2a8))/0x5*(-parseInt(_0xac7039(0x251))/0x6)+parseInt(_0xac7039(0x218))/0x7+-parseInt(_0xac7039(0x332))/0x8*(-parseInt(_0xac7039(0x272))/0x9);if(_0xf6e7ae===_0x46976e)break;else _0x54c3f0['push'](_0x54c3f0['shift']());}catch(_0x343827){_0x54c3f0['push'](_0x54c3f0['shift']());}}}(_0x213b,0x7c96b));import{extension_prompt_roles,setExtensionPrompt,eventSource,event_types}from'/script.js';import*as _0x1d5b5a from'./utils/context-utils.js';import{getCollectionIdInfo,getCharacterId,getCharacterStableId}from'./utils/context-utils.js';import{defaultSettings as _0x5d048b}from'./rag-settings.js';import{extractBlocksByTags,applyExclusionRules}from'./utils/rag-tag-extractor.js';import*as _0x4f1b20 from'./ingestion-manager.js';import{getEmbeddings,fetchEmbeddingModels as _0x4fe4b8,fetchRerankModels as _0x3706a5,executeRerank,testApiConnection as _0x371108}from'./rag-api.js';import{superSort}from'./super-sorter.js';import{executeGraphRetrieval}from'./relationship-graph/executor.js';import{initializeArchiveManager}from'./archive-manager.js';const MODULE_NAME=_0x1f6706(0x208),OFFICIAL_REARRANGE_CHAT_FUNCTION_NAME='vectors_rearrangeChat',GLOBAL_SCOPE_ID=_0x1f6706(0x2f3);let context=null,settings=null,lockedCollectionId=null;function filterWorldbooks(_0x1c2cb8,_0x3c42af){const _0x182ae6=_0x1f6706;if(!_0x1c2cb8||!_0x1c2cb8[_0x182ae6(0x299)]())return _0x3c42af;const _0x32dc77=_0x1c2cb8[_0x182ae6(0x1f3)]()[_0x182ae6(0x299)]();return _0x3c42af[_0x182ae6(0x29e)](_0x45598c=>{const _0x39089d=_0x182ae6;return _0x45598c['toLowerCase']()[_0x39089d(0x27f)](_0x32dc77)||containsPinyinMatch(_0x45598c,_0x32dc77);});}function filterWorldbookEntries(_0x29ba40,_0x31c91c){const _0x33e185=_0x1f6706;if(!_0x29ba40||!_0x29ba40[_0x33e185(0x299)]())return _0x31c91c;const _0x4a7f22=_0x29ba40[_0x33e185(0x1f3)]()[_0x33e185(0x299)]();return _0x31c91c[_0x33e185(0x29e)](_0x292b63=>{const _0x4c893e=_0x33e185,_0x51881f=[_0x292b63[_0x4c893e(0x2d4)]||'',_0x292b63[_0x4c893e(0x26f)]||'',_0x292b63[_0x4c893e(0x2fa)]||''][_0x4c893e(0x324)]('\x20')[_0x4c893e(0x1f3)]();return _0x51881f[_0x4c893e(0x27f)](_0x4a7f22)||containsPinyinMatch(_0x292b63[_0x4c893e(0x2d4)]||'',_0x4a7f22);});}function containsPinyinMatch(_0x29d4ca,_0x3e435a){const _0x1f1f7a=_0x1f6706,_0x17ec2f={'世界书':_0x1f1f7a(0x267),'条目':_0x1f1f7a(0x27c),'编纂':_0x1f1f7a(0x30a),'搜索':_0x1f1f7a(0x305)},_0x25e3e8=_0x17ec2f[_0x29d4ca];return _0x25e3e8&&_0x25e3e8[_0x1f1f7a(0x27f)](_0x3e435a);}function highlightSearchMatch(_0xb2c5c3,_0x5886ad){const _0x54fd71=_0x1f6706;if(!_0x5886ad||!_0x5886ad[_0x54fd71(0x299)]())return _0xb2c5c3;const _0x2b92f2=new RegExp('('+_0x5886ad[_0x54fd71(0x2c4)](/[.*+?^${}()|[\]\\]/g,_0x54fd71(0x247))+')','gi');return _0xb2c5c3[_0x54fd71(0x2c4)](_0x2b92f2,_0x54fd71(0x2c5));}function debounce(_0x15d7ea,_0x11ab3f){let _0x292b86;return function _0x3f26e3(..._0x4eab2e){const _0x4f2d7d=()=>{clearTimeout(_0x292b86),_0x15d7ea(..._0x4eab2e);};clearTimeout(_0x292b86),_0x292b86=setTimeout(_0x4f2d7d,_0x11ab3f);};}export{initialize,getSettings,saveSettings,resetSettings,_0x371108 as testApiConnection,_0x4fe4b8 as fetchEmbeddingModels,_0x3706a5 as fetchRerankModels,getVectorCount,purgeStorage,getMessagesForCondensation,processCondensation,ingestTextToHanlinyuan,getCollectionId,toggleSessionLock,isSessionLocked,getLockedSessionInfo,addKnowledgeBase,removeKnowledgeBase,getLocalKnowledgeBases,getGlobalKnowledgeBases,toggleKnowledgeBase,moveKnowledgeBase,filterWorldbooks,filterWorldbookEntries,highlightSearchMatch,debounce,renameKnowledgeBase};function initialize(){const _0xcb9a33=_0x1f6706;context=SillyTavern[_0xcb9a33(0x225)]();if(!context){console[_0xcb9a33(0x28e)]('[翰林院]\x20未能获取SillyTavern上下文，初始化失败。');return;}settings=getSettings(),!window[_0xcb9a33(0x269)]&&(window[_0xcb9a33(0x269)]={}),window['hanlinyuanRagProcessor'][_0xcb9a33(0x219)]=rearrangeChat,window['hanlinyuanRagProcessor']['initialized']=!![],eventSource['on'](event_types[_0xcb9a33(0x28c)],handleAutoCondensation),initializeArchiveManager(),console[_0xcb9a33(0x309)](_0xcb9a33(0x286));}async function ingestTextToHanlinyuan(_0x1d4c29,_0x4a113f=_0x1f6706(0x318),_0x5f0201={},_0x2d15b8=()=>{},_0x1ec601=null,_0x253f42=()=>{},_0x479853=()=>{},_0x411f16=null,_0x4a46b6=0x0){const _0x25ad59=_0x1f6706;if(!_0x1d4c29||!_0x1d4c29[_0x25ad59(0x299)]())return{'success':![],'error':_0x25ad59(0x25b)};if(!settings)return{'success':![],'error':_0x25ad59(0x2c3)};try{const _0x40f233=getCollectionIdInfo(),_0x272add=await _0x471883();if(_0x40f233['oldId']&&_0x40f233[_0x25ad59(0x313)]===_0x272add&&_0x40f233[_0x25ad59(0x313)]!==_0x40f233['newId']){const _0x2b4b0a=confirm(_0x25ad59(0x337));if(_0x2b4b0a)_0x253f42(_0x25ad59(0x236)+_0x40f233['oldId'],'warn'),await purgeStorage(_0x40f233['oldId']),_0x253f42(_0x25ad59(0x2b8),_0x25ad59(0x1f1));else return _0x253f42(_0x25ad59(0x2d5),_0x25ad59(0x2ad)),toastr[_0x25ad59(0x2ad)]('操作已取消。'),{'success':![],'error':_0x25ad59(0x32b)};}let _0x4fbf2c,_0x30c581;const _0x2df935=new Date()[_0x25ad59(0x293)](_0x25ad59(0x2eb),{'hour12':![]}),_0x437b8f=getCharacterName()||_0x25ad59(0x2cf);switch(_0x4a113f){case _0x25ad59(0x2a6):const _0x217b8c=_0x5f0201[_0x25ad59(0x26c)]||{},_0x2aa0f3=_0x217b8c['start']??'?',_0xc57ebf=_0x217b8c[_0x25ad59(0x2dd)]===0x0?'末':_0x217b8c[_0x25ad59(0x2dd)]??'?';_0x4fbf2c=_0x437b8f+':\x20'+_0x2aa0f3+'楼-'+_0xc57ebf+'楼';break;case _0x25ad59(0x310):const _0x30fbfb=_0x5f0201[_0x25ad59(0x1fe)]||'未分类世界书';if(_0x5f0201[_0x25ad59(0x1f5)]&&_0x5f0201[_0x25ad59(0x1f5)]['includes'](_0x25ad59(0x316)))_0x5f0201[_0x25ad59(0x1f5)]=_0x25ad59(0x246);else _0x5f0201[_0x25ad59(0x1f5)]&&_0x5f0201[_0x25ad59(0x1f5)][_0x25ad59(0x27f)](_0x25ad59(0x29b))&&(_0x5f0201[_0x25ad59(0x1f5)]=_0x25ad59(0x2de));const _0x39adc8=_0x5f0201[_0x25ad59(0x1f5)]||_0x25ad59(0x250);_0x4fbf2c=_0x30fbfb+':\x20'+_0x39adc8;break;case _0x25ad59(0x2e3):_0x4fbf2c=_0x25ad59(0x296)+(_0x5f0201[_0x25ad59(0x1fc)]||_0x25ad59(0x22c));break;case'manual':default:_0x4fbf2c='手动录入:\x20'+_0x2df935;break;}const _0x186e1a=Object[_0x25ad59(0x2e4)](getKnowledgeBases()),_0x3bdba5=_0x186e1a[_0x25ad59(0x2be)](_0x48a82e=>_0x48a82e['name']===_0x4fbf2c);if(_0x3bdba5)_0x30c581=_0x3bdba5['id'],_0x253f42(_0x25ad59(0x257)+_0x4fbf2c+'\x22，将数据合并入库。',_0x25ad59(0x2ad));else{_0x253f42(_0x25ad59(0x242)+_0x4fbf2c+'\x22\x20创建专属知识库...',_0x25ad59(0x2ad));const _0xe2d0cd=addKnowledgeBase(_0x4fbf2c,_0x4a113f);_0x30c581=_0xe2d0cd['id'];}const _0x4c87b1=getCharacterStableId(),_0x4b49d8=_0x4c87b1+'_'+_0x30c581;_0x253f42(_0x25ad59(0x24a)+_0x4fbf2c+_0x25ad59(0x2c7)+_0x4b49d8+')',_0x25ad59(0x1f1)),_0x253f42(_0x25ad59(0x2e0)+_0x4b49d8,'info'),_0x2d15b8({'message':_0x25ad59(0x2e5),'processed':0x0,'total':0x1});const _0x11cc4d=splitIntoChunks(_0x1d4c29,_0x4a113f,_0x5f0201),_0x4c23e8=_0x11cc4d['length'];if(_0x1ec601?.[_0x25ad59(0x284)])throw new Error('AbortError');_0x253f42(_0x25ad59(0x2f8)+_0x4fbf2c+_0x25ad59(0x29f)+_0x4c23e8+_0x25ad59(0x335),_0x25ad59(0x2ad));if(_0x4c23e8===0x0)return{'success':!![],'count':0x0};const _0x33fdc7=settings[_0x25ad59(0x1f8)][_0x25ad59(0x31a)]||0x5;let _0x3a653e=_0x4a46b6;for(let _0xd2ec20=_0x4a46b6;_0xd2ec20<_0x4c23e8;_0xd2ec20+=_0x33fdc7){if(_0x1ec601?.['aborted'])throw new Error('AbortError');const _0x287818=_0x11cc4d[_0x25ad59(0x2bb)](_0xd2ec20,_0xd2ec20+_0x33fdc7);_0x2d15b8({'message':_0x25ad59(0x21e)+(_0xd2ec20+0x1)+'-'+(_0xd2ec20+_0x287818[_0x25ad59(0x21f)])+'\x20块','processed':_0xd2ec20,'total':_0x4c23e8});const _0x307ed6=_0x287818[_0x25ad59(0x238)](_0x107f0f=>_0x107f0f[_0x25ad59(0x211)]),_0x5c32b5=await getEmbeddings(_0x307ed6,_0x1ec601);if(_0x1ec601?.['aborted'])throw new Error(_0x25ad59(0x2b5));if(_0x287818['length']!==_0x5c32b5[_0x25ad59(0x21f)])throw new Error(_0x25ad59(0x2e7));const _0x18178d=_0x287818[_0x25ad59(0x238)]((_0x52d8b0,_0x16c1ad)=>({..._0x52d8b0,'vector':_0x5c32b5[_0x16c1ad]}));await insertVectors(_0x18178d,_0x1ec601,_0x4b49d8),_0x3a653e+=_0x287818[_0x25ad59(0x21f)],_0x411f16&&_0x4f1b20[_0x25ad59(0x29a)](_0x411f16,_0x3a653e,_0x4c23e8),await _0x479853();}return _0x411f16&&_0x4f1b20[_0x25ad59(0x20d)](_0x411f16),_0x253f42(_0x25ad59(0x276)+_0x3a653e+'\x20个向量条目。','success'),{'success':!![],'count':_0x3a653e};}catch(_0x30108c){if(_0x30108c[_0x25ad59(0x275)]==='AbortError'){_0x253f42('[翰林院-核心]\x20文本录入任务被用户中止。','warn');throw _0x30108c;}return console[_0x25ad59(0x28e)](_0x25ad59(0x30f),_0x30108c),_0x253f42('[翰林院-核心]\x20文本录入失败:\x20'+_0x30108c[_0x25ad59(0x30d)],_0x25ad59(0x28e)),{'success':![],'error':_0x30108c[_0x25ad59(0x30d)]};}}function getSettings(){const _0x1fb493=_0x1f6706;if(!context||!context[_0x1fb493(0x26e)])return structuredClone(_0x5d048b);let _0x366771=context[_0x1fb493(0x26e)][MODULE_NAME];!_0x366771&&(_0x366771={},context['extensionSettings'][MODULE_NAME]=_0x366771);_0x366771[_0x1fb493(0x32a)]===undefined&&(_0x366771[_0x1fb493(0x32a)]={});_0x366771[_0x1fb493(0x2a5)]===undefined&&(_0x366771[_0x1fb493(0x2a5)]={});_0x366771[_0x1fb493(0x234)]===undefined&&(_0x366771[_0x1fb493(0x234)]={'enabled':![],'tagExtractionEnabled':![],'tags':'content,details,摘要','exclusionRules':[]});for(const _0x5274ef in _0x5d048b){if(_0x366771[_0x5274ef]===undefined)_0x366771[_0x5274ef]=structuredClone(_0x5d048b[_0x5274ef]);else{if(typeof _0x5d048b[_0x5274ef]===_0x1fb493(0x221)&&!Array[_0x1fb493(0x21d)](_0x5d048b[_0x5274ef])&&_0x5d048b[_0x5274ef]!==null)for(const _0x5951f2 in _0x5d048b[_0x5274ef]){_0x366771[_0x5274ef][_0x5951f2]===undefined&&(_0x366771[_0x5274ef][_0x5951f2]=_0x5d048b[_0x5274ef][_0x5951f2]);}}}return _0x366771;}function saveSettings(){const _0x5e6a1d=_0x1f6706;if(context)context[_0x5e6a1d(0x291)]();}function resetSettings(){context&&(context['extensionSettings'][MODULE_NAME]=structuredClone(_0x5d048b),saveSettings());}function showNotification(_0x146575,_0x14e934=_0x1f6706(0x2ad)){toastr[_0x14e934](_0x146575);}function getTagForSource(_0x5b9f17){const _0x30a414=_0x1f6706;switch(_0x5b9f17){case _0x30a414(0x2a6):return _0x30a414(0x24d);case'lorebook':return _0x30a414(0x2a9);case _0x30a414(0x318):return'手动录入';case _0x30a414(0x2e3):return _0x30a414(0x226);default:return'资料';}}function splitIntoChunks(_0xe29c21,_0x10871a,_0x22dd2e={}){const _0x50223a=_0x1f6706;switch(_0x10871a){case _0x50223a(0x2e3):return _chunkForNovel(_0xe29c21,_0x22dd2e);case _0x50223a(0x2a6):return _chunkForChatHistory(_0xe29c21,_0x22dd2e);case _0x50223a(0x310):return _chunkForLorebook(_0xe29c21,_0x22dd2e);case _0x50223a(0x318):return _chunkForManual(_0xe29c21,_0x22dd2e);default:console[_0x50223a(0x255)]('[翰林院-分块]\x20未知的来源类型\x20\x27'+_0x10871a+'\x27，使用通用分块逻辑。');return _chunkForManual(_0xe29c21,{..._0x22dd2e,'sourceName':_0x22dd2e[_0x50223a(0x1fc)]||_0x50223a(0x32c)});}}function _0x21b6(_0xf0f723,_0x2355f0){_0xf0f723=_0xf0f723-0x1f1;const _0x213bf9=_0x213b();let _0x21b679=_0x213bf9[_0xf0f723];return _0x21b679;}function _chunkForNovel(_0x22dfa8,_0x52cc9a){const _0x466013=_0x1f6706,{chunkSize:_0x5a389f,overlap:_0x44cff0}=settings[_0x466013(0x2d9)],{sourceName:sourceName='小说'}=_0x52cc9a,_0x47e489=[];if(!_0x22dfa8||_0x5a389f<=0x0)return _0x47e489;const _0x375661=/(第\s*[一二三四五六七八九十百千万零\d]+\s*卷)/gim,_0x29b529=/(第\s*[一二三四五六七八九十百千万零\d]+\s*[章回节部])|^(Chapter\s+\d+)/gim;let _0x2af7dd=0x0;const _0x12194a=_0x22dfa8[_0x466013(0x331)]('\x0a');let _0x96988a=_0x466013(0x334),_0xfa64c=_0x466013(0x1f7),_0x1cf11c=[];function _0x2c74e2(){const _0x4ab279=_0x466013;if(_0x1cf11c['length']===0x0)return;const _0x54ffb4=_0x1cf11c['join']('\x0a');let _0x269ac1=0x0,_0x42f6a7=0x1;while(_0x269ac1<_0x54ffb4[_0x4ab279(0x21f)]){const _0x252e5f=Math['min'](_0x269ac1+_0x5a389f,_0x54ffb4[_0x4ab279(0x21f)]),_0xf80588=_0x54ffb4[_0x4ab279(0x30b)](_0x269ac1,_0x252e5f);if(_0xf80588[_0x4ab279(0x299)]()[_0x4ab279(0x21f)]>0x0){const _0x21d4bb={'source':_0x4ab279(0x2e3),'sourceName':sourceName,'timestamp':new Date()['toISOString'](),'globalIndex':_0x2af7dd++,'volume':_0x96988a,'chapter':_0xfa64c,'section':_0x42f6a7},_0x1dedba=getTagForSource(_0x4ab279(0x2e3)),_0x3db927='[来源:\x20'+sourceName+',\x20'+_0x96988a+',\x20'+_0xfa64c+_0x4ab279(0x2aa)+_0x42f6a7+'节]',_0x4e566f='<'+_0x1dedba+'>\x0a'+_0x3db927+'\x0a'+_0xf80588+_0x4ab279(0x228)+_0x1dedba+'>';_0x47e489[_0x4ab279(0x2db)]({'text':_0x4e566f,'metadata':_0x21d4bb}),_0x42f6a7++;}_0x269ac1+=_0x5a389f-_0x44cff0;if(_0x269ac1>=_0x54ffb4[_0x4ab279(0x21f)])break;}_0x1cf11c=[];}for(const _0x452ac2 of _0x12194a){const _0x53aaaa=_0x452ac2[_0x466013(0x299)]();if(_0x375661[_0x466013(0x2f0)](_0x53aaaa))_0x2c74e2(),_0x96988a=_0x53aaaa,_0xfa64c=_0x466013(0x1f7);else _0x29b529['test'](_0x53aaaa)?(_0x2c74e2(),_0xfa64c=_0x53aaaa):_0x1cf11c[_0x466013(0x2db)](_0x452ac2);}_0x2c74e2();if(_0x47e489[_0x466013(0x21f)]===0x0&&_0x22dfa8[_0x466013(0x21f)]>0x0){let _0x592119=0x0,_0x53f269=0x1;while(_0x592119<_0x22dfa8[_0x466013(0x21f)]){const _0x19b45f=Math[_0x466013(0x28f)](_0x592119+_0x5a389f,_0x22dfa8['length']),_0x3afd06=_0x22dfa8[_0x466013(0x30b)](_0x592119,_0x19b45f),_0x33128f={'source':_0x466013(0x2e3),'sourceName':sourceName,'timestamp':new Date()[_0x466013(0x297)](),'globalIndex':_0x47e489[_0x466013(0x21f)],'volume':_0x466013(0x334),'chapter':_0x466013(0x1f7),'section':_0x53f269},_0x22166a=getTagForSource(_0x466013(0x2e3)),_0x37782f='[来源:\x20'+sourceName+_0x466013(0x1fa)+_0x53f269+'节]',_0x3ecfc2='<'+_0x22166a+'>\x0a'+_0x37782f+'\x0a'+_0x3afd06+_0x466013(0x228)+_0x22166a+'>';_0x47e489[_0x466013(0x2db)]({'text':_0x3ecfc2,'metadata':_0x33128f}),_0x53f269++,_0x592119+=_0x5a389f-_0x44cff0;}}return _0x47e489;}function _chunkForChatHistory(_0x50b8a0,_0x3eb500){const _0x70a5b5=_0x1f6706,{chunkSize:_0x1e6b0c,overlap:_0xbb50b4}=settings[_0x70a5b5(0x2d9)],{floor:_0x167720,is_user:_0x46e8d2,timestamp:_0x2218c1}=_0x3eb500,_0x119f0a=[];if(!_0x50b8a0||_0x1e6b0c<=0x0)return _0x119f0a;let _0x597439=0x1,_0x5d5f51=0x0;while(_0x5d5f51<_0x50b8a0[_0x70a5b5(0x21f)]){const _0x4b6c6b=Math[_0x70a5b5(0x28f)](_0x5d5f51+_0x1e6b0c,_0x50b8a0[_0x70a5b5(0x21f)]),_0x3362ce=_0x50b8a0[_0x70a5b5(0x30b)](_0x5d5f51,_0x4b6c6b),_0x457ef2=_0x70a5b5(0x224)+_0x167720+_0x70a5b5(0x2aa)+_0x597439+_0x70a5b5(0x2ac),_0xe717a4=getTagForSource(_0x70a5b5(0x2a6)),_0x1319bf='<'+_0xe717a4+'>\x0a'+_0x457ef2+'\x0a'+_0x3362ce+_0x70a5b5(0x228)+_0xe717a4+'>';_0x119f0a[_0x70a5b5(0x2db)]({'text':_0x1319bf,'metadata':{'source':'chat_history','sourceName':_0x70a5b5(0x295)+_0x167720,'floor':_0x167720,'part':_0x597439,'is_user':_0x46e8d2,'timestamp':_0x2218c1}}),_0x597439++,_0x5d5f51+=_0x1e6b0c-_0xbb50b4;if(_0x5d5f51>=_0x50b8a0[_0x70a5b5(0x21f)])break;}return _0x119f0a;}function _chunkForLorebook(_0x20f362,_0x2daafc){const _0x5e77f7=_0x1f6706,{chunkSize:_0x147260,overlap:_0x4ea10e}=settings[_0x5e77f7(0x2d9)],{bookName:bookName=_0x5e77f7(0x2a9),entryName:entryName=_0x5e77f7(0x259)}=_0x2daafc,_0x391c76=[];if(!_0x20f362||_0x147260<=0x0)return _0x391c76;let _0x3da84c=0x1,_0x24b8be=0x0;while(_0x24b8be<_0x20f362['length']){const _0x520371=Math['min'](_0x24b8be+_0x147260,_0x20f362['length']),_0x4fa609=_0x20f362[_0x5e77f7(0x30b)](_0x24b8be,_0x520371),_0x4792e4=_0x5e77f7(0x2a1)+bookName+',\x20条目:\x20'+entryName+_0x5e77f7(0x2aa)+_0x3da84c+_0x5e77f7(0x2ac),_0x4ad284=getTagForSource(_0x5e77f7(0x310)),_0x33f9a9='<'+_0x4ad284+'>\x0a'+_0x4792e4+'\x0a'+_0x4fa609+'\x0a</'+_0x4ad284+'>';_0x391c76[_0x5e77f7(0x2db)]({'text':_0x33f9a9,'metadata':{'source':_0x5e77f7(0x310),'sourceName':bookName+':\x20'+entryName,'bookName':bookName,'entryName':entryName,'part':_0x3da84c,'timestamp':new Date()[_0x5e77f7(0x297)]()}}),_0x3da84c++,_0x24b8be+=_0x147260-_0x4ea10e;if(_0x24b8be>=_0x20f362['length'])break;}return _0x391c76;}function _chunkForManual(_0x4844a4,_0x3d3f57){const _0x59e792=_0x1f6706,{chunkSize:_0x261ddf,overlap:_0x39f133}=settings['advanced'],{sourceName:sourceName=_0x59e792(0x302)}=_0x3d3f57,_0x138fa9=[];if(!_0x4844a4||_0x261ddf<=0x0)return _0x138fa9;const _0x5b5c4c=new Date(),_0x4a8f3e=_0x5b5c4c['toLocaleString'](_0x59e792(0x2eb));let _0x496b54=0x1,_0x1adeef=0x0;while(_0x1adeef<_0x4844a4[_0x59e792(0x21f)]){const _0xc16b9f=Math[_0x59e792(0x28f)](_0x1adeef+_0x261ddf,_0x4844a4[_0x59e792(0x21f)]),_0x53f507=_0x4844a4[_0x59e792(0x30b)](_0x1adeef,_0xc16b9f),_0x4c8b29=_0x59e792(0x2a1)+sourceName+',\x20向量化录入时间:\x20'+_0x4a8f3e+_0x59e792(0x2aa)+_0x496b54+_0x59e792(0x2ac),_0x4b6ff3=getTagForSource(_0x59e792(0x318)),_0x335fb0='<'+_0x4b6ff3+'>\x0a'+_0x4c8b29+'\x0a'+_0x53f507+_0x59e792(0x228)+_0x4b6ff3+'>';_0x138fa9[_0x59e792(0x2db)]({'text':_0x335fb0,'metadata':{'source':_0x59e792(0x318),'sourceName':sourceName,'part':_0x496b54,'timestamp':_0x5b5c4c['toISOString']()}}),_0x496b54++,_0x1adeef+=_0x261ddf-_0x39f133;if(_0x1adeef>=_0x4844a4['length'])break;}return _0x138fa9;}import{getCollectionId as _0x471883,getCharacterName,getChatId}from'./utils/context-utils.js';async function getCollectionId(){const _0x2be8c9=_0x1f6706;if(lockedCollectionId)return lockedCollectionId;const _0x2b3e4f=settings[_0x2be8c9(0x1f8)][_0x2be8c9(0x1fd)];return _0x2b3e4f?getChatId():await _0x471883();}function _0x213b(){const _0x9cf3b0=['...)','\x20时发生网络错误:','知识库【','[翰林院-日志]\x20没有启用的新知识库，尝试查询旧版单体宝库...','1342698iLmOeW','insertVectors\x20必须接收一个有效的\x20collectionId\x20参数。','[翰林院-日志]\x20清空宝库API错误:','queryPreprocessing','rerank','[翰林院-迁移]\x20用户确认迁移，正在处理旧宝库:\x20','\x20池精确提取\x20','map','无法确定要清空的目标宝库。','[翰林院-自动凝识]\x20处理分桶:\x20','统一检索部分的Rerank已完成','凝识之权未开启','\x20个知识块，准备入库。','\x20返回\x20','priorityRetrieval','chat','is_user','[翰林院-核心]\x20准备为任务\x20\x22','[翰林院-核心]\x20尝试删除一个不存在的知识库:\x20','reranked','[翰林院-户口普查]\x20检测到旧版设置\x20(V','对话记录小总结','\x5c$&','\x20条内容。','start','[翰林院-核心]\x20已创建并锁定知识库:\x20','[翰林院-日志]\x20独立聊天记忆模式开启，聊天\x20','match','聊天记录','[翰林院-日志]\x20开始获取所有知识库的向量总数...',')，开始强制重分类所有知识库...','未知条目','3813438ReqIyl','】已成功移动到','[翰林院-Rerank]\x20开始外部API重排序...','toString','warn','all','[翰林院-核心]\x20检测到同名知识库\x20\x22','[翰林院-核心]\x20成功删除知识库\x20','世界书条目','\x20不存在，计为\x200。','输入文本为空','[翰林院-自动凝识]\x20分桶\x20','json','\x20条消息分解为\x20','hashes','[翰林院-核心]\x20清空向量集合\x20','[翰林院-日志]\x20发送到\x20/api/vector/purge\x20的请求体:','[翰林院-核心]\x20凝识任务已锁定知识库:\x20','exclusionRules','[翰林院]\x20进入传统处理流程...','HANLINYUAN_RAG_LOREBOOK','[索引:\x20','sjshu','指定知识库','hanlinyuanRagProcessor','知识库\x20\x22','\x20列表API时出现问题\x20(状态:\x20','range','findIndex','extensionSettings','key','查询集合\x20','\x20的知识库。','5369535WouEzr','\x20->\x20','[翰林院]\x20常规池处理完毕，产出\x20','name','[翰林院-核心]\x20成功插入\x20','local',')\x20的状态已切换为:\x20','\x22\x20创建专属知识库...','，将清空集合:\x20','settingsVersion','tiaomu','[翰林院-日志]\x20统计目标集合ID:\x20','send_date','includes','startsWith','metadata','reduce','superSortEnabled','aborted','[翰林院-核心]\x20processCondensation\x20失败:','翰林院忆识核心已启动\x20(V5.3-归档版)，已注册到全局\x20hanlinyuanRagProcessor\x20对象。','[翰林院-计数]\x20在作用域\x20\x27','[翰林院]\x20优先组\x20','HANLINYUAN_RAG_GRAPH','mes','global','MESSAGE_RECEIVED','[翰林院-Rerank]\x20元数据加权排序完成。','error','min','在源作用域\x20\x27','saveSettingsDebounced','[翰林院-日志]\x20没有可供查询的知识库，查询中止。','toLocaleString','[翰林院]\x20已从\x20','聊天记录\x20#','小说:\x20','toISOString','\x20条结果。','trim','saveProgress','宏史卷总结','task_','翰林院通告','filter','\x27的文本分割成\x20','unknown','[来源:\x20','[翰林院]\x20已为来源\x20\x27','vector','enabled','knowledgeBases','chat_history','scope','5HzIQcY','世界书',',\x20第','tagExtractionEnabled','部分]','info','top_n','forEach','preserveFloors','[翰林院-配置]\x20','then','[翰林院-日志]\x20统计集合\x20','legacy','AbortError','matchThreshold','webllm','[翰林院-迁移]\x20旧宝库已清空。','chapter',':\x20自动凝识\x20(','slice','[翰林院]\x20经过预处理后，最终检索文本为空，注入中止。','[翰林院-核心]\x20知识库\x20','find','notify','flat','count','\x20(ID:\x20','核心未初始化','replace','<mark\x20class=\x22search-highlight\x22>$1</mark>','max','\x20(集合ID:\x20','injection_','[翰林院-日志]\x20查询白名单已提供，将查询\x20','status','[翰林院-日志]\x20清空宝库API调用成功。','1811728ZGsMWI','position','[翰林院-自动凝识]\x20触发自动凝识:\x20','未知角色','[翰林院]\x20常规组返回\x20','删除知识库失败，未能清空后端数据。','[翰林院-日志]\x20/api/vector/purge\x20响应状态:\x20','sources','comment','[翰林院-迁移]\x20用户取消了迁移操作。','\x22，将数据合并入库。','[翰林院]\x20开始处理常规池...','所有启用库','advanced','hybrid_alpha','push','/api/vector/insert','end','对话记录大总结','[翰林院-日志]\x20开始清空宝库...','[翰林院-核心]\x20已锁定忆识宝库ID:\x20','[翰林院-修复]\x20最终返回数组长度:\x20','/api/vector/list','novel','values','正在智能分块...','小说:','文本块和向量数量不匹配','injection_lorebook','\x20个已启用的全局知识库。','[翰林院]\x20未找到来源\x20\x27','zh-CN','个库)','user','warning','435389aHasNd','test','[翰林院-配置]\x20为旧版知识库\x20','source','_global','HANLINYUAN_RAG_NOVEL','\x22\x20已从\x20[','embeddings','autoCondense','[翰林院-核心]\x20将来源\x27','\x20记录凝识范围:\x20','content','sort','string','tags','[翰林院-预处理]\x20最终用于检索的文本:\x20\x22','\x20楼\x20(ChatID:\x20','score','index','手动录入','[翰林院-核心]\x20已为宝库\x20','[翰林院-日志]\x20正在查询知识库:\x20','sousuo','(已锁定:\x20','[翰林院-日志]\x20无法获取当前聊天ID，跳过聊天宝库。','[翰林院-预处理]\x20原始检索文本:\x20\x22','log','bianzhuan','substring','[翰林院-日志]\x20未能为知识库\x20','message','知识库名称不能为空。','[翰林院-核心]\x20ingestTextToHanlinyuan\x20失败:','lorebook','[翰林院-日志]\x20查询知识库\x20','[翰林院-日志]\x20添加\x20','oldId','[翰林院-V13\x20修复]\x20重建元数据后，知识库\x20','\x27\x20的注入设置，跳过处理。','微言录总结','_history','manual','手动录入:\x20','batchSize','floor','2129817wxsgJk','condensation','[翰林院]\x20最终准备注入\x20','\x20个特定知识库。','volume','getRequestHeaders','add','在作用域\x20\x27','join','autoCondenseProgress','stringify','旧版宝库\x20(Legacy)','\x20条初步结果。','知识库名称不能为空','condensationHistory','用户取消了迁移操作','未知来源','queryMessageCount','final_score','[翰林院-自动凝识]\x20执行失败:','keys','split','8GGprDb','[翰林院-Rerank]\x20外部Rerank失败，将仅使用内部加权。','第1卷','\x20个块。','[翰林院-核心]\x20准备删除知识库\x20','检测到旧版数据。此操作将把旧数据迁移到新格式，过程不可逆，是否继续？','检测到旧版数据，正在进行一次性户口普查...','HANLINYUAN_RAG_MANUAL','\x27\x20中未找到ID为\x20','[翰林院]\x20检测到索引引用，已增强检索词:\x20','[翰林院-日志]\x20独立聊天记忆模式开启...','success','\x20个条目。','toLowerCase','聊天记录:\x20','entryName','\x20处理失败，中止后续处理。','第1章','retrieval','[翰林院-户口普查]\x20普查完成，正在保存更新后的户籍...',',\x20第1卷,\x20第1章,\x20第','\x20不存在，返回空数组。','sourceName','independentChatMemoryEnabled','bookName','/api/vector/query','[翰林院-日志]\x20统一角色卡模式开启...','忆识存入API错误\x20','part','[翰林院-核心]\x20已为角色\x20','rerank_score','\x27\x20注入\x20','POST','\x20(范围:\x20','hanlinyuan-rag-core','[翰林院-日志]\x20忆识存入API错误:','[翰林院-核心]\x20聊天记录凝识完成，成功插入\x20','[翰林院-日志]\x20无法确定要清空的目标集合ID。','HANLINYUAN_RAG_CHAT','clearJob','\x20及其向量数据。','messageTypes','[翰林院]\x20检索或注入时发生错误:','text','\x20-\x20楼层\x20#','No\x20messages\x20to\x20process.','original_index','\x20失败:','results','移动失败：没有当前角色，无法移入局部知识库。','895006ZYDUdG','rearrangeChat','\x22\x20已删除。','Rerank失败:\x20','data','isArray','正在处理\x20','length','[翰林院-预处理]\x20处理后检索文本:\x20\x22','object','random','_text}}','[来源:\x20聊天记录,\x20楼层:\x20#','getContext','小说录入','[翰林院]\x20创建优先查询组:\x20','\x0a</','[翰林院-Rerank]\x20开始元数据加权最终排序...','owner',']\x20更正为\x20[','未知小说'];_0x213b=function(){return _0x9cf3b0;};return _0x213b();}async function toggleSessionLock(){return lockedCollectionId?(lockedCollectionId=null,![]):(lockedCollectionId=await _0x471883(),!![]);}function isSessionLocked(){return lockedCollectionId!==null;}function getLockedSessionInfo(){const _0x5c0c53=_0x1f6706;if(!lockedCollectionId)return null;return{'id':lockedCollectionId,'name':_0x5c0c53(0x306)+lockedCollectionId['substring'](0x0,0x8)+_0x5c0c53(0x22d)};}function getLocalKnowledgeBases(){const _0x322772=_0x1f6706,_0x1552c=getCharacterStableId();return!settings[_0x322772(0x2a5)][_0x1552c]&&(settings[_0x322772(0x2a5)][_0x1552c]={}),settings[_0x322772(0x2a5)][_0x1552c];}function getGlobalKnowledgeBases(){const _0x566db6=_0x1f6706;return!settings[_0x566db6(0x2a5)][GLOBAL_SCOPE_ID]&&(settings[_0x566db6(0x2a5)][GLOBAL_SCOPE_ID]={}),settings[_0x566db6(0x2a5)][GLOBAL_SCOPE_ID];}function getKnowledgeBases(){const _0x3f3dcf=getLocalKnowledgeBases(),_0x2be468=getGlobalKnowledgeBases();return{..._0x2be468,..._0x3f3dcf};}function addKnowledgeBase(_0x4b481f,_0x1f080a=_0x1f6706(0x318)){const _0x1ffcbf=_0x1f6706;if(!_0x4b481f||!_0x4b481f['trim']())throw new Error(_0x1ffcbf(0x329));const _0x252f30=getCharacterStableId(),_0x3b4605=getLocalKnowledgeBases(),_0x39c20b=_0x1ffcbf(0x29c)+Date['now']()+'_'+Math[_0x1ffcbf(0x222)]()[_0x1ffcbf(0x254)](0x24)[_0x1ffcbf(0x30b)](0x2,0x9),_0x58c308={'id':_0x39c20b,'name':_0x4b481f[_0x1ffcbf(0x299)](),'enabled':!![],'createdAt':new Date()[_0x1ffcbf(0x297)](),'owner':_0x252f30,'source':_0x1f080a};return _0x3b4605[_0x39c20b]=_0x58c308,saveSettings(),console[_0x1ffcbf(0x309)](_0x1ffcbf(0x203)+_0x252f30+'\x20添加新知识库:\x20'+_0x4b481f+_0x1ffcbf(0x2c2)+_0x39c20b+')'),_0x58c308;}async function removeKnowledgeBase(_0x216b7d,_0x44a1d5){const _0x26632e=_0x1f6706,_0xe864b=getCharacterStableId(),_0x12195b=_0x44a1d5===_0x26632e(0x28b)?getGlobalKnowledgeBases():getLocalKnowledgeBases(),_0x14f67d=_0x12195b[_0x216b7d],_0x9f17ae=_0x14f67d?.[_0x26632e(0x275)]||_0x216b7d;if(!_0x14f67d){console[_0x26632e(0x255)](_0x26632e(0x243)+_0x216b7d+_0x26632e(0x207)+_0x44a1d5+')');return;}const _0x4ac4e6=_0x44a1d5===_0x26632e(0x28b)?_0x14f67d['owner']||GLOBAL_SCOPE_ID:_0xe864b,_0x478d81=_0x4ac4e6+'_'+_0x216b7d;console[_0x26632e(0x309)](_0x26632e(0x336)+_0x216b7d+_0x26632e(0x27a)+_0x478d81);const _0x3faade=await purgeStorage(_0x478d81);_0x3faade?(delete _0x12195b[_0x216b7d],saveSettings(),console[_0x26632e(0x309)](_0x26632e(0x258)+_0x216b7d+_0x26632e(0x20e)),toastr['success'](_0x26632e(0x26a)+_0x9f17ae+_0x26632e(0x21a))):(console[_0x26632e(0x28e)](_0x26632e(0x260)+_0x478d81+'\x20失败，删除操作中止。'),toastr[_0x26632e(0x28e)](_0x26632e(0x2d1)));}function toggleKnowledgeBase(_0x427676,_0x1a5963){const _0x29521f=_0x1f6706,_0x274955=_0x1a5963===_0x29521f(0x28b)?getGlobalKnowledgeBases():getLocalKnowledgeBases();_0x274955[_0x427676]&&(_0x274955[_0x427676][_0x29521f(0x2a4)]=!_0x274955[_0x427676][_0x29521f(0x2a4)],saveSettings(),console[_0x29521f(0x309)](_0x29521f(0x2bd)+_0x427676+_0x29521f(0x207)+_0x1a5963+_0x29521f(0x278)+(_0x274955[_0x427676][_0x29521f(0x2a4)]?'启用':'禁用')));}function generateHash(_0x21435d){const _0x574c80=_0x1f6706;let _0x45e597=0x0;for(let _0x55bbc5=0x0;_0x55bbc5<_0x21435d[_0x574c80(0x21f)];_0x55bbc5++){const _0xa3b833=_0x21435d['charCodeAt'](_0x55bbc5);_0x45e597=(_0x45e597<<0x5)-_0x45e597+_0xa3b833,_0x45e597=_0x45e597&_0x45e597;}return Math['abs'](_0x45e597)[_0x574c80(0x254)](0x24);}async function queryVectors(_0x530dfc,_0x1f83af={}){const _0x479210=_0x1f6706,{includeBases:includeBases=null}=_0x1f83af;let _0x19392b=[];console[_0x479210(0x309)]('[翰林院-日志]\x20开始向量查询...\x20(目标:\x20'+(includeBases?_0x479210(0x268):_0x479210(0x2d8))+')');if(includeBases)_0x19392b=includeBases,console[_0x479210(0x309)](_0x479210(0x2c9)+_0x19392b[_0x479210(0x21f)]+_0x479210(0x31f));else{if(settings['retrieval']['independentChatMemoryEnabled']){console[_0x479210(0x309)](_0x479210(0x33c));const _0x1449e0=getChatId();_0x1449e0?(console[_0x479210(0x309)]('[翰林院-日志]\x20添加当前聊天宝库:\x20'+_0x1449e0),_0x19392b[_0x479210(0x2db)]({'id':_0x1449e0,'name':'当前聊天\x20('+_0x1449e0+')','scope':_0x479210(0x240)})):console[_0x479210(0x255)](_0x479210(0x307));const _0x3bc172=getGlobalKnowledgeBases(),_0x320b94=Object[_0x479210(0x2e4)](_0x3bc172)[_0x479210(0x29e)](_0x30ec32=>_0x30ec32[_0x479210(0x2a4)]);_0x320b94[_0x479210(0x21f)]>0x0&&(console[_0x479210(0x309)](_0x479210(0x312)+_0x320b94['length']+_0x479210(0x2e9)),_0x19392b['push'](..._0x320b94[_0x479210(0x238)](_0x3b8a45=>({..._0x3b8a45,'scope':'global'}))));}else{console[_0x479210(0x309)](_0x479210(0x200));const _0x7e8fd=getLocalKnowledgeBases(),_0x5c4c36=getGlobalKnowledgeBases(),_0x5bafe3=Object['values'](_0x7e8fd)[_0x479210(0x29e)](_0x5ee983=>_0x5ee983[_0x479210(0x2a4)]),_0x51b1a1=Object[_0x479210(0x2e4)](_0x5c4c36)['filter'](_0xa2ada6=>_0xa2ada6[_0x479210(0x2a4)]);_0x19392b['push'](..._0x5bafe3[_0x479210(0x238)](_0x54eb60=>({..._0x54eb60,'scope':_0x479210(0x277)}))),_0x19392b['push'](..._0x51b1a1[_0x479210(0x238)](_0x15ff92=>({..._0x15ff92,'scope':_0x479210(0x28b)})));if(_0x19392b[_0x479210(0x21f)]===0x0){console[_0x479210(0x309)](_0x479210(0x230));const _0xb635fe=await _0x471883();_0xb635fe&&_0x19392b[_0x479210(0x2db)]({'id':null,'name':_0x479210(0x327),'scope':'legacy'});}}}if(_0x19392b[_0x479210(0x21f)]===0x0)return console[_0x479210(0x309)](_0x479210(0x292)),[];const _0x543971=(await getEmbeddings([_0x530dfc]))[0x0];if(!_0x543971)throw new Error('未能生成查询向量。');const _0x49f3ae=_0x19392b[_0x479210(0x238)](_0x2f4c07=>_executeQueryForBase(_0x2f4c07,_0x530dfc,_0x543971)),_0x166a43=await Promise[_0x479210(0x256)](_0x49f3ae);let _0x40a573=_0x166a43['flat']();console[_0x479210(0x309)]('[翰林院-日志]\x20所有知识库查询完毕，共获得\x20'+_0x40a573[_0x479210(0x21f)]+_0x479210(0x328));const _0x4ea8ef=[],_0x7646e3=new Set();for(const _0xaba49d of _0x40a573){if(_0xaba49d&&typeof _0xaba49d===_0x479210(0x221)&&_0xaba49d[_0x479210(0x211)]&&typeof _0xaba49d[_0x479210(0x211)]===_0x479210(0x2fc)){const _0xb11bf3=_0xaba49d[_0x479210(0x211)][_0x479210(0x299)]();_0xb11bf3[_0x479210(0x21f)]>0x0&&!_0x7646e3['has'](_0xb11bf3)&&(_0x7646e3[_0x479210(0x322)](_0xb11bf3),_0x4ea8ef[_0x479210(0x2db)](_0xaba49d));}}console['log']('[翰林院-日志]\x20去重后剩余\x20'+_0x4ea8ef[_0x479210(0x21f)]+_0x479210(0x298)),_0x4ea8ef[_0x479210(0x2fb)]((_0x4499e1,_0x471826)=>(_0x471826['score']||0x0)-(_0x4499e1[_0x479210(0x300)]||0x0));const _0x4d59ad=[..._0x4ea8ef];return console[_0x479210(0x309)](_0x479210(0x2e1)+_0x4d59ad[_0x479210(0x21f)]),console[_0x479210(0x309)]('[翰林院-修复]\x20最终返回数组样本:',JSON['stringify'](_0x4d59ad[_0x479210(0x2bb)](0x0,0x1),null,0x2)),_0x4d59ad;}async function _executeQueryForBase(_0x4a7ac1,_0x1c6a38,_0x5dda0f=null){const _0x17176c=_0x1f6706,_0x2b38b0=getCharacterStableId();let _0x4e2185;switch(_0x4a7ac1[_0x17176c(0x2a7)]){case _0x17176c(0x2b4):_0x4e2185=await _0x471883();break;case _0x17176c(0x240):_0x4e2185=_0x4a7ac1['id'];break;case _0x17176c(0x28b):const _0x46d4b8=_0x4a7ac1[_0x17176c(0x22a)]||GLOBAL_SCOPE_ID;_0x4e2185=_0x46d4b8+'_'+_0x4a7ac1['id'];break;case _0x17176c(0x277):default:_0x4e2185=_0x2b38b0+'_'+_0x4a7ac1['id'];break;}if(!_0x4e2185)return[];console[_0x17176c(0x309)](_0x17176c(0x304)+_0x4a7ac1[_0x17176c(0x275)]+_0x17176c(0x2c2)+_0x4e2185+')');const _0x41793f=_0x5dda0f||(await getEmbeddings([_0x1c6a38]))[0x0];if(!_0x41793f)return console[_0x17176c(0x28e)](_0x17176c(0x30c)+_0x4e2185+'\x20生成查询向量。'),[];const _0x25078e={'collectionId':_0x4e2185,'searchText':_0x1c6a38,'topK':settings[_0x17176c(0x2d9)]['maxResults'],'threshold':settings[_0x17176c(0x2d9)][_0x17176c(0x2b6)],'source':_0x17176c(0x2b7),'embeddings':{[_0x1c6a38]:_0x41793f}};try{const _0x2495f0=await fetch(_0x17176c(0x1ff),{'method':_0x17176c(0x206),'headers':context[_0x17176c(0x321)](),'body':JSON[_0x17176c(0x326)](_0x25078e)});if(!_0x2495f0['ok']){const _0x40bf0e=await _0x2495f0['text']();return console[_0x17176c(0x28e)](_0x17176c(0x311)+_0x4e2185+_0x17176c(0x215),_0x40bf0e),[];}const _0x453d9e=await _0x2495f0[_0x17176c(0x25d)]();let _0x43eaf4=[];if(Array['isArray'](_0x453d9e))_0x43eaf4=_0x453d9e;else{if(_0x453d9e&&_0x453d9e[_0x17176c(0x281)]&&Array['isArray'](_0x453d9e[_0x17176c(0x281)]))_0x43eaf4=_0x453d9e['metadata'];else{if(_0x453d9e&&_0x453d9e[_0x17176c(0x216)]&&Array[_0x17176c(0x21d)](_0x453d9e[_0x17176c(0x216)]))_0x43eaf4=_0x453d9e[_0x17176c(0x216)];else _0x453d9e&&_0x453d9e[_0x17176c(0x21c)]&&Array[_0x17176c(0x21d)](_0x453d9e[_0x17176c(0x21c)])&&(_0x43eaf4=_0x453d9e[_0x17176c(0x21c)]);}}const _0x2dbc91=_0x43eaf4[_0x17176c(0x238)](_0x55cb7=>{const _0x314032=_0x17176c;if(!_0x55cb7||typeof _0x55cb7[_0x314032(0x211)]!==_0x314032(0x2fc))return null;const _0x19240c={'source':_0x314032(0x2a0),'sourceName':'未知'},_0x43c651=_0x55cb7[_0x314032(0x211)][_0x314032(0x24c)](/^<([^>]+)>/),_0x402418=_0x43c651?_0x43c651[0x1]:'';switch(_0x402418){case _0x314032(0x24d):_0x19240c[_0x314032(0x2f2)]=_0x314032(0x2a6);const _0x5a1daf=_0x55cb7['text'][_0x314032(0x24c)](/楼层:\s*#(\d+),\s*第(\d+)部分/);_0x5a1daf&&_0x5a1daf[0x1]&&_0x5a1daf[0x2]&&(_0x19240c[_0x314032(0x31b)]=parseInt(_0x5a1daf[0x1],0xa),_0x19240c[_0x314032(0x202)]=parseInt(_0x5a1daf[0x2],0xa),_0x19240c[_0x314032(0x1fc)]='聊天记录\x20#'+_0x19240c[_0x314032(0x31b)]);break;case _0x314032(0x2a9):_0x19240c[_0x314032(0x2f2)]=_0x314032(0x310);const _0x339904=_0x55cb7[_0x314032(0x211)][_0x314032(0x24c)](/\[来源:\s*([^,]+),\s*条目:\s*([^,]+),\s*第(\d+)部分\]/);_0x339904&&_0x339904[0x1]&&_0x339904[0x2]&&_0x339904[0x3]&&(_0x19240c[_0x314032(0x1fe)]=_0x339904[0x1][_0x314032(0x299)](),_0x19240c[_0x314032(0x1f5)]=_0x339904[0x2]['trim'](),_0x19240c[_0x314032(0x202)]=parseInt(_0x339904[0x3],0xa),_0x19240c[_0x314032(0x1fc)]=_0x19240c[_0x314032(0x1fe)]+':\x20'+_0x19240c['entryName']);break;case _0x314032(0x302):_0x19240c['source']=_0x314032(0x318);const _0x56b027=_0x55cb7[_0x314032(0x211)][_0x314032(0x24c)](/\[来源:\s*([^,]+),.*第(\d+)部分\]/);_0x56b027&&_0x56b027[0x1]&&_0x56b027[0x2]&&(_0x19240c['sourceName']=_0x56b027[0x1][_0x314032(0x299)](),_0x19240c[_0x314032(0x202)]=parseInt(_0x56b027[0x2],0xa));break;case _0x314032(0x226):_0x19240c['source']=_0x314032(0x2e3);const _0x4487fe=_0x55cb7[_0x314032(0x211)][_0x314032(0x24c)](/\[来源:\s*([^,]+),\s*([^,]+),\s*([^,]+),\s*([^\]]+)\]/);_0x4487fe&&(_0x19240c['sourceName']=_0x4487fe[0x1][_0x314032(0x299)](),_0x19240c[_0x314032(0x320)]=_0x4487fe[0x2][_0x314032(0x299)](),_0x19240c[_0x314032(0x2b9)]=_0x4487fe[0x3][_0x314032(0x299)](),_0x19240c['section']=_0x4487fe[0x4]['trim']());break;}return{..._0x55cb7,'score':_0x55cb7['score']||0x1,'metadata':_0x19240c};})[_0x17176c(0x29e)](Boolean);return console[_0x17176c(0x309)](_0x17176c(0x314)+_0x4a7ac1[_0x17176c(0x275)]+_0x17176c(0x23e)+_0x2dbc91['length']+_0x17176c(0x298)),_0x2dbc91;}catch(_0x537beb){return console[_0x17176c(0x28e)](_0x17176c(0x311)+_0x4e2185+_0x17176c(0x22e),_0x537beb),[];}}async function insertVectors(_0x19f92c,_0x232398=null,_0x5dd223){const _0x357cfd=_0x1f6706;if(!_0x5dd223)throw new Error(_0x357cfd(0x232));if(_0x19f92c['length']===0x0)return{'success':!![],'count':0x0};const _0x5b8bde=_0x19f92c[_0x357cfd(0x238)]((_0x40a9e2,_0x5be5b2)=>({'hash':generateHash(_0x40a9e2['text']+Date['now']()+_0x5be5b2),'text':_0x40a9e2[_0x357cfd(0x211)],'metadata':_0x40a9e2[_0x357cfd(0x281)]||{'source':_0x357cfd(0x2a0),'timestamp':new Date()[_0x357cfd(0x297)]()}})),_0x4ce55d=_0x5b8bde[_0x357cfd(0x282)]((_0x558ebb,_0x4eb1db,_0x192ad2)=>{const _0x431819=_0x357cfd;return _0x558ebb[_0x4eb1db['text']]=_0x19f92c[_0x192ad2][_0x431819(0x2a3)],_0x558ebb;},{}),_0x484cca={'collectionId':_0x5dd223,'items':_0x5b8bde,'source':_0x357cfd(0x2b7),'embeddings':_0x4ce55d},_0x3a66c8=await fetch(_0x357cfd(0x2dc),{'method':_0x357cfd(0x206),'headers':context[_0x357cfd(0x321)](),'body':JSON['stringify'](_0x484cca),'signal':_0x232398});if(!_0x3a66c8['ok']){const _0x371105=await _0x3a66c8['text']();console[_0x357cfd(0x28e)](_0x357cfd(0x209),_0x371105);throw new Error(_0x357cfd(0x201)+_0x3a66c8[_0x357cfd(0x2ca)]+':\x20'+_0x371105);}return{'success':!![],'count':_0x5b8bde[_0x357cfd(0x21f)]};}async function getVectorCount(_0x34ba72=null,_0x3e0214=_0x1f6706(0x277)){const _0x14f1dd=_0x1f6706,_0x13e473=getCharacterStableId();if(_0x34ba72){const _0x3e0151=_0x3e0214===_0x14f1dd(0x28b)?getGlobalKnowledgeBases():getLocalKnowledgeBases(),_0xfccb59=_0x3e0151[_0x34ba72];if(!_0xfccb59)return console['warn'](_0x14f1dd(0x287)+_0x3e0214+_0x14f1dd(0x33a)+_0x34ba72+_0x14f1dd(0x271)),0x0;const _0x2f8e2f=_0x3e0214==='global'?_0xfccb59['owner']||GLOBAL_SCOPE_ID:_0x13e473,_0x5f1a4f=_0x2f8e2f+'_'+_0x34ba72;return await countVectorsInCollection(_0x5f1a4f);}else{if(settings[_0x14f1dd(0x1f8)][_0x14f1dd(0x1fd)]){const _0x2adb80=getChatId();if(!_0x2adb80)return 0x0;const _0xeec37f=await countVectorsInCollection(_0x2adb80);return console[_0x14f1dd(0x309)](_0x14f1dd(0x24b)+_0x2adb80+'\x20的向量总数:\x20'+_0xeec37f),_0xeec37f;}console['log'](_0x14f1dd(0x24e));const _0x451774=Object[_0x14f1dd(0x2e4)](getLocalKnowledgeBases()),_0x27d514=Object['values'](getGlobalKnowledgeBases()),_0x41b3bf=[];_0x451774['forEach'](_0x546a9b=>{const _0x1b702f=_0x14f1dd,_0x2fea25=_0x13e473+'_'+_0x546a9b['id'];_0x41b3bf[_0x1b702f(0x2db)](countVectorsInCollection(_0x2fea25));}),_0x27d514[_0x14f1dd(0x2af)](_0x53c48f=>{const _0x507320=_0x14f1dd,_0x164f86=_0x53c48f[_0x507320(0x22a)]||GLOBAL_SCOPE_ID,_0x4fb19f=_0x164f86+'_'+_0x53c48f['id'];_0x41b3bf[_0x507320(0x2db)](countVectorsInCollection(_0x4fb19f));});const _0x1403a7=await _0x471883();_0x41b3bf[_0x14f1dd(0x2db)](countVectorsInCollection(_0x1403a7));const _0x9a4cba=await Promise[_0x14f1dd(0x256)](_0x41b3bf),_0x5e98e0=_0x9a4cba['reduce']((_0x239c7c,_0x250402)=>_0x239c7c+_0x250402,0x0);return console['log']('[翰林院-日志]\x20所有知识库统计完成，总向量数:\x20'+_0x5e98e0),_0x5e98e0;}}async function countVectorsInCollection(_0x25af8e){const _0x19386f=_0x1f6706;if(!_0x25af8e)return 0x0;console[_0x19386f(0x309)](_0x19386f(0x27d)+_0x25af8e);const _0x4de6e7={'collectionId':_0x25af8e,'source':_0x19386f(0x2b7),'embeddings':{}};try{const _0x20b882=await fetch(_0x19386f(0x2e2),{'method':'POST','headers':context[_0x19386f(0x321)](),'body':JSON['stringify'](_0x4de6e7)});if(!_0x20b882['ok']){if(_0x20b882['status']===0x194)console['log']('[翰林院-日志]\x20集合\x20'+_0x25af8e+_0x19386f(0x25a));else{const _0x5ab115=await _0x20b882['text']();console[_0x19386f(0x255)]('[翰林院-日志]\x20获取集合\x20'+_0x25af8e+_0x19386f(0x26b)+_0x20b882[_0x19386f(0x2ca)]+'):',_0x5ab115);}return 0x0;}const _0x440e91=await _0x20b882[_0x19386f(0x25d)]();let _0xb1faa5=0x0;if(Array[_0x19386f(0x21d)](_0x440e91))_0xb1faa5=_0x440e91[_0x19386f(0x21f)];else _0x440e91&&_0x440e91[_0x19386f(0x25f)]&&(_0xb1faa5=_0x440e91[_0x19386f(0x25f)][_0x19386f(0x21f)]);return _0xb1faa5;}catch(_0x41f1e6){return console[_0x19386f(0x28e)](_0x19386f(0x2b3)+_0x25af8e+_0x19386f(0x22e),_0x41f1e6),0x0;}}async function purgeStorage(_0x4ab8a4=null){const _0x43381c=_0x1f6706;console[_0x43381c(0x309)](_0x43381c(0x2df));const _0x4b68ee=_0x4ab8a4||await getCollectionId();if(!_0x4b68ee)return console[_0x43381c(0x28e)](_0x43381c(0x20b)),toastr[_0x43381c(0x28e)](_0x43381c(0x239)),![];console[_0x43381c(0x309)]('[翰林院-日志]\x20清空目标集合ID:\x20'+_0x4b68ee);const _0x44cd48={'collectionId':_0x4b68ee};console['log'](_0x43381c(0x261),JSON[_0x43381c(0x326)](_0x44cd48,null,0x2));const _0x158a24=await fetch('/api/vector/purge',{'method':'POST','headers':context[_0x43381c(0x321)](),'body':JSON[_0x43381c(0x326)](_0x44cd48)});console[_0x43381c(0x309)](_0x43381c(0x2d2)+_0x158a24[_0x43381c(0x2ca)]);if(!_0x158a24['ok']){const _0x7d3ebc=await _0x158a24[_0x43381c(0x211)]();console['error'](_0x43381c(0x233),_0x7d3ebc);}else console[_0x43381c(0x309)](_0x43381c(0x2cb));return _0x158a24['ok'];}function getMessagesForCondensation(_0x147d0b=null){const _0xc6a24a=_0x1f6706;if(!settings['condensation'][_0xc6a24a(0x2a4)])return showNotification(_0xc6a24a(0x23c),_0xc6a24a(0x2ee)),[];const {layerStart:_0xcee7c5,layerEnd:_0x2f1cd3}=settings[_0xc6a24a(0x31d)],_0x37acd5=_0x147d0b||settings['condensation'][_0xc6a24a(0x20f)],_0x2d1211=context[_0xc6a24a(0x240)][_0xc6a24a(0x21f)],_0x1337ab=Math[_0xc6a24a(0x2c6)](0x0,_0xcee7c5-0x1),_0x4ecbd3=_0x2f1cd3===0x0||_0x2f1cd3>_0x2d1211?_0x2d1211:Math[_0xc6a24a(0x28f)](_0x2d1211,_0x2f1cd3),_0x2a749d=context[_0xc6a24a(0x240)][_0xc6a24a(0x2bb)](_0x1337ab,_0x4ecbd3);return _0x2a749d['filter'](_0x4256ec=>{const _0x146c72=_0xc6a24a,_0x4c844a=_0x4256ec['is_user']===!![],_0x53be1f=_0x4256ec[_0x146c72(0x241)]===![];if(!_0x4256ec[_0x146c72(0x28a)]||!_0x4256ec[_0x146c72(0x28a)][_0x146c72(0x299)]())return![];return _0x37acd5[_0x146c72(0x2ed)]&&_0x4c844a||_0x37acd5['ai']&&_0x53be1f;});}async function processCondensation(_0x26cb28,_0x7da777=()=>{},_0x543742=null,_0x270d61=null){const _0x51f32a=_0x1f6706;if(!_0x26cb28||_0x26cb28[_0x51f32a(0x21f)]===0x0)return{'success':![],'error':_0x51f32a(0x213)};try{let _0x3643a5,_0x3b24c0;const _0x28899e=getCharacterName()||_0x51f32a(0x2cf);if(_0x270d61)_0x3643a5=_0x270d61;else{if(_0x543742){const _0x7dbb66=_0x543742[_0x51f32a(0x249)]??'?',_0x168145=_0x543742[_0x51f32a(0x2dd)]===0x0?'末':_0x543742[_0x51f32a(0x2dd)]??'?';_0x3643a5=_0x28899e+':\x20'+_0x7dbb66+'楼-'+_0x168145+'楼';}else{const _0x4ed69c=new Date()['toLocaleString']('zh-CN',{'hour12':![]});_0x3643a5=_0x51f32a(0x1f4)+_0x4ed69c;}}const _0x20245c=Object[_0x51f32a(0x2e4)](getLocalKnowledgeBases()),_0x546567=_0x20245c[_0x51f32a(0x2be)](_0xc2cf44=>_0xc2cf44[_0x51f32a(0x275)]===_0x3643a5);if(_0x546567)_0x3b24c0=_0x546567['id'],_0x7da777('[翰林院-核心]\x20检测到同名知识库\x20\x22'+_0x3643a5+_0x51f32a(0x2d6),'info');else{_0x7da777('[翰林院-核心]\x20准备为任务\x20\x22'+_0x3643a5+_0x51f32a(0x279),_0x51f32a(0x2ad));const _0xc3a91d=addKnowledgeBase(_0x3643a5,'chat_history');_0x3b24c0=_0xc3a91d['id'];}const _0x34a142=getCharacterStableId(),_0x11f271=_0x34a142+'_'+_0x3b24c0;_0x7da777(_0x51f32a(0x262)+_0x3643a5+'\x20(集合ID:\x20'+_0x11f271+')',_0x51f32a(0x1f1));const _0x43ddef=[],_0x11c11e=context[_0x51f32a(0x240)];for(const _0x23da25 of _0x26cb28){const _0x51a699=(_0x23da25[_0x51f32a(0x28a)]||'')['replace'](/<[^>]*>/g,'')[_0x51f32a(0x299)]();if(_0x51a699[_0x51f32a(0x21f)]===0x0)continue;let _0x4dc5a5;if(_0x23da25[_0x51f32a(0x31b)]!==undefined&&_0x23da25[_0x51f32a(0x31b)]!==null)_0x4dc5a5=_0x23da25[_0x51f32a(0x31b)];else{const _0x594c56=_0x11c11e[_0x51f32a(0x26d)](_0x2c6f76=>_0x2c6f76===_0x23da25);_0x4dc5a5=_0x594c56!==-0x1?_0x594c56+0x1:-0x1;}const _0x1f5f90=new Date(_0x23da25[_0x51f32a(0x27e)]),_0x180e3f=isNaN(_0x1f5f90['getTime']())?new Date()['toISOString']():_0x1f5f90[_0x51f32a(0x297)](),_0x2f3966=splitIntoChunks(_0x51a699,'chat_history',{'floor':_0x4dc5a5,'is_user':_0x23da25['is_user'],'timestamp':_0x180e3f});_0x43ddef['push'](..._0x2f3966);}if(_0x43ddef[_0x51f32a(0x21f)]===0x0)return{'success':!![],'count':0x0};_0x7da777('[翰林院-核心]\x20已将\x20'+_0x26cb28[_0x51f32a(0x21f)]+_0x51f32a(0x25e)+_0x43ddef[_0x51f32a(0x21f)]+_0x51f32a(0x23d),_0x51f32a(0x2ad));const _0x2b5f43=settings['retrieval']['batchSize']||0x5;let _0x16cc2c=0x0;for(let _0x4f81b4=0x0;_0x4f81b4<_0x43ddef[_0x51f32a(0x21f)];_0x4f81b4+=_0x2b5f43){const _0x2565f3=_0x43ddef['slice'](_0x4f81b4,_0x4f81b4+_0x2b5f43),_0x553f3b=_0x2565f3['map'](_0x5a8aaa=>_0x5a8aaa['text']),_0xf25a1b=await getEmbeddings(_0x553f3b);if(_0x2565f3[_0x51f32a(0x21f)]!==_0xf25a1b[_0x51f32a(0x21f)])throw new Error(_0x51f32a(0x2e7));const _0x369a59=_0x2565f3['map']((_0x22570c,_0x5c3b0e)=>({..._0x22570c,'vector':_0xf25a1b[_0x5c3b0e]}));await insertVectors(_0x369a59,null,_0x11f271),_0x16cc2c+=_0x2565f3[_0x51f32a(0x21f)];}if(_0x543742){const _0x1da32e=_0x543742[_0x51f32a(0x2dd)]===0x0?context[_0x51f32a(0x240)]['length']:_0x543742['end'],_0x23285a=getCharacterStableId();!settings[_0x51f32a(0x32a)][_0x23285a]&&(settings[_0x51f32a(0x32a)][_0x23285a]={}),settings[_0x51f32a(0x32a)][_0x23285a][_0x11f271]={'start':_0x543742['start'],'end':_0x1da32e,'timestamp':new Date()['toISOString']()},saveSettings(),_0x7da777(_0x51f32a(0x303)+_0x11f271+_0x51f32a(0x2f9)+_0x543742['start']+'-'+_0x1da32e,_0x51f32a(0x2ad));}_0x7da777(_0x51f32a(0x20a)+_0x16cc2c+_0x51f32a(0x1f2),_0x51f32a(0x1f1));const _0x4ea196=_0x26cb28[_0x51f32a(0x238)](_0x57e000=>{const _0x149534=_0x51f32a,_0x2739f4=_0x11c11e[_0x149534(0x26d)](_0x35454a=>_0x35454a===_0x57e000),_0x3690fe=_0x2739f4!==-0x1?_0x2739f4+0x1:-0x1,_0x27be40=_0x57e000[_0x149534(0x241)]?'用户':getCharacterName()||'AI';return'['+_0x27be40+_0x149534(0x212)+_0x3690fe+']\x20的消息已成功凝识。';});return{'success':!![],'count':_0x16cc2c,'messages':_0x4ea196};}catch(_0x507fea){return console['error'](_0x51f32a(0x285),_0x507fea),_0x7da777('[翰林院-核心]\x20聊天记录凝识失败:\x20'+_0x507fea[_0x51f32a(0x30d)],'error'),{'success':![],'error':_0x507fea[_0x51f32a(0x30d)]};}}async function handleAutoCondensation(){const _0x167fb1=_0x1f6706;if(!settings||!settings['condensation']||!settings['condensation']['enabled']||!settings[_0x167fb1(0x31d)][_0x167fb1(0x2f7)])return;setTimeout(async()=>{const _0x233965=_0x167fb1;try{const _0x2e2baa=settings[_0x233965(0x31d)][_0x233965(0x2b0)]||0x0,_0x3bfb18=context[_0x233965(0x240)][_0x233965(0x21f)],_0x64779c=getChatId();if(!_0x64779c){console['warn']('[翰林院-自动凝识]\x20无法获取聊天ID，跳过。');return;}!settings[_0x233965(0x31d)][_0x233965(0x325)]&&(settings[_0x233965(0x31d)][_0x233965(0x325)]={});const _0x1dc9bc=settings[_0x233965(0x31d)][_0x233965(0x325)][_0x64779c]||0x0,_0x3026f2=_0x1dc9bc+0x1,_0x30816a=_0x3bfb18-_0x2e2baa;if(_0x3026f2>_0x30816a)return;const _0x3ddbdd=_0x3026f2-0x1,_0xb871ec=_0x30816a,_0x1a0825=context['chat'][_0x233965(0x2bb)](_0x3ddbdd,_0xb871ec);if(_0x1a0825[_0x233965(0x21f)]===0x0)return;console[_0x233965(0x309)](_0x233965(0x2ce)+_0x3026f2+'\x20-\x20'+_0x30816a+_0x233965(0x2ff)+_0x64779c+')');const _0x30688a=0x64;let _0x167fde=_0x3026f2;while(_0x167fde<=_0x30816a){const _0x5be6d9=Math[_0x233965(0x31b)]((_0x167fde-0x1)/_0x30688a),_0x2a4b13=_0x5be6d9*_0x30688a+0x1,_0x368316=(_0x5be6d9+0x1)*_0x30688a,_0x5f442a=Math[_0x233965(0x28f)](_0x30816a,_0x368316),_0xafd1ea=_0x167fde-_0x3026f2,_0x5144c1=_0x5f442a-_0x3026f2+0x1,_0xb52c5b=_0x1a0825[_0x233965(0x2bb)](_0xafd1ea,_0x5144c1);if(_0xb52c5b[_0x233965(0x21f)]>0x0){const _0x11cc23={'start':_0x167fde,'end':_0x5f442a},_0xbd34fb=getCharacterName()+_0x233965(0x2ba)+_0x2a4b13+'-'+_0x368316+')';console[_0x233965(0x309)](_0x233965(0x23a)+_0x167fde+'-'+_0x5f442a+_0x233965(0x273)+_0xbd34fb);const _0x58f779=await processCondensation(_0xb52c5b,(_0x32f30e,_0x1c9b4e)=>{const _0x30088c=_0x233965;if(_0x1c9b4e===_0x30088c(0x28e))console[_0x30088c(0x28e)](_0x32f30e);else console[_0x30088c(0x309)](_0x32f30e);},_0x11cc23,_0xbd34fb);if(_0x58f779['success'])settings['condensation'][_0x233965(0x325)][_0x64779c]=_0x5f442a,saveSettings();else{console[_0x233965(0x28e)](_0x233965(0x25c)+_0xbd34fb+_0x233965(0x1f6));break;}}_0x167fde=_0x5f442a+0x1;}}catch(_0x929685){console[_0x233965(0x28e)](_0x233965(0x32f),_0x929685);}},0x7d0);}function preprocessQueryText(_0x21d921){const _0x11a96a=_0x1f6706;if(!settings[_0x11a96a(0x234)]['enabled'])return _0x21d921;let _0x582709=_0x21d921;const {tagExtractionEnabled:_0x5f4d5c,tags:_0x50441e,exclusionRules:_0x30eb6f}=settings[_0x11a96a(0x234)];if(_0x5f4d5c&&_0x50441e){const _0x3ebeee=_0x50441e[_0x11a96a(0x331)](',')['map'](_0x3db516=>_0x3db516[_0x11a96a(0x299)]())['filter'](Boolean);if(_0x3ebeee['length']>0x0){const _0x183805=extractBlocksByTags(_0x582709,_0x3ebeee);_0x582709=_0x183805[_0x11a96a(0x324)]('\x0a\x0a');}}_0x30eb6f&&_0x30eb6f[_0x11a96a(0x21f)]>0x0&&(_0x582709=applyExclusionRules(_0x582709,_0x30eb6f));const _0x51e9d2=_0x582709[_0x11a96a(0x299)]();return _0x21d921!==_0x51e9d2&&(console[_0x11a96a(0x309)](_0x11a96a(0x308)+_0x21d921+'\x22'),console['log'](_0x11a96a(0x220)+_0x51e9d2+'\x22')),_0x51e9d2;}async function rerankResults(_0x5d7a31,_0x1cac65,_0x3b25f0){const _0xb2990f=_0x1f6706;let _0x20e582=_0x5d7a31,_0x5f1759=![];if(_0x3b25f0['rerank'][_0xb2990f(0x2a4)]&&_0x5d7a31[_0xb2990f(0x21f)]>0x0){console['log'](_0xb2990f(0x253));try{const _0x36c604=_0x5d7a31[_0xb2990f(0x238)](_0x2825a9=>_0x2825a9[_0xb2990f(0x211)]),_0x3fb514=await executeRerank(_0x1cac65,_0x36c604,_0x3b25f0['rerank']),_0xbf456=_0x5d7a31[_0xb2990f(0x238)]((_0x43ec35,_0x1574c1)=>({..._0x43ec35,'original_index':_0x1574c1}));_0x20e582=_0xbf456[_0xb2990f(0x238)](_0x5e4f52=>{const _0x5122fe=_0xb2990f,_0x1f599a=_0x3fb514['results'][_0x5122fe(0x2be)](_0x5ea4aa=>_0x5ea4aa[_0x5122fe(0x301)]===_0x5e4f52[_0x5122fe(0x214)]),_0x5f2bbd=_0x1f599a?_0x1f599a['relevance_score']:0x0;return{..._0x5e4f52,'rerank_score':_0x5f2bbd};}),_0x5f1759=!![];}catch(_0x171c43){console[_0xb2990f(0x28e)](_0xb2990f(0x333),_0x171c43);if(_0x3b25f0['rerank'][_0xb2990f(0x2bf)])showNotification(_0xb2990f(0x21b)+_0x171c43[_0xb2990f(0x30d)],_0xb2990f(0x28e));_0x20e582['forEach'](_0x2af6f7=>_0x2af6f7['rerank_score']=0x0);}}else _0x20e582[_0xb2990f(0x2af)](_0x29c7e6=>_0x29c7e6[_0xb2990f(0x204)]=0x0);console['log'](_0xb2990f(0x229));const _0x499671=context[_0xb2990f(0x240)][_0xb2990f(0x21f)],_0x40d49d=_0x3b25f0[_0xb2990f(0x235)][_0xb2990f(0x2da)],_0x5d37e9=_0x20e582[_0xb2990f(0x238)](_0x3a374a=>{const _0x7aa59e=_0xb2990f;let _0x19ccbc=0x1;const _0x58bb3b=_0x3a374a[_0x7aa59e(0x281)]||{};switch(_0x58bb3b[_0x7aa59e(0x2f2)]){case _0x7aa59e(0x310):_0x19ccbc*=1.2;break;case'manual':_0x19ccbc*=1.1;break;case'chat_history':if(_0x58bb3b[_0x7aa59e(0x31b)]&&_0x499671>0x0){const _0x2d3218=_0x58bb3b[_0x7aa59e(0x31b)]/_0x499671;_0x19ccbc*=0x1+_0x2d3218;}break;}const _0x175d1c=_0x3a374a[_0x7aa59e(0x204)]*_0x40d49d+(_0x3a374a['score']||0x0)*(0x1-_0x40d49d),_0x3f87f7=_0x175d1c*_0x19ccbc;return{'text':_0x3a374a[_0x7aa59e(0x211)],'score':_0x3a374a[_0x7aa59e(0x300)],'rerank_score':_0x3a374a[_0x7aa59e(0x204)],'final_score':_0x3f87f7,'metadata':_0x3a374a[_0x7aa59e(0x281)]};});_0x5d37e9[_0xb2990f(0x2fb)]((_0x3fde2b,_0x47806c)=>(_0x47806c[_0xb2990f(0x32e)]||0x0)-(_0x3fde2b[_0xb2990f(0x32e)]||0x0)),console[_0xb2990f(0x309)](_0xb2990f(0x28d));let _0x11f3bc=_0x5d37e9;return _0x3b25f0[_0xb2990f(0x235)][_0xb2990f(0x283)]&&(_0x11f3bc=superSort(_0x5d37e9)),{'results':_0x11f3bc['slice'](0x0,_0x3b25f0[_0xb2990f(0x235)][_0xb2990f(0x2ae)]),'reranked':_0x5f1759};}async function rearrangeChat(_0x3e3bac,_0x2c8100,_0x10ad24,_0x4d6c3a){const _0xa7d5a0=_0x1f6706,_0x469b26={'novel':_0xa7d5a0(0x2f4),'chat_history':_0xa7d5a0(0x20c),'lorebook':_0xa7d5a0(0x265),'manual':_0xa7d5a0(0x339),'graph':_0xa7d5a0(0x289)};Object['values'](_0x469b26)[_0xa7d5a0(0x2af)](_0x20b619=>setExtensionPrompt(_0x20b619,'',0x0,0x0,![],0x0));if(_0x4d6c3a==='quiet'||!settings['retrieval'][_0xa7d5a0(0x2a4)])return;const _0x1bb1e8=_0x3e3bac[_0xa7d5a0(0x2bb)](-settings['advanced'][_0xa7d5a0(0x32d)]);if(_0x1bb1e8[_0xa7d5a0(0x21f)]===0x0)return;const _0x333038=settings[_0xa7d5a0(0x234)];let _0x5902f3='';const _0x118fde=[];for(const _0x1cf346 of _0x1bb1e8){if(_0x1cf346[_0xa7d5a0(0x241)]){_0x118fde['push'](_0x1cf346[_0xa7d5a0(0x28a)]);continue;}if(_0x333038[_0xa7d5a0(0x2a4)]&&_0x333038[_0xa7d5a0(0x2ab)]){const _0x13ac9c=(_0x333038[_0xa7d5a0(0x2fd)]||'')[_0xa7d5a0(0x331)](',')[_0xa7d5a0(0x238)](_0x41d3bc=>_0x41d3bc[_0xa7d5a0(0x299)]())['filter'](Boolean);if(_0x13ac9c[_0xa7d5a0(0x21f)]>0x0){const _0x2ba6e4=extractBlocksByTags(_0x1cf346[_0xa7d5a0(0x28a)],_0x13ac9c);if(_0x2ba6e4[_0xa7d5a0(0x21f)]>0x0){const _0x3d59d7=_0x2ba6e4[_0xa7d5a0(0x238)](_0x42b025=>{const _0x2ff4cf=_0x42b025['match'](/<[^>]+>([\s\S]*?)<\/[^>]+>/);return _0x2ff4cf?_0x2ff4cf[0x1]['trim']():'';});_0x118fde[_0xa7d5a0(0x2db)](_0x3d59d7['filter'](Boolean)[_0xa7d5a0(0x324)]('\x0a\x0a'));}}else _0x118fde['push'](_0x1cf346[_0xa7d5a0(0x28a)]);}else _0x118fde[_0xa7d5a0(0x2db)](_0x1cf346['mes']);}_0x5902f3=_0x118fde[_0xa7d5a0(0x29e)](Boolean)[_0xa7d5a0(0x324)]('\x0a\x0a');_0x333038['enabled']&&(_0x5902f3=applyExclusionRules(_0x5902f3,_0x333038[_0xa7d5a0(0x263)]));_0x5902f3=_0x5902f3['trim']();if(!_0x5902f3){console[_0xa7d5a0(0x309)](_0xa7d5a0(0x2bc));return;}const _0x52f754=_0x5902f3[_0xa7d5a0(0x24c)](/(M\d+)/g);if(_0x52f754){const _0x24f4b9=[...new Set(_0x52f754)],_0x5b5c86=_0x24f4b9[_0xa7d5a0(0x238)](_0x12fa5b=>_0xa7d5a0(0x266)+_0x12fa5b+']')[_0xa7d5a0(0x324)]('\x20');_0x5902f3+='\x0a\x0a'+_0x5b5c86,console[_0xa7d5a0(0x309)](_0xa7d5a0(0x33b)+_0x5b5c86);}console[_0xa7d5a0(0x309)](_0xa7d5a0(0x2fe)+_0x5902f3+'\x22');try{const _0x1fda1b=await executeGraphRetrieval(_0x5902f3);_0x1fda1b&&(console[_0xa7d5a0(0x309)]('[翰林院]\x20成功获取关系图谱上下文，准备注入。'),setExtensionPrompt(_0x469b26['graph'],_0x1fda1b,settings[_0xa7d5a0(0x2e8)]?settings['injection_lorebook'][_0xa7d5a0(0x2cd)]:0x0,settings[_0xa7d5a0(0x2e8)]?settings[_0xa7d5a0(0x2e8)]['depth']:0x4,![],0x0));const _0x439688=0x2,_0x33b3c0=settings[_0xa7d5a0(0x27b)]||0x1;let _0x520168=![];if(_0x33b3c0<_0x439688){console[_0xa7d5a0(0x309)](_0xa7d5a0(0x245)+_0x33b3c0+_0xa7d5a0(0x24f)),toastr['info'](_0xa7d5a0(0x338),_0xa7d5a0(0x29d));const _0x1a6a69=getKnowledgeBases();for(const _0x289a2d of Object[_0xa7d5a0(0x2e4)](_0x1a6a69)){const _0x573622=_0x289a2d[_0xa7d5a0(0x275)],_0x15df7d=_0x289a2d['source'];if(_0x573622[_0xa7d5a0(0x280)](_0xa7d5a0(0x319)))_0x289a2d[_0xa7d5a0(0x2f2)]=_0xa7d5a0(0x318);else{if(_0x573622[_0xa7d5a0(0x280)](_0xa7d5a0(0x2e6)))_0x289a2d[_0xa7d5a0(0x2f2)]=_0xa7d5a0(0x2e3);else _0x573622['includes']('楼-')&&_0x573622[_0xa7d5a0(0x27f)]('楼')&&_0x573622['includes'](':')?_0x289a2d['source']=_0xa7d5a0(0x2a6):_0x289a2d['source']=_0xa7d5a0(0x310);}_0x15df7d!==_0x289a2d[_0xa7d5a0(0x2f2)]&&console['log']('[翰林院-户口普查]\x20知识库\x20\x22'+_0x573622+_0xa7d5a0(0x2f5)+(_0x15df7d||'无')+_0xa7d5a0(0x22b)+_0x289a2d[_0xa7d5a0(0x2f2)]+']');}settings[_0xa7d5a0(0x27b)]=_0x439688,_0x520168=!![];}_0x520168&&(console[_0xa7d5a0(0x309)](_0xa7d5a0(0x1f9)),saveSettings());let _0x2357d8=[];const _0x347c7b=settings[_0xa7d5a0(0x235)][_0xa7d5a0(0x23f)];if(_0x347c7b[_0xa7d5a0(0x2a4)]){console[_0xa7d5a0(0x309)]('[翰林院]\x20进入多路并行独立检索流程...');const _0x2b0663=Object[_0xa7d5a0(0x2e4)](getKnowledgeBases())[_0xa7d5a0(0x29e)](_0x323dfa=>_0x323dfa[_0xa7d5a0(0x2a4)]),_0x2671f5=Object[_0xa7d5a0(0x330)](_0x347c7b[_0xa7d5a0(0x2d3)])[_0xa7d5a0(0x29e)](_0x32fb81=>_0x347c7b[_0xa7d5a0(0x2d3)][_0x32fb81]&&_0x347c7b[_0xa7d5a0(0x2d3)][_0x32fb81][_0xa7d5a0(0x2a4)]),_0x1b21b1=[];let _0x37f1b1=[..._0x2b0663];for(const _0x3b927e of _0x2671f5){const _0x9a10fc=_0x347c7b[_0xa7d5a0(0x2d3)][_0x3b927e],_0x546b3f=_0x37f1b1[_0xa7d5a0(0x29e)](_0x322c0c=>_0x322c0c['source']===_0x3b927e);_0x37f1b1=_0x37f1b1[_0xa7d5a0(0x29e)](_0xd43d8d=>!_0x546b3f[_0xa7d5a0(0x27f)](_0xd43d8d));if(_0x546b3f['length']>0x0){console[_0xa7d5a0(0x309)](_0xa7d5a0(0x227)+_0x3b927e+'\x20('+_0x546b3f[_0xa7d5a0(0x21f)]+_0xa7d5a0(0x2ec));const _0x35c884=queryVectors(_0x5902f3,{'includeBases':_0x546b3f})[_0xa7d5a0(0x2b2)](_0x408022=>{const _0x572e47=_0xa7d5a0;console[_0x572e47(0x309)](_0x572e47(0x288)+_0x3b927e+_0x572e47(0x23e)+_0x408022[_0x572e47(0x21f)]+_0x572e47(0x298));let _0x39e6cf=_0x408022[_0x572e47(0x29e)](_0x4e214e=>_0x4e214e[_0x572e47(0x281)]?.[_0x572e47(0x2f2)]===_0x3b927e);return _0x39e6cf=_0x39e6cf[_0x572e47(0x2bb)](0x0,_0x9a10fc[_0x572e47(0x2c1)]),console[_0x572e47(0x309)](_0x572e47(0x294)+_0x3b927e+_0x572e47(0x237)+_0x39e6cf[_0x572e47(0x21f)]+_0x572e47(0x298)),settings[_0x572e47(0x235)]['superSortEnabled']&&(_0x39e6cf=superSort(_0x39e6cf)),_0x39e6cf;});_0x1b21b1[_0xa7d5a0(0x2db)](_0x35c884);}}const _0x453cf2=_0x37f1b1;if(_0x453cf2[_0xa7d5a0(0x21f)]>0x0){console[_0xa7d5a0(0x309)]('[翰林院]\x20创建常规查询组\x20('+_0x453cf2[_0xa7d5a0(0x21f)]+_0xa7d5a0(0x2ec));const _0x5e8f1d=queryVectors(_0x5902f3,{'includeBases':_0x453cf2})[_0xa7d5a0(0x2b2)](async _0x5e9a8d=>{const _0x363bd9=_0xa7d5a0;console[_0x363bd9(0x309)](_0x363bd9(0x2d0)+_0x5e9a8d[_0x363bd9(0x21f)]+'\x20条结果。'),console['log'](_0x363bd9(0x2d7));const _0x59b62e=await rerankResults(_0x5e9a8d,_0x5902f3,settings),_0x2709ad=_0x59b62e[_0x363bd9(0x216)];return console[_0x363bd9(0x309)](_0x363bd9(0x274)+(_0x2709ad||[])[_0x363bd9(0x21f)]+_0x363bd9(0x298)),_0x59b62e[_0x363bd9(0x244)]&&settings['rerank'][_0x363bd9(0x2bf)]&&showNotification(_0x363bd9(0x23b),_0x363bd9(0x1f1)),_0x2709ad;});_0x1b21b1[_0xa7d5a0(0x2db)](_0x5e8f1d);}const _0xc486cc=await Promise[_0xa7d5a0(0x256)](_0x1b21b1);_0x2357d8=_0xc486cc[_0xa7d5a0(0x2c0)]();}else{console[_0xa7d5a0(0x309)](_0xa7d5a0(0x264));const _0x43abb9=await queryVectors(_0x5902f3),_0x13aa70=await rerankResults(_0x43abb9,_0x5902f3,settings);_0x2357d8=_0x13aa70[_0xa7d5a0(0x216)],_0x13aa70[_0xa7d5a0(0x244)]&&settings['rerank']['notify']&&showNotification('外部Rerank完成',_0xa7d5a0(0x1f1));}if(!_0x2357d8||_0x2357d8['length']===0x0){console[_0xa7d5a0(0x309)]('[翰林院]\x20最终无可用结果，注入中止。');return;}console['log'](_0xa7d5a0(0x31e)+_0x2357d8['length']+'\x20条结果。');const _0x32a8ea={'novel':[],'chat_history':[],'lorebook':[],'manual':[]};_0x2357d8['forEach'](_0x797c24=>{const _0x236f7e=_0xa7d5a0,_0x21ebcb=_0x797c24['metadata']?.[_0x236f7e(0x2f2)];_0x21ebcb&&_0x32a8ea['hasOwnProperty'](_0x21ebcb)&&_0x32a8ea[_0x21ebcb][_0x236f7e(0x2db)](_0x797c24);});for(const _0x417a77 in _0x32a8ea){const _0x216e60=_0x32a8ea[_0x417a77];if(_0x216e60[_0xa7d5a0(0x21f)]===0x0)continue;const _0x4ed9bb=settings[_0xa7d5a0(0x2c8)+_0x417a77[_0xa7d5a0(0x2c4)](_0xa7d5a0(0x317),'')];if(!_0x4ed9bb){console['warn'](_0xa7d5a0(0x2ea)+_0x417a77+_0xa7d5a0(0x315));continue;}const _0x419586=_0x216e60[_0xa7d5a0(0x238)](_0x2786e=>_0x2786e['text'])['join']('\x0a\x0a'),_0x173f0f='{{'+_0x417a77[_0xa7d5a0(0x2c4)](_0xa7d5a0(0x317),'')+_0xa7d5a0(0x223);let _0x5d1541=_0x4ed9bb['template'][_0xa7d5a0(0x2c4)](_0x173f0f,_0x419586);_0x5d1541['trim']()&&(_0x5d1541='%%'+_0x469b26[_0x417a77]+'%%'+_0x5d1541),setExtensionPrompt(_0x469b26[_0x417a77],_0x5d1541,_0x4ed9bb[_0xa7d5a0(0x2cd)],_0x4ed9bb['depth'],![],_0x4ed9bb['depth_role']),console[_0xa7d5a0(0x309)](_0xa7d5a0(0x2a2)+_0x417a77+_0xa7d5a0(0x205)+_0x216e60[_0xa7d5a0(0x21f)]+_0xa7d5a0(0x248));}}catch(_0x434c27){console[_0xa7d5a0(0x28e)](_0xa7d5a0(0x210),_0x434c27);if(settings[_0xa7d5a0(0x1f8)]['notify'])showNotification('忆识检索失败:\x20'+_0x434c27[_0xa7d5a0(0x30d)],'error');}}async function moveKnowledgeBase(_0x58fab5,_0xe73892){const _0x37d536=_0x1f6706,_0x3c1c9f=_0xe73892==='global'?_0x37d536(0x277):_0x37d536(0x28b),_0xd8f2dc=getCharacterStableId();if(!_0xd8f2dc&&_0x3c1c9f===_0x37d536(0x277)){toastr[_0x37d536(0x28e)](_0x37d536(0x217));return;}const _0x9e934b=_0xe73892==='global'?getGlobalKnowledgeBases():getLocalKnowledgeBases(),_0x2efaf7=_0x3c1c9f==='global'?getGlobalKnowledgeBases():getLocalKnowledgeBases(),_0x196163=_0x9e934b[_0x58fab5];if(!_0x196163){const _0x50a997=_0x37d536(0x290)+_0xe73892+_0x37d536(0x33a)+_0x58fab5+_0x37d536(0x271);console['error'](_0x37d536(0x2b1)+_0x50a997),toastr['error']('移动失败：未找到源条目。');return;}_0xe73892===_0x37d536(0x277)&&_0x3c1c9f===_0x37d536(0x28b)&&!_0x196163[_0x37d536(0x22a)]&&(console[_0x37d536(0x309)](_0x37d536(0x2f1)+_0x58fab5+'\x20补充所有者ID:\x20'+_0xd8f2dc),_0x196163[_0x37d536(0x22a)]=_0xd8f2dc);delete _0x9e934b[_0x58fab5],_0x2efaf7[_0x58fab5]=_0x196163,saveSettings();const _0xd9929a=_0x37d536(0x22f)+_0x196163['name']+_0x37d536(0x252)+(_0x3c1c9f===_0x37d536(0x28b)?'全局':'局部')+'。';console[_0x37d536(0x309)](_0x37d536(0x2b1)+_0xd9929a);}function renameKnowledgeBase(_0x38370a,_0x2f30da,_0x6ee401){const _0x383ae3=_0x1f6706;if(!_0x2f30da||!_0x2f30da[_0x383ae3(0x299)]()){toastr['error'](_0x383ae3(0x30e));throw new Error(_0x383ae3(0x329));}const _0x438174=_0x6ee401==='global'?getGlobalKnowledgeBases():getLocalKnowledgeBases(),_0x57563a=_0x438174[_0x38370a];if(!_0x57563a){const _0x2410a6=_0x383ae3(0x323)+_0x6ee401+'\x27\x20中未找到ID为\x20'+_0x38370a+'\x20的知识库。';console['error']('[翰林院-配置]\x20'+_0x2410a6),toastr[_0x383ae3(0x28e)]('重命名失败：未找到知识库条目。');throw new Error(_0x2410a6);}const _0x2f3780=_0x57563a[_0x383ae3(0x275)];_0x57563a[_0x383ae3(0x275)]=_0x2f30da[_0x383ae3(0x299)](),saveSettings();const _0x3e6adf='知识库\x20\x22'+_0x2f3780+'\x22\x20已成功重命名为\x20\x22'+_0x57563a['name']+'\x22。';console[_0x383ae3(0x309)](_0x383ae3(0x2b1)+_0x3e6adf),toastr['success'](_0x3e6adf);}async function getAllVectorsFromCollection(_0x422309){const _0x52b34d=_0x1f6706,_0x545a76='*',_0x46b0f5={'collectionId':_0x422309,'searchText':_0x545a76,'topK':0x2710,'threshold':0x0,'source':_0x52b34d(0x2b7),'embeddings':{}},_0x596ae5=(await getEmbeddings([_0x545a76]))[0x0];_0x46b0f5[_0x52b34d(0x2f6)]={[_0x545a76]:_0x596ae5};const _0x2ab15c=await fetch(_0x52b34d(0x1ff),{'method':'POST','headers':context['getRequestHeaders'](),'body':JSON[_0x52b34d(0x326)](_0x46b0f5)});if(!_0x2ab15c['ok']){if(_0x2ab15c[_0x52b34d(0x2ca)]===0x194)return console[_0x52b34d(0x309)]('[翰林院-迁移]\x20集合\x20'+_0x422309+_0x52b34d(0x1fb)),[];const _0x1c3ab7=await _0x2ab15c[_0x52b34d(0x211)]();throw new Error(_0x52b34d(0x270)+_0x422309+'\x20失败:\x20'+_0x1c3ab7);}const _0x102bbb=await _0x2ab15c[_0x52b34d(0x25d)]();return _0x102bbb[_0x52b34d(0x281)]||_0x102bbb[_0x52b34d(0x216)]||_0x102bbb['data']||[];}
+'use strict';
+
+import {
+    extension_prompt_roles,
+    setExtensionPrompt,
+    eventSource,
+    event_types
+} from '/script.js';
+
+import * as ContextUtils from './utils/context-utils.js';
+import { getCollectionIdInfo, getCharacterId, getCharacterStableId } from './utils/context-utils.js';
+import { defaultSettings as ragDefaultSettings } from './rag-settings.js';
+import { extractBlocksByTags, applyExclusionRules } from './utils/rag-tag-extractor.js';
+import * as IngestionManager from './ingestion-manager.js'; 
+import {
+    getEmbeddings,
+    fetchEmbeddingModels as apiFetchEmbeddingModels,
+    fetchRerankModels as apiFetchRerankModels,
+    executeRerank,
+    testApiConnection as apiTestApiConnection
+} from './rag-api.js';
+import { superSort } from './super-sorter.js';
+import { executeGraphRetrieval } from './relationship-graph/executor.js';
+import { initializeArchiveManager } from './archive-manager.js';
+
+const MODULE_NAME = 'hanlinyuan-rag-core';
+const OFFICIAL_REARRANGE_CHAT_FUNCTION_NAME = 'vectors_rearrangeChat';
+const GLOBAL_SCOPE_ID = '_global';
+
+
+
+let context = null;
+let settings = null;
+let lockedCollectionId = null;
+
+function filterWorldbooks(searchQuery, worldbooks) {
+    if (!searchQuery || !searchQuery.trim()) {
+        return worldbooks;
+    }
+    
+    const query = searchQuery.toLowerCase().trim();
+    
+    return worldbooks.filter(bookName => {
+        return bookName.toLowerCase().includes(query) ||
+               containsPinyinMatch(bookName, query);
+    });
+}
+
+function filterWorldbookEntries(searchQuery, entries) {
+    if (!searchQuery || !searchQuery.trim()) {
+        return entries;
+    }
+    
+    const query = searchQuery.toLowerCase().trim();
+    
+    return entries.filter(entry => {
+        const searchableText = [
+            entry.comment || '',
+            entry.key || '',
+            entry.content || ''
+        ].join(' ').toLowerCase();
+        
+        return searchableText.includes(query) ||
+               containsPinyinMatch(entry.comment || '', query);
+    });
+}
+
+function containsPinyinMatch(text, query) {
+    const pinyinMap = {
+        '世界书': 'sjshu',
+        '条目': 'tiaomu', 
+        '编纂': 'bianzhuan',
+        '搜索': 'sousuo'
+    };
+    
+    const pinyin = pinyinMap[text];
+    return pinyin && pinyin.includes(query);
+}
+
+
+function highlightSearchMatch(text, query) {
+    if (!query || !query.trim()) {
+        return text;
+    }
+    
+    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+export {
+    initialize,
+    getSettings,
+    saveSettings,
+    resetSettings,
+    apiTestApiConnection as testApiConnection,
+    apiFetchEmbeddingModels as fetchEmbeddingModels,
+    apiFetchRerankModels as fetchRerankModels,
+    getVectorCount,
+    purgeStorage,
+    getMessagesForCondensation,
+    processCondensation,
+    ingestTextToHanlinyuan,
+    getCollectionId, 
+    toggleSessionLock,
+    isSessionLocked,
+    getLockedSessionInfo,
+    addKnowledgeBase,
+    removeKnowledgeBase,
+    getLocalKnowledgeBases,
+    getGlobalKnowledgeBases,
+    toggleKnowledgeBase,
+    moveKnowledgeBase,
+    filterWorldbooks,
+    filterWorldbookEntries,
+    highlightSearchMatch,
+    debounce,
+    renameKnowledgeBase,
+};
+
+
+function initialize() {
+    context = SillyTavern.getContext();
+    if (!context) {
+        console.error('[翰林院] 未能获取SillyTavern上下文，初始化失败。');
+        return;
+    }
+    settings = getSettings();
+    if (!window.hanlinyuanRagProcessor) {
+        window.hanlinyuanRagProcessor = {};
+    }
+    
+    window.hanlinyuanRagProcessor.rearrangeChat = rearrangeChat;
+    window.hanlinyuanRagProcessor.initialized = true;
+    eventSource.on(event_types.MESSAGE_RECEIVED, handleAutoCondensation);
+    initializeArchiveManager();
+    
+    console.log('翰林院忆识核心已启动 (V5.3-归档版)，已注册到全局 hanlinyuanRagProcessor 对象。');
+}
+
+
+async function ingestTextToHanlinyuan(text, source = 'manual', metadata = {}, progressCallback = () => {}, signal = null, logCallback = () => {}, batchCompleteCallback = () => {}, jobId = null, resumeFromIndex = 0) {
+    if (!text || !text.trim()) {
+        return { success: false, error: '输入文本为空' };
+    }
+    if (!settings) return { success: false, error: '核心未初始化' };
+
+    try {
+        const idInfo = getCollectionIdInfo();
+        const legacyCollectionId = await getDynamicCollectionId();
+        if (idInfo.oldId && idInfo.oldId === legacyCollectionId && idInfo.oldId !== idInfo.newId) {
+            const confirmMigration = confirm('检测到旧版数据。此操作将把旧数据迁移到新格式，过程不可逆，是否继续？');
+            if (confirmMigration) {
+                logCallback(`[翰林院-迁移] 用户确认迁移，正在处理旧宝库: ${idInfo.oldId}`, 'warn');
+                await purgeStorage(idInfo.oldId); 
+                logCallback(`[翰林院-迁移] 旧宝库已清空。`, 'success');
+            } else {
+                logCallback('[翰林院-迁移] 用户取消了迁移操作。', 'info');
+                toastr.info('操作已取消。');
+                return { success: false, error: '用户取消了迁移操作' };
+            }
+        }
+
+        let kbName;
+        let taskId;
+        const timestamp = new Date().toLocaleString('zh-CN', { hour12: false });
+        const charName = getCharacterName() || '未知角色';
+
+        switch (source) {
+            case 'chat_history':
+                const range = metadata.range || {};
+                const start = range.start ?? '?';
+                const end = range.end === 0 ? '末' : (range.end ?? '?');
+                kbName = `${charName}: ${start}楼-${end}楼`;
+                break;
+            case 'lorebook':
+                const bookName = metadata.bookName || '未分类世界书';
+                if (metadata.entryName && metadata.entryName.includes('微言录总结')) {
+                    metadata.entryName = '对话记录小总结';
+                } else if (metadata.entryName && metadata.entryName.includes('宏史卷总结')) {
+                    metadata.entryName = '对话记录大总结';
+                }
+                const entryName = metadata.entryName || '未知条目';
+                kbName = `${bookName}: ${entryName}`;
+                break;
+            case 'novel':
+                kbName = `小说: ${metadata.sourceName || '未知小说'}`;
+                break;
+            case 'manual':
+            default:
+                kbName = `手动录入: ${timestamp}`;
+                break;
+        }
+
+        const existingKbs = Object.values(getKnowledgeBases());
+        const foundKb = existingKbs.find(kb => kb.name === kbName);
+
+        if (foundKb) {
+            taskId = foundKb.id;
+            logCallback(`[翰林院-核心] 检测到同名知识库 "${kbName}"，将数据合并入库。`, 'info');
+        } else {
+            logCallback(`[翰林院-核心] 准备为任务 "${kbName}" 创建专属知识库...`, 'info');
+            const newKb = addKnowledgeBase(kbName, source); 
+            taskId = newKb.id;
+        }
+        
+        const charId = getCharacterStableId();
+        const collectionId = `${charId}_${taskId}`;
+        logCallback(`[翰林院-核心] 已创建并锁定知识库: ${kbName} (集合ID: ${collectionId})`, 'success');
+        logCallback(`[翰林院-核心] 已锁定忆识宝库ID: ${collectionId}`, 'info');
+
+        progressCallback({ message: '正在智能分块...', processed: 0, total: 1 });
+        const chunks = splitIntoChunks(text, source, metadata);
+        const totalChunks = chunks.length;
+        if (signal?.aborted) throw new Error('AbortError');
+        logCallback(`[翰林院-核心] 将来源'${kbName}'的文本分割成 ${totalChunks} 个块。`, 'info');
+
+        if (totalChunks === 0) {
+            return { success: true, count: 0 };
+        }
+
+        const batchSize = settings.retrieval.batchSize || 5;
+        let processedCount = resumeFromIndex; 
+
+        for (let i = resumeFromIndex; i < totalChunks; i += batchSize) {
+            if (signal?.aborted) throw new Error('AbortError');
+            
+            const batchChunks = chunks.slice(i, i + batchSize);
+            
+            progressCallback({ message: `正在处理 ${i + 1}-${i + batchChunks.length} 块`, processed: i, total: totalChunks });
+
+            const batchTexts = batchChunks.map(c => c.text);
+            const embeddings = await getEmbeddings(batchTexts, signal);
+            if (signal?.aborted) throw new Error('AbortError');
+
+            if (batchChunks.length !== embeddings.length) {
+                throw new Error('文本块和向量数量不匹配');
+            }
+
+            const vectorItems = batchChunks.map((chunk, index) => ({
+                ...chunk,
+                vector: embeddings[index],
+            }));
+
+            await insertVectors(vectorItems, signal, collectionId);
+            
+            processedCount += batchChunks.length;
+
+            if (jobId) {
+                IngestionManager.saveProgress(jobId, processedCount, totalChunks);
+            }
+            
+            await batchCompleteCallback();
+        }
+
+        if (jobId) {
+            IngestionManager.clearJob(jobId);
+        }
+
+
+        logCallback(`[翰林院-核心] 成功插入 ${processedCount} 个向量条目。`, 'success');
+        return { success: true, count: processedCount };
+
+    } catch (error) {
+        if (error.name === 'AbortError') {
+            logCallback('[翰林院-核心] 文本录入任务被用户中止。', 'warn');
+            throw error; 
+        }
+        console.error('[翰林院-核心] ingestTextToHanlinyuan 失败:', error);
+        logCallback(`[翰林院-核心] 文本录入失败: ${error.message}`, 'error');
+        return { success: false, error: error.message };
+    }
+}
+
+function getSettings() {
+    if (!context || !context.extensionSettings) {
+
+        return structuredClone(ragDefaultSettings);
+    }
+    
+
+    let s = context.extensionSettings[MODULE_NAME];
+
+    if (!s) {
+        s = {};
+        context.extensionSettings[MODULE_NAME] = s;
+    }
+
+    if (s.condensationHistory === undefined) {
+        s.condensationHistory = {};
+    }
+
+    if (s.knowledgeBases === undefined) {
+        s.knowledgeBases = {};
+    }
+
+    if (s.queryPreprocessing === undefined) {
+        s.queryPreprocessing = {
+            enabled: false,
+            tagExtractionEnabled: false,
+            tags: 'content,details,摘要',
+            exclusionRules: [],
+        };
+    }
+
+
+    for (const key in ragDefaultSettings) {
+        if (s[key] === undefined) {
+            s[key] = structuredClone(ragDefaultSettings[key]);
+        } else if (typeof ragDefaultSettings[key] === 'object' && !Array.isArray(ragDefaultSettings[key]) && ragDefaultSettings[key] !== null) {
+            for (const subKey in ragDefaultSettings[key]) {
+                if (s[key][subKey] === undefined) {
+                    s[key][subKey] = ragDefaultSettings[key][subKey];
+                }
+            }
+        }
+    }
+    
+    return s;
+}
+
+function saveSettings() {
+
+    if (context) context.saveSettingsDebounced();
+}
+
+function resetSettings() {
+
+    if (context) {
+        context.extensionSettings[MODULE_NAME] = structuredClone(ragDefaultSettings);
+        saveSettings();
+    }
+}
+
+function showNotification(message, type = 'info') {
+    toastr[type](message);
+}
+
+
+function getTagForSource(source) {
+    switch (source) {
+        case 'chat_history':
+            return '聊天记录';
+        case 'lorebook':
+            return '世界书';
+        case 'manual':
+            return '手动录入';
+        case 'novel':
+            return '小说录入';
+        default:
+            return '资料';
+    }
+}
+
+
+function splitIntoChunks(text, source, metadata = {}) {
+    switch (source) {
+        case 'novel':
+            return _chunkForNovel(text, metadata);
+        case 'chat_history':
+            return _chunkForChatHistory(text, metadata);
+        case 'lorebook':
+            return _chunkForLorebook(text, metadata);
+        case 'manual':
+            return _chunkForManual(text, metadata);
+        default:
+            console.warn(`[翰林院-分块] 未知的来源类型 '${source}'，使用通用分块逻辑。`);
+            return _chunkForManual(text, { ...metadata, sourceName: metadata.sourceName || '未知来源' });
+    }
+}
+
+function _chunkForNovel(text, metadata) {
+    const { chunkSize, overlap } = settings.advanced;
+    const { sourceName = '小说' } = metadata;
+    const allChunks = [];
+    if (!text || chunkSize <= 0) return allChunks;
+
+    const volumeRegex = /(第\s*[一二三四五六七八九十百千万零\d]+\s*卷)/gim;
+    const chapterRegex = /(第\s*[一二三四五六七八九十百千万零\d]+\s*[章回节部])|^(Chapter\s+\d+)/gim;
+
+    let globalChunkIndex = 0;
+    const textLines = text.split('\n');
+    let currentVolumeTitle = "第1卷";
+    let currentChapterTitle = "第1章";
+    let contentBuffer = [];
+
+    function processBuffer() {
+        if (contentBuffer.length === 0) return;
+        const content = contentBuffer.join('\n');
+        let start = 0;
+        let section = 1;
+        while (start < content.length) {
+            const end = Math.min(start + chunkSize, content.length);
+            const chunkText = content.substring(start, end);
+            if (chunkText.trim().length > 0) {
+                const chunkMetadata = {
+                    source: 'novel',
+                    sourceName: sourceName,
+                    timestamp: new Date().toISOString(),
+                    globalIndex: globalChunkIndex++,
+                    volume: currentVolumeTitle,
+                    chapter: currentChapterTitle,
+                    section: section,
+                };
+                const tagName = getTagForSource('novel');
+                const prefix = `[来源: ${sourceName}, ${currentVolumeTitle}, ${currentChapterTitle}, 第${section}节]`;
+                const wrappedText = `<${tagName}>\n${prefix}\n${chunkText}\n</${tagName}>`;
+                allChunks.push({ text: wrappedText, metadata: chunkMetadata });
+                section++;
+            }
+            start += (chunkSize - overlap);
+            if (start >= content.length) break;
+        }
+        contentBuffer = [];
+    }
+
+    for (const line of textLines) {
+        const trimmedLine = line.trim();
+        if (volumeRegex.test(trimmedLine)) {
+            processBuffer();
+            currentVolumeTitle = trimmedLine;
+            currentChapterTitle = "第1章"; 
+        } else if (chapterRegex.test(trimmedLine)) {
+            processBuffer();
+            currentChapterTitle = trimmedLine;
+        } else {
+            contentBuffer.push(line);
+        }
+    }
+    processBuffer();
+
+    if (allChunks.length === 0 && text.length > 0) {
+        let start = 0;
+        let section = 1;
+        while (start < text.length) {
+            const end = Math.min(start + chunkSize, text.length);
+            const chunkText = text.substring(start, end);
+            const chunkMetadata = {
+                source: 'novel',
+                sourceName: sourceName,
+                timestamp: new Date().toISOString(),
+                globalIndex: allChunks.length,
+                volume: "第1卷",
+                chapter: "第1章",
+                section: section,
+            };
+            const tagName = getTagForSource('novel');
+            const prefix = `[来源: ${sourceName}, 第1卷, 第1章, 第${section}节]`;
+            const wrappedText = `<${tagName}>\n${prefix}\n${chunkText}\n</${tagName}>`;
+            allChunks.push({ text: wrappedText, metadata: chunkMetadata });
+            section++;
+            start += (chunkSize - overlap);
+        }
+    }
+    return allChunks;
+}
+
+
+function _chunkForChatHistory(text, metadata) {
+    const { chunkSize, overlap } = settings.advanced;
+    const { floor, is_user, timestamp } = metadata;
+    const allChunks = [];
+    if (!text || chunkSize <= 0) return allChunks;
+
+    let part = 1;
+    let start = 0;
+
+    while (start < text.length) {
+        const end = Math.min(start + chunkSize, text.length);
+        const chunkText = text.substring(start, end);
+        
+        const prefix = `[来源: 聊天记录, 楼层: #${floor}, 第${part}部分]`;
+        const tagName = getTagForSource('chat_history');
+        const wrappedText = `<${tagName}>\n${prefix}\n${chunkText}\n</${tagName}>`;
+
+        allChunks.push({
+            text: wrappedText,
+            metadata: {
+                source: 'chat_history',
+                sourceName: `聊天记录 #${floor}`,
+                floor: floor,
+                part: part,
+                is_user: is_user,
+                timestamp: timestamp,
+            }
+        });
+        
+        part++;
+        start += (chunkSize - overlap);
+        if (start >= text.length) break;
+    }
+    return allChunks;
+}
+
+
+function _chunkForLorebook(text, metadata) {
+    const { chunkSize, overlap } = settings.advanced;
+    const { bookName = '世界书', entryName = '世界书条目' } = metadata;
+    const allChunks = [];
+    if (!text || chunkSize <= 0) return allChunks;
+
+    let part = 1;
+    let start = 0;
+
+    while (start < text.length) {
+        const end = Math.min(start + chunkSize, text.length);
+        const chunkText = text.substring(start, end);
+        
+        const prefix = `[来源: ${bookName}, 条目: ${entryName}, 第${part}部分]`;
+        const tagName = getTagForSource('lorebook');
+        const wrappedText = `<${tagName}>\n${prefix}\n${chunkText}\n</${tagName}>`;
+
+        allChunks.push({
+            text: wrappedText,
+            metadata: {
+                source: 'lorebook',
+                sourceName: `${bookName}: ${entryName}`,
+                bookName: bookName,
+                entryName: entryName,
+                part: part,
+                timestamp: new Date().toISOString(),
+            }
+        });
+        
+        part++;
+        start += (chunkSize - overlap);
+        if (start >= text.length) break;
+    }
+    return allChunks;
+}
+
+
+function _chunkForManual(text, metadata) {
+    const { chunkSize, overlap } = settings.advanced;
+    const { sourceName = '手动录入' } = metadata;
+    const allChunks = [];
+    if (!text || chunkSize <= 0) return allChunks;
+
+    const timestamp = new Date();
+    const readableTime = timestamp.toLocaleString('zh-CN');
+    let part = 1;
+    let start = 0;
+
+    while (start < text.length) {
+        const end = Math.min(start + chunkSize, text.length);
+        const chunkText = text.substring(start, end);
+        
+        const prefix = `[来源: ${sourceName}, 向量化录入时间: ${readableTime}, 第${part}部分]`;
+        const tagName = getTagForSource('manual');
+        const wrappedText = `<${tagName}>\n${prefix}\n${chunkText}\n</${tagName}>`;
+
+        allChunks.push({
+            text: wrappedText,
+            metadata: {
+                source: 'manual',
+                sourceName: sourceName,
+                part: part,
+                timestamp: timestamp.toISOString(),
+            }
+        });
+        
+        part++;
+        start += (chunkSize - overlap);
+        if (start >= text.length) break;
+    }
+    return allChunks;
+}
+
+import { getCollectionId as getDynamicCollectionId, getCharacterName, getChatId } from './utils/context-utils.js';
+
+
+async function getCollectionId() {
+    if (lockedCollectionId) {
+        return lockedCollectionId;
+    }
+
+    const independentMemoryEnabled = settings.retrieval.independentChatMemoryEnabled;
+
+    if (independentMemoryEnabled) {
+        return getChatId();
+    } else {
+        return await getDynamicCollectionId();
+    }
+}
+
+
+async function toggleSessionLock() {
+    if (lockedCollectionId) {
+        lockedCollectionId = null;
+        return false;
+    } else {
+        lockedCollectionId = await getDynamicCollectionId();
+        return true;
+    }
+}
+
+
+function isSessionLocked() {
+    return lockedCollectionId !== null;
+}
+
+
+function getLockedSessionInfo() {
+    if (!lockedCollectionId) return null;
+
+    return {
+        id: lockedCollectionId,
+        name: `(已锁定: ${lockedCollectionId.substring(0, 8)}...)`
+    };
+}
+
+function getLocalKnowledgeBases() {
+    const charId = getCharacterStableId();
+    if (!settings.knowledgeBases[charId]) {
+        settings.knowledgeBases[charId] = {};
+    }
+    return settings.knowledgeBases[charId];
+}
+
+function getGlobalKnowledgeBases() {
+    if (!settings.knowledgeBases[GLOBAL_SCOPE_ID]) {
+        settings.knowledgeBases[GLOBAL_SCOPE_ID] = {};
+    }
+    return settings.knowledgeBases[GLOBAL_SCOPE_ID];
+}
+
+function getKnowledgeBases() {
+    const localBases = getLocalKnowledgeBases();
+    const globalBases = getGlobalKnowledgeBases();
+    return { ...globalBases, ...localBases };
+}
+
+function addKnowledgeBase(name, source = 'manual') { 
+    if (!name || !name.trim()) {
+        throw new Error('知识库名称不能为空');
+    }
+    const charId = getCharacterStableId();
+    const bases = getLocalKnowledgeBases();
+
+    const taskId = `task_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const newBase = {
+        id: taskId,
+        name: name.trim(),
+        enabled: true,
+        createdAt: new Date().toISOString(),
+        owner: charId, 
+        source: source, 
+    };
+
+    bases[taskId] = newBase;
+    saveSettings();
+    
+    console.log(`[翰林院-核心] 已为角色 ${charId} 添加新知识库: ${name} (ID: ${taskId})`);
+    return newBase;
+}
+
+async function removeKnowledgeBase(taskId, scope) {
+    const charId = getCharacterStableId();
+    const bases = scope === 'global' ? getGlobalKnowledgeBases() : getLocalKnowledgeBases();
+    const base = bases[taskId];
+    const baseName = base?.name || taskId;
+
+    if (!base) {
+        console.warn(`[翰林院-核心] 尝试删除一个不存在的知识库: ${taskId} (范围: ${scope})`);
+        return;
+    }
+
+    const ownerId = scope === 'global' ? (base.owner || GLOBAL_SCOPE_ID) : charId;
+    const collectionIdToPurge = `${ownerId}_${taskId}`;
+    
+    console.log(`[翰林院-核心] 准备删除知识库 ${taskId}，将清空集合: ${collectionIdToPurge}`);
+
+    const purged = await purgeStorage(collectionIdToPurge);
+    if (purged) {
+        delete bases[taskId];
+        saveSettings();
+        console.log(`[翰林院-核心] 成功删除知识库 ${taskId} 及其向量数据。`);
+        toastr.success(`知识库 "${baseName}" 已删除。`);
+    } else {
+        console.error(`[翰林院-核心] 清空向量集合 ${collectionIdToPurge} 失败，删除操作中止。`);
+        toastr.error(`删除知识库失败，未能清空后端数据。`);
+    }
+}
+
+function toggleKnowledgeBase(taskId, scope) {
+    const bases = scope === 'global' ? getGlobalKnowledgeBases() : getLocalKnowledgeBases();
+    if (bases[taskId]) {
+        bases[taskId].enabled = !bases[taskId].enabled;
+        saveSettings();
+        console.log(`[翰林院-核心] 知识库 ${taskId} (范围: ${scope}) 的状态已切换为: ${bases[taskId].enabled ? '启用' : '禁用'}`);
+    }
+}
+
+function generateHash(text) {
+    let hash = 0;
+    for (let i = 0; i < text.length; i++) {
+        const char = text.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash; 
+    }
+    return Math.abs(hash).toString(36);
+}
+
+
+async function queryVectors(queryText, options = {}) {
+    const { includeBases = null } = options;
+    let basesToQuery = [];
+
+    console.log(`[翰林院-日志] 开始向量查询... (目标: ${includeBases ? '指定知识库' : '所有启用库'})`);
+
+    if (includeBases) {
+        basesToQuery = includeBases;
+        console.log(`[翰林院-日志] 查询白名单已提供，将查询 ${basesToQuery.length} 个特定知识库。`);
+    } 
+    else if (settings.retrieval.independentChatMemoryEnabled) {
+        console.log('[翰林院-日志] 独立聊天记忆模式开启...');
+        
+        const chatId = getChatId();
+        if (chatId) {
+            console.log(`[翰林院-日志] 添加当前聊天宝库: ${chatId}`);
+            basesToQuery.push({ id: chatId, name: `当前聊天 (${chatId})`, scope: 'chat' });
+        } else {
+            console.warn('[翰林院-日志] 无法获取当前聊天ID，跳过聊天宝库。');
+        }
+
+        const globalBases = getGlobalKnowledgeBases();
+        const enabledGlobalBases = Object.values(globalBases).filter(b => b.enabled);
+        if (enabledGlobalBases.length > 0) {
+            console.log(`[翰林院-日志] 添加 ${enabledGlobalBases.length} 个已启用的全局知识库。`);
+            basesToQuery.push(...enabledGlobalBases.map(b => ({ ...b, scope: 'global' })));
+        }
+    } 
+    else {
+        console.log('[翰林院-日志] 统一角色卡模式开启...');
+        const localBases = getLocalKnowledgeBases();
+        const globalBases = getGlobalKnowledgeBases();
+        const enabledLocalBases = Object.values(localBases).filter(b => b.enabled);
+        const enabledGlobalBases = Object.values(globalBases).filter(b => b.enabled);
+        
+        basesToQuery.push(...enabledLocalBases.map(b => ({ ...b, scope: 'local' })));
+        basesToQuery.push(...enabledGlobalBases.map(b => ({ ...b, scope: 'global' })));
+
+        if (basesToQuery.length === 0) {
+            console.log('[翰林院-日志] 没有启用的新知识库，尝试查询旧版单体宝库...');
+            const legacyCollectionId = await getDynamicCollectionId();
+            if (legacyCollectionId) {
+                basesToQuery.push({ id: null, name: '旧版宝库 (Legacy)', scope: 'legacy' });
+            }
+        }
+    }
+
+    if (basesToQuery.length === 0) {
+        console.log('[翰林院-日志] 没有可供查询的知识库，查询中止。');
+        return [];
+    }
+
+    const queryEmbedding = (await getEmbeddings([queryText]))[0];
+    if (!queryEmbedding) {
+        throw new Error("未能生成查询向量。");
+    }
+    
+    const queryPromises = basesToQuery.map(base => _executeQueryForBase(base, queryText, queryEmbedding));
+
+    const resultsFromAllBases = await Promise.all(queryPromises);
+    let allResults = resultsFromAllBases.flat();
+
+    console.log(`[翰林院-日志] 所有知识库查询完毕，共获得 ${allResults.length} 条初步结果。`);
+
+    const uniqueResults = [];
+    const seenTexts = new Set();
+    
+    for (const result of allResults) {
+        if (result && typeof result === 'object' && result.text && typeof result.text === 'string') {
+            const text = result.text.trim();
+            if (text.length > 0 && !seenTexts.has(text)) {
+                seenTexts.add(text);
+                uniqueResults.push(result);
+            }
+        }
+    }
+    
+    console.log(`[翰林院-日志] 去重后剩余 ${uniqueResults.length} 条结果。`);
+
+    uniqueResults.sort((a, b) => (b.score || 0) - (a.score || 0));
+
+    const finalResults = [...uniqueResults];
+    
+    console.log(`[翰林院-修复] 最终返回数组长度: ${finalResults.length}`);
+    console.log(`[翰林院-修复] 最终返回数组样本:`, JSON.stringify(finalResults.slice(0, 1), null, 2));
+    
+    return finalResults;
+}
+
+
+async function _executeQueryForBase(base, queryText, queryEmbedding = null) {
+    const charId = getCharacterStableId();
+    let collectionId;
+
+    switch (base.scope) {
+        case 'legacy':
+            collectionId = await getDynamicCollectionId();
+            break;
+        case 'chat':
+            collectionId = base.id; 
+            break;
+        case 'global':
+            const ownerId = base.owner || GLOBAL_SCOPE_ID;
+            collectionId = `${ownerId}_${base.id}`;
+            break;
+        case 'local':
+        default:
+            collectionId = `${charId}_${base.id}`;
+            break;
+    }
+
+    if (!collectionId) return [];
+
+    console.log(`[翰林院-日志] 正在查询知识库: ${base.name} (ID: ${collectionId})`);
+
+    const finalQueryEmbedding = queryEmbedding || (await getEmbeddings([queryText]))[0];
+    if (!finalQueryEmbedding) {
+        console.error(`[翰林院-日志] 未能为知识库 ${collectionId} 生成查询向量。`);
+        return [];
+    }
+
+    const requestBody = {
+        collectionId: collectionId,
+        searchText: queryText,
+        topK: settings.advanced.maxResults,
+        threshold: settings.advanced.matchThreshold,
+        source: 'webllm',
+        embeddings: { [queryText]: finalQueryEmbedding }
+    };
+
+    try {
+        const response = await fetch('/api/vector/query', {
+            method: 'POST',
+            headers: context.getRequestHeaders(),
+            body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`[翰林院-日志] 查询知识库 ${collectionId} 失败:`, errorText);
+            return [];
+        }
+        const result = await response.json();
+        
+        let rawData = [];
+        if (Array.isArray(result)) {
+            rawData = result;
+        } else if (result && result.metadata && Array.isArray(result.metadata)) {
+            rawData = result.metadata;
+        } else if (result && result.results && Array.isArray(result.results)) {
+            rawData = result.results;
+        } else if (result && result.data && Array.isArray(result.data)) {
+            rawData = result.data;
+        }
+
+        const data = rawData.map(item => {
+            if (!item || typeof item.text !== 'string') return null;
+
+            const newMetadata = { source: 'unknown', sourceName: '未知' };
+            const tagMatch = item.text.match(/^<([^>]+)>/);
+            const sourceTag = tagMatch ? tagMatch[1] : '';
+
+            switch (sourceTag) {
+                case '聊天记录':
+                    newMetadata.source = 'chat_history';
+                    const chatMatch = item.text.match(/楼层:\s*#(\d+),\s*第(\d+)部分/);
+                    if (chatMatch && chatMatch[1] && chatMatch[2]) {
+                        newMetadata.floor = parseInt(chatMatch[1], 10);
+                        newMetadata.part = parseInt(chatMatch[2], 10);
+                        newMetadata.sourceName = `聊天记录 #${newMetadata.floor}`;
+                    }
+                    break;
+                case '世界书':
+                    newMetadata.source = 'lorebook';
+                    const loreMatch = item.text.match(/\[来源:\s*([^,]+),\s*条目:\s*([^,]+),\s*第(\d+)部分\]/);
+                    if (loreMatch && loreMatch[1] && loreMatch[2] && loreMatch[3]) {
+                        newMetadata.bookName = loreMatch[1].trim();
+                        newMetadata.entryName = loreMatch[2].trim();
+                        newMetadata.part = parseInt(loreMatch[3], 10);
+                        newMetadata.sourceName = `${newMetadata.bookName}: ${newMetadata.entryName}`;
+                    }
+                    break;
+                case '手动录入':
+                    newMetadata.source = 'manual';
+                    const manualMatch = item.text.match(/\[来源:\s*([^,]+),.*第(\d+)部分\]/);
+                    if (manualMatch && manualMatch[1] && manualMatch[2]) {
+                        newMetadata.sourceName = manualMatch[1].trim();
+                        newMetadata.part = parseInt(manualMatch[2], 10);
+                    }
+                    break;
+                case '小说录入':
+                    newMetadata.source = 'novel';
+                    const novelMatch = item.text.match(/\[来源:\s*([^,]+),\s*([^,]+),\s*([^,]+),\s*([^\]]+)\]/);
+                    if (novelMatch) {
+                        newMetadata.sourceName = novelMatch[1].trim();
+                        newMetadata.volume = novelMatch[2].trim();
+                        newMetadata.chapter = novelMatch[3].trim();
+                        newMetadata.section = novelMatch[4].trim();
+                    }
+                    break;
+            }
+            
+            return {
+                ...item,
+                score: item.score || 1.0, 
+                metadata: newMetadata
+            };
+        }).filter(Boolean);
+
+        console.log(`[翰林院-V13 修复] 重建元数据后，知识库 ${base.name} 返回 ${data.length} 条结果。`);
+        return data;
+    } catch (error) {
+        console.error(`[翰林院-日志] 查询知识库 ${collectionId} 时发生网络错误:`, error);
+        return [];
+    }
+}
+
+
+async function insertVectors(vectorItems, signal = null, collectionId) {
+    if (!collectionId) {
+        throw new Error("insertVectors 必须接收一个有效的 collectionId 参数。");
+    }
+
+    if (vectorItems.length === 0) {
+        return { success: true, count: 0 };
+    }
+
+    const items = vectorItems.map((item, index) => ({
+        hash: generateHash(item.text + Date.now() + index),
+        text: item.text,
+        metadata: item.metadata || { source: 'unknown', timestamp: new Date().toISOString() },
+    }));
+    const embeddingsMap = items.reduce((acc, item, index) => {
+        acc[item.text] = vectorItems[index].vector;
+        return acc;
+    }, {});
+
+    const requestBody = {
+        collectionId: collectionId,
+        items: items,
+        source: 'webllm',
+        embeddings: embeddingsMap,
+    };
+
+    const response = await fetch('/api/vector/insert', {
+        method: 'POST',
+        headers: context.getRequestHeaders(),
+        body: JSON.stringify(requestBody),
+        signal: signal, 
+    });
+
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[翰林院-日志] 忆识存入API错误:', errorText);
+        throw new Error(`忆识存入API错误 ${response.status}: ${errorText}`);
+    }
+    
+    return { success: true, count: items.length };
+}
+
+
+async function getVectorCount(taskId = null, scope = 'local') {
+    const charId = getCharacterStableId();
+    
+    if (taskId) {
+        const bases = scope === 'global' ? getGlobalKnowledgeBases() : getLocalKnowledgeBases();
+        const base = bases[taskId];
+        if (!base) {
+            console.warn(`[翰林院-计数] 在作用域 '${scope}' 中未找到ID为 ${taskId} 的知识库。`);
+            return 0;
+        }
+        const ownerId = scope === 'global' ? (base.owner || GLOBAL_SCOPE_ID) : charId;
+        const collectionId = `${ownerId}_${taskId}`;
+        return await countVectorsInCollection(collectionId);
+
+    } else {
+        if (settings.retrieval.independentChatMemoryEnabled) {
+            const chatId = getChatId();
+            if (!chatId) return 0;
+            const totalCount = await countVectorsInCollection(chatId);
+            console.log(`[翰林院-日志] 独立聊天记忆模式开启，聊天 ${chatId} 的向量总数: ${totalCount}`);
+            return totalCount;
+        }
+
+        console.log('[翰林院-日志] 开始获取所有知识库的向量总数...');
+        const localBases = Object.values(getLocalKnowledgeBases());
+        const globalBases = Object.values(getGlobalKnowledgeBases());
+
+        const countPromises = [];
+
+        localBases.forEach(base => {
+            const collectionId = `${charId}_${base.id}`;
+            countPromises.push(countVectorsInCollection(collectionId));
+        });
+
+        globalBases.forEach(base => {
+            const ownerId = base.owner || GLOBAL_SCOPE_ID; 
+            const collectionId = `${ownerId}_${base.id}`;
+            countPromises.push(countVectorsInCollection(collectionId));
+        });
+
+        const legacyCollectionId = await getDynamicCollectionId();
+        countPromises.push(countVectorsInCollection(legacyCollectionId));
+
+        const counts = await Promise.all(countPromises);
+        const totalCount = counts.reduce((total, count) => total + count, 0);
+        
+        console.log(`[翰林院-日志] 所有知识库统计完成，总向量数: ${totalCount}`);
+        return totalCount;
+    }
+}
+
+async function countVectorsInCollection(collectionId) {
+    if (!collectionId) return 0;
+    console.log(`[翰林院-日志] 统计目标集合ID: ${collectionId}`);
+    const requestBody = { collectionId, source: 'webllm', embeddings: {} };
+    
+    try {
+        const response = await fetch('/api/vector/list', {
+            method: 'POST',
+            headers: context.getRequestHeaders(),
+            body: JSON.stringify(requestBody),
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) {
+                 console.log(`[翰林院-日志] 集合 ${collectionId} 不存在，计为 0。`);
+            } else {
+                const errorText = await response.text();
+                console.warn(`[翰林院-日志] 获取集合 ${collectionId} 列表API时出现问题 (状态: ${response.status}):`, errorText);
+            }
+            return 0;
+        }
+
+        const result = await response.json();
+        let count = 0;
+        if (Array.isArray(result)) {
+            count = result.length;
+        } else if (result && result.hashes) {
+            count = result.hashes.length;
+        }
+        return count;
+    } catch (error) {
+        console.error(`[翰林院-日志] 统计集合 ${collectionId} 时发生网络错误:`, error);
+        return 0;
+    }
+}
+
+async function purgeStorage(collectionIdOverride = null) {
+    console.log('[翰林院-日志] 开始清空宝库...');
+    const collectionId = collectionIdOverride || await getCollectionId();
+    
+    if (!collectionId) {
+        console.error('[翰林院-日志] 无法确定要清空的目标集合ID。');
+        toastr.error('无法确定要清空的目标宝库。');
+        return false;
+    }
+
+    console.log(`[翰林院-日志] 清空目标集合ID: ${collectionId}`);
+
+    const requestBody = { collectionId: collectionId };
+    console.log('[翰林院-日志] 发送到 /api/vector/purge 的请求体:', JSON.stringify(requestBody, null, 2));
+
+    const response = await fetch('/api/vector/purge', {
+        method: 'POST',
+        headers: context.getRequestHeaders(),
+        body: JSON.stringify(requestBody),
+    });
+
+    console.log(`[翰林院-日志] /api/vector/purge 响应状态: ${response.status}`);
+    if (!response.ok) {
+        const errorText = await response.text();
+        console.error('[翰林院-日志] 清空宝库API错误:', errorText);
+    } else {
+        console.log('[翰林院-日志] 清空宝库API调用成功。');
+    }
+    return response.ok;
+}
+
+function getMessagesForCondensation(overrideMessageTypes = null) {
+    if (!settings.condensation.enabled) {
+        showNotification('凝识之权未开启', 'warning');
+        return [];
+    }
+    const { layerStart, layerEnd } = settings.condensation;
+    const messageTypes = overrideMessageTypes || settings.condensation.messageTypes;
+    const total = context.chat.length;
+    const startIndex = Math.max(0, layerStart - 1);
+    const endIndex = (layerEnd === 0 || layerEnd > total) ? total : Math.min(total, layerEnd);
+    const messages = context.chat.slice(startIndex, endIndex);
+    return messages.filter(msg => {
+        const isUser = msg.is_user === true;
+        const isAI = msg.is_user === false;
+        if (!msg.mes || !msg.mes.trim()) {
+            return false;
+        }
+
+        return (messageTypes.user && isUser) || (messageTypes.ai && isAI);
+    });
+}
+
+async function processCondensation(messages, logCallback = () => {}, range = null, kbNameOverride = null) {
+    if (!messages || messages.length === 0) {
+        return { success: false, error: 'No messages to process.' };
+    }
+
+    try {
+        let kbName;
+        let taskId;
+        const charName = getCharacterName() || '未知角色';
+
+        if (kbNameOverride) {
+            kbName = kbNameOverride;
+        } else if (range) {
+            const start = range.start ?? '?';
+            const end = range.end === 0 ? '末' : (range.end ?? '?');
+            kbName = `${charName}: ${start}楼-${end}楼`;
+        } else {
+            const timestamp = new Date().toLocaleString('zh-CN', { hour12: false });
+            kbName = `聊天记录: ${timestamp}`;
+        }
+
+        const existingKbs = Object.values(getLocalKnowledgeBases()); 
+        const foundKb = existingKbs.find(kb => kb.name === kbName);
+
+        if (foundKb) {
+            taskId = foundKb.id;
+            logCallback(`[翰林院-核心] 检测到同名知识库 "${kbName}"，将数据合并入库。`, 'info');
+        } else {
+            logCallback(`[翰林院-核心] 准备为任务 "${kbName}" 创建专属知识库...`, 'info');
+            const newKb = addKnowledgeBase(kbName, 'chat_history');
+            taskId = newKb.id;
+        }
+        
+        const charId = getCharacterStableId();
+        const collectionId = `${charId}_${taskId}`;
+        logCallback(`[翰林院-核心] 凝识任务已锁定知识库: ${kbName} (集合ID: ${collectionId})`, 'success');
+
+        const allChunks = [];
+        const fullChat = context.chat;
+
+        for (const msg of messages) {
+            const text = (msg.mes || '').replace(/<[^>]*>/g, '').trim();
+            if (text.length === 0) continue;
+
+            let floor;
+            if (msg.floor !== undefined && msg.floor !== null) {
+                floor = msg.floor;
+            } else {
+                const floorIndex = fullChat.findIndex(chatMsg => chatMsg === msg);
+                floor = floorIndex !== -1 ? floorIndex + 1 : -1;
+            }
+
+            const sendDate = new Date(msg.send_date);
+            const timestamp = isNaN(sendDate.getTime())
+                ? new Date().toISOString()
+                : sendDate.toISOString();
+
+            const msgChunks = splitIntoChunks(text, 'chat_history', {
+                floor: floor,
+                is_user: msg.is_user,
+                timestamp: timestamp,
+            });
+            allChunks.push(...msgChunks);
+        }
+
+        if (allChunks.length === 0) {
+            return { success: true, count: 0 };
+        }
+
+        logCallback(`[翰林院-核心] 已将 ${messages.length} 条消息分解为 ${allChunks.length} 个知识块，准备入库。`, 'info');
+
+        const batchSize = settings.retrieval.batchSize || 5;
+        let processedCount = 0;
+
+        for (let i = 0; i < allChunks.length; i += batchSize) {
+            const batchChunks = allChunks.slice(i, i + batchSize);
+            const batchTexts = batchChunks.map(c => c.text);
+            const embeddings = await getEmbeddings(batchTexts);
+
+            if (batchChunks.length !== embeddings.length) {
+                throw new Error('文本块和向量数量不匹配');
+            }
+
+            const vectorItems = batchChunks.map((chunk, index) => ({
+                ...chunk,
+                vector: embeddings[index],
+            }));
+
+            await insertVectors(vectorItems, null, collectionId);
+            processedCount += batchChunks.length;
+        }
+
+        if (range) {
+            const finalEnd = range.end === 0 ? context.chat.length : range.end;
+            const charId = getCharacterStableId();
+            if (!settings.condensationHistory[charId]) {
+                settings.condensationHistory[charId] = {};
+            }
+            settings.condensationHistory[charId][collectionId] = {
+                start: range.start,
+                end: finalEnd,
+                timestamp: new Date().toISOString(),
+            };
+            saveSettings();
+            logCallback(`[翰林院-核心] 已为宝库 ${collectionId} 记录凝识范围: ${range.start}-${finalEnd}`, 'info');
+        }
+
+        logCallback(`[翰林院-核心] 聊天记录凝识完成，成功插入 ${processedCount} 个条目。`, 'success');
+        const successMessages = messages.map(msg => {
+            const floorIndex = fullChat.findIndex(chatMsg => chatMsg === msg);
+            const floor = floorIndex !== -1 ? floorIndex + 1 : -1;
+            const author = msg.is_user ? '用户' : (getCharacterName() || 'AI');
+            return `[${author} - 楼层 #${floor}] 的消息已成功凝识。`;
+        });
+        return { success: true, count: processedCount, messages: successMessages };
+
+    } catch (error) {
+        console.error('[翰林院-核心] processCondensation 失败:', error);
+        logCallback(`[翰林院-核心] 聊天记录凝识失败: ${error.message}`, 'error');
+        return { success: false, error: error.message };
+    }
+}
+
+async function handleAutoCondensation() {
+    if (!settings || !settings.condensation || !settings.condensation.enabled || !settings.condensation.autoCondense) {
+        return;
+    }
+
+    setTimeout(async () => {
+        try {
+            const preserveFloors = settings.condensation.preserveFloors || 0;
+            const totalMessages = context.chat.length;
+            const chatId = getChatId(); // 获取当前聊天ID
+
+            if (!chatId) {
+                console.warn('[翰林院-自动凝识] 无法获取聊天ID，跳过。');
+                return;
+            }
+
+            if (!settings.condensation.autoCondenseProgress) {
+                settings.condensation.autoCondenseProgress = {};
+            }
+
+            const lastCondensedFloor = settings.condensation.autoCondenseProgress[chatId] || 0;
+            
+            const startFloor = lastCondensedFloor + 1;
+            const endFloor = totalMessages - preserveFloors;
+            
+            if (startFloor > endFloor) {
+                return;
+            }
+            
+            const startIndex = startFloor - 1;
+            const endIndex = endFloor; 
+            
+            const messagesToCondense = context.chat.slice(startIndex, endIndex);
+            
+            if (messagesToCondense.length === 0) return;
+            
+            console.log(`[翰林院-自动凝识] 触发自动凝识: ${startFloor} - ${endFloor} 楼 (ChatID: ${chatId})`);
+            
+            const BUCKET_SIZE = 100;
+            let currentStart = startFloor;
+            
+            while (currentStart <= endFloor) {
+                const bucketIndex = Math.floor((currentStart - 1) / BUCKET_SIZE);
+                const bucketStartFloor = bucketIndex * BUCKET_SIZE + 1;
+                const bucketEndFloor = (bucketIndex + 1) * BUCKET_SIZE;
+
+                const currentEnd = Math.min(endFloor, bucketEndFloor);
+
+                const sliceStart = currentStart - startFloor;
+                const sliceEnd = currentEnd - startFloor + 1;
+                const batchMessages = messagesToCondense.slice(sliceStart, sliceEnd);
+                
+                if (batchMessages.length > 0) {
+                    const range = { start: currentStart, end: currentEnd };
+                    const kbName = `${getCharacterName()}: 自动凝识 (${bucketStartFloor}-${bucketEndFloor})`;
+                    
+                    console.log(`[翰林院-自动凝识] 处理分桶: ${currentStart}-${currentEnd} -> ${kbName}`);
+                    
+                    const result = await processCondensation(batchMessages, (msg, type) => {
+                        if (type === 'error') console.error(msg);
+                        else console.log(msg);
+                    }, range, kbName);
+
+                    if (result.success) {
+                        settings.condensation.autoCondenseProgress[chatId] = currentEnd;
+                        saveSettings();
+                    } else {
+                        console.error(`[翰林院-自动凝识] 分桶 ${kbName} 处理失败，中止后续处理。`);
+                        break;
+                    }
+                }
+
+                currentStart = currentEnd + 1;
+            }
+            
+        } catch (error) {
+            console.error('[翰林院-自动凝识] 执行失败:', error);
+        }
+    }, 2000); // 延迟2秒
+}
+
+function preprocessQueryText(queryText) {
+    if (!settings.queryPreprocessing.enabled) {
+        return queryText;
+    }
+
+    let processedText = queryText;
+    const { tagExtractionEnabled, tags, exclusionRules } = settings.queryPreprocessing;
+
+    if (tagExtractionEnabled && tags) {
+        const tagsToExtract = tags.split(',').map(t => t.trim()).filter(Boolean);
+        if (tagsToExtract.length > 0) {
+            const blocks = extractBlocksByTags(processedText, tagsToExtract);
+            processedText = blocks.join('\n\n');
+        }
+    }
+
+    if (exclusionRules && exclusionRules.length > 0) {
+        processedText = applyExclusionRules(processedText, exclusionRules);
+    }
+
+    const trimmedResult = processedText.trim();
+
+    if (queryText !== trimmedResult) {
+        console.log(`[翰林院-预处理] 原始检索文本: "${queryText}"`);
+        console.log(`[翰林院-预处理] 处理后检索文本: "${trimmedResult}"`);
+    }
+    
+    return trimmedResult;
+}
+
+
+async function rerankResults(allResults, queryText, settings) {
+    let processedResults = allResults;
+    let rerankedSuccessfully = false;
+
+    if (settings.rerank.enabled && allResults.length > 0) {
+        console.log('[翰林院-Rerank] 开始外部API重排序...');
+        try {
+            const documentsToRerank = allResults.map(res => res.text);
+            const rerankedData = await executeRerank(queryText, documentsToRerank, settings.rerank);
+            const indexedResults = allResults.map((res, index) => ({ ...res, original_index: index }));
+            
+            processedResults = indexedResults.map(result => {
+                const rerankedResult = rerankedData.results.find(r => r.index === result.original_index);
+                const relevanceScore = rerankedResult ? rerankedResult.relevance_score : 0;
+                return { ...result, rerank_score: relevanceScore };
+            });
+
+            rerankedSuccessfully = true;
+
+        } catch (error) {
+            console.error('[翰林院-Rerank] 外部Rerank失败，将仅使用内部加权。', error);
+            if (settings.rerank.notify) showNotification(`Rerank失败: ${error.message}`, 'error');
+            processedResults.forEach(res => res.rerank_score = 0);
+        }
+    } else {
+        processedResults.forEach(res => res.rerank_score = 0);
+    }
+
+    console.log('[翰林院-Rerank] 开始元数据加权最终排序...');
+    const totalMessages = context.chat.length;
+    const alpha = settings.rerank.hybrid_alpha;
+
+    const finalScoredResults = processedResults.map(result => {
+        let contextualWeight = 1.0;
+        const metadata = result.metadata || {};
+
+        switch (metadata.source) {
+            case 'lorebook': contextualWeight *= 1.2; break;
+            case 'manual': contextualWeight *= 1.1; break;
+            case 'chat_history':
+                if (metadata.floor && totalMessages > 0) {
+                    const recencyFactor = metadata.floor / totalMessages;
+                    contextualWeight *= (1 + recencyFactor);
+                }
+                break;
+        }
+
+        const semanticScore = (result.rerank_score * alpha) + ((result.score || 0) * (1 - alpha));
+        const finalScore = semanticScore * contextualWeight;
+
+        return {
+            text: result.text,
+            score: result.score,
+            rerank_score: result.rerank_score,
+            final_score: finalScore,
+            metadata: result.metadata,
+        };
+    });
+
+    finalScoredResults.sort((a, b) => (b.final_score || 0) - (a.final_score || 0));
+    console.log('[翰林院-Rerank] 元数据加权排序完成。');
+
+    let finalResults = finalScoredResults;
+    if (settings.rerank.superSortEnabled) {
+        finalResults = superSort(finalScoredResults);
+    }
+    
+    return {
+        results: finalResults.slice(0, settings.rerank.top_n),
+        reranked: rerankedSuccessfully
+    };
+}
+
+
+async function rearrangeChat(chat, contextSize, abort, type) {
+    const injectionKeys = {
+        novel: 'HANLINYUAN_RAG_NOVEL',
+        chat_history: 'HANLINYUAN_RAG_CHAT',
+        lorebook: 'HANLINYUAN_RAG_LOREBOOK',
+        manual: 'HANLINYUAN_RAG_MANUAL',
+        graph: 'HANLINYUAN_RAG_GRAPH', // 新增图谱注入键
+    };
+    Object.values(injectionKeys).forEach(key => setExtensionPrompt(key, '', 0, 0, false, 0));
+
+    if (type === 'quiet' || !settings.retrieval.enabled) return;
+
+    const queryMessages = chat.slice(-settings.advanced.queryMessageCount);
+    if (queryMessages.length === 0) return;
+    
+    const queryPreprocessingSettings = settings.queryPreprocessing;
+    let queryText = '';
+    const relevantTexts = [];
+
+    for (const msg of queryMessages) {
+        if (msg.is_user) {
+            relevantTexts.push(msg.mes);
+            continue;
+        }
+
+        if (queryPreprocessingSettings.enabled && queryPreprocessingSettings.tagExtractionEnabled) {
+            const tagsToExtract = (queryPreprocessingSettings.tags || '').split(',').map(t => t.trim()).filter(Boolean);
+            if (tagsToExtract.length > 0) {
+                const blocks = extractBlocksByTags(msg.mes, tagsToExtract);
+                if (blocks.length > 0) {
+                    const innerContents = blocks.map(block => {
+                        const match = block.match(/<[^>]+>([\s\S]*?)<\/[^>]+>/);
+                        return match ? match[1].trim() : '';
+                    });
+                    relevantTexts.push(innerContents.filter(Boolean).join('\n\n'));
+                }
+            } else {
+                relevantTexts.push(msg.mes); 
+            }
+        } else {
+            relevantTexts.push(msg.mes);
+        }
+    }
+    
+    queryText = relevantTexts.filter(Boolean).join('\n\n');
+
+    if (queryPreprocessingSettings.enabled) {
+        queryText = applyExclusionRules(queryText, queryPreprocessingSettings.exclusionRules);
+    }
+
+    queryText = queryText.trim();
+
+    if (!queryText) {
+        console.log('[翰林院] 经过预处理后，最终检索文本为空，注入中止。');
+        return;
+    }
+
+    const indexMatches = queryText.match(/(M\d+)/g);
+    if (indexMatches) {
+        const uniqueIndices = [...new Set(indexMatches)];
+        const indexQuery = uniqueIndices.map(idx => `[索引: ${idx}]`).join(' ');
+        queryText += `\n\n${indexQuery}`;
+        console.log(`[翰林院] 检测到索引引用，已增强检索词: ${indexQuery}`);
+    }
+
+    console.log(`[翰林院-预处理] 最终用于检索的文本: "${queryText}"`);
+
+    try {
+        const graphContext = await executeGraphRetrieval(queryText);
+        if (graphContext) {
+            console.log('[翰林院] 成功获取关系图谱上下文，准备注入。');
+            setExtensionPrompt(
+                injectionKeys.graph,
+                graphContext,
+                settings.injection_lorebook ? settings.injection_lorebook.position : 0, // 复用世界书的注入位置
+                settings.injection_lorebook ? settings.injection_lorebook.depth : 4,   // 复用世界书的深度
+                false,
+                0
+            );
+        }
+
+        const SETTINGS_VERSION = 2; 
+        const currentVersion = settings.settingsVersion || 1;
+        let settingsModified = false;
+
+        if (currentVersion < SETTINGS_VERSION) {
+            console.log(`[翰林院-户口普查] 检测到旧版设置 (V${currentVersion})，开始强制重分类所有知识库...`);
+            toastr.info('检测到旧版数据，正在进行一次性户口普查...', '翰林院通告');
+            
+            const allBasesObject = getKnowledgeBases();
+            for (const kb of Object.values(allBasesObject)) {
+                const name = kb.name;
+                const oldSource = kb.source;
+                
+                if (name.startsWith('手动录入: ')) {
+                    kb.source = 'manual';
+                } else if (name.startsWith('小说:')) {
+                    kb.source = 'novel';
+                } else if (name.includes('楼-') && name.includes('楼') && name.includes(':')) {
+                    kb.source = 'chat_history';
+                } else {
+                    kb.source = 'lorebook';
+                }
+
+                if (oldSource !== kb.source) {
+                    console.log(`[翰林院-户口普查] 知识库 "${name}" 已从 [${oldSource || '无'}] 更正为 [${kb.source}]`);
+                }
+            }
+            
+            settings.settingsVersion = SETTINGS_VERSION;
+            settingsModified = true;
+        }
+
+        if (settingsModified) {
+            console.log('[翰林院-户口普查] 普查完成，正在保存更新后的户籍...');
+            saveSettings();
+        }
+
+
+        let finalResults = [];
+        const prioritySettings = settings.rerank.priorityRetrieval;
+
+        if (prioritySettings.enabled) {
+            // =================== 多路并行独立检索流程 (V2-精确版) ===================
+            console.log('[翰林院] 进入多路并行独立检索流程...');
+
+            const allEnabledBases = Object.values(getKnowledgeBases()).filter(b => b.enabled);
+            const prioritySourceNames = Object.keys(prioritySettings.sources).filter(
+                key => prioritySettings.sources[key] && prioritySettings.sources[key].enabled
+            );
+
+            const queryPromises = [];
+            let remainingBases = [...allEnabledBases];
+
+            for (const sourceName of prioritySourceNames) {
+                const sourceSettings = prioritySettings.sources[sourceName];
+                
+                const priorityGroup = remainingBases.filter(b => b.source === sourceName);
+                remainingBases = remainingBases.filter(b => !priorityGroup.includes(b));
+
+                if (priorityGroup.length > 0) {
+                    console.log(`[翰林院] 创建优先查询组: ${sourceName} (${priorityGroup.length}个库)`);
+                    const promise = queryVectors(queryText, { includeBases: priorityGroup })
+                        .then(candidates => {
+                            console.log(`[翰林院] 优先组 ${sourceName} 返回 ${candidates.length} 条结果。`);
+                            let processed = candidates.filter(r => r.metadata?.source === sourceName);
+                            processed = processed.slice(0, sourceSettings.count);
+                            console.log(`[翰林院] 已从 ${sourceName} 池精确提取 ${processed.length} 条结果。`);
+                            if (settings.rerank.superSortEnabled) {
+                                processed = superSort(processed);
+                            }
+                            return processed;
+                        });
+                    queryPromises.push(promise);
+                }
+            }
+            const normalBases = remainingBases;
+            if (normalBases.length > 0) {
+                console.log(`[翰林院] 创建常规查询组 (${normalBases.length}个库)`);
+                const promise = queryVectors(queryText, { includeBases: normalBases })
+                    .then(async (candidates) => {
+                        console.log(`[翰林院] 常规组返回 ${candidates.length} 条结果。`);
+                        console.log('[翰林院] 开始处理常规池...');
+                        const rerankOutput = await rerankResults(candidates, queryText, settings);
+                        const normalResults = rerankOutput.results;
+                        console.log(`[翰林院] 常规池处理完毕，产出 ${(normalResults || []).length} 条结果。`);
+                        
+                        if (rerankOutput.reranked && settings.rerank.notify) {
+                            showNotification('统一检索部分的Rerank已完成', 'success');
+                        }
+                        
+                        return normalResults;
+                    });
+                queryPromises.push(promise);
+            }
+
+            const allResultGroups = await Promise.all(queryPromises);
+            finalResults = allResultGroups.flat();
+
+        } else {
+            // =================== 传统流程 ===================
+            console.log('[翰林院] 进入传统处理流程...');
+            const allCandidates = await queryVectors(queryText);
+            const rerankOutput = await rerankResults(allCandidates, queryText, settings);
+            finalResults = rerankOutput.results;
+            if (rerankOutput.reranked && settings.rerank.notify) {
+                showNotification('外部Rerank完成', 'success');
+            }
+        }
+
+        if (!finalResults || finalResults.length === 0) {
+            console.log('[翰林院] 最终无可用结果，注入中止。');
+            return;
+        }
+        
+        console.log(`[翰林院] 最终准备注入 ${finalResults.length} 条结果。`);
+        const resultsBySource = { novel: [], chat_history: [], lorebook: [], manual: [] };
+        finalResults.forEach(result => {
+            const source = result.metadata?.source;
+            if (source && resultsBySource.hasOwnProperty(source)) {
+                resultsBySource[source].push(result);
+            }
+        });
+
+        for (const source in resultsBySource) {
+            const results = resultsBySource[source];
+            if (results.length === 0) continue;
+
+            const injectionSettings = settings[`injection_${source.replace('_history', '')}`];
+            if (!injectionSettings) {
+                console.warn(`[翰林院] 未找到来源 '${source}' 的注入设置，跳过处理。`);
+                continue;
+            }
+
+            const formattedText = results.map(r => r.text).join('\n\n');
+            const placeholder = `{{${source.replace('_history', '')}_text}}`;
+            let injectionContent = injectionSettings.template.replace(placeholder, formattedText);
+
+            if (injectionContent.trim()) {
+                injectionContent = `%%${injectionKeys[source]}%%${injectionContent}`;
+            }
+
+            setExtensionPrompt(
+                injectionKeys[source],
+                injectionContent,
+                injectionSettings.position,
+                injectionSettings.depth,
+                false,
+                injectionSettings.depth_role
+            );
+            
+            console.log(`[翰林院] 已为来源 '${source}' 注入 ${results.length} 条内容。`);
+        }
+
+    } catch (error) {
+        console.error('[翰林院] 检索或注入时发生错误:', error);
+        if (settings.retrieval.notify) showNotification(`忆识检索失败: ${error.message}`, 'error');
+    }
+}
+
+async function moveKnowledgeBase(taskId, fromScope) {
+    const toScope = fromScope === 'global' ? 'local' : 'global';
+    const charId = getCharacterStableId();
+
+    if (!charId && toScope === 'local') {
+        toastr.error('移动失败：没有当前角色，无法移入局部知识库。');
+        return;
+    }
+
+    const sourceBases = fromScope === 'global' ? getGlobalKnowledgeBases() : getLocalKnowledgeBases();
+    const targetBases = toScope === 'global' ? getGlobalKnowledgeBases() : getLocalKnowledgeBases();
+
+    const kbData = sourceBases[taskId];
+
+    if (!kbData) {
+        const errorMsg = `在源作用域 '${fromScope}' 中未找到ID为 ${taskId} 的知识库。`;
+        console.error(`[翰林院-配置] ${errorMsg}`);
+        toastr.error('移动失败：未找到源条目。');
+        return;
+    }
+
+    if (fromScope === 'local' && toScope === 'global' && !kbData.owner) {
+        console.log(`[翰林院-配置] 为旧版知识库 ${taskId} 补充所有者ID: ${charId}`);
+        kbData.owner = charId;
+    }
+
+    delete sourceBases[taskId];
+    targetBases[taskId] = kbData;
+
+    saveSettings();
+    
+    const message = `知识库【${kbData.name}】已成功移动到${toScope === 'global' ? '全局' : '局部'}。`;
+    console.log(`[翰林院-配置] ${message}`);
+}
+
+function renameKnowledgeBase(taskId, newName, scope) {
+    if (!newName || !newName.trim()) {
+        toastr.error('知识库名称不能为空。');
+        throw new Error('知识库名称不能为空');
+    }
+
+    const bases = scope === 'global' ? getGlobalKnowledgeBases() : getLocalKnowledgeBases();
+    const base = bases[taskId];
+
+    if (!base) {
+        const errorMsg = `在作用域 '${scope}' 中未找到ID为 ${taskId} 的知识库。`;
+        console.error(`[翰林院-配置] ${errorMsg}`);
+        toastr.error('重命名失败：未找到知识库条目。');
+        throw new Error(errorMsg);
+    }
+
+    const oldName = base.name;
+    base.name = newName.trim();
+    saveSettings();
+
+    const message = `知识库 "${oldName}" 已成功重命名为 "${base.name}"。`;
+    console.log(`[翰林院-配置] ${message}`);
+    toastr.success(message);
+}
+
+async function getAllVectorsFromCollection(collectionId) {
+    const queryText = '*';
+    const requestBody = {
+        collectionId: collectionId,
+        searchText: queryText,
+        topK: 10000,
+        threshold: 0,
+        source: 'webllm',
+        embeddings: {}
+    };
+
+    const queryEmbedding = (await getEmbeddings([queryText]))[0];
+    requestBody.embeddings = { [queryText]: queryEmbedding };
+
+    const response = await fetch('/api/vector/query', {
+        method: 'POST',
+        headers: context.getRequestHeaders(),
+        body: JSON.stringify(requestBody),
+    });
+
+    if (!response.ok) {
+        if (response.status === 404) {
+            console.log(`[翰林院-迁移] 集合 ${collectionId} 不存在，返回空数组。`);
+            return [];
+        }
+        const errorText = await response.text();
+        throw new Error(`查询集合 ${collectionId} 失败: ${errorText}`);
+    }
+    const result = await response.json();
+    return result.metadata || result.results || result.data || [];
+}
