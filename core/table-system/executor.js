@@ -1,4 +1,3 @@
-
 import { log } from './logger.js';
 
 function insertRow(state, tableIndex, data) {
@@ -158,7 +157,10 @@ function parseValue(val) {
             return JSON.parse(val);
         } catch (e) {
             try {
-                return JSON.parse(val.replace(/'/g, '"'));
+                let fixedVal = val.replace(/([{,]\s*)(\d+)(\s*:)/g, '$1"$2"$3');
+                fixedVal = fixedVal.replace(/'/g, '"');
+                
+                return JSON.parse(fixedVal);
             } catch (e2) {
                 return val;
             }
