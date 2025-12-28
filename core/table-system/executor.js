@@ -5,6 +5,13 @@ function insertRow(state, tableIndex, data) {
         log(`AI指令错误：尝试在不存在的表格索引 ${tableIndex} 中插入行。`, 'error');
         return { state, changes: [] };
     }
+    
+    // 【安全检查】确保 data 是对象
+    if (typeof data !== 'object' || data === null) {
+        log(`AI指令错误：insertRow 的 data 参数必须是对象，实际收到: ${typeof data} (${data})`, 'error');
+        return { state, changes: [] };
+    }
+
     const table = state[tableIndex];
     const colCount = table.headers.length;
     const newRow = Array(colCount).fill('');
@@ -25,6 +32,12 @@ function insertRow(state, tableIndex, data) {
 function updateRow(state, tableIndex, rowIndex, data) {
     if (!state[tableIndex]) {
         log(`AI指令错误：尝试更新不存在的表格 ${tableIndex}。`, 'error');
+        return { state, changes: [] };
+    }
+
+    // 【安全检查】确保 data 是对象
+    if (typeof data !== 'object' || data === null) {
+        log(`AI指令错误：updateRow 的 data 参数必须是对象，实际收到: ${typeof data} (${data})`, 'error');
         return { state, changes: [] };
     }
 
@@ -156,13 +169,21 @@ function parseValue(val) {
         try {
             return JSON.parse(val);
         } catch (e) {
+            let fixedKeys = val.replace(/([{,]\s*)(\d+)(\s*:)/g, '$1"$2"$3');
             try {
-                let fixedVal = val.replace(/([{,]\s*)(\d+)(\s*:)/g, '$1"$2"$3');
-                fixedVal = fixedVal.replace(/'/g, '"');
-                
-                return JSON.parse(fixedVal);
+                return JSON.parse(fixedKeys);
             } catch (e2) {
-                return val;
+                let fixedQuotes = fixedKeys.replace(/'/g, '"');
+                try {
+                    return JSON.parse(fixedQuotes);
+                } catch (e3) {
+                    let fixedAllKeys = val.replace(/([{,]\s*)([a-zA-Z0-9_]+)(\s*:)/g, '$1"$2"$3');
+                    try {
+                         return JSON.parse(fixedAllKeys);
+                    } catch (e4) {
+                         return val;
+                    }
+                }
             }
         }
     }
