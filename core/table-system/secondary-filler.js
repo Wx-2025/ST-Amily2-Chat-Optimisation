@@ -99,11 +99,19 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
         const bufferSize = parseInt(settings.secondary_filler_buffer || 0, 10);
         const batchSize = parseInt(settings.secondary_filler_batch || 0, 10); 
         const contextLimit = parseInt(settings.secondary_filler_context || 2, 10);
+        
+        // 【V1.7.7 修复】限制最大回溯深度，防止更新后无限填补旧历史
+        // 响应用户反馈：扫描深度 = 上下文 + 填表批次 + 保留楼层 + 冗余量(10)
+        // redundancy (冗余量): 额外扫描 10 层作为安全缓冲，防止因消息索引计算偏差导致漏掉边缘消息
+        const redundancy = 10;
+        const maxScanDepth = contextLimit + batchSize + bufferSize + redundancy;
 
         const chat = context.chat;
         const totalMessages = chat.length;
         
         const validEndIndex = totalMessages - 1 - bufferSize;
+        // 计算扫描的起始索引（不小于0）
+        const scanStartIndex = Math.max(0, validEndIndex - maxScanDepth);
 
         if (validEndIndex < 0) {
             console.log(`[Amily2-副API] 消息数量不足以超出保留区(${bufferSize})，跳过。`);
@@ -124,7 +132,7 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
             return hash;
         };
 
-        for (let i = validEndIndex; i >= 0; i--) {
+        for (let i = validEndIndex; i >= scanStartIndex; i--) {
             const msg = chat[i];
             
             if (msg.is_user) continue;
