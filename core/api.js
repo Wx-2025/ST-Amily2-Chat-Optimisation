@@ -47,6 +47,11 @@ const UPDATE_CHECK_URL =
 
 const MESSAGE_BOARD_URL =
   "https://amilyservice.amily49.cc/amily2_message_board.json";
+const PROXIES = [
+    "https://corsproxy.io/?",
+    "https://api.allorigins.win/raw?url=",
+    "https://api.codetabs.com/v1/proxy?quest="
+];
 
 let lastMessageId = null;
  
@@ -55,6 +60,23 @@ export async function fetchMessageBoardContent() {
         console.log('[Amily2号-内务府] 任务取消：陛下尚未配置留言板URL。');
         return null;
     }
+
+    const processResponse = async (response) => {
+        if (response.status === 304) {
+            console.log('[Amily2号-内务府] 留言板内容未变更 (304)。');
+            return null;
+        }
+        if (!response.ok) {
+            throw new Error(`服务器响应异常: ${response.status}`);
+        }
+        const data = await response.json();
+        if (data && data.id) {
+            lastMessageId = data.id;
+        }
+        return data;
+    };
+
+    // 1. 尝试直连
     try {
         let url = MESSAGE_BOARD_URL;
         if (lastMessageId) {
@@ -63,26 +85,40 @@ export async function fetchMessageBoardContent() {
         }
 
         const response = await fetch(url, { cache: 'no-store' });
-
-        if (response.status === 304) {
-            console.log('[Amily2号-内务府] 留言板内容未变更 (304)。');
-            return null;
-        }
-
-        if (!response.ok) {
-            throw new Error(`服务器响应异常: ${response.status}`);
-        }
-        const data = await response.json();
-        
-        if (data && data.id) {
-            lastMessageId = data.id;
-        }
-
-        return data;
+        return await processResponse(response);
     } catch (error) {
-        console.error('[Amily2号-内务府] 获取留言板内容失败:', error);
-        return null;
+        console.warn('[Amily2号-内务府] 直连失败，开始尝试代理链...', error);
     }
+
+    // 2. 尝试代理链
+    for (const proxyPrefix of PROXIES) {
+        try {
+            let targetUrl = MESSAGE_BOARD_URL;
+            if (lastMessageId) {
+                const separator = targetUrl.includes('?') ? '&' : '?';
+                targetUrl += `${separator}nowId=${encodeURIComponent(lastMessageId)}`;
+            }
+            
+            let proxyUrl;
+            // corsproxy.io 支持直接拼接，其他通常需要编码
+            if (proxyPrefix.includes('corsproxy.io')) {
+                proxyUrl = proxyPrefix + targetUrl;
+            } else {
+                proxyUrl = proxyPrefix + encodeURIComponent(targetUrl);
+            }
+
+            console.log(`[Amily2号-内务府] 尝试代理: ${proxyPrefix}`);
+            const response = await fetch(proxyUrl, { cache: 'no-store' });
+            const data = await processResponse(response);
+            console.log(`[Amily2号-内务府] 代理成功: ${proxyPrefix}`);
+            return data;
+        } catch (e) {
+            console.warn(`[Amily2号-内务府] 代理失败: ${proxyPrefix}`, e);
+        }
+    }
+
+    console.error('[Amily2号-内务府] 所有通道均已失效，无法获取留言板内容。');
+    return null;
 }
  
 export async function checkForUpdates() {
