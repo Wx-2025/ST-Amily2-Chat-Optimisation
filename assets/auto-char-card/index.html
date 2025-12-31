@@ -45,15 +45,28 @@
 
                 <div class="acc-divider"></div>
 
+                <div class="acc-panel-header" style="cursor: pointer;" id="acc-rules-toggle">
+                    <i class="fas fa-book"></i> 动态规则 <i class="fas fa-chevron-down" style="float: right;"></i>
+                </div>
+                <div id="acc-rules-content" style="display: none; padding-top: 10px;">
+                    <div class="acc-form-group">
+                        <label>添加新规则 (格式: 关键词|规则内容)</label>
+                        <div style="display: flex; gap: 5px;">
+                            <input type="text" id="acc-new-rule-input" class="acc-input" placeholder="例如: 魔法|描写魔法时必须包含咒语">
+                            <button id="acc-add-rule-btn" class="acc-btn-secondary"><i class="fas fa-plus"></i></button>
+                        </div>
+                    </div>
+                    <div id="acc-rules-list" class="acc-rules-list">
+                        <!-- Rules will be added here -->
+                    </div>
+                </div>
+
+                <div class="acc-divider"></div>
+
                 <div class="acc-panel-header" style="cursor: pointer;" id="acc-api-settings-toggle">
                     <i class="fas fa-network-wired"></i> API 配置 <i class="fas fa-chevron-down" style="float: right;"></i>
                 </div>
                 <div id="acc-api-settings-content" style="display: none; padding-top: 10px;">
-                    <div class="acc-tabs">
-                        <button class="acc-tab-btn active" data-target="executor">模型 A (执行)</button>
-                        <button class="acc-tab-btn" data-target="reviewer">模型 B (规划)</button>
-                    </div>
-                    
                     <div id="acc-api-executor" class="acc-api-group">
                         <div class="acc-form-group">
                             <label>API URL</label>
@@ -72,28 +85,11 @@
                                 <button id="acc-executor-refresh-models" class="acc-btn-secondary" title="刷新模型列表"><i class="fas fa-sync-alt"></i></button>
                             </div>
                         </div>
+                        <div class="acc-form-group">
+                            <label>Max Tokens</label>
+                            <input type="number" id="acc-executor-max-tokens" class="acc-input" placeholder="4000" value="4000">
+                        </div>
                         <button id="acc-executor-test" class="acc-btn-secondary" style="width: 100%;">测试连接</button>
-                    </div>
-
-                    <div id="acc-api-reviewer" class="acc-api-group" style="display: none;">
-                        <div class="acc-form-group">
-                            <label>API URL</label>
-                            <input type="text" id="acc-reviewer-url" class="acc-input" placeholder="http://localhost:3000/v1">
-                        </div>
-                        <div class="acc-form-group">
-                            <label>API Key</label>
-                            <input type="password" id="acc-reviewer-key" class="acc-input" placeholder="sk-...">
-                        </div>
-                        <div class="acc-form-group">
-                            <label>Model</label>
-                            <div style="display: flex; gap: 5px;">
-                                <select id="acc-reviewer-model" class="acc-select" style="flex: 1;">
-                                    <option value="">请刷新获取模型</option>
-                                </select>
-                                <button id="acc-reviewer-refresh-models" class="acc-btn-secondary" title="刷新模型列表"><i class="fas fa-sync-alt"></i></button>
-                            </div>
-                        </div>
-                        <button id="acc-reviewer-test" class="acc-btn-secondary" style="width: 100%;">测试连接</button>
                     </div>
                     
                     <button id="acc-save-api" class="acc-btn-primary" style="width: 100%; margin-top: 10px;">保存配置</button>
@@ -120,18 +116,26 @@
                     <button id="acc-send-btn" class="acc-send-btn"><i class="fas fa-paper-plane"></i></button>
                 </div>
                 <div class="acc-input-controls">
+                    <label class="acc-checkbox-label" title="开启后，每次工具调用前都需要您确认">
+                        <input type="checkbox" id="acc-require-approval"> 需要确认
+                    </label>
                     <button id="acc-stop-btn" class="acc-btn-danger" style="display: none;"><i class="fas fa-stop"></i> 停止生成</button>
                 </div>
             </div>
+            
         </div>
 
         <!-- 右栏：实时预览/Diff -->
         <div class="acc-column acc-right-panel">
-            <div class="acc-panel-header">
-                <i class="fas fa-eye"></i> 内容预览
-                <div class="acc-preview-tabs">
-                    <button class="acc-tab-btn active" data-tab="diff">变更对比</button>
-                    <button class="acc-tab-btn" data-tab="preview">最终效果</button>
+            <div class="acc-panel-header" style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 5px;">
+                    <i class="fas fa-eye"></i> 
+                    <select id="acc-file-selector" class="acc-select" style="height: 24px; padding: 0 5px; font-size: 12px; max-width: 150px;">
+                        <option value="">-- 选择文件 --</option>
+                    </select>
+                </div>
+                <div class="acc-preview-tabs" style="display: flex; gap: 2px; overflow-x: auto; max-width: 60%;">
+                    <!-- Tabs will be injected here -->
                 </div>
             </div>
             <div class="acc-panel-content" id="acc-preview-container">
