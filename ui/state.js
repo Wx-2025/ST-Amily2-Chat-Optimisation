@@ -98,9 +98,6 @@ export function updateUI() {
 	$("#amily2_optimization_target_tag").val(settings.optimizationTargetTag);
 
 
-    $(
-      `input[name="amily2_optimization_mode"][value="${settings.optimizationMode}"]`,
-    ).prop("checked", true);
     $("#amily2_optimization_enabled").prop(
       "checked",
       settings.optimizationEnabled,
