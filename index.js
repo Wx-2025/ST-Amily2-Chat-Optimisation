@@ -616,6 +616,7 @@ jQuery(async () => {
 
         console.log("[Amily2号-开国大典] 步骤3.8：注册表格占位符宏...");
         try {
+
             eventSource.on(event_types.GENERATION_STARTED, () => {
                 resetContextBuffer();
             });
@@ -890,6 +891,7 @@ jQuery(async () => {
 
         console.log("【Amily2号】帝国秩序已完美建立。Amily2号的府邸已恭候陛下的莅临。");
 
+        // 【新增功能】每次加载插件时，如果已授权，则弹出提示
         if (checkAuthorization()) {
             const userType = localStorage.getItem("plugin_user_type") || "未知";
             const userNote = localStorage.getItem("plugin_user_note");
@@ -898,9 +900,12 @@ jQuery(async () => {
             const displayNote = userNote || userType;
             toastr.success(`欢迎回来！授权状态有效 (用户: ${displayNote})`, "Amily2 插件已就绪");
 
+            // 2. 后台静默刷新，检查过期状态或信息更新
+            // 即使本地有备注，也需要去服务器验证一下是否过期
             refreshUserInfo().then(data => {
                 if (data && data.note && data.note !== userNote) {
                     console.log("[Amily2] 用户信息已更新:", data.note);
+                    // 如果备注变了，可以选择再次提示或者静默更新
                 }
             }).catch(e => {
                 console.warn("[Amily2] 后台刷新用户信息失败:", e);
@@ -976,10 +981,12 @@ function applyMessageLimit() {
     const total = messages.length;
     
     if (total <= limit) {
+        // 如果消息数未超标，确保所有消息可见
         messages.forEach(el => el.style.display = '');
         return;
     }
 
+    // 隐藏旧消息，保留最后 limit 条
     const hideCount = total - limit;
     for (let i = 0; i < total; i++) {
         if (i < hideCount) {
@@ -991,6 +998,7 @@ function applyMessageLimit() {
     console.log(`[Amily2-性能优化] 已隐藏 ${hideCount} 条旧消息，仅显示最近 ${limit} 条。`);
 }
 
+// 监听聊天更新事件以应用限制
 eventSource.on(event_types.MESSAGE_RECEIVED, () => setTimeout(applyMessageLimit, 100));
 eventSource.on(event_types.chat_updated, () => setTimeout(applyMessageLimit, 100));
 
@@ -1017,6 +1025,7 @@ function initializeOnlineTracker() {
     }
 
     function connect() {
+        // 单例模式检查：如果已有连接且处于连接中或打开状态，则不重复创建
         if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) {
             console.log('[Amily2-在线统计] 连接已存在，跳过创建');
             return;
@@ -1075,6 +1084,7 @@ function initializeOnlineTracker() {
             
             ws.onerror = (err) => {
                 console.warn('[Amily2-在线统计] 连接错误:', err);
+                // onerror 通常会触发 onclose，所以这里不需要额外的重连逻辑，交给 onclose 处理
             };
         } catch (e) {
             console.error('[Amily2-在线统计] 初始化失败:', e);
@@ -1144,6 +1154,7 @@ function initializeLocalLinkage() {
                             if (window.toastr) window.toastr.success(`已限制显示最近 ${limit} 条消息`, '性能优化');
                         }
                     }
+                    // 这里可以扩展更多指令
                 }
             } catch (e) {
                 console.error('[Amily2-本地联动] 处理消息失败:', e);
@@ -1162,6 +1173,7 @@ function initializeLocalLinkage() {
         };
 
         ws.onerror = (err) => {
+            // console.warn('[Amily2-本地联动] 连接错误:', err);
         };
     }
 
