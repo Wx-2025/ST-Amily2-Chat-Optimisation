@@ -4,6 +4,7 @@ import { extensionName } from "../utils/settings.js";
 import { SlashCommand } from "/scripts/slash-commands/SlashCommand.js";
 import { SlashCommandParser } from "/scripts/slash-commands/SlashCommandParser.js";
 import { checkAndFixWithAPI } from "./api.js";
+import { amilyHelper } from './tavern-helper/main.js';
 
 async function checkLatestMessage() {
   const context = getContext();
@@ -94,9 +95,12 @@ export async function fixCommand() {
     result.optimizedContent &&
     result.optimizedContent !== latestMessage.mes
   ) {
-    latestMessage.mes = result.optimizedContent;
-    await saveChatConditional();
-    await reloadCurrentChat();
+    const messageId = chat.length - 1;
+    await amilyHelper.setChatMessage(
+        { message: result.optimizedContent },
+        messageId,
+        { refresh: 'display_and_render_current' }
+    );
     toastr.success("回复已修复", "命令检查器");
   } else {
     toastr.info("未检测到需要修复的问题", "命令检查器");
