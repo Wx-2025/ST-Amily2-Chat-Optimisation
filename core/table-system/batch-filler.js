@@ -356,6 +356,16 @@ export function startBatchFilling() {
     totalBatches = Math.ceil(chatHistoryLength / threshold);
     currentBatch = 0;
 
+    const startFloorInput = document.getElementById('floor-start-input');
+    if (startFloorInput && startFloorInput.value) {
+        const val = parseInt(startFloorInput.value, 10);
+        if (!isNaN(val) && val > 1) {
+            const startBatch = Math.ceil(val / threshold);
+            currentBatch = startBatch - 1;
+            log(`根据设定，将从第 ${startBatch} 批次（包含楼层 ${val}）开始执行。`, 'info');
+        }
+    }
+
     log(`准备开始批量填表任务，共 ${totalBatches} 个批次。`, 'info');
     processNextBatch();
 }
