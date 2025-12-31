@@ -115,6 +115,12 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    overflow: hidden; /* Prevent overflow */
+}
+
+.acc-panel-header i.fa-chevron-down,
+.acc-panel-header i.fa-chevron-up {
+    margin-left: auto; /* Use flexbox alignment instead of float */
 }
 
 .acc-panel-content {
@@ -144,6 +150,53 @@
     border-radius: 4px;
 }
 
+.acc-input {
+    width: 100%;
+    padding: 8px;
+    background-color: #3c3c3c;
+    border: 1px solid #555;
+    color: #fff;
+    border-radius: 4px;
+    box-sizing: border-box; /* Ensure padding doesn't affect width */
+}
+
+.acc-input:focus {
+    outline: none;
+    border-color: #0e639c;
+}
+
+.acc-btn-primary {
+    background-color: #0e639c;
+    color: #fff;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background-color 0.2s;
+}
+
+.acc-btn-primary:hover {
+    background-color: #1177bb;
+}
+
+.acc-btn-secondary {
+    background-color: #3c3c3c;
+    color: #ccc;
+    border: 1px solid #555;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.acc-btn-secondary:hover {
+    background-color: #444;
+    color: #fff;
+    border-color: #666;
+}
+
 .acc-divider {
     height: 1px;
     background-color: #333;
@@ -171,77 +224,122 @@
     background-color: rgba(255, 193, 7, 0.1);
 }
 
-/* 聊天区域 */
+/* 聊天区域 (Cline Style) */
 .acc-chat-stream {
     flex: 1;
     padding: 20px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 20px;
+    background-color: #1e1e1e;
 }
 
 .acc-message {
-    max-width: 90%;
+    max-width: 95%;
     display: flex;
-    gap: 10px;
-    margin-bottom: 10px;
+    gap: 12px;
+    margin-bottom: 5px;
 }
 
 .acc-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background-color: #444;
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 16px;
+    font-size: 14px;
     flex-shrink: 0;
+    margin-top: 4px;
 }
 
 .acc-message-content {
-    padding: 10px 15px;
-    border-radius: 8px;
     font-size: 14px;
-    line-height: 1.5;
-    position: relative;
+    line-height: 1.6;
+    color: #cccccc;
     word-wrap: break-word;
+    flex: 1;
 }
 
+/* User Message */
 .acc-message.user {
-    align-self: flex-end;
-    flex-direction: row-reverse;
+    background-color: #2b2d31; /* VSCode sidebar/input bg */
+    padding: 12px 16px;
+    border-radius: 6px;
+    align-self: stretch; /* Full width block like Cline */
+    flex-direction: row; /* Keep avatar on left or remove it? Cline puts user msg in a box */
+    border: 1px solid #333;
+}
+
+.acc-message.user .acc-avatar {
+    display: none; /* Hide avatar for user, just show text box */
 }
 
 .acc-message.user .acc-message-content {
-    background-color: #0e639c;
-    color: #fff;
-    border-bottom-right-radius: 0;
+    color: #ffffff;
+    font-weight: 500;
 }
 
+/* Assistant Message */
 .acc-message.assistant {
-    align-self: flex-start;
+    align-self: stretch;
+    padding: 0 10px;
 }
 
-.acc-message.assistant .acc-message-content {
-    background-color: #333;
-    border: 1px solid #444;
-    border-bottom-left-radius: 0;
-}
-
-.acc-message.system {
-    align-self: center;
-    justify-content: center;
-}
-
-.acc-message.system .acc-message-content {
+.acc-message.assistant .acc-avatar {
     background-color: transparent;
-    color: #888;
-    font-style: italic;
+    color: #4caf50; /* Green robot */
+}
+
+/* Tool Request Styles */
+.acc-tool-request {
+    background-color: #252526;
+    border: 1px solid #333;
+    border-radius: 6px;
+    margin: 10px 0;
+    overflow: hidden;
+}
+
+.acc-tool-header {
+    background-color: #2d2d2d;
+    padding: 8px 12px;
     font-size: 12px;
-    padding: 5px;
-    border: none;
+    font-weight: 600;
+    color: #cccccc;
+    border-bottom: 1px solid #333;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.acc-tool-header i {
+    color: #e5c07b; /* Gold icon */
+}
+
+.acc-tool-content {
+    padding: 12px;
+    margin: 0;
+    background-color: #1e1e1e;
+    color: #9cdcfe;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+}
+
+/* System/Thought Message */
+.acc-message.system, .acc-message.thought {
+    align-self: stretch;
+    padding: 0 10px;
+    opacity: 0.8;
+}
+
+.acc-message.thought .acc-message-content {
+    color: #8b949e;
+    font-style: italic;
+    border-left: 2px solid #333;
+    padding-left: 10px;
 }
 
 /* 输入区域 */
@@ -296,24 +394,80 @@
     font-size: 12px;
 }
 
-/* 预览区域 */
+/* 预览区域 (Editor Tabs) */
 .acc-preview-tabs {
     display: flex;
-    gap: 5px;
+    background-color: #252526;
+    border-bottom: 1px solid #2b2b2b;
+    overflow-x: auto;
 }
 
 .acc-tab-btn {
-    background: none;
+    background: #2d2d2d;
     border: none;
-    color: #888;
+    border-right: 1px solid #252526;
+    color: #969696;
     cursor: pointer;
-    padding: 2px 8px;
-    font-size: 12px;
+    padding: 8px 15px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 100px;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.acc-tab-title {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+}
+
+.acc-tab-btn:hover {
+    background-color: #2a2d2e;
+    color: #cccccc;
 }
 
 .acc-tab-btn.active {
+    background-color: #1e1e1e;
+    color: #ffffff;
+    border-top: 2px solid #0e639c; /* Active tab indicator */
+}
+
+.acc-tab-btn i {
+    font-size: 14px;
+    color: #e7c05e; /* JS/File icon color */
+    flex-shrink: 0;
+}
+
+.acc-tab-close {
+    flex-shrink: 0;
+    margin-left: 5px;
+    cursor: pointer;
+    opacity: 0.7;
+}
+
+.acc-tab-close:hover {
+    opacity: 1;
     color: #fff;
-    border-bottom: 2px solid #0e639c;
+}
+
+.acc-editor-content {
+    flex: 1;
+    overflow-y: auto;
+    background-color: #1e1e1e;
+    padding: 0; /* Remove padding to let editor fill space */
+}
+
+/* Hide scrollbar for tabs but allow scrolling */
+.acc-preview-tabs::-webkit-scrollbar {
+    height: 3px;
+}
+.acc-preview-tabs::-webkit-scrollbar-thumb {
+    background: #444;
 }
 
 .acc-empty-state {
@@ -365,15 +519,124 @@
     border: 2px solid #1e1e1e;
 }
 
-/* Diff 高亮样式 */
+/* Cursor-like Editor Styles */
+.cursor-card {
+    background-color: #181818; /* Cursor dark background */
+    color: #cccccc;
+    font-family: 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    border: 1px solid #2b2b2b;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.cursor-header {
+    background-color: #202020;
+    padding: 8px 12px;
+    border-bottom: 1px solid #2b2b2b;
+    font-size: 12px;
+    color: #8b949e;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.cursor-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cursor-filename {
+    color: #c9d1d9;
+    font-weight: 500;
+}
+
+.cursor-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.cursor-action-btn {
+    background: transparent;
+    border: 1px solid #30363d;
+    color: #c9d1d9;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cursor-action-btn:hover {
+    background-color: #30363d;
+    border-color: #8b949e;
+}
+
+.cursor-content {
+    padding: 4px 0;
+    overflow-x: auto;
+}
+
+.cursor-line {
+    display: flex;
+    padding: 0;
+    min-height: 21px; /* Ensure empty lines have height */
+}
+
+.cursor-line-number {
+    color: #484f58;
+    min-width: 40px;
+    text-align: right;
+    padding-right: 16px;
+    user-select: none;
+    font-size: 12px;
+    line-height: 1.7; /* Align with content */
+    background-color: #181818;
+    border-right: 1px solid transparent; /* Optional separator */
+}
+
+.cursor-line-content {
+    white-space: pre-wrap;
+    flex: 1;
+    padding-left: 8px;
+    padding-right: 8px;
+}
+
+/* Syntax Highlighting (Cursor/Dark Modern) */
+.syntax-key { color: #ff7b72; } /* Red/Pink */
+.syntax-string { color: #a5d6ff; } /* Light Blue */
+.syntax-number { color: #79c0ff; } /* Blue */
+.syntax-comment { color: #8b949e; font-style: italic; } /* Grey */
+.syntax-func { color: #d2a8ff; } /* Purple */
+
+/* Diff Styles (Cursor Style) */
 .diff-added {
-    background-color: rgba(76, 175, 80, 0.2);
-    border-left: 3px solid #4CAF50;
+    background-color: rgba(46, 160, 67, 0.15);
+}
+
+.diff-added .cursor-line-number {
+    background-color: rgba(46, 160, 67, 0.15); /* Match line bg */
+    color: rgba(255, 255, 255, 0.6);
+    border-left: 3px solid #2ea043; /* Green marker */
 }
 
 .diff-removed {
-    background-color: rgba(244, 67, 54, 0.2);
-    border-left: 3px solid #f44336;
+    background-color: rgba(248, 81, 73, 0.15);
+    opacity: 0.8;
+}
+
+.diff-removed .cursor-line-number {
+    background-color: rgba(248, 81, 73, 0.15);
+    color: rgba(255, 255, 255, 0.6);
+    border-left: 3px solid #f85149; /* Red marker */
+}
+
+.diff-removed .cursor-line-content {
     text-decoration: line-through;
-    opacity: 0.7;
+    text-decoration-color: rgba(255, 255, 255, 0.4);
 }
