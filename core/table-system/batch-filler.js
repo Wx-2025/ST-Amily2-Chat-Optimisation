@@ -357,13 +357,22 @@ export function startBatchFilling() {
     currentBatch = 0;
 
     const startFloorInput = document.getElementById('floor-start-input');
-    if (startFloorInput && startFloorInput.value) {
+    console.log('[Amily2 Debug] startFloorInput found:', !!startFloorInput);
+    if (startFloorInput) {
+        console.log('[Amily2 Debug] startFloorInput value:', startFloorInput.value);
         const val = parseInt(startFloorInput.value, 10);
+        console.log('[Amily2 Debug] Parsed val:', val, 'Threshold:', threshold);
+        
         if (!isNaN(val) && val > 1) {
             const startBatch = Math.ceil(val / threshold);
+            console.log('[Amily2 Debug] Calculated startBatch:', startBatch);
             currentBatch = startBatch - 1;
             log(`根据设定，将从第 ${startBatch} 批次（包含楼层 ${val}）开始执行。`, 'info');
+        } else {
+            console.log('[Amily2 Debug] Value is NaN or <= 1');
         }
+    } else {
+        console.log('[Amily2 Debug] startFloorInput element not found');
     }
 
     log(`准备开始批量填表任务，共 ${totalBatches} 个批次。`, 'info');
