@@ -1,256 +1,348 @@
 import { callAi, getApiConfig } from "./api.js";
 import { tools, getToolDefinitions } from "./tools.js";
 import { ContextManager } from "./context-manager.js";
+import { TaskState } from "./task-state.js";
+import { MemorySystem } from "./memory-system.js";
 
 export class AgentManager {
     constructor() {
         this.history = []; 
-        this.executorHistory = [];
-        this.reviewerHistory = [];
-        this.executorSystemPrompt = this.buildExecutorSystemPrompt();
-        this.reviewerSystemPrompt = this.buildReviewerSystemPrompt();
         this.contextManager = new ContextManager();
+        this.taskState = new TaskState();
+        this.memorySystem = new MemorySystem();
         this.currentChid = undefined;
         this.currentBookName = undefined;
+        this.status = 'idle'; // idle, running, paused
+        this.approvalRequired = false;
+        this.pendingToolCall = null;
     }
 
-    setContext(chid, bookName) {
+    async setContext(chid, bookName) {
         this.currentChid = chid;
         this.currentBookName = bookName;
-        this.executorSystemPrompt = this.buildExecutorSystemPrompt();
-    }
-
-    buildReviewerSystemPrompt() {
-        const toolDefs = getToolDefinitions();
-        let prompt = `你是一个经验丰富的角色卡设计师和辅导员（Reviewer）。你的搭档是一个执行力强且富有创造力的 AI 助手（Executor）。
-你的目标是根据用户的需求，设计出高质量的角色卡和世界书方案，并指导 Executor 一步步实现。
-
-Executor 拥有以下工具（你不能直接使用，但需要知道它能做什么）：
-`;
-        toolDefs.forEach(tool => {
-            prompt += `- ${tool.name}: ${tool.description}\n`;
-        });
-
-        prompt += `
-### 世界书高级设置指南 (World Info Settings)
-- **constant (蓝灯)**: 如果为 true，该条目将始终被激活并包含在上下文中，忽略关键词触发。
-- **position (插入位置)**: 决定条目内容在 Prompt 中的位置。
-  - \`before/after_character_definition\`: 角色定义前后。
-  - \`before/after_author_note\`: 作者注释前后。
-  - \`at_depth_as_system\`: 在指定深度作为系统消息插入（推荐）。
-- **depth (插入深度)**: 仅当 position 为 \`at_depth_as_system\` 时有效。表示条目距离最新消息的距离（例如 0 为最新，4 为倒数第 4 条消息后）。
-- **scanDepth (扫描深度)**: 系统扫描关键词的消息范围。例如 2 表示只扫描最近 2 条消息。
-- **exclude_recursion**: 如果为 true，此条目的内容不会触发其他条目。
-- **prevent_recursion**: 如果为 true，其他条目的内容不会触发此条目。
-
-你的工作流程：
-1. 分析用户需求。
-2. 制定详细的实施计划（大纲）。
-3. 将计划拆解为 Executor 可以执行的**指导性指令**。
-4. 审查 Executor 的执行结果，提出修改意见。
-
-**关键原则：**
-- **只给方案，不给成品**：你负责提供创意方向、关键设定点和风格指导，让 Executor 去进行具体的文本创作和扩写。不要直接把完整的角色描述或世界书内容写出来让 Executor 照抄。
-- **示例**：
-  - ❌ 错误：“请写入以下描述：她有一头金发，性格傲娇...”
-  - ✅ 正确：“请为角色撰写一段详细的外貌和性格描述。外貌上要突出她的金发和贵族气质，性格上要体现出‘傲娇’的特点，即外表冷漠但内心渴望被关怀。请发挥你的文采。”
-
-交互规则：
-- 当你需要 Executor 执行操作时，请在回复的最后一行使用标签：<instruction>你的指令</instruction>
-- **重要**：<instruction> 标签内必须是**自然语言指令**。**严禁**直接输出 JSON 代码块作为指令。
-- **单步原则**：每次指令**只能包含一个**具体的任务（例如：只创建一个世界书条目，或只更新角色描述）。严禁一次性下达多个任务。
-- **字数强制**：在指令中必须明确要求 Executor 进行深度扩写。
-  - 世界书条目：要求**不低于 300 字**。
-  - 角色开场白：要求**不低于 1500 字**。
-- 当你认为任务已完成或需要用户反馈时，直接回复用户即可，不要包含 <instruction> 标签。
-`;
-        return prompt;
-    }
-
-    buildExecutorSystemPrompt() {
-        const toolDefs = getToolDefinitions();
-        let contextInfo = "";
         
+        if (bookName && bookName !== 'new') {
+            try {
+                // Use return_full: true to get content for ContextManager (RAG)
+                const bookData = await tools.read_world_info({ book_name: bookName, return_full: true });
+                const entries = JSON.parse(bookData);
+                this.contextManager.setWorldInfo(entries);
+            } catch (e) {
+                console.error("Failed to load world info for context:", e);
+            }
+        }
+    }
+
+    setApprovalRequired(required) {
+        this.approvalRequired = required;
+    }
+
+    stop() {
+        this.status = 'idle';
+    }
+
+    async resumeWithApproval(approved, feedback, onStreamUpdate, onPreviewUpdate, onApprovalRequest) {
+        if (this.status !== 'paused' || !this.pendingToolCall) return;
+
+        if (approved) {
+            this.status = 'running';
+            await this.executePendingTool(onStreamUpdate, onPreviewUpdate);
+            this.pendingToolCall = null;
+            await this.runTaskLoop(onStreamUpdate, onPreviewUpdate, onApprovalRequest);
+        } else {
+            this.status = 'running';
+            this.pendingToolCall = null;
+            // Add feedback as user message to guide correction
+            this.history.push({ 
+                role: 'user', 
+                content: `[Tool Execution Denied] User Feedback: ${feedback || "No reason provided."}` 
+            });
+            await this.runTaskLoop(onStreamUpdate, onPreviewUpdate, onApprovalRequest);
+        }
+    }
+
+    async buildSystemPrompt() {
+        const toolDefs = getToolDefinitions();
+        
+        // 1. Role & Objective
+        let prompt = `You are an expert Character Card Designer and World Builder.
+You accomplish a given task iteratively, breaking it down into clear steps and working through them methodically.
+
+IMPORTANT: You MUST speak in Chinese (Simplified) for all your responses and reasoning.
+
+**Core Capabilities**:
+- You can create and modify **Single Character Cards**.
+- You can create and modify **Multi-Character World Cards** (Group Cards). Do not assume the user only wants a single character.
+- You can manage **World Info (Lorebooks)**.
+
+**Workflow**:
+1. **Analyze & Explore First**: The World Book Index is provided in the context below. Review it to see what entries exist. If you need the *content* of a specific entry, use \`read_world_entry\` with its UID. Do not use \`read_world_info\` unless you need to refresh the index.
+2. **Plan & Execute**: Based on the read data, formulate a plan and execute it step-by-step.
+3. **Tool Usage**: Use one tool per turn. Always explain your reasoning in \`<thinking>\` tags before using a tool.
+4. **Completion**: When finished, provide a concise summary.
+
+# Memory & Task State
+${this.taskState.getPromptContext()}
+
+# Current Context
+`;
+
         if (this.currentChid === 'new') {
-            contextInfo += `**注意：用户希望创建一个新角色。**\n请首先使用 \`create_character\` 工具创建角色。创建成功后，你将获得新的角色 ID，请使用该 ID 进行后续操作（如 \`update_character_card\`）。\n`;
+            prompt += `- **Status**: Creating a NEW character.\n`;
+            prompt += `- **Action Required**: Use \`create_character\` first to get a Character ID.\n`;
         } else if (this.currentChid !== undefined) {
-            contextInfo += `当前操作的角色ID: ${this.currentChid}\n`;
+            prompt += `- **Character ID**: ${this.currentChid}\n`;
         }
         
         if (this.currentBookName) {
-            contextInfo += `当前操作的世界书: ${this.currentBookName}\n`;
+            prompt += `- **World Info Book**: ${this.currentBookName}\n`;
         }
 
-        let prompt = `你是一个专业的角色卡构建助手（Executor）。你的目标是根据 Reviewer 的指导和用户的需求，在当前选定的“工作区”（角色卡和世界书）中进行**创作**和修改。
+        // Dynamic Context Injection (Rules & World Info)
+        const contextText = this.getLastUserMessage() || "";
+        const { rules, worldInfo } = this.contextManager.getRelevantContext(contextText);
+        
+        if (rules.length > 0) {
+            prompt += `\n# Style Guides & Rules\n`;
+            rules.forEach(rule => {
+                prompt += `- ${rule.content}\n`;
+            });
+        }
 
-${contextInfo}
+        if (worldInfo.length > 0) {
+            prompt += `\n# World Info Context\n`;
+            worldInfo.forEach(entry => {
+                prompt += `## Entry: ${entry.keys.join(', ')}\n${entry.content}\n\n`;
+            });
+        }
 
-**你的职责：**
-1. **理解指令**：仔细阅读 Reviewer 的指导性指令。
-2. **深度扩写**：这是你的核心任务。Reviewer 给出的只是大纲，你需要将其扩写成丰富、细腻的文学作品。
-   - **世界书条目**：必须丰富细节，字数**不低于 300 字**。
-   - **角色开场白**：必须包含环境描写、心理活动、动作细节，字数**不低于 1500 字**。
-3. **执行操作**：使用工具将你创作的内容写入系统。
+        // Environment Details Injection
+        let envDetails = `\n<environment_details>\n`;
+        envDetails += `# Current Time\n${new Date().toLocaleString()}\n\n`;
+        
+        if (this.currentChid !== undefined && this.currentChid !== 'new') {
+            try {
+                const charData = await tools.read_character_card({ chid: this.currentChid });
+                const char = JSON.parse(charData);
+                envDetails += `# Current Character\n`;
+                envDetails += `Name: ${char.name}\n`;
+                envDetails += `Description Length: ${char.description?.length || 0}\n`;
+                envDetails += `First Message Length: ${char.first_mes?.length || 0}\n`;
+                envDetails += `Description Snippet: ${char.description?.substring(0, 200).replace(/\n/g, ' ')}...\n\n`;
+            } catch (e) {
+                envDetails += `# Current Character\nError reading character: ${e.message}\n\n`;
+            }
+        }
+        
+        if (this.currentBookName && this.currentBookName !== 'new') {
+             try {
+                // Get the index for the system prompt
+                const bookData = await tools.read_world_info({ book_name: this.currentBookName, return_full: false });
+                const result = JSON.parse(bookData);
+                envDetails += `# Current World Book Index\n`;
+                envDetails += `Name: ${this.currentBookName}\n`;
+                envDetails += `Total Entries: ${result.total_entries}\n`;
+                envDetails += `Entries List (UID | Name | Keys):\n`;
+                
+                if (result.entries && result.entries.length > 0) {
+                    result.entries.forEach(entry => {
+                        const keys = Array.isArray(entry.keys) ? entry.keys.join(', ') : entry.keys;
+                        const name = entry.comment || keys || "Unnamed";
+                        envDetails += `- [${entry.uid}] ${name} (Keys: ${keys})\n`;
+                    });
+                } else {
+                    envDetails += `(No entries found)\n`;
+                }
+                envDetails += `\n`;
+            } catch (e) {
+                envDetails += `# Current World Book\nError reading world book: ${e.message}\n\n`;
+            }
+        }
+        envDetails += `</environment_details>\n`;
+        prompt += envDetails;
 
-TOOL USE
-
-你拥有以下工具可以使用。你可以使用这些工具来完成任务。每次回复只能使用一个工具。
-
-# Tools
-
-`;
-
+        // 2. Tools
+        prompt += `\n# Tools\n\n`;
         toolDefs.forEach(tool => {
             prompt += `## ${tool.name}\n`;
             prompt += `Description: ${tool.description}\n`;
             prompt += `Parameters:\n${JSON.stringify(tool.parameters, null, 2)}\n\n`;
         });
 
+        // 3. Tool Use Formatting
         prompt += `
-### 世界书高级设置指南 (World Info Settings)
-- **constant (蓝灯)**: 如果为 true，该条目将始终被激活并包含在上下文中，忽略关键词触发。
-- **position (插入位置)**: 决定条目内容在 Prompt 中的位置。
-  - \`before/after_character_definition\`: 角色定义前后。
-  - \`before/after_author_note\`: 作者注释前后。
-  - \`at_depth_as_system\`: 在指定深度作为系统消息插入（推荐）。
-- **depth (插入深度)**: 仅当 position 为 \`at_depth_as_system\` 时有效。表示条目距离最新消息的距离（例如 0 为最新，4 为倒数第 4 条消息后）。
-- **scanDepth (扫描深度)**: 系统扫描关键词的消息范围。例如 2 表示只扫描最近 2 条消息。
-- **exclude_recursion**: 如果为 true，此条目的内容不会触发其他条目。
-- **prevent_recursion**: 如果为 true，其他条目的内容不会触发此条目。
-
 # Tool Use Formatting
 
-工具调用必须使用以下 XML 格式。工具名称包含在开始和结束标签中，每个参数也包含在自己的标签中：
+Tool use is formatted using XML-style tags. The tool name is enclosed in opening and closing tags, and each parameter is similarly enclosed within its own set of tags.
 
-<工具名称>
-<参数1>值1</参数1>
-<参数2>值2</参数2>
+<tool_name>
+<parameter1_name>value1</parameter1_name>
+<parameter2_name>value2</parameter2_name>
 ...
-</工具名称>
+</tool_name>
 
-**注意**：对于复杂参数（如数组或对象），请直接在标签内写入 **JSON 字符串**。
+**Important**: For complex parameters (arrays or objects), write the **JSON string** directly inside the tag.
 
-例如：
+Example:
 <write_world_info_entry>
 <book_name>MyWorld</book_name>
 <entries>[{"key": "Entry1", "content": "..."}]</entries>
 </write_world_info_entry>
 
-# Tool Use Guidelines
-
-1. **必须思考 (Mandatory Thinking)**: 在调用任何工具之前，你**必须**先输出一段思考过程，解释你为什么要这样做，以及你打算如何创作内容。请使用 \`<thinking>\` 标签包裹你的思考。**严禁**直接输出工具调用而不进行思考。
-2. **单步执行**: 每次回复只能使用**一个**工具。必须等待工具执行结果（成功或失败）后，才能决定并执行下一步操作。
-3. **等待确认**: 永远不要假设工具执行成功。必须根据实际返回的结果来判断。
-4. **参数完整性**: 确保提供所有必需的参数。
-
-# Capabilities
-
-- 你可以读取和修改当前绑定的世界书（World Info）。
-- 你可以读取和修改当前角色的详细信息（Name, Description, Personality, Scenario, First Message, etc.）。
-- 你可以管理角色的开场白（添加、修改、删除）。
-
 # Rules
 
-1. **工作区**: 你始终在当前选定的角色卡和世界书上下文中操作。
-2. **路径**: 如果涉及文件路径（虽然主要通过 API 操作），请认为是相对于工作区的虚拟路径。
-3. **完成任务**: 当你认为任务已经完成时，请向用户汇报结果。不要在汇报结果后继续提问。
-
-现在，请开始你的工作。
+- **Think First**: Before using any tool, you MUST output a \`<thinking>\` block explaining your plan and reasoning.
+- **One Tool Per Turn**: You can only use ONE tool per message. Wait for the result before proceeding.
+- **Verify Results**: Always check the [Tool Result] to ensure success. If a tool fails, analyze the error and try again.
+- **Detailed Writing**: When writing content (Description, First Message, World Info), be creative and detailed.
+   - World Info entries: > 300 words.
+   - First Message: > 1500 words, including environment, psychology, and action.
+- **Do not ask for more information than necessary**: Use the tools provided to accomplish the user's request efficiently and effectively.
+- **Completion**: When the task is done, provide a final summary to the user.
 `;
         return prompt;
     }
 
-    async handleUserMessage(message, onStreamUpdate, onPreviewUpdate) {
-        this.history.push({ role: 'user', content: message });
-        
-        this.reviewerHistory.push({ role: 'user', content: message });
-
-        await this.runDualAgentLoop(onStreamUpdate, onPreviewUpdate);
-    }
-
-    async runDualAgentLoop(onStreamUpdate, onPreviewUpdate) {
-        let maxLoops = 3; 
-        let currentLoop = 0;
-
-        while (currentLoop < maxLoops) {
-            currentLoop++;
-
-            onStreamUpdate("Reviewer (模型B) 正在思考...", 'system');
-            
-            const reviewerConfig = getApiConfig('reviewer');
-            const reviewerMessages = this.contextManager.buildMessages(
-                this.reviewerSystemPrompt, 
-                this.reviewerHistory, 
-                reviewerConfig.maxTokens
-            );
-
-            let reviewerResponse;
-            try {
-                reviewerResponse = await callAi('reviewer', reviewerMessages);
-            } catch (error) {
-                onStreamUpdate(`[Reviewer 错误] ${error.message}`, 'system');
-                return;
-            }
-
-            const instructionMatch = reviewerResponse.match(/<instruction>([\s\S]*?)<\/instruction>/);
-            const instruction = instructionMatch ? instructionMatch[1].trim() : null;
-            
-            const displayContent = reviewerResponse.replace(/<instruction>[\s\S]*?<\/instruction>/, '').trim();
-            
-            if (displayContent) {
-                onStreamUpdate(displayContent, 'assistant'); 
-                this.history.push({ role: 'assistant', content: displayContent });
-                this.reviewerHistory.push({ role: 'assistant', content: displayContent });
-            }
-
-            if (!instruction) {
-                break;
-            }
-
-            onStreamUpdate(`Reviewer 指令: ${instruction}`, 'system');
-            
-            this.executorHistory.push({ role: 'user', content: instruction }); 
-            
-            await this.runExecutorLoop(onStreamUpdate, onPreviewUpdate);
-
-            const lastExecutorResponse = this.executorHistory[this.executorHistory.length - 1];
-            if (lastExecutorResponse && lastExecutorResponse.role === 'assistant') {
-                this.reviewerHistory.push({ 
-                    role: 'user', 
-                    content: `[Executor 执行结果]\n${lastExecutorResponse.content}` 
-                });
+    getLastUserMessage() {
+        for (let i = this.history.length - 1; i >= 0; i--) {
+            if (this.history[i].role === 'user') {
+                return this.history[i].content;
             }
         }
+        return null;
     }
 
-    async runExecutorLoop(onStreamUpdate, onPreviewUpdate) {
-        let maxTurns = 5;
+    async handleUserMessage(message, onStreamUpdate, onPreviewUpdate, onApprovalRequest) {
+        // Initialize task state if it's the first message or explicitly requested
+        if (this.history.length === 0) {
+            this.taskState.init(message);
+        }
+        
+        this.history.push({ role: 'user', content: message });
+        this.status = 'running';
+        await this.runTaskLoop(onStreamUpdate, onPreviewUpdate, onApprovalRequest);
+    }
+
+    async runTaskLoop(onStreamUpdate, onPreviewUpdate, onApprovalRequest) {
+        let maxTurns = 20; // Safety limit
         let currentTurn = 0;
 
-        while (currentTurn < maxTurns) {
+        while (this.status === 'running' && currentTurn < maxTurns) {
             currentTurn++;
             
-            const executorConfig = getApiConfig('executor');
+            // 0. Check Memory/Context
+            const config = getApiConfig('executor'); 
+            const currentTokens = this.contextManager.estimateTokens(JSON.stringify(this.history));
+            
+            if (this.memorySystem.shouldSummarize(this.history, currentTokens, config.maxTokens)) {
+                onStreamUpdate("Context limit approaching. Summarizing memory...", 'system');
+                const summary = await this.memorySystem.summarize(this.history, this.taskState);
+                if (summary) {
+                    this.taskState.updateSummary(summary);
+                    // Optional: Compress history here. For now, we just rely on the summary being injected.
+                    // A simple compression strategy: Keep the last 5 messages, and replace the rest with a system note.
+                    if (this.history.length > 5) {
+                        const lastMessages = this.history.slice(-5);
+                        this.history = [
+                            { role: 'system', content: `[History Compressed] Previous conversation has been summarized in the "Memory & Task State" section. Resuming from recent messages.` },
+                            ...lastMessages
+                        ];
+                    }
+                }
+            }
+
+            // 1. Build System Prompt (Dynamic)
+            const systemPrompt = await this.buildSystemPrompt();
+            
+            // 2. Build Messages
             const messages = this.contextManager.buildMessages(
-                this.executorSystemPrompt, 
-                this.executorHistory,
-                executorConfig.maxTokens
+                systemPrompt, 
+                this.history,
+                config.maxTokens
             );
 
+            // 3. Call AI
             let responseContent;
+            let fullStreamedContent = "";
             try {
-                responseContent = await callAi('executor', messages);
+                onStreamUpdate("Thinking...", 'system');
+                responseContent = await callAi('executor', messages, {}, (chunk) => {
+                    onStreamUpdate(chunk, 'stream-assistant');
+                    fullStreamedContent += chunk;
+                    
+                    // Try to parse partial tool call for real-time preview
+                    if (onPreviewUpdate) {
+                        const partialTool = this.parsePartialToolCall(fullStreamedContent);
+                        if (partialTool) {
+                            onPreviewUpdate(partialTool.name, partialTool.arguments, true); // true = isPartial
+                        }
+                    }
+                });
             } catch (error) {
-                onStreamUpdate(`[Executor 错误] ${error.message}`, 'system');
+                onStreamUpdate(`[Error] ${error.message}`, 'system');
+                this.status = 'idle'; // Stop on API error
                 return;
             }
 
-            onStreamUpdate(responseContent, 'executor'); 
-            this.executorHistory.push({ role: 'assistant', content: responseContent });
+            if (this.status !== 'running') return; // Check if stopped during await
 
+            // 4. Process Response
+            
+            // Check for truncation (Auto-Continue)
+            const lastChar = responseContent.trim().slice(-1);
+            const isTruncated = !['.', '!', '?', '"', "'", '}', ']', '>', '*'].includes(lastChar) && responseContent.length > 100;
+
+            if (isTruncated && currentTurn < maxTurns) {
+                console.log("检测到回复截断，正在自动继续...");
+                try {
+                    // Append a continue message
+                    const continueMsg = { role: 'user', content: "Continue" };
+                    const continueMessages = [...messages, { role: 'assistant', content: responseContent }, continueMsg];
+                    
+                    const continuation = await callAi('executor', continueMessages, {}, (chunk) => {
+                        onStreamUpdate(chunk, 'stream-assistant');
+                    });
+                    
+                    responseContent += continuation;
+                    console.log("自动合并接续内容完成");
+                } catch (e) {
+                    console.warn("Auto-continue failed:", e);
+                }
+            }
+
+            this.history.push({ role: 'assistant', content: responseContent });
+            
+            const thinkingMatch = responseContent.match(/<thinking>([\s\S]*?)<\/thinking>/);
+            if (thinkingMatch) {
+                onStreamUpdate(thinkingMatch[1].trim(), 'thought');
+            }
+            
+            // Clean up content for UI display
+            let cleanContent = responseContent
+                .replace(/<thinking(?:\s+[^>]*)?>[\s\S]*?<\/thinking>/gi, '')
+                .replace(/<\/thinking>/gi, ''); // Remove residual tags
+
+            const toolNames = Object.keys(tools);
+            const toolRegex = new RegExp(`<(${toolNames.join('|')})(?:\\s+[^>]*)?>[\\s\\S]*?<\\/\\1>`, 'gi');
+            cleanContent = cleanContent.replace(toolRegex, '').trim();
+            
+            // Update the UI with the final clean content (replacing the raw stream)
+            if (cleanContent) {
+               onStreamUpdate(cleanContent, 'assistant');
+            }
+
+            // 5. Parse Tool Call
             const toolCall = this.parseToolCall(responseContent);
             
             if (toolCall) {
+                // Check for duplicate tool calls to prevent loops
+                if (this.isDuplicateToolCall(toolCall)) {
+                    const warningMsg = `[System Warning] You have just executed this exact tool call (${toolCall.name}). Do not repeat the same action immediately. If you need to check the result again, look at the conversation history. If the previous result was unsatisfactory, try a different approach.`;
+                    this.history.push({ role: 'user', content: warningMsg });
+                    continue;
+                }
+
+                // Inject Context if missing
                 if (toolCall.name === 'update_character_card' || toolCall.name === 'read_character_card' || toolCall.name === 'edit_character_text' || toolCall.name === 'manage_first_message') {
                     if (toolCall.arguments.chid === undefined && this.currentChid !== undefined) {
                         toolCall.arguments.chid = parseInt(this.currentChid);
@@ -262,39 +354,77 @@ TOOL USE
                     }
                 }
 
-                onStreamUpdate(`[Executor] 执行工具: ${toolCall.name}`, 'system');
-                
-                let result;
-                try {
-                    if (tools[toolCall.name]) {
-                        result = await tools[toolCall.name](toolCall.arguments);
-                        
-                        if (toolCall.name === 'create_character' && result.includes('ID:')) {
-                            const match = result.match(/ID:\s*(\d+)/);
-                            if (match) {
-                                this.currentChid = parseInt(match[1]);
-                                this.executorSystemPrompt = this.buildExecutorSystemPrompt();
-                            }
-                        }
-                    } else {
-                        result = `Error: Tool '${toolCall.name}' not found.`;
+                this.pendingToolCall = toolCall;
+
+                if (this.approvalRequired) {
+                    this.status = 'paused';
+                    if (onApprovalRequest) {
+                        onApprovalRequest(toolCall.name, toolCall.arguments);
                     }
-                } catch (error) {
-                    result = `Error executing tool '${toolCall.name}': ${error.message}`;
-                }
-
-                const toolResultMsg = `[Tool Result for ${toolCall.name}]\n${result}`;
-                this.executorHistory.push({ role: 'user', content: toolResultMsg });
-                
-                onStreamUpdate(`[Executor] 工具结果: ${result.substring(0, 100)}...`, 'system');
-
-                if (onPreviewUpdate && !result.startsWith('Error')) {
-                    onPreviewUpdate(toolCall.name, toolCall.arguments);
+                    return; // Exit loop, wait for resumeWithApproval
+                } else {
+                    await this.executePendingTool(onStreamUpdate, onPreviewUpdate);
+                    this.pendingToolCall = null;
                 }
             } else {
-                break;
+                this.status = 'idle';
             }
         }
+    }
+
+    async executePendingTool(onStreamUpdate, onPreviewUpdate) {
+        const toolCall = this.pendingToolCall;
+        if (!toolCall) return;
+
+        onStreamUpdate(`Executing: ${toolCall.name}`, 'system');
+        
+        let result;
+        try {
+            if (tools[toolCall.name]) {
+                result = await tools[toolCall.name](toolCall.arguments);
+                
+                if (toolCall.name === 'create_character' && result.includes('ID:')) {
+                    const match = result.match(/ID:\s*(\d+)/);
+                    if (match) {
+                        this.currentChid = parseInt(match[1]);
+                    }
+                }
+            } else {
+                result = `Error: Tool '${toolCall.name}' not found.`;
+            }
+        } catch (error) {
+            result = `Error executing tool '${toolCall.name}': ${error.message}`;
+        }
+
+        const toolResultMsg = `[Tool Result for ${toolCall.name}]\n${result}`;
+        this.history.push({ role: 'user', content: toolResultMsg });
+        
+        if (onPreviewUpdate && !result.startsWith('Error')) {
+            onPreviewUpdate(toolCall.name, toolCall.arguments);
+        }
+    }
+
+    isDuplicateToolCall(toolCall) {
+        if (this.history.length < 3) return false;
+        
+        // History structure:
+        // ...
+        // Assistant: <tool>A</tool> (index -3)
+        // User: [Tool Result A] (index -2)
+        // Assistant: <tool>A</tool> (index -1, current)
+        
+        const prevAssistantMsg = this.history[this.history.length - 3];
+        const prevUserMsg = this.history[this.history.length - 2];
+        
+        if (prevAssistantMsg.role === 'assistant' && prevUserMsg.role === 'user' && prevUserMsg.content.startsWith('[Tool Result')) {
+            const prevToolCall = this.parseToolCall(prevAssistantMsg.content);
+            if (prevToolCall && 
+                prevToolCall.name === toolCall.name && 
+                JSON.stringify(prevToolCall.arguments) === JSON.stringify(toolCall.arguments)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     parseToolCall(content) {
@@ -327,10 +457,41 @@ TOOL USE
         }
         return null;
     }
+
+    parsePartialToolCall(content) {
+        const toolNames = Object.keys(tools);
+        for (const name of toolNames) {
+            // Look for the opening tag
+            const openTagRegex = new RegExp(`<${name}>`);
+            const openMatch = content.match(openTagRegex);
+            
+            if (openMatch) {
+                // We found a tool start. Now try to extract params, even if incomplete.
+                const startIndex = openMatch.index + openMatch[0].length;
+                const toolContent = content.slice(startIndex);
+                
+                const args = {};
+                // Match complete tags or tags that are still open (at the end)
+                // <param>value...</param> OR <param>value...
+                const paramRegex = /<(\w+)>([\s\S]*?)(?:<\/\1>|$)/g;
+                
+                let paramMatch;
+                while ((paramMatch = paramRegex.exec(toolContent)) !== null) {
+                    const paramName = paramMatch[1];
+                    let paramValue = paramMatch[2];
+                    
+                    // Don't try to JSON parse partial content here, leave it as string
+                    // The UI handler will deal with partial JSON
+                    args[paramName] = paramValue;
+                }
+                
+                return { name, arguments: args };
+            }
+        }
+        return null;
+    }
     
     clearHistory() {
         this.history = [];
-        this.executorHistory = [];
-        this.reviewerHistory = [];
     }
 }

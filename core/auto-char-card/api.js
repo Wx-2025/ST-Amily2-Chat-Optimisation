@@ -24,7 +24,7 @@ export function setApiConfig(role, config) {
     extension_settings[extensionName][configKey] = { ...getApiConfig(role), ...config };
 }
 
-export async function callAi(role, messages, options = {}) {
+export async function callAi(role, messages, options = {}, onChunk = null) {
     const config = { ...getApiConfig(role), ...options };
     const roleName = role === 'executor' ? '执行者(模型A)' : '规划者(模型B)';
 
@@ -32,7 +32,7 @@ export async function callAi(role, messages, options = {}) {
         throw new Error(`[自动构建器] ${roleName} API 配置不完整，请检查 URL、Key 和模型设置。`);
     }
 
-    console.log(`[自动构建器] 正在调用 AI (${roleName})...`, { model: config.model, messagesCount: messages.length });
+    console.log(`[自动构建器] 正在调用 AI (${roleName})...`, { model: config.model, messagesCount: messages.length, stream: !!onChunk });
 
     const body = {
         chat_completion_source: 'openai',
@@ -40,8 +40,8 @@ export async function callAi(role, messages, options = {}) {
         model: config.model,
         reverse_proxy: config.apiUrl,
         proxy_password: config.apiKey,
-        stream: false, 
-        max_tokens: config.maxTokens,
+        stream: !!onChunk, 
+        max_tokens: config.maxTokens > 0 ? config.maxTokens : undefined,
         temperature: config.temperature,
         top_p: 1,
         custom_prompt_post_processing: 'strict',
@@ -62,18 +62,54 @@ export async function callAi(role, messages, options = {}) {
             throw new Error(`API 请求失败: ${response.status} - ${errorText}`);
         }
 
-        const responseData = await response.json();
-        
-        if (!responseData || !responseData.choices || responseData.choices.length === 0) {
-            if (responseData.error) {
-                throw new Error(`API 返回错误: ${responseData.error.message || JSON.stringify(responseData.error)}`);
-            }
-            throw new Error('API 返回了空响应。');
-        }
+        if (onChunk) {
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+            let fullContent = "";
+            let buffer = "";
 
-        const content = responseData.choices[0].message?.content;
-        console.log(`[自动构建器] AI (${roleName}) 响应接收成功。长度: ${content?.length}`);
-        return content;
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split('\n');
+                buffer = lines.pop(); // Keep incomplete line in buffer
+                
+                for (const line of lines) {
+                    const trimmedLine = line.trim();
+                    if (trimmedLine.startsWith('data: ')) {
+                        const dataStr = trimmedLine.slice(6).trim();
+                        if (dataStr === '[DONE]') continue;
+                        try {
+                            const data = JSON.parse(dataStr);
+                            const delta = data.choices[0].delta?.content || "";
+                            if (delta) {
+                                fullContent += delta;
+                                onChunk(delta);
+                            }
+                        } catch (e) {
+                            // Ignore parse errors for partial chunks
+                        }
+                    }
+                }
+            }
+            console.log(`[自动构建器] AI (${roleName}) 流式响应结束。长度: ${fullContent.length}`);
+            return fullContent;
+        } else {
+            const responseData = await response.json();
+            
+            if (!responseData || !responseData.choices || responseData.choices.length === 0) {
+                if (responseData.error) {
+                    throw new Error(`API 返回错误: ${responseData.error.message || JSON.stringify(responseData.error)}`);
+                }
+                throw new Error('API 返回了空响应。');
+            }
+
+            const content = responseData.choices[0].message?.content;
+            console.log(`[自动构建器] AI (${roleName}) 响应接收成功。长度: ${content?.length}`);
+            return content;
+        }
 
     } catch (error) {
         console.error(`[自动构建器] AI (${roleName}) 调用失败:`, error);
@@ -86,10 +122,10 @@ export async function testConnection(role) {
         const response = await callAi(role, [
             { role: 'user', content: 'Hi' }
         ], { maxTokens: 10 });
-        return !!response;
+        return { success: !!response };
     } catch (error) {
         console.error(`[自动构建器] ${role} 连接测试失败:`, error);
-        return false;
+        return { success: false, error: error.message };
     }
 }
 

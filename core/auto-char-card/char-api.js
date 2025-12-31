@@ -121,6 +121,11 @@ export async function createNewCharacter(name) {
         formData.append('depth_prompt_depth', '4');
         formData.append('depth_prompt_role', 'system');
 
+        const base64Png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+        const res = await fetch(`data:image/png;base64,${base64Png}`);
+        const blob = await res.blob();
+        formData.append('avatar', blob, 'default.png');
+
         const response = await fetch('/api/characters/create', {
             method: 'POST',
             headers: getRequestHeaders({ omitContentType: true }), 

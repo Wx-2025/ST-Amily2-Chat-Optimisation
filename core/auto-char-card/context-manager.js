@@ -1,7 +1,55 @@
 export class ContextManager {
     constructor() {
-        this.keepToolOutputTurns = 3; 
-        this.tokenLimit = 12000; 
+        this.keepToolOutputTurns = 5; 
+        this.tokenLimit = 100000; 
+        this.rules = [];
+        this.worldInfo = [];
+    }
+
+    addRule(rule) {
+        this.rules.push({
+            id: rule.id || Date.now().toString(),
+            keyword: rule.keyword || null, 
+            content: rule.content,
+            enabled: rule.enabled !== undefined ? rule.enabled : true
+        });
+    }
+
+    setWorldInfo(entries) {
+        this.worldInfo = entries.map(entry => {
+            let keys = [];
+            if (Array.isArray(entry.key)) {
+                keys = entry.key;
+            } else if (typeof entry.key === 'string') {
+                keys = entry.key.split(',').map(k => k.trim()).filter(k => k);
+            }
+            
+            return {
+                id: entry.uid,
+                keys: keys,
+                content: entry.content,
+                enabled: entry.enabled !== false
+            };
+        });
+    }
+
+    getRelevantContext(contextText) {
+        const relevantRules = this.rules.filter(rule => {
+            if (!rule.enabled) return false;
+            if (!rule.keyword) return true; 
+            return contextText.includes(rule.keyword);
+        });
+
+        const relevantWorldInfo = this.worldInfo.filter(entry => {
+            if (!entry.enabled) return false;
+            if (!entry.keys || entry.keys.length === 0) return false;
+            return entry.keys.some(key => contextText.includes(key));
+        });
+
+        return {
+            rules: relevantRules,
+            worldInfo: relevantWorldInfo
+        };
     }
 
     estimateTokens(text) {

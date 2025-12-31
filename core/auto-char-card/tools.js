@@ -3,9 +3,40 @@ import * as charApi from "./char-api.js";
 
 export const tools = {
     
-    read_world_info: async ({ book_name }) => {
+    read_world_info: async ({ book_name, return_full = false }) => {
         const entries = await amilyHelper.getLorebookEntries(book_name);
-        return JSON.stringify(entries, null, 2);
+        
+        if (return_full) {
+            return JSON.stringify(entries, null, 2);
+        }
+
+        const summary = entries.map(e => {
+            let keys = e.key;
+            if (Array.isArray(keys)) keys = keys.join(', ');
+            
+            return {
+                uid: e.uid,
+                keys: keys,
+                comment: e.comment || keys || "Unnamed Entry",
+            };
+        });
+        
+        return JSON.stringify({
+            info: "Index of world book entries. Use 'read_world_entry' with 'uid' to read specific content.",
+            total_entries: entries.length,
+            entries: summary
+        }, null, 2);
+    },
+
+    read_world_entry: async ({ book_name, uid }) => {
+        const entries = await amilyHelper.getLorebookEntries(book_name);
+        const entry = entries.find(e => String(e.uid) === String(uid));
+        
+        if (!entry) {
+            return `Entry with UID ${uid} not found in world book "${book_name}".`;
+        }
+        
+        return JSON.stringify(entry, null, 2);
     },
 
     write_world_info_entry: async ({ book_name, entries }) => {
@@ -74,10 +105,15 @@ export const tools = {
         const finalUpdates = args.updates || updates;
         
         const success = charApi.updateCharacter(chid, finalUpdates);
-        return success ? "角色卡更新成功。" : "更新角色卡失败。";
+        if (success) {
+            const updatedFields = Object.keys(finalUpdates).join(', ');
+            return `角色卡更新成功 [ID: ${chid}]。已更新字段: ${updatedFields}。`;
+        } else {
+            return "更新角色卡失败。";
+        }
     },
 
-    edit_character_text: async ({ chid, field, search, replace }) => {
+    edit_character_text: async ({ chid, field, diff }) => {
         const char = charApi.getCharacter(chid);
         if (!char) return "未找到角色。";
 
@@ -86,14 +122,27 @@ export const tools = {
             return `无效的字段。允许的字段: ${allowedFields.join(', ')}`;
         }
 
-        const originalText = char[field] || '';
-        if (!originalText.includes(search)) {
-            return `在字段 '${field}' 中未找到搜索文本。`;
+        let content = char[field] || '';
+        const changes = diff.split('------- SEARCH');
+        
+        // Remove the first empty split if any
+        if (changes[0].trim() === '') changes.shift();
+
+        for (const change of changes) {
+            const parts = change.split('=======');
+            if (parts.length !== 2) continue;
+
+            const searchBlock = parts[0].trim();
+            const replaceBlock = parts[1].split('+++++++ REPLACE')[0].trim();
+
+            if (!content.includes(searchBlock)) {
+                return `错误: 在字段 '${field}' 中未找到以下搜索块:\n${searchBlock}`;
+            }
+
+            content = content.replace(searchBlock, replaceBlock);
         }
 
-        const newText = originalText.replace(search, replace);
-        const success = charApi.updateCharacter(chid, { [field]: newText });
-        
+        const success = charApi.updateCharacter(chid, { [field]: content });
         return success ? `字段 '${field}' 更新成功。` : `更新字段 '${field}' 失败。`;
     },
 
@@ -127,13 +176,25 @@ export function getToolDefinitions() {
     return [
         {
             name: "read_world_info",
-            description: "Read all entries from a specific world book.",
+            description: "Read the index (list of entries with keys and comments) of a world book. Does NOT return full content.",
             parameters: {
                 type: "object",
                 properties: {
                     book_name: { type: "string", description: "The name of the world book." }
                 },
                 required: ["book_name"]
+            }
+        },
+        {
+            name: "read_world_entry",
+            description: "Read the full content of a specific world book entry.",
+            parameters: {
+                type: "object",
+                properties: {
+                    book_name: { type: "string", description: "The name of the world book." },
+                    uid: { type: "number", description: "The UID of the entry to read." }
+                },
+                required: ["book_name", "uid"]
             }
         },
         {
@@ -207,16 +268,18 @@ export function getToolDefinitions() {
         },
         {
             name: "edit_character_text",
-            description: "Edit a specific text field of a character using search and replace.",
+            description: "Edit a specific text field of a character using SEARCH/REPLACE blocks.",
             parameters: {
                 type: "object",
                 properties: {
                     chid: { type: "number", description: "Character ID." },
                     field: { type: "string", enum: ["description", "personality", "scenario", "first_mes", "mes_example"], description: "The field to edit." },
-                    search: { type: "string", description: "The exact text to find." },
-                    replace: { type: "string", description: "The text to replace with." }
+                    diff: { 
+                        type: "string", 
+                        description: "One or more SEARCH/REPLACE blocks following this exact format:\n------- SEARCH\n[exact content to find]\n=======\n[new content to replace with]\n+++++++ REPLACE" 
+                    }
                 },
-                required: ["chid", "field", "search", "replace"]
+                required: ["chid", "field", "diff"]
             }
         },
         {
