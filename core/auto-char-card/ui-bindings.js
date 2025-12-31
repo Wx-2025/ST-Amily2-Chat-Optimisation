@@ -402,6 +402,24 @@ function bindEvents() {
             toastr.error(`连接失败: ${result.error || '未知错误'}`);
         }
     });
+
+    // Mobile Navigation Logic
+    $('.acc-nav-btn').on('click', function() {
+        const targetClass = $(this).data('target');
+        
+        // Update buttons
+        $('.acc-nav-btn').removeClass('active');
+        $(this).addClass('active');
+        
+        // Update panels
+        $('.acc-column').removeClass('mobile-active');
+        $(`.${targetClass}`).addClass('mobile-active');
+    });
+
+    // Initialize mobile view (default to center panel)
+    if (window.innerWidth <= 768) {
+        $('.acc-center-panel').addClass('mobile-active');
+    }
 }
 
 async function handleSendMessage() {
