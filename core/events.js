@@ -65,6 +65,7 @@ import { processOptimization } from "./summarizer.js";
 import { executeAutoHide } from './autoHideManager.js';
 import { checkAndTriggerAutoSummary } from './historiographer.js';
 import { fillWithSecondaryApi } from './table-system/secondary-filler.js';
+import { amilyHelper } from './tavern-helper/main.js';
 
 export async function onMessageReceived(data) {
     window.lastPreOptimizationResult = null;
@@ -97,11 +98,12 @@ export async function onMessageReceived(data) {
             }
 
             if (result && result.optimizedContent && result.optimizedContent !== latestMessage.mes) {
-                latestMessage.mes = result.optimizedContent;
-                await saveChatConditional();
-                if (settings.optimizationMode === 'refresh') {
-                    await reloadCurrentChat();
-                }
+                const messageId = chat.length - 1;
+                await amilyHelper.setChatMessage(
+                    { message: result.optimizedContent },
+                    messageId,
+                    { refresh: 'display_and_render_current' }
+                );
             }
         } else {
             console.log("[Amily2号-正文优化] 检测到消息并非AI对用户的直接回复，已跳过优化。");
