@@ -26,6 +26,13 @@ function insertRow(state, tableIndex, data) {
         }
     }
     table.rows.push(newRow);
+
+    // 同步更新 rowStatuses
+    if (!table.rowStatuses) {
+        table.rowStatuses = Array(table.rows.length - 1).fill('normal');
+    }
+    table.rowStatuses.push('normal');
+
     return { state, changes };
 }
 
