@@ -1,6 +1,6 @@
 import { extensionName } from "../../utils/settings.js";
 import { AgentManager } from "./agent-manager.js";
-import { characters, this_chid, saveSettingsDebounced } from "/script.js";
+import { characters, this_chid, saveSettingsDebounced, getCharacters } from "/script.js";
 import { world_names } from "/scripts/world-info.js";
 import { getApiConfig, setApiConfig, testConnection, fetchModels } from "./api.js";
 import { tools } from "./tools.js";
@@ -77,6 +77,22 @@ function populateDropdowns() {
     });
 }
 
+async function handleContextUpdate(type, value) {
+    console.log(`[Amily2 AutoCharCard] Context Update: ${type} -> ${value}`);
+    
+    if (type === 'char') {
+        await getCharacters(); // Force refresh character list
+    }
+    
+    populateDropdowns(); 
+    
+    if (type === 'char') {
+        $('#acc-target-char').val(value);
+    } else if (type === 'world') {
+        $('#acc-target-world').val(value);
+    }
+}
+
 function renderRulesList() {
     const list = $('#acc-rules-list');
     list.empty();
@@ -145,7 +161,6 @@ function bindEvents() {
             const chid = id;
             const field = subId;
             
-            // Check if already open
             const fileId = `char-${chid}-${field}`;
             if (openedFiles.has(fileId)) {
                 activeFileId = fileId;
@@ -153,32 +168,33 @@ function bindEvents() {
                 return;
             }
 
-            // Fetch content if needed (we might have it cached in previousCharData or need to fetch)
-            // For simplicity, fetch again or use cache
             let content = '';
-            if (previousCharData && previousCharData.name) { // Simple check if loaded
-                 if (field.startsWith('greeting_')) {
-                     const index = parseInt(field.split('_')[1]);
-                     content = previousCharData.alternate_greetings[index];
-                 } else {
-                     content = previousCharData[field];
-                 }
-            } else {
-                // Fetch
-                try {
-                    const charData = await tools.read_character_card({ chid });
-                    const char = JSON.parse(charData);
-                    previousCharData = char;
-                    if (field.startsWith('greeting_')) {
-                        const index = parseInt(field.split('_')[1]);
-                        content = char.alternate_greetings[index];
-                    } else {
-                        content = char[field];
-                    }
-                } catch (e) {
-                    toastr.error('无法读取角色卡内容');
-                    return;
+            
+            
+            try {
+                console.log(`[AutoCharCard] Reading char ${chid}, field ${field}`);
+                const charData = await tools.read_character_card({ chid });
+                const response = JSON.parse(charData);
+                
+                if (response.status !== 'success' || !response.data) {
+                    throw new Error(response.message || 'Unknown error');
                 }
+                
+                const char = response.data;
+                previousCharData = char;
+                console.log(`[AutoCharCard] Char data:`, char);
+                
+                if (field.startsWith('greeting_')) {
+                    const index = parseInt(field.split('_')[1]);
+                    content = char.alternate_greetings[index];
+                } else {
+                    content = char[field];
+                }
+                console.log(`[AutoCharCard] Content for ${field}:`, content);
+            } catch (e) {
+                console.error(e);
+                toastr.error('无法读取角色卡内容');
+                return;
             }
 
             openedFiles.set(fileId, {
@@ -203,7 +219,13 @@ function bindEvents() {
 
             try {
                 const entryData = await tools.read_world_entry({ book_name: bookName, uid: uid });
-                const entry = JSON.parse(entryData);
+                const response = JSON.parse(entryData);
+                
+                if (response.status !== 'success' || !response.data) {
+                    throw new Error(response.message || 'Unknown error');
+                }
+                
+                const entry = response.data;
                 
                 let keys = entry.key;
                 if (Array.isArray(keys)) keys = keys.join(', ');
@@ -217,6 +239,7 @@ function bindEvents() {
                 activeFileId = fileId;
                 renderEditor();
             } catch (e) {
+                console.error(e);
                 toastr.error('无法读取世界书条目');
             }
         }
@@ -269,9 +292,6 @@ function bindEvents() {
         }
     });
 
-    // Removed old approval buttons handlers
-
-    // Add Refresh Button to Preview Header if not exists
     const previewHeader = $('.acc-right-panel .acc-panel-header');
     if (previewHeader.find('#acc-refresh-preview').length === 0) {
         const refreshBtn = $('<button>')
@@ -342,7 +362,7 @@ function bindEvents() {
             apiUrl: $('#acc-executor-url').val().trim(),
             apiKey: $('#acc-executor-key').val().trim(),
             model: $('#acc-executor-model').val() || '',
-            maxTokens: isNaN(execMaxTokens) ? 0 : execMaxTokens // 0 means unlimited
+            maxTokens: isNaN(execMaxTokens) ? 0 : execMaxTokens
         };
 
         setApiConfig('executor', executorConfig);
@@ -403,20 +423,17 @@ function bindEvents() {
         }
     });
 
-    // Mobile Navigation Logic
     $('.acc-nav-btn').on('click', function() {
         const targetClass = $(this).data('target');
         
-        // Update buttons
         $('.acc-nav-btn').removeClass('active');
         $(this).addClass('active');
         
-        // Update panels
         $('.acc-column').removeClass('mobile-active');
         $(`.${targetClass}`).addClass('mobile-active');
     });
 
-    // Initialize mobile view (default to center panel)
+    
     if (window.innerWidth <= 768) {
         $('.acc-center-panel').addClass('mobile-active');
     }
@@ -430,32 +447,34 @@ async function handleSendMessage() {
         if (!agentManager) return;
         
         isWaitingForApproval = false;
-        // Reset UI
+
         const btn = $('#acc-send-btn');
         btn.html('<i class="fas fa-paper-plane"></i>');
         btn.prop('title', '发送');
         btn.removeClass('acc-btn-success');
+        $('#acc-reject-btn').remove();
+        
         input.attr('placeholder', '描述您的需求...');
         input.val('');
         
         if (message) {
-            // User typed something -> Reject with feedback
-            addMessage('user', message); // Show feedback in chat
+            addMessage('user', message); 
             await agentManager.resumeWithApproval(
                 false, 
                 message, 
                 (content, role) => addMessage(role, content),
                 (toolName, args) => updatePreview(toolName, args),
-                showApprovalRequest
+                showApprovalRequest,
+                handleContextUpdate
             );
         } else {
-            // Empty input -> Approve
             await agentManager.resumeWithApproval(
                 true, 
                 null, 
                 (content, role) => addMessage(role, content),
                 (toolName, args) => updatePreview(toolName, args),
-                showApprovalRequest
+                showApprovalRequest,
+                handleContextUpdate
             );
         }
         return;
@@ -495,7 +514,8 @@ async function handleSendMessage() {
             (toolName, args) => {
                 updatePreview(toolName, args);
             },
-            showApprovalRequest
+            showApprovalRequest,
+            handleContextUpdate
         );
     } catch (error) {
         console.error('Agent Error:', error);
@@ -510,14 +530,60 @@ async function handleSendMessage() {
 function showApprovalRequest(toolName, args) {
     isWaitingForApproval = true;
     
-    // Update UI to Approval Mode
     const btn = $('#acc-send-btn');
     btn.html('<i class="fas fa-check"></i>');
-    btn.prop('title', '批准执行 (点击批准，或输入文字拒绝)');
+    btn.prop('title', '批准执行');
     btn.addClass('acc-btn-success');
-    $('#acc-user-input').attr('placeholder', '输入反馈以拒绝/修改，或直接点击右侧按钮批准...');
+    $('#acc-user-input').attr('placeholder', '输入反馈以修改，或点击 √ 批准，点击 X 拒绝...');
 
-    // Show tool call in chat (Collapsible)
+    if ($('#acc-reject-btn').length === 0) {
+        const rejectBtn = $('<button>')
+            .attr('id', 'acc-reject-btn')
+            .addClass('acc-btn-danger')
+            .html('<i class="fas fa-times"></i>')
+            .attr('title', '拒绝执行')
+            .css({
+                'margin-right': '5px',
+                'width': '40px',
+                'height': '40px',
+                'border-radius': '50%',
+                'border': 'none',
+                'cursor': 'pointer',
+                'display': 'flex',
+                'align-items': 'center',
+                'justify-content': 'center'
+            });
+        
+        rejectBtn.insertBefore(btn);
+        
+        rejectBtn.on('click', async () => {
+            if (!isWaitingForApproval) return;
+            isWaitingForApproval = false;
+            
+            const input = $('#acc-user-input');
+            const message = input.val().trim();
+            
+            btn.html('<i class="fas fa-paper-plane"></i>');
+            btn.prop('title', '发送');
+            btn.removeClass('acc-btn-success');
+            rejectBtn.remove();
+            input.attr('placeholder', '描述您的需求...');
+            input.val('');
+
+            const feedback = message || "用户拒绝了操作。";
+            addMessage('user', `[拒绝] ${feedback}`);
+
+            await agentManager.resumeWithApproval(
+                false, 
+                feedback, 
+                (content, role) => addMessage(role, content),
+                (toolName, args) => updatePreview(toolName, args),
+                showApprovalRequest,
+                handleContextUpdate
+            );
+        });
+    }
+
     const toolDisplay = `
         <div class="acc-tool-request">
             <details>
@@ -537,10 +603,7 @@ function addMessage(role, content) {
     
     if (role === 'stream-assistant') {
         let lastMsg = stream.children().last();
-        // Check if the last message is a streaming assistant message
         if (!lastMsg.hasClass('assistant') || !lastMsg.hasClass('acc-streaming')) {
-            // Create new message if last one wasn't a streaming assistant
-            // We use 'assistant' role but add 'acc-streaming' class
             const msgDiv = $('<div>').addClass('acc-message assistant acc-streaming');
             const avatarDiv = $('<div>').addClass('acc-avatar').html('<i class="fas fa-robot" style="color: #4caf50;"></i>');
             const contentDiv = $('<div>').addClass('acc-message-content');
@@ -551,7 +614,6 @@ function addMessage(role, content) {
         
         const contentDiv = lastMsg.find('.acc-message-content');
         
-        // Simple escaping for stream chunks
         const escapedContent = content
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
@@ -568,11 +630,10 @@ function addMessage(role, content) {
 
     let displayContent = content;
     if (role === 'executor' || role === 'assistant') {
-        // Remove thinking blocks and tool_code wrappers for final display
-        // Use case-insensitive and robust matching
+
         displayContent = displayContent
             .replace(/<thinking(?:\s+[^>]*)?>[\s\S]*?<\/thinking>/gi, '')
-            .replace(/<\/thinking>/gi, '') // Remove residual closing tags
+            .replace(/<\/thinking>/gi, '') 
             .replace(/<tool_code(?:\s+[^>]*)?>[\s\S]*?<\/tool_code>/gi, '')
             .trim();
 
@@ -581,7 +642,6 @@ function addMessage(role, content) {
             'read_character_card', 'update_character_card', 'edit_character_text',
             'manage_first_message', 'use_tool'
         ];
-        // Match tools with potential attributes and whitespace
         const regex = new RegExp(`<(${tools.join('|')})(?:\\s+[^>]*)?>[\\s\\S]*?<\\/\\1>`, 'gi');
         displayContent = displayContent.replace(regex, '').trim();
         
@@ -589,15 +649,13 @@ function addMessage(role, content) {
             displayContent = "<i>(正在执行操作...)</i>";
         }
 
-        // If this is a final assistant message, remove ANY streaming message
         if (role === 'assistant') {
             stream.find('.acc-streaming').remove();
         }
     }
 
     let formattedContent;
-    
-    // Check if content is pre-formatted HTML (e.g. tool requests)
+
     if (displayContent.trim().startsWith('<div class="acc-tool-request"')) {
         formattedContent = displayContent;
     } else {
@@ -641,43 +699,27 @@ function addMessage(role, content) {
 function parseMarkdown(text) {
     if (!text) return '';
 
-    // 1. Escape HTML (basic)
     let html = text
         .replace(/&/g, "&")
         .replace(/</g, "<")
         .replace(/>/g, ">");
 
-    // 2. Code Blocks (```...```)
     html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
 
-    // 3. Inline Code (`...`)
     html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
 
-    // 4. Headers
     html = html.replace(/^#### (.*$)/gm, '<h4>$1</h4>');
     html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>');
     html = html.replace(/^## (.*$)/gm, '<h2>$1</h2>');
     html = html.replace(/^# (.*$)/gm, '<h1>$1</h1>');
 
-    // 5. Bold & Italic
     html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
 
-    // 6. Horizontal Rules
     html = html.replace(/^[\*\-]{3,}$/gm, '<hr>');
 
-    // 7. Lists
-    // Replace * or - at start of line with a bullet point
     html = html.replace(/^\s*[\-\*]\s+(.*$)/gm, '<li>$1</li>');
     
-    // 8. Line breaks
-    // We want to preserve line breaks, but block elements (h1-h6, pre, li) handle their own spacing.
-    // We can replace newlines with <br> ONLY if they are not around block tags.
-    // A simpler approach for chat: just replace all \n with <br>, and let CSS handle the extra spacing or remove it.
-    // But <pre> content shouldn't have <br>.
-    // Let's just replace \n with <br> globally, but we need to protect <pre> blocks.
-    // Actually, the code block regex above already consumed the newlines inside it.
-    // So we can just replace remaining \n.
     
     html = html.replace(/\n/g, '<br>');
 
@@ -688,9 +730,6 @@ function renderEditor() {
     const container = $('#acc-preview-container');
     const tabsContainer = $('.acc-preview-tabs');
     
-    // Don't fully empty if we want to preserve state, but for simplicity we re-render tabs
-    // To preserve scroll position or focus, we might need more complex logic.
-    // For now, re-rendering is acceptable as long as data is in openedFiles.
     
     container.empty();
     tabsContainer.empty();
@@ -700,7 +739,6 @@ function renderEditor() {
         return;
     }
 
-    // Ensure activeFileId is valid
     if (!activeFileId || !openedFiles.has(activeFileId)) {
         activeFileId = openedFiles.keys().next().value;
     }
@@ -713,13 +751,12 @@ function renderEditor() {
             .attr('title', file.title)
             .on('click', () => {
                 activeFileId = id;
-                renderEditor(); // Re-render to switch tabs
+                renderEditor(); 
             });
 
         const icon = $('<i class="fas fa-file-alt"></i>');
         const titleSpan = $('<span>').addClass('acc-tab-title').text(file.title);
         
-        // Close button for tab
         const closeBtn = $('<span>')
             .html('&times;')
             .addClass('acc-tab-close')
@@ -774,7 +811,6 @@ function renderEditor() {
                 })
                 .on('input', function() {
                     file.content = $(this).val();
-                    // file.isDirty = true; // Could add dirty indicator
                 });
             
             contentDiv.append(textarea);
@@ -796,17 +832,23 @@ async function saveFile(id) {
     try {
         let result;
         if (meta.type === 'char') {
-            result = await tools.update_character_card({
-                chid: meta.chid,
-                [meta.field]: file.content
-            });
+            if (meta.field.startsWith('greeting_')) {
+                const index = parseInt(meta.field.split('_')[1]);
+
+                result = await tools.manage_first_message({
+                    action: 'update',
+                    chid: meta.chid,
+                    index: index + 1,
+                    message: file.content
+                });
+            } else {
+                result = await tools.update_character_card({
+                    chid: meta.chid,
+                    [meta.field]: file.content
+                });
+            }
         } else if (meta.type === 'wi') {
-            // For WI, we need to construct the entry object
-            // We assume file.content is the 'content' field of the entry
-            // We need other fields like keys, etc. stored in metadata or parsed?
-            // If we only have content, we might lose keys if we just write content.
-            // But wait, write_world_info_entry takes an array of entry objects.
-            // If we only update content, we need the UID.
+
             
             if (meta.uid !== undefined) {
                 result = await tools.write_world_info_entry({
@@ -814,8 +856,7 @@ async function saveFile(id) {
                     entries: [{ uid: meta.uid, content: file.content }]
                 });
             } else {
-                // New entry? We need keys.
-                // If it's a raw JSON view, we can parse it.
+
                 try {
                     const entry = JSON.parse(file.content);
                     result = await tools.write_world_info_entry({
@@ -823,8 +864,7 @@ async function saveFile(id) {
                         entries: [entry]
                     });
                 } catch (e) {
-                    // If it's just text content, we can't save it as a new entry without keys.
-                    // Unless we assume it's an update to an existing entry we know about.
+
                     toastr.error('保存失败: 内容必须是有效的 JSON (针对新建条目) 或包含 UID');
                     return;
                 }
@@ -852,9 +892,15 @@ async function loadContextToEditor() {
     if (chid && chid !== 'new') {
         try {
             const charData = await tools.read_character_card({ chid });
-            const char = JSON.parse(charData);
-            previousCharData = char; // Cache for selector
-
+            const response = JSON.parse(charData);
+            
+            if (response.status !== 'success' || !response.data) {
+                console.error("Failed to read character:", response);
+                return;
+            }
+            
+            const char = response.data;
+            previousCharData = char;
             const charGroup = $('<optgroup label="角色卡字段">');
             const fields = ['description', 'personality', 'first_mes', 'scenario', 'mes_example'];
             fields.forEach(field => {
@@ -868,7 +914,6 @@ async function loadContextToEditor() {
             }
             selector.append(charGroup);
 
-            // Open Description by default if nothing open
             if (openedFiles.size === 0 && char.description) {
                 const id = `char-${chid}-description`;
                 openedFiles.set(id, {
@@ -887,7 +932,6 @@ async function loadContextToEditor() {
 
     if (bookName && bookName !== 'new') {
         try {
-            // Use return_full: false to get index only
             const indexData = await tools.read_world_info({ book_name: bookName, return_full: false });
             const index = JSON.parse(indexData);
             
@@ -936,27 +980,22 @@ async function updatePreview(toolName, args, isPartial = false) {
         const id = `char-${chid}-${field}`;
         
         if (isPartial) {
-            // For partial diffs, we might want to show the diff itself in a temp tab?
-            // Or if we have the original content, try to apply it?
-            // Applying partial diff is hard.
-            // Let's show the diff in a separate tab for now.
+
             const diffId = `diff-${chid}-${field}`;
             openedFiles.set(diffId, {
                 title: `Diff: ${field}`,
                 content: diff,
                 type: 'diff',
-                metadata: null // Cannot save raw diff easily
+                metadata: null 
             });
             activeFileId = diffId;
         } else {
-            // Full diff available. Try to apply to existing content.
+
             let originalContent = '';
             if (openedFiles.has(id)) {
                 originalContent = openedFiles.get(id).content;
             } else {
-                // Try to fetch if not open?
-                // For now, just assume it's open or we can't apply.
-                // If we can't apply, show diff.
+
             }
 
             if (originalContent) {
@@ -988,10 +1027,8 @@ async function updatePreview(toolName, args, isPartial = false) {
                         metadata: { type: 'char', chid, field }
                     });
                     activeFileId = id;
-                    // Close diff tab if open
                     openedFiles.delete(`diff-${chid}-${field}`);
                 } else {
-                    // Failed to apply, show diff
                     const diffId = `diff-${chid}-${field}`;
                     openedFiles.set(diffId, {
                         title: `Diff: ${field} (Failed to Apply)`,
@@ -1002,7 +1039,6 @@ async function updatePreview(toolName, args, isPartial = false) {
                     activeFileId = diffId;
                 }
             } else {
-                 // Original not found, show diff
                  const diffId = `diff-${chid}-${field}`;
                  openedFiles.set(diffId, {
                      title: `Diff: ${field}`,
@@ -1018,7 +1054,6 @@ async function updatePreview(toolName, args, isPartial = false) {
         let entries = args.entries;
         
         if (isPartial && typeof entries === 'string') {
-            // Show raw JSON for partial
             const id = `wi-raw-partial`;
             openedFiles.set(id, {
                 title: 'WI Entry (Generating...)',
@@ -1046,7 +1081,6 @@ async function updatePreview(toolName, args, isPartial = false) {
                 });
                 activeFileId = id;
             });
-            // Remove partial tab
             openedFiles.delete(`wi-raw-partial`);
         }
     }

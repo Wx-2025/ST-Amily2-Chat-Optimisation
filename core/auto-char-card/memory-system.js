@@ -18,8 +18,45 @@ Format your response as a structured Markdown block.
 `;
     }
 
+    async extractKeyFacts(history) {
+        const extractionPrompt = `
+Analyze the recent conversation and extract "Key Facts" that should be remembered long-term.
+Key Facts include:
+- Specific decisions made (e.g., "Character has blue eyes", "Weapon is a sword").
+- User preferences stated (e.g., "User dislikes horror").
+- Completed milestones.
+
+Do NOT include temporary conversation details or planning steps.
+Return the facts as a JSON array of strings. Example: ["Eyes: Blue", "Class: Mage"].
+Output ONLY valid JSON.
+`;
+        const recentHistory = history.slice(-5);
+        const messages = [
+            { role: 'system', content: extractionPrompt },
+            ...recentHistory
+        ];
+
+        try {
+            const response = await callAi('executor', messages, {
+                max_tokens: 500,
+                temperature: 0.3
+            });
+            const cleanResponse = response.replace(/```json/g, '').replace(/```/g, '').trim();
+            const facts = JSON.parse(cleanResponse);
+            return Array.isArray(facts) ? facts : [];
+        } catch (error) {
+            console.warn("Failed to extract key facts:", error);
+            return [];
+        }
+    }
+
     async summarize(history, taskState) {
         const config = getApiConfig('executor');
+
+        const newFacts = await this.extractKeyFacts(history);
+        if (newFacts.length > 0) {
+            taskState.addKeyFacts(newFacts);
+        }
 
         const contextMsg = `
 [System Note]: The following is the current Task State. Use this to inform your summary.

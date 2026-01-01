@@ -4,6 +4,8 @@ export class ContextManager {
         this.tokenLimit = 100000; 
         this.rules = [];
         this.worldInfo = [];
+        this.activeWorldInfoCache = new Map();
+        this.cacheDuration = 3; 
     }
 
     addRule(rule) {
@@ -40,11 +42,26 @@ export class ContextManager {
             return contextText.includes(rule.keyword);
         });
 
-        const relevantWorldInfo = this.worldInfo.filter(entry => {
+        const currentMatches = this.worldInfo.filter(entry => {
             if (!entry.enabled) return false;
             if (!entry.keys || entry.keys.length === 0) return false;
             return entry.keys.some(key => contextText.includes(key));
         });
+
+        for (const [uid, data] of this.activeWorldInfoCache) {
+            data.turnsLeft--;
+            if (data.turnsLeft <= 0) {
+                this.activeWorldInfoCache.delete(uid);
+            }
+        }
+
+        currentMatches.forEach(entry => {
+            this.activeWorldInfoCache.set(entry.id, { turnsLeft: this.cacheDuration });
+        });
+
+        const allRelevantUIDs = new Set([...currentMatches.map(e => e.id), ...this.activeWorldInfoCache.keys()]);
+        
+        const relevantWorldInfo = this.worldInfo.filter(entry => allRelevantUIDs.has(entry.id));
 
         return {
             rules: relevantRules,

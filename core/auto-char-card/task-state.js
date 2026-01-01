@@ -6,10 +6,12 @@ export class TaskState {
     reset() {
         this.originalRequest = "";
         this.currentGoal = "";
-        this.completedSteps = []; // Array of strings
-        this.pendingSteps = []; // Array of strings
-        this.summary = ""; // The structured summary of the character/world so far
-        this.generatedData = {}; // Key-value pairs of generated attributes (e.g., name, personality)
+        this.completedSteps = [];
+        this.pendingSteps = [];
+        this.summary = ""; 
+        this.generatedData = {};
+        this.style_reference = "";
+        this.keyFacts = [];
         this.lastSummaryTimestamp = 0;
     }
 
@@ -41,11 +43,23 @@ export class TaskState {
         this.generatedData[key] = value;
     }
 
+    setStyle(style) {
+        this.style_reference = style;
+    }
+
+    addKeyFacts(facts) {
+        this.keyFacts.push(...facts);
+    }
+
     getPromptContext() {
         let context = `\n# Task State\n`;
         context += `- **Original Request**: ${this.originalRequest}\n`;
         context += `- **Current Goal**: ${this.currentGoal}\n`;
         
+        if (this.style_reference) {
+            context += `- **Style Reference**: ${this.style_reference}\n`;
+        }
+
         if (this.completedSteps.length > 0) {
             context += `- **Completed Steps**:\n${this.completedSteps.map(s => `  - ${s}`).join('\n')}\n`;
         }
@@ -54,8 +68,13 @@ export class TaskState {
             context += `- **Pending Steps**:\n${this.pendingSteps.map(s => `  - ${s}`).join('\n')}\n`;
         }
 
+        if (this.keyFacts.length > 0) {
+            context += `\n# Key Facts (Long Term Memory)\n`;
+            this.keyFacts.forEach(fact => context += `- ${fact}\n`);
+        }
+
         if (this.summary) {
-            context += `\n# Memory & Context Summary\n${this.summary}\n`;
+            context += `\n# Recent Context Summary\n${this.summary}\n`;
         }
 
         return context;
@@ -69,6 +88,8 @@ export class TaskState {
             pendingSteps: this.pendingSteps,
             summary: this.summary,
             generatedData: this.generatedData,
+            style_reference: this.style_reference,
+            keyFacts: this.keyFacts,
             lastSummaryTimestamp: this.lastSummaryTimestamp
         };
     }
@@ -81,6 +102,8 @@ export class TaskState {
         this.pendingSteps = json.pendingSteps || [];
         this.summary = json.summary || "";
         this.generatedData = json.generatedData || {};
+        this.style_reference = json.style_reference || "";
+        this.keyFacts = json.keyFacts || [];
         this.lastSummaryTimestamp = json.lastSummaryTimestamp || 0;
     }
 }

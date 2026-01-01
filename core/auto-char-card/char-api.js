@@ -1,4 +1,26 @@
 import { characters, saveCharacterDebounced, this_chid, getCharacters, getRequestHeaders } from "/script.js";
+import { extensionName } from "../../utils/settings.js";
+
+async function saveCharacterById(chid) {
+    const char = characters[chid];
+    if (!char) return;
+
+    try {
+        const response = await fetch('/api/characters/edit', {
+            method: 'POST',
+            headers: getRequestHeaders(),
+            body: JSON.stringify(char)
+        });
+        
+        if (!response.ok) {
+            console.error(`[Amily2 CharAPI] Failed to save character ${chid}:`, response.statusText);
+        } else {
+            console.log(`[Amily2 CharAPI] Successfully saved character ${chid}`);
+        }
+    } catch (e) {
+        console.error(`[Amily2 CharAPI] Error saving character ${chid}:`, e);
+    }
+}
 
 export function getCharacter(chid = this_chid) {
     if (chid === undefined || chid < 0 || !characters[chid]) {
@@ -23,7 +45,7 @@ export function updateCharacter(chid, updates) {
     });
 
     if (changed) {
-        saveCharacterDebounced();
+        saveCharacterById(chid);
         console.log(`[Amily2 CharAPI] Updated character ${chid}:`, Object.keys(updates));
         return true;
     }
@@ -51,7 +73,7 @@ export function addFirstMessage(chid, message) {
     }
 
     char.data.alternate_greetings.push(message);
-    saveCharacterDebounced();
+    saveCharacterById(chid);
     console.log(`[Amily2 CharAPI] Added alternate greeting to character ${chid}`);
     return true;
 }
@@ -71,7 +93,7 @@ export function updateFirstMessage(chid, index, message) {
             return false;
         }
     }
-    saveCharacterDebounced();
+    saveCharacterById(chid);
     console.log(`[Amily2 CharAPI] Updated greeting ${index} for character ${chid}`);
     return true;
 }
@@ -92,7 +114,7 @@ export function removeFirstMessage(chid, index) {
             return false;
         }
     }
-    saveCharacterDebounced();
+    saveCharacterById(chid);
     console.log(`[Amily2 CharAPI] Removed greeting ${index} for character ${chid}`);
     return true;
 }
@@ -121,10 +143,26 @@ export async function createNewCharacter(name) {
         formData.append('depth_prompt_depth', '4');
         formData.append('depth_prompt_role', 'system');
 
-        const base64Png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-        const res = await fetch(`data:image/png;base64,${base64Png}`);
-        const blob = await res.blob();
-        formData.append('avatar', blob, 'default.png');
+        try {
+            const res = await fetch(`scripts/extensions/third-party/${extensionName}/core/auto-char-card/Amily.png`);
+            if (res.ok) {
+                const blob = await res.blob();
+                formData.append('avatar', blob, 'default.png');
+            } else {
+                throw new Error('Failed to fetch default avatar');
+            }
+        } catch (e) {
+            console.warn("[Amily2 CharAPI] Failed to load default avatar, using fallback 1x1 PNG.", e);
+            const base64Png = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
+            const byteCharacters = atob(base64Png);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+                byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const blob = new Blob([byteArray], { type: 'image/png' });
+            formData.append('avatar', blob, 'default.png');
+        }
 
         const response = await fetch('/api/characters/create', {
             method: 'POST',
