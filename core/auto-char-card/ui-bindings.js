@@ -12,8 +12,9 @@ let agentManager = null;
 let previousCharData = {};
 let previousWorldData = {};
 let isWaitingForApproval = false;
-let openedFiles = new Map(); // Key: string ID, Value: { title, content, type, metadata }
+let openedFiles = new Map(); 
 let activeFileId = null;
+let promptLogContent = "=== Prompt Log ===\n\n";
 
 export async function openAutoCharCardWindow() {
     if ($('#acc-window').length > 0) {
@@ -57,31 +58,51 @@ export async function openAutoCharCardWindow() {
 
 function populateDropdowns() {
     const charSelect = $('#acc-target-char');
+    const prevCharId = charSelect.val();
+
     charSelect.empty().append('<option value="">-- 请选择 --</option>');
     charSelect.append('<option value="new">新建角色卡</option>');
 
+    let isPrevCharStillPresent = false;
     characters.forEach((char, index) => {
         if (char) {
-            const option = $('<option>').val(index).text(char.name);
-            if (index === this_chid) option.prop('selected', true);
-            charSelect.append(option);
+            charSelect.append($('<option>').val(index).text(char.name));
+            if (String(index) === prevCharId) {
+                isPrevCharStillPresent = true;
+            }
         }
     });
 
+    if (isPrevCharStillPresent) {
+        charSelect.val(prevCharId);
+    } else if (this_chid !== undefined) {
+        charSelect.val(this_chid);
+    }
+
     const worldSelect = $('#acc-target-world');
+    const prevWorldName = worldSelect.val();
+
     worldSelect.empty().append('<option value="">-- 请选择 --</option>');
     worldSelect.append('<option value="new">新建世界书</option>');
 
+    let isPrevWorldStillPresent = false;
     world_names.forEach(name => {
         worldSelect.append($('<option>').val(name).text(name));
+        if (name === prevWorldName) {
+            isPrevWorldStillPresent = true;
+        }
     });
+
+    if (isPrevWorldStillPresent) {
+        worldSelect.val(prevWorldName);
+    }
 }
 
 async function handleContextUpdate(type, value) {
     console.log(`[Amily2 AutoCharCard] Context Update: ${type} -> ${value}`);
     
     if (type === 'char') {
-        await getCharacters(); // Force refresh character list
+        await getCharacters(); 
     }
     
     populateDropdowns(); 
@@ -90,6 +111,29 @@ async function handleContextUpdate(type, value) {
         $('#acc-target-char').val(value);
     } else if (type === 'world') {
         $('#acc-target-world').val(value);
+    }
+}
+
+function handlePromptLog(messages) {
+    const userType = localStorage.getItem("plugin_user_type");
+    if (userType !== "3") return;
+
+    const timestamp = new Date().toLocaleTimeString();
+    let logEntry = `\n\n--- [${timestamp}] New Request ---\n`;
+    
+    messages.forEach(msg => {
+        logEntry += `\n[${msg.role.toUpperCase()}]\n${msg.content}\n`;
+    });
+    
+    promptLogContent += logEntry;
+    
+    
+    if (openedFiles.has('debug-prompt-log')) {
+        const file = openedFiles.get('debug-prompt-log');
+        file.content = promptLogContent;
+        if (activeFileId === 'debug-prompt-log') {
+            renderEditor();
+        }
     }
 }
 
@@ -157,9 +201,31 @@ function bindEvents() {
 
         const [type, id, subId] = val.split('|');
         
+        if (type === 'debug' && id === 'log') {
+            const userType = localStorage.getItem("plugin_user_type");
+            if (userType !== "3") {
+                toastr.warning('权限不足：仅开发者可查看调试日志。');
+                $(this).val('');
+                return;
+            }
+
+            const fileId = 'debug-prompt-log';
+            openedFiles.set(fileId, {
+                title: 'Prompt Log',
+                content: promptLogContent,
+                type: 'log',
+                metadata: null
+            });
+            activeFileId = fileId;
+            renderEditor();
+            $(this).val('');
+            return;
+        }
+
         if (type === 'char') {
             const chid = id;
             const field = subId;
+            
             
             const fileId = `char-${chid}-${field}`;
             if (openedFiles.has(fileId)) {
@@ -168,7 +234,11 @@ function bindEvents() {
                 return;
             }
 
+            
+            
             let content = '';
+            
+            
             
             
             try {
@@ -244,7 +314,7 @@ function bindEvents() {
             }
         }
         
-        // Reset selector
+        
         $(this).val('');
     });
 
@@ -292,6 +362,9 @@ function bindEvents() {
         }
     });
 
+    
+
+    
     const previewHeader = $('.acc-right-panel .acc-panel-header');
     if (previewHeader.find('#acc-refresh-preview').length === 0) {
         const refreshBtn = $('<button>')
@@ -362,7 +435,7 @@ function bindEvents() {
             apiUrl: $('#acc-executor-url').val().trim(),
             apiKey: $('#acc-executor-key').val().trim(),
             model: $('#acc-executor-model').val() || '',
-            maxTokens: isNaN(execMaxTokens) ? 0 : execMaxTokens
+            maxTokens: isNaN(execMaxTokens) ? 0 : execMaxTokens 
         };
 
         setApiConfig('executor', executorConfig);
@@ -423,11 +496,14 @@ function bindEvents() {
         }
     });
 
+    
     $('.acc-nav-btn').on('click', function() {
         const targetClass = $(this).data('target');
         
+        
         $('.acc-nav-btn').removeClass('active');
         $(this).addClass('active');
+        
         
         $('.acc-column').removeClass('mobile-active');
         $(`.${targetClass}`).addClass('mobile-active');
@@ -447,34 +523,38 @@ async function handleSendMessage() {
         if (!agentManager) return;
         
         isWaitingForApproval = false;
-
+        
         const btn = $('#acc-send-btn');
         btn.html('<i class="fas fa-paper-plane"></i>');
         btn.prop('title', '发送');
         btn.removeClass('acc-btn-success');
-        $('#acc-reject-btn').remove();
+        $('#acc-reject-btn').remove(); 
         
         input.attr('placeholder', '描述您的需求...');
         input.val('');
         
         if (message) {
+            
             addMessage('user', message); 
             await agentManager.resumeWithApproval(
                 false, 
                 message, 
                 (content, role) => addMessage(role, content),
-                (toolName, args) => updatePreview(toolName, args),
+                updatePreview,
                 showApprovalRequest,
-                handleContextUpdate
+                handleContextUpdate,
+                handlePromptLog
             );
         } else {
+            
             await agentManager.resumeWithApproval(
                 true, 
                 null, 
                 (content, role) => addMessage(role, content),
-                (toolName, args) => updatePreview(toolName, args),
+                updatePreview,
                 showApprovalRequest,
-                handleContextUpdate
+                handleContextUpdate,
+                handlePromptLog
             );
         }
         return;
@@ -511,11 +591,10 @@ async function handleSendMessage() {
             (content, role) => {
                 addMessage(role, content);
             },
-            (toolName, args) => {
-                updatePreview(toolName, args);
-            },
+            updatePreview,
             showApprovalRequest,
-            handleContextUpdate
+            handleContextUpdate,
+            handlePromptLog
         );
     } catch (error) {
         console.error('Agent Error:', error);
@@ -530,12 +609,17 @@ async function handleSendMessage() {
 function showApprovalRequest(toolName, args) {
     isWaitingForApproval = true;
     
+    
+    updatePreview(toolName, args, false);
+
+    
     const btn = $('#acc-send-btn');
     btn.html('<i class="fas fa-check"></i>');
     btn.prop('title', '批准执行');
     btn.addClass('acc-btn-success');
     $('#acc-user-input').attr('placeholder', '输入反馈以修改，或点击 √ 批准，点击 X 拒绝...');
 
+    
     if ($('#acc-reject-btn').length === 0) {
         const rejectBtn = $('<button>')
             .attr('id', 'acc-reject-btn')
@@ -563,12 +647,16 @@ function showApprovalRequest(toolName, args) {
             const input = $('#acc-user-input');
             const message = input.val().trim();
             
+            
             btn.html('<i class="fas fa-paper-plane"></i>');
             btn.prop('title', '发送');
             btn.removeClass('acc-btn-success');
             rejectBtn.remove();
             input.attr('placeholder', '描述您的需求...');
             input.val('');
+
+            
+            updatePreview(toolName, args, false, true);
 
             const feedback = message || "用户拒绝了操作。";
             addMessage('user', `[拒绝] ${feedback}`);
@@ -577,13 +665,15 @@ function showApprovalRequest(toolName, args) {
                 false, 
                 feedback, 
                 (content, role) => addMessage(role, content),
-                (toolName, args) => updatePreview(toolName, args),
+                updatePreview,
                 showApprovalRequest,
-                handleContextUpdate
+                handleContextUpdate,
+                handlePromptLog
             );
         });
     }
 
+    
     const toolDisplay = `
         <div class="acc-tool-request">
             <details>
@@ -603,7 +693,10 @@ function addMessage(role, content) {
     
     if (role === 'stream-assistant') {
         let lastMsg = stream.children().last();
+        
         if (!lastMsg.hasClass('assistant') || !lastMsg.hasClass('acc-streaming')) {
+            
+            
             const msgDiv = $('<div>').addClass('acc-message assistant acc-streaming');
             const avatarDiv = $('<div>').addClass('acc-avatar').html('<i class="fas fa-robot" style="color: #4caf50;"></i>');
             const contentDiv = $('<div>').addClass('acc-message-content');
@@ -613,6 +706,7 @@ function addMessage(role, content) {
         }
         
         const contentDiv = lastMsg.find('.acc-message-content');
+        
         
         const escapedContent = content
         .replace(/&/g, "&amp;")
@@ -630,7 +724,8 @@ function addMessage(role, content) {
 
     let displayContent = content;
     if (role === 'executor' || role === 'assistant') {
-
+        
+        
         displayContent = displayContent
             .replace(/<thinking(?:\s+[^>]*)?>[\s\S]*?<\/thinking>/gi, '')
             .replace(/<\/thinking>/gi, '') 
@@ -640,8 +735,10 @@ function addMessage(role, content) {
         const tools = [
             'read_world_info', 'read_world_entry', 'write_world_info_entry', 'create_world_book',
             'read_character_card', 'update_character_card', 'edit_character_text',
+            'edit_world_info_entry',
             'manage_first_message', 'use_tool'
         ];
+        
         const regex = new RegExp(`<(${tools.join('|')})(?:\\s+[^>]*)?>[\\s\\S]*?<\\/\\1>`, 'gi');
         displayContent = displayContent.replace(regex, '').trim();
         
@@ -649,13 +746,15 @@ function addMessage(role, content) {
             displayContent = "<i>(正在执行操作...)</i>";
         }
 
+        
         if (role === 'assistant') {
             stream.find('.acc-streaming').remove();
         }
     }
 
     let formattedContent;
-
+    
+    
     if (displayContent.trim().startsWith('<div class="acc-tool-request"')) {
         formattedContent = displayContent;
     } else {
@@ -699,26 +798,44 @@ function addMessage(role, content) {
 function parseMarkdown(text) {
     if (!text) return '';
 
+    
     let html = text
         .replace(/&/g, "&")
         .replace(/</g, "<")
         .replace(/>/g, ">");
 
+    
     html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
 
+    
     html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
 
+    
     html = html.replace(/^#### (.*$)/gm, '<h4>$1</h4>');
     html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>');
     html = html.replace(/^## (.*$)/gm, '<h2>$1</h2>');
     html = html.replace(/^# (.*$)/gm, '<h1>$1</h1>');
 
+    
     html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
     html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
 
+    
+    html = html.replace(/~~(.*?)~~/g, '<del>$1</del>');
+
+    
     html = html.replace(/^[\*\-]{3,}$/gm, '<hr>');
 
+    
+    
     html = html.replace(/^\s*[\-\*]\s+(.*$)/gm, '<li>$1</li>');
+    
+    
+    
+    
+    
+    
+    
     
     
     html = html.replace(/\n/g, '<br>');
@@ -731,6 +848,9 @@ function renderEditor() {
     const tabsContainer = $('.acc-preview-tabs');
     
     
+    
+    
+    
     container.empty();
     tabsContainer.empty();
 
@@ -739,6 +859,7 @@ function renderEditor() {
         return;
     }
 
+    
     if (!activeFileId || !openedFiles.has(activeFileId)) {
         activeFileId = openedFiles.keys().next().value;
     }
@@ -756,6 +877,7 @@ function renderEditor() {
 
         const icon = $('<i class="fas fa-file-alt"></i>');
         const titleSpan = $('<span>').addClass('acc-tab-title').text(file.title);
+        
         
         const closeBtn = $('<span>')
             .html('&times;')
@@ -777,7 +899,7 @@ function renderEditor() {
                 .css('flex-direction', 'column')
                 .css('height', '100%');
 
-            // Toolbar
+            
             const toolbar = $('<div>').addClass('acc-editor-toolbar').css({
                 'padding': '5px',
                 'border-bottom': '1px solid #444',
@@ -792,28 +914,142 @@ function renderEditor() {
                 .on('click', () => saveFile(id));
             
             toolbar.append(saveBtn);
+
+
             contentDiv.append(toolbar);
 
-            // Textarea
-            const textarea = $('<textarea>')
-                .addClass('acc-editor-textarea')
-                .val(file.content)
-                .css({
-                    'flex': '1',
-                    'width': '100%',
-                    'background': '#1e1e1e',
-                    'color': '#d4d4d4',
-                    'border': 'none',
-                    'padding': '10px',
-                    'font-family': 'monospace',
-                    'resize': 'none',
-                    'outline': 'none'
-                })
-                .on('input', function() {
-                    file.content = $(this).val();
-                });
+            if (file.type === 'diff-view') {
+                const editorDiv = $('<div>')
+                    .addClass('acc-editor-diff-view')
+                    .css({
+                        'flex': '1',
+                        'width': '100%',
+                        'background': '#1e1e1e',
+                        'color': '#d4d4d4',
+                        'padding': '10px',
+                        'font-family': 'monospace',
+                        'overflow-y': 'auto',
+                        'white-space': 'pre-wrap'
+                    });
+                
+                if (file.segments) {
+                    file.segments.forEach((segment) => {
+                        if (segment.type === 'text') {
+                            editorDiv.append($('<span>').text(segment.content));
+                        } else if (segment.type === 'change') {
+                            const container = $('<div>').addClass('acc-diff-container').css({
+                                'display': 'block',
+                                'margin': '10px 0',
+                                'border': '1px solid #444',
+                                'padding': '5px',
+                                'border-radius': '4px'
+                            });
+                            
+                            const renderChange = () => {
+                                container.empty();
+                                if (segment.active) {
+                                    const removed = $('<div>')
+                                        .text(segment.original)
+                                        .css({
+                                            'background-color': 'rgba(255, 0, 0, 0.2)',
+                                            'cursor': 'pointer',
+                                            'padding': '5px',
+                                            'margin-bottom': '2px',
+                                            'white-space': 'pre-wrap',
+                                            'color': '#d4d4d4'
+                                        })
+                                        .attr('title', '点击恢复 (Click to restore)');
+                                    
+                                    const added = $('<div>')
+                                        .attr('contenteditable', 'true')
+                                        .css({
+                                            'background-color': 'rgba(0, 255, 0, 0.2)',
+                                            'cursor': 'text',
+                                            'padding': '5px',
+                                            'white-space': 'pre-wrap',
+                                            'color': '#d4d4d4',
+                                            'outline': 'none'
+                                        })
+                                        .attr('title', '点击编辑');
+                                    
+                                    const toggle = () => {
+                                        segment.active = false;
+                                        renderChange();
+                                        if (agentManager) {
+                                            const newDiff = reconstructDiff(file.segments);
+                                            agentManager.updatePendingToolArgs({ diff: newDiff });
+                                        }
+                                    };
+                                    
+                                    removed.on('click', toggle);
+                                    
+                                    added.on('input', function() {
+                                        segment.new = $(this).text();
+                                        if (agentManager) {
+                                            const newDiff = reconstructDiff(file.segments);
+                                            agentManager.updatePendingToolArgs({ diff: newDiff });
+                                        }
+                                    });
+                                    
+                                    container.append(removed).append(added);
+                                } else {
+                                    
+                                    const restored = $('<div>')
+                                        .text(segment.original)
+                                        .css({
+                                            'cursor': 'pointer',
+                                            'border-left': '3px solid #666',
+                                            'padding': '5px',
+                                            'white-space': 'pre-wrap',
+                                            'opacity': '0.7'
+                                        })
+                                        .attr('title', '点击重新应用修改 (Click to re-apply change)');
+                                    
+                                    restored.on('click', () => {
+                                        segment.active = true;
+                                        renderChange();
+                                        if (agentManager) {
+                                            const newDiff = reconstructDiff(file.segments);
+                                            agentManager.updatePendingToolArgs({ diff: newDiff });
+                                        }
+                                    });
+                                    
+                                    container.append(restored);
+                                }
+                            };
+                            
+                            renderChange();
+                            editorDiv.append(container);
+                        }
+                    });
+                } else {
+                    editorDiv.text('Error: No segments found for diff view.');
+                }
+                
+                contentDiv.append(editorDiv);
+            } else {
+                
+                const textarea = $('<textarea>')
+                    .addClass('acc-editor-textarea')
+                    .val(file.content)
+                    .css({
+                        'flex': '1',
+                        'width': '100%',
+                        'background': '#1e1e1e',
+                        'color': '#d4d4d4',
+                        'border': 'none',
+                        'padding': '10px',
+                        'font-family': 'monospace',
+                        'resize': 'none',
+                        'outline': 'none'
+                    })
+                    .on('input', function() {
+                        file.content = $(this).val();
+                    });
+                
+                contentDiv.append(textarea);
+            }
             
-            contentDiv.append(textarea);
             container.append(contentDiv);
         }
     });
@@ -829,42 +1065,61 @@ async function saveFile(id) {
         return;
     }
 
+    let contentToSave = file.content;
+    if (file.type === 'diff-view' && file.segments) {
+        contentToSave = file.segments.map(seg => {
+            if (seg.type === 'text') return seg.content;
+            if (seg.type === 'change') {
+                return seg.active ? seg.new : seg.original;
+            }
+            return '';
+        }).join('');
+    }
+
     try {
         let result;
         if (meta.type === 'char') {
             if (meta.field.startsWith('greeting_')) {
                 const index = parseInt(meta.field.split('_')[1]);
-
+                
+                
                 result = await tools.manage_first_message({
                     action: 'update',
                     chid: meta.chid,
                     index: index + 1,
-                    message: file.content
+                    message: contentToSave
                 });
             } else {
                 result = await tools.update_character_card({
                     chid: meta.chid,
-                    [meta.field]: file.content
+                    [meta.field]: contentToSave
                 });
             }
         } else if (meta.type === 'wi') {
-
+            
+            
+            
+            
+            
+            
             
             if (meta.uid !== undefined) {
                 result = await tools.write_world_info_entry({
                     book_name: meta.bookName,
-                    entries: [{ uid: meta.uid, content: file.content }]
+                    entries: [{ uid: meta.uid, content: contentToSave }]
                 });
             } else {
-
+                
+                
                 try {
-                    const entry = JSON.parse(file.content);
+                    const entry = JSON.parse(contentToSave);
                     result = await tools.write_world_info_entry({
                         book_name: meta.bookName,
                         entries: [entry]
                     });
                 } catch (e) {
-
+                    
+                    
                     toastr.error('保存失败: 内容必须是有效的 JSON (针对新建条目) 或包含 UID');
                     return;
                 }
@@ -873,6 +1128,15 @@ async function saveFile(id) {
 
         if (result && !result.startsWith('Error') && !result.includes('失败')) {
             toastr.success('保存成功');
+
+            
+            if (file.type === 'diff-view') {
+                file.type = 'normal';
+                delete file.segments;
+                
+                file.content = contentToSave;
+                renderEditor();
+            }
         } else {
             toastr.error(result || '保存失败');
         }
@@ -900,7 +1164,8 @@ async function loadContextToEditor() {
             }
             
             const char = response.data;
-            previousCharData = char;
+            previousCharData = char; 
+
             const charGroup = $('<optgroup label="角色卡字段">');
             const fields = ['description', 'personality', 'first_mes', 'scenario', 'mes_example'];
             fields.forEach(field => {
@@ -914,6 +1179,13 @@ async function loadContextToEditor() {
             }
             selector.append(charGroup);
 
+            
+            const userType = localStorage.getItem("plugin_user_type");
+            if (userType === "3") {
+                selector.append('<option value="debug|log">Debug: Prompt Log</option>');
+            }
+
+            
             if (openedFiles.size === 0 && char.description) {
                 const id = `char-${chid}-description`;
                 openedFiles.set(id, {
@@ -932,6 +1204,7 @@ async function loadContextToEditor() {
 
     if (bookName && bookName !== 'new') {
         try {
+            
             const indexData = await tools.read_world_info({ book_name: bookName, return_full: false });
             const index = JSON.parse(indexData);
             
@@ -952,9 +1225,18 @@ async function loadContextToEditor() {
     renderEditor();
 }
 
-async function updatePreview(toolName, args, isPartial = false) {
-    const chid = args.chid !== undefined ? args.chid : $('#acc-target-char').val();
-    const bookName = args.book_name !== undefined ? args.book_name : $('#acc-target-world').val();
+async function updatePreview(toolName, args, isPartial = false, isExecuted = false) {
+    let chid = args.chid;
+    if (chid === undefined || chid === null || chid === '') {
+        chid = $('#acc-target-char').val();
+    }
+    chid = String(chid);
+
+    let bookName = args.book_name;
+    if (bookName === undefined || bookName === null || bookName === '') {
+        bookName = $('#acc-target-world').val();
+    }
+    bookName = String(bookName);
 
     if (toolName === 'update_character_card') {
         const fields = ['description', 'personality', 'first_mes', 'scenario', 'mes_example'];
@@ -976,72 +1258,245 @@ async function updatePreview(toolName, args, isPartial = false) {
 
     } else if (toolName === 'edit_character_text') {
         const field = args.field || 'Unknown Field';
+
+        
+        if (field !== 'Unknown Field') {
+            const unknownDiffId = `diff-${chid}-Unknown Field`;
+            if (openedFiles.has(unknownDiffId)) {
+                openedFiles.delete(unknownDiffId);
+            }
+            
+            
+            const unknownId = `char-${chid}-Unknown Field`;
+            if (openedFiles.has(unknownId)) {
+                const file = openedFiles.get(unknownId);
+                openedFiles.delete(unknownId);
+                file.title = field;
+                file.metadata.field = field;
+                openedFiles.set(id, file); 
+                if (activeFileId === unknownId) activeFileId = id;
+            }
+        }
+
         const diff = args.diff || '';
         const id = `char-${chid}-${field}`;
         
         if (isPartial) {
-
             const diffId = `diff-${chid}-${field}`;
             openedFiles.set(diffId, {
                 title: `Diff: ${field}`,
                 content: diff,
                 type: 'diff',
-                metadata: null 
+                metadata: null
             });
             activeFileId = diffId;
-        } else {
+        } else if (isExecuted) {
+            
+            let success = false;
+            let content = '';
 
+            try {
+                const charData = await tools.read_character_card({ chid });
+                const response = JSON.parse(charData);
+                if (response.status === 'success' && response.data) {
+                    const char = response.data;
+                    if (field.startsWith('greeting_')) {
+                        const index = parseInt(field.split('_')[1]);
+                        content = char.alternate_greetings[index];
+                    } else {
+                        content = char[field];
+                    }
+                    success = true;
+                }
+            } catch (e) {
+                console.error("Failed to refresh content after edit", e);
+            }
+
+            openedFiles.delete(`diff-${chid}-${field}`);
+
+            
+            if (!openedFiles.has(id)) {
+                for (const [key, val] of openedFiles) {
+                    if (val.metadata && val.metadata.chid == chid && val.metadata.field == field) {
+                        id = key;
+                        break;
+                    }
+                }
+            }
+
+            
+            
+            let foundAndFixed = false;
+            openedFiles.forEach((file, fileId) => {
+                if (file.metadata && file.metadata.chid == chid && file.metadata.field == field) {
+                    if (file.type === 'diff-view') {
+                        
+                        if (file.segments) {
+                            const newContent = file.segments.map(s => s.type === 'change' ? s.new : s.content).join('');
+                            file.content = newContent;
+                        }
+                        file.type = 'normal';
+                        delete file.segments;
+                        
+                        
+                        if (fileId !== id) {
+                            openedFiles.delete(fileId);
+                            openedFiles.set(id, file);
+                            if (activeFileId === fileId) activeFileId = id;
+                        }
+                        foundAndFixed = true;
+                    }
+                }
+            });
+
+            if (success) {
+                
+                
+                
+                
+                openedFiles.set(id, {
+                    title: field,
+                    content: content,
+                    type: 'normal',
+                    metadata: { type: 'char', chid, field }
+                });
+                activeFileId = id;
+            } else if (!foundAndFixed) {
+                
+                
+                
+                if (openedFiles.has(id)) {
+                     
+                     const file = openedFiles.get(id);
+                     file.type = 'normal';
+                     activeFileId = id;
+                }
+            }
+            
+            
+            renderEditor();
+        } else {
+            
             let originalContent = '';
             if (openedFiles.has(id)) {
                 originalContent = openedFiles.get(id).content;
             } else {
-
+                
+                try {
+                    const charData = await tools.read_character_card({ chid });
+                    const response = JSON.parse(charData);
+                    if (response.status === 'success' && response.data) {
+                        const char = response.data;
+                        if (field.startsWith('greeting_')) {
+                            const index = parseInt(field.split('_')[1]);
+                            originalContent = char.alternate_greetings[index];
+                        } else {
+                            originalContent = char[field];
+                        }
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch original content for diff view", e);
+                }
             }
 
             if (originalContent) {
-                // Apply diff logic
-                const changes = diff.split('------- SEARCH');
-                if (changes[0].trim() === '') changes.shift();
-                
-                let newContent = originalContent;
-                let applied = true;
-
-                for (const change of changes) {
-                    const parts = change.split('=======');
-                    if (parts.length === 2) {
-                        const searchBlock = parts[0].trim();
-                        const replaceBlock = parts[1].split('+++++++ REPLACE')[0].trim();
-                        if (newContent.includes(searchBlock)) {
-                            newContent = newContent.replace(searchBlock, replaceBlock);
-                        } else {
-                            applied = false;
-                        }
-                    }
-                }
-
-                if (applied) {
-                    openedFiles.set(id, {
-                        title: field,
-                        content: newContent,
-                        type: 'normal',
-                        metadata: { type: 'char', chid, field }
-                    });
-                    activeFileId = id;
-                    openedFiles.delete(`diff-${chid}-${field}`);
-                } else {
-                    const diffId = `diff-${chid}-${field}`;
-                    openedFiles.set(diffId, {
-                        title: `Diff: ${field} (Failed to Apply)`,
-                        content: diff,
-                        type: 'diff',
-                        metadata: null
-                    });
-                    activeFileId = diffId;
-                }
+                const segments = parseDiff(originalContent, diff);
+                openedFiles.set(id, {
+                    title: field,
+                    content: originalContent, 
+                    segments: segments,
+                    type: 'diff-view',
+                    metadata: { type: 'char', chid, field }
+                });
+                activeFileId = id;
+                openedFiles.delete(`diff-${chid}-${field}`);
             } else {
+                 
                  const diffId = `diff-${chid}-${field}`;
                  openedFiles.set(diffId, {
                      title: `Diff: ${field}`,
+                     content: diff,
+                     type: 'diff',
+                     metadata: null
+                 });
+                 activeFileId = diffId;
+            }
+        }
+
+    } else if (toolName === 'edit_world_info_entry') {
+        const uid = args.uid;
+
+        
+        if (uid !== undefined) {
+            const unknownDiffId = `diff-wi-${bookName}-undefined`;
+            if (openedFiles.has(unknownDiffId)) {
+                openedFiles.delete(unknownDiffId);
+            }
+        }
+
+        const diff = args.diff || '';
+        const id = `wi-${bookName}-${uid}`;
+        
+        if (isPartial) {
+            const diffId = `diff-wi-${bookName}-${uid}`;
+            openedFiles.set(diffId, {
+                title: `Diff: WI ${uid}`,
+                content: diff,
+                type: 'diff',
+                metadata: null
+            });
+            activeFileId = diffId;
+        } else if (isExecuted) {
+            
+            try {
+                const entryData = await tools.read_world_entry({ book_name: bookName, uid: uid });
+                const response = JSON.parse(entryData);
+                if (response.status === 'success' && response.data) {
+                    openedFiles.delete(`diff-wi-${bookName}-${uid}`);
+                    openedFiles.delete(id); 
+                    
+                    openedFiles.set(id, {
+                        title: `WI: ${uid}`,
+                        content: response.data.content,
+                        type: 'normal',
+                        metadata: { type: 'wi', bookName, uid }
+                    });
+                    activeFileId = id;
+                }
+            } catch (e) {
+                console.error("Failed to refresh WI content after edit", e);
+            }
+        } else {
+            let originalContent = '';
+            if (openedFiles.has(id)) {
+                originalContent = openedFiles.get(id).content;
+            } else {
+                try {
+                    const entryData = await tools.read_world_entry({ book_name: bookName, uid: uid });
+                    const response = JSON.parse(entryData);
+                    if (response.status === 'success' && response.data) {
+                        originalContent = response.data.content;
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch original content for WI diff view", e);
+                }
+            }
+            
+            if (originalContent) {
+                const segments = parseDiff(originalContent, diff);
+                openedFiles.set(id, {
+                    title: `WI: ${uid}`,
+                    content: originalContent,
+                    segments: segments,
+                    type: 'diff-view',
+                    metadata: { type: 'wi', bookName, uid }
+                });
+                activeFileId = id;
+                openedFiles.delete(`diff-wi-${bookName}-${uid}`);
+            } else {
+                 const diffId = `diff-wi-${bookName}-${uid}`;
+                 openedFiles.set(diffId, {
+                     title: `Diff: WI ${uid}`,
                      content: diff,
                      type: 'diff',
                      metadata: null
@@ -1054,6 +1509,7 @@ async function updatePreview(toolName, args, isPartial = false) {
         let entries = args.entries;
         
         if (isPartial && typeof entries === 'string') {
+            
             const id = `wi-raw-partial`;
             openedFiles.set(id, {
                 title: 'WI Entry (Generating...)',
@@ -1081,9 +1537,65 @@ async function updatePreview(toolName, args, isPartial = false) {
                 });
                 activeFileId = id;
             });
+            
             openedFiles.delete(`wi-raw-partial`);
         }
     }
 
     renderEditor();
+}
+
+function parseDiff(originalContent, diff) {
+    const segments = [];
+    let currentIndex = 0;
+    
+    const parts = diff.split('------- SEARCH');
+    
+    for (let i = 1; i < parts.length; i++) {
+        const part = parts[i];
+        const split1 = part.split('=======');
+        if (split1.length < 2) continue;
+        
+        const searchContent = split1[0].trim();
+        const split2 = split1[1].split('+++++++ REPLACE');
+        if (split2.length < 1) continue;
+        
+        const replaceContent = split2[0].trim();
+        
+        const foundIndex = originalContent.indexOf(searchContent, currentIndex);
+        
+        if (foundIndex !== -1) {
+            if (foundIndex > currentIndex) {
+                segments.push({
+                    type: 'text',
+                    content: originalContent.substring(currentIndex, foundIndex)
+                });
+            }
+            
+            segments.push({
+                type: 'change',
+                original: searchContent,
+                new: replaceContent,
+                active: true
+            });
+            
+            currentIndex = foundIndex + searchContent.length;
+        }
+    }
+    
+    if (currentIndex < originalContent.length) {
+        segments.push({
+            type: 'text',
+            content: originalContent.substring(currentIndex)
+        });
+    }
+    
+    return segments;
+}
+
+function reconstructDiff(segments) {
+    return segments
+        .filter(s => s.type === 'change' && s.active)
+        .map(s => `------- SEARCH\n${s.original}\n=======\n${s.new}\n+++++++ REPLACE`)
+        .join('\n');
 }

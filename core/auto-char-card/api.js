@@ -74,7 +74,7 @@ export async function callAi(role, messages, options = {}, onChunk = null) {
                 
                 buffer += decoder.decode(value, { stream: true });
                 const lines = buffer.split('\n');
-                buffer = lines.pop(); // Keep incomplete line in buffer
+                buffer = lines.pop(); 
                 
                 for (const line of lines) {
                     const trimmedLine = line.trim();
@@ -89,7 +89,7 @@ export async function callAi(role, messages, options = {}, onChunk = null) {
                                 onChunk(delta);
                             }
                         } catch (e) {
-                            // Ignore parse errors for partial chunks
+                            
                         }
                     }
                 }
@@ -107,6 +107,14 @@ export async function callAi(role, messages, options = {}, onChunk = null) {
             }
 
             const content = responseData.choices[0].message?.content;
+            
+            if (!content) {
+                console.warn(`[自动构建器] AI (${roleName}) 响应内容为空。完整响应:`, responseData);
+                if (responseData.choices && responseData.choices[0]) {
+                    console.warn("Choices[0]:", responseData.choices[0]);
+                }
+            }
+
             console.log(`[自动构建器] AI (${roleName}) 响应接收成功。长度: ${content?.length}`);
             return content;
         }
@@ -117,12 +125,17 @@ export async function callAi(role, messages, options = {}, onChunk = null) {
     }
 }
 
-export async function testConnection(role) {
+export async function testConnection(role, config = {}) {
     try {
         const response = await callAi(role, [
-            { role: 'user', content: 'Hi' }
-        ], { maxTokens: 10 });
-        return { success: !!response };
+            { role: 'user', content: 'Say hello' }
+        ], { maxTokens: 50, ...config });
+        
+        if (!response) {
+            return { success: false, error: "API 返回了空内容 (可能是被安全过滤或模型无响应)" };
+        }
+
+        return { success: true };
     } catch (error) {
         console.error(`[自动构建器] ${role} 连接测试失败:`, error);
         return { success: false, error: error.message };

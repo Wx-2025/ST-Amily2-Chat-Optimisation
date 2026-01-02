@@ -159,7 +159,7 @@ export const tools = {
         const { chid, ...updates } = args;
         const finalUpdates = args.updates || updates;
         
-        const success = charApi.updateCharacter(chid, finalUpdates);
+        const success = await charApi.updateCharacter(chid, finalUpdates);
         if (success) {
             const updatedFields = Object.keys(finalUpdates).join(', ');
             return JSON.stringify({
@@ -171,7 +171,7 @@ export const tools = {
             return JSON.stringify({
                 status: "error",
                 code: "UPDATE_FAILED",
-                message: "更新角色卡失败。"
+                message: "更新角色卡失败。请确保您正在编辑当前选中的角色（暂不支持后台编辑其他角色）。"
             });
         }
     },
@@ -196,30 +196,52 @@ export const tools = {
         }
 
         let content = char[field] || '';
-        const changes = diff.split('------- SEARCH');
+        
+        
+        const normalizedDiff = diff
+            .replace(/-------\s*SEARCH/g, '------- SEARCH')
+            .replace(/=======\s*/g, '=======')
+            .replace(/\+\+\+\+\+\+\+\s*REPLACE/g, '+++++++ REPLACE');
+
+        const changes = normalizedDiff.split('------- SEARCH');
 
         if (changes[0].trim() === '') changes.shift();
 
         for (const change of changes) {
             const parts = change.split('=======');
-            if (parts.length !== 2) continue;
+            if (parts.length < 2) continue;
 
             const searchBlock = parts[0].trim();
             const replaceBlock = parts[1].split('+++++++ REPLACE')[0].trim();
 
-            if (!content.includes(searchBlock)) {
-                return JSON.stringify({
-                    status: "error",
-                    code: "SEARCH_NOT_FOUND",
-                    message: `在字段 '${field}' 中未找到搜索块。`,
-                    suggestion: "请确保 SEARCH 块与现有内容完全匹配（包括空格）。"
-                });
+            
+            if (content.includes(searchBlock)) {
+                content = content.replace(searchBlock, replaceBlock);
+                continue;
             }
 
-            content = content.replace(searchBlock, replaceBlock);
+            
+            const normalizedSearch = searchBlock.replace(/\r\n/g, '\n');
+            const lines = normalizedSearch.split('\n');
+            const regexPattern = lines.map(line => line.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\r?\\n');
+            
+            const regex = new RegExp(regexPattern);
+            const match = content.match(regex);
+
+            if (match) {
+                content = content.replace(match[0], replaceBlock);
+                continue;
+            }
+
+            return JSON.stringify({
+                status: "error",
+                code: "SEARCH_NOT_FOUND",
+                message: `在字段 '${field}' 中未找到搜索块。`,
+                suggestion: "请确保 SEARCH 块与现有内容完全匹配（包括空格）。"
+            });
         }
 
-        const success = charApi.updateCharacter(chid, { [field]: content });
+        const success = await charApi.updateCharacter(chid, { [field]: content });
         if (success) {
             return JSON.stringify({
                 status: "success",
@@ -229,7 +251,81 @@ export const tools = {
             return JSON.stringify({
                 status: "error",
                 code: "UPDATE_FAILED",
-                message: `更新字段 '${field}' 失败。`
+                message: `更新字段 '${field}' 失败。请确保您正在编辑当前选中的角色（暂不支持后台编辑其他角色）。`
+            });
+        }
+    },
+
+    edit_world_info_entry: async ({ book_name, uid, diff }) => {
+        const entries = await amilyHelper.getLorebookEntries(book_name);
+        const entry = entries.find(e => String(e.uid) === String(uid));
+        
+        if (!entry) {
+            return JSON.stringify({
+                status: "error",
+                code: "ENTRY_NOT_FOUND",
+                message: `在世界书 "${book_name}" 中未找到 UID 为 ${uid} 的条目。`
+            });
+        }
+
+        let content = entry.content || '';
+        
+        
+        const normalizedDiff = diff
+            .replace(/-------\s*SEARCH/g, '------- SEARCH')
+            .replace(/=======\s*/g, '=======')
+            .replace(/\+\+\+\+\+\+\+\s*REPLACE/g, '+++++++ REPLACE');
+
+        const changes = normalizedDiff.split('------- SEARCH');
+
+        if (changes[0].trim() === '') changes.shift();
+
+        for (const change of changes) {
+            const parts = change.split('=======');
+            if (parts.length < 2) continue;
+
+            const searchBlock = parts[0].trim();
+            const replaceBlock = parts[1].split('+++++++ REPLACE')[0].trim();
+
+            
+            if (content.includes(searchBlock)) {
+                content = content.replace(searchBlock, replaceBlock);
+                continue;
+            }
+
+            
+            const normalizedSearch = searchBlock.replace(/\r\n/g, '\n');
+            const lines = normalizedSearch.split('\n');
+            const regexPattern = lines.map(line => line.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('\\r?\\n');
+            
+            const regex = new RegExp(regexPattern);
+            const match = content.match(regex);
+
+            if (match) {
+                content = content.replace(match[0], replaceBlock);
+                continue;
+            }
+
+            return JSON.stringify({
+                status: "error",
+                code: "SEARCH_NOT_FOUND",
+                message: `在条目内容中未找到搜索块。`,
+                suggestion: "请确保 SEARCH 块与现有内容完全匹配（包括空格）。"
+            });
+        }
+
+        const success = await amilyHelper.setLorebookEntries(book_name, [{ uid: entry.uid, content: content }]);
+        
+        if (success) {
+            return JSON.stringify({
+                status: "success",
+                message: `条目 [${uid}] 更新成功。`
+            });
+        } else {
+            return JSON.stringify({
+                status: "error",
+                code: "UPDATE_FAILED",
+                message: `更新条目 [${uid}] 失败。`
             });
         }
     },
@@ -238,13 +334,13 @@ export const tools = {
         let success = false;
         switch (action) {
             case 'add':
-                success = charApi.addFirstMessage(chid, message);
+                success = await charApi.addFirstMessage(chid, message);
                 break;
             case 'update':
-                success = charApi.updateFirstMessage(chid, index, message);
+                success = await charApi.updateFirstMessage(chid, index, message);
                 break;
             case 'remove':
-                success = charApi.removeFirstMessage(chid, index);
+                success = await charApi.removeFirstMessage(chid, index);
                 break;
             default:
                 return JSON.stringify({
@@ -492,6 +588,22 @@ export function getToolDefinitions() {
                     }
                 },
                 required: ["chid", "field", "diff"]
+            }
+        },
+        {
+            name: "edit_world_info_entry",
+            description: "使用 搜索/替换 块编辑世界书条目的内容。",
+            parameters: {
+                type: "object",
+                properties: {
+                    book_name: { type: "string", description: "世界书名称。" },
+                    uid: { type: "number", description: "条目 UID。" },
+                    diff: { 
+                        type: "string", 
+                        description: "一个或多个遵循此确切格式的 搜索/替换 块:\n------- SEARCH\n[exact content to find]\n=======\n[new content to replace with]\n+++++++ REPLACE" 
+                    }
+                },
+                required: ["book_name", "uid", "diff"]
             }
         },
         {

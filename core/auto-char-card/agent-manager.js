@@ -36,18 +36,25 @@ export class AgentManager {
         this.approvalRequired = required;
     }
 
+    updatePendingToolArgs(newArgs) {
+        if (this.pendingToolCall) {
+            this.pendingToolCall.arguments = { ...this.pendingToolCall.arguments, ...newArgs };
+            console.log("[AgentManager] Pending tool args updated:", this.pendingToolCall.arguments);
+        }
+    }
+
     stop() {
         this.status = 'idle';
     }
 
-    async resumeWithApproval(approved, feedback, onStreamUpdate, onPreviewUpdate, onApprovalRequest, onContextUpdate) {
+    async resumeWithApproval(approved, feedback, onStreamUpdate, onPreviewUpdate, onApprovalRequest, onContextUpdate, onPromptGenerated) {
         if (this.status !== 'paused' || !this.pendingToolCall) return;
 
         if (approved) {
             this.status = 'running';
             await this.executePendingTool(onStreamUpdate, onPreviewUpdate, onContextUpdate);
             this.pendingToolCall = null;
-            await this.runTaskLoop(onStreamUpdate, onPreviewUpdate, onApprovalRequest, onContextUpdate);
+            await this.runTaskLoop(onStreamUpdate, onPreviewUpdate, onApprovalRequest, onContextUpdate, onPromptGenerated);
         } else {
             this.status = 'running';
             this.pendingToolCall = null;
@@ -55,7 +62,7 @@ export class AgentManager {
                 role: 'user', 
                 content: `[工具执行被拒绝] 用户反馈: ${feedback || "未提供原因。"}` 
             });
-            await this.runTaskLoop(onStreamUpdate, onPreviewUpdate, onApprovalRequest, onContextUpdate);
+            await this.runTaskLoop(onStreamUpdate, onPreviewUpdate, onApprovalRequest, onContextUpdate, onPromptGenerated);
         }
     }
 
@@ -120,12 +127,18 @@ ${this.taskState.getPromptContext()}
         if (this.currentChid !== undefined && this.currentChid !== 'new') {
             try {
                 const charData = await tools.read_character_card({ chid: this.currentChid });
-                const char = JSON.parse(charData);
-                envDetails += `# Current Character\n`;
-                envDetails += `Name: ${char.name}\n`;
-                envDetails += `Description Length: ${char.description?.length || 0}\n`;
-                envDetails += `First Message Length: ${char.first_mes?.length || 0}\n`;
-                envDetails += `Description Snippet: ${char.description?.substring(0, 200).replace(/\n/g, ' ')}...\n\n`;
+                const response = JSON.parse(charData);
+                
+                if (response.status === 'success' && response.data) {
+                    const char = response.data;
+                    envDetails += `# Current Character\n`;
+                    envDetails += `Name: ${char.name}\n`;
+                    envDetails += `Description Length: ${char.description?.length || 0}\n`;
+                    envDetails += `First Message Length: ${char.first_mes?.length || 0}\n`;
+                    envDetails += `Description Snippet: ${char.description?.substring(0, 200).replace(/\n/g, ' ')}...\n\n`;
+                } else {
+                    envDetails += `# Current Character\nError reading character: ${response.message || 'Unknown error'}\n\n`;
+                }
             } catch (e) {
                 envDetails += `# Current Character\nError reading character: ${e.message}\n\n`;
             }
@@ -192,6 +205,11 @@ Example:
 - **Detailed Writing**: When writing content (Description, First Message, World Info), be creative and detailed.
    - World Info entries: > 300 words.
    - First Message: > 1500 words, including environment, psychology, and action.
+- **Tool Selection**:
+   - **Use \`edit_character_text\`** for small modifications to existing large text fields (Description, First Message, etc.). This is more precise and saves tokens.
+   - **Use \`edit_world_info_entry\`** for small modifications to existing World Info entries.
+   - **Use \`update_character_card\`** only when populating empty fields or rewriting the entire content of a field.
+   - **Use \`write_world_info_entry\`** only when creating new entries or rewriting the entire content of an entry.
 - **Do not ask for more information than necessary**: Use the tools provided to accomplish the user's request efficiently and effectively.
 - **Completion**: When the task is done, provide a final summary to the user.
 `;
@@ -207,17 +225,17 @@ Example:
         return null;
     }
 
-    async handleUserMessage(message, onStreamUpdate, onPreviewUpdate, onApprovalRequest, onContextUpdate) {
+    async handleUserMessage(message, onStreamUpdate, onPreviewUpdate, onApprovalRequest, onContextUpdate, onPromptGenerated) {
         if (this.history.length === 0) {
             this.taskState.init(message);
         }
         
         this.history.push({ role: 'user', content: message });
         this.status = 'running';
-        await this.runTaskLoop(onStreamUpdate, onPreviewUpdate, onApprovalRequest, onContextUpdate);
+        await this.runTaskLoop(onStreamUpdate, onPreviewUpdate, onApprovalRequest, onContextUpdate, onPromptGenerated);
     }
 
-    async runTaskLoop(onStreamUpdate, onPreviewUpdate, onApprovalRequest, onContextUpdate) {
+    async runTaskLoop(onStreamUpdate, onPreviewUpdate, onApprovalRequest, onContextUpdate, onPromptGenerated) {
         let maxTurns = 20;
         let currentTurn = 0;
 
@@ -249,6 +267,10 @@ Example:
                 this.history,
                 config.maxTokens
             );
+
+            if (onPromptGenerated) {
+                onPromptGenerated(messages);
+            }
 
             let responseContent;
             let fullStreamedContent = "";
@@ -326,7 +348,7 @@ Example:
                         toolCall.arguments.chid = parseInt(this.currentChid);
                     }
                 }
-                if (toolCall.name === 'write_world_info_entry' || toolCall.name === 'read_world_info') {
+                if (toolCall.name === 'write_world_info_entry' || toolCall.name === 'read_world_info' || toolCall.name === 'edit_world_info_entry') {
                     if (!toolCall.arguments.book_name && this.currentBookName) {
                         toolCall.arguments.book_name = this.currentBookName;
                     }
@@ -419,7 +441,7 @@ Example:
         }
 
         if (onPreviewUpdate && !isError) {
-            onPreviewUpdate(toolCall.name, toolCall.arguments);
+            onPreviewUpdate(toolCall.name, toolCall.arguments, false, true);
         }
     }
 

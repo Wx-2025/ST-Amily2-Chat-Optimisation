@@ -85,7 +85,7 @@ ${taskState.getPromptContext()}
     shouldSummarize(history, tokenCount, maxTokens) {
         const tokenUsageRatio = tokenCount / maxTokens;
         if (tokenUsageRatio > 0.7) return true;
-        if (history.length > 15) return true;
+        if (history.length > 35) return true;
         return false;
     }
 }
