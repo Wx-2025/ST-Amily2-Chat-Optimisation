@@ -106,7 +106,8 @@
                 <div class="acc-message system">
                     <div class="acc-message-content">
                         欢迎使用 Amily2 自动构建器。<br>
-                        请在左侧配置工作区，然后在下方输入您的需求。
+                        请在左侧配置工作区，然后在下方输入您的需求。<br>
+                        当使用时，最好不要进入所选的角色卡中，以便后台执行即时生效。
                     </div>
                 </div>
             </div>
@@ -128,12 +129,12 @@
         <!-- 右栏：实时预览/Diff -->
         <div class="acc-column acc-right-panel">
             <div class="acc-panel-header" style="display: flex; justify-content: space-between; align-items: center;">
-                <div style="display: flex; align-items: center; gap: 5px;">
-                    <i class="fas fa-eye"></i> 
-                    <select id="acc-file-selector" class="acc-select" style="height: 24px; padding: 0 5px; font-size: 12px; max-width: 150px;">
-                        <option value="">-- 选择文件 --</option>
-                    </select>
-                </div>
+            <div style="display: flex; align-items: center; gap: 5px; flex: 1; min-width: 0;">
+                <i class="fas fa-eye" style="flex-shrink: 0;"></i> 
+                <select id="acc-file-selector" class="acc-select" style="height: 24px; padding: 0 5px; font-size: 12px; width: auto; flex: 1; min-width: 100px;">
+                    <option value="">-- 选择文件 --</option>
+                </select>
+            </div>
                 <div class="acc-preview-tabs" style="display: flex; gap: 2px; overflow-x: auto; max-width: 60%;">
                     <!-- Tabs will be injected here -->
                 </div>
