@@ -30,35 +30,60 @@ export async function syncToLorebook(tableName, data, indexText, role, headers, 
     const entriesToUpdate = [];
     const entriesToCreate = [];
 
+    const arraysEqual = (a, b) => {
+        if (a === b) return true;
+        if (a == null || b == null) return false;
+        if (a.length !== b.length) return false;
+        const sA = [...a].sort();
+        const sB = [...b].sort();
+        return sA.every((val, index) => val === sB[index]);
+    };
+
     const processEntry = (comment, keys, content, type = 'selective', enabled = true, excludeRecursion = false, specificOrder = null, specificDepth = null) => {
         const existingEntry = entries.find(e => e.comment === comment);
         if (existingEntry) {
-            existingEntry.content = content;
-            existingEntry.key = keys;
-
-            existingEntry.exclude_recursion = excludeRecursion; 
-            existingEntry.prevent_recursion = excludeRecursion;
-            existingEntry.excludeRecursion = excludeRecursion; 
-            existingEntry.preventRecursion = excludeRecursion; 
-
-            if (specificOrder !== null) {
-                existingEntry.order = specificOrder;
-                existingEntry.position = 4; 
-            }
-            if (specificDepth !== null) {
-                existingEntry.depth = specificDepth; 
-            }
+            let isChanged = false;
             
-            if (type === 'constant') {
-                existingEntry.constant = true;
-            } else {
-                existingEntry.constant = false;
-            }
-            existingEntry.enabled = enabled;
-            delete existingEntry.disable;
-            delete existingEntry.disabled;
+            if (existingEntry.content !== content) isChanged = true;
+            if (!arraysEqual(existingEntry.key, keys)) isChanged = true;
+            if (existingEntry.enabled !== enabled) isChanged = true;
             
-            entriesToUpdate.push(existingEntry);
+            const shouldBeConstant = (type === 'constant');
+            if (!!existingEntry.constant !== shouldBeConstant) isChanged = true;
+            
+            if (!!existingEntry.exclude_recursion !== excludeRecursion) isChanged = true;
+            
+            if (specificOrder !== null && existingEntry.order !== specificOrder) isChanged = true;
+            if (specificDepth !== null && existingEntry.depth !== specificDepth) isChanged = true;
+
+            if (isChanged) {
+                existingEntry.content = content;
+                existingEntry.key = keys;
+
+                existingEntry.exclude_recursion = excludeRecursion; 
+                existingEntry.prevent_recursion = excludeRecursion;
+                existingEntry.excludeRecursion = excludeRecursion; 
+                existingEntry.preventRecursion = excludeRecursion; 
+
+                if (specificOrder !== null) {
+                    existingEntry.order = specificOrder;
+                    existingEntry.position = 4; 
+                }
+                if (specificDepth !== null) {
+                    existingEntry.depth = specificDepth; 
+                }
+                
+                if (type === 'constant') {
+                    existingEntry.constant = true;
+                } else {
+                    existingEntry.constant = false;
+                }
+                existingEntry.enabled = enabled;
+                delete existingEntry.disable;
+                delete existingEntry.disabled;
+                
+                entriesToUpdate.push(existingEntry);
+            }
         } else {
             entriesToCreate.push({
                 comment: comment,
@@ -182,6 +207,11 @@ export async function syncToLorebook(tableName, data, indexText, role, headers, 
         console.log(`[Amily2-Bridge] 创建 ${entriesToCreate.length} 个新条目...`);
         await amilyHelper.createLorebookEntries(bookName, entriesToCreate);
     }
+
+    if (entriesToDelete.length === 0 && entriesToUpdate.length === 0 && entriesToCreate.length === 0) {
+        console.log(`[Amily2-Bridge] ${tableName} 无需变更 (数据一致)。`);
+    }
+
     console.log(`[Amily2-Bridge] 同步完成: ${tableName}`);
 }
 
