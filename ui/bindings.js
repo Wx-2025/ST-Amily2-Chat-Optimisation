@@ -4,6 +4,7 @@ import { defaultSettings, extensionName, saveSettings } from "../utils/settings.
 import { pluginAuthStatus, activatePluginAuthorization, getPasswordForDate } from "../utils/auth.js";
 import { fetchModels, testApiConnection } from "../core/api.js";
 import { getJqyhApiSettings, testJqyhApiConnection, fetchJqyhModels } from '../core/api/JqyhApi.js';
+import { testConcurrentApiConnection, fetchConcurrentModels } from '../core/api/ConcurrentApi.js';
 import { safeLorebooks, safeCharLorebooks, safeLorebookEntries, isTavernHelperAvailable } from "../core/tavernhelper-compatibility.js";
 
 import { setAvailableModels, populateModelDropdown, getLatestUpdateInfo } from "./state.js";
@@ -1591,11 +1592,14 @@ function opt_saveCurrentPromptsAsPreset(panel) {
     const currentEditorPromptKey = panel.find('#amily2_opt_prompt_selector').val();
     promptCache[currentEditorPromptKey] = panel.find('#amily2_opt_prompt_editor').val();
 
+    const currentSettings = extension_settings[extensionName] || {};
     const newPresetData = {
         name: presetName,
         mainPrompt: promptCache.main,
         systemPrompt: promptCache.system,
         finalSystemDirective: promptCache.final_system,
+        concurrentMainPrompt: currentSettings.plotOpt_concurrentMainPrompt || '',
+        concurrentSystemPrompt: currentSettings.plotOpt_concurrentSystemPrompt || '',
         rateMain: parseFloat(panel.find('#amily2_opt_rate_main').val()),
         ratePersonal: parseFloat(panel.find('#amily2_opt_rate_personal').val()),
         rateErotic: parseFloat(panel.find('#amily2_opt_rate_erotic').val()),
@@ -1702,6 +1706,8 @@ function opt_importPromptPresets(file, panel) {
                         mainPrompt: preset.mainPrompt || '',
                         systemPrompt: preset.systemPrompt || '',
                         finalSystemDirective: preset.finalSystemDirective || '',
+                        concurrentMainPrompt: preset.concurrentMainPrompt || '',
+                        concurrentSystemPrompt: preset.concurrentSystemPrompt || '',
                         rateMain: preset.rateMain ?? 1.0,
                         ratePersonal: preset.ratePersonal ?? 1.0,
                         rateErotic: preset.rateErotic ?? 1.0,
@@ -1827,6 +1833,301 @@ const promptCache = {
     final_system: ''
 };
 
+function bindConcurrentApiEvents() {
+    const concurrentToggle = document.getElementById('amily2_plotOpt_concurrentEnabled');
+    const concurrentContent = document.getElementById('amily2_concurrent_content');
+    
+    if (!concurrentToggle || !concurrentContent) return;
+
+    const settings = extension_settings[extensionName] || {};
+    
+    // Initial Load
+    concurrentToggle.checked = settings.plotOpt_concurrentEnabled ?? false;
+    concurrentContent.style.display = concurrentToggle.checked ? 'grid' : 'none';
+
+    const fields = [
+        { id: 'amily2_plotOpt_concurrentApiProvider', key: 'plotOpt_concurrentApiProvider' },
+        { id: 'amily2_plotOpt_concurrentApiUrl', key: 'plotOpt_concurrentApiUrl' },
+        { id: 'amily2_plotOpt_concurrentApiKey', key: 'plotOpt_concurrentApiKey' },
+        { id: 'amily2_plotOpt_concurrentModel', key: 'plotOpt_concurrentModel' }
+    ];
+
+    fields.forEach(field => {
+        const element = document.getElementById(field.id);
+        if (element) {
+            element.value = settings[field.key] || '';
+        }
+    });
+
+    // Button Listeners
+    const testButton = document.getElementById('amily2_plotOpt_concurrent_test_connection');
+    if (testButton) {
+        testButton.addEventListener('click', async () => {
+            const button = $(testButton);
+            const originalHtml = button.html();
+            button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 测试中');
+            try {
+                await testConcurrentApiConnection();
+            } finally {
+                button.prop('disabled', false).html(originalHtml);
+            }
+        });
+    }
+
+    const fetchButton = document.getElementById('amily2_plotOpt_concurrent_fetch_models');
+    const modelInput = document.getElementById('amily2_plotOpt_concurrentModel');
+    const modelSelect = document.getElementById('amily2_plotOpt_concurrentModel_select');
+
+    if (fetchButton && modelInput && modelSelect) {
+        fetchButton.addEventListener('click', async () => {
+            const button = $(fetchButton);
+            const originalHtml = button.html();
+            button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 获取中');
+            try {
+                const models = await fetchConcurrentModels();
+                if (models && models.length > 0) {
+                    modelSelect.innerHTML = '<option value="">-- 选择一个模型 --</option>';
+                    models.forEach(model => {
+                        const option = document.createElement('option');
+                        option.value = model.id;
+                        option.textContent = model.name;
+                        if (model.id === modelInput.value) {
+                            option.selected = true;
+                        }
+                        modelSelect.appendChild(option);
+                    });
+                    modelSelect.style.display = 'block';
+                    modelInput.style.display = 'none';
+                    toastr.success(`成功获取 ${models.length} 个并发模型`, '获取模型成功');
+                } else {
+                    toastr.warning('未获取到任何并发模型。', '获取模型');
+                }
+            } catch (error) {
+                toastr.error(`获取并发模型失败: ${error.message}`, '获取模型失败');
+            } finally {
+                button.prop('disabled', false).html(originalHtml);
+            }
+        });
+
+        modelSelect.addEventListener('change', function() {
+            const selectedModel = this.value;
+            if (selectedModel) {
+                modelInput.value = selectedModel;
+                 if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
+                extension_settings[extensionName].plotOpt_concurrentModel = selectedModel;
+                saveSettingsDebounced();
+            }
+        });
+    }
+
+
+    // Event Listeners
+    concurrentToggle.addEventListener('change', function() {
+        const isEnabled = this.checked;
+        if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
+        extension_settings[extensionName].plotOpt_concurrentEnabled = isEnabled;
+        saveSettingsDebounced();
+        concurrentContent.style.display = isEnabled ? 'grid' : 'none';
+    });
+
+    fields.forEach(field => {
+        const element = document.getElementById(field.id);
+        if (element) {
+            element.addEventListener('change', function() {
+                if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
+                extension_settings[extensionName][field.key] = this.value;
+                saveSettingsDebounced();
+            });
+        }
+    });
+}
+
+function bindConcurrentPromptEvents() {
+    const panel = $('#sinan-prompt-settings-tab');
+    if (panel.length === 0) return;
+
+    const selector = panel.find('#amily2_concurrent_prompt_selector');
+    const editor = panel.find('#amily2_concurrent_prompt_editor');
+    const resetButton = panel.find('#amily2_opt_reset_concurrent_prompt');
+    
+    const promptMap = {
+        main: 'plotOpt_concurrentMainPrompt',
+        system: 'plotOpt_concurrentSystemPrompt'
+    };
+
+    function updateConcurrentEditor() {
+        const settings = extension_settings[extensionName] || {};
+        const selectedKey = selector.val();
+        const settingKey = promptMap[selectedKey];
+        editor.val(settings[settingKey] || '');
+    }
+
+    // Initial load
+    updateConcurrentEditor();
+
+    // Event Listeners
+    selector.on('change', updateConcurrentEditor);
+
+    editor.on('input', function() {
+        const selectedKey = selector.val();
+        const settingKey = promptMap[selectedKey];
+        if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
+        extension_settings[extensionName][settingKey] = $(this).val();
+        saveSettingsDebounced();
+    });
+
+    resetButton.on('click', function() {
+        const selectedKey = selector.val();
+        const settingKey = promptMap[selectedKey];
+        const defaultValue = defaultSettings[settingKey] || '';
+        
+        if (confirm(`您确定要将 "${selector.find('option:selected').text()}" 恢复为默认值吗？`)) {
+            editor.val(defaultValue);
+            if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
+            extension_settings[extensionName][settingKey] = defaultValue;
+            saveSettingsDebounced();
+            toastr.success('并发提示词已成功恢复为默认值。');
+        }
+    });
+}
+
+function opt_loadConcurrentWorldbookSettings() {
+    const panel = $('#amily2_plot_optimization_panel');
+    if (panel.length === 0) return;
+
+    const settings = extension_settings[extensionName] || {};
+    const enabledCheckbox = panel.find('#amily2_plotOpt_concurrentWorldbookEnabled');
+    const sourceRadios = panel.find('input[name="amily2_plotOpt_concurrentWorldbook_source"]');
+    const charLimitSlider = panel.find('#amily2_plotOpt_concurrentWorldbookCharLimit');
+    const charLimitValue = panel.find('#amily2_plotOpt_concurrentWorldbookCharLimit_value');
+
+    enabledCheckbox.prop('checked', settings.plotOpt_concurrentWorldbookEnabled ?? true);
+    const currentSource = settings.plotOpt_concurrentWorldbookSource || 'character';
+    panel.find(`input[name="amily2_plotOpt_concurrentWorldbook_source"][value="${currentSource}"]`).prop('checked', true);
+    charLimitSlider.val(settings.plotOpt_concurrentWorldbookCharLimit || 60000);
+    charLimitValue.text(charLimitSlider.val());
+
+    // This will also trigger the visibility update
+    enabledCheckbox.trigger('change');
+}
+
+function bindConcurrentWorldbookEvents() {
+    const panel = $('#amily2_plot_optimization_panel');
+    if (panel.length === 0) return;
+
+    const settings = extension_settings[extensionName] || {};
+    const enabledCheckbox = panel.find('#amily2_plotOpt_concurrentWorldbookEnabled');
+    const contentDiv = panel.find('#amily2_concurrent_worldbook_content');
+    const sourceRadios = panel.find('input[name="amily2_plotOpt_concurrentWorldbook_source"]');
+    const manualSelectWrapper = panel.find('#amily2_plotOpt_concurrent_worldbook_select_wrapper');
+    const refreshButton = panel.find('#amily2_plotOpt_concurrent_refresh_worldbooks');
+    const bookListContainer = panel.find('#amily2_plotOpt_concurrent_worldbook_checkbox_list');
+    const charLimitSlider = panel.find('#amily2_plotOpt_concurrentWorldbookCharLimit');
+    const charLimitValue = panel.find('#amily2_plotOpt_concurrentWorldbookCharLimit_value');
+
+    function updateVisibility() {
+        const isEnabled = enabledCheckbox.is(':checked');
+        contentDiv.css('display', isEnabled ? 'block' : 'none');
+        if (isEnabled) {
+            const source = panel.find('input[name="amily2_plotOpt_concurrentWorldbook_source"]:checked').val();
+            manualSelectWrapper.css('display', source === 'manual' ? 'block' : 'none');
+        }
+    }
+
+    async function loadConcurrentWorldbooks() {
+        bookListContainer.html('<p class="notes">加载中...</p>');
+        try {
+            const lorebooks = await safeLorebooks();
+            bookListContainer.empty();
+            if (!lorebooks || lorebooks.length === 0) {
+                bookListContainer.html('<p class="notes">未找到世界书。</p>');
+                return;
+            }
+            const selectedBooks = settings.plotOpt_concurrentSelectedWorldbooks || [];
+            const autoSelectedBooks = settings.plotOpt_concurrentAutoSelectWorldbooks || [];
+            lorebooks.forEach(name => {
+                const bookId = `amily2-opt-concurrent-wb-check-${name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+                const autoId = `amily2-opt-concurrent-wb-auto-${name.replace(/[^a-zA-Z0-9]/g, '-')}`;
+                const isChecked = selectedBooks.includes(name);
+                const isAuto = autoSelectedBooks.includes(name);
+                const item = $(`
+                    <div class="amily2_opt_worldbook_list_item" style="display: flex; align-items: center; justify-content: space-between; padding-right: 5px;">
+                        <div style="display: flex; align-items: center;">
+                            <input type="checkbox" id="${bookId}" value="${name}" ${isChecked ? 'checked' : ''} style="margin-right: 5px;">
+                            <label for="${bookId}" style="margin-bottom: 0;">${name}</label>
+                        </div>
+                        <div style="display: flex; align-items: center;" title="开启后自动加载该世界书所有条目（包括新增）">
+                            <input type="checkbox" class="amily2_opt_concurrent_wb_auto_check" id="${autoId}" data-book="${name}" ${isAuto ? 'checked' : ''} style="margin-right: 5px;">
+                            <label for="${autoId}" style="margin-bottom: 0; font-size: 0.9em; opacity: 0.8; cursor: pointer;">全选</label>
+                        </div>
+                    </div>
+                `);
+                bookListContainer.append(item);
+            });
+        } catch (error) {
+            console.error(`[${extensionName}] 加载并发世界书失败:`, error);
+            bookListContainer.html('<p class="notes" style="color:red;">加载世界书列表失败。</p>');
+        }
+    }
+
+    // Initial State is now handled by opt_loadConcurrentWorldbookSettings
+    updateVisibility();
+    if (panel.find('input[name="amily2_plotOpt_concurrentWorldbook_source"]:checked').val() === 'manual') {
+        loadConcurrentWorldbooks();
+    }
+
+    // Event Listeners
+    enabledCheckbox.on('change', function() {
+        if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
+        extension_settings[extensionName].plotOpt_concurrentWorldbookEnabled = this.checked;
+        saveSettingsDebounced();
+        updateVisibility();
+    });
+
+    sourceRadios.on('change', function() {
+        if (this.checked) {
+            const source = $(this).val();
+            if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
+            extension_settings[extensionName].plotOpt_concurrentWorldbookSource = source;
+            saveSettingsDebounced();
+            updateVisibility();
+            if (source === 'manual') {
+                loadConcurrentWorldbooks();
+            }
+        }
+    });
+
+    refreshButton.on('click', loadConcurrentWorldbooks);
+
+    bookListContainer.on('change', 'input[type="checkbox"]:not(.amily2_opt_concurrent_wb_auto_check)', function() {
+        const selected = [];
+        bookListContainer.find('input[type="checkbox"]:not(.amily2_opt_concurrent_wb_auto_check):checked').each(function() {
+            selected.push($(this).val());
+        });
+        if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
+        extension_settings[extensionName].plotOpt_concurrentSelectedWorldbooks = selected;
+        saveSettingsDebounced();
+    });
+
+    bookListContainer.on('change', '.amily2_opt_concurrent_wb_auto_check', function() {
+        const autoSelected = [];
+        bookListContainer.find('.amily2_opt_concurrent_wb_auto_check:checked').each(function() {
+            autoSelected.push($(this).data('book'));
+        });
+        if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
+        extension_settings[extensionName].plotOpt_concurrentAutoSelectWorldbooks = autoSelected;
+        saveSettingsDebounced();
+    });
+
+    charLimitSlider.on('input', function() {
+        const value = $(this).val();
+        charLimitValue.text(value);
+        if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
+        extension_settings[extensionName].plotOpt_concurrentWorldbookCharLimit = parseInt(value, 10);
+        saveSettingsDebounced();
+    });
+}
+
 export function initializePlotOptimizationBindings() {
     const panel = $('#amily2_plot_optimization_panel');
     if (panel.length === 0 || panel.data('events-bound')) {
@@ -1936,6 +2237,10 @@ export function initializePlotOptimizationBindings() {
     
     opt_loadSettings(panel);
     bindJqyhApiEvents();
+    bindConcurrentApiEvents();
+    bindConcurrentPromptEvents();
+    opt_loadConcurrentWorldbookSettings(); // Load settings
+    bindConcurrentWorldbookEvents(); // Then bind events
 
     eventSource.on(event_types.CHAT_CHANGED, () => {
         console.log(`[${extensionName}] 检测到角色/聊天切换，正在刷新剧情优化设置UI...`);
@@ -2052,6 +2357,21 @@ export function initializePlotOptimizationBindings() {
             opt_saveSetting('plotOpt_mainPrompt', promptCache.main);
             opt_saveSetting('plotOpt_systemPrompt', promptCache.system);
             opt_saveSetting('plotOpt_finalSystemDirective', promptCache.final_system);
+            
+            // Also load and save concurrent prompts
+            const concurrentMain = selectedPreset.concurrentMainPrompt || defaultSettings.plotOpt_concurrentMainPrompt;
+            const concurrentSystem = selectedPreset.concurrentSystemPrompt || defaultSettings.plotOpt_concurrentSystemPrompt;
+            opt_saveSetting('plotOpt_concurrentMainPrompt', concurrentMain);
+            opt_saveSetting('plotOpt_concurrentSystemPrompt', concurrentSystem);
+
+            // Trigger UI update for concurrent editor
+            const concurrentEditor = panel.find('#amily2_concurrent_prompt_editor');
+            const concurrentSelector = panel.find('#amily2_concurrent_prompt_selector');
+            if (concurrentSelector.val() === 'main') {
+                concurrentEditor.val(concurrentMain);
+            } else {
+                concurrentEditor.val(concurrentSystem);
+            }
 
             panel.find('#amily2_opt_rate_main').val(selectedPreset.rateMain ?? 1.0).trigger('change');
             panel.find('#amily2_opt_rate_personal').val(selectedPreset.ratePersonal ?? 1.0).trigger('change');
