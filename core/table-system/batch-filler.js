@@ -272,7 +272,8 @@ async function runBatchAttempt(batchNum, attemptNum) {
             throw new Error('API返回内容为空。');
         }
 
-        updateTableFromText(resultText);
+        // 【V155.0】批量填表时，启用立即删除模式，避免红色待删除行残留
+        updateTableFromText(resultText, { immediateDelete: true });
         renderTables();
         log(`批次 ${batchNum} 处理成功。`, 'success');
         
@@ -483,7 +484,7 @@ export async function startFloorRangeFilling(startFloor, endFloor) {
             throw new Error('API返回内容为空。');
         }
 
-        updateTableFromText(resultText);
+        updateTableFromText(resultText, { immediateDelete: true });
         renderTables();
         
         toastr.success(`楼层 ${startFloor}-${endFloor} 填表完成！`);
