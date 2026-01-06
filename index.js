@@ -2,6 +2,7 @@ import { createDrawer } from "./ui/drawer.js";
 import "./PresetSettings/index.js"; // 【预设设置】独立模块
 import "./PreOptimizationViewer/index.js"; // 【优化前文查看器】独立模块
 import "./WorldEditor/WorldEditor.js"; // 【世界编辑器】独立模块
+import { showPlotOptimizationProgress, updatePlotOptimizationProgress, hidePlotOptimizationProgress } from './ui/optimization-progress.js';
 import { registerSlashCommands } from "./core/commands.js";
 import { onMessageReceived, handleTableUpdate } from "./core/events.js";
 import { processPlotOptimization } from "./core/summarizer.js";
@@ -616,9 +617,18 @@ jQuery(async () => {
 
         console.log("[Amily2号-开国大典] 步骤3.8：注册表格占位符宏...");
         try {
-
+            // 【V144.0】注册上下文优化器宏 (已移至开国大典步骤0优先执行，此处仅保留重置逻辑)
+            // registerContextOptimizerMacros();
+            
+            // 注册生成开始事件以重置缓冲区
             eventSource.on(event_types.GENERATION_STARTED, () => {
                 resetContextBuffer();
+                
+                // 故障恢复：如果生成开始了，说明之前的优化肯定结束了（或者被绕过了），强制重置标志位
+                if (isProcessingPlotOptimization) {
+                    console.warn("[Amily2-剧情优化] 检测到生成开始，但优化标志位仍为 true。这可能是并发生成或状态未及时重置。");
+                    // 我们不在这里强制重置，因为优化可能正在进行中，我们希望它完成并修改输入框。
+                }
             });
 
             const context = getContext();
@@ -645,17 +655,23 @@ jQuery(async () => {
         async function onPlotGenerationAfterCommands(type, params, dryRun) {
             clearUpdatedTables();
 
-
-            console.log("[Amily2-剧情优化] Generation after commands triggered", { type, params, dryRun, isProcessing: isProcessingPlotOptimization });
-
-            if (type === 'regenerate' || isProcessingPlotOptimization || dryRun) {
-                console.log("[Amily2-剧情优化] Skipping due to conditions:", { type, isProcessing: isProcessingPlotOptimization, dryRun });
-                return;
+            // 如果正在处理中，拦截所有其他触发（防止意外的双重触发）
+            if (isProcessingPlotOptimization) {
+                console.log("[Amily2-剧情优化] 优化正在进行中，拦截重复触发。");
+                return; 
             }
-        
+
+            console.log("[Amily2-剧情优化] Generation after commands triggered", { type, params, dryRun });
+
+            // Skip for regenerations or dry runs
+            if (type === 'regenerate' || dryRun) {
+                console.log("[Amily2-剧情优化] Skipping due to regenerate or dryRun.");
+                return false;
+            }
+
             const globalSettings = extension_settings[extensionName];
             if (globalSettings?.plotOpt_enabled === false) {
-                return;
+                return false;
             }
 
             const isJqyhEnabled = globalSettings?.jqyhEnabled === true;
@@ -663,117 +679,106 @@ jQuery(async () => {
 
             if (!isJqyhEnabled && !isMainApiConfigured) {
                 console.log("[Amily2-剧情优化] 优化已启用，但Jqyh API已禁用且主页API未配置。");
-                return;
+                return false;
             }
-        
+
+            // Determine the message to be processed
+            let userMessage = $('#send_textarea').val();
+            let isFromTextarea = true;
+            const context = getContext();
+            if (!userMessage) {
+                if (context.chat && context.chat.length > 0) {
+                    const lastMsg = context.chat[context.chat.length - 1];
+                    if (lastMsg.is_user) {
+                        userMessage = lastMsg.mes;
+                        isFromTextarea = false;
+                        console.log("[Amily2-剧情优化] Detected empty textarea, processing last user message.");
+                    }
+                }
+            }
+
+            if (!userMessage) {
+                return false; // Nothing to process
+            }
+
+            // Set the flag to prevent loops and show progress
             isProcessingPlotOptimization = true;
-            let plotOptimizationToast = null;
             const cancellationState = { isCancelled: false };
+            showPlotOptimizationProgress(cancellationState);
+
+            const onProgress = (message, isDone = false, isSkipped = false) => {
+                updatePlotOptimizationProgress(message, isDone, isSkipped);
+            };
 
             try {
-                let userMessage = $('#send_textarea').val();
-                let isFromTextarea = true;
-                let targetMessageId = null;
-                const context = getContext();
-
-                if (!userMessage) {
-                    // 尝试从聊天记录中获取最后一条用户消息（针对 /send 指令场景）
-                    if (context.chat && context.chat.length > 0) {
-                        const lastMsg = context.chat[context.chat.length - 1];
-                        if (lastMsg.is_user) {
-                            userMessage = lastMsg.mes;
-                            isFromTextarea = false;
-                            targetMessageId = context.chat.length - 1;
-                            console.log("[Amily2-剧情优化] 检测到输入框为空，但最后一条消息为用户发送，将对其进行优化。");
-                        }
-                    }
-                }
-
-                if (!userMessage) {
-                    isProcessingPlotOptimization = false;
-                    return false; 
-                }
-
-                const toastMessage = `
-                    <div>
-                        正在进行剧情优化...
-                        <button id="amily2-cancel-optimization-btn" class="menu_button danger_button" style="margin-left: 10px; padding: 2px 8px; font-size: 0.8em;">中止</button>
-                    </div>
-                `;
-                
-                let cancellationReject;
                 const cancellationPromise = new Promise((_, reject) => {
-                    cancellationReject = reject;
-                });
-
-                plotOptimizationToast = toastr.info(toastMessage, '剧情优化', {
-                    timeOut: 0,
-                    extendedTimeOut: 0,
-                    tapToDismiss: false,
-                    onclick: null,
-                    escapeHtml: false,
-                    onShown: function() {
-                       $('#amily2-cancel-optimization-btn').one('click', function(event) {
-                           event.stopPropagation();
-                           
-                           if (plotOptimizationToast) {
-                               plotOptimizationToast.remove(); 
-                               plotOptimizationToast = null;
-                           }
-                           
-                           cancellationState.isCancelled = true;
-                           cancellationReject(new Error("Optimization cancelled by user"));
-                       });
-                    }
+                    const checkCancel = setInterval(() => {
+                        if (cancellationState.isCancelled) {
+                            clearInterval(checkCancel);
+                            reject(new Error("Optimization cancelled by user"));
+                        }
+                    }, 100);
                 });
 
                 const contextTurnCount = globalSettings.plotOpt_contextLimit || 10;
-                let slicedContext = [];
-                
-                // 如果是从聊天记录中获取的消息，上下文需要排除最后一条
                 const contextSource = isFromTextarea ? context.chat : context.chat.slice(0, -1);
-                
-                if (contextTurnCount > 0) {
-                    slicedContext = contextSource.slice(-contextTurnCount);
-                } else {
-                    slicedContext = contextSource;
-                }
-                
-                const optimizationPromise = processPlotOptimization({ mes: userMessage }, slicedContext, cancellationState);
+                const slicedContext = contextTurnCount > 0 ? contextSource.slice(-contextTurnCount) : contextSource;
 
+                const optimizationPromise = processPlotOptimization({ mes: userMessage }, slicedContext, cancellationState, onProgress);
                 const result = await Promise.race([optimizationPromise, cancellationPromise]);
 
+                if (cancellationState.isCancelled) {
+                    throw new Error("Optimization cancelled by user");
+                }
+
                 if (result && result.contentToAppend) {
+                    const finalMessage = userMessage + '\n' + result.contentToAppend;
+                    
+                    if (params && typeof params === 'object') {
+                        try {
+                            if (params.prompt) params.prompt = finalMessage;
+                            if (Array.isArray(params.messages)) {
+                                const lastMsg = params.messages[params.messages.length - 1];
+                                if (lastMsg && lastMsg.role === 'user') {
+                                    lastMsg.content = finalMessage;
+                                }
+                            }
+                        } catch (e) {
+                            console.warn("[Amily2-剧情优化] 尝试修改 params 失败:", e);
+                        }
+                    }
+
                     if (isFromTextarea) {
-                        const currentUserInput = $('#send_textarea').val();
-                        const finalMessage = currentUserInput + '\n' + result.contentToAppend;
                         $('#send_textarea').val(finalMessage).trigger('input');
                     } else {
-                        const finalMessage = userMessage + '\n' + result.contentToAppend;
-                        await amilyHelper.setChatMessage(finalMessage, targetMessageId, { refresh: 'display_and_render_current' });
+                        const targetMessageId = context.chat.length - 1;
+                        await amilyHelper.setChatMessage(finalMessage, targetMessageId, { refresh: 'none' });
                     }
-                    toastr.success('剧情优化已完成并注入。', '操作成功');
+                    
+                    toastr.success('剧情优化已完成并注入，继续生成...', '操作成功');
+
+                    isProcessingPlotOptimization = false;
+                    hidePlotOptimizationProgress();
+
+                    return false; 
                 } else {
                     console.log("[Amily2-剧情优化] Plot optimization returned no result. Sending original message.");
+                    isProcessingPlotOptimization = false;
+                    hidePlotOptimizationProgress();
+                    return false;
                 }
-                
-                return false;
 
             } catch (error) {
-                if (error.message === "Optimization cancelled by user") {
+                if (cancellationState.isCancelled || error.message === "Optimization cancelled by user") {
                     console.log("[Amily2-剧情优化] 优化流程已被用户中止。发送原始消息。");
-                    toastr.warning('剧情优化任务已中止...', '操作取消', { timeOut: 2000 });
+                    toastr.warning('记忆管理任务已中止。', '操作取消', { timeOut: 2000 });
                 } else {
                     console.error(`[Amily2-剧情优化] 处理发送前事件时出错:`, error);
-                    toastr.error('剧情优化处理失败。', '错误');
+                    toastr.error('记忆管理处理失败，将发送原始消息。', '错误');
                 }
-                return false;
-            } finally {
                 isProcessingPlotOptimization = false;
-                if (plotOptimizationToast) {
-                    toastr.clear(plotOptimizationToast);
-                    plotOptimizationToast = null;
-                }
+                hidePlotOptimizationProgress();
+                return false;
             }
         }
         if (!window.amily2EventsRegistered) {
@@ -891,21 +896,16 @@ jQuery(async () => {
 
         console.log("【Amily2号】帝国秩序已完美建立。Amily2号的府邸已恭候陛下的莅临。");
 
-        // 【新增功能】每次加载插件时，如果已授权，则弹出提示
         if (checkAuthorization()) {
             const userType = localStorage.getItem("plugin_user_type") || "未知";
             const userNote = localStorage.getItem("plugin_user_note");
             
-            // 1. 先显示本地缓存的状态，保证启动速度和体验
             const displayNote = userNote || userType;
             toastr.success(`欢迎回来！授权状态有效 (用户: ${displayNote})`, "Amily2 插件已就绪");
 
-            // 2. 后台静默刷新，检查过期状态或信息更新
-            // 即使本地有备注，也需要去服务器验证一下是否过期
             refreshUserInfo().then(data => {
                 if (data && data.note && data.note !== userNote) {
                     console.log("[Amily2] 用户信息已更新:", data.note);
-                    // 如果备注变了，可以选择再次提示或者静默更新
                 }
             }).catch(e => {
                 console.warn("[Amily2] 后台刷新用户信息失败:", e);
