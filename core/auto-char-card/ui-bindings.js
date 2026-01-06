@@ -732,14 +732,8 @@ function addMessage(role, content) {
             .replace(/<tool_code(?:\s+[^>]*)?>[\s\S]*?<\/tool_code>/gi, '')
             .trim();
 
-        const tools = [
-            'read_world_info', 'read_world_entry', 'write_world_info_entry', 'create_world_book',
-            'read_character_card', 'update_character_card', 'edit_character_text',
-            'edit_world_info_entry',
-            'manage_first_message', 'use_tool'
-        ];
-        
-        const regex = new RegExp(`<(${tools.join('|')})(?:\\s+[^>]*)?>[\\s\\S]*?<\\/\\1>`, 'gi');
+        const toolNames = Object.keys(tools);
+        const regex = new RegExp(`<(${toolNames.join('|')})(?:\\s+[^>]*)?>[\\s\\S]*?<\\/\\1>`, 'gi');
         displayContent = displayContent.replace(regex, '').trim();
         
         if (!displayContent && role === 'executor') {
