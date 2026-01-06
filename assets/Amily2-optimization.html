@@ -78,10 +78,90 @@
                 <input type="range" id="amily2_jqyh_temperature" min="0" max="2" step="0.1" value="0.7">
             </div>
         </fieldset>
+
+        <fieldset class="settings-group">
+            <legend>并发 API (第二个LLM)</legend>
+            <div class="control-block-with-switch">
+                <label for="amily2_plotOpt_concurrentEnabled"><strong>启用并发调用</strong></label>
+                <label class="toggle-switch">
+                    <input id="amily2_plotOpt_concurrentEnabled" type="checkbox" />
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div id="amily2_concurrent_content" style="display: none;" class="inline-settings-grid">
+                <label for="amily2_plotOpt_concurrentApiProvider">API 模式</label>
+                <select id="amily2_plotOpt_concurrentApiProvider" class="text_pole">
+                    <option value="openai_test">全兼容模式</option>
+                    <option value="openai">OpenAI 兼容</option>
+                </select>
+                <label for="amily2_plotOpt_concurrentApiUrl">API URL</label>
+                <input type="text" id="amily2_plotOpt_concurrentApiUrl" class="text_pole" placeholder="例如: https://api.openai.com/v1">
+                <label for="amily2_plotOpt_concurrentApiKey">API Key</label>
+                <input type="password" id="amily2_plotOpt_concurrentApiKey" class="text_pole" placeholder="请输入您的 API Key">
+                <label for="amily2_plotOpt_concurrentModel">模型</label>
+                <div class="amily2_opt_preset_selector_wrapper">
+                    <input type="text" id="amily2_plotOpt_concurrentModel" class="text_pole" placeholder="请先获取模型列表或手动输入">
+                    <select id="amily2_plotOpt_concurrentModel_select" class="text_pole" style="display: none;"></select>
+                </div>
+                <div class="jqyh-button-row" style="grid-column: 1 / -1;">
+                    <button id="amily2_plotOpt_concurrent_fetch_models" class="menu_button secondary" title="获取模型列表"><i class="fas fa-sync-alt"></i> 获取模型</button>
+                    <button id="amily2_plotOpt_concurrent_test_connection" class="menu_button primary"><i class="fas fa-plug"></i> 测试连接</button>
+                </div>
+            </div>
+        </fieldset>
+
+        <fieldset class="settings-group">
+            <legend>并发 API 世界书</legend>
+            <div class="control-block-with-switch">
+                <label for="amily2_plotOpt_concurrentWorldbookEnabled">启用世界书</label>
+                <label class="toggle-switch">
+                    <input id="amily2_plotOpt_concurrentWorldbookEnabled" type="checkbox" />
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div id="amily2_concurrent_worldbook_content" style="display: none;">
+                <div class="control-block-with-switch">
+                    <label>世界书来源</label>
+                    <div class="radio-group">
+                        <input type="radio" id="amily2_plotOpt_concurrentWorldbook_source_character" name="amily2_plotOpt_concurrentWorldbook_source" value="character" checked>
+                        <label for="amily2_plotOpt_concurrentWorldbook_source_character">角色</label>
+                        <input type="radio" id="amily2_plotOpt_concurrentWorldbook_source_manual" name="amily2_plotOpt_concurrentWorldbook_source" value="manual">
+                        <label for="amily2_plotOpt_concurrentWorldbook_source_manual">自定</label>
+                    </div>
+                </div>
+                <div id="amily2_plotOpt_concurrent_worldbook_select_wrapper" style="display: none;">
+                    <div class="worldbook-column">
+                        <div class="amily2_opt_label_with_button_wrapper">
+                            <label>选择世界书</label>
+                            <button id="amily2_plotOpt_concurrent_refresh_worldbooks" class="menu_button" title="刷新世界书列表"><i class="fa-solid fa-sync"></i></button>
+                        </div>
+                        <div id="amily2_plotOpt_concurrent_worldbook_checkbox_list" class="scrollable-container"></div>
+                    </div>
+                </div>
+                <div class="inline-settings-grid">
+                    <label for="amily2_plotOpt_concurrentWorldbookCharLimit">世界书最大字符数: <span id="amily2_plotOpt_concurrentWorldbookCharLimit_value">60000</span></label>
+                    <input type="range" id="amily2_plotOpt_concurrentWorldbookCharLimit" min="1000" max="200000" step="1000" value="60000">
+                </div>
+            </div>
+        </fieldset>
     </div>
 
     <!-- Prompt Settings Tab -->
     <div id="sinan-prompt-settings-tab" class="sinan-tab-pane">
+        <fieldset class="settings-group">
+            <legend>并发API提示词</legend>
+            <div class="unified-prompt-editor">
+                <label for="amily2_concurrent_prompt_selector">选择编辑的提示词:</label>
+                <select id="amily2_concurrent_prompt_selector" class="text_pole">
+                    <option value="main">主系统提示词 (并发)</option>
+                    <option value="system">拦截任务详细指令 (并发)</option>
+                </select>
+                <textarea id="amily2_concurrent_prompt_editor" class="text_pole" rows="6"></textarea>
+                <div class="prompt-editor-buttons">
+                    <button id="amily2_opt_reset_concurrent_prompt" class="menu_button secondary">恢复当前并发提示词为默认</button>
+                </div>
+            </div>
+        </fieldset>
         <fieldset class="settings-group">
             <legend>提示词管理</legend>
             <div class="inline-settings-grid">
@@ -103,8 +183,8 @@
             <div class="unified-prompt-editor">
                 <label for="amily2_opt_prompt_selector">选择编辑的提示词:</label>
                 <select id="amily2_opt_prompt_selector" class="text_pole">
-                    <option value="main">主系统提示词 (通用)</option>
-                    <option value="system">拦截任务详细指令</option>
+                    <option value="main">主系统提示词 (主LLM)</option>
+                    <option value="system">拦截任务详细指令 (主LLM)</option>
                     <option value="final_system">最终注入指令</option>
                 </select>
                 <textarea id="amily2_opt_prompt_editor" class="text_pole" rows="8"></textarea>
@@ -195,4 +275,3 @@
 
 <div class="amily2_opt_footer">
 </div>
-
