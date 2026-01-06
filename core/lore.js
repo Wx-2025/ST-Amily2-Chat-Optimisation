@@ -266,16 +266,25 @@ export async function getOptimizationWorldbookContent() {
 }
 
 
-export async function getPlotOptimizedWorldbookContent(context, apiSettings) {
+export async function getPlotOptimizedWorldbookContent(context, apiSettings, isConcurrent = false) {
     const panel = $('#amily2_plot_optimization_panel');
     let liveSettings = {};
 
-    // Check if the panel exists and its dynamic content (the entry list) has been populated.
-    // This helps prevent a race condition where we read from an empty, partially-rendered panel.
     const isPanelReady = panel.length > 0 && panel.find('#amily2_opt_worldbook_entry_list_container input[type="checkbox"]').length > 0;
 
-    if (isPanelReady) {
-        // Panel is ready, so we can trust the live values from the UI.
+    if (isConcurrent) {
+        // This is a concurrent call, force use of passed apiSettings
+        console.log('[剧情优化大师] 检测到并发调用，强制使用传入的并发世界书设置。');
+        liveSettings = {
+            worldbookEnabled: apiSettings.plotOpt_worldbook_enabled,
+            worldbookSource: apiSettings.plotOpt_worldbook_source || 'character',
+            selectedWorldbooks: apiSettings.plotOpt_selectedWorldbooks || [],
+            autoSelectWorldbooks: apiSettings.plotOpt_autoSelectWorldbooks || [],
+            worldbookCharLimit: apiSettings.plotOpt_worldbookCharLimit,
+            enabledWorldbookEntries: null, // Let the logic below handle it based on selected books.
+        };
+    } else if (isPanelReady) {
+        // This is a main call and the panel is ready, read from UI.
         liveSettings.worldbookEnabled = panel.find('#amily2_opt_worldbook_enabled').is(':checked');
         liveSettings.worldbookSource = panel.find('input[name="amily2_opt_worldbook_source"]:checked').val() || 'character';
         
@@ -304,8 +313,7 @@ export async function getPlotOptimizedWorldbookContent(context, apiSettings) {
         });
         liveSettings.enabledWorldbookEntries = enabledEntries;
     } else {
-        // Panel is not ready or doesn't exist. Fall back to the saved settings from the extension.
-        // This uses the correct, prefixed keys.
+        // Fallback for main call when panel is not ready.
         if (panel.length > 0) {
             console.warn('[剧情优化大师] 检测到UI面板但内容未完全加载，回退到使用已保存的设置。');
         } else {
@@ -313,12 +321,12 @@ export async function getPlotOptimizedWorldbookContent(context, apiSettings) {
         }
         
         liveSettings = {
-            worldbookEnabled: apiSettings.plotOpt_worldbook_enabled,
-            worldbookSource: apiSettings.plotOpt_worldbook_source || 'character', // Default to 'character'
-            selectedWorldbooks: apiSettings.plotOpt_worldbook_selected_worldbooks,
+            worldbookEnabled: apiSettings.plotOpt_worldbookEnabled,
+            worldbookSource: apiSettings.plotOpt_worldbookSource || 'character',
+            selectedWorldbooks: apiSettings.plotOpt_selectedWorldbooks,
             autoSelectWorldbooks: apiSettings.plotOpt_autoSelectWorldbooks || [],
-            worldbookCharLimit: apiSettings.plotOpt_worldbook_char_limit,
-            enabledWorldbookEntries: apiSettings.plotOpt_worldbook_selected_entries,
+            worldbookCharLimit: apiSettings.plotOpt_worldbookCharLimit,
+            enabledWorldbookEntries: apiSettings.plotOpt_enabledWorldbookEntries,
         };
     }
 
@@ -356,24 +364,34 @@ export async function getPlotOptimizedWorldbookContent(context, apiSettings) {
 
         if (allEntries.length === 0) return '';
         
-        const enabledEntriesMap = liveSettings.enabledWorldbookEntries || {};
+        const enabledEntriesMap = liveSettings.enabledWorldbookEntries; // Can be null for concurrent
         const autoSelectedBooks = liveSettings.autoSelectWorldbooks || [];
 
         const userEnabledEntries = allEntries.filter(entry => {
             if (!entry.enabled) return false;
 
-            // 检查是否在UI中被勾选（或被自动全选）
+            // For concurrent calls where enabledWorldbookEntries is null, or for books marked as "auto-select",
+            // we consider all enabled entries within that book as selected.
             const isAuto = autoSelectedBooks.includes(entry.bookName);
-            const bookConfig = enabledEntriesMap[entry.bookName];
-            const isChecked = isAuto || (bookConfig ? (bookConfig.includes(entry.uid) || bookConfig.includes(String(entry.uid))) : false);
-
-            if (isChecked) {
-                // 勾选状态下必读 (强制设为 Constant)
-                entry.constant = true;
+            if (isConcurrent || isAuto) {
+                entry.constant = true; // Force as constant if auto-selected or concurrent
+                return true;
             }
-            // 不勾选则依靠蓝绿灯 (保持原样，不返回 false)
+
+            // For main calls with manual entry selection
+            if (enabledEntriesMap) {
+                const bookConfig = enabledEntriesMap[entry.bookName];
+                const isChecked = (bookConfig ? (bookConfig.includes(entry.uid) || bookConfig.includes(String(entry.uid))) : false);
+                
+                if (isChecked) {
+                    entry.constant = true; // Force as constant if checked in UI
+                }
+                // If not checked, it relies on its own constant/green-light status.
+                return true; 
+            }
             
-            return true;
+            // Default case if something goes wrong (should not be reached)
+            return false;
         });
 
         if (userEnabledEntries.length === 0) return '';
