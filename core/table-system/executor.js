@@ -176,6 +176,10 @@ function parseValue(val) {
         try {
             return JSON.parse(val);
         } catch (e) {
+            // 尝试手动解析以处理嵌套引号等格式错误
+            const manualParsed = tryParseObject(val);
+            if (manualParsed) return manualParsed;
+
             let fixedKeys = val.replace(/([{,]\s*)(\d+)(\s*:)/g, '$1"$2"$3');
             try {
                 return JSON.parse(fixedKeys);
@@ -195,6 +199,50 @@ function parseValue(val) {
         }
     }
     return val;
+}
+
+function tryParseObject(str) {
+    if (!str.startsWith('{') || !str.endsWith('}')) return null;
+    
+    const content = str.slice(1, -1);
+    const result = {};
+    let hasMatch = false;
+    
+    // 匹配键：(开头或逗号/分号/冒号) + (数字 或 "键" 或 '键') + 冒号
+    // 增强容错：允许逗号、分号甚至冒号作为分隔符
+    const keyRegex = /(?:^|[,;:]+\s*)(?:(\d+)|"([^"]+)"|'([^']+)')\s*:/g;
+    
+    let match;
+    let lastIndex = 0;
+    let lastKey = null;
+    
+    while ((match = keyRegex.exec(content)) !== null) {
+        hasMatch = true;
+        if (lastKey !== null) {
+            let valStr = content.slice(lastIndex, match.index).trim();
+            // 去掉末尾可能的分隔符
+            valStr = valStr.replace(/[,;:]+$/, '').trim();
+            result[lastKey] = cleanValueStr(valStr);
+        }
+        
+        lastKey = match[1] || match[2] || match[3];
+        lastIndex = match.index + match[0].length;
+    }
+    
+    if (lastKey !== null) {
+        let valStr = content.slice(lastIndex).trim();
+        valStr = valStr.replace(/[,;:]+$/, '').trim();
+        result[lastKey] = cleanValueStr(valStr);
+    }
+    
+    return hasMatch ? result : null;
+}
+
+function cleanValueStr(str) {
+    if ((str.startsWith('"') && str.endsWith('"')) || (str.startsWith("'") && str.endsWith("'"))) {
+        return str.slice(1, -1);
+    }
+    return str;
 }
 
 
