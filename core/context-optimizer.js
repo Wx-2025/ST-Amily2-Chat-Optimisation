@@ -1,6 +1,7 @@
 import { log } from "./table-system/logger.js";
-import { getContext } from "/scripts/extensions.js";
+import { getContext, extension_settings } from "/scripts/extensions.js";
 import { eventSource, event_types } from "/script.js";
+import { extensionName } from "../utils/settings.js";
 
 function collectDataToBuffer(buffer, tableName, rowObj) {
     if (!buffer[tableName]) {
@@ -96,6 +97,13 @@ function processText(text) {
 }
 
 function handlePromptProcessing(data) {
+    // 【V146.5】检查上下文优化开关
+    const settings = extension_settings[extensionName];
+    if (settings && settings.context_optimization_enabled === false) {
+        // log('[ContextOptimizer] 上下文优化已禁用，跳过处理。', 'info');
+        return;
+    }
+
     if (!data) return;
 
     if (typeof data.prompt === 'string') {
