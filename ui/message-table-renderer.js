@@ -167,76 +167,63 @@ function injectChatTableStyles() {
             margin-right: 10px;
         }
 
-        /* 卡片式布局 (RPG风格) */
-        .amily2-game-cards-container {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .amily2-game-card {
-            background: rgba(30, 35, 45, 0.6);
-            border: 1px solid rgba(100, 149, 237, 0.15);
+        /* 表格布局 (RPG风格) */
+        .amily2-table-wrapper {
+            width: 100%;
+            overflow-x: auto; /* 允许横向滚动 */
+            -webkit-overflow-scrolling: touch;
             border-radius: 6px;
-            padding: 12px;
-            position: relative;
-            transition: all 0.2s ease;
+            border: 1px solid rgba(100, 149, 237, 0.15);
+            background: rgba(30, 35, 45, 0.4);
         }
 
-        .amily2-game-card:hover {
-            background: rgba(40, 50, 70, 0.8);
-            border-color: rgba(0, 191, 255, 0.4);
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.3);
-            transform: translateX(2px);
+        .amily2-data-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9em;
+            white-space: nowrap; /* 防止换行，保持表格整洁 */
         }
 
-        .amily2-game-card::before {
-            content: '';
-            position: absolute;
-            left: 0; top: 10px; bottom: 10px;
-            width: 3px;
-            background: #00bfff;
-            border-radius: 0 2px 2px 0;
-            opacity: 0.5;
-        }
-
-        .amily2-card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-            padding-bottom: 5px;
+        .amily2-data-table th,
+        .amily2-data-table td {
+            padding: 10px 12px;
+            text-align: left;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        .amily2-card-title {
-            font-size: 1.1em;
-            font-weight: bold;
+        .amily2-data-table th {
+            background: rgba(20, 25, 35, 0.8);
             color: #00bfff;
-            text-shadow: 0 0 5px rgba(0, 191, 255, 0.3);
-        }
-
-        .amily2-card-body {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            gap: 8px 15px;
-        }
-
-        .amily2-card-attr {
-            display: flex;
-            flex-direction: column;
-            font-size: 0.9em;
-        }
-
-        .amily2-card-label {
-            color: #5a6a7e;
-            font-size: 0.8em;
+            font-weight: 600;
             text-transform: uppercase;
-            margin-bottom: 2px;
+            letter-spacing: 0.5px;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            border-bottom: 2px solid rgba(0, 191, 255, 0.3);
         }
 
-        .amily2-card-value {
+        .amily2-data-table tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .amily2-data-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .amily2-data-table td {
             color: #e0e0e0;
+        }
+
+        /* 第一列特殊样式 (通常是名称/ID) */
+        .amily2-data-table td:first-child {
+            font-weight: bold;
+            color: #fff;
+            border-left: 3px solid transparent;
+        }
+
+        .amily2-data-table tr:hover td:first-child {
+            border-left-color: #00bfff;
         }
 
         /* 滚动条 */
@@ -386,71 +373,48 @@ function renderTablesToHtml(tables, highlights) {
             </div>
         `;
 
-        // 内容面板 (卡片式渲染)
-        let cardsHtml = '';
+        // 内容面板 (表格渲染)
+        let tableHtml = '';
         
-        // 如果是单行表格（如时空栏），使用特殊布局
-        if (table.rows.length === 1) {
-            const row = table.rows[0];
-            cardsHtml += `<div class="amily2-game-card" style="border-left: 3px solid #00bfff;">
-                <div class="amily2-card-body" style="grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));">
-                    ${row.map((cell, colIndex) => {
-                        const header = table.headers[colIndex];
-                        const highlightKey = `${table.originalIndex}-0-${colIndex}`;
-                        const isHighlighted = highlights.has(highlightKey);
-                        const style = isHighlighted ? 'style="color: #00ff7f;"' : '';
-                        return `
-                            <div class="amily2-card-attr">
-                                <span class="amily2-card-label">${header}</span>
-                                <span class="amily2-card-value" ${style}>${cell}</span>
-                            </div>
-                        `;
-                    }).join('')}
-                </div>
-            </div>`;
-        } else {
-            // 多行表格，每行一个卡片
-            table.rows.forEach((row, rowIndex) => {
-                const rowStatus = table.rowStatuses ? table.rowStatuses[rowIndex] : 'normal';
-                if (rowStatus === 'pending-deletion') return;
+        // 构建表头
+        const theadHtml = `
+            <thead>
+                <tr>
+                    ${table.headers.map(header => `<th>${header}</th>`).join('')}
+                </tr>
+            </thead>
+        `;
 
-                // 假设第一列是标题/名称
-                const titleCell = row[0];
-                const otherCells = row.slice(1);
-                const otherHeaders = table.headers.slice(1);
+        // 构建表体
+        let tbodyHtml = '<tbody>';
+        table.rows.forEach((row, rowIndex) => {
+            const rowStatus = table.rowStatuses ? table.rowStatuses[rowIndex] : 'normal';
+            if (rowStatus === 'pending-deletion') return;
 
-                cardsHtml += `
-                    <div class="amily2-game-card">
-                        <div class="amily2-card-header">
-                            <span class="amily2-card-title">${titleCell}</span>
-                            <span style="font-size: 0.8em; color: #555;">#${rowIndex + 1}</span>
-                        </div>
-                        <div class="amily2-card-body">
-                            ${otherCells.map((cell, i) => {
-                                const colIndex = i + 1;
-                                const header = otherHeaders[i];
-                                const highlightKey = `${table.originalIndex}-${rowIndex}-${colIndex}`;
-                                const isHighlighted = highlights.has(highlightKey);
-                                const style = isHighlighted ? 'style="color: #00ff7f;"' : '';
-                                return `
-                                    <div class="amily2-card-attr">
-                                        <span class="amily2-card-label">${header}</span>
-                                        <span class="amily2-card-value" ${style}>${cell}</span>
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
-                    </div>
-                `;
+            tbodyHtml += '<tr>';
+            row.forEach((cell, colIndex) => {
+                const highlightKey = `${table.originalIndex}-${rowIndex}-${colIndex}`;
+                const isHighlighted = highlights.has(highlightKey);
+                const style = isHighlighted ? 'style="color: #00ff7f; font-weight: bold;"' : '';
+                tbodyHtml += `<td ${style}>${cell}</td>`;
             });
-        }
+            tbodyHtml += '</tr>';
+        });
+        tbodyHtml += '</tbody>';
+
+        tableHtml = `
+            <div class="amily2-table-wrapper">
+                <table class="amily2-data-table">
+                    ${theadHtml}
+                    ${tbodyHtml}
+                </table>
+            </div>
+        `;
 
         contentHtml += `
             <div id="game-panel-${index}" class="amily2-game-panel ${isActive}">
                 <div class="amily2-panel-title"><i class="fas ${icon}"></i> ${table.name}</div>
-                <div class="amily2-game-cards-container">
-                    ${cardsHtml}
-                </div>
+                ${tableHtml}
             </div>
         `;
     });
@@ -556,6 +520,17 @@ export function updateOrInsertTableInChat() {
             lastMessage.appendChild(container);
             bindSwipePreventer(container); 
             
+            // 绑定鼠标滚轮横向滚动事件
+            const tableWrappers = container.querySelectorAll('.amily2-table-wrapper');
+            tableWrappers.forEach(wrapper => {
+                wrapper.addEventListener('wheel', (e) => {
+                    if (e.deltaY !== 0) {
+                        e.preventDefault();
+                        wrapper.scrollLeft += e.deltaY;
+                    }
+                });
+            });
+
             // 绑定折叠按钮事件
             const toggleBtn = container.querySelector('.amily2-table-toggle');
             if (toggleBtn) {
