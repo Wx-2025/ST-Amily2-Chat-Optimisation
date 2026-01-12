@@ -300,6 +300,7 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
         let worldbookContent = await getPlotOptimizedWorldbookContent(context, settings, false); // Explicitly mark as not concurrent
         onProgress(getRandomText(['正在检索核心记忆碎片...', '正在唤醒沉睡的过往...', '正在回溯时间线...']), true);
 
+        // --- EJS 預處理（劇情優化專用）---
         onProgress(getRandomText(['正在解析多维剧情逻辑...', '正在构建动态世界观...', '正在编译因果律...']), false);
         try {
             if (settings.plotOpt_ejsEnabled !== false && globalThis.EjsTemplate?.evalTemplate && globalThis.EjsTemplate?.prepareContext) {
@@ -393,11 +394,21 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
             return null; // 直接中止，不送出訊息
         }
         onProgress(getRandomText(['正在解析多维剧情逻辑...', '正在构建动态世界观...', '正在编译因果律...']), true);
+
+        // 虚构步骤：记忆校准
         onProgress(getRandomText(['正在校准记忆偏差...', '正在强化神经突触连接...', '正在同步灵魂共鸣率...']), false);
         onProgress(getRandomText(['正在校准记忆偏差...', '正在强化神经突触连接...', '正在同步灵魂共鸣率...']), true);
 
         let tableContent = '';
-        if (settings.plotOpt_tableEnabled) {
+        // Handle table enabled setting which can be boolean (legacy) or string
+        let tableEnabledValue = settings.plotOpt_tableEnabled;
+        if (tableEnabledValue === true) {
+            tableEnabledValue = 'main';
+        } else if (tableEnabledValue === false || tableEnabledValue === undefined) {
+            tableEnabledValue = 'disabled';
+        }
+
+        if (tableEnabledValue !== 'disabled') {
             try {
                 const { convertTablesToCsvStringForContentOnly } = await import('./table-system/manager.js');
                 const contentOnlyTemplate = "##以下内容是故事发生的剧情中提取出的内容，已经转化为表格形式呈现给你，请将以下内容作为后续剧情的一部分参考：<表格内容>\n{{{Amily2TableDataContent}}}</表格内容>";
@@ -449,7 +460,12 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
 
         if (settings.plotOpt_concurrentEnabled) {
             onProgress(getRandomText(['正在编织思维导图 (LLM-A)...', '正在重构对话上下文 (LLM-A)...']), false);
-            const mainMessages = await buildPlotOptimizationMessages(mainPrompt, systemPrompt, worldbookContent, '', history, currentUserMessage);
+            
+            // Determine where to send table content
+            const mainTableContent = tableEnabledValue === 'main' ? tableContent : '';
+            const concurrentTableContent = tableEnabledValue === 'concurrent' ? tableContent : '';
+
+            const mainMessages = await buildPlotOptimizationMessages(mainPrompt, systemPrompt, worldbookContent, mainTableContent, history, currentUserMessage);
             onProgress(getRandomText(['正在编织思维导图 (LLM-A)...', '正在重构对话上下文 (LLM-A)...']), true);
             
             console.groupCollapsed(`[${extensionName}] 发送给主AI的最终请求内容`);
@@ -464,6 +480,8 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
                 onProgress(getRandomText(['正在与核心意识同步 (LLM-A)...', '正在等待灵魂共鸣 (LLM-A)...']), true);
                 return res;
             });
+
+            // 为并发LLM (LLM-B) 准备独立的世界书设置
             const concurrentApiSettings = {
                 plotOpt_worldbook_enabled: settings.plotOpt_concurrentWorldbookEnabled,
                 plotOpt_worldbook_source: settings.plotOpt_concurrentWorldbookSource,
@@ -478,7 +496,8 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
             const concurrentMainPrompt = settings.plotOpt_concurrentMainPrompt || mainPrompt;
             const concurrentSystemPrompt = settings.plotOpt_concurrentSystemPrompt || systemPrompt;
             
-            const concurrentMessages = await buildPlotOptimizationMessages(concurrentMainPrompt, concurrentSystemPrompt, concurrentWorldbookContent, tableContent, history, currentUserMessage, 'concurrent_plot_optimization');
+            // LLM-B 的消息构建，包含表格内容和独立的世界书
+            const concurrentMessages = await buildPlotOptimizationMessages(concurrentMainPrompt, concurrentSystemPrompt, concurrentWorldbookContent, concurrentTableContent, history, currentUserMessage, 'concurrent_plot_optimization');
             onProgress(getRandomText(['正在构建辅助思维模型 (LLM-B)...', '正在解析潜意识逻辑 (LLM-B)...']), true);
 
             console.groupCollapsed(`[${extensionName}] 发送给并发AI的最终请求内容`);
@@ -502,12 +521,15 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
                 return null;
             }
             
+            // Directly combine the raw text responses.
             apiResponse = [mainResponse, concurrentResponse].filter(Boolean).join('\n\n');
             
         } else {
             onProgress('未启用 LLM-B (并发模型)', false, true);
             onProgress(getRandomText(['正在编织思维导图...', '正在重构对话上下文...']), false);
-            const mainMessages = await buildPlotOptimizationMessages(mainPrompt, systemPrompt, worldbookContent, tableContent, history, currentUserMessage);
+            const mainTableContent = tableEnabledValue === 'main' ? tableContent : '';
+
+            const mainMessages = await buildPlotOptimizationMessages(mainPrompt, systemPrompt, worldbookContent, mainTableContent, history, currentUserMessage);
             onProgress(getRandomText(['正在编织思维导图...', '正在重构对话上下文...']), true);
 
             console.groupCollapsed(`[${extensionName}] 发送给主AI的最终请求内容`);
@@ -565,6 +587,8 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
         console.log(apiResponse);
         console.groupEnd();
 
+        // In concurrent mode, apiResponse is the combined pure text.
+        // In single mode, we still need to extract the plot tag if it exists.
         const optimizedContent = settings.plotOpt_concurrentEnabled 
             ? apiResponse 
             : (extractContentByTag(apiResponse, 'plot') || apiResponse).trim();
