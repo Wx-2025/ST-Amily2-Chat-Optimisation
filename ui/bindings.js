@@ -1756,7 +1756,16 @@ function opt_loadSettings(panel) {
     const settings = opt_getMergedSettings();
 
     panel.find('#amily2_opt_enabled').prop('checked', settings.plotOpt_enabled);
-    panel.find('#amily2_opt_table_enabled').prop('checked', settings.plotOpt_tableEnabled);
+    
+    // Handle table enabled setting which can be boolean (legacy) or string
+    let tableEnabledValue = settings.plotOpt_tableEnabled;
+    if (tableEnabledValue === true) {
+        tableEnabledValue = 'main';
+    } else if (tableEnabledValue === false || tableEnabledValue === undefined) {
+        tableEnabledValue = 'disabled';
+    }
+    panel.find('#amily2_opt_table_enabled').val(tableEnabledValue);
+
     panel.find('#amily2_opt_ejs_enabled').prop('checked', settings.plotOpt_ejsEnabled);
     panel.find(`input[name="amily2_opt_api_mode"][value="${settings.plotOpt_apiMode}"]`).prop('checked', true);
     panel.find('#amily2_opt_tavern_api_profile_select').val(settings.plotOpt_tavernProfile);
@@ -1936,6 +1945,29 @@ function bindConcurrentApiEvents() {
             element.addEventListener('change', function() {
                 if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
                 extension_settings[extensionName][field.key] = this.value;
+                saveSettingsDebounced();
+            });
+        }
+    });
+
+    // Slider Bindings
+    const sliderFields = [
+        { id: 'amily2_plotOpt_concurrentMaxTokens', key: 'plotOpt_concurrentMaxTokens', defaultValue: 8100 }
+    ];
+
+    sliderFields.forEach(field => {
+        const slider = document.getElementById(field.id);
+        const display = document.getElementById(field.id + '_value');
+        if (slider && display) {
+            const value = settings[field.key] || field.defaultValue;
+            slider.value = value;
+            display.textContent = value;
+
+            slider.addEventListener('input', function() {
+                const newValue = parseInt(this.value, 10);
+                display.textContent = newValue;
+                if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
+                extension_settings[extensionName][field.key] = newValue;
                 saveSettingsDebounced();
             });
         }
