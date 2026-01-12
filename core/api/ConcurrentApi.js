@@ -9,8 +9,8 @@ function getConcurrentApiSettings() {
         apiUrl: settings.plotOpt_concurrentApiUrl?.trim() || '',
         apiKey: settings.plotOpt_concurrentApiKey?.trim() || '',
         model: settings.plotOpt_concurrentModel || '',
-        maxTokens: settings.plotOpt_max_tokens || 20000,
-        temperature: settings.plotOpt_temperature || 1,
+        maxTokens: settings.plotOpt_concurrentMaxTokens || 8100,
+        temperature: settings.plotOpt_concurrentTemperature || 1,
     };
 }
 
@@ -79,6 +79,8 @@ export async function callConcurrentAI(messages, options = {}) {
 }
 
 async function callConcurrentOpenAITest(messages, options) {
+    const isGoogleApi = options.apiUrl.includes('googleapis.com');
+
     const body = {
         chat_completion_source: 'openai',
         messages: messages,
@@ -86,10 +88,23 @@ async function callConcurrentOpenAITest(messages, options) {
         reverse_proxy: options.apiUrl,
         proxy_password: options.apiKey,
         stream: false,
-        max_tokens: options.maxTokens || 20000,
-        temperature: options.temperature || 0.7,
-        top_p: options.top_p || 0.95,
+        max_tokens: options.maxTokens || 8100,
+        temperature: options.temperature || 1,
+        top_p: options.top_p || 1,
     };
+
+    if (!isGoogleApi) {
+        Object.assign(body, {
+            custom_prompt_post_processing: 'strict',
+            enable_web_search: false,
+            frequency_penalty: 0,
+            group_names: [],
+            include_reasoning: false,
+            presence_penalty: 0.12,
+            reasoning_effort: 'medium',
+            request_images: false,
+        });
+    }
 
     const response = await fetch('/api/backends/chat-completions/generate', {
         method: 'POST',
@@ -107,54 +122,97 @@ async function callConcurrentOpenAITest(messages, options) {
 }
 
 export async function testConcurrentApiConnection() {
+    console.log('[Amily2号-Concurrent外交部] 开始API连接测试');
+    
     const apiSettings = getConcurrentApiSettings();
-    if (!apiSettings.apiUrl || !apiSettings.apiKey) {
-        toastr.error("并发API的URL或API Key未设置。", "测试连接失败");
-        return;
+
+    if (!apiSettings.apiUrl || !apiSettings.apiKey || !apiSettings.model) {
+        toastr.error('并发API配置不完整，请检查URL、Key和模型', 'Concurrent API连接测试失败');
+        return false;
     }
 
-    const modelsUrl = new URL('/v1/models', apiSettings.apiUrl).toString();
-
     try {
-        const response = await fetch(modelsUrl, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${apiSettings.apiKey}`,
-            },
-        });
+        toastr.info('正在发送测试消息"你好！"...', 'Concurrent API连接测试');
+        
+        const userName = window.SillyTavern.getContext?.()?.name1 || '用户';
+        const systemPrompt = `接下来用户会使用测试按钮测试api连接是否正常，请回复ta连接是正常的，称呼用户为：“${userName}大人”，并复述群号1060183271，告知ta，本扩展开发者：“诗与酒.”正静待ta的入驻。`;
 
-        if (response.ok) {
-            toastr.success("并发API连接成功！", "测试连接");
+        const testMessages = [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: '你好！' }
+        ];
+        
+        const response = await callConcurrentAI(testMessages);
+        
+        if (response && response.trim()) {
+            console.log('[Amily2号-Concurrent外交部] 测试消息响应:', response);
+            const formattedResponse = response.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+            toastr.success(`连接测试成功！AI回复: "${formattedResponse}"`, 'Concurrent API连接测试成功', { "escapeHtml": false });
+            return true;
         } else {
-            const errorText = await response.text();
-            toastr.error(`连接失败: ${response.status}. ${errorText}`, "测试连接失败");
+            throw new Error('API未返回有效响应');
         }
+        
     } catch (error) {
-        console.error("[Amily2-Concurrent] 测试连接时出错:", error);
-        toastr.error(`网络错误: ${error.message}`, "测试连接失败");
+        console.error('[Amily2号-Concurrent外交部] 连接测试失败:', error);
+        toastr.error(`连接测试失败: ${error.message}`, 'Concurrent API连接测试失败');
+        return false;
     }
 }
 
 export async function fetchConcurrentModels() {
+    console.log('[Amily2号-Concurrent外交部] 开始获取模型列表');
+    
     const apiSettings = getConcurrentApiSettings();
-    if (!apiSettings.apiUrl || !apiSettings.apiKey) {
-        throw new Error("并发API的URL或API Key未设置。");
+    
+    try {
+        if (!apiSettings.apiUrl || !apiSettings.apiKey) {
+            throw new Error('API URL或Key未配置');
+        }
+        
+        const response = await fetch('/api/backends/chat-completions/status', {
+            method: 'POST',
+            headers: {
+                ...getRequestHeaders(),
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                reverse_proxy: apiSettings.apiUrl,
+                proxy_password: apiSettings.apiKey,
+                chat_completion_source: 'openai'
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const rawData = await response.json();
+        const models = Array.isArray(rawData) ? rawData : (rawData.data || rawData.models || []);
+
+        if (!Array.isArray(models)) {
+            const errorMessage = rawData.error?.message || 'API未返回有效的模型列表数组';
+            throw new Error(errorMessage);
+        }
+
+        const formattedModels = models
+            .map(m => {
+                const modelIdRaw = m.name || m.id || m.model || m;
+                const modelName = String(modelIdRaw).replace(/^models\//, '');
+                return {
+                    id: modelName,
+                    name: modelName
+                };
+            })
+            .filter(m => m.id)
+            .sort((a, b) => String(a.name).localeCompare(String(b.name)));
+
+        console.log('[Amily2号-Concurrent外交部] 全兼容模式获取到模型:', formattedModels);
+        return formattedModels;
+        
+    } catch (error) {
+        console.error('[Amily2号-Concurrent外交部] 获取模型列表失败:', error);
+        toastr.error(`获取模型列表失败: ${error.message}`, 'Concurrent API');
+        throw error;
     }
-
-    const modelsUrl = new URL('/v1/models', apiSettings.apiUrl).toString();
-
-    const response = await fetch(modelsUrl, {
-        method: 'GET',
-        headers: {
-            'Authorization': `Bearer ${apiSettings.apiKey}`,
-        },
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`获取模型列表失败: ${response.status} - ${errorText}`);
-    }
-
-    const data = await response.json();
-    return data.data.map(model => ({ id: model.id, name: model.id })); // Return in the same format as other fetchers
 }
