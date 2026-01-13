@@ -1771,6 +1771,7 @@ function opt_loadSettings(panel) {
     panel.find('#amily2_opt_tavern_api_profile_select').val(settings.plotOpt_tavernProfile);
     panel.find(`input[name="amily2_opt_worldbook_source"][value="${settings.plotOpt_worldbookSource || 'character'}"]`).prop('checked', true);
     panel.find('#amily2_opt_worldbook_enabled').prop('checked', settings.plotOpt_worldbookEnabled);
+    panel.find('#amily2_opt_new_memory_logic_enabled').prop('checked', settings.plotOpt_newMemoryLogicEnabled);
     panel.find('#amily2_opt_api_url').val(settings.plotOpt_apiUrl);
     panel.find('#amily2_opt_api_key').val(settings.plotOpt_apiKey);
     
@@ -2278,6 +2279,21 @@ export function initializePlotOptimizationBindings() {
         console.log(`[${extensionName}] 检测到角色/聊天切换，正在刷新剧情优化设置UI...`);
         opt_loadSettings(panel);
     });
+
+    const refreshWorldbookUI = () => {
+        if (panel.is(':visible')) {
+            console.log(`[${extensionName}] 检测到世界书变更，正在刷新列表...`);
+            opt_loadWorldbooks(panel).then(() => {
+                opt_loadWorldbookEntries(panel);
+            });
+        }
+    };
+
+    eventSource.on(event_types.WORLDINFO_UPDATED, refreshWorldbookUI);
+    // 尝试监听更多可能的世界书事件，确保第一时间更新
+    if (event_types.WORLDINFO_ENTRY_UPDATED) eventSource.on(event_types.WORLDINFO_ENTRY_UPDATED, refreshWorldbookUI);
+    if (event_types.WORLDINFO_ENTRY_CREATED) eventSource.on(event_types.WORLDINFO_ENTRY_CREATED, refreshWorldbookUI);
+    if (event_types.WORLDINFO_ENTRY_DELETED) eventSource.on(event_types.WORLDINFO_ENTRY_DELETED, refreshWorldbookUI);
 
     const handleSettingChange = function(element) {
         const el = $(element);
