@@ -286,6 +286,7 @@ export async function getPlotOptimizedWorldbookContent(context, apiSettings, isC
     } else if (isPanelReady) {
         // This is a main call and the panel is ready, read from UI.
         liveSettings.worldbookEnabled = panel.find('#amily2_opt_worldbook_enabled').is(':checked');
+        liveSettings.newMemoryLogicEnabled = panel.find('#amily2_opt_new_memory_logic_enabled').is(':checked');
         liveSettings.worldbookSource = panel.find('input[name="amily2_opt_worldbook_source"]:checked').val() || 'character';
         
         liveSettings.selectedWorldbooks = [];
@@ -301,6 +302,7 @@ export async function getPlotOptimizedWorldbookContent(context, apiSettings, isC
         });
 
         liveSettings.worldbookCharLimit = parseInt(panel.find('#amily2_opt_worldbook_char_limit').val(), 10) || 60000;
+        liveSettings.contextLimit = parseInt(panel.find('#amily2_opt_context_limit').val(), 10) || 5;
 
         let enabledEntries = {};
         panel.find('#amily2_opt_worldbook_entry_list_container input[type="checkbox"]:checked').each(function() {
@@ -322,10 +324,12 @@ export async function getPlotOptimizedWorldbookContent(context, apiSettings, isC
         
         liveSettings = {
             worldbookEnabled: apiSettings.plotOpt_worldbookEnabled,
+            newMemoryLogicEnabled: apiSettings.plotOpt_newMemoryLogicEnabled,
             worldbookSource: apiSettings.plotOpt_worldbookSource || 'character',
             selectedWorldbooks: apiSettings.plotOpt_selectedWorldbooks,
             autoSelectWorldbooks: apiSettings.plotOpt_autoSelectWorldbooks || [],
             worldbookCharLimit: apiSettings.plotOpt_worldbookCharLimit,
+            contextLimit: apiSettings.plotOpt_contextLimit || 5,
             enabledWorldbookEntries: apiSettings.plotOpt_enabledWorldbookEntries,
         };
     }
@@ -370,6 +374,34 @@ export async function getPlotOptimizedWorldbookContent(context, apiSettings, isC
         const userEnabledEntries = allEntries.filter(entry => {
             if (!entry.enabled) return false;
 
+            // New Memory Logic
+            if (liveSettings.newMemoryLogicEnabled) {
+                const character = characters[context.characterId];
+                const charName = character ? (character.data?.name || character.name) : null;
+                
+                if (charName && entry.bookName === `Amily2_Memory_${charName}`) {
+                    const keywords = [...new Set([...(entry.key || []), ...(entry.keys || [])])];
+                    if (keywords.some(k => k.includes('索引'))) {
+                        entry.constant = true; // Blue Light (Constant)
+                        entry.prevent_recursion = true; // Prevent Index from triggering other entries
+                    } else {
+                        // Ensure it's not constant unless it was already constant in ST (which we might want to respect, or override?)
+                        // The requirement says: "其余的绿灯条目，则依照SittlyTavern原本的绿灯关键词的触发逻辑"
+                        // This implies we should treat them as potential Green Lights.
+                        // In my logic, if entry.constant is false, it becomes a Green Light candidate.
+                        // However, ST entries have a `constant` property. `safeLorebookEntries` returns it.
+                        // If the entry was originally constant in ST, should we keep it constant?
+                        // The requirement says "原逻辑转换...".
+                        // "只要关键词里面包含索引，则将所有索引条目发送给我们的模型。"
+                        // "而其余的绿灯条目..."
+                        // This implies we are redefining what is constant/triggered based on this logic.
+                        // So I will force constant=false if it doesn't have "索引".
+                        entry.constant = false;
+                    }
+                    return true; // Always include as candidate
+                }
+            }
+
             // For concurrent calls where enabledWorldbookEntries is null, or for books marked as "auto-select",
             // we consider all enabled entries within that book as selected.
             const isAuto = autoSelectedBooks.includes(entry.bookName);
@@ -396,46 +428,58 @@ export async function getPlotOptimizedWorldbookContent(context, apiSettings, isC
 
         if (userEnabledEntries.length === 0) return '';
         
-        const chatHistory = context.chat.map(message => message.mes).join('\n').toLowerCase();
-        const getEntryKeywords = (entry) => [...new Set([...(entry.key || []), ...(entry.keys || [])])].map(k => k.toLowerCase());
+        let messagesToScan = context.chat;
+        if (liveSettings.contextLimit > 0) {
+            messagesToScan = context.chat.slice(-liveSettings.contextLimit);
+        }
+        const chatHistory = messagesToScan.map(message => message.mes).join('\n').toLowerCase();
+        const getEntryKeywords = (entry) => [...new Set([...(entry.key || []), ...(entry.keys || [])])]
+            .filter(k => k && k.trim().length > 0)
+            .map(k => k.toLowerCase());
 
         const blueLightEntries = userEnabledEntries.filter(entry => entry.constant);
         let pendingGreenLights = userEnabledEntries.filter(entry => !entry.constant);
         
         const triggeredEntries = new Set([...blueLightEntries]);
 
-        while (true) {
-            let hasChangedInThisPass = false;
+        // 禁用递归扫描，防止总结/索引条目触发所有内容。
+        // 仅扫描聊天记录。
+        for (const entry of pendingGreenLights) {
+            const keywords = getEntryKeywords(entry);
+            const secondaryKeys = (entry.secondary_keys || []).filter(k => k && k.trim().length > 0).map(k => k.toLowerCase());
+            const selectiveKeys = (entry.selective || []).filter(k => k && k.trim().length > 0).map(k => k.toLowerCase());
             
-            const recursionSourceContent = Array.from(triggeredEntries)
-                .filter(e => !e.prevent_recursion)
-                .map(e => e.content)
-                .join('\n')
-                .toLowerCase();
-            const fullSearchText = `${chatHistory}\n${recursionSourceContent}`;
-
-            const nextPendingGreenLights = [];
+            // 仅检查聊天记录，忽略其他条目的内容（防止递归触发）
+            const checkText = chatHistory;
             
-            for (const entry of pendingGreenLights) {
-                const keywords = getEntryKeywords(entry);
-                let isTriggered = keywords.length > 0 && keywords.some(keyword => 
-                    entry.exclude_recursion ? chatHistory.includes(keyword) : fullSearchText.includes(keyword)
-                );
+            const hasPrimary = keywords.length > 0 && keywords.some(k => checkText.includes(k));
+            const hasSecondary = secondaryKeys.length === 0 || secondaryKeys.some(k => checkText.includes(k));
+            const hasSelective = selectiveKeys.length > 0 && selectiveKeys.some(k => checkText.includes(k));
 
-                if (isTriggered) {
-                    triggeredEntries.add(entry);
-                    hasChangedInThisPass = true;
-                } else {
-                    nextPendingGreenLights.push(entry);
-                }
+            let isTriggered = hasPrimary && hasSecondary && !hasSelective;
+
+            if (isTriggered) {
+                triggeredEntries.add(entry);
             }
-            
-            if (!hasChangedInThisPass) break;
-            
-            pendingGreenLights = nextPendingGreenLights;
         }
 
-        const finalContent = Array.from(triggeredEntries).map(entry => {
+        const finalEntries = Array.from(triggeredEntries);
+        
+        // 排序：索引内容（常驻且防递归） > 触发的条目 > 其他常驻
+        finalEntries.sort((a, b) => {
+            const isIndex = (e) => e.constant && e.prevent_recursion;
+            const isTriggered = (e) => !e.constant;
+            
+            const getPriority = (e) => {
+                if (isIndex(e)) return 1;
+                if (isTriggered(e)) return 2;
+                return 3; // 其他常驻
+            };
+
+            return getPriority(a) - getPriority(b);
+        });
+
+        const finalContent = finalEntries.map(entry => {
             const keys = [...new Set([...(entry.key || []), ...(entry.keys || [])])].filter(Boolean).join('、');
             const displayName = entry.comment || `Entry ${entry.uid}`;
             return `【世界书条目：${displayName}。绿灯触发关键词：${keys}】\n内容：${entry.content}`;
