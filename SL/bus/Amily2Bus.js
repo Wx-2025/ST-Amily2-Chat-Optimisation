@@ -56,4 +56,9 @@ if (!window.Amily2Bus) {
     window.Amily2Bus = new Amily2Bus();
 }
 
-export default Amily2Bus;
+export function initializeAmilyBus() {
+    if (!window.Amily2Bus) {
+        window.Amily2Bus = new Amily2Bus();
+        console.log('[Amily2] Amily2Bus 已成功初始化并附加到 window 对象');
+    }
+}

@@ -1,11 +1,11 @@
 import { eventSource, event_types } from '/script.js';
 
 export const LOG_LEVELS = {
-    DEBUG: 0,
-    INFO: 1,
-    WARN: 2,
-    ERROR: 3,
-    NONE: 99
+    DEBUG: 0b0001,
+    INFO: 0b0010,
+    WARN: 0b0100,
+    ERROR: 0b1000,
+    NONE: 0
 };
 
 class FilePipe {
