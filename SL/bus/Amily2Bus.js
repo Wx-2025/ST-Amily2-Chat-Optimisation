@@ -1,9 +1,12 @@
+import { Logger } from '/core/logger.js';
+import { FilePipe } from '/core/file-pipe.js';
+
 class Amily2Bus {
     constructor() {
         /** @type {Logger|null} */
-        this.Logger = null;
+        this.Logger = new Logger();
         /** @type {FilePipe|null} */
-        this.FilePipe = null;
+        this.FilePipe = new FilePipe();
         
         // 已注册插件列表，防止重复注册
         this.registry = new Set();
