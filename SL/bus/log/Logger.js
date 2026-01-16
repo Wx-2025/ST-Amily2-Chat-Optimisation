@@ -10,12 +10,12 @@ class Logger {
     static LOG_HEADER_ERROR = '[ERROR]';
 
     static LOG_LEVEL_CODE = {
-        none: 0,
-        debug: 1 << 0, // 1
-        info: 1 << 1,  // 2
-        warn: 1 << 2,  // 4
-        error: 1 << 3, // 8
-        all: (1 << 4) - 1 // 15
+        none: 0x0,  // 0
+        debug: 0x1, // 1
+        info: 0x2,  // 2
+        warn: 0x4,  // 4
+        error: 0x8, // 8
+        all: 0xF // 15
     };
 
     constructor() {
@@ -139,23 +139,31 @@ class Logger {
         return this.globalLevel;
     }
 
-    log(plugin, origin, type, message, inFile = false) {
-        // 获取当前上下文生效的日志级别掩码
-        const effectiveMask = this._getEffectiveLevelMask(plugin, origin);
+    /**
+     * 标准日志处理方法 (Core Processing)
+     * 统一处理过滤、格式化和输出，支持默认归属 Global
+     */
+    process(plugin, origin, type, message, inFile = false) {
+        // 1. 默认归属处理
+        const safePlugin = plugin || 'Global';
+        const safeOrigin = origin || 'System';
+
+        // 2. 获取当前上下文生效的日志级别掩码
+        const effectiveMask = this._getEffectiveLevelMask(safePlugin, safeOrigin);
         
-        // 获取当前日志类型的位码
+        // 3. 获取当前日志类型的位码
         const typeCode = Logger.LOG_LEVEL_CODE[type];
 
-        // 级别筛选：位与运算结果为0则表示该级别未开启
+        // 4. 级别筛选：位与运算结果为0则表示该级别未开启
         if (typeCode === undefined || (effectiveMask & typeCode) === 0) {
             return;
         }
 
         const timestamp = new Date().toLocaleTimeString();
         // 格式: [12:00:00] [PluginName::ClassName] [INFO]: message
-        const fullMessage = `[${timestamp}] [${plugin}::${origin}] [${type.toUpperCase()}]: ${message}`;
+        const fullMessage = `[${timestamp}] [${safePlugin}::${safeOrigin}] [${type.toUpperCase()}]: ${message}`;
 
-        // 1. Console Output
+        // 5. Console Output
         switch (type) {
             case 'debug':
                 console.debug(fullMessage);
@@ -174,7 +182,7 @@ class Logger {
                 break;
         }
 
-        // 2. File Output (via FilePipe)
+        // 6. File Output (via FilePipe)
         if (inFile) {
             // Logger 自身也需要作为系统组件注册，获取写入权限
             if (!this.sysBus) {
@@ -194,6 +202,10 @@ class Logger {
                 }
             }
         }
+    }
+
+    log(plugin, origin, type, message, inFile = false) {
+        this.process(plugin, origin, type, message, inFile);
     }
 
 }

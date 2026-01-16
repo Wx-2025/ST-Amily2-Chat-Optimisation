@@ -1,5 +1,5 @@
-import { Logger } from './core/logger.js';
-import { FilePipe } from './core/file-pipe.js';
+import Logger from './log/Logger.js';
+import FilePipe from './file/FilePipe.js';
 
 class Amily2Bus {
     constructor() {
@@ -12,6 +12,20 @@ class Amily2Bus {
         this.registry = new Set();
 
         console.log('[Amily2Bus] Core container initialized with secure registry.');
+    }
+
+    /**
+     * 直接记录系统级日志 (Global Scope)
+     * 支持手动指定来源，方便终端调试或非插件环境调用
+     * @param {string} type 日志级别 (debug, info, warn, error)
+     * @param {string} message 消息内容
+     * @param {string} [origin='Bus'] 来源模块，默认为 'Bus'
+     * @param {string} [plugin='Global'] 来源插件/命名空间，调试时可指定如 'Console'
+     */
+    log(type, message, origin = 'Bus', plugin = 'Global') {
+        if (this.Logger) {
+            this.Logger.process(plugin, origin, type, message);
+        }
     }
 
     /**
