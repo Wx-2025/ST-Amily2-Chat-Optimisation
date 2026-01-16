@@ -939,6 +939,7 @@ jQuery(async () => {
     initializeAmilyHelper();
     mergePluginSettings();
     initializeAmilyBus();
+    window.Amily2Bus.log('info', 'System Init', 'Kernel');
 
     let attempts = 0;
     const maxAttempts = 100;
