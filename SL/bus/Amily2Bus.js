@@ -1,5 +1,5 @@
-import { Logger } from '/core/logger.js';
-import { FilePipe } from '/core/file-pipe.js';
+import { Logger } from './core/logger.js';
+import { FilePipe } from './core/file-pipe.js';
 
 class Amily2Bus {
     constructor() {
