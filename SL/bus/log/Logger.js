@@ -210,8 +210,4 @@ class Logger {
 
 }
 
-// Ensure Amily2Bus namespace exists to prevent crash if loaded out of order
-window.Amily2Bus = window.Amily2Bus || {};
-window.Amily2Bus.Logger = new Logger();
-
 export default Logger;

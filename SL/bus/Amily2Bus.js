@@ -67,14 +67,8 @@ class Amily2Bus {
         };
     }
 }
-
-// 挂载全局单例
-if (!window.Amily2Bus) {
-    window.Amily2Bus = new Amily2Bus();
-}
-
 export function initializeAmilyBus() {
-    if (!window.Amily2Bus) {
+    if (!window.Amily2Bus || !(window.Amily2Bus instanceof Amily2Bus)) {
         window.Amily2Bus = new Amily2Bus();
         console.log('[Amily2] Amily2Bus 已成功初始化并附加到 window 对象');
     }
