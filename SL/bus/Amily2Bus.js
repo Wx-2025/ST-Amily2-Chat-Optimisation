@@ -1,8 +1,26 @@
 import Logger from './log/Logger.js';
 import FilePipe from './file/FilePipe.js';
 
+// 【逃生通道】创建一个纯净的 Console 对象，绕过任何潜在的劫持
+const getSafeConsole = () => {
+    try {
+        if (window._amilySafeConsole) return window._amilySafeConsole;
+        
+        const iframe = document.createElement('iframe');
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+        const safe = iframe.contentWindow.console;
+        // document.body.removeChild(iframe); // 保持 iframe 以维持 console 引用有效
+        window._amilySafeConsole = safe;
+        return safe;
+    } catch (e) {
+        return window.console; // Fallback
+    }
+};
+
 class Amily2Bus {
     constructor() {
+        this.safeConsole = getSafeConsole();
         /** @type {Logger|null} */
         this.Logger = new Logger();
         /** @type {FilePipe|null} */
@@ -11,7 +29,7 @@ class Amily2Bus {
         // 已注册插件列表，防止重复注册
         this.registry = new Set();
 
-        console.log('[Amily2Bus] Core container initialized with secure registry.');
+        this.safeConsole.log('[Amily2Bus] Core container initialized with secure registry.');
     }
 
     /**
@@ -23,6 +41,7 @@ class Amily2Bus {
      * @param {string} [plugin='Global'] 来源插件/命名空间，调试时可指定如 'Console'
      */
     log(type, message, origin = 'Bus', plugin = 'Global') {
+        this.safeConsole.error('[Amily2Bus DEBUG] log called (via SafeConsole):', { type, loggerExists: !!this.Logger });
         if (this.Logger) {
             this.Logger.process(plugin, origin, type, message);
         }
