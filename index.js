@@ -310,8 +310,8 @@ function loadPluginStyles() {
     loadStyleFile("style.css"); // 【第一道圣谕】为帝国主体宫殿披上通用华服
     loadStyleFile("historiography.css"); // 【第二道圣谕】为敕史局披上其专属华服
     loadStyleFile("hanlinyuan.css"); // 【第三道圣谕】为翰林院披上其专属华服
-    loadStyleFile("amily2-glossary.css"); // 【新圣谕】为术语表披上其专属华服
-    loadStyleFile("table.css"); // 【第四道圣谕】为内存储司披上其专属华服
+    loadStyleFile("amily-glossary-system/amily2-glossary.css"); // 【新圣谕】为术语表披上其专属华服
+    loadStyleFile("amily-data-table/table.css"); // 【第四道圣谕】为内存储司披上其专属华服
     loadStyleFile("optimization.css"); // 【第五道圣谕】为剧情优化披上其专属华服
     loadStyleFile("renderer.css"); // 【新圣谕】为渲染器披上其专属华服
     loadStyleFile("iframe-renderer.css"); // 【新圣谕】为iframe渲染内容披上其专属华服
