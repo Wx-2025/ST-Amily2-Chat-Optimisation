@@ -75,7 +75,7 @@ async function initializePanel(contentPanel, errorContainer) {
         const mainContainer = contentPanel.find('#amily2_chat_optimiser');
 
         if (mainContainer.length) {
-            const additionalFeaturesContent = await $.get(`${extensionFolderPath}/assets/Amily2-AdditionalFeatures.html`);
+            const additionalFeaturesContent = await $.get(`${extensionFolderPath}/assets/amily-additional-features/Amily2-AdditionalFeatures.html`);
             const additionalPanelHtml = `<div id="amily2_additional_features_panel" style="display: none;">${additionalFeaturesContent}</div>`;
             mainContainer.append(additionalPanelHtml);
 
@@ -87,7 +87,7 @@ async function initializePanel(contentPanel, errorContainer) {
             const hanlinyuanPanelHtml = `<div id="amily2_hanlinyuan_panel" style="display: none;">${hanlinyuanContent}</div>`;
             mainContainer.append(hanlinyuanPanelHtml);
 
-            const memorisationFormsContent = await $.get(`${extensionFolderPath}/assets/Memorisation-forms.html`);
+            const memorisationFormsContent = await $.get(`${extensionFolderPath}/assets/amily-data-table/Memorisation-forms.html`);
             const memorisationFormsPanelHtml = `<div id="amily2_memorisation_forms_panel" style="display: none;">${memorisationFormsContent}</div>`;
             mainContainer.append(memorisationFormsPanelHtml);
 
@@ -103,7 +103,7 @@ async function initializePanel(contentPanel, errorContainer) {
             const worldEditorPanelHtml = `<div id="amily2_world_editor_panel" style="display: none;">${worldEditorContent}</div>`;
             mainContainer.append(worldEditorPanelHtml);
 
-            const glossaryContent = await $.get(`${extensionFolderPath}/assets/amily2-glossary.html`);
+            const glossaryContent = await $.get(`${extensionFolderPath}/assets/amily-glossary-system/amily2-glossary.html`);
             const glossaryPanelHtml = `<div id="amily2_glossary_panel" style="display: none;">${glossaryContent}</div>`;
             mainContainer.append(glossaryPanelHtml);
 
