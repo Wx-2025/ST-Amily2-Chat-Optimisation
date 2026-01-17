@@ -309,12 +309,13 @@ function loadPluginStyles() {
     // 颁布三道制衣圣谕
     loadStyleFile("style.css"); // 【第一道圣谕】为帝国主体宫殿披上通用华服
     loadStyleFile("historiography.css"); // 【第二道圣谕】为敕史局披上其专属华服
-    loadStyleFile("hanlinyuan.css"); // 【第三道圣谕】为翰林院披上其专属华服
+    loadStyleFile("amily-hanlinyuan-system/hanlinyuan.css"); // 【第三道圣谕】为翰林院披上其专属华服
     loadStyleFile("amily-glossary-system/amily2-glossary.css"); // 【新圣谕】为术语表披上其专属华服
     loadStyleFile("amily-data-table/table.css"); // 【第四道圣谕】为内存储司披上其专属华服
     loadStyleFile("optimization.css"); // 【第五道圣谕】为剧情优化披上其专属华服
     loadStyleFile("renderer.css"); // 【新圣谕】为渲染器披上其专属华服
-    loadStyleFile("iframe-renderer.css"); // 【新圣谕】为iframe渲染内容披上其专属华服
+    // loadStyleFile("iframe-renderer.css"); // 【新圣谕】为iframe渲染内容披上其专属华服
+    loadStyleFile("renderer.css"); // 【新圣谕】为iframe渲染内容披上其专属华服
     loadStyleFile("super-memory.css"); // 【新圣谕】为超级记忆披上其专属华服
 
     // 【第六道圣谕】为角色世界书披上其专属华服
