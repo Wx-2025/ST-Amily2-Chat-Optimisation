@@ -23,7 +23,7 @@ export class RequestBody {
      * @returns {Object} 纯净的 JSON 对象
      */
     toPayload() {
-        const { apiUrl, apiKey, model, maxTokens, temperature, params } = this.options;
+        const { apiUrl, apiKey, model, maxTokens, temperature, params, fakeStream } = this.options;
         const isGoogle = apiUrl && apiUrl.includes('googleapis.com');
 
         // 基础字段 (Base Fields)
@@ -33,7 +33,11 @@ export class RequestBody {
             model: model,
             reverse_proxy: apiUrl,
             proxy_password: apiKey,
-            stream: false, // 这里的 stream 是指 ST 后端行为，始终为 false
+
+            // 【核心修正】: 如果客户端开启防超时聚合(fakeStream)，
+            // 必须告诉服务端开启流式传输，否则服务端不会分块发送数据。
+            stream: fakeStream,
+
             max_tokens: maxTokens,
             temperature: temperature,
             // 允许 Options 中的 params 覆盖上述字段
@@ -59,6 +63,8 @@ export class RequestBody {
     toMinimalPayload() {
         return {
             messages: this.messages,
+            // 同样需要联动
+            stream: this.options.fakeStream,
             max_tokens: this.options.maxTokens,
             ...this.options.params
         };
