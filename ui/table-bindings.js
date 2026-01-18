@@ -1980,6 +1980,7 @@ function bindNccsApiEvents() {
     const settings = extension_settings[extensionName];
     
     if (settings.nccsEnabled === undefined) settings.nccsEnabled = false;
+    if (settings.nccsFakeStreamEnabled === undefined) settings.nccsEnabled = false;
     if (settings.nccsApiMode === undefined) settings.nccsApiMode = 'openai_test';
     if (settings.nccsApiUrl === undefined) settings.nccsApiUrl = 'https://api.openai.com/v1';
     if (settings.nccsApiKey === undefined) settings.nccsApiKey = '';
@@ -1989,6 +1990,7 @@ function bindNccsApiEvents() {
     if (settings.nccsTavernProfile === undefined) settings.nccsTavernProfile = '';
 
     const enabledToggle = document.getElementById('nccs-api-enabled');
+    const enabledFakeStreamToggle = document.getElementById('nccs-api-fakestream-enabled');
     const configDiv = document.getElementById('nccs-api-config');
     const modeSelect = document.getElementById('nccs-api-mode');
     const urlInput = document.getElementById('nccs-api-url');
@@ -2005,6 +2007,7 @@ function bindNccsApiEvents() {
     if (!enabledToggle || !configDiv) return;
 
     enabledToggle.checked = settings.nccsEnabled;
+    enabledFakeStreamToggle.checked = settings.nccsFakeStreamEnabled;
     if (modeSelect) modeSelect.value = settings.nccsApiMode;
     if (urlInput) urlInput.value = settings.nccsApiUrl;
     if (keyInput) keyInput.value = settings.nccsApiKey;

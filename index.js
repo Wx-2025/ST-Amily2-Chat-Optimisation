@@ -932,6 +932,7 @@ async function runAmily2Deployment() {
 jQuery(async () => {
     console.log("[Amily2号-帝国枢密院] 开始执行开国大典...");
 
+    initializeAmilyBus();
     loadExternalLibraries();
     initializeContextOptimizer();
     await initializeMiZheSi();
@@ -939,8 +940,6 @@ jQuery(async () => {
     registerAllApiHandlers();
     initializeAmilyHelper();
     mergePluginSettings();
-    initializeAmilyBus();
-    window.Amily2Bus.log('info', 'System Init', 'Kernel');
 
     let attempts = 0;
     const maxAttempts = 100;
