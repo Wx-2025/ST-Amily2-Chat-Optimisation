@@ -18,7 +18,9 @@ class Logger {
         all: 0xF // 15
     };
 
-    constructor() {
+    constructor(safeConsole = null) {
+        // 使用传入的 safeConsole，如果没有则回退到全局 console
+        this.safeConsole = safeConsole || (typeof window !== 'undefined' ? window.console : console);
         // 全局默认级别 (默认开启 info, warn, error)
         this.globalLevel = Logger.LOG_LEVEL_CODE.info | Logger.LOG_LEVEL_CODE.warn | Logger.LOG_LEVEL_CODE.error;
         
@@ -49,7 +51,7 @@ class Logger {
             if (levelInput.includes('|')) {
                 return levelInput.split('|').reduce((mask, l) => mask | (Logger.LOG_LEVEL_CODE[l.trim()] || 0), 0);
             }
-            console.warn(`[Logger] Unknown log level string: ${levelInput}`);
+            this.safeConsole.warn(`[Logger] Unknown log level string: ${levelInput}`);
             return 0;
         }
 
@@ -70,10 +72,10 @@ class Logger {
 
         if (target === 'Global') {
             this.globalLevel = mask;
-            console.log(`[Logger] Global log level mask set to: ${mask.toString(2)}`);
+            this.safeConsole.log(`[Logger] Global log level mask set to: ${mask.toString(2)}`);
         } else {
             this.levelConfig[target] = mask;
-            console.log(`[Logger] Log level mask for '${target}' set to: ${mask.toString(2)}`);
+            this.safeConsole.log(`[Logger] Log level mask for '${target}' set to: ${mask.toString(2)}`);
         }
     }
 
@@ -89,11 +91,11 @@ class Logger {
         if (target === 'Global') {
             currentMask = this.globalLevel;
             this.globalLevel = currentMask | maskToAdd;
-            console.log(`[Logger] Added level to Global. New mask: ${this.globalLevel.toString(2)}`);
+            this.safeConsole.log(`[Logger] Added level to Global. New mask: ${this.globalLevel.toString(2)}`);
         } else {
             currentMask = this.levelConfig[target] !== undefined ? this.levelConfig[target] : this.globalLevel;
             this.levelConfig[target] = currentMask | maskToAdd;
-            console.log(`[Logger] Added level to '${target}'. New mask: ${this.levelConfig[target].toString(2)}`);
+            this.safeConsole.log(`[Logger] Added level to '${target}'. New mask: ${this.levelConfig[target].toString(2)}`);
         }
     }
 
@@ -110,11 +112,11 @@ class Logger {
             currentMask = this.globalLevel;
             // 使用 & ~mask 实现移除
             this.globalLevel = currentMask & ~maskToRemove;
-            console.log(`[Logger] Removed level from Global. New mask: ${this.globalLevel.toString(2)}`);
+            this.safeConsole.log(`[Logger] Removed level from Global. New mask: ${this.globalLevel.toString(2)}`);
         } else {
             currentMask = this.levelConfig[target] !== undefined ? this.levelConfig[target] : this.globalLevel;
             this.levelConfig[target] = currentMask & ~maskToRemove;
-            console.log(`[Logger] Removed level from '${target}'. New mask: ${this.levelConfig[target].toString(2)}`);
+            this.safeConsole.log(`[Logger] Removed level from '${target}'. New mask: ${this.levelConfig[target].toString(2)}`);
         }
     }
 
@@ -145,7 +147,8 @@ class Logger {
      */
     process(plugin, origin, type, message, inFile = false) {
         // [DEBUG] 强制输出以确认方法被调用 (使用 error 级别防止被过滤)
-        console.error('[Logger DEBUG] Process called:', { plugin, origin, type, message });
+        // 【核心修改】：使用 safeConsole 替代全局 console
+        this.safeConsole.error('[Logger DEBUG] Process called:', { plugin, origin, type, message });
 
         // 1. 默认归属处理
         const safePlugin = plugin || 'Global';
@@ -163,25 +166,26 @@ class Logger {
         }
 
         const timestamp = new Date().toLocaleTimeString();
-        // 格式: [12:00:00] [PluginName::ClassName] [INFO]: message
+        // 格式: [12:00:00] [PluginName::ClassName] [INFO: message
         const fullMessage = `[${timestamp}] [${safePlugin}::${safeOrigin}] [${type.toUpperCase()}]: ${message}`;
 
         // 5. Console Output
+        // 【核心修改】：使用 safeConsole 替代全局 console
         switch (type) {
             case 'debug':
-                console.debug(fullMessage);
+                this.safeConsole.debug(fullMessage);
                 break;
             case 'info':
-                console.info(fullMessage);
+                this.safeConsole.info(fullMessage);
                 break;
             case 'warn':
-                console.warn(fullMessage);
+                this.safeConsole.warn(fullMessage);
                 break;
             case 'error':
-                console.error(fullMessage);
+                this.safeConsole.error(fullMessage);
                 break;
             default:
-                console.log(fullMessage);
+                this.safeConsole.log(fullMessage);
                 break;
         }
 
@@ -200,7 +204,7 @@ class Logger {
             } else {
                 // Fallback: 如果总线未就绪，仅在控制台警告一次，避免死循环
                 if (!this._warned) {
-                    console.warn('[Logger] FilePipe system not linked. Log not saved to file.');
+                    this.safeConsole.warn('[Logger] FilePipe system not linked. Log not saved to file.');
                     this._warned = true;
                 }
             }
