@@ -1,6 +1,6 @@
 import { getRequestHeaders } from "/script.js";
 import { getContext } from "/scripts/extensions.js";
-import { amilyHelper } from '../../core/tavern-helper/main.js';
+import { amilyHelper } from '../../../core/tavern-helper/main.js';
 import Options from './Options.js';
 import RequestBody from './RequestBody.js';
 
