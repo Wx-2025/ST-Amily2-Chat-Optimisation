@@ -12,34 +12,28 @@ try {
     console.warn("[Amily2号-Nccs外交部] 未能召唤“皇家信使”，部分高级功能（如Claw代理）将受限。请考虑更新SillyTavern版本。", e);
 }
 
-function normalizeApiResponse(responseData) {
-    let data = responseData;
-    if (typeof data === 'string') {
-        try {
-            data = JSON.parse(data);
-        } catch (e) {
-            console.error(`[${extensionName}] Nccs API响应JSON解析失败:`, e);
-            return { error: { message: 'Invalid JSON response' } };
-        }
+let nccsCtx = null;
+// 尝试连接总线
+if (window.Amily2Bus) {
+    try {
+        // 注册 'NccsApi' 身份，获取专属上下文
+        nccsCtx = window.Amily2Bus.register('NccsApi');
+
+        // 【联动】暴露 Nccs 的核心调用能力，允许其他插件通过 query('NccsApi') 借用此通道
+        nccsCtx.expose({
+            call: callNccsAI,
+            getSettings: getNccsApiSettings
+        });
+
+        nccsCtx.log('Init', 'info', 'NccsApi 已连接至 Amily2Bus，网络通道准备就绪。');
+    } catch (e) {
+        // 如果是热重载导致重复注册，尝试降级获取（注意：严格锁模式下无法获取旧Context，这里仅做日志提示）
+        // 在生产环境中，页面刷新会重置 Bus，不会有问题。
+        console.warn('[Amily2-Nccs] Bus 注册警告 (可能是热重载):', e);
     }
-    if (data && typeof data.data === 'object' && data.data !== null && !Array.isArray(data.data)) {
-        if (Object.hasOwn(data.data, 'data')) {
-            data = data.data;
-        }
-    }
-    if (data && data.choices && data.choices[0]) {
-        return { content: data.choices[0].message?.content?.trim() };
-    }
-    if (data && data.content) {
-        return { content: data.content.trim() };
-    }
-    if (data && data.data) { 
-        return { data: data.data };
-    }
-    if (data && data.error) {
-        return { error: data.error };
-    }
-    return data;
+} else {
+    console.error('[Amily2-Nccs] 严重警告: Amily2Bus 未找到，NccsApi 网络层将无法工作！');
+    toastr.error("核心组件 Amily2Bus 丢失，请检查安装。", "Nccs-System");
 }
 
 export function getNccsApiSettings() {
@@ -54,6 +48,10 @@ export function getNccsApiSettings() {
     };
 }
 
+// =================================================================================================
+// 核心调用入口 (Hybrid Mode: Bus First -> Fallback Legacy)
+// =================================================================================================
+
 export async function callNccsAI(messages, options = {}) {
     if (window.AMILY2_SYSTEM_PARALYZED === true) {
         console.error("[Amily2-Nccs制裁] 系统完整性已受损，所有外交活动被无限期中止。");
@@ -61,15 +59,8 @@ export async function callNccsAI(messages, options = {}) {
     }
 
     const apiSettings = getNccsApiSettings();
-
     const finalOptions = {
-        maxTokens: apiSettings.maxTokens,
-        temperature: apiSettings.temperature,
-        model: apiSettings.model,
-        apiUrl: apiSettings.apiUrl,
-        apiKey: apiSettings.apiKey,
-        apiMode: apiSettings.apiMode,
-        tavernProfile: apiSettings.tavernProfile,
+        ...apiSettings,
         ...options
     };
 
@@ -81,18 +72,59 @@ export async function callNccsAI(messages, options = {}) {
         }
     }
 
-    console.groupCollapsed(`[Amily2号-Nccs统一API调用] ${new Date().toLocaleTimeString()}`);
-    console.log("【请求参数】:", { 
-        mode: finalOptions.apiMode,
-        model: finalOptions.model, 
-        maxTokens: finalOptions.maxTokens, 
-        temperature: finalOptions.temperature,
-        messagesCount: messages.length
-    });
-    console.log("【消息内容】:", messages);
-    console.groupEnd();
+    // ============================================================
+    // 尝试路径 A: 新版 Amily2Bus ModelCaller (支持 FakeStream)
+    // ============================================================
+    if (nccsCtx && nccsCtx.model) {
+        try {
+            nccsCtx.log('Main', 'info', `[v2 尝试通过 ModelCaller 调用 (${finalOptions.useFakeStream ? 'FakeStream' : 'Standard'})...`);
 
+            const Options = nccsCtx.model.Options;
+            const builder = Options.builder()
+                .setFakeStream(finalOptions.useFakeStream)
+                .setMaxTokens(finalOptions.maxTokens)
+                .setTemperature(finalOptions.temperature)
+                .setParams(options.params || {});
+
+            if (finalOptions.apiMode === 'sillytavern_preset') {
+                builder.setMode('preset')
+                    .setPresetId(finalOptions.tavernProfile)
+                    .setModel(finalOptions.model);
+            } else {
+                builder.setMode('direct')
+                    .setApiUrl(finalOptions.apiUrl)
+                    .setApiKey(finalOptions.apiKey)
+                    .setModel(finalOptions.model);
+            }
+
+            // 发起请求
+            const response = await nccsCtx.model.call(messages, builder.build());
+
+            // 校验结果
+            if (response) {
+                nccsCtx.log('Main', 'info', `[v2] ModelCaller 调用成功。`);
+                return response;
+            } else {
+                throw new Error("ModelCaller 返回了空响应");
+            }
+
+        } catch (busError) {
+            const errorMsg = `[v2] ModelCaller 调用失败，准备回退到旧版逻辑。原因: ${busError.message}`;
+            // 记录错误但阻断抛出，以便执行下方代码
+            if (nccsCtx) nccsCtx.log('Main', 'warn', errorMsg);
+            else console.warn(errorMsg);
+        }
+    } else {
+        console.warn("[Amily2-Nccs] Bus 未连接，直接使用旧版逻辑。");
+    }
+
+    // ============================================================
+    // 尝试路径 B: 旧版 Legacy 方法 (Fallback)
+    // ============================================================
     try {
+        console.groupCollapsed(`[Amily2-Nccs] 降级使用 Legacy API 调用`);
+        console.log("Fallback Mode Active");
+
         let responseContent;
 
         switch (finalOptions.apiMode) {
@@ -103,53 +135,57 @@ export async function callNccsAI(messages, options = {}) {
                 responseContent = await callNccsSillyTavernPreset(messages, finalOptions);
                 break;
             default:
-                console.error(`[Amily2-Nccs外交部] 未支持的API模式: ${finalOptions.apiMode}`);
+                console.error(`未支持的 API 模式: ${finalOptions.apiMode}`);
                 return null;
         }
 
-        if (!responseContent) {
-            console.warn('[Amily2-Nccs外交部] 未能获取AI响应内容');
-            return null;
-        }
-
-        console.groupCollapsed("[Amily2号-Nccs AI回复]");
-        console.log(responseContent);
+        console.log("Legacy Response:", responseContent);
         console.groupEnd();
 
         return responseContent;
 
-    } catch (error) {
-        console.error(`[Amily2-Nccs外交部] API调用发生错误:`, error);
+    } catch (legacyError) {
+        console.groupEnd();
+        console.error(`[Amily2-Nccs] Legacy API 调用也失败了:`, legacyError);
 
-        if (error.message.includes('400')) {
-            toastr.error(`API请求格式错误 (400): 请检查消息格式和模型配置`, "Nccs API调用失败");
-        } else if (error.message.includes('401')) {
-            toastr.error(`API认证失败 (401): 请检查API Key配置`, "Nccs API调用失败");
-        } else if (error.message.includes('403')) {
-            toastr.error(`API访问被拒绝 (403): 请检查权限设置`, "Nccs API调用失败");
-        } else if (error.message.includes('429')) {
-            toastr.error(`API调用频率超限 (429): 请稍后重试`, "Nccs API调用失败");
-        } else if (error.message.includes('500')) {
-            toastr.error(`API服务器错误 (500): 请稍后重试`, "Nccs API调用失败");
-        } else {
-            toastr.error(`API调用失败: ${error.message}`, "Nccs API调用失败");
-        }
-        
+        // 统一错误提示
+        const msg = legacyError.message;
+        if (msg.includes('401')) toastr.error("API认证失败 (401)", "Nccs API Error");
+        else if (msg.includes('403')) toastr.error("权限拒绝 (403)", "Nccs API Error");
+        else if (msg.includes('500')) toastr.error("服务器错误 (500)", "Nccs API Error");
+        else toastr.error(`调用失败: ${msg}`, "Nccs API Error");
+
         return null;
     }
 }
 
+// =================================================================================================
+// Legacy Implementations (保留旧代码以供降级使用)
+// =================================================================================================
+
+function normalizeApiResponse(responseData) {
+    let data = responseData;
+    if (typeof data === 'string') {
+        try { data = JSON.parse(data); } catch (e) { return { error: { message: 'Invalid JSON' } }; }
+    }
+    if (data?.data?.data) data = data.data; // Unpack nested data
+    if (data?.choices?.[0]?.message?.content) return { content: data.choices[0].message.content.trim() };
+    if (data?.content) return { content: data.content.trim() };
+    if (data?.data) return { data: data.data };
+    if (data?.error) return { error: data.error };
+    return data;
+}
+
 async function callNccsOpenAITest(messages, options) {
     const isGoogleApi = options.apiUrl.includes('googleapis.com');
-
     const body = {
         chat_completion_source: 'openai',
         messages: messages,
         model: options.model,
         reverse_proxy: options.apiUrl,
         proxy_password: options.apiKey,
-        stream: false,
-        max_tokens: options.maxTokens || 30000,
+        stream: false, // 旧版不支持 FakeStream
+        max_tokens: options.maxTokens || 4000,
         temperature: options.temperature || 1,
         top_p: options.top_p || 1,
     };
@@ -159,10 +195,7 @@ async function callNccsOpenAITest(messages, options) {
             custom_prompt_post_processing: 'strict',
             enable_web_search: false,
             frequency_penalty: 0,
-            group_names: [],
-            include_reasoning: false,
             presence_penalty: 0.12,
-            reasoning_effort: 'medium',
             request_images: false,
         });
     }
@@ -174,8 +207,7 @@ async function callNccsOpenAITest(messages, options) {
     });
 
     if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Nccs全兼容API请求失败: ${response.status} - ${errorText}`);
+        throw new Error(`Legacy HTTP ${response.status}: ${await response.text()}`);
     }
 
     const responseData = await response.json();
@@ -183,83 +215,49 @@ async function callNccsOpenAITest(messages, options) {
 }
 
 async function callNccsSillyTavernPreset(messages, options) {
-    console.log('[Amily2号-NccsST预设] 使用SillyTavern预设调用');
-
     const context = getContext();
-    if (!context) {
-        throw new Error('无法获取SillyTavern上下文');
-    }
+    if (!context) throw new Error('SillyTavern context unavailable');
 
     const profileId = options.tavernProfile;
-    if (!profileId) {
-        throw new Error('未配置SillyTavern预设ID');
-    }
+    if (!profileId) throw new Error('No profile ID configured');
 
-    let originalProfile = '';
-    let responsePromise;
+    const originalProfile = await amilyHelper.triggerSlash('/profile');
+    const targetProfile = context.extensionSettings?.connectionManager?.profiles?.find(p => p.id === profileId);
+
+    if (!targetProfile) throw new Error(`Profile ${profileId} not found`);
 
     try {
-        originalProfile = await amilyHelper.triggerSlash('/profile');
-        console.log(`[Amily2号-NccsST预设] 当前配置文件: ${originalProfile}`);
-
-        const targetProfile = context.extensionSettings?.connectionManager?.profiles?.find(p => p.id === profileId);
-        if (!targetProfile) {
-            throw new Error(`未找到配置文件ID: ${profileId}`);
+        if (originalProfile !== targetProfile.name) {
+            console.log(`[Legacy Switching profile: ${originalProfile} -> ${targetProfile.name}`);
+            await amilyHelper.triggerSlash(`/profile await=true "${targetProfile.name.replace(/"/g, '\\"')}"`);
         }
 
-        const targetProfileName = targetProfile.name;
-        console.log(`[Amily2号-NccsST预设] 目标配置文件: ${targetProfileName}`);
+        if (!context.ConnectionManagerRequestService) throw new Error('ConnectionManagerRequestService unavailable');
 
-        const currentProfile = await amilyHelper.triggerSlash('/profile');
-        if (currentProfile !== targetProfileName) {
-            console.log(`[Amily2号-NccsST预设] 切换配置文件: ${currentProfile} -> ${targetProfileName}`);
-            const escapedProfileName = targetProfileName.replace(/"/g, '\\"');
-            await amilyHelper.triggerSlash(`/profile await=true "${escapedProfileName}"`);
-        }
-
-        if (!context.ConnectionManagerRequestService) {
-            throw new Error('ConnectionManagerRequestService不可用');
-        }
-
-        console.log(`[Amily2号-NccsST预设] 通过配置文件 ${targetProfileName} 发送请求`);
-        responsePromise = context.ConnectionManagerRequestService.sendRequest(
+        const result = await context.ConnectionManagerRequestService.sendRequest(
             targetProfile.id,
             messages,
             options.maxTokens || 4000
         );
 
+        const normalized = normalizeApiResponse(result);
+        if (normalized.error) throw new Error(normalized.error.message);
+        return normalized.content;
+
     } finally {
-        try {
-            const currentProfileAfterCall = await amilyHelper.triggerSlash('/profile');
-            if (originalProfile && originalProfile !== currentProfileAfterCall) {
-                console.log(`[Amily2号-NccsST预设] 恢复原始配置文件: ${currentProfileAfterCall} -> ${originalProfile}`);
-                const escapedOriginalProfile = originalProfile.replace(/"/g, '\\"');
-                await amilyHelper.triggerSlash(`/profile await=true "${escapedOriginalProfile}"`);
-            }
-        } catch (restoreError) {
-            console.error('[Amily2号-NccsST预设] 恢复配置文件失败:', restoreError);
+        // Restore profile
+        const current = await amilyHelper.triggerSlash('/profile');
+        if (originalProfile && originalProfile !== current) {
+            await amilyHelper.triggerSlash(`/profile await=true "${originalProfile.replace(/"/g, '\\"')}"`);
         }
     }
-
-    const result = await responsePromise;
-
-    if (!result) {
-        throw new Error('未收到API响应');
-    }
-
-    const normalizedResult = normalizeApiResponse(result);
-    if (normalizedResult.error) {
-        throw new Error(normalizedResult.error.message || 'SillyTavern预设API调用失败');
-    }
-
-    return normalizedResult.content;
 }
 
 export async function fetchNccsModels() {
     console.log('[Amily2号-Nccs外交部] 开始获取模型列表');
-    
+
     const apiSettings = getNccsApiSettings();
-    
+
     try {
         if (apiSettings.apiMode === 'sillytavern_preset') {
             // SillyTavern预设模式：获取当前预设的模型
@@ -267,29 +265,28 @@ export async function fetchNccsModels() {
             if (!context?.extensionSettings?.connectionManager?.profiles) {
                 throw new Error('无法获取SillyTavern配置文件列表');
             }
-            
+
             const targetProfile = context.extensionSettings.connectionManager.profiles.find(p => p.id === apiSettings.tavernProfile);
             if (!targetProfile) {
                 throw new Error(`未找到配置文件ID: ${apiSettings.tavernProfile}`);
             }
-            
+
             const models = [];
             if (targetProfile.openai_model) {
                 models.push({ id: targetProfile.openai_model, name: targetProfile.openai_model });
             }
-            
+
             if (models.length === 0) {
                 throw new Error('当前预设未配置模型');
             }
-            
+
             console.log('[Amily2号-Nccs外交部] SillyTavern预设模式获取到模型:', models);
             return models;
-            
         } else {
             if (!apiSettings.apiUrl || !apiSettings.apiKey) {
                 throw new Error('API URL或Key未配置');
             }
-            
+
             const response = await fetch('/api/backends/chat-completions/status', {
                 method: 'POST',
                 headers: {
@@ -340,7 +337,7 @@ export async function fetchNccsModels() {
 
 export async function testNccsApiConnection() {
     console.log('[Amily2号-Nccs外交部] 开始API连接测试');
-    
+
     const apiSettings = getNccsApiSettings();
 
     if (apiSettings.apiMode === 'sillytavern_preset') {
@@ -357,7 +354,7 @@ export async function testNccsApiConnection() {
 
     try {
         toastr.info('正在发送测试消息"你好！"...', 'Nccs API连接测试');
-        
+
         const userName = window.SillyTavern.getContext?.()?.name1 || '用户';
         const systemPrompt = `接下来用户会使用测试按钮测试api连接是否正常，请回复ta连接是正常的，称呼用户为：“${userName}大人”，并复述群号1060183271，告知ta，本扩展开发者：“诗与酒.”正静待ta的入驻。`;
 
@@ -365,9 +362,9 @@ export async function testNccsApiConnection() {
             { role: 'system', content: systemPrompt },
             { role: 'user', content: '你好！' }
         ];
-        
+
         const response = await callNccsAI(testMessages);
-        
+
         if (response && response.trim()) {
             console.log('[Amily2号-Nccs外交部] 测试消息响应:', response);
             const formattedResponse = response.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
@@ -376,10 +373,11 @@ export async function testNccsApiConnection() {
         } else {
             throw new Error('API未返回有效响应');
         }
-        
+
     } catch (error) {
         console.error('[Amily2号-Nccs外交部] 连接测试失败:', error);
         toastr.error(`连接测试失败: ${error.message}`, 'Nccs API连接测试失败');
         return false;
     }
 }
+

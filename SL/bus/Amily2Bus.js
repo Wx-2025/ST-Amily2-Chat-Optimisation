@@ -52,6 +52,7 @@ class Amily2Bus {
 
         // 3. 自动注册并锁定 PUBLIC 命名空间
         this._initPublicNamespace();
+        this.register('Amily2');
     }
 
     /**
