@@ -148,7 +148,7 @@ class Logger {
     process(plugin, origin, type, message, inFile = false) {
         // [DEBUG] 强制输出以确认方法被调用 (使用 error 级别防止被过滤)
         // 【核心修改】：使用 safeConsole 替代全局 console
-        this.safeConsole.error('[Logger DEBUG] Process called:', { plugin, origin, type, message });
+        // this.safeConsole.error('[Logger DEBUG] Process called:', { plugin, origin, type, message });
 
         // 1. 默认归属处理
         const safePlugin = plugin || 'Global';
