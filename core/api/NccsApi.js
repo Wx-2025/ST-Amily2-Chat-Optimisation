@@ -60,43 +60,69 @@ export async function callNccsAI(messages, options = {}) {
         return null;
     }
 
-    const apiSettings = getNccsApiSettings();
-    const finalOptions = {
-        ...apiSettings,
-        ...options
-    };
+    const settings = getNccsApiSettings();
 
-    if (finalOptions.apiMode !== 'sillytavern_preset') {
-        if (!finalOptions.apiUrl || !finalOptions.model || !finalOptions.apiKey) {
+    // 0. 全局开关检查
+    if (settings.nccsEnabled === false) {
+        // 暂不阻断，仅作为配置读取，保持兼容性
+    }
+
+    // 1. 基础配置确定 (options 覆盖 settings)
+    const activeMode = options.apiMode || settings.apiMode;
+    const activeUrl = options.apiUrl || settings.apiUrl;
+    const activeKey = options.apiKey || settings.apiKey;
+    const activeModel = options.model || settings.model;
+    const activeProfile = options.tavernProfile || settings.tavernProfile;
+    const activeMaxTokens = options.maxTokens ?? settings.maxTokens;
+    const activeTemperature = options.temperature ?? settings.temperature;
+    const activeFakeStream = options.useFakeStream ?? settings.useFakeStream;
+
+    if (activeMode !== 'sillytavern_preset') {
+        if (!activeUrl || !activeModel || !activeKey) {
             console.warn("[Amily2-Nccs外交部] API配置不完整，无法调用AI");
             toastr.error("API配置不完整，请检查URL、Key和模型配置。", "Nccs-外交部");
             return null;
         }
     }
 
+    // [兼容性修复] 自动收集 options 中的额外参数到 params，防止 ModelCaller 丢失 top_p 等参数
+    const standardKeys = [
+        'apiMode', 'apiUrl', 'apiKey', 'model', 
+        'maxTokens', 'temperature', 'tavernProfile', 'useFakeStream', 
+        'params'
+    ];
+    const extraParams = {};
+    Object.keys(options).forEach(key => {
+        if (!standardKeys.includes(key)) {
+            extraParams[key] = options[key];
+        }
+    });
+    // 合并显式的 options.params 和 收集到的 extraParams
+    const finalParams = { ...extraParams, ...(options.params || {}) };
+
+
     // ============================================================
     // 尝试路径 A: 新版 Amily2Bus ModelCaller (支持 FakeStream)
     // ============================================================
     if (nccsCtx && nccsCtx.model) {
         try {
-            nccsCtx.log('Main', 'info', `[v2 尝试通过 ModelCaller 调用 (${finalOptions.useFakeStream ? 'FakeStream' : 'Standard'})...`);
+            nccsCtx.log('Main', 'info', `[v2] 尝试通过 ModelCaller 调用 (${activeFakeStream ? 'FakeStream' : 'Standard'})...`);
 
-            const Options = nccsCtx.model.Options;
-            const builder = Options.builder()
-                .setFakeStream(finalOptions.useFakeStream)
-                .setMaxTokens(finalOptions.maxTokens)
-                .setTemperature(finalOptions.temperature)
-                .setParams(options.params || {});
+            const builder = nccsCtx.model.Options.builder()
+                .setFakeStream(activeFakeStream)
+                .setMaxTokens(activeMaxTokens)
+                .setTemperature(activeTemperature)
+                .setParams(finalParams);
 
-            if (finalOptions.apiMode === 'sillytavern_preset') {
+            if (activeMode === 'sillytavern_preset') {
                 builder.setMode('preset')
-                    .setPresetId(finalOptions.tavernProfile)
-                    .setModel(finalOptions.model);
+                    .setPresetId(activeProfile)
+                    .setModel(activeModel);
             } else {
                 builder.setMode('direct')
-                    .setApiUrl(finalOptions.apiUrl)
-                    .setApiKey(finalOptions.apiKey)
-                    .setModel(finalOptions.model);
+                    .setApiUrl(activeUrl)
+                    .setApiKey(activeKey)
+                    .setModel(activeModel);
             }
 
             // 发起请求
@@ -123,21 +149,34 @@ export async function callNccsAI(messages, options = {}) {
     // ============================================================
     // 尝试路径 B: 旧版 Legacy 方法 (Fallback)
     // ============================================================
+    // 构建 Legacy 兼容对象
+    const legacyOptions = {
+        apiMode: activeMode,
+        apiUrl: activeUrl,
+        apiKey: activeKey,
+        model: activeModel,
+        tavernProfile: activeProfile,
+        maxTokens: activeMaxTokens,
+        temperature: activeTemperature,
+        useFakeStream: activeFakeStream,
+        ...finalParams // 将额外参数直接展平回 legacyOptions 根目录
+    };
+
     try {
         console.groupCollapsed(`[Amily2-Nccs] 降级使用 Legacy API 调用`);
         console.log("Fallback Mode Active");
 
         let responseContent;
 
-        switch (finalOptions.apiMode) {
+        switch (activeMode) {
             case 'openai_test':
-                responseContent = await callNccsOpenAITest(messages, finalOptions);
+                responseContent = await callNccsOpenAITest(messages, legacyOptions);
                 break;
             case 'sillytavern_preset':
-                responseContent = await callNccsSillyTavernPreset(messages, finalOptions);
+                responseContent = await callNccsSillyTavernPreset(messages, legacyOptions);
                 break;
             default:
-                console.error(`未支持的 API 模式: ${finalOptions.apiMode}`);
+                console.error(`未支持的 API 模式: ${activeMode}`);
                 return null;
         }
 
