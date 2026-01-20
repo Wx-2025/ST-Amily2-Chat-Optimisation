@@ -155,4 +155,8 @@ export const tableSystemDefaultSettings = {
     table_independent_rules_enabled: false,
     table_tags_to_extract: '',
     table_exclusion_rules: [],
+
+    // Nccs API 设置
+    nccsEnabled: false,
+    nccsFakeStreamEnabled: false,
 };

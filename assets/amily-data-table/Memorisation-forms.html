@@ -333,13 +333,12 @@
 
                             <div class="amily2_opt_settings_block" style="margin-bottom: 10px;">
                                 <label for="nccs-temperature">Temperature: <span id="nccs-temperature-value">0.7</span></label>
-                                <input type="checkbox" id="nccs-api-fakestream-enabled" data-setting-key="nccsFakeStreamEnabled"
-                                    data-type="boolean">
+                                <input type="range" id="nccs-temperature" min="0" max="2" step="0.1" value="0.7">
                             </div>
 
                             <div class="amily2_opt_settings_block" style="margin-bottom: 10px;">
-                                <label for="nccs-temperature">Temperature: <span id="nccs-temperature-value">0.7</span></label>
-                                <input type="range" id="nccs-temperature" min="0" max="2" step="0.1" value="0.7">
+                                <label for="nccs-api-fakestream-enabled">启用流式支持: </label>
+                                <input type="checkbox" id="nccs-api-fakestream-enabled" data-setting-key="nccsFakeStreamEnabled" data-type="boolean">
                             </div>
 
                             <div class="amily2_opt_settings_block" style="margin-bottom: 10px;">
