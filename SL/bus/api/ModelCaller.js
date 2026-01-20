@@ -1,5 +1,5 @@
 import { getRequestHeaders } from "/script.js";
-import { getContext } from "/scripts/extensions.js";
+import { getContext, extension_settings } from "/scripts/extensions.js";
 import { amilyHelper } from '../../../core/tavern-helper/main.js';
 import Options from './Options.js';
 import RequestBody from './RequestBody.js';
@@ -295,12 +295,17 @@ export default class ModelCaller {
         // 只要 reverse_proxy 设置正确，后端就会按 OpenAI 协议转发
         payload.chat_completion_source = 'openai';
 
-        // 5. 补充默认采样参数 (防止 undefined)
-        if (payload.temperature === undefined) payload.temperature = 1;
-        if (payload.max_tokens === undefined) payload.max_tokens = 2000;
-        if (payload.top_p === undefined) payload.top_p = 1;
-        if (payload.frequency_penalty === undefined) payload.frequency_penalty = 0;
-        if (payload.presence_penalty === undefined) payload.presence_penalty = 0;
+        // 5. 补充默认采样参数 (优先读取全局当前设置)
+        const globalGenSettings = extension_settings.text_generation || {};
+        
+        if (payload.temperature === undefined) payload.temperature = globalGenSettings.temperature ?? 1;
+        if (payload.max_tokens === undefined) payload.max_tokens = globalGenSettings.max_tokens ?? 2000;
+        if (payload.top_p === undefined) payload.top_p = globalGenSettings.top_p ?? 1;
+        if (payload.top_k === undefined) payload.top_k = globalGenSettings.top_k ?? 0;
+        if (payload.min_p === undefined) payload.min_p = globalGenSettings.min_p ?? 0;
+        if (payload.frequency_penalty === undefined) payload.frequency_penalty = globalGenSettings.frequency_penalty ?? 0;
+        if (payload.presence_penalty === undefined) payload.presence_penalty = globalGenSettings.presence_penalty ?? 0;
+        if (payload.repetition_penalty === undefined) payload.repetition_penalty = globalGenSettings.repetition_penalty ?? 1;
 
         return payload;
     }
