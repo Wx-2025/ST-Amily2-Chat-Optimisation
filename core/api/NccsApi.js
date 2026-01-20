@@ -38,13 +38,15 @@ if (window.Amily2Bus) {
 
 export function getNccsApiSettings() {
     return {
+        nccsEnabled: extension_settings[extensionName]?.nccsEnabled || false,
         apiMode: extension_settings[extensionName]?.nccsApiMode || 'openai_test',
         apiUrl: extension_settings[extensionName]?.nccsApiUrl?.trim() || '',
         apiKey: extension_settings[extensionName]?.nccsApiKey?.trim() || '',
         model: extension_settings[extensionName]?.nccsModel || '',
         maxTokens: extension_settings[extensionName]?.nccsMaxTokens || 4000,
         temperature: extension_settings[extensionName]?.nccsTemperature || 0.7,
-        tavernProfile: extension_settings[extensionName]?.nccsTavernProfile || ''
+        tavernProfile: extension_settings[extensionName]?.nccsTavernProfile || '',
+        useFakeStream: extension_settings[extensionName]?.nccsFakeStreamEnabled || false
     };
 }
 

@@ -1980,7 +1980,7 @@ function bindNccsApiEvents() {
     const settings = extension_settings[extensionName];
     
     if (settings.nccsEnabled === undefined) settings.nccsEnabled = false;
-    if (settings.nccsFakeStreamEnabled === undefined) settings.nccsEnabled = false;
+    if (settings.nccsFakeStreamEnabled === undefined) settings.nccsFakeStreamEnabled = false;
     if (settings.nccsApiMode === undefined) settings.nccsApiMode = 'openai_test';
     if (settings.nccsApiUrl === undefined) settings.nccsApiUrl = 'https://api.openai.com/v1';
     if (settings.nccsApiKey === undefined) settings.nccsApiKey = '';
@@ -2066,6 +2066,12 @@ function bindNccsApiEvents() {
         saveSettingsDebounced();
         updateConfigVisibility();
         log(`Nccs API ${enabledToggle.checked ? '已启用' : '已禁用'}`, 'info');
+    });
+
+    enabledFakeStreamToggle.addEventListener('change', () => {
+        settings.nccsFakeStreamEnabled = enabledFakeStreamToggle.checked;
+        saveSettingsDebounced();
+        log(`Nccs API FakeStream ${enabledFakeStreamToggle.checked ? 'Enabled' : 'Disabled'}`, 'info');
     });
 
     if (modeSelect) {
