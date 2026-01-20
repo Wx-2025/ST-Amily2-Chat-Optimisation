@@ -139,14 +139,6 @@
         </label>
     </div>
 
-    <div class="amily2_settings_block">
-        <label for="amily2_ngms_fakestream_enabled">启用 Fake Stream (防超时)</label>
-        <label class="toggle-switch">
-            <input id="amily2_ngms_fakestream_enabled" type="checkbox" />
-            <span class="slider"></span>
-        </label>
-    </div>
-
     <div class="amily2_settings_block" id="amily2_ngms_content" style="display: none;">
         <div class="control-group">
             <label for="amily2_ngms_api_mode">API调用模式：</label>
@@ -196,6 +188,11 @@
             <div class="control-group">
                 <label for="amily2_ngms_temperature">温度：<span id="amily2_ngms_temperature_value">0.7</span></label>
                 <input type="range" id="amily2_ngms_temperature" min="0" max="2" step="0.1" value="0.7" />
+            </div>
+
+            <div class="control-group" style="display: flex; align-items: center; gap: 10px;">
+                <label for="amily2_ngms_fakestream_enabled" style="margin-bottom: 0;">启用流式支持 (防超时)</label>
+                <input type="checkbox" id="amily2_ngms_fakestream_enabled" style="width: auto;" />
             </div>
 
             <!-- 测试按钮组 - 水平排列 -->
