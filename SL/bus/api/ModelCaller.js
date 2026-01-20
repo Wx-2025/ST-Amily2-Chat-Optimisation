@@ -265,47 +265,57 @@ export default class ModelCaller {
 
     /**
      * 辅助方法：从 Profile 对象中提取标准生成参数
-     * 用于在手动构造请求时模拟 ST 后端行为
+     * 严格复刻 SillyTavern 原始 Payload 逻辑
      */
     _buildProfilePayload(targetProfile) {
-        // 1. 全量继承 Profile 属性
+        const context = getContext();
+        
+        // 1. 基础克隆
         const payload = { ...targetProfile };
 
-        // 2. 规范化关键字段
-        // ST 的 Profile 里模型名可能叫 openai_model
+        // 2. 注入运行时元数据 (这是旧版能通的关键，包含用户/角色名等)
+        payload.user_name = context.name1 || 'User';
+        payload.char_name = context.name2 || 'AI';
+        payload.group_names = []; // 暂不处理群组
+        payload.use_sysprompt = true;
+        payload.type = 'quiet';
+        payload.custom_prompt_post_processing = payload.custom_prompt_post_processing || 'strict';
+
+        // 3. 规范化模型字段
         if (!payload.model) {
-            payload.model = payload.openai_model || payload.claude_model || payload.mistral_model || payload.text_generation_webui_model || '';
+            payload.model = payload.openai_model || payload.claude_model || payload.mistral_model || '';
         }
 
-        // 3. 强制修正 URL 映射 (解决 400 错误的核心)
-        // Profile 原始数据里可能是 api-url (中划线), api_url, custom_url 等
+        // 4. 精准对齐 URL 映射 (解决 403/400 错误的核心)
         const rawUrl = payload['api-url'] || payload['api_url'] || payload.custom_url || payload.url;
-        
         if (rawUrl) {
-            // OpenAI 模式认 reverse_proxy
-            payload.reverse_proxy = rawUrl;
-            // Custom 模式认 custom_url (双保险)
-            payload.custom_url = rawUrl;
-            // 某些后端可能需要这个
-            payload.openai_reverse_proxy = rawUrl;
+            // 如果 Source 是 custom，严格遵循旧版：custom_url 有值，reverse_proxy 为空
+            if (payload.chat_completion_source === 'custom') {
+                payload.custom_url = rawUrl;
+                payload.reverse_proxy = payload.reverse_proxy || ''; 
+            } else {
+                // 如果是 openai，则填充 reverse_proxy
+                payload.reverse_proxy = rawUrl;
+                payload.custom_url = rawUrl;
+            }
+            // 兼容性修补
+            payload.zai_endpoint = rawUrl;
+            payload.vertexai_region = rawUrl;
         }
 
-        // 4. 强制指定 Source 为 OpenAI
-        // 我们的 ModelCaller._fetchFakeStream 是按 OpenAI SSE 格式解析的
-        // 只要 reverse_proxy 设置正确，后端就会按 OpenAI 协议转发
-        payload.chat_completion_source = 'openai';
-
-        // 5. 补充默认采样参数 (优先读取全局当前设置)
+        // 5. 补全采样参数 (严格对齐 UI 当前状态)
         const globalGenSettings = extension_settings.text_generation || {};
-        
-        if (payload.temperature === undefined) payload.temperature = globalGenSettings.temperature ?? 1;
-        if (payload.max_tokens === undefined) payload.max_tokens = globalGenSettings.max_tokens ?? 2000;
-        if (payload.top_p === undefined) payload.top_p = globalGenSettings.top_p ?? 1;
-        if (payload.top_k === undefined) payload.top_k = globalGenSettings.top_k ?? 0;
-        if (payload.min_p === undefined) payload.min_p = globalGenSettings.min_p ?? 0;
-        if (payload.frequency_penalty === undefined) payload.frequency_penalty = globalGenSettings.frequency_penalty ?? 0;
-        if (payload.presence_penalty === undefined) payload.presence_penalty = globalGenSettings.presence_penalty ?? 0;
-        if (payload.repetition_penalty === undefined) payload.repetition_penalty = globalGenSettings.repetition_penalty ?? 1;
+        const fields = ['temperature', 'max_tokens', 'top_p', 'top_k', 'min_p', 'frequency_penalty', 'presence_penalty', 'repetition_penalty'];
+        fields.forEach(field => {
+            if (payload[field] === undefined) {
+                payload[field] = globalGenSettings[field] ?? (field === 'temperature' ? 1 : 0);
+            }
+        });
+
+        // 6. 确保 Source 存在且不被错误覆盖
+        if (!payload.chat_completion_source) {
+            payload.chat_completion_source = 'openai';
+        }
 
         return payload;
     }
