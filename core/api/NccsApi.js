@@ -51,7 +51,7 @@ export function getNccsApiSettings() {
 }
 
 // =================================================================================================
-// 核心调用入口 (Hybrid Mode: Bus First -> Fallback Legacy)
+// 核心调用入口 (Legacy First Mode)
 // =================================================================================================
 
 export async function callNccsAI(messages, options = {}) {
@@ -61,160 +61,107 @@ export async function callNccsAI(messages, options = {}) {
     }
 
     const settings = getNccsApiSettings();
+    const finalOptions = {
+        ...settings,
+        ...options
+    };
 
-    // 0. 全局开关检查
-    if (settings.nccsEnabled === false) {
-        // 暂不阻断，仅作为配置读取，保持兼容性
-    }
+    // 确保 stream 标志位存在
+    finalOptions.stream = finalOptions.useFakeStream ?? false;
 
-    // 1. 基础配置确定 (options 覆盖 settings)
-    const activeMode = options.apiMode || settings.apiMode;
-    const activeUrl = options.apiUrl || settings.apiUrl;
-    const activeKey = options.apiKey || settings.apiKey;
-    const activeModel = options.model || settings.model;
-    const activeProfile = options.tavernProfile || settings.tavernProfile;
-    const activeMaxTokens = options.maxTokens ?? settings.maxTokens;
-    const activeTemperature = options.temperature ?? settings.temperature;
-    const activeFakeStream = options.useFakeStream ?? settings.useFakeStream;
-
-    if (activeMode !== 'sillytavern_preset') {
-        if (!activeUrl || !activeModel || !activeKey) {
+    if (finalOptions.apiMode !== 'sillytavern_preset') {
+        if (!finalOptions.apiUrl || !finalOptions.model || !finalOptions.apiKey) {
             console.warn("[Amily2-Nccs外交部] API配置不完整，无法调用AI");
             toastr.error("API配置不完整，请检查URL、Key和模型配置。", "Nccs-外交部");
             return null;
         }
-    }
-
-    // [兼容性修复] 自动收集 options 中的额外参数到 params，防止 ModelCaller 丢失 top_p 等参数
-    const standardKeys = [
-        'apiMode', 'apiUrl', 'apiKey', 'model',
-        'maxTokens', 'temperature', 'tavernProfile', 'useFakeStream',
-        'params'
-    ];
-    const extraParams = {};
-    Object.keys(options).forEach(key => {
-        if (!standardKeys.includes(key)) {
-            extraParams[key] = options[key];
-        }
-    });
-    // 合并显式的 options.params 和 收集到的 extraParams
-    const finalParams = { ...extraParams, ...(options.params || {}) };
-
-
-    // ============================================================
-    // 尝试路径 A: 新版 Amily2Bus ModelCaller (支持 FakeStream)
-    // ============================================================
-    if (nccsCtx && nccsCtx.model) {
-        try {
-            nccsCtx.log('Main', 'info', `[v2] 尝试通过 ModelCaller 调用 (${activeFakeStream ? 'FakeStream' : 'Standard'})...`);
-
-            const builder = nccsCtx.model.Options.builder()
-                .setFakeStream(activeFakeStream)
-                .setMaxTokens(activeMaxTokens)
-                .setTemperature(activeTemperature)
-                .setParams(finalParams);
-
-            if (activeMode === 'sillytavern_preset') {
-                builder.setMode('preset')
-                    .setPresetId(activeProfile)
-                    .setModel(activeModel);
-            } else {
-                builder.setMode('direct')
-                    .setApiUrl(activeUrl)
-                    .setApiKey(activeKey)
-                    .setModel(activeModel);
-            }
-
-            // 发起请求
-            const response = await nccsCtx.model.call(messages, builder.build());
-
-            // 校验结果
-            if (response) {
-                nccsCtx.log('Main', 'info', `[v2] ModelCaller 调用成功。`);
-                return response;
-            } else {
-                throw new Error("ModelCaller 返回了空响应");
-            }
-
-        } catch (busError) {
-            const errorMsg = `[v2] ModelCaller 调用失败，准备回退到旧版逻辑。原因: ${busError.message}`;
-            // 记录错误但阻断抛出，以便执行下方代码
-            if (nccsCtx) nccsCtx.log('Main', 'warn', errorMsg);
-            else console.warn(errorMsg);
-        }
     } else {
-        console.warn("[Amily2-Nccs] Bus 未连接，直接使用旧版逻辑。");
+        // [限制] 预设模式暂不支持流式
+        if (finalOptions.stream) {
+            console.warn("[Amily2-Nccs] 预设模式目前尚不支持流式处理方案，已自动切换为标准模式。");
+            toastr.warning("SillyTavern预设模式目前暂不支持流式处理（假流式），已为您切换为标准请求模式。该功能将在后续版本中支持。", "Nccs-外交部");
+            finalOptions.stream = false;
+        }
     }
-
-    // ============================================================
-    // 尝试路径 B: 旧版 Legacy 方法 (Fallback)
-    // ============================================================
-    // 构建 Legacy 兼容对象
-    const legacyOptions = {
-        apiMode: activeMode,
-        apiUrl: activeUrl,
-        apiKey: activeKey,
-        model: activeModel,
-        tavernProfile: activeProfile,
-        maxTokens: activeMaxTokens,
-        temperature: activeTemperature,
-        useFakeStream: activeFakeStream,
-        ...finalParams // 将额外参数直接展平回 legacyOptions 根目录
-    };
 
     try {
-        console.groupCollapsed(`[Amily2-Nccs] 降级使用 Legacy API 调用`);
-        console.log("Fallback Mode Active");
-
         let responseContent;
-
-        switch (activeMode) {
+        switch (finalOptions.apiMode) {
             case 'openai_test':
-                responseContent = await callNccsOpenAITest(messages, legacyOptions);
+                responseContent = await callNccsOpenAITest(messages, finalOptions);
                 break;
             case 'sillytavern_preset':
-                responseContent = await callNccsSillyTavernPreset(messages, legacyOptions);
+                responseContent = await callNccsSillyTavernPreset(messages, finalOptions);
                 break;
             default:
-                console.error(`未支持的 API 模式: ${activeMode}`);
+                console.error(`未支持的 API 模式: ${finalOptions.apiMode}`);
                 return null;
         }
-
-        console.log("Legacy Response:", responseContent);
-        console.groupEnd();
-
         return responseContent;
-
-    } catch (legacyError) {
-        console.groupEnd();
-        console.error(`[Amily2-Nccs] Legacy API 调用也失败了:`, legacyError);
-
-        // 统一错误提示
-        const msg = legacyError.message;
-        if (msg.includes('401')) toastr.error("API认证失败 (401)", "Nccs API Error");
-        else if (msg.includes('403')) toastr.error("权限拒绝 (403)", "Nccs API Error");
-        else if (msg.includes('500')) toastr.error("服务器错误 (500)", "Nccs API Error");
-        else toastr.error(`调用失败: ${msg}`, "Nccs API Error");
-
+    } catch (error) {
+        console.error(`[Amily2-Nccs] API 调用失败:`, error);
+        toastr.error(`调用失败: ${error.message}`, "Nccs API Error");
         return null;
     }
 }
 
+async function fetchFakeStream(url, opts) {
+    const res = await fetch(url, opts);
+    if (!res.ok) throw new Error(`Stream HTTP ${res.status}: ${await res.text()}`);
+    
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let fullContent = "";
+    let buffer = "";
+    
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed || trimmed === 'data: [DONE]') continue;
+                if (trimmed.startsWith('data: ')) {
+                    try {
+                        const json = JSON.parse(trimmed.substring(6));
+                        const delta = json.choices?.[0]?.delta?.content;
+                        if (delta) fullContent += delta;
+                    } catch (e) {
+                        console.warn('[NccsApi] SSE Parse Error:', e);
+                    }
+                }
+            }
+        }
+    } finally {
+        reader.releaseLock();
+    }
+    
+    if (!fullContent && buffer) {
+        try { 
+            const data = JSON.parse(buffer);
+            return data.choices?.[0]?.message?.content || data.content || buffer; 
+        } catch { return buffer; }
+    }
+    return fullContent;
+}
+
 // =================================================================================================
-// Legacy Implementations (保留旧代码以供降级使用)
+// Legacy Implementations
 // =================================================================================================
 
 function normalizeApiResponse(responseData) {
     let data = responseData;
     if (typeof data === 'string') {
-        try { data = JSON.parse(data); } catch (e) { return { error: { message: 'Invalid JSON' } }; }
+        try { data = JSON.parse(data); } catch (e) { return data; }
     }
-    if (data?.data?.data) data = data.data; // Unpack nested data
-    if (data?.choices?.[0]?.message?.content) return { content: data.choices[0].message.content.trim() };
-    if (data?.content) return { content: data.content.trim() };
-    if (data?.data) return { data: data.data };
-    if (data?.error) return { error: data.error };
-    return data;
+    if (data?.choices?.[0]?.message?.content) return data.choices[0].message.content.trim();
+    if (data?.content) return data.content.trim();
+    return typeof data === 'object' ? JSON.stringify(data) : data;
 }
 
 async function callNccsOpenAITest(messages, options) {
@@ -225,7 +172,7 @@ async function callNccsOpenAITest(messages, options) {
         model: options.model,
         reverse_proxy: options.apiUrl,
         proxy_password: options.apiKey,
-        stream: false, // 旧版不支持 FakeStream
+        stream: !!options.stream,
         max_tokens: options.maxTokens || 4000,
         temperature: options.temperature || 1,
         top_p: options.top_p || 1,
@@ -234,25 +181,23 @@ async function callNccsOpenAITest(messages, options) {
     if (!isGoogleApi) {
         Object.assign(body, {
             custom_prompt_post_processing: 'strict',
-            enable_web_search: false,
-            frequency_penalty: 0,
             presence_penalty: 0.12,
-            request_images: false,
         });
     }
 
-    const response = await fetch('/api/backends/chat-completions/generate', {
+    const fetchOpts = {
         method: 'POST',
         headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
-    });
+    };
 
-    if (!response.ok) {
-        throw new Error(`Legacy HTTP ${response.status}: ${await response.text()}`);
+    if (options.stream) {
+        return await fetchFakeStream('/api/backends/chat-completions/generate', fetchOpts);
     }
 
-    const responseData = await response.json();
-    return responseData?.choices?.[0]?.message?.content;
+    const response = await fetch('/api/backends/chat-completions/generate', fetchOpts);
+    if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+    return normalizeApiResponse(await response.json());
 }
 
 async function callNccsSillyTavernPreset(messages, options) {
@@ -269,7 +214,6 @@ async function callNccsSillyTavernPreset(messages, options) {
 
     try {
         if (originalProfile !== targetProfile.name) {
-            console.log(`[Legacy Switching profile: ${originalProfile} -> ${targetProfile.name}`);
             await amilyHelper.triggerSlash(`/profile await=true "${targetProfile.name.replace(/"/g, '\\"')}"`);
         }
 
@@ -281,9 +225,7 @@ async function callNccsSillyTavernPreset(messages, options) {
             options.maxTokens || 4000
         );
 
-        const normalized = normalizeApiResponse(result);
-        if (normalized.error) throw new Error(normalized.error.message);
-        return normalized.content;
+        return normalizeApiResponse(result);
 
     } finally {
         // Restore profile
@@ -293,7 +235,6 @@ async function callNccsSillyTavernPreset(messages, options) {
         }
     }
 }
-
 export async function fetchNccsModels() {
     console.log('[Amily2号-Nccs外交部] 开始获取模型列表');
 
