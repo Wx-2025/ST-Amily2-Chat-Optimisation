@@ -268,28 +268,32 @@ export default class ModelCaller {
      * 用于在手动构造请求时模拟 ST 后端行为
      */
     _buildProfilePayload(targetProfile) {
-        return {
-            // 基础模型参数
-            model: targetProfile.openai_model || targetProfile.model,
-            temperature: targetProfile.temperature,
-            frequency_penalty: targetProfile.frequency_penalty,
-            presence_penalty: targetProfile.presence_penalty,
-            top_p: targetProfile.top_p,
-            top_k: targetProfile.top_k,
-            min_p: targetProfile.min_p,
-            repetition_penalty: targetProfile.repetition_penalty,
-            
-            // 关键：OpenAI 源标记
-            chat_completion_source: targetProfile.chat_completion_source || 'openai',
-            
-            // 代理设置 (如果预设里有)
-            reverse_proxy: targetProfile.reverse_proxy,
-            proxy_password: targetProfile.proxy_password,
-            
-            // 其他可能影响生成的参数
-            custom_prompt_post_processing: targetProfile.custom_prompt_post_processing ?? 'strict',
-            include_reasoning: targetProfile.include_reasoning ?? false,
-        };
+        // 1. 全量继承 Profile 属性，防止遗漏自定义字段 (如 custom_url, user_name 等)
+        const payload = { ...targetProfile };
+
+        // 2. 规范化关键字段
+        // ST 的 Profile 里模型名可能叫 openai_model, claude_model 等，统一映射为 model
+        if (!payload.model) {
+            payload.model = payload.openai_model || payload.claude_model || payload.mistral_model || payload.text_generation_webui_model || '';
+        }
+
+        // 3. 确保 chat_completion_source 存在
+        if (!payload.chat_completion_source) {
+            payload.chat_completion_source = 'openai';
+        }
+
+        // 4. 处理 URL 映射 (OpenAI 兼容接口通常需要 reverse_proxy)
+        // 如果 Profile 里只有 custom_url 或 api_url，尝试映射给 reverse_proxy
+        if (!payload.reverse_proxy && (payload.custom_url || payload.api_url)) {
+            payload.reverse_proxy = payload.custom_url || payload.api_url;
+        }
+
+        // 5. 补充默认采样参数 (如果 Profile 里完全缺失)
+        if (payload.temperature === undefined) payload.temperature = 1;
+        if (payload.max_tokens === undefined) payload.max_tokens = 2000;
+        // 注意：top_p 等如果为 undefined，通常后端会用默认值，这里暂不强行赋值，以免覆盖后端逻辑
+
+        return payload;
     }
 }
 
