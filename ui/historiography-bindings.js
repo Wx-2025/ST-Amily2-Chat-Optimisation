@@ -408,6 +408,7 @@ function bindNgmsApiEvents() {
 
     // Ngms API 开关控制
     const ngmsToggle = document.getElementById('amily2_ngms_enabled');
+    const ngmsFakeStreamToggle = document.getElementById('amily2_ngms_fakestream_enabled');
     const ngmsContent = document.getElementById('amily2_ngms_content');
     
     if (ngmsToggle && ngmsContent) {
@@ -418,6 +419,13 @@ function bindNgmsApiEvents() {
             const isEnabled = this.checked;
             updateAndSaveSetting('ngmsEnabled', isEnabled);
             ngmsContent.style.display = isEnabled ? 'block' : 'none';
+        });
+    }
+
+    if (ngmsFakeStreamToggle) {
+        ngmsFakeStreamToggle.checked = extension_settings[extensionName].ngmsFakeStreamEnabled ?? false;
+        ngmsFakeStreamToggle.addEventListener('change', function() {
+            updateAndSaveSetting('ngmsFakeStreamEnabled', this.checked);
         });
     }
 

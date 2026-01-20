@@ -50,7 +50,8 @@ export function getNgmsApiSettings() {
         model: extension_settings[extensionName]?.ngmsModel || '',
         maxTokens: extension_settings[extensionName]?.ngmsMaxTokens || 4000,
         temperature: extension_settings[extensionName]?.ngmsTemperature || 0.7,
-        tavernProfile: extension_settings[extensionName]?.ngmsTavernProfile || ''
+        tavernProfile: extension_settings[extensionName]?.ngmsTavernProfile || '',
+        useFakeStream: extension_settings[extensionName]?.ngmsFakeStreamEnabled || false
     };
 }
 
@@ -73,11 +74,21 @@ export async function callNgmsAI(messages, options = {}) {
         ...options
     };
 
+    // 确保 stream 标志位存在
+    finalOptions.stream = finalOptions.useFakeStream ?? apiSettings.useFakeStream ?? false;
+
     if (finalOptions.apiMode !== 'sillytavern_preset') {
         if (!finalOptions.apiUrl || !finalOptions.model || !finalOptions.apiKey) {
             console.warn("[Amily2-Ngms外交部] API配置不完整，无法调用AI");
             toastr.error("API配置不完整，请检查URL、Key和模型配置。", "Ngms-外交部");
             return null;
+        }
+    } else {
+        // [限制] 预设模式暂不支持流式
+        if (finalOptions.stream) {
+            console.warn("[Amily2-Ngms] 预设模式目前尚不支持流式处理方案，已自动切换为标准模式。");
+            toastr.warning("SillyTavern预设模式目前暂不支持流式处理（假流式），已为您切换为标准请求模式。该功能将在后续版本中支持。", "Ngms-外交部");
+            finalOptions.stream = false;
         }
     }
 
@@ -87,6 +98,7 @@ export async function callNgmsAI(messages, options = {}) {
         model: finalOptions.model, 
         maxTokens: finalOptions.maxTokens, 
         temperature: finalOptions.temperature,
+        stream: finalOptions.stream,
         messagesCount: messages.length
     });
     console.log("【消息内容】:", messages);
@@ -139,6 +151,54 @@ export async function callNgmsAI(messages, options = {}) {
     }
 }
 
+async function fetchFakeStream(url, opts) {
+    const res = await fetch(url, opts);
+    if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Stream HTTP ${res.status}: ${errorText}`);
+    }
+    
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let fullContent = "";
+    let buffer = "";
+    
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop();
+
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed || trimmed === 'data: [DONE]') continue;
+                if (trimmed.startsWith('data: ')) {
+                    try {
+                        const json = JSON.parse(trimmed.substring(6));
+                        const delta = json.choices?.[0]?.delta?.content;
+                        if (delta) fullContent += delta;
+                    } catch (e) {
+                        console.warn('[NgmsApi] SSE Parse Error:', e);
+                    }
+                }
+            }
+        }
+    } finally {
+        reader.releaseLock();
+    }
+    
+    if (!fullContent && buffer) {
+        try { 
+            const data = JSON.parse(buffer);
+            return data.choices?.[0]?.message?.content || data.content || buffer; 
+        } catch { return buffer; }
+    }
+    return fullContent;
+}
+
 async function callNgmsOpenAITest(messages, options) {
     const isGoogleApi = options.apiUrl.includes('googleapis.com');
 
@@ -148,7 +208,7 @@ async function callNgmsOpenAITest(messages, options) {
         model: options.model,
         reverse_proxy: options.apiUrl,
         proxy_password: options.apiKey,
-        stream: false,
+        stream: !!options.stream,
         max_tokens: options.maxTokens || 30000,
         temperature: options.temperature || 1,
         top_p: options.top_p || 1,
@@ -167,11 +227,17 @@ async function callNgmsOpenAITest(messages, options) {
         });
     }
 
-    const response = await fetch('/api/backends/chat-completions/generate', {
+    const fetchOpts = {
         method: 'POST',
         headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
-    });
+    };
+
+    if (options.stream) {
+        return await fetchFakeStream('/api/backends/chat-completions/generate', fetchOpts);
+    }
+
+    const response = await fetch('/api/backends/chat-completions/generate', fetchOpts);
 
     if (!response.ok) {
         const errorText = await response.text();
