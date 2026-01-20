@@ -114,13 +114,49 @@ export default class ModelCaller {
                 // 难点：ST 的 ConnectionManagerRequestService 不暴露流。
                 // 策略：切换 Profile 后，手动向生成接口发送请求。
                 const url = '/api/backends/chat-completions/generate';
-                // Preset 模式下只需要最小载荷
-                const payload = requestBody.toMinimalPayload();
+                
+                // [修复]: 手动合并 Profile 中的关键参数，否则后端不会自动应用预设配置
+                // 我们需要模拟 ST 前端发送请求时的行为，把预设参数填进去
+                const profilePayload = {
+                    // 基础模型参数
+                    model: targetProfile.openai_model || targetProfile.model,
+                    temperature: targetProfile.temperature,
+                    frequency_penalty: targetProfile.frequency_penalty,
+                    presence_penalty: targetProfile.presence_penalty,
+                    top_p: targetProfile.top_p,
+                    top_k: targetProfile.top_k,
+                    min_p: targetProfile.min_p,
+                    repetition_penalty: targetProfile.repetition_penalty,
+                    
+                    // 关键：OpenAI 源标记
+                    chat_completion_source: targetProfile.chat_completion_source || 'openai',
+                    
+                    // 代理设置 (如果预设里有)
+                    reverse_proxy: targetProfile.reverse_proxy,
+                    proxy_password: targetProfile.proxy_password,
+                    
+                    // 其他可能影响生成的参数
+                    custom_prompt_post_processing: targetProfile.custom_prompt_post_processing ?? 'strict',
+                };
+
+                // 合并顺序：基础Payload(msg) < Profile预设 < 显式Params覆盖
+                // toMinimalPayload 包含: messages, stream, max_tokens, ...params
+                // 我们需要把 profilePayload 塞在中间，被 params 覆盖
+                const minimal = requestBody.toMinimalPayload();
+                
+                // 剔除 minimal 中可能已经存在的 undefined 属性，避免覆盖 profile 的有效值
+                // 但实际上 minimal 中的 ...params 是用户强指定的，应该覆盖 profile
+                
+                const finalPayload = {
+                    ...profilePayload,
+                    ...minimal, // 包含 messages, stream, max_tokens
+                    ...options.params // 再次确保显式参数优先级最高 (minimal里其实已经含了，这里双保险)
+                };
 
                 const fetchOpts = {
                     method: 'POST',
                     headers: { ...getRequestHeaders(), ...this.defaultHeaders },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(finalPayload)
                 };
                 return await this._fetchFakeStream(url, fetchOpts);
             } else {
