@@ -729,3 +729,25 @@ hr.header-divider {
 #amily2_test_api_connection {
     margin-left: 10px;
 }
+
+/* === 消息高亮样式 === */
+.highlight_message {
+    animation: highlight-pulse 2s ease-out;
+    border: 2px solid #ff9800 !important;
+    box-shadow: 0 0 15px rgba(255, 152, 0, 0.5);
+}
+
+@keyframes highlight-pulse {
+    0% {
+        background-color: rgba(255, 152, 0, 0.3);
+        transform: scale(1.02);
+    }
+    50% {
+        background-color: rgba(255, 152, 0, 0.1);
+        transform: scale(1);
+    }
+    100% {
+        background-color: transparent;
+        transform: scale(1);
+    }
+}
