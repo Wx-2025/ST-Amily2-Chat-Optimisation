@@ -1,0 +1,558 @@
+import { extension_settings, getContext } from "/scripts/extensions.js";
+import { characters, eventSource, event_types } from "/script.js";
+import { loadWorldInfo, createNewWorldInfo, createWorldInfoEntry, saveWorldInfo, world_names, updateWorldInfoList } from "/scripts/world-info.js";
+import { compatibleWriteToLorebook, safeLorebooks, safeCharLorebooks, safeLorebookEntries } from "./tavernhelper-compatibility.js";
+import { extensionName } from "../utils/settings.js";
+
+
+document.addEventListener('amily-lorebook-created', (event) => {
+    if (event.detail && event.detail.bookName) {
+        console.log(`[Amily2-国史馆] 监听到史书《${event.detail.bookName}》变更，即刻通报工部刷新宫殿。`);
+        refreshWorldbookListOnly(event.detail.bookName);
+    }
+});
+
+
+export const LOREBOOK_PREFIX = "Amily2档案-";
+export const DEDICATED_LOREBOOK_NAME = "Amily2号-国史馆";
+export const INTRODUCTORY_TEXT =
+  "【Amily2号自动档案】\n此卷宗由Amily2号优化助手自动生成并维护，记录核心事件脉络。\n---\n";
+
+export async function getChatIdentifier() {
+  let attempts = 0;
+  const maxAttempts = 50;
+  const interval = 100;
+
+  while (attempts < maxAttempts) {
+    try {
+      const context = getContext();
+      if (context && context.characterId) {
+        const character = characters[context.characterId];
+        if (character && character.avatar) {
+          return `char-${character.avatar.replace(/\.(png|webp|jpg|jpeg|gif)$/, "")}`;
+        }
+        return `char-${context.characterId}`;
+      }
+      if (context && context.chat_filename) {
+        const fileName = context.chat_filename.split(/[\\/]/).pop();
+        return fileName.replace(/\.jsonl?$/, "");
+      }
+    } catch (error) {
+      console.warn(
+        `[Amily2-户籍管理处] 等待上下文时发生轻微错误 (尝试次数 ${attempts + 1}):`,
+        error.message,
+      );
+    }
+    await new Promise((resolve) => setTimeout(resolve, interval));
+    attempts++;
+  }
+
+  console.error("[Amily2-国史馆] 户籍管理处在长时间等待后，仍无法确定户籍。");
+  toastr.warning(
+    "Amily2号无法确定当前聊天身份，世界书功能将受影响。",
+    "上下文错误",
+  );
+  return "unknown_chat_timeout";
+}
+
+export async function findLatestSummaryLore(lorebookName, chatIdentifier) {
+  try {
+    const bookData = await loadWorldInfo(lorebookName);
+    if (!bookData || !bookData.entries) {
+      return null;
+    }
+    const entriesArray = Object.values(bookData.entries);
+    const uniqueLoreName = `${LOREBOOK_PREFIX}${chatIdentifier}`;
+    return (
+      entriesArray.find(
+        (entry) => entry.comment === uniqueLoreName && !entry.disable,
+      ) || null
+    );
+  } catch (error) {
+    console.error(
+      `[Amily2-国史馆] 钦差大臣在 '${lorebookName}' 检索时发生错误:`,
+      error,
+    );
+    return null;
+  }
+}
+
+export async function getCombinedWorldbookContent(lorebookName) {
+  if (!lorebookName) return "";
+  try {
+    const bookData = await loadWorldInfo(lorebookName);
+    if (!bookData || !bookData.entries) {
+      return "";
+    }
+    const activeContents = Object.values(bookData.entries)
+      .filter((entry) => !entry.disable)
+      .map((entry) => `[条目: ${entry.comment || "无标题"}]\n${entry.content}`);
+    return activeContents.join("\n\n---\n\n");
+  } catch (error) {
+    console.error(
+      `[Amily2-国史馆] 钦差大臣在整合 '${lorebookName}' 时发生错误:`,
+      error,
+    );
+    toastr.error(`读取世界书 '${lorebookName}' 失败!`, "档案整合错误");
+    return "";
+  }
+}
+
+export async function refreshWorldbookListOnly(newBookName = null) {
+    console.log("[Amily2号-工部-v2.0] 执行SillyTavern核心UI刷新...");
+    try {
+        await updateWorldInfoList();
+        console.log("[Amily2号-工部] SillyTavern核心刷新函数 (updateWorldInfoList) 调用成功。");
+    } catch (error) {
+        console.error("[Amily2号-工部] 调用核心刷新函数时出错:", error);
+        toastr.error("Amily2号调用核心UI刷新函数时失败。", "核心刷新失败");
+    }
+}
+
+export async function writeSummaryToLorebook(pendingData) {
+    if (!pendingData || !pendingData.summary || !pendingData.sourceAiMessageTimestamp || !pendingData.settings) {
+        console.warn("[Amily助手-国史馆] 接到一份残缺的待办文书，写入任务已中止。", pendingData);
+        return;
+    }
+
+    const context = getContext();
+    const chat = context.chat;
+    let isSourceMessageValid = false;
+    let sourceMessageCandidate = null;
+    // 寻找最新的 AI 消息以进行时间戳验证
+    for (let i = chat.length - 1; i >= 0; i--) {
+        if (!chat[i].is_user) {
+            sourceMessageCandidate = chat[i];
+            break;
+        }
+    }
+
+    if (sourceMessageCandidate && sourceMessageCandidate.send_date === pendingData.sourceAiMessageTimestamp) {
+        isSourceMessageValid = true;
+    }
+
+    if (!isSourceMessageValid) {
+        console.log("[Amily助手-逆时寻踪] 裁决: 源消息已被修改或删除，遵旨废黜过时总结。");
+        return;
+    }
+
+    const { summary: summaryToCommit, settings } = pendingData;
+
+    console.groupCollapsed(`[Amily助手-存档任务] ${new Date().toLocaleTimeString()}`);
+    console.time("总结写入总耗时");
+
+    try {
+        const chatIdentifier = await getChatIdentifier();
+        const character = characters[context.characterId];
+        let targetLorebookName = null;
+
+        switch (settings.target) {
+            case "character_main":
+                targetLorebookName = character?.data?.extensions?.world;
+                if (!targetLorebookName) {
+                    toastr.warning("角色未绑定主世界书，总结写入任务已中止。", "Amily助手");
+                    console.groupEnd();
+                    return;
+                }
+                break;
+            case "dedicated":
+                targetLorebookName = `${DEDICATED_LOREBOOK_NAME}-${chatIdentifier}`;
+                break;
+            default:
+                toastr.error(`收到未知的写入指令: "${settings.target}"`, "Amily助手");
+                console.groupEnd();
+                return;
+        }
+
+        const uniqueLoreName = `${LOREBOOK_PREFIX}${chatIdentifier}`;
+
+        // 定义内容更新的回调函数
+        const contentUpdateCallback = (existingContent) => {
+            if (existingContent) {
+                // 如果条目已存在，追加内容
+                const cleanedContent = existingContent.replace(INTRODUCTORY_TEXT, "").trim();
+                const lines = cleanedContent ? cleanedContent.split("\n") : [];
+                const nextNumber = lines.length + 1;
+                return `${existingContent}\n${nextNumber}. ${summaryToCommit}`;
+            } else {
+                // 如果条目不存在，创建新内容
+                return `${INTRODUCTORY_TEXT}1. ${summaryToCommit}`;
+            }
+        };
+
+        // 定义写入选项
+        const options = {
+            keys: settings.keywords.split(',').map(k => k.trim()).filter(Boolean),
+            isConstant: settings.activationMode === 'always',
+            insertion_position: settings.insertionPosition,
+            depth: settings.depth,
+        };
+
+        // 使用统一的兼容性写入函数
+        const success = await compatibleWriteToLorebook(targetLorebookName, uniqueLoreName, contentUpdateCallback, options);
+
+        if (success) {
+            toastr.success(`总结已成功写入《${targetLorebookName}》！`, "Amily助手");
+        } else {
+            toastr.error(`总结写入《${targetLorebookName}》时失败。`, "Amily助手");
+        }
+
+    } catch (error) {
+        console.error("[Amily助手-写入失败] 写入流程发生意外错误:", error);
+        toastr.error("后台写入总结时发生错误。", "Amily助手");
+    } finally {
+        console.timeEnd("总结写入总耗时");
+        console.groupEnd();
+    }
+}
+
+export async function getOptimizationWorldbookContent() {
+    const settings = extension_settings[extensionName];
+    if (!settings || !settings.modal_wbEnabled) {
+        return '';
+    }
+
+    try {
+        let bookNames = [];
+        if (settings.modal_wbSource === 'manual') {
+            bookNames = settings.modal_amily2_wb_selected_worldbooks || [];
+        } else { // 'character' source
+            const charLorebooks = await safeCharLorebooks({ type: 'all' });
+            if (charLorebooks.primary) bookNames.push(charLorebooks.primary);
+            if (charLorebooks.additional?.length) bookNames.push(...charLorebooks.additional);
+        }
+
+        if (bookNames.length === 0) {
+            console.log('[Amily2-正文优化] No world books selected or linked for optimization.');
+            return '';
+        }
+
+        let allEntries = [];
+        for (const bookName of bookNames) {
+            if (bookName) {
+                const entries = await safeLorebookEntries(bookName);
+                if (entries?.length) {
+                    entries.forEach(entry => allEntries.push({ ...entry, bookName }));
+                }
+            }
+        }
+
+        const selectedEntriesConfig = settings.modal_amily2_wb_selected_entries || {};
+
+        const userEnabledEntries = allEntries.filter(entry => {
+            // Entry must be enabled in the lorebook itself
+            if (!entry.enabled) return false;
+            
+            // Check against our UI selection
+            const bookConfig = selectedEntriesConfig[entry.bookName];
+            return bookConfig ? bookConfig.includes(String(entry.uid)) : false;
+        });
+
+        if (userEnabledEntries.length === 0) {
+            console.log('[Amily2-正文优化] No entries are selected for optimization in the chosen world books.');
+            return '';
+        }
+
+        const finalContent = userEnabledEntries.map(entry => entry.content).filter(Boolean);
+        const combinedContent = finalContent.join('\n\n---\n\n');
+        
+        console.log(`[Amily2-正文优化] Loaded ${userEnabledEntries.length} world book entries, total length: ${combinedContent.length}`);
+        return combinedContent;
+
+    } catch (error) {
+        console.error(`[Amily2-正文优化] Processing world book content failed:`, error);
+        return '';
+    }
+}
+
+
+export async function getPlotOptimizedWorldbookContent(context, apiSettings, isConcurrent = false) {
+    const panel = $('#amily2_plot_optimization_panel');
+    let liveSettings = {};
+
+    const isPanelReady = panel.length > 0 && panel.find('#amily2_opt_worldbook_entry_list_container input[type="checkbox"]').length > 0;
+
+    if (isConcurrent) {
+        // This is a concurrent call, force use of passed apiSettings
+        console.log('[剧情优化大师] 检测到并发调用，强制使用传入的并发世界书设置。');
+        liveSettings = {
+            worldbookEnabled: apiSettings.plotOpt_worldbook_enabled,
+            worldbookSource: apiSettings.plotOpt_worldbook_source || 'character',
+            selectedWorldbooks: apiSettings.plotOpt_selectedWorldbooks || [],
+            autoSelectWorldbooks: apiSettings.plotOpt_autoSelectWorldbooks || [],
+            worldbookCharLimit: apiSettings.plotOpt_worldbookCharLimit,
+            enabledWorldbookEntries: null, // Let the logic below handle it based on selected books.
+        };
+    } else if (isPanelReady) {
+        // This is a main call and the panel is ready, read from UI.
+        liveSettings.worldbookEnabled = panel.find('#amily2_opt_worldbook_enabled').is(':checked');
+        liveSettings.newMemoryLogicEnabled = panel.find('#amily2_opt_new_memory_logic_enabled').is(':checked');
+        liveSettings.worldbookSource = panel.find('input[name="amily2_opt_worldbook_source"]:checked').val() || 'character';
+        
+        liveSettings.selectedWorldbooks = [];
+        if (liveSettings.worldbookSource === 'manual') {
+            panel.find('#amily2_opt_worldbook_checkbox_list input[type="checkbox"]:not(.amily2_opt_wb_auto_check):checked').each(function() {
+                liveSettings.selectedWorldbooks.push($(this).val());
+            });
+        }
+
+        liveSettings.autoSelectWorldbooks = [];
+        panel.find('#amily2_opt_worldbook_checkbox_list input.amily2_opt_wb_auto_check:checked').each(function() {
+            liveSettings.autoSelectWorldbooks.push($(this).data('book'));
+        });
+
+        liveSettings.worldbookCharLimit = parseInt(panel.find('#amily2_opt_worldbook_char_limit').val(), 10) || 60000;
+        liveSettings.contextLimit = parseInt(panel.find('#amily2_opt_context_limit').val(), 10) || 5;
+
+        let enabledEntries = {};
+        panel.find('#amily2_opt_worldbook_entry_list_container input[type="checkbox"]:checked').each(function() {
+            const bookName = $(this).data('book');
+            const uid = parseInt($(this).data('uid'));
+            if (!enabledEntries[bookName]) {
+                enabledEntries[bookName] = [];
+            }
+            enabledEntries[bookName].push(uid);
+        });
+        liveSettings.enabledWorldbookEntries = enabledEntries;
+    } else {
+        // Fallback for main call when panel is not ready.
+        if (panel.length > 0) {
+            console.warn('[剧情优化大师] 检测到UI面板但内容未完全加载，回退到使用已保存的设置。');
+        } else {
+            console.warn('[剧情优化大师] 未找到设置面板，世界书功能将使用已保存的设置。');
+        }
+        
+        liveSettings = {
+            worldbookEnabled: apiSettings.plotOpt_worldbookEnabled,
+            newMemoryLogicEnabled: apiSettings.plotOpt_newMemoryLogicEnabled,
+            worldbookSource: apiSettings.plotOpt_worldbookSource || 'character',
+            selectedWorldbooks: apiSettings.plotOpt_selectedWorldbooks,
+            autoSelectWorldbooks: apiSettings.plotOpt_autoSelectWorldbooks || [],
+            worldbookCharLimit: apiSettings.plotOpt_worldbookCharLimit,
+            contextLimit: apiSettings.plotOpt_contextLimit || 5,
+            enabledWorldbookEntries: apiSettings.plotOpt_enabledWorldbookEntries,
+        };
+    }
+
+    if (!liveSettings.worldbookEnabled) {
+        return '';
+    }
+
+    if (!context) {
+        console.warn('[剧情优化大师] context 未提供，无法获取世界书内容。');
+        return '';
+    }
+
+    try {
+        let bookNames = [];
+        
+        if (liveSettings.worldbookSource === 'manual') {
+            bookNames = liveSettings.selectedWorldbooks;
+            if (bookNames.length === 0) return '';
+        } else {
+            const charLorebooks = await safeCharLorebooks({ type: 'all' });
+            if (charLorebooks.primary) bookNames.push(charLorebooks.primary);
+            if (charLorebooks.additional?.length) bookNames.push(...charLorebooks.additional);
+            if (bookNames.length === 0) return '';
+        }
+
+        let allEntries = [];
+        for (const bookName of bookNames) {
+            if (bookName) {
+                const entries = await safeLorebookEntries(bookName);
+                if (entries?.length) {
+                    entries.forEach(entry => allEntries.push({ ...entry, bookName }));
+                }
+            }
+        }
+
+        if (allEntries.length === 0) return '';
+        
+        const enabledEntriesMap = liveSettings.enabledWorldbookEntries; // Can be null for concurrent
+        const autoSelectedBooks = liveSettings.autoSelectWorldbooks || [];
+
+        const userEnabledEntries = allEntries.filter(entry => {
+            if (!entry.enabled) return false;
+
+            // New Memory Logic
+            if (liveSettings.newMemoryLogicEnabled) {
+                const character = characters[context.characterId];
+                const charName = character ? (character.data?.name || character.name) : null;
+                
+                if (charName && entry.bookName === `Amily2_Memory_${charName}`) {
+                    const keywords = [...new Set([...(entry.key || []), ...(entry.keys || [])])];
+                    if (keywords.some(k => k.includes('索引'))) {
+                        entry.constant = true; // Blue Light (Constant)
+                        entry.prevent_recursion = true; // Prevent Index from triggering other entries
+                    } else {
+                        // Ensure it's not constant unless it was already constant in ST (which we might want to respect, or override?)
+                        // The requirement says: "其余的绿灯条目，则依照SittlyTavern原本的绿灯关键词的触发逻辑"
+                        // This implies we should treat them as potential Green Lights.
+                        // In my logic, if entry.constant is false, it becomes a Green Light candidate.
+                        // However, ST entries have a `constant` property. `safeLorebookEntries` returns it.
+                        // If the entry was originally constant in ST, should we keep it constant?
+                        // The requirement says "原逻辑转换...".
+                        // "只要关键词里面包含索引，则将所有索引条目发送给我们的模型。"
+                        // "而其余的绿灯条目..."
+                        // This implies we are redefining what is constant/triggered based on this logic.
+                        // So I will force constant=false if it doesn't have "索引".
+                        entry.constant = false;
+                    }
+                    return true; // Always include as candidate
+                }
+            }
+
+            // For concurrent calls where enabledWorldbookEntries is null, or for books marked as "auto-select",
+            // we consider all enabled entries within that book as selected.
+            const isAuto = autoSelectedBooks.includes(entry.bookName);
+            if (isConcurrent || isAuto) {
+                entry.constant = true; // Force as constant if auto-selected or concurrent
+                return true;
+            }
+
+            // For main calls with manual entry selection
+            if (enabledEntriesMap) {
+                const bookConfig = enabledEntriesMap[entry.bookName];
+                const isChecked = (bookConfig ? (bookConfig.includes(entry.uid) || bookConfig.includes(String(entry.uid))) : false);
+                
+                if (isChecked) {
+                    entry.constant = true; // Force as constant if checked in UI
+                }
+                // If not checked, it relies on its own constant/green-light status.
+                return true; 
+            }
+            
+            // Default case if something goes wrong (should not be reached)
+            return false;
+        });
+
+        if (userEnabledEntries.length === 0) return '';
+        
+        let messagesToScan = context.chat;
+        if (liveSettings.contextLimit > 0) {
+            messagesToScan = context.chat.slice(-liveSettings.contextLimit);
+        }
+        const chatHistory = messagesToScan.map(message => message.mes).join('\n').toLowerCase();
+        const getEntryKeywords = (entry) => [...new Set([...(entry.key || []), ...(entry.keys || [])])]
+            .filter(k => k && k.trim().length > 0)
+            .map(k => k.toLowerCase());
+
+        const blueLightEntries = userEnabledEntries.filter(entry => entry.constant);
+        let pendingGreenLights = userEnabledEntries.filter(entry => !entry.constant);
+        
+        const triggeredEntries = new Set([...blueLightEntries]);
+
+        // 禁用递归扫描，防止总结/索引条目触发所有内容。
+        // 仅扫描聊天记录。
+        for (const entry of pendingGreenLights) {
+            const keywords = getEntryKeywords(entry);
+            const secondaryKeys = (entry.secondary_keys || []).filter(k => k && k.trim().length > 0).map(k => k.toLowerCase());
+            const selectiveKeys = (entry.selective || []).filter(k => k && k.trim().length > 0).map(k => k.toLowerCase());
+            
+            // 仅检查聊天记录，忽略其他条目的内容（防止递归触发）
+            const checkText = chatHistory;
+            
+            const hasPrimary = keywords.length > 0 && keywords.some(k => checkText.includes(k));
+            const hasSecondary = secondaryKeys.length === 0 || secondaryKeys.some(k => checkText.includes(k));
+            const hasSelective = selectiveKeys.length > 0 && selectiveKeys.some(k => checkText.includes(k));
+
+            let isTriggered = hasPrimary && hasSecondary && !hasSelective;
+
+            if (isTriggered) {
+                triggeredEntries.add(entry);
+            }
+        }
+
+        const finalEntries = Array.from(triggeredEntries);
+        
+        // 排序：索引内容（常驻且防递归） > 触发的条目 > 其他常驻
+        finalEntries.sort((a, b) => {
+            const isIndex = (e) => e.constant && e.prevent_recursion;
+            const isTriggered = (e) => !e.constant;
+            
+            const getPriority = (e) => {
+                if (isIndex(e)) return 1;
+                if (isTriggered(e)) return 2;
+                return 3; // 其他常驻
+            };
+
+            return getPriority(a) - getPriority(b);
+        });
+
+        const finalContent = finalEntries.map(entry => {
+            const keys = [...new Set([...(entry.key || []), ...(entry.keys || [])])].filter(Boolean).join('、');
+            const displayName = entry.comment || `Entry ${entry.uid}`;
+            return `【世界书条目：${displayName}。绿灯触发关键词：${keys}】\n内容：${entry.content}`;
+        }).filter(Boolean);
+        if (finalContent.length === 0) return '';
+
+        const combinedContent = finalContent.join('\n\n---\n\n');
+        
+        const limit = liveSettings.worldbookCharLimit;
+        if (combinedContent.length > limit) {
+            console.log(`[剧情优化大师] 世界书内容 (${combinedContent.length} chars) 超出限制 (${limit} chars)，将被截断。`);
+            return combinedContent.substring(0, limit);
+        }
+
+        return combinedContent;
+
+    } catch (error) {
+        console.error(`[剧情优化大师] 处理世界书逻辑时出错:`, error);
+        return '';
+    }
+}
+
+
+export async function manageLorebookEntriesForChat() {
+    try {
+        const chatIdentifier = await getChatIdentifier();
+        if (!chatIdentifier || chatIdentifier.startsWith("unknown_chat")) {
+            console.error(`[Amily2-国史馆] 无法获取有效的聊天标识符，中止条目状态管理。`);
+            return;
+        }
+
+        const context = getContext();
+        if (!context || !context.characterId) {
+            console.log("[Amily2-国史馆] 未选择任何角色，跳过世界书管理。");
+            return;
+        }
+
+        const charLorebooks = await safeCharLorebooks({ type: 'all' });
+        const bookNames = [];
+        if (charLorebooks.primary) bookNames.push(charLorebooks.primary);
+        if (charLorebooks.additional?.length) bookNames.push(...charLorebooks.additional);
+
+        const dedicatedBookName = `${DEDICATED_LOREBOOK_NAME}-${chatIdentifier}`;
+        if (!bookNames.includes(dedicatedBookName)) {
+            bookNames.push(dedicatedBookName);
+        }
+
+        for (const bookName of bookNames) {
+            if (!world_names.includes(bookName)) continue; 
+
+            const entries = await safeLorebookEntries(bookName);
+            const entriesToUpdate = [];
+
+            for (const entry of entries) {
+                if (entry.comment && entry.comment.startsWith(LOREBOOK_PREFIX)) {
+                    const isForCurrentChat = entry.comment.includes(chatIdentifier);
+                    if (isForCurrentChat && entry.disable) {
+                        entriesToUpdate.push({ uid: entry.uid, enabled: true });
+                    } else if (!isForCurrentChat && !entry.disable) {
+                        entriesToUpdate.push({ uid: entry.uid, enabled: false });
+                    }
+                }
+            }
+
+            if (entriesToUpdate.length > 0) {
+                const success = await safeUpdateLorebookEntries(bookName, entriesToUpdate);
+                if (success) {
+                    console.log(`[Amily2-国史馆] 已为《${bookName}》更新了 ${entriesToUpdate.length} 个条目的状态以匹配当前聊天: ${chatIdentifier}`);
+                }
+            }
+        }
+
+    } catch (error) {
+        console.error("[Amily2-国史馆] 管理世界书条目状态时发生错误:", error);
+    }
+}

@@ -1,0 +1,803 @@
+:root {
+    --amily2-bg-color: #2C2C2C;
+    --amily2-button-color: #4A4A4A;
+    --amily2-text-color: #E0E0E0;
+}
+
+
+/* ------------------ 整体模态窗口布局 ------------------ */
+#hly-modal-container {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--amily2-text-color);
+    background-color: transparent;
+    padding: 15px;
+    border-radius: 8px;
+    max-width: 90vw; /* 限制最大宽度 */
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* ------------------ 滚动区域 ------------------ */
+#hly-modal-container .hly-scroll {
+    max-height: 60vh; /* 限制最大高度 */
+    overflow-y: auto;
+    padding-right: 10px; /* 为滚动条留出空间 */
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+
+#hly-modal-container .hly-scroll::-webkit-scrollbar {
+    width: 8px;
+}
+#hly-modal-container .hly-scroll::-webkit-scrollbar-track {
+    background: #333;
+    border-radius: 4px;
+}
+#hly-modal-container .hly-scroll::-webkit-scrollbar-thumb {
+    background-color: #555;
+    border-radius: 4px;
+    border: 2px solid #333;
+}
+#hly-modal-container .hly-scroll::-webkit-scrollbar-thumb:hover {
+    background-color: #777;
+}
+
+/* ------------------ 头部 & 分割线 ------------------ */
+#hly-modal-container .amily2-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 10px;
+}
+#hly-modal-container .additional-features-title {
+    font-size: 1.5em;
+    font-weight: bold;
+    color: #8A2BE2; /* 紫罗兰色 */
+}
+#hly-modal-container .header-divider {
+    border: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, #555, transparent);
+    margin: 0;
+}
+
+/* ------------------ 状态诏书 (顶部信息面板) ------------------ */
+#hly-modal-container .hly-imperial-edict {
+    background-color: transparent;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+#hly-modal-container .hly-edict-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+#hly-modal-container .hly-edict-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+#hly-modal-container .hly-edict-label {
+    color: #AAA;
+    font-size: 0.9em;
+}
+#hly-modal-container .hly-edict-value {
+    color: #E0E0E0;
+    font-weight: bold;
+    background-color: #383838;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+#hly-modal-container .hly-memory-display .hly-memory-count {
+    color: #4CAF50; /* 绿色 */
+}
+#hly-modal-container .hly-locked-status {
+    color: #8A2BE2 !important; /* 锁定状态用醒目的紫罗兰色 */
+    font-style: italic;
+}
+
+/* ------------------ 司南 (导航栏) ------------------ */
+#hly-modal-container .hly-navigation-deck {
+    display: flex;
+    background-color: transparent;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #444;
+}
+#hly-modal-container .hly-nav-item {
+    flex-grow: 1;
+    padding: 10px 15px;
+    text-align: center;
+    cursor: pointer;
+    background-color: transparent;
+    color: #CCC;
+    border: none;
+    border-right: 1px solid #444;
+    transition: background-color 0.3s, color 0.3s;
+}
+#hly-modal-container .hly-nav-item:last-child {
+    border-right: none;
+}
+#hly-modal-container .hly-nav-item:hover {
+    background-color: #454545;
+    color: #FFF;
+}
+#hly-modal-container .hly-nav-item.active {
+    background-color: #8A2BE2;
+    color: #FFFFFF;
+    font-weight: bold;
+}
+
+/* ------------------ 标签页内容 ------------------ */
+#hly-modal-container .hly-tab-pane {
+    display: none;
+    flex-direction: column;
+    gap: 15px;
+}
+#hly-modal-container .hly-tab-pane.active {
+    display: flex;
+}
+
+/* 【V11.4 废弃】注入面板的显示/隐藏逻辑已完全由 hanlinyuan-bindings.js 通过直接修改style属性来控制。*/
+
+
+/* ------------------ 设置组 (Fieldset) ------------------ */
+#hly-modal-container .hly-settings-group {
+    border: 1px solid #4A4A4A;
+    border-radius: 6px;
+    padding: 15px;
+    background-color: transparent;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+#hly-modal-container .hly-settings-group legend {
+    color: #8A2BE2;
+    font-weight: bold;
+    padding: 0 10px;
+    margin-left: 5px;
+}
+#hly-modal-container .hly-settings-group legend i {
+    margin-right: 8px;
+}
+
+/* ------------------ 通用控件样式 ------------------ */
+#hly-modal-container .hly-control-block {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+#hly-modal-container .hly-control-block label {
+    color: #CCC;
+    font-size: 0.95em;
+}
+#hly-modal-container .hly-imperial-brush { /* 通用输入框/下拉框样式 */
+    width: 100%;
+    background-color: transparent;
+    color: #E0E0E0;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 8px;
+    box-sizing: border-box;
+}
+#hly-modal-container .hly-imperial-brush:focus {
+    outline: none;
+    border-color: #8A2BE2;
+    box-shadow: 0 0 5px rgba(138, 43, 226, 0.5);
+}
+#hly-modal-container .hly-notes {
+    font-size: 0.8em;
+    color: #888;
+    margin-top: 2px;
+}
+
+/* ------------------ 【V15.2 紧急修复】优先检索排版修正 ------------------ */
+#hly-modal-container .hly-priority-source-config .hly-control-block {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px; /* 为元素之间提供一些间距 */
+}
+#hly-modal-container .hly-priority-source-config .hly-control-block label:not(.hly-checkbox-label) {
+    white-space: nowrap; /* 防止 "固定检索:" 换行 */
+    flex-shrink: 0;
+}
+#hly-modal-container .hly-priority-source-config .hly-control-block .hly-imperial-brush {
+    width: 60px; /* 固定输入框宽度 */
+    flex-shrink: 0;
+    text-align: center;
+}
+#hly-modal-container .hly-priority-source-config .hly-control-block > span {
+    flex-shrink: 0;
+}
+
+/* ------------------ 按钮组 ------------------ */
+#hly-modal-container .hly-button-group {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+#hly-modal-container .hly-action-button {
+    background-color: var(--amily2-button-color);
+    color: var(--amily2-text-color);
+    border: 1px solid #666;
+    border-radius: 4px;
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.3s, border-color 0.3s;
+}
+#hly-modal-container .hly-action-button:hover {
+    background-color: #5A5A5A;
+    border-color: #888;
+}
+#hly-modal-container .hly-action-button.success {
+    background-color: #4CAF50;
+    border-color: #66BB6A;
+}
+#hly-modal-container .hly-action-button.success:hover {
+    background-color: #5CB85C;
+}
+#hly-modal-container .hly-action-button.danger {
+    background-color: #D9534F;
+    border-color: #E57373;
+}
+#hly-modal-container .hly-action-button.danger:hover {
+    background-color: #E57373;
+}
+#hly-modal-container .hly-action-button.active {
+    background-color: #8A2BE2;
+    color: #FFFFFF;
+    border-color: #9370DB;
+}
+
+/* ------------------ 开关 (Toggle Switch) ------------------ */
+#hly-modal-container .hly-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+}
+#hly-modal-container .hly-toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+#hly-modal-container .hly-toggle-switch .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #555;
+    transition: .4s;
+    border-radius: 24px;
+}
+#hly-modal-container .hly-toggle-switch .slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+#hly-modal-container input:checked + .slider {
+    background-color: #4CAF50;
+}
+#hly-modal-container input:checked + .slider:before {
+    transform: translateX(20px);
+}
+
+/* ------------------ 复选框和单选框 ------------------ */
+#hly-modal-container .hly-checkbox-group,
+#hly-modal-container .hly-radio-group-vertical {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+#hly-modal-container .hly-radio-group-vertical {
+    flex-direction: column;
+    gap: 10px;
+}
+#hly-modal-container .hly-checkbox-group label,
+#hly-modal-container .hly-radio-label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    cursor: pointer;
+}
+
+/* ------------------ 结果显示区域 ------------------ */
+#hly-modal-container .hly-results-display,
+#hly-modal-container .hly-log-display {
+    background-color: transparent;
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 10px;
+    min-height: 80px;
+    max-height: 200px;
+    overflow-y: auto;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+#hly-modal-container .hly-record-hint {
+    color: #888;
+    font-style: italic;
+}
+
+/* ------------------ 日志条目样式 ------------------ */
+#hly-modal-container .hly-log-entry {
+    margin: 0 0 5px 0;
+    padding: 2px 5px;
+    border-radius: 3px;
+}
+#hly-modal-container .hly-log-entry i {
+    margin-right: 8px;
+}
+#hly-modal-container .log-info { color: #A6A6A6; }
+#hly-modal-container .log-success { color: #76C7C0; }
+#hly-modal-container .log-error { color: #F47174; }
+#hly-modal-container .log-warn { color: #F9D56E; }
+
+/* ------------------ 文件上传控件 ------------------ */
+#hly-modal-container .file-input-container {
+    position: relative;
+    overflow: hidden;
+    display: inline-block;
+}
+#hly-modal-container .file-input-container input[type=file] {
+    font-size: 100px;
+    position: absolute;
+    left: 0;
+    top: 0;
+    opacity: 0;
+}
+#hly-modal-container .file-name {
+    display: inline-block;
+    margin-left: 10px;
+    color: #ccc;
+    font-style: italic;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    vertical-align: middle;
+}
+
+/* ------------------ 预览模态框样式 ------------------ */
+#hly-modal-container .hly-preview-container-v2 {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 10px;
+    background: #2a2a2a;
+    border-radius: 5px;
+}
+#hly-modal-container .hly-preview-item-v2 {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: #333;
+    border: 1px solid #444;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    padding: 10px;
+}
+#hly-modal-container .hly-preview-details {
+    flex-grow: 1;
+}
+#hly-modal-container .hly-preview-summary {
+    cursor: pointer;
+    font-weight: bold;
+    color: #8A2BE2;
+}
+#hly-modal-container .hly-preview-content {
+    margin-top: 8px;
+}
+#hly-modal-container .hly-preview-textarea {
+    width: 100%;
+    min-height: 100px;
+    background: #252525;
+    color: #E0E0E0;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 8px;
+    box-sizing: border-box;
+    resize: vertical;
+}
+#hly-modal-container .hly-preview-delete-btn-v2 {
+    background: #c0392b;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 24px;
+    text-align: center;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+/* ------------------ 知识库管理列表 ------------------ */
+#hly-modal-container .hly-kb-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 10px;
+    background-color: #3a3a3a;
+    border-radius: 4px;
+    margin-bottom: 8px;
+}
+#hly-modal-container .hly-kb-toolbar label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+#hly-modal-container .hly-kb-bulk-actions {
+    display: flex;
+    gap: 8px;
+}
+#hly-modal-container .hly-kb-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+#hly-modal-container .hly-kb-list-item {
+    display: flex;
+    align-items: center;
+    background-color: #383838;
+    padding: 8px 12px;
+    border-radius: 4px;
+    border: 1px solid #484848;
+    gap: 10px;
+}
+#hly-modal-container .hly-kb-list-item input[type="checkbox"] {
+    margin-right: 5px;
+}
+#hly-modal-container .hly-kb-name {
+    font-weight: bold;
+    color: #DDD;
+    flex-grow: 1;
+}
+#hly-modal-container .hly-kb-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+#hly-modal-container .hly-kb-actions .hly-kb-move-btn,
+#hly-modal-container .hly-kb-actions .hly-kb-delete-btn {
+    background-color: var(--amily2-button-color);
+    color: var(--amily2-text-color);
+    border: 1px solid #666;
+    border-radius: 4px;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: background-color 0.2s, border-color 0.2s;
+    font-size: 1em;
+    line-height: 1;
+}
+
+#hly-modal-container .hly-kb-actions .hly-kb-move-btn:hover {
+    background-color: #5A5A5A;
+    border-color: #888;
+}
+
+#hly-modal-container .hly-kb-actions .hly-kb-delete-btn {
+    background-color: #c94a4a;
+    font-size: 1.2em;
+    padding: 2px 8px;
+}
+
+#hly-modal-container .hly-kb-actions .hly-kb-delete-btn:hover {
+    background-color: #e04f4f;
+    color: white;
+}
+
+/* 【修复】为知识库管理列表中的开关添加特定样式 */
+#hly-modal-container .hly-kb-list .hly-toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 20px;
+}
+#hly-modal-container .hly-kb-list .hly-toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+#hly-modal-container .hly-kb-list .hly-toggle-switch .hly-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 20px;
+}
+#hly-modal-container .hly-kb-list .hly-toggle-switch .hly-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+#hly-modal-container .hly-kb-list input:checked + .hly-toggle-slider {
+    background-color: #2196F3;
+}
+#hly-modal-container .hly-kb-list input:checked + .hly-toggle-slider:before {
+    transform: translateX(20px);
+}
+
+/* ------------------ 自定义多选下拉框样式 ------------------ */
+#hly-modal-container .hly-multiselect-container {
+    position: relative;
+}
+#hly-modal-container .hly-multiselect-options-container {
+    position: absolute;
+    background-color: #333;
+    border: 1px solid #555;
+    border-radius: 4px;
+    width: 100%;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    margin-top: 5px;
+}
+#hly-modal-container .hly-multiselect-option {
+    display: flex; /* 关键：使内部元素水平排列 */
+    align-items: center; /* 关键：垂直居中对齐 */
+    padding: 8px 12px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+#hly-modal-container .hly-multiselect-option:hover {
+    background-color: #454545;
+}
+#hly-modal-container .hly-multiselect-option input[type="checkbox"] {
+    margin-right: 10px; /* 在复选框和文本之间添加间距 */
+}
+#hly-modal-container #hly-hist-entry-multiselect-btn {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    text-align: left;
+}
+#hly-modal-container #hly-hist-entry-multiselect-btn i {
+    transition: transform 0.3s;
+}
+#hly-modal-container #hly-hist-entry-multiselect-options[style*="display: block;"] + #hly-hist-entry-multiselect-btn i {
+    transform: rotate(180deg);
+}
+
+/* ------------------ 搜索框样式 ------------------ */
+#hly-modal-container .hly-search-wrapper,
+#hly-modal-container .hly-entry-search-wrapper {
+    position: relative;
+    margin-bottom: 8px;
+}
+
+#hly-modal-container .hly-search-input {
+    width: 100%;
+    padding: 8px 32px 8px 12px;
+    border: 1px solid #555;
+    border-radius: 4px;
+    font-size: 14px;
+    background: transparent;
+    color: var(--amily2-text-color);
+    box-sizing: border-box;
+}
+
+#hly-modal-container .hly-search-icon {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #888;
+    pointer-events: none;
+}
+
+#hly-modal-container .hly-search-input:focus {
+    outline: none;
+    border-color: #8A2BE2;
+    box-shadow: 0 0 5px rgba(138, 43, 226, 0.5);
+}
+
+#hly-modal-container .hly-search-input::placeholder {
+    color: #888;
+    opacity: 1;
+}
+
+/* 搜索高亮样式 */
+#hly-modal-container .search-highlight {
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 1px 2px;
+    border-radius: 2px;
+}
+
+/* 条目容器样式 */
+#hly-modal-container .hly-entries-container {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+#hly-modal-container .hly-multiselect-option {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #444;
+    margin: 0;
+    transition: background-color 0.2s;
+}
+
+#hly-modal-container .hly-multiselect-option:hover {
+    background-color: #454545;
+}
+
+#hly-modal-container .hly-multiselect-option input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+/* 无结果提示 */
+#hly-modal-container .hly-no-results {
+    padding: 12px;
+    text-align: center;
+    color: #888;
+    font-style: italic;
+}
+
+/* 增强选择器样式 */
+#hly-modal-container .hly-enhanced-selector {
+    position: relative;
+}
+
+#hly-modal-container .hly-search-container {
+    position: relative;
+    margin-bottom: 8px;
+}
+
+/* ------------------ 【V15.3 新增 & V15.4 优化】功能署名样式 ------------------ */
+#hly-modal-container .hly-feature-credit {
+    position: absolute;
+    bottom: 10px;
+    right: 15px;
+    font-size: 0.9em;
+    font-style: italic;
+    font-weight: bold;
+    opacity: 0.9;
+    background: linear-gradient(90deg, #00d2ff 0%, #928DFF 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    pointer-events: none;
+    text-shadow: 0 0 4px rgba(200, 200, 255, 0.5);
+}
+
+/* ------------------ 【V15.5】移动端响应式适配 ------------------ */
+@media (max-width: 768px) {
+    /* 知识库列表项 */
+    #hly-modal-container .hly-kb-list-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px; /* 增加垂直间距 */
+    }
+
+    /* 知识库名称，将其与复选框包裹起来以便对齐 */
+    #hly-modal-container .hly-kb-name-container {
+        display: flex;
+        align-items: center;
+        width: 100%;
+    }
+
+    #hly-modal-container .hly-kb-name {
+        white-space: normal; /* 允许长标题换行 */
+        word-break: break-all; /* 强制长单词换行 */
+        flex-grow: 1;
+        margin-left: 8px; /* 与复选框的间距 */
+    }
+
+    /* 操作按钮容器 */
+    #hly-modal-container .hly-kb-actions {
+        width: 100%;
+        justify-content: flex-end; /* 让按钮靠右对齐 */
+    }
+
+    /* 顶部批量操作按钮栏 */
+    #hly-modal-container .hly-kb-toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    #hly-modal-container .hly-kb-bulk-actions {
+        width: 100%;
+        justify-content: space-around; /* 让按钮均匀分布 */
+    }
+}
+
+/* ------------------ 知识库分组样式 ------------------ */
+#hly-modal-container .hly-kb-group-item {
+    margin-bottom: 8px;
+    border: 1px solid #484848;
+    border-radius: 4px;
+    background-color: #333;
+    overflow: hidden;
+}
+
+#hly-modal-container .hly-kb-group-summary {
+    padding: 10px 12px;
+    background-color: #3a3a3a;
+    cursor: pointer;
+    list-style: none; /* 移除默认三角 */
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+    color: #DDD;
+    transition: background-color 0.2s;
+}
+
+#hly-modal-container .hly-kb-group-summary:hover {
+    background-color: #454545;
+}
+
+/* 自定义三角图标 */
+#hly-modal-container .hly-kb-group-summary::-webkit-details-marker {
+    display: none;
+}
+#hly-modal-container .hly-kb-group-summary::before {
+    content: '▶';
+    font-size: 0.8em;
+    margin-right: 8px;
+    transition: transform 0.2s;
+    display: inline-block;
+}
+#hly-modal-container .hly-kb-group-details[open] .hly-kb-group-summary::before {
+    transform: rotate(90deg);
+}
+
+#hly-modal-container .hly-kb-group-title i {
+    margin-right: 5px;
+    color: #8A2BE2;
+}
+
+#hly-modal-container .hly-kb-group-content {
+    padding: 5px;
+    background-color: #2c2c2c;
+    border-top: 1px solid #444;
+}
+
+/* 组内的列表项稍微缩进 */
+#hly-modal-container .hly-kb-group-content .hly-kb-list-item {
+    margin-bottom: 5px;
+    border-left: 3px solid #8A2BE2; /* 视觉区分 */
+}
+#hly-modal-container .hly-kb-group-content .hly-kb-list-item:last-child {
+    margin-bottom: 0;
+}

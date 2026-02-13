@@ -1,0 +1,197 @@
+<div class="amily2-header">
+    <div class="additional-features-title">
+        <i class="fas fa-book"></i> 术语表 (Sybd 系统)
+    </div>
+    <button id="amily2_back_to_main_from_glossary" class="menu_button secondary small_button interactable">
+        返回主殿 <i class="fas fa-arrow-right"></i>
+    </button>
+</div>
+<hr class="header-divider">
+
+<div class="glossary-tabs">
+    <button class="glossary-tab active" data-tab="api">
+        <i class="fas fa-bolt"></i> API 设置
+    </button>
+    <button class="glossary-tab" data-tab="novel-process">
+        <i class="fas fa-file-invoice"></i> 小说处理
+    </button>
+    <button class="glossary-tab" data-tab="tools">
+        <i class="fas fa-tools"></i> 条目工具
+    </button>
+    <button class="glossary-tab" data-tab="context">
+        <i class="fas fa-book-open"></i> 世界书条目
+    </button>
+</div>
+
+<div class="glossary-content-container">
+
+    <div id="glossary-content-api" class="glossary-content active">
+        <div class="settings-group">
+            <div class="legend"><i class="fas fa-satellite-dish"></i> Sybd API 调用系统</div>
+            <small class="notes" style="text-align: center; display: block; margin-bottom: 15px;">
+                独立的API调用系统，可与主系统并行使用，支持全兼容和SillyTavern预设两种模式。
+            </small>
+
+            <div class="amily2_settings_block" id="amily2_sybd_content">
+                <div class="control-group">
+                    <label for="amily2_sybd_api_mode">API调用模式：</label>
+                    <select id="amily2_sybd_api_mode" class="text_pole" data-setting-key="sybdApiMode" data-type="string">
+                        <option value="openai_test">全兼容模式</option>
+                        <option value="sillytavern_preset">SillyTavern预设模式</option>
+                    </select>
+                </div>
+
+                <div id="amily2_sybd_config_panel" style="margin-top: 15px;">
+                    <!-- 全兼容模式配置 -->
+                    <div id="amily2_sybd_compatible_config">
+                        <div class="control-group">
+                            <label for="amily2_sybd_api_url">API地址：</label>
+                            <input type="text" id="amily2_sybd_api_url" class="text_pole" placeholder="https://api.openai.com/v1" data-setting-key="sybdApiUrl" data-type="string" />
+                        </div>
+                        <div class="control-group">
+                            <label for="amily2_sybd_api_key">API密钥：</label>
+                            <input type="password" id="amily2_sybd_api_key" class="text_pole" placeholder="sk-..." data-setting-key="sybdApiKey" data-type="string" />
+                        </div>
+                        <div class="control-group">
+                            <label for="amily2_sybd_model">模型：</label>
+                            <div class="select-with-refresh">
+                                <select id="amily2_sybd_model_select" class="text_pole" style="flex-grow: 1; display: none;">
+                                    <option value="">-- 请选择模型 --</option>
+                                </select>
+                                <input type="text" id="amily2_sybd_model" class="text_pole" placeholder="gpt-4" style="flex-grow: 1;" data-setting-key="sybdModel" data-type="string" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SillyTavern预设模式配置 -->
+                    <div id="amily2_sybd_preset_config" style="display: none;">
+                        <div class="control-group">
+                            <label for="amily2_sybd_tavern_profile">选择SillyTavern预设：</label>
+                            <select id="amily2_sybd_tavern_profile" class="text_pole" data-setting-key="sybdTavernProfile" data-type="string">
+                                <option value="">-- 请选择预设 --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- 通用参数配置 -->
+                    <div class="control-group">
+                        <label for="amily2_sybd_max_tokens">最大令牌数：<span id="amily2_sybd_max_tokens_value">4000</span></label>
+                        <input type="range" id="amily2_sybd_max_tokens" min="100" max="100000" step="100" value="4000" data-setting-key="sybdMaxTokens" data-type="integer" />
+                    </div>
+                    <div class="control-group">
+                        <label for="amily2_sybd_temperature">温度：<span id="amily2_sybd_temperature_value">0.7</span></label>
+                        <input type="range" id="amily2_sybd_temperature" min="0" max="2" step="0.1" value="0.7" data-setting-key="sybdTemperature" data-type="float" />
+                    </div>
+
+                    <!-- 测试按钮组 - 水平排列 -->
+                    <div class="sybd-button-row" style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                        <button id="amily2_sybd_test_connection" class="menu_button primary small_button interactable">
+                            <i class="fas fa-plug"></i> 测试连接
+                        </button>
+                        <button id="amily2_sybd_fetch_models" class="menu_button secondary small_button interactable" title="获取可用模型列表">
+                            <i class="fas fa-download"></i> 获取模型
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="glossary-content-tools" class="glossary-content">
+        <div class="settings-group">
+            <div class="legend"><i class="fas fa-sitemap"></i> 按标题重组条目</div>
+            <small class="notes" style="text-align: center; display: block; margin-bottom: 15px;">
+                在下方文本框中输入您想要合并的标题 (不带'#')，每行一个。<br>
+                插件将精确查找这些标题，并将它们的内容合并到同名的新条目中。
+            </small>
+            <div class="control-group" style="margin: 15px auto; max-width: 80%;">
+                <label for="reorganize-headings-list" style="display: block; text-align: center; margin-bottom: 5px;">要重组的标题列表:</label>
+                <textarea id="reorganize-headings-list" class="text_pole" style="width: 100%; min-height: 120px;" placeholder="世界观设定&#10;章节内容概述&#10;时间线&#10;角色关系网&#10;角色总览"></textarea>
+            </div>
+            <div class="sybd-button-row" style="justify-content: center; margin-top: 10px;">
+                <button id="reorganize-entries-by-heading" class="menu_button primary interactable">
+                    <i class="fas fa-play-circle"></i> 开始重组
+                </button>
+            </div>
+            <div id="reorganize-status" style="text-align: center; margin-top: 10px; font-weight: bold;">
+                请选择一个世界书并开始操作...
+            </div>
+        </div>
+    </div>
+
+    <div id="glossary-content-context" class="glossary-content">
+        <div class="settings-group">
+            <div class="legend"><i class="fas fa-book-open"></i> 世界书条目预览</div>
+            <small class="notes" style="text-align: center; display: block; margin-bottom: 15px;">
+                此处将显示在“小说处理”标签页中选定世界书的条目。
+            </small>
+            <div class="amily2-glossary-toolbar" style="text-align: center; margin-bottom: 15px;">
+                
+            </div>
+            <div id="world-book-entries-display" class="world-book-entries-container">
+
+            </div>
+        </div>
+    </div>
+
+    <div id="glossary-content-novel-process" class="glossary-content">
+        <div class="settings-group">
+            <div class="legend"><i class="fas fa-file-upload"></i> 小说文件处理流程</div>
+            
+            <div class="control-group horizontal-group">
+                <label for="novel-world-book-select">1. 选择目标世界书:</label>
+                <select id="novel-world-book-select" class="text_pole"></select>
+            </div>
+
+            <div class="upload-button-container" style="display: flex; gap: 10px; justify-content: center;">
+                <label for="novel-file-input" class="menu_button secondary interactable">
+                    <i class="fas fa-upload"></i> 2a. 上传本地文件 (.txt)
+                </label>
+                <input type="file" id="novel-file-input" accept=".txt" style="display: none;">
+                <button id="select-from-database-button" class="menu_button secondary interactable">
+                    <i class="fas fa-database"></i> 2b. 从数据库选择
+                </button>
+            </div>
+            <div id="database-file-list-container" class="world-book-entries-container" style="display: none; margin-top: 10px; max-height: 200px; overflow-y: auto;">
+
+            </div>
+
+            <div class="control-group horizontal-group">
+                <label for="novel-chunk-size">3. 每批处理字符数:</label>
+                <input type="number" id="novel-chunk-size" class="text_pole" value="300000" min="1000" step="500" data-setting-key="novelChunkSize" data-type="integer">
+            </div>
+
+            <div class="control-group horizontal-group">
+                <label for="novel-start-batch-index" title="如果处理中断，可在此指定从第几批重新开始。">指定开始批次:</label>
+                <input type="number" id="novel-start-batch-index" class="text_pole" value="1" min="1" step="1">
+            </div>
+
+            <hr class="header-divider">
+
+            <div class="preview-container">
+                <label>4. 内容分块预览 (共 <span id="novel-chunk-count">0</span> 块):</label>
+                <div id="novel-chunk-preview">
+                    <small>请先上传文件...</small>
+                </div>
+            </div>
+
+            <div class="amily2_settings_block">
+                <label for="novel-force-new">强制新建条目 (不更新现有条目)</label>
+                <label class="amily2-glossary-toggle">
+                    <input id="novel-force-new" type="checkbox" />
+                    <span class="slider"></span>
+                </label>
+            </div>
+
+            <div class="sybd-button-row">
+                <button id="novel-confirm-and-process" class="menu_button primary interactable" disabled>
+                    <i class="fas fa-play-circle"></i> 确认并开始处理
+                </button>
+            </div>
+
+            <div id="novel-process-status" style="text-align: center; margin-top: 10px; font-weight: bold;">
+                等待操作...
+            </div>
+        </div>
+    </div>
+</div>

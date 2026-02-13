@@ -1,0 +1,104 @@
+<!-- 返回按钮和标题 -->
+<div class="amily2-header">
+    <button id="amily2_back_to_main_from_world_editor" class="menu_button secondary small_button interactable">
+        <i class="fas fa-arrow-left"></i> 返回主殿
+    </button>
+    <div class="additional-features-title" style="cursor: default;">
+        <i class="fas fa-globe"></i> 世界编辑
+    </div>
+</div>
+<hr class="header-divider">
+
+<!-- 主容器 -->
+<div id="world-editor-container" class="world-editor">
+        <div class="world-editor-header">
+            <div class="world-editor-header-controls">
+                <button class="world-editor-btn world-editor-btn-primary" id="world-editor-refresh-btn">
+                    <i class="fas fa-sync"></i> 刷新
+                </button>
+                <button class="world-editor-btn world-editor-btn-success" id="world-editor-create-book-btn">
+                    <i class="fas fa-book-medical"></i> 新建世界
+                </button>
+                <button class="world-editor-btn world-editor-btn-success" id="world-editor-create-entry-btn" disabled>
+                    <i class="fas fa-plus"></i> 新建条目
+                </button>
+            </div>
+        </div>
+
+        <!-- 新的世界书选择和管理界面 -->
+        <div id="world-book-selection-view">
+            <div class="world-editor-toolbar">
+                <div class="world-editor-toolbar-left">
+                    <input type="text" class="world-editor-search-box" id="world-book-search-box" placeholder="搜索世界书...">
+                    <button class="world-editor-btn world-editor-btn-primary" id="world-book-search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <div class="world-editor-toolbar-right">
+                    <span id="world-book-count">世界书：0</span>
+                </div>
+            </div>
+            <div class="world-editor-batch-actions" id="world-book-batch-actions">
+                <span class="world-editor-selected-count" id="world-book-selected-count">已选择 0 项</span>
+                <button class="world-editor-btn world-editor-btn-primary" id="world-book-clone-btn">备份新建</button>
+                <button class="world-editor-btn world-editor-btn-danger" id="world-book-delete-btn">批量删除</button>
+            </div>
+            <div id="world-book-list-container">
+                <!-- 世界书列表将由JS动态生成 -->
+            </div>
+        </div>
+
+        <!-- 世界书条目编辑界面 (默认隐藏) -->
+        <div id="world-editor-entry-view" style="display: none;">
+            <div class="world-editor-selector">
+                <h3 id="world-editor-current-book-title">当前编辑：</h3>
+                <button class="world-editor-btn" id="world-editor-back-to-list-btn"><i class="fas fa-arrow-left"></i> 返回列表</button>
+            </div>
+
+            <div class="world-editor-toolbar">
+                <div class="world-editor-toolbar-left">
+                    <select id="world-editor-search-type" class="world-editor-search-box" style="width: auto; margin-right: 5px;">
+                        <option value="comment">搜索条目</option>
+                        <option value="content">搜索内容</option>
+                    </select>
+                    <input type="text" class="world-editor-search-box" id="world-editor-search-box" placeholder="输入关键词...">
+                    <button class="world-editor-btn world-editor-btn-primary" id="world-editor-search-btn">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+                <div class="world-editor-toolbar-right">
+                    <span id="world-editor-entry-count">条目：0</span>
+                </div>
+            </div>
+
+            <div class="world-editor-entries-wrapper">
+                <div class="world-editor-batch-actions" id="world-editor-batch-actions">
+                    <span class="world-editor-selected-count" id="world-editor-selected-count">已选择 0 项</span>
+                    <button class="world-editor-btn world-editor-btn-primary" id="world-editor-enable-selected-btn">批量启用</button>
+                    <button class="world-editor-btn world-editor-btn-warning" id="world-editor-disable-selected-btn">批量禁用</button>
+                    <button class="world-editor-btn world-editor-btn-primary" id="world-editor-set-blue-btn">批量蓝灯</button>
+                    <button class="world-editor-btn world-editor-btn-success" id="world-editor-set-green-btn">批量绿灯</button>
+                    <button class="world-editor-btn world-editor-btn-info" id="world-editor-copy-entries-btn">复制条目</button>
+                    <button class="world-editor-btn world-editor-btn-danger" id="world-editor-delete-selected-btn">批量删除</button>
+                    <button class="world-editor-btn world-editor-btn-primary" id="world-editor-set-disable-recursion-btn">不可递归</button>
+                    <button class="world-editor-btn world-editor-btn-primary" id="world-editor-set-prevent-recursion-btn">防止递归</button>
+                </div>
+                
+                <div id="world-editor-entries-container">
+                    <div class="world-editor-entries-header">
+                        <div><input type="checkbox" id="world-editor-select-all"></div>
+                        <div data-sort="enabled">状态</div>
+                        <div data-sort="type">灯色</div>
+                        <div data-sort="comment">条目</div>
+                        <div data-sort="content">内容</div>
+                        <div data-sort="position">位置</div>
+                        <div data-sort="depth">深度</div>
+                        <div data-sort="order">顺序</div>
+                    </div>
+                    <div class="world-editor-loading">
+                        <i class="fas fa-spinner fa-spin"></i> 加载中...
+        </div>
+    </div>
+        </div>
+    </div>
+</div>

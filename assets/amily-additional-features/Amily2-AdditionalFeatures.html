@@ -1,0 +1,438 @@
+
+<div class="amily2-header">
+    <button id="amily2_back_to_main_settings" class="menu_button secondary small_button interactable">
+        <i class="fas fa-arrow-left"></i> 返回主殿
+    </button>
+    <div id="amily2_open_neige_tutorial" class="additional-features-title interactable" title="查看内阁使用教程" style="cursor: pointer;">
+        <i class="fas fa-landmark-dome"></i> 内阁密室
+    </div>
+</div>
+<hr class="header-divider">
+
+
+<fieldset class="settings-group">
+    <legend><i class="fas fa-scroll"></i> 皇家史册管理员</legend>
+
+    <div class="control-pair-container">
+        <div class="amily2_settings_block">
+            <label for="amily2_auto_hide_enabled">按阈值自动隐藏</label>
+            <label class="toggle-switch">
+                <input id="amily2_auto_hide_enabled" type="checkbox" />
+                <span class="slider"></span>
+            </label>
+        </div>
+        
+        <div class="amily2_settings_block">
+            <label for="amily2_auto_hide_summarized_enabled">隐藏已总结楼层</label>
+            <label class="toggle-switch">
+                <input id="amily2_auto_hide_summarized_enabled" type="checkbox" />
+                <span class="slider"></span>
+            </label>
+        </div>
+
+
+<div class="amily2_settings_block">
+    <button id="amily2_unhide_all_button" class="menu_button secondary small_button interactable" title="一键取消所有已隐藏的楼层">
+        <i class="fas fa-folder-open"></i>
+        <span>全部可见</span>
+    </button>
+</div>
+
+    </div>
+
+    <hr style="border-style: dashed; margin: 10px 0;">
+
+
+    <div class="amily2_settings_block">
+        <label for="amily2_auto_hide_threshold">保留最新消息层数: <span id="amily2_auto_hide_threshold_value">30</span></label>
+        <input id="amily2_auto_hide_threshold" type="range" min="5" max="100" step="1" value="30" />
+        <small class="notes">设定始终在你的上下文中保留的最新消息数量。</small>
+    </div>
+</fieldset>
+<fieldset class="settings-group">
+    <legend><i class="fas fa-pen-ruler"></i> 手动敕令司</legend>
+
+
+    <div class="manual-command-block">
+        <label>隐藏范围:</label>
+        <input type="number" id="amily2_manual_hide_from" class="manual-input" placeholder="起始层">
+        <span class="manual-command-divider">-</span>
+        <input type="number" id="amily2_manual_hide_to" class="manual-input" placeholder="结束层">
+        <button id="amily2_manual_hide_confirm" class="menu_button primary small_button interactable">
+            <i class="fas fa-eye-slash"></i> 确认隐藏
+        </button>
+    </div>
+
+    <div class="manual-command-block">
+        <label>取消隐藏:</label>
+        <input type="number" id="amily2_manual_unhide_from" class="manual-input" placeholder="起始层">
+        <span class="manual-command-divider">-</span>
+        <input type="number" id="amily2_manual_unhide_to" class="manual-input" placeholder="结束层">
+        <button id="amily2_manual_unhide_confirm" class="menu_button accent small_button interactable">
+            <i class="fas fa-eye"></i> 确认取消
+        </button>
+    </div>
+
+    <small class="notes" style="text-align: center; display: block; margin-top: 10px;">
+        提示：若“起始层”留空，则仅操作“结束层”所指定的单层。
+    </small>
+</fieldset>
+
+
+<fieldset class="settings-group">
+    <legend><i class="fas fa-gavel"></i> 总结与律法</legend>
+    <div class="lore-config-grid">
+        <!-- Left Column -->
+        <div class="amily2_settings_block grid-left-col">
+            <label>总结写入目标:</label>
+            <div class="radio-group vertical">
+                <input type="radio" id="amily2_target_main" name="amily2_lorebook_target" value="character_main" checked>
+                <label for="amily2_target_main">写入【主世界书】</label>
+                <input type="radio" id="amily2_target_dedicated" name="amily2_lorebook_target" value="dedicated">
+                <label for="amily2_target_dedicated">写入【独立档案】</label>
+            </div>
+            <small class="notes">更推荐使用独立档案，会生成一个新的世界书执行总结逻辑。</small>
+        </div>
+        <!-- Right Column -->
+        <div class="grid-right-col">
+            <div class="amily2_settings_block">
+                <label for="amily2_lore_activation_mode">默认激活模式:</label>
+                <select id="amily2_lore_activation_mode" class="text_pole">
+                    <option value="always">🔵 蓝灯 (始终激活)</option>
+                    <option value="keyed">🟢 绿灯 (关键词触发)</option>
+                </select>
+            </div>
+            <div class="amily2_settings_block">
+                <label for="amily2_lore_insertion_position">默认插入位置:</label>
+                <select id="amily2_lore_insertion_position" class="text_pole">
+                    <option value="before_char">角色定义之前</option>
+                    <option value="after_char">角色定义之后</option>
+                    <option value="before_an">作者注释之前</option>
+                    <option value="after_an">作者注释之后</option>
+                    <option value="at_depth">@D 注入指定深度</option>
+                </select>
+            </div>
+            <div id="amily2_lore_depth_container" class="amily2_settings_block" style="display: none;">
+                <label for="amily2_lore_depth_input">注入深度:</label>
+                <input id="amily2_lore_depth_input" title="深度" class="text_pole" type="number" name="depth" placeholder="2" min="0" max="9999">
+            </div>
+            <div class="amily2_settings_block">
+                <button id="amily2_save_lore_settings" class="menu_button"><i class="fas fa-save"></i> 确认敕令</button>
+                <small id="amily2_lore_save_status" class="notes" style="text-align: center; width: 100%;"></small>
+            </div>
+        </div>
+    </div>
+</fieldset>
+
+
+<fieldset class="settings-group">
+    <legend><i class="fas fa-satellite-dish"></i> Ngms API 调用系统</legend>
+    <small class="notes" style="text-align: center; display: block; margin-bottom: 15px;">
+        独立的API调用系统，可与主系统并行使用，支持全兼容和SillyTavern预设两种模式。
+    </small>
+
+    <div class="amily2_settings_block">
+        <label for="amily2_ngms_enabled">启用Ngms API系统</label>
+        <label class="toggle-switch">
+            <input id="amily2_ngms_enabled" type="checkbox" />
+            <span class="slider"></span>
+        </label>
+    </div>
+
+    <div class="amily2_settings_block" id="amily2_ngms_content" style="display: none;">
+        <div class="control-group">
+            <label for="amily2_ngms_api_mode">API调用模式：</label>
+            <select id="amily2_ngms_api_mode" class="text_pole">
+                <option value="openai_test">全兼容模式</option>
+                <option value="sillytavern_preset">SillyTavern预设模式</option>
+            </select>
+        </div>
+
+        <div id="amily2_ngms_config_panel" style="margin-top: 15px;">
+            <!-- 全兼容模式配置 -->
+            <div id="amily2_ngms_compatible_config">
+                <div class="control-group">
+                    <label for="amily2_ngms_api_url">API地址：</label>
+                    <input type="text" id="amily2_ngms_api_url" class="text_pole" placeholder="https://api.openai.com/v1" />
+                </div>
+                <div class="control-group">
+                    <label for="amily2_ngms_api_key">API密钥：</label>
+                    <input type="password" id="amily2_ngms_api_key" class="text_pole" placeholder="sk-..." />
+                </div>
+                <div class="control-group">
+                    <label for="amily2_ngms_model">模型：</label>
+                    <div class="select-with-refresh">
+                        <select id="amily2_ngms_model_select" class="text_pole" style="flex-grow: 1; display: none;">
+                            <option value="">-- 请选择模型 --</option>
+                        </select>
+                        <input type="text" id="amily2_ngms_model" class="text_pole" placeholder="gpt-4" style="flex-grow: 1;" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- SillyTavern预设模式配置 -->
+            <div id="amily2_ngms_preset_config" style="display: none;">
+                <div class="control-group">
+                    <label for="amily2_ngms_tavern_profile">选择SillyTavern预设：</label>
+                    <select id="amily2_ngms_tavern_profile" class="text_pole">
+                        <option value="">-- 请选择预设 --</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 通用参数配置 -->
+            <div class="control-group">
+                <label for="amily2_ngms_max_tokens">最大令牌数：<span id="amily2_ngms_max_tokens_value">4000</span></label>
+                <input type="range" id="amily2_ngms_max_tokens" min="100" max="100000" step="100" value="4000" />
+            </div>
+            <div class="control-group">
+                <label for="amily2_ngms_temperature">温度：<span id="amily2_ngms_temperature_value">0.7</span></label>
+                <input type="range" id="amily2_ngms_temperature" min="0" max="2" step="0.1" value="0.7" />
+            </div>
+
+            <!-- 测试按钮组 - 水平排列 -->
+            <div class="ngms-button-row" style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                <button id="amily2_ngms_test_connection" class="menu_button primary small_button interactable">
+                    <i class="fas fa-plug"></i> 测试连接
+                </button>
+                <button id="amily2_ngms_fetch_models" class="menu_button secondary small_button interactable" title="获取可用模型列表">
+                    <i class="fas fa-download"></i> 获取模型
+                </button>
+            </div>
+        </div>
+    </div>
+</fieldset>
+
+<fieldset class="settings-group" id="amily2_manual_historiography_bureau">
+    <legend><i class="fas fa-gavel"></i> 手动敕史局</legend>
+    <small class="notes" style="text-align: center; display: block; margin-bottom: 15px;">
+        赋予你选取任意对话、熔铸为永恒史册的至高权力。
+    </small>
+
+
+    <fieldset class="settings-group" style="border-style: dashed;">
+        <legend>� 微言录 (Small Summary)</legend>
+
+
+        <div class="amily2_settings_block">
+            <div class="label-with-button">
+                <label for="amily2_mhb_small_prompt_selector">选择编辑的谕旨:</label>
+                <i id="amily2_mhb_small_expand_editor" class="editor_maximize fa-solid fa-maximize right_menu_button interactable" title="展开编辑器" tabindex="0"></i>
+            </div>
+            <select id="amily2_mhb_small_prompt_selector" class="text_pole">
+                <option value="jailbreak">小总结主要提示词</option>
+                <option value="summary">小总结任务提示词</option>
+            </select>
+        </div>
+        <div class="amily2_settings_block prompt-editor-area">
+            <textarea id="amily2_mhb_small_editor" class="text_pole" rows="3"></textarea>
+            <div class="editor-buttons-panel">
+                <button id="amily2_mhb_small_save_button" class="menu_button accent small_button interactable"><i class="fas fa-save"></i> 保存当前</button>
+                <button id="amily2_mhb_small_restore_button" class="menu_button secondary small_button interactable"><i class="fas fa-undo"></i> 恢复默认</button>
+            </div>
+        </div>
+
+
+        <div class="mhb-controls-wrapper">
+
+            <div class="manual-command-block">
+                <label>手动总结范围:</label>
+                <input type="number" id="amily2_mhb_small_start_floor" class="manual-input" placeholder="起始层">
+                <span class="manual-command-divider">-</span>
+                <input type="number" id="amily2_mhb_small_end_floor" class="manual-input" placeholder="结束层">
+                <button id="amily2_mhb_small_manual_execute" class="menu_button primary small_button interactable">
+                    <i class="fas fa-fire"></i> 开始
+                </button>
+            </div>
+
+            <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center; margin-top: 10px;">
+                <label for="historiography-tag-extraction-toggle">标签提取</label>
+                <label class="hly-toggle-switch">
+                    <input type="checkbox" id="historiography-tag-extraction-toggle" data-setting-key="condensation.tagExtractionEnabled" data-type="boolean">
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div id="historiography-tag-input-container" class="hly-control-block" style="display: none;">
+                <label for="historiography-tag-input">输入标签 (以逗号分隔):</label>
+                <textarea id="historiography-tag-input" class="hly-imperial-brush" rows="2" placeholder="例如: content,details" data-setting-key="condensation.tags" data-type="string"></textarea>
+            </div>
+            <div class="hly-button-group" style="justify-content: flex-start; margin-top: 10px; display: flex; align-items: center; gap: 20px;">
+                <button id="historiography-exclusion-rules-btn" class="hly-action-button">内容排除</button>
+                
+                <div class="auto-control-pair" style="margin-bottom: 0;">
+                    <label for="historiography_auto_summary_interactive" title="开启后，“自动巡录”将弹出交互窗口确认，而不是在后台静默运行。">交互式巡录:</label>
+                    <label class="toggle-switch">
+                        <input id="historiography_auto_summary_interactive" type="checkbox" />
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+
+
+            <div class="auto-command-block" id="amily2_mhb_auto_command_block">
+
+                <button id="amily2_mhb_small_expedition_execute" class="menu_button primary small_button interactable" title="立即发动一次彻底的总结远征，将所有未归档的历史一次性清算。">
+                    <i class="fas fa-flag-checkered"></i> 自动批量
+                </button>
+
+
+                <div class="auto-control-pair">
+                    <label for="amily2_mhb_small_auto_enabled" title="在您聊天时，于后台默默守护史册的完整。">静默总结:</label>
+                    <label class="toggle-switch">
+                        <input id="amily2_mhb_small_auto_enabled" type="checkbox" />
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+
+                <div class="auto-control-pair">
+                    <label for="historiography_write_to_lorebook" title="将生成的总结写入世界书。">存世界书:</label>
+                    <label class="toggle-switch">
+                        <input id="historiography_write_to_lorebook" type="checkbox" checked />
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="auto-control-pair">
+                    <label for="historiography_ingest_to_rag" title="将生成的总结存入翰林院进行向量化。">上传向量:</label>
+                    <label class="toggle-switch">
+                        <input id="historiography_ingest_to_rag" type="checkbox" />
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="auto-control-pair">
+                    <label for="amily2_mhb_small_trigger_count" title="“自动巡录”和“开始远征”的单次作战楼层数。">总结阈值:</label>
+                    <input id="amily2_mhb_small_trigger_count" type="number" min="1" class="text_pole" style="width: 70px;" placeholder="30">
+                </div>
+
+                <div class="auto-control-pair">
+                    <label for="historiography_retention_count" title="保留最近的对话层数不参与自动总结。">保留层数:</label>
+                    <input id="historiography_retention_count" type="number" min="0" class="text_pole" style="width: 70px;" placeholder="5">
+                </div>
+            </div>
+
+
+            <small class="notes" style="text-align: center; display: block; margin-top: 5px;">
+                【自动批量】将立即清算所有未记录的历史。 【静默总结】则在您聊天时，于后台默默守护史册的完整。
+            </small>
+
+
+        </div>
+    </fieldset>
+
+    <!-- 上下分割线 -->
+    <hr class="header-divider" style="margin: 20px 0;">
+
+    <fieldset class="settings-group" style="border-style: dashed;">
+        <legend>📚 史册归档与回溯</legend>
+        <small class="notes" style="text-align: center; display: block; margin-bottom: 15px;">
+            管理多条时间线的史册，随时封存或重启旧的历史。
+        </small>
+
+        <div class="amily2_settings_block">
+            <button id="amily2_mhb_archive_current" class="menu_button secondary small_button interactable" style="width: 100%; margin-bottom: 10px;">
+                <i class="fas fa-archive"></i> 归档当前【对话流水总帐】并停用
+            </button>
+        </div>
+
+        <div class="mhb-selector-container">
+            <div class="mhb-selector-group">
+                <label for="amily2_mhb_archive_selector">选择要回溯的旧史册</label>
+                <div class="select-with-refresh">
+                    <select id="amily2_mhb_archive_selector" class="text_pole" style="flex-grow: 1;">
+                        <option value="">请刷新列表...</option>
+                    </select>
+                    <button id="amily2_mhb_refresh_archives" class="menu_button secondary small_button interactable" title="刷新归档列表">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <button id="amily2_mhb_restore_archive" class="menu_button primary small_button interactable" style="margin-top: 10px; width: 100%;">
+            <i class="fas fa-trash-restore"></i> 回溯选中史册 (自动归档当前)
+        </button>
+
+    </fieldset>
+
+    <!-- 上下分割线 -->
+    <hr class="header-divider" style="margin: 20px 0;">
+
+    <fieldset class="settings-group" style="border-style: dashed;">
+        <legend>💎 宏史卷 (史册精炼)</legend>
+
+
+        <div class="amily2_settings_block">
+            <div class="label-with-button">
+                <label for="amily2_mhb_large_prompt_selector">选择编辑的谕旨:</label>
+                <i id="amily2_mhb_large_expand_editor" class="editor_maximize fa-solid fa-maximize right_menu_button interactable" title="展开编辑器" tabindex="0"></i>
+            </div>
+            <select id="amily2_mhb_large_prompt_selector" class="text_pole">
+                <option value="jailbreak">大总结主要提示词</option>
+                <option value="summary">大总结任务提示词)</option>
+            </select>
+        </div>
+        <div class="amily2_settings_block prompt-editor-area">
+            <textarea id="amily2_mhb_large_editor" class="text_pole" rows="4"></textarea>
+            <div class="editor-buttons-panel">
+                <button id="amily2_mhb_large_save_button" class="menu_button accent small_button interactable"><i class="fas fa-save"></i> 保存当前</button>
+                <button id="amily2_mhb_large_restore_button" class="menu_button secondary small_button interactable"><i class="fas fa-undo"></i> 恢复默认</button>
+            </div>
+        </div>
+
+
+          <div class="mhb-controls-wrapper">
+
+            <div class="mhb-selector-container">
+
+                <div class="mhb-selector-group">
+                    <label for="amily2_mhb_large_worldbook_selector">目标国史馆 (世界书)</label>
+                    <div class="select-with-refresh">
+                        <select id="amily2_mhb_large_worldbook_selector" class="text_pole" style="flex-grow: 1;">
+                            <option value="">刷新列表...</option>
+                        </select>
+                        <button id="amily2_mhb_large_refresh_worldbooks" class="menu_button secondary small_button interactable" title="刷新世界书列表">
+                            <i class="fas fa-atlas"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mhb-selector-group">
+                    <label for="amily2_mhb_large_lore_selector">待精炼的史册条目</label>
+                    <div class="select-with-refresh">
+                        <select id="amily2_mhb_large_lore_selector" class="text_pole" style="flex-grow: 1;">
+                            <option value="">请先选择世界书...</option>
+                        </select>
+                        <button id="amily2_mhb_large_refresh_lores" class="menu_button secondary small_button interactable" title="刷新所选世界书的史册列表">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+
+            <button id="amily2_mhb_large_refine_execute" class="menu_button primary small_button interactable" style="margin-top: 15px; width: 100%;">
+                <i class="fas fa-gem"></i> 开始精炼
+            </button>
+
+            <div class="auto-control-pair" style="margin-top: 10px; justify-content: center;">
+                <label for="amily2_vectorize_summary_content">将前段的大总结内容自动送去向量化。</label>
+                <label class="toggle-switch">
+                    <input id="amily2_vectorize_summary_content" type="checkbox" />
+                    <span class="slider"></span>
+                </label>
+            </div>
+        </div>
+        </div>
+    </fieldset>
+
+
+    <div id="amily2_mhb_hidden_prompts" style="display:none;">
+        <textarea id="amily2_mhb_small_jailbreak_prompt"></textarea>
+        <textarea id="amily2_mhb_small_summary_prompt"></textarea>
+        <textarea id="amily2_mhb_large_jailbreak_prompt"></textarea>
+        <textarea id="amily2_mhb_large_summary_prompt"></textarea>
+    </div>
+
+</fieldset>

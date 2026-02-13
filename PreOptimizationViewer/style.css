@@ -1,0 +1,195 @@
+
+#viewer-orb {
+    position: fixed !important;
+    z-index: 9998;
+    width: 56px;
+    height: 56px;
+    min-width: 44px;
+    min-height: 44px;
+
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: 3px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    color: white;
+    font-size: 20px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: none;
+
+    box-shadow: 
+        0 8px 25px rgba(102, 126, 234, 0.4),
+        0 4px 10px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transform: translateZ(0);
+}
+
+#viewer-orb:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 
+        0 12px 35px rgba(102, 126, 234, 0.5),
+        0 8px 15px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+#viewer-orb:active {
+    transform: translateY(0) scale(0.95);
+    transition: all 0.1s ease;
+}
+
+#viewer-orb.dragging {
+    cursor: grabbing !important;
+    transform: scale(1.1);
+    box-shadow: 
+        0 15px 40px rgba(102, 126, 234, 0.6),
+        0 10px 20px rgba(0, 0, 0, 0.4);
+    border-color: rgba(255, 255, 255, 0.6);
+}
+
+@media (max-width: 768px) {
+    #viewer-orb {
+        width: 60px;
+        height: 60px;
+        font-size: 22px;
+    }
+}
+
+.pre-optimization-viewer-content {
+    padding: 20px;
+    background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+    border-radius: 12px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pre-optimization-viewer-content textarea {
+    width: 100% !important;
+    height: 450px !important;
+    min-height: 300px;
+    padding: 20px !important;
+    border: 2px solid #e0e6ed !important;
+    border-radius: 10px !important;
+    background: #ffffff !important;
+    color: #2c3e50 !important;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace !important;
+    font-size: 14px !important;
+    line-height: 1.6 !important;
+    white-space: pre-wrap !important;
+    box-shadow: 
+        0 2px 8px rgba(0, 0, 0, 0.1),
+        inset 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+    transition: all 0.3s ease !important;
+    resize: vertical !important;
+    outline: none !important;
+}
+
+.pre-optimization-viewer-content textarea:focus {
+    border-color: #667eea !important;
+    box-shadow: 
+        0 4px 12px rgba(102, 126, 234, 0.2),
+        inset 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+
+.popup-body:has(.pov-container) {
+    display: flex !important;
+    flex-direction: column !important;
+    padding: 5px !important;
+    overflow: hidden !important;
+}
+
+.pov-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0; 
+}
+
+.pov-content-container {
+
+    max-height: 70vh; 
+    overflow-y: auto;
+    
+    padding: 15px;
+    border: 2px solid #e0e6ed;
+    border-radius: 10px;
+    background-color: #ffffff;
+}
+
+.pre-optimization-content-area {
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+    line-height: 1.6;
+    color: #2c3e50;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.diff-fallback {
+    padding: 15px;
+}
+
+.diff-fallback h4 {
+    color: #d9534f;
+    border-bottom: 1px solid #d9534f;
+    padding-bottom: 5px;
+}
+
+.diff-fallback p {
+    color: #555;
+}
+
+.diff-fallback pre {
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 4px;
+    white-space: pre-wrap;
+    word-break: break-all;
+    color: #333;
+    border: 1px solid #ddd;
+}
+
+.pov-content-container::-webkit-scrollbar {
+    width: 10px;
+}
+
+.pov-content-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.pov-content-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.pov-content-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.pre-optimization-viewer-content textarea::-webkit-scrollbar {
+    width: 10px;
+}
+
+.pre-optimization-viewer-content textarea::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.pre-optimization-viewer-content textarea::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.pre-optimization-viewer-content textarea::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}

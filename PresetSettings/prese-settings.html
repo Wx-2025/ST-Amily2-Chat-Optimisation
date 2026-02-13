@@ -1,0 +1,408 @@
+<div id="amily2-preset-settings-popup">
+    <style>
+        #amily2-preset-settings-popup { 
+            font-size: 14px;
+        }
+        
+        /* 确保编辑器容器有更大的高度和滚动能力 */
+        #prompt-editor-container {
+            max-height: 75vh;
+            overflow-y: auto;
+            border: 1px solid #444;
+            border-radius: 6px;
+            padding: 12px 12px 150px 12px;
+            background: #2a2a2a;
+        }
+        
+        /* 滚动条样式 */
+        #prompt-editor-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        #prompt-editor-container::-webkit-scrollbar-track {
+            background: #2a2a2a;
+        }
+        
+        #prompt-editor-container::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 4px;
+        }
+        
+        #prompt-editor-container::-webkit-scrollbar-thumb:hover {
+            background: #666;
+        }
+        
+        /* 紧凑的区块样式 */
+        #amily2-preset-settings-popup .prompt-section { 
+            border: 1px solid #555; 
+            border-radius: 6px; 
+            padding: 12px; 
+            margin-bottom: 16px; 
+            background: linear-gradient(135deg, #2a2a2a 0%, #1e1e1e 100%);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        
+        #amily2-preset-settings-popup .prompt-section h3 { 
+            margin: 0 0 8px 0; 
+            font-size: 16px; 
+            color: #fff;
+            font-weight: 600;
+        }
+        
+        #amily2-preset-settings-popup .prompt-section .text-muted { 
+            margin: 0 0 12px 0; 
+            font-size: 12px; 
+            color: #aaa;
+        }
+        
+        /* 混合列表样式 */
+        #amily2-preset-settings-popup .mixed-list { 
+            margin-bottom: 12px; 
+        }
+        
+        /* 混合项目样式 */
+        #amily2-preset-settings-popup .mixed-item { 
+            border: 1px solid #444; 
+            border-radius: 4px; 
+            margin-bottom: 8px; 
+            background: #333;
+            transition: all 0.2s ease;
+        }
+        
+        #amily2-preset-settings-popup .mixed-item:hover { 
+            border-color: #666; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        /* 项目头部 */
+        #amily2-preset-settings-popup .item-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 8px 12px; 
+            background: #3a3a3a;
+            border-bottom: 1px solid #444;
+        }
+        
+        #amily2-preset-settings-popup .item-type-badge { 
+            font-size: 11px; 
+            padding: 2px 6px; 
+            border-radius: 3px; 
+            font-weight: 500;
+        }
+        
+        #amily2-preset-settings-popup .badge-primary { 
+            background-color: #007bff; 
+            color: white; 
+        }
+        
+        #amily2-preset-settings-popup .badge-secondary { 
+            background-color: #6c757d; 
+            color: white; 
+        }
+        
+        /* 项目控制按钮 */
+        #amily2-preset-settings-popup .item-controls { 
+            display: flex; 
+            gap: 4px; 
+        }
+        
+        #amily2-preset-settings-popup .item-controls .btn { 
+            padding: 2px 6px; 
+            font-size: 11px; 
+            min-width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* 项目内容 */
+        #amily2-preset-settings-popup .item-content { 
+            padding: 12px; 
+        }
+        
+        #amily2-preset-settings-popup .item-content select { 
+            margin-bottom: 8px; 
+            font-size: 13px;
+            padding: 4px 8px;
+        }
+        
+        #amily2-preset-settings-popup .item-content textarea { 
+            width: 100%; 
+            height: 60px; 
+            box-sizing: border-box; 
+            resize: vertical; 
+            font-size: 13px;
+            padding: 8px;
+            border: 1px solid #555;
+            background: #2a2a2a;
+            color: #fff;
+            border-radius: 3px;
+        }
+        
+        #amily2-preset-settings-popup .item-content textarea:focus {
+            border-color: #007bff;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+        }
+        
+        #amily2-preset-settings-popup .item-content strong { 
+            color: #fff; 
+            font-size: 14px;
+        }
+        
+        #amily2-preset-settings-popup .item-content .small { 
+            font-size: 11px; 
+            margin: 4px 0 0 0;
+            line-height: 1.3;
+        }
+        
+        /* 条件块水平线格式样式 */
+        #amily2-preset-settings-popup .conditional-line-format {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background: #3a3a3a;
+            border-bottom: 1px solid #444;
+            gap: 8px;
+            justify-content: center;
+            position: relative;
+        }
+        
+        #amily2-preset-settings-popup .conditional-prefix {
+            color: #6c757d;
+            font-size: 12px;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        
+        #amily2-preset-settings-popup .conditional-dashes {
+            color: #555;
+            font-family: monospace;
+            font-size: 12px;
+            user-select: none;
+            flex: 1;
+        }
+        
+        #amily2-preset-settings-popup .conditional-name {
+            color: #fff;
+            font-weight: 600;
+            font-size: 14px;
+            white-space: nowrap;
+            text-align: center;
+        }
+        
+        #amily2-preset-settings-popup .conditional-controls {
+            position: absolute;
+            right: 12px;
+            display: flex;
+            gap: 4px;
+        }
+        
+        #amily2-preset-settings-popup .conditional-controls .btn {
+            padding: 2px 6px;
+            font-size: 11px;
+            min-width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #amily2-preset-settings-popup .conditional-description {
+            padding: 8px 12px;
+            background: #333;
+        }
+        
+        #amily2-preset-settings-popup .conditional-description code {
+            background: transparent;
+            color: #aaa;
+            font-size: 11px;
+            padding: 0;
+            border: none;
+        }
+        
+        /* 区块控制按钮 - 更紧凑 */
+        #amily2-preset-settings-popup .section-controls { 
+            display: flex; 
+            gap: 6px; 
+            flex-wrap: wrap;
+        }
+        
+        #amily2-preset-settings-popup .section-controls .btn { 
+            font-size: 11px; 
+            padding: 4px 8px;
+        }
+        
+        /* 区块操作按钮组 - 更紧凑 */
+        #amily2-preset-settings-popup .section-action-buttons {
+            margin-top: 6px !important;
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        
+        #amily2-preset-settings-popup .section-action-buttons .btn {
+            font-size: 10px;
+            padding: 3px 6px;
+        }
+        
+        /* 顶部按钮组 - 居中布局 */
+        #amily2-preset-settings-popup .button-group { 
+            margin-bottom: 12px; 
+            display: flex; 
+            gap: 6px; 
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        /* 按钮样式 - 更紧凑 */
+        #amily2-preset-settings-popup .btn {
+            color: #fff;
+            border: 1px solid transparent;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            font-size: 12px;
+            text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.2;
+        }
+        
+        #amily2-preset-settings-popup .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        #amily2-preset-settings-popup .btn-success { 
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%); 
+            border-color: #28a745; 
+        }
+        
+        #amily2-preset-settings-popup .btn-info { 
+            background: linear-gradient(135deg, #17a2b8 0%, #20c997 100%); 
+            border-color: #17a2b8; 
+        }
+        
+        #amily2-preset-settings-popup .btn-warning { 
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%); 
+            border-color: #ffc107; 
+            color: #212529; 
+        }
+        
+        #amily2-preset-settings-popup .btn-danger { 
+            background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%); 
+            border-color: #dc3545; 
+        }
+        
+        #amily2-preset-settings-popup .btn-primary { 
+            background: linear-gradient(135deg, #007bff 0%, #6610f2 100%); 
+            border-color: #007bff; 
+        }
+        
+        #amily2-preset-settings-popup .btn-secondary { 
+            background: linear-gradient(135deg, #6c757d 0%, #495057 100%); 
+            border-color: #6c757d; 
+        }
+        
+        #amily2-preset-settings-popup .btn-sm {
+            background: #6c757d;
+            border-color: #6c757d;
+        }
+        
+        #amily2-preset-settings-popup .btn-sm.btn-danger {
+            background: #dc3545;
+            border-color: #dc3545;
+        }
+        
+        #amily2-preset-settings-popup .btn-sm:hover {
+            opacity: 0.8;
+        }
+        
+        /* 表单控件样式 */
+        #amily2-preset-settings-popup .form-control {
+            background: #2a2a2a;
+            border: 1px solid #555;
+            color: #fff;
+            border-radius: 3px;
+        }
+        
+        #amily2-preset-settings-popup .form-control:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+            outline: none;
+        }
+        
+        /* 拖拽手柄样式 */
+        #amily2-preset-settings-popup .drag-handle {
+            cursor: grab;
+            color: #888;
+            font-weight: bold;
+            user-select: none;
+            padding: 0 4px;
+            font-family: monospace;
+        }
+        
+        #amily2-preset-settings-popup .drag-handle:hover {
+            color: #fff;
+        }
+        
+        #amily2-preset-settings-popup .drag-handle:active {
+            cursor: grabbing;
+        }
+        
+        /* 拖拽状态样式 */
+        #amily2-preset-settings-popup .mixed-item.dragging {
+            opacity: 0.5;
+            transform: rotate(2deg);
+        }
+        
+        #amily2-preset-settings-popup .mixed-item.drag-over {
+            border-color: #007bff;
+            background: #1a4480;
+            transform: scale(1.02);
+        }
+        
+        #amily2-preset-settings-popup .mixed-item[draggable="true"] {
+            cursor: move;
+        }
+        
+        #amily2-preset-settings-popup::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        #amily2-preset-settings-popup::-webkit-scrollbar-track {
+            background: #2a2a2a;
+        }
+        
+        #amily2-preset-settings-popup::-webkit-scrollbar-thumb {
+            background: #555;
+            border-radius: 4px;
+        }
+        
+        #amily2-preset-settings-popup::-webkit-scrollbar-thumb:hover {
+            background: #666;
+        }
+    </style>
+
+    <h3 style="margin: 0 0 16px 0; color: #fff; font-weight: 600;">Amily2 提示词链编辑器</h3>
+
+    <div class="button-group">
+        <button id="save-all-presets" class="btn btn-success">全部保存</button>
+        <button id="import-all-presets" class="btn btn-info">导入配置</button>
+        <button id="export-all-presets" class="btn btn-warning">导出配置</button>
+        <button id="reset-all-presets" class="btn btn-danger">恢复全部</button>
+    </div>
+
+    <div id="preset-manager-container">
+        <!-- Preset manager UI will be injected here by JS -->
+    </div>
+
+    <div id="prompt-editor-container">
+        <!-- JS will dynamically populate this -->
+    </div>

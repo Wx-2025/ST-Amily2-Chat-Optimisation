@@ -1,0 +1,274 @@
+#amily2_plot_optimization_panel .settings-group {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 15px;
+}
+
+:root {
+    --amily2-bg-color: #2C2C2C;
+    --amily2-button-color: #4A4A4A;
+    --amily2-text-color: #E0E0E0;
+}
+
+#amily2_plot_optimization_panel .settings-group > legend {
+    color: var(--amily2-text-color);
+    font-weight: bold;
+    padding: 0 10px;
+    margin-left: 10px;
+    font-size: 1.1em;
+}
+
+#amily2_plot_optimization_panel .settings-group > legend > i {
+    margin-right: 8px;
+    color: #9e8aff;
+}
+
+#amily2_plot_optimization_panel .sinan-navigation-deck {
+    display: flex;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    margin-bottom: 15px;
+}
+
+#amily2_plot_optimization_panel .sinan-nav-item {
+    padding: 10px 20px;
+    cursor: pointer;
+    border: none;
+    background-color: transparent;
+    color: var(--amily2-text-color);
+    font-size: 1em;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+}
+
+#amily2_plot_optimization_panel .sinan-nav-item:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--amily2-text-color);
+}
+
+#amily2_plot_optimization_panel .sinan-nav-item.active {
+    color: #9e8aff;
+    border-bottom-color: #9e8aff;
+    font-weight: bold;
+}
+
+#amily2_plot_optimization_panel .sinan-nav-item i {
+    margin-right: 8px;
+}
+
+#amily2_plot_optimization_panel .sinan-content-wrapper {
+    padding: 10px 0;
+}
+
+#amily2_plot_optimization_panel .sinan-tab-pane {
+    display: none;
+    animation: fadeIn 0.5s;
+}
+
+#amily2_plot_optimization_panel .sinan-tab-pane.active {
+    display: block;
+}
+
+#amily2_plot_optimization_panel .control-block-with-switch {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+#amily2_plot_optimization_panel .control-block-with-switch label {
+    font-weight: bold;
+    color: var(--amily2-text-color);
+}
+
+#amily2_plot_optimization_panel .inline-settings-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px 12px;
+    align-items: center;
+}
+
+#amily2_plot_optimization_panel .inline-settings-grid label {
+    font-weight: bold;
+    text-align: right;
+    white-space: nowrap;
+    color: var(--amily2-text-color);
+}
+
+#amily2_plot_optimization_panel .inline-settings-grid .text_pole,
+#amily2_plot_optimization_panel .inline-settings-grid input[type="range"],
+#amily2_plot_optimization_panel .inline-settings-grid .amily2_opt_preset_selector_wrapper {
+    width: 100%;
+}
+
+#amily2_plot_optimization_panel .prompt-editor-area {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#amily2_plot_optimization_panel .prompt-editor-area > label {
+    font-weight: bold;
+    color: var(--amily2-text-color);
+    margin-bottom: -5px;
+}
+
+#amily2_plot_optimization_panel .editor-with-button {
+    display: flex;
+    align-items: flex-start;
+    gap: 5px;
+}
+
+#amily2_plot_optimization_panel .editor-with-button textarea {
+    flex-grow: 1;
+}
+
+#amily2_plot_optimization_panel .amily2_opt_reset_button {
+    padding: 5px 10px;
+}
+
+#amily2_plot_optimization_panel .scrollable-container {
+    border: 1px solid #444;
+    border-radius: 5px;
+    padding: 10px;
+    height: 150px;
+    overflow-y: auto;
+    background-color: var(--amily2-bg-color);
+    margin-top: 5px;
+}
+
+#amily2_plot_optimization_panel .worldbook-column {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    margin-top: 10px;
+}
+
+#amily2_plot_optimization_panel .amily2_opt_label_with_button_wrapper,
+#amily2_plot_optimization_panel .amily2_opt_label_with_controls_wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+#amily2_plot_optimization_panel .radio-group {
+    display: flex;
+    border: 1px solid #555;
+    border-radius: 8px;
+    overflow: hidden;
+}
+#amily2_plot_optimization_panel .radio-group input[type="radio"] { display: none; }
+#amily2_plot_optimization_panel .radio-group label {
+    flex: 1;
+    text-align: center;
+    padding: 8px 10px;
+    cursor: pointer;
+    background-color: var(--amily2-bg-color);
+    color: var(--amily2-text-color);
+    transition: all 0.3s ease;
+    border-left: 1px solid #555;
+    margin: 0 !important;
+    font-weight: normal !important;
+}
+#amily2_plot_optimization_panel .radio-group label:first-of-type { border-left: none; }
+#amily2_plot_optimization_panel .radio-group input[type="radio"]:checked + label {
+    background-color: #7e57c2;
+    color: white;
+    font-weight: bold !important;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Horizontal wrapping for button groups */
+#amily2_plot_optimization_panel .amily2_opt_preset_selector_wrapper,
+#amily2_plot_optimization_panel #amily2_opt_worldbook_entry_controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    align-items: center;
+}
+
+#amily2_plot_optimization_panel .amily2_opt_preset_selector_wrapper > .text_pole {
+    flex-grow: 1; /* Allow select to take available space */
+}
+
+/* Jqyh API button styles */
+#amily2_plot_optimization_panel .jqyh-button-row {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 15px;
+}
+
+#amily2_plot_optimization_panel .jqyh-button-row .menu_button {
+    min-width: 120px;
+    height: 35px;
+    padding: 8px 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    text-transform: none;
+    letter-spacing: 0.5px;
+}
+
+#amily2_plot_optimization_panel .jqyh-button-row .menu_button.primary {
+    background: linear-gradient(135deg, #4CAF50, #45a049);
+    border: 1px solid #388e3c;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+#amily2_plot_optimization_panel .jqyh-button-row .menu_button.primary:hover {
+    background: linear-gradient(135deg, #5CBF60, #4CAF50);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+    transform: translateY(-1px);
+}
+
+#amily2_plot_optimization_panel .jqyh-button-row .menu_button.secondary {
+    background: linear-gradient(135deg, #2196F3, #1976D2);
+    border: 1px solid #1565C0;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+
+#amily2_plot_optimization_panel .jqyh-button-row .menu_button.secondary:hover {
+    background: linear-gradient(135deg, #42A5F5, #2196F3);
+    box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+    transform: translateY(-1px);
+}
+
+#amily2_plot_optimization_panel .jqyh-button-row .menu_button i {
+    font-size: 14px;
+}
+
+/* Unified Prompt Editor Styles */
+#amily2_plot_optimization_panel .unified-prompt-editor {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#amily2_plot_optimization_panel .prompt-editor-buttons {
+    display: flex;
+    justify-content: space-around;
+    gap: 10px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+#amily2_plot_optimization_panel .prompt-editor-buttons .menu_button {
+    min-width: 120px;
+    padding: 8px 12px;
+}

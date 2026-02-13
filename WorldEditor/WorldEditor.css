@@ -1,0 +1,626 @@
+/* 世界书编辑器样式 */
+#world-editor-container {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #ffffff;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+#world-editor-container .world-editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background-color: #2d2d2d;
+    border-bottom: 1px solid #555;
+    flex-shrink: 0;
+}
+
+#world-editor-container .world-editor-header h1 {
+    margin: 0;
+    color: #68b7ff;
+    font-size: 20px;
+}
+
+#world-editor-container .world-editor-header-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+#world-editor-container .world-editor-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.3s;
+    color: white;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+#world-editor-container .world-editor-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#world-editor-container .world-editor-btn-primary {
+    background-color: #4a90e2;
+    color: white;
+}
+
+#world-editor-container .world-editor-btn-primary:hover {
+    background-color: #357abd;
+}
+
+#world-editor-container .world-editor-btn-success {
+    background-color: #4CAF50;
+    color: white;
+}
+
+#world-editor-container .world-editor-btn-success:hover {
+    background-color: #45a049;
+}
+
+#world-editor-container .world-editor-btn-danger {
+    background-color: #f44336;
+    color: white;
+}
+
+#world-editor-container .world-editor-btn-danger:hover {
+    background-color: #da190b;
+}
+
+#world-editor-container .world-editor-btn-warning {
+    background-color: #ff9800;
+    color: white;
+}
+
+#world-editor-container .world-editor-btn-warning:hover {
+    background-color: #e68900;
+}
+
+#world-editor-container .world-editor-btn-info {
+    background-color: #17a2b8;
+    color: white;
+}
+
+#world-editor-container .world-editor-btn-info:hover {
+    background-color: #138496;
+}
+
+#world-editor-container .world-editor-content {
+    flex: 1;
+    padding: 20px;
+    overflow: auto;
+}
+
+#world-editor-container .world-editor-selector {
+    margin-bottom: 15px;
+    padding: 15px;
+    background-color: #2d2d2d;
+    border-radius: 8px;
+}
+
+#world-editor-container .world-editor-selector select {
+    width: 100%;
+    padding: 8px;
+    background-color: #404040;
+    color: white;
+    border: 1px solid #555;
+    border-radius: 4px;
+}
+
+#world-editor-container .world-editor-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 10px 15px;
+    background-color: #2d2d2d;
+    border-radius: 8px;
+}
+
+#world-editor-container .world-editor-toolbar-left {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+#world-editor-container .world-editor-toolbar-right {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+#world-editor-container .world-editor-search-box {
+    padding: 6px 10px;
+    background-color: #404040;
+    color: white;
+    border: 1px solid #555;
+    border-radius: 4px;
+    min-width: 200px;
+}
+
+#world-editor-container .world-editor-entries-container {
+    background-color: #2d2d2d;
+    border-radius: 8px;
+    overflow-y: auto;
+    max-height: calc(100vh - 300px); /* Adjust as needed */
+    position: relative;
+}
+
+#world-editor-container .world-editor-entries-header {
+    display: grid;
+    grid-template-columns: 40px 50px 50px 120px 1fr 100px 80px 80px;
+    background-color: #404040;
+    padding: 10px;
+    border-bottom: 1px solid #555;
+    font-weight: bold;
+    font-size: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+#world-editor-container .world-editor-entries-header > div[data-sort] {
+    cursor: pointer;
+    user-select: none;
+}
+
+#world-editor-container .world-editor-entries-header > div[data-sort]:hover {
+    color: #68b7ff;
+}
+
+#world-editor-container .world-editor-entry-row {
+    display: grid;
+    grid-template-columns: 40px 50px 50px 120px 1fr 100px 80px 80px;
+    padding: 8px 10px;
+    border-bottom: 1px solid #333;
+    align-items: center;
+    transition: background-color 0.2s;
+    min-height: 40px;
+    cursor: pointer;
+}
+
+
+#world-editor-container .world-editor-entry-row:hover {
+    background-color: #3a3a3a;
+}
+
+#world-editor-container .world-editor-entry-row.selected {
+    background-color: rgba(74, 74, 74, 0.5);
+}
+
+#world-editor-container .world-editor-entry-checkbox {
+    width: 16px;
+    height: 16px;
+    justify-self: center;
+}
+
+#world-editor-container .world-editor-entry-status {
+    text-align: center;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+#world-editor-container .world-editor-status-enabled {
+    color: #4CAF50;
+}
+
+#world-editor-container .world-editor-status-disabled {
+    color: #f44336;
+}
+
+#world-editor-container .fa-toggle-on {
+    color: #68b7ff;
+}
+
+#world-editor-container .fa-toggle-off {
+    color: #777;
+}
+
+#world-editor-container .world-editor-entry-activation {
+    text-align: center;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+#world-editor-container .world-editor-activation-constant {
+    color: #2196F3;
+}
+
+#world-editor-container .world-editor-activation-selective {
+    color: #4CAF50;
+}
+
+#world-editor-container .world-editor-entry-keys {
+    font-size: 11px;
+    color: #aaa;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#world-editor-container .world-editor-entry-content {
+    font-size: 11px;
+    color: #ccc;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#world-editor-container .world-editor-entry-position {
+    font-size: 10px;
+    color: #999;
+    text-align: center;
+}
+
+#world-editor-container .world-editor-entry-depth {
+    font-size: 12px;
+    color: #fff;
+    text-align: center;
+    background-color: #555;
+    border-radius: 3px;
+    padding: 2px 6px;
+    cursor: pointer;
+}
+
+#world-editor-container .world-editor-entry-order {
+    font-size: 12px;
+    color: #fff;
+    text-align: center;
+}
+
+/* 行内编辑样式 */
+#world-editor-container .inline-edit {
+    background-color: transparent;
+    border: 1px solid transparent;
+    color: #ccc;
+    font-family: inherit;
+    font-size: 11px;
+    padding: 2px 4px;
+    width: 100%;
+    box-sizing: border-box;
+    border-radius: 3px;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+#world-editor-container .inline-edit:hover {
+    border-color: #555;
+}
+
+#world-editor-container .inline-edit:focus {
+    background-color: #404040;
+    border-color: #68b7ff;
+    outline: none;
+}
+
+#world-editor-container .inline-edit[disabled] {
+    background-color: rgba(0,0,0,0.2);
+    color: #777;
+    cursor: not-allowed;
+}
+
+#world-editor-container .inline-toggle {
+    cursor: pointer;
+    text-align: center;
+}
+
+#world-editor-container .world-editor-batch-actions {
+    display: none;
+    padding: 15px;
+    background-color: #4a4a4a;
+    border-bottom: 1px solid #555;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+#world-editor-container .world-editor-batch-actions.active {
+    display: flex;
+}
+
+#world-editor-container .world-editor-selected-count {
+    color: #68b7ff;
+    font-weight: bold;
+}
+
+
+#world-editor-container .world-editor-loading {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+}
+
+#world-editor-container .world-editor-empty-state {
+    text-align: center;
+    padding: 40px;
+    color: #999;
+}
+
+#world-editor-container .world-editor-error {
+    background-color: #d32f2f;
+    color: white;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+#world-editor-container .world-editor-success {
+    background-color: #388e3c;
+    color: white;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+/* 新增：世界书列表样式 */
+#world-book-list-container {
+    background-color: #2d2d2d;
+    border-radius: 8px;
+    overflow-y: auto;
+    max-height: calc(100vh - 350px); /* 根据需要调整 */
+    padding: 5px;
+}
+
+.world-book-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    border-bottom: 1px solid #3a3a3a;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.world-book-row:last-child {
+    border-bottom: none;
+}
+
+.world-book-row:hover {
+    background-color: #3f3f3f;
+}
+
+.world-book-row.selected {
+    background-color: #4a4a4a;
+    border-left: 3px solid #68b7ff;
+}
+
+.world-book-checkbox {
+    margin-right: 15px;
+    width: 16px;
+    height: 16px;
+}
+
+.world-book-name {
+    flex-grow: 1;
+    font-size: 14px;
+    color: #e0e0e0;
+}
+
+.world-book-actions {
+    display: flex;
+    gap: 8px;
+    opacity: 0; /* 默认隐藏 */
+    transition: opacity 0.2s;
+}
+
+.world-book-row:hover .world-book-actions {
+    opacity: 1; /* 悬停时显示 */
+}
+
+.world-editor-btn.small-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+    color: white;
+    background-color: #4a90e2;
+}
+
+.world-editor-btn.small-btn:hover {
+    background-color: #357abd;
+}
+
+#world-editor-container .world-editor-selector h3 {
+    margin: 0;
+    font-size: 16px;
+    color: #e0e0e0;
+}
+
+#world-editor-container .world-editor-selector {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+#world-editor-container .world-editor-selector button {
+    color: white;
+    font-weight: 500;
+    background-color: #4a90e2;
+}
+
+#world-editor-container .world-editor-selector button:hover {
+    background-color: #357abd;
+}
+
+/* 确保返回列表按钮有颜色 */
+#world-editor-back-to-list-btn {
+    color: white !important;
+    background-color: #4a90e2 !important;
+}
+
+#world-editor-back-to-list-btn:hover {
+    background-color: #357abd !important;
+}
+
+/* ====== 布局修正 v2：针对 fieldset ====== */
+
+/* 1. 重置 fieldset 的默认样式，使其表现为标准的 flex 容器 */
+.settings-group {
+    display: flex;
+    flex-direction: column;
+    border: none; /* 移除 fieldset 默认边框 */
+    padding: 0; /* 移除 fieldset 默认内边距 */
+    margin: 0; /* 移除 fieldset 默认外边距 */
+    min-inline-size: auto; /* 覆盖默认行为 */
+    flex: 1; /* 让 fieldset 自身也能在父容器中伸展 */
+    min-height: 0;
+}
+
+/* 2. 让主容器在 fieldset 内撑满 */
+#world-editor-container {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+/* 3. 让视图（世界书列表 / 条目编辑器）作为flex子项，能够自动填充剩余空间 */
+#world-book-selection-view,
+#world-editor-entry-view {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+/* 4. 条目视图内的包裹容器也需要是flex布局 */
+.world-editor-entries-wrapper {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+}
+
+/* 5. 移除列表的固定高度限制，让它们在flex容器内自由伸展 */
+#world-book-list-container,
+#world-editor-container .world-editor-entries-container {
+    flex: 1;
+    min-height: 0;
+    max-height: none; /* 覆盖之前写死的max-height */
+}
+
+/* 响应式设计：移动端适配 */
+@media (max-width: 768px) {
+    #world-editor-container .world-editor-header-controls,
+    #world-editor-container .world-editor-toolbar-left,
+    #world-editor-container .world-editor-toolbar-right {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+    }
+
+    #world-editor-container .world-editor-btn {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+
+    #world-editor-container .world-editor-search-box {
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    #world-editor-container .world-editor-entries-header {
+        display: flex;
+        align-items: center;
+        padding: 10px;
+        background-color: #333;
+        border-bottom: 1px solid #444;
+    }
+
+    #world-editor-container .world-editor-entries-header > div {
+        display: none;
+    }
+
+    #world-editor-container .world-editor-entries-header > div:first-child {
+        display: flex;
+        align-items: center;
+    }
+
+    #world-editor-container .world-editor-entries-header > div:first-child::after {
+        content: "全选";
+        margin-left: 10px;
+        color: #ccc;
+        font-size: 14px;
+    }
+
+    #world-editor-container .world-editor-entry-row {
+        display: grid;
+        grid-template-columns: 40px 1fr; /* 复选框和内容区 */
+        gap: 5px;
+        padding: 10px;
+        border-bottom: 1px solid #444;
+        height: auto;
+    }
+
+    #world-editor-container .world-editor-entry-row > div {
+        text-align: left;
+        padding: 2px 0;
+    }
+
+    /* Add labels for mobile view */
+    #world-editor-container .world-editor-entry-row > div::before {
+        content: attr(data-label) ": ";
+        font-weight: bold;
+        color: #888;
+        display: inline-block;
+        margin-right: 5px;
+    }
+    
+    /* Hide label for checkbox */
+    #world-editor-container .world-editor-entry-row > div:nth-child(1)::before {
+        display: none;
+    }
+
+    /* Checkbox positioning - Target the WRAPPER div */
+    #world-editor-container .world-editor-entry-checkbox { 
+        grid-row: 1 / span 8; 
+        align-self: start; 
+        margin-top: 5px;
+    }
+
+    /* Stack other elements in the second column */
+    #world-editor-container .world-editor-entry-status,
+    #world-editor-container .world-editor-entry-activation,
+    #world-editor-container .world-editor-entry-keys,
+    #world-editor-container .world-editor-entry-content,
+    #world-editor-container .world-editor-entry-position,
+    #world-editor-container .world-editor-entry-depth,
+    #world-editor-container .world-editor-entry-order,
+    #world-editor-container .world-editor-entry-row > div[data-label="条目"] {
+        grid-column: 2;
+        width: 100%;
+    }
+
+    /* Truncation for keys and content */
+    #world-editor-container .world-editor-entry-keys,
+    #world-editor-container .world-editor-entry-content {
+        white-space: normal;
+        max-width: 100%;
+        display: -webkit-box !important;
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        word-break: break-word;
+    }
+    
+    /* Ensure inline edits take full width on mobile */
+    #world-editor-container .inline-edit {
+        width: calc(100% - 60px); /* Adjust for label width roughly */
+        display: inline-block;
+    }
+
+    #world-editor-container .world-editor-batch-actions {
+        flex-direction: column;
+    }
+
+    #world-editor-container .world-editor-batch-actions .world-editor-btn {
+        width: auto;
+    }
+}
