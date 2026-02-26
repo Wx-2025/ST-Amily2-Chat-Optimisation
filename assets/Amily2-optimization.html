@@ -73,9 +73,9 @@
                 </div>
 
                 <label for="amily2_jqyh_max_tokens">最大 Tokens: <span id="amily2_jqyh_max_tokens_value">4000</span></label>
-                <input type="range" id="amily2_jqyh_max_tokens" min="100" max="100000" step="100" value="4000">
+                <input type="number" class="text_pole" id="amily2_jqyh_max_tokens" min="100" max="100000" value="4000">
                 <label for="amily2_jqyh_temperature">温度: <span id="amily2_jqyh_temperature_value">0.7</span></label>
-                <input type="range" id="amily2_jqyh_temperature" min="0" max="2" step="0.1" value="0.7">
+                <input type="number" class="text_pole" id="amily2_jqyh_temperature" min="0" max="2" value="0.7">
             </div>
         </fieldset>
 
@@ -104,7 +104,7 @@
                     <select id="amily2_plotOpt_concurrentModel_select" class="text_pole" style="display: none;"></select>
                 </div>
                 <label for="amily2_plotOpt_concurrentMaxTokens">最大 Tokens: <span id="amily2_plotOpt_concurrentMaxTokens_value">8100</span></label>
-                <input type="range" id="amily2_plotOpt_concurrentMaxTokens" min="100" max="100000" step="100" value="8100">
+                <input type="number" class="text_pole" id="amily2_plotOpt_concurrentMaxTokens" min="100" max="100000" value="8100">
                 <div class="jqyh-button-row" style="grid-column: 1 / -1;">
                     <button id="amily2_plotOpt_concurrent_fetch_models" class="menu_button secondary" title="获取模型列表"><i class="fas fa-sync-alt"></i> 获取模型</button>
                     <button id="amily2_plotOpt_concurrent_test_connection" class="menu_button primary"><i class="fas fa-plug"></i> 测试连接</button>
@@ -142,7 +142,7 @@
                 </div>
                 <div class="inline-settings-grid">
                     <label for="amily2_plotOpt_concurrentWorldbookCharLimit">世界书最大字符数: <span id="amily2_plotOpt_concurrentWorldbookCharLimit_value">60000</span></label>
-                    <input type="range" id="amily2_plotOpt_concurrentWorldbookCharLimit" min="1000" max="200000" step="1000" value="60000">
+                    <input type="number" class="text_pole" id="amily2_plotOpt_concurrentWorldbookCharLimit" min="1000" max="200000" value="60000">
                 </div>
             </div>
         </fieldset>
@@ -236,9 +236,9 @@
             <legend>上下文参数</legend>
             <div class="inline-settings-grid">
                 <label for="amily2_opt_context_limit">上下文条数: <span id="amily2_opt_context_limit_value">10</span></label>
-                <input type="range" id="amily2_opt_context_limit" min="1" max="50" step="1" value="10">
+                <input type="number" class="text_pole" id="amily2_opt_context_limit" min="1" max="50" value="10">
                 <label for="amily2_opt_worldbook_char_limit">世界书最大字符数: <span id="amily2_opt_worldbook_char_limit_value">60000</span></label>
-                <input type="range" id="amily2_opt_worldbook_char_limit" min="1000" max="200000" step="1000" value="60000">
+                <input type="number" class="text_pole" id="amily2_opt_worldbook_char_limit" min="1000" max="200000" value="60000">
             </div>
         </fieldset>
         <fieldset class="settings-group">

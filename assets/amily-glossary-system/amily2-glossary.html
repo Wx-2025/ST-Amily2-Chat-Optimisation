@@ -76,11 +76,13 @@
                     <!-- 通用参数配置 -->
                     <div class="control-group">
                         <label for="amily2_sybd_max_tokens">最大令牌数：<span id="amily2_sybd_max_tokens_value">4000</span></label>
-                        <input type="range" id="amily2_sybd_max_tokens" min="100" max="100000" step="100" value="4000" data-setting-key="sybdMaxTokens" data-type="integer" />
+                        <input type="number" class="text_pole" id="amily2_sybd_max_tokens" min="100" max="100000" value="4000"
+                            data-setting-key="sybdMaxTokens" data-type="integer" />
                     </div>
                     <div class="control-group">
                         <label for="amily2_sybd_temperature">温度：<span id="amily2_sybd_temperature_value">0.7</span></label>
-                        <input type="range" id="amily2_sybd_temperature" min="0" max="2" step="0.1" value="0.7" data-setting-key="sybdTemperature" data-type="float" />
+                        <input type="number" class="text_pole" id="amily2_sybd_temperature" min="0" max="2" value="0.7"
+                            data-setting-key="sybdTemperature" data-type="float" />
                     </div>
 
                     <!-- 测试按钮组 - 水平排列 -->
