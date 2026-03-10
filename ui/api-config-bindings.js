@@ -8,6 +8,7 @@
 
 import { apiProfileManager, PROFILE_TYPES, SLOTS } from '../utils/config/ApiProfileManager.js';
 import { apiKeyStore } from '../utils/config/api-key-store/ApiKeyStore.js';
+import { getRequestHeaders } from '/script.js';
 
 // ── 状态 ─────────────────────────────────────────────────────────────────────
 
@@ -375,12 +376,16 @@ async function _fetchModels($c) {
                 ))
                 .map(m => m.name.replace(/^models\//, ''));
         } else {
-            // OpenAI 兼容接口
-            const baseUrl = apiUrl.replace(/\/+$/, '');
-            const headers = {};
-            if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
-
-            const resp = await fetch(`${baseUrl}/models`, { headers });
+            // OpenAI 兼容接口 — 通过 ST 后端代理，规避 CORS
+            const resp = await fetch('/api/backends/chat-completions/status', {
+                method: 'POST',
+                headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    reverse_proxy: apiUrl,
+                    proxy_password: apiKey,
+                    chat_completion_source: 'openai',
+                }),
+            });
             if (!resp.ok) {
                 const status = resp.status;
                 if (status === 401 || status === 403) {
@@ -392,8 +397,10 @@ async function _fetchModels($c) {
                 }
                 return;
             }
-            const data = await resp.json();
-            models = (data.data ?? []).map(m => m.id).filter(Boolean);
+            const rawData = await resp.json();
+            // ST 返回原始数组或包含 data/models 字段的对象
+            const list = Array.isArray(rawData) ? rawData : (rawData.data ?? rawData.models ?? []);
+            models = list.map(m => m.id ?? m.name ?? m).filter(m => typeof m === 'string' && m);
         }
 
         if (models.length === 0) {
@@ -418,8 +425,6 @@ async function _fetchModels($c) {
 async function _testConnection($c) {
     const apiUrl   = $c.find('#amily2_pf_url').val().trim();
     const apiKey   = $c.find('#amily2_pf_key').val().trim();
-    const model    = $c.find('#amily2_pf_model').val().trim();
-    const type     = $c.find('#amily2_pf_type').val();
     const provider = $c.find('#amily2_pf_provider').val();
 
     if (!apiUrl) { toastr.warning('请先填写 API 地址。'); return; }
@@ -454,51 +459,34 @@ async function _testConnection($c) {
             return;
         }
 
-        // OpenAI 兼容接口
-        const headers = { 'Content-Type': 'application/json' };
-        if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
-        const baseUrl = apiUrl.replace(/\/+$/, '');
-
-        // 先尝试 GET /models（通用、免费、无副作用）
-        const modelsResp = await fetch(`${baseUrl}/models`, { headers });
+        // OpenAI 兼容接口 — 通过 ST 后端代理，规避 CORS
+        const modelsResp = await fetch('/api/backends/chat-completions/status', {
+            method: 'POST',
+            headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                reverse_proxy: apiUrl,
+                proxy_password: apiKey,
+                chat_completion_source: 'openai',
+            }),
+        });
 
         if (modelsResp.ok) {
-            const data  = await modelsResp.json();
-            const count = (data.data ?? []).length;
+            const rawData = await modelsResp.json();
+            const list    = Array.isArray(rawData) ? rawData : (rawData.data ?? rawData.models ?? []);
+            const count   = list.length;
             $result.text(`连接成功${count ? `，${count} 个可用模型` : ''}`).css('color', 'var(--green)');
             toastr.success('连接测试通过！');
             return;
         }
 
-        if (modelsResp.status === 401 || modelsResp.status === 403) {
-            $result.text('认证失败，请检查 API Key').css('color', 'var(--warning-color)');
-            toastr.error('认证失败：API Key 无效或无权限。');
-            return;
-        }
-
-        // /models 不支持时，发一个最小请求验证连通性
-        let endpoint, body;
-        if (type === 'embedding') {
-            endpoint = `${baseUrl}/embeddings`;
-            body     = { model: model || 'text-embedding-ada-002', input: 'test' };
-        } else if (type === 'rerank') {
-            endpoint = `${baseUrl}/rerank`;
-            body     = { model, query: 'test', documents: ['a'] };
-        } else {
-            endpoint = `${baseUrl}/chat/completions`;
-            body     = { model: model || 'gpt-3.5-turbo', messages: [{ role: 'user', content: 'hi' }], max_tokens: 1 };
-        }
-
-        const fallbackResp = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) });
-        if (fallbackResp.ok || fallbackResp.status === 200) {
-            $result.text('连接成功').css('color', 'var(--green)');
-            toastr.success('连接测试通过！');
-        } else {
-            const err = await fallbackResp.json().catch(() => ({}));
-            const msg = err?.error?.message || `HTTP ${fallbackResp.status}`;
-            $result.text(`失败：${msg}`).css('color', 'var(--warning-color)');
-            toastr.error(`测试失败：${msg}`);
-        }
+        const status = modelsResp.status;
+        const errBody = await modelsResp.json().catch(() => ({}));
+        const msg = errBody?.error?.message
+                 || (status === 401 || status === 403 ? 'API Key 无效或无权限'
+                   : status === 404 ? '接口地址不存在'
+                   : `HTTP ${status}`);
+        $result.text(`失败：${msg}`).css('color', 'var(--warning-color)');
+        toastr.error(`测试失败：${msg}`);
     } catch (e) {
         $result.text(`无法连接：${e.message}`).css('color', 'var(--warning-color)');
         toastr.error(`连接失败：${e.message}`);
