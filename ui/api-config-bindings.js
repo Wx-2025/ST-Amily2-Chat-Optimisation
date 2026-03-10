@@ -38,6 +38,17 @@ export function bindApiConfigPanel(container) {
         _switchParamSections($c, $(this).val());
     });
 
+    // 弹窗：接口类型切换（Google 自动填 URL）
+    $c.find('#amily2_pf_provider').on('change', function () {
+        _handleProviderChange($c, $(this).val());
+    });
+
+    // 弹窗：获取模型列表
+    $c.find('#amily2_pf_fetch_models').on('click', () => _fetchModels($c));
+
+    // 弹窗：测试连接
+    $c.find('#amily2_pf_test_conn').on('click', () => _testConnection($c));
+
     // 弹窗：关闭
     $c.find('#amily2_profile_modal_close, #amily2_profile_modal_cancel').on('click', () => closeModal($c));
     $c.find('#amily2_profile_modal').on('click', function (e) {
@@ -246,12 +257,14 @@ async function openModal($c, id) {
             $c.find('#amily2_pf_return_documents').prop('checked', p.returnDocuments);
         }
         _switchParamSections($c, p.type);
+        _handleProviderChange($c, p.provider);
     } else {
         // 新建模式
         $c.find('#amily2_profile_modal_title').html('<i class="fas fa-plus"></i> 新建连接配置');
         $c.find('#amily2_pf_type').val('chat').prop('disabled', false);
         $c.find('#amily2_pf_name, #amily2_pf_url, #amily2_pf_key, #amily2_pf_model').val('');
         $c.find('#amily2_pf_provider').val('openai');
+        _handleProviderChange($c, 'openai');
         $c.find('#amily2_pf_max_tokens').val(65500);
         $c.find('#amily2_pf_temperature').val(1.0);
         $c.find('#amily2_pf_dimensions').val('');
@@ -260,6 +273,10 @@ async function openModal($c, id) {
         $c.find('#amily2_pf_return_documents').prop('checked', false);
         _switchParamSections($c, 'chat');
     }
+
+    // 清空上次测试结果和模型列表缓存
+    $c.find('#amily2_pf_test_result').text('');
+    $c.find('#amily2_pf_model_list').empty();
 
     $modal.css('display', 'flex');
 }
@@ -319,6 +336,188 @@ async function saveProfile($c) {
         toastr.error('保存失败，请查看控制台。');
     } finally {
         $btn.prop('disabled', false);
+    }
+}
+
+// ── 获取模型 / 测试连接 ───────────────────────────────────────────────────────
+
+async function _fetchModels($c) {
+    const apiUrl   = $c.find('#amily2_pf_url').val().trim();
+    const apiKey   = $c.find('#amily2_pf_key').val().trim();
+    const provider = $c.find('#amily2_pf_provider').val();
+
+    if (!apiUrl) { toastr.warning('请先填写 API 地址。'); return; }
+
+    const $btn = $c.find('#amily2_pf_fetch_models').prop('disabled', true);
+    $btn.html('<i class="fas fa-spinner fa-spin"></i> 获取中...');
+
+    try {
+        let models;
+
+        if (provider === 'google') {
+            // Google 用原生 API，以 ?key= 传参，返回 models[] 而非 data[]
+            if (!apiKey) { toastr.warning('请先填写 Google API Key。'); return; }
+            const resp = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`
+            );
+            if (!resp.ok) {
+                const status = resp.status;
+                toastr.error(status === 400 ? '获取失败：API Key 格式错误。'
+                           : status === 403 ? '获取失败：API Key 无效或无权限。'
+                           : `获取失败：HTTP ${status}`);
+                return;
+            }
+            const data = await resp.json();
+            // 只保留支持文本生成的模型
+            models = (data.models ?? [])
+                .filter(m => m.supportedGenerationMethods?.some(
+                    method => ['generateContent', 'embedContent'].includes(method)
+                ))
+                .map(m => m.name.replace(/^models\//, ''));
+        } else {
+            // OpenAI 兼容接口
+            const baseUrl = apiUrl.replace(/\/+$/, '');
+            const headers = {};
+            if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+
+            const resp = await fetch(`${baseUrl}/models`, { headers });
+            if (!resp.ok) {
+                const status = resp.status;
+                if (status === 401 || status === 403) {
+                    toastr.error('获取失败：API Key 无效或无权限。');
+                } else if (status === 404) {
+                    toastr.warning('该接口不支持模型列表查询，请手动填写模型 ID。');
+                } else {
+                    toastr.error(`获取失败：HTTP ${status}`);
+                }
+                return;
+            }
+            const data = await resp.json();
+            models = (data.data ?? []).map(m => m.id).filter(Boolean);
+        }
+
+        if (models.length === 0) {
+            toastr.warning('未获取到模型列表，请手动填写。');
+            return;
+        }
+
+        const $dl = $c.find('#amily2_pf_model_list');
+        $dl.html(models.map(m => `<option value="${_escapeHtml(m)}">`).join(''));
+
+        const $modelInput = $c.find('#amily2_pf_model');
+        if (!$modelInput.val()) $modelInput.val(models[0]);
+
+        toastr.success(`已获取 ${models.length} 个可用模型。`);
+    } catch (e) {
+        toastr.error(`获取失败：${e.message}`);
+    } finally {
+        $btn.prop('disabled', false).html('<i class="fas fa-list"></i> 获取');
+    }
+}
+
+async function _testConnection($c) {
+    const apiUrl   = $c.find('#amily2_pf_url').val().trim();
+    const apiKey   = $c.find('#amily2_pf_key').val().trim();
+    const model    = $c.find('#amily2_pf_model').val().trim();
+    const type     = $c.find('#amily2_pf_type').val();
+    const provider = $c.find('#amily2_pf_provider').val();
+
+    if (!apiUrl) { toastr.warning('请先填写 API 地址。'); return; }
+
+    const $btn    = $c.find('#amily2_pf_test_conn').prop('disabled', true);
+    const $result = $c.find('#amily2_pf_test_result').text('测试中…').css('color', 'var(--SmartThemeQuoteColor)');
+    $btn.html('<i class="fas fa-spinner fa-spin"></i> 测试中...');
+
+    try {
+        if (provider === 'google') {
+            // Google 用原生 models 端点测试
+            if (!apiKey) {
+                $result.text('请填写 API Key').css('color', 'var(--warning-color)');
+                return;
+            }
+            const resp = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`
+            );
+            if (resp.ok) {
+                const data  = await resp.json();
+                const count = (data.models ?? []).length;
+                $result.text(`连接成功${count ? `，${count} 个可用模型` : ''}`).css('color', 'var(--green)');
+                toastr.success('Google AI Studio 连接测试通过！');
+            } else {
+                const status = resp.status;
+                const msg = status === 400 ? 'API Key 格式错误'
+                          : status === 403 ? 'API Key 无效或无权限'
+                          : `HTTP ${status}`;
+                $result.text(`失败：${msg}`).css('color', 'var(--warning-color)');
+                toastr.error(`测试失败：${msg}`);
+            }
+            return;
+        }
+
+        // OpenAI 兼容接口
+        const headers = { 'Content-Type': 'application/json' };
+        if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+        const baseUrl = apiUrl.replace(/\/+$/, '');
+
+        // 先尝试 GET /models（通用、免费、无副作用）
+        const modelsResp = await fetch(`${baseUrl}/models`, { headers });
+
+        if (modelsResp.ok) {
+            const data  = await modelsResp.json();
+            const count = (data.data ?? []).length;
+            $result.text(`连接成功${count ? `，${count} 个可用模型` : ''}`).css('color', 'var(--green)');
+            toastr.success('连接测试通过！');
+            return;
+        }
+
+        if (modelsResp.status === 401 || modelsResp.status === 403) {
+            $result.text('认证失败，请检查 API Key').css('color', 'var(--warning-color)');
+            toastr.error('认证失败：API Key 无效或无权限。');
+            return;
+        }
+
+        // /models 不支持时，发一个最小请求验证连通性
+        let endpoint, body;
+        if (type === 'embedding') {
+            endpoint = `${baseUrl}/embeddings`;
+            body     = { model: model || 'text-embedding-ada-002', input: 'test' };
+        } else if (type === 'rerank') {
+            endpoint = `${baseUrl}/rerank`;
+            body     = { model, query: 'test', documents: ['a'] };
+        } else {
+            endpoint = `${baseUrl}/chat/completions`;
+            body     = { model: model || 'gpt-3.5-turbo', messages: [{ role: 'user', content: 'hi' }], max_tokens: 1 };
+        }
+
+        const fallbackResp = await fetch(endpoint, { method: 'POST', headers, body: JSON.stringify(body) });
+        if (fallbackResp.ok || fallbackResp.status === 200) {
+            $result.text('连接成功').css('color', 'var(--green)');
+            toastr.success('连接测试通过！');
+        } else {
+            const err = await fallbackResp.json().catch(() => ({}));
+            const msg = err?.error?.message || `HTTP ${fallbackResp.status}`;
+            $result.text(`失败：${msg}`).css('color', 'var(--warning-color)');
+            toastr.error(`测试失败：${msg}`);
+        }
+    } catch (e) {
+        $result.text(`无法连接：${e.message}`).css('color', 'var(--warning-color)');
+        toastr.error(`连接失败：${e.message}`);
+    } finally {
+        $btn.prop('disabled', false).html('<i class="fas fa-plug"></i> 测试连接');
+    }
+}
+
+// ── Provider 切换 ─────────────────────────────────────────────────────────────
+
+const GOOGLE_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/openai';
+
+function _handleProviderChange($c, provider) {
+    const isGoogle = provider === 'google';
+    $c.find('#amily2_pf_url_row').toggle(!isGoogle);
+    $c.find('#amily2_pf_google_note').toggle(isGoogle);
+
+    if (isGoogle) {
+        $c.find('#amily2_pf_url').val(GOOGLE_API_BASE);
     }
 }
 

@@ -41,7 +41,6 @@
 <fieldset class="settings-group">
     <legend><i class="fas fa-server"></i> 连接配置列表</legend>
 
-    <!-- 类型筛选标签 -->
     <div style="display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap;">
         <button class="menu_button small_button amily2_profile_type_filter active" data-type="all">全部</button>
         <button class="menu_button small_button amily2_profile_type_filter" data-type="chat">
@@ -58,9 +57,7 @@
         </button>
     </div>
 
-    <!-- Profile 卡片列表 -->
     <div id="amily2_profile_list" style="display:flex; flex-direction:column; gap:8px;">
-        <!-- 由 JS 动态渲染 -->
         <div class="amily2_profile_empty" style="color:var(--SmartThemeQuoteColor); text-align:center; padding:20px;">
             暂无连接配置，点击「新建配置」添加。
         </div>
@@ -74,13 +71,12 @@
         为每个系统功能指定使用的连接配置。选单只会显示类型匹配的配置。
     </small>
     <div id="amily2_slot_assignments" style="display:flex; flex-direction:column; gap:6px;">
-        <!-- 由 JS 动态渲染 -->
     </div>
 </fieldset>
 
 <!-- 新建/编辑 Profile 弹窗 -->
 <div id="amily2_profile_modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
-    <div style="background:var(--SmartThemeBlurTintColor); border:1px solid var(--SmartThemeBorderColor); border-radius:8px; padding:20px; width:min(480px,92vw); max-height:85vh; overflow-y:auto;">
+    <div style="background:var(--SmartThemeBlurTintColor); border:1px solid var(--SmartThemeBorderColor); border-radius:8px; padding:20px; width:min(500px,94vw); max-height:88vh; overflow-y:auto;">
 
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
             <strong id="amily2_profile_modal_title"><i class="fas fa-key"></i> 新建连接配置</strong>
@@ -103,66 +99,113 @@
             <input id="amily2_pf_name" type="text" class="text_pole" placeholder="例如：我的 DeepSeek" />
         </div>
         <div class="amily2_settings_block">
-            <label for="amily2_pf_provider">API 提供商</label>
+            <label for="amily2_pf_provider">接口类型</label>
             <select id="amily2_pf_provider" class="text_pole">
-                <option value="openai">OpenAI 兼容</option>
-                <option value="openai_test">实验性全兼容</option>
-                <option value="google">Google 直连</option>
-                <option value="sillytavern_backend">SillyTavern 后端</option>
-                <option value="sillytavern_preset">SillyTavern 预设</option>
+                <option value="openai">OpenAI / 兼容接口（推荐）</option>
+                <option value="google">Google Gemini 直连</option>
+                <option value="sillytavern_backend">SillyTavern 后端代理</option>
+                <option value="sillytavern_preset">SillyTavern 预设转发</option>
             </select>
         </div>
-        <div class="amily2_settings_block">
-            <label for="amily2_pf_url">API URL</label>
+        <div class="amily2_settings_block" id="amily2_pf_url_row">
+            <label for="amily2_pf_url">API 地址</label>
             <input id="amily2_pf_url" type="text" class="text_pole" placeholder="https://api.example.com/v1" />
+        </div>
+        <!-- Google 专属提示（选 Google 时显示） -->
+        <div id="amily2_pf_google_note" style="display:none; margin-bottom:8px;">
+            <small class="notes" style="display:block; padding:6px 10px; background:var(--black10a); border-radius:4px; border-left:3px solid #4285f4;">
+                <i class="fas fa-info-circle" style="color:#4285f4;"></i>
+                Google AI Studio — 接口地址已自动配置，只需填写 API Key 即可。
+                在 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:#4285f4;">aistudio.google.com</a> 生成密钥。
+            </small>
         </div>
         <div class="amily2_settings_block">
             <label for="amily2_pf_key">API Key <span style="color:var(--SmartThemeQuoteColor); font-size:0.85em;">（加密存储）</span></label>
             <input id="amily2_pf_key" type="password" class="text_pole" placeholder="sk-..." autocomplete="off" />
             <small class="notes">留空则不修改现有 Key。</small>
         </div>
+
+        <!-- 模型选择（带获取按钮） -->
         <div class="amily2_settings_block">
-            <label for="amily2_pf_model">模型 ID</label>
-            <input id="amily2_pf_model" type="text" class="text_pole" placeholder="例如：deepseek-r1-250528" />
+            <label for="amily2_pf_model">模型</label>
+            <div style="display:flex; gap:6px; align-items:stretch;">
+                <input id="amily2_pf_model" type="text" class="text_pole"
+                       list="amily2_pf_model_list"
+                       placeholder="手动填写或点击「获取」"
+                       style="flex:1;" />
+                <datalist id="amily2_pf_model_list"></datalist>
+                <button id="amily2_pf_fetch_models" class="menu_button small_button interactable" type="button" title="从 API 获取可用模型列表（需先填写地址和 Key）">
+                    <i class="fas fa-list"></i> 获取
+                </button>
+            </div>
         </div>
 
-        <!-- Chat 专有参数 -->
+        <!-- 测试连接 -->
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+            <button id="amily2_pf_test_conn" class="menu_button small_button interactable" type="button">
+                <i class="fas fa-plug"></i> 测试连接
+            </button>
+            <span id="amily2_pf_test_result" style="font-size:0.85em;"></span>
+        </div>
+
+        <!-- Chat 高级参数（折叠） -->
         <div id="amily2_pf_chat_params">
-            <div class="amily2_settings_block">
-                <label for="amily2_pf_max_tokens">最大 Token 数</label>
-                <input id="amily2_pf_max_tokens" type="number" class="text_pole" min="100" max="200000" value="65500" />
-            </div>
-            <div class="amily2_settings_block">
-                <label for="amily2_pf_temperature">温度（Temperature）</label>
-                <input id="amily2_pf_temperature" type="number" class="text_pole" min="0" max="2" step="0.1" value="1.0" />
-            </div>
+            <details class="amily2_advanced_section" style="margin-top:4px;">
+                <summary style="cursor:pointer; font-size:0.88em; color:var(--SmartThemeQuoteColor); user-select:none; padding:4px 0;">
+                    <i class="fas fa-sliders-h"></i> 高级参数
+                </summary>
+                <div style="padding-top:8px;">
+                    <div class="amily2_settings_block">
+                        <label for="amily2_pf_max_tokens">最大 Token 数</label>
+                        <input id="amily2_pf_max_tokens" type="number" class="text_pole" min="100" max="200000" value="65500" />
+                    </div>
+                    <div class="amily2_settings_block">
+                        <label for="amily2_pf_temperature">温度（Temperature）</label>
+                        <input id="amily2_pf_temperature" type="number" class="text_pole" min="0" max="2" step="0.1" value="1.0" />
+                    </div>
+                </div>
+            </details>
         </div>
 
-        <!-- Embedding 专有参数 -->
+        <!-- Embedding 高级参数（折叠） -->
         <div id="amily2_pf_embedding_params" style="display:none;">
-            <div class="amily2_settings_block">
-                <label for="amily2_pf_dimensions">输出维度 <span style="color:var(--SmartThemeQuoteColor); font-size:0.85em;">（留空=模型默认）</span></label>
-                <input id="amily2_pf_dimensions" type="number" class="text_pole" min="1" placeholder="例如：1536" />
-            </div>
-            <div class="amily2_settings_block">
-                <label for="amily2_pf_encoding_format">编码格式</label>
-                <select id="amily2_pf_encoding_format" class="text_pole">
-                    <option value="float">float（默认）</option>
-                    <option value="base64">base64</option>
-                </select>
-            </div>
+            <details class="amily2_advanced_section" style="margin-top:4px;">
+                <summary style="cursor:pointer; font-size:0.88em; color:var(--SmartThemeQuoteColor); user-select:none; padding:4px 0;">
+                    <i class="fas fa-sliders-h"></i> 高级参数
+                </summary>
+                <div style="padding-top:8px;">
+                    <div class="amily2_settings_block">
+                        <label for="amily2_pf_dimensions">输出维度 <span style="color:var(--SmartThemeQuoteColor); font-size:0.85em;">（留空 = 模型默认）</span></label>
+                        <input id="amily2_pf_dimensions" type="number" class="text_pole" min="1" placeholder="例如：1536" />
+                    </div>
+                    <div class="amily2_settings_block">
+                        <label for="amily2_pf_encoding_format">编码格式</label>
+                        <select id="amily2_pf_encoding_format" class="text_pole">
+                            <option value="float">float（默认）</option>
+                            <option value="base64">base64</option>
+                        </select>
+                    </div>
+                </div>
+            </details>
         </div>
 
-        <!-- Rerank 专有参数 -->
+        <!-- Rerank 参数 -->
         <div id="amily2_pf_rerank_params" style="display:none;">
             <div class="amily2_settings_block">
                 <label for="amily2_pf_top_n">返回结果数量（Top N）</label>
                 <input id="amily2_pf_top_n" type="number" class="text_pole" min="1" max="100" value="5" />
             </div>
-            <div class="amily2_settings_block" style="flex-direction:row; align-items:center; gap:8px;">
-                <input id="amily2_pf_return_documents" type="checkbox" />
-                <label for="amily2_pf_return_documents">返回原始文档内容</label>
-            </div>
+            <details class="amily2_advanced_section" style="margin-top:4px;">
+                <summary style="cursor:pointer; font-size:0.88em; color:var(--SmartThemeQuoteColor); user-select:none; padding:4px 0;">
+                    <i class="fas fa-sliders-h"></i> 高级参数
+                </summary>
+                <div style="padding-top:8px;">
+                    <div class="amily2_settings_block" style="flex-direction:row; align-items:center; gap:8px;">
+                        <input id="amily2_pf_return_documents" type="checkbox" />
+                        <label for="amily2_pf_return_documents">返回原始文档内容</label>
+                    </div>
+                </div>
+            </details>
         </div>
 
         <!-- 操作按钮 -->
