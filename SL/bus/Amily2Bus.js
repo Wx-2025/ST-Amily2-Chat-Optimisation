@@ -124,15 +124,17 @@ class Amily2Bus {
             // 1. 日志能力 (绑定了身份的日志接口)
             log: (origin, type, message) => this.Logger.log(pluginName, origin, type, message),
 
-            // 2. 文件能力 (绑定了身份的文件接口)
-            file: {
-                read: (path) => {
-                    return this.FilePipe ? this.FilePipe.read(pluginName, path) : null;
+            // 2. 文件能力 (绑定了插件身份的文件接口，后端为 IndexedDB)
+            file: this.FilePipe
+                ? this.FilePipe.forPlugin(pluginName)
+                : {
+                    read:     () => null,
+                    write:    () => false,
+                    delete:   () => false,
+                    list:     () => [],
+                    clearAll: () => 0,
+                    stat:     () => null,
                 },
-                write: (path, data) => {
-                    return this.FilePipe ? this.FilePipe.write(pluginName, path, data) : false;
-                }
-            },
 
             // 3. 网络能力 (ModelCaller)
             model: {

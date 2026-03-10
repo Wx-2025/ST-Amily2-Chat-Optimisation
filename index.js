@@ -15,6 +15,7 @@ import {
     checkForUpdates, fetchMessageBoardContent,
     setUpdateInfo, applyUpdateIndicator,
     pluginVersion, extensionName, defaultSettings,
+    configManager,
     checkAuthorization, refreshUserInfo,
     tableSystemDefaultSettings,
     manageLorebookEntriesForChat,
@@ -940,6 +941,7 @@ jQuery(async () => {
     registerAllApiHandlers();
     initializeAmilyHelper();
     mergePluginSettings();
+    configManager.migrate(); // 将 extension_settings 中残留的敏感字段迁移到 localStorage
 
     let attempts = 0;
     const maxAttempts = 100;
