@@ -2,6 +2,7 @@ import { extension_settings, getContext } from "/scripts/extensions.js";
 import { characters, this_chid, getRequestHeaders, saveSettingsDebounced, eventSource, event_types } from "/script.js";
 import { extensionName } from "../../utils/settings.js";
 import { amilyHelper } from '../../core/tavern-helper/main.js';
+import { getSlotProfile, providerToApiMode } from './api-resolver.js';
 
 let ChatCompletionService = undefined;
 try {
@@ -42,15 +43,30 @@ function normalizeApiResponse(responseData) {
     return data;
 }
 
-export function getJqyhApiSettings() {
+export async function getJqyhApiSettings() {
+    // 优先读取 'jqyh' 槽位分配的 Profile
+    const profile = await getSlotProfile('jqyh');
+    if (profile) {
+        return {
+            apiMode:      providerToApiMode(profile.provider),
+            apiUrl:       profile.apiUrl,
+            apiKey:       profile.apiKey ?? '',
+            model:        profile.model,
+            maxTokens:    profile.maxTokens   ?? 65500,
+            temperature:  profile.temperature ?? 1.0,
+            tavernProfile: '',
+        };
+    }
+
+    // 降级：读旧 extension_settings 字段
     return {
-        apiMode: extension_settings[extensionName]?.jqyhApiMode || 'openai_test',
-        apiUrl: extension_settings[extensionName]?.jqyhApiUrl?.trim() || '',
-        apiKey: extension_settings[extensionName]?.jqyhApiKey?.trim() || '',
-        model: extension_settings[extensionName]?.jqyhModel || '',
-        maxTokens: extension_settings[extensionName]?.jqyhMaxTokens || 4000,
-        temperature: extension_settings[extensionName]?.jqyhTemperature || 0.7,
-        tavernProfile: extension_settings[extensionName]?.jqyhTavernProfile || ''
+        apiMode:      extension_settings[extensionName]?.jqyhApiMode    || 'openai_test',
+        apiUrl:       extension_settings[extensionName]?.jqyhApiUrl?.trim() || '',
+        apiKey:       extension_settings[extensionName]?.jqyhApiKey?.trim() || '',
+        model:        extension_settings[extensionName]?.jqyhModel      || '',
+        maxTokens:    extension_settings[extensionName]?.jqyhMaxTokens  || 4000,
+        temperature:  extension_settings[extensionName]?.jqyhTemperature || 0.7,
+        tavernProfile: extension_settings[extensionName]?.jqyhTavernProfile || '',
     };
 }
 
@@ -60,7 +76,7 @@ export async function callJqyhAI(messages, options = {}) {
         return null;
     }
 
-    const apiSettings = getJqyhApiSettings();
+    const apiSettings = await getJqyhApiSettings();
 
     const finalOptions = {
         maxTokens: apiSettings.maxTokens,
@@ -258,7 +274,7 @@ async function callJqyhSillyTavernPreset(messages, options) {
 export async function fetchJqyhModels() {
     console.log('[Amily2号-Jqyh外交部] 开始获取模型列表');
     
-    const apiSettings = getJqyhApiSettings();
+    const apiSettings = await getJqyhApiSettings();
     
     try {
         if (apiSettings.apiMode === 'sillytavern_preset') {
@@ -339,7 +355,7 @@ export async function fetchJqyhModels() {
 export async function testJqyhApiConnection() {
     console.log('[Amily2号-Jqyh外交部] 开始API连接测试');
     
-    const apiSettings = getJqyhApiSettings();
+    const apiSettings = await getJqyhApiSettings();
 
     if (apiSettings.apiMode === 'sillytavern_preset') {
         if (!apiSettings.tavernProfile) {

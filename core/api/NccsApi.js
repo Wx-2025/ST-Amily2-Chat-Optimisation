@@ -2,6 +2,7 @@ import { extension_settings, getContext } from "/scripts/extensions.js";
 import { characters, this_chid, getRequestHeaders, saveSettingsDebounced, eventSource, event_types } from "/script.js";
 import { extensionName } from "../../utils/settings.js";
 import { amilyHelper } from '../../core/tavern-helper/main.js';
+import { getSlotProfile, providerToApiMode } from './api-resolver.js';
 
 let ChatCompletionService = undefined;
 try {
@@ -36,17 +37,34 @@ if (window.Amily2Bus) {
     toastr.error("核心组件 Amily2Bus 丢失，请检查安装。", "Nccs-System");
 }
 
-export function getNccsApiSettings() {
+export async function getNccsApiSettings() {
+    // 优先读取 'nccs' 槽位分配的 Profile
+    const profile = await getSlotProfile('nccs');
+    if (profile) {
+        return {
+            nccsEnabled:  true,
+            apiMode:      providerToApiMode(profile.provider),
+            apiUrl:       profile.apiUrl,
+            apiKey:       profile.apiKey ?? '',
+            model:        profile.model,
+            maxTokens:    profile.maxTokens   ?? 65500,
+            temperature:  profile.temperature ?? 1.0,
+            tavernProfile: '',
+            useFakeStream: false,
+        };
+    }
+
+    // 降级：读旧 extension_settings 字段
     return {
-        nccsEnabled: extension_settings[extensionName]?.nccsEnabled || false,
-        apiMode: extension_settings[extensionName]?.nccsApiMode || 'openai_test',
-        apiUrl: extension_settings[extensionName]?.nccsApiUrl?.trim() || '',
-        apiKey: extension_settings[extensionName]?.nccsApiKey?.trim() || '',
-        model: extension_settings[extensionName]?.nccsModel || '',
-        maxTokens: extension_settings[extensionName]?.nccsMaxTokens || 4000,
-        temperature: extension_settings[extensionName]?.nccsTemperature || 0.7,
+        nccsEnabled:  extension_settings[extensionName]?.nccsEnabled   || false,
+        apiMode:      extension_settings[extensionName]?.nccsApiMode    || 'openai_test',
+        apiUrl:       extension_settings[extensionName]?.nccsApiUrl?.trim() || '',
+        apiKey:       extension_settings[extensionName]?.nccsApiKey?.trim() || '',
+        model:        extension_settings[extensionName]?.nccsModel      || '',
+        maxTokens:    extension_settings[extensionName]?.nccsMaxTokens  || 4000,
+        temperature:  extension_settings[extensionName]?.nccsTemperature || 0.7,
         tavernProfile: extension_settings[extensionName]?.nccsTavernProfile || '',
-        useFakeStream: extension_settings[extensionName]?.nccsFakeStreamEnabled || false
+        useFakeStream: extension_settings[extensionName]?.nccsFakeStreamEnabled || false,
     };
 }
 
@@ -60,7 +78,7 @@ export async function callNccsAI(messages, options = {}) {
         return null;
     }
 
-    const settings = getNccsApiSettings();
+    const settings = await getNccsApiSettings();
     const finalOptions = {
         ...settings,
         ...options
@@ -238,7 +256,7 @@ async function callNccsSillyTavernPreset(messages, options) {
 export async function fetchNccsModels() {
     console.log('[Amily2号-Nccs外交部] 开始获取模型列表');
 
-    const apiSettings = getNccsApiSettings();
+    const apiSettings = await getNccsApiSettings();
 
     try {
         if (apiSettings.apiMode === 'sillytavern_preset') {
@@ -320,7 +338,7 @@ export async function fetchNccsModels() {
 export async function testNccsApiConnection() {
     console.log('[Amily2号-Nccs外交部] 开始API连接测试');
 
-    const apiSettings = getNccsApiSettings();
+    const apiSettings = await getNccsApiSettings();
 
     if (apiSettings.apiMode === 'sillytavern_preset') {
         if (!apiSettings.tavernProfile) {
