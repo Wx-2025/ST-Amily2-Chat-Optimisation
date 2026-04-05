@@ -10,6 +10,11 @@ import { callNccsAI } from '../api/NccsApi.js';
 export async function reorganizeTableContent(selectedTableIndices) {
     const settings = extension_settings[extensionName];
 
+    if (settings.table_system_enabled === false) {
+        toastr.warning('表格系统总开关已关闭。');
+        return;
+    }
+
     if (window.AMILY2_SYSTEM_PARALYZED === true) {
         console.error("[Amily2-制裁] 系统完整性已受损，所有外交活动被无限期中止。");
         return;

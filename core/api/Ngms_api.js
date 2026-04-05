@@ -2,6 +2,7 @@ import { extension_settings, getContext } from "/scripts/extensions.js";
 import { characters, this_chid, getRequestHeaders, saveSettingsDebounced, eventSource, event_types } from "/script.js";
 import { extensionName } from "../../utils/settings.js";
 import { amilyHelper } from '../../core/tavern-helper/main.js';
+import { getSlotProfile, providerToApiMode } from './api-resolver.js';
 
 let ChatCompletionService = undefined;
 try {
@@ -42,16 +43,35 @@ function normalizeApiResponse(responseData) {
     return data;
 }
 
-export function getNgmsApiSettings() {
+export async function getNgmsApiSettings() {
+    const s = extension_settings[extensionName] || {};
+
+    // 优先读取 'ngms' 槽位分配的 Profile（仅接管连接参数）
+    const profile = await getSlotProfile('ngms');
+    if (profile) {
+        return {
+            apiMode:      providerToApiMode(profile.provider),
+            apiUrl:       profile.apiUrl,
+            apiKey:       profile.apiKey ?? '',
+            model:        profile.model,
+            // 温度 / MaxTokens / FakeStream 读面板值
+            maxTokens:    s.ngmsMaxTokens    ?? profile.maxTokens   ?? 65500,
+            temperature:  s.ngmsTemperature  ?? profile.temperature ?? 1.0,
+            tavernProfile: '',
+            useFakeStream: s.ngmsFakeStreamEnabled ?? false,
+        };
+    }
+
+    // 降级：读旧 extension_settings 字段
     return {
-        apiMode: extension_settings[extensionName]?.ngmsApiMode || 'openai_test',
-        apiUrl: extension_settings[extensionName]?.ngmsApiUrl?.trim() || '',
-        apiKey: extension_settings[extensionName]?.ngmsApiKey?.trim() || '',
-        model: extension_settings[extensionName]?.ngmsModel || '',
-        maxTokens: extension_settings[extensionName]?.ngmsMaxTokens || 4000,
-        temperature: extension_settings[extensionName]?.ngmsTemperature || 0.7,
-        tavernProfile: extension_settings[extensionName]?.ngmsTavernProfile || '',
-        useFakeStream: extension_settings[extensionName]?.ngmsFakeStreamEnabled || false
+        apiMode:       s.ngmsApiMode    || 'openai_test',
+        apiUrl:        s.ngmsApiUrl?.trim() || '',
+        apiKey:        s.ngmsApiKey?.trim() || '',
+        model:         s.ngmsModel      || '',
+        maxTokens:     s.ngmsMaxTokens  ?? 30000,
+        temperature:   s.ngmsTemperature ?? 1.0,
+        tavernProfile: s.ngmsTavernProfile || '',
+        useFakeStream: s.ngmsFakeStreamEnabled || false,
     };
 }
 
@@ -61,7 +81,7 @@ export async function callNgmsAI(messages, options = {}) {
         return null;
     }
 
-    const apiSettings = getNgmsApiSettings();
+    const apiSettings = await getNgmsApiSettings();
 
     const finalOptions = {
         maxTokens: apiSettings.maxTokens,
@@ -324,7 +344,7 @@ async function callNgmsSillyTavernPreset(messages, options) {
 export async function fetchNgmsModels() {
     console.log('[Amily2号-Ngms外交部] 开始获取模型列表');
     
-    const apiSettings = getNgmsApiSettings();
+    const apiSettings = await getNgmsApiSettings();
     
     try {
         if (apiSettings.apiMode === 'sillytavern_preset') {
@@ -407,7 +427,7 @@ export async function fetchNgmsModels() {
 export async function testNgmsApiConnection() {
     console.log('[Amily2号-Ngms外交部] 开始API连接测试');
     
-    const apiSettings = getNgmsApiSettings();
+    const apiSettings = await getNgmsApiSettings();
 
     if (apiSettings.apiMode === 'sillytavern_preset') {
         if (!apiSettings.tavernProfile) {

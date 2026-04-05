@@ -1364,6 +1364,7 @@ export function bindTableEvents() {
     const contextSlider = document.getElementById('secondary-filler-context');
     const batchSlider = document.getElementById('secondary-filler-batch');
     const bufferSlider = document.getElementById('secondary-filler-buffer');
+    const maxRetriesSlider = document.getElementById('secondary-filler-max-retries'); // 【新增】
 
     const independentRulesContainer = document.getElementById('table-independent-rules-container');
     const independentRulesToggle = document.getElementById('table-independent-rules-enabled');
@@ -1431,6 +1432,16 @@ export function bindTableEvents() {
         bufferSlider.addEventListener('change', function() {
             updateAndSaveTableSetting('secondary_filler_buffer', parseInt(this.value, 10));
             toastr.info(`保留楼层已设置为 ${this.value}。`);
+        });
+    }
+
+    if (maxRetriesSlider) {
+        const value = extension_settings[extensionName]?.secondary_filler_max_retries ?? 2;
+        maxRetriesSlider.value = value;
+        
+        maxRetriesSlider.addEventListener('change', function() {
+            updateAndSaveTableSetting('secondary_filler_max_retries', parseInt(this.value, 10));
+            toastr.info(`最大重试次数已设置为 ${this.value}。`);
         });
     }
 
@@ -1985,8 +1996,6 @@ function bindNccsApiEvents() {
     if (settings.nccsApiUrl === undefined) settings.nccsApiUrl = 'https://api.openai.com/v1';
     if (settings.nccsApiKey === undefined) settings.nccsApiKey = '';
     if (settings.nccsModel === undefined) settings.nccsModel = '';
-    if (settings.nccsMaxTokens === undefined) settings.nccsMaxTokens = 2000;
-    if (settings.nccsTemperature === undefined) settings.nccsTemperature = 0.7;
     if (settings.nccsTavernProfile === undefined) settings.nccsTavernProfile = '';
 
     const enabledToggle = document.getElementById('nccs-api-enabled');
@@ -1996,10 +2005,6 @@ function bindNccsApiEvents() {
     const urlInput = document.getElementById('nccs-api-url');
     const keyInput = document.getElementById('nccs-api-key');
     const modelInput = document.getElementById('nccs-api-model');
-    const maxTokensSlider = document.getElementById('nccs-max-tokens');
-    const maxTokensValue = document.getElementById('nccs-max-tokens-value');
-    const temperatureSlider = document.getElementById('nccs-temperature');
-    const temperatureValue = document.getElementById('nccs-temperature-value');
     const presetSelect = document.getElementById('nccs-sillytavern-preset');
     const testButton = document.getElementById('nccs-test-connection');
     const fetchModelsButton = document.getElementById('nccs-fetch-models');
@@ -2012,14 +2017,6 @@ function bindNccsApiEvents() {
     if (urlInput) urlInput.value = settings.nccsApiUrl;
     if (keyInput) keyInput.value = settings.nccsApiKey;
     if (modelInput) modelInput.value = settings.nccsModel;
-    if (maxTokensSlider) {
-        maxTokensSlider.value = settings.nccsMaxTokens;
-        if (maxTokensValue) maxTokensValue.textContent = settings.nccsMaxTokens;
-    }
-    if (temperatureSlider) {
-        temperatureSlider.value = settings.nccsTemperature;
-        if (temperatureValue) temperatureValue.textContent = settings.nccsTemperature;
-    }
     if (presetSelect) presetSelect.value = settings.nccsTavernProfile || '';
 
     const updateConfigVisibility = () => {
@@ -2040,9 +2037,7 @@ function bindNccsApiEvents() {
         const fieldsToHideInPresetMode = [
             { element: urlInput, containerId: null },
             { element: keyInput, containerId: null },
-            { element: modelInput, containerId: null },
-            { element: maxTokensSlider, containerId: null },
-            { element: temperatureSlider, containerId: null }
+            { element: modelInput, containerId: null }
         ];
 
         fieldsToHideInPresetMode.forEach(({ element }) => {
@@ -2109,26 +2104,6 @@ function bindNccsApiEvents() {
         
         modelInput.addEventListener('blur', saveModel);
         modelInput.addEventListener('input', saveModel);
-    }
-
-    if (maxTokensSlider && maxTokensValue) {
-        maxTokensSlider.addEventListener('input', () => {
-            maxTokensValue.textContent = maxTokensSlider.value;
-        });
-        maxTokensSlider.addEventListener('change', () => {
-            settings.nccsMaxTokens = parseInt(maxTokensSlider.value);
-            saveSettingsDebounced();
-        });
-    }
-
-    if (temperatureSlider && temperatureValue) {
-        temperatureSlider.addEventListener('input', () => {
-            temperatureValue.textContent = temperatureSlider.value;
-        });
-        temperatureSlider.addEventListener('change', () => {
-            settings.nccsTemperature = parseFloat(temperatureSlider.value);
-            saveSettingsDebounced();
-        });
     }
 
     if (presetSelect) {

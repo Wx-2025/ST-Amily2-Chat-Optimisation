@@ -1,1 +1,143 @@
-(function(_0x294e55,_0x2984e3){const _0x5366a6=_0x2073,_0xfcb7a9=_0x294e55();while(!![]){try{const _0x3ad0a0=-parseInt(_0x5366a6(0x197))/0x1*(-parseInt(_0x5366a6(0x1b8))/0x2)+-parseInt(_0x5366a6(0x1c5))/0x3*(-parseInt(_0x5366a6(0x1b5))/0x4)+parseInt(_0x5366a6(0x1a4))/0x5*(parseInt(_0x5366a6(0x188))/0x6)+parseInt(_0x5366a6(0x1b6))/0x7*(-parseInt(_0x5366a6(0x1a7))/0x8)+-parseInt(_0x5366a6(0x196))/0x9+-parseInt(_0x5366a6(0x1c1))/0xa+parseInt(_0x5366a6(0x1b2))/0xb;if(_0x3ad0a0===_0x2984e3)break;else _0xfcb7a9['push'](_0xfcb7a9['shift']());}catch(_0x19f2e4){_0xfcb7a9['push'](_0xfcb7a9['shift']());}}}(_0x49dc,0x9b35a));function _0x2073(_0x48a94f,_0x10a52b){const _0x49dc52=_0x49dc();return _0x2073=function(_0x207356,_0x1c65ae){_0x207356=_0x207356-0x186;let _0x56779f=_0x49dc52[_0x207356];return _0x56779f;},_0x2073(_0x48a94f,_0x10a52b);}function _0x49dc(){const _0x237804=['秒\x20<br>\x0a\x20\x20\x20\x20\x20\x20\x20\x20用时:\x20','message','一次性尝试','任务处理失败','div','textContent','complete','cssText','status','1655XngFnQ','remove','0.8em','1623344AAsjYS','[轮询超时]\x20','fontSize','pow','无错误详情','\x0a\x20\x20\x20\x20position:\x20fixed;\x0a\x20\x20\x20\x20bottom:\x2020px;\x0a\x20\x20\x20\x20right:\x2020px;\x0a\x20\x20\x20\x20padding:\x2015px;\x0a\x20\x20\x20\x20background:\x20rgba(0,0,0,0.8);\x0a\x20\x20\x20\x20color:\x20white;\x0a\x20\x20\x20\x20border-radius:\x2010px;\x0a\x20\x20\x20\x20z-index:\x2010000;\x0a\x20\x20\x20\x20max-width:\x20300px;\x0a\x20\x20','API请求失败\x20(','round','[轮询错误]','value','progress-info-','1321166FOqaBe','style','<span\x20style=\x22color:#ff9494\x22>错误详情:</span>\x0a','1656676whLPpX','28uRXbbt','red','4YqPRMV','createElement','pre-wrap','text','100%','color','[轮询管理器]\x20','达到最大尝试次数但未完成\x20','轮询任务成功\x20(','3384260hblCIh','display','):\x20','block','6cJvLxA','min','body','20034rrnctu','progress-bar-','innerHTML','0\x200\x2010px\x200','rgba(80,0,0,0.9)','margin','now','\x0a\x20\x20\x20\x20\x20\x20\x20\x20进度:\x20','log','width','progress','polling-progress-','appendChild','次尝试)','7801803PWLBaF','299525blacNC','error','none','\x20<br>\x0a\x20\x20\x20\x20\x20\x20\x20\x20延迟:\x20'];_0x49dc=function(){return _0x237804;};return _0x49dc();}export async function intelligentPoll(_0xe118ca,_0x3e884d={}){const _0x5c5c09=_0x2073,{maxAttempts:maxAttempts=0x8,baseDelay:baseDelay=0x3e8,shouldStop:shouldStop=_0x249c62=>!!_0x249c62[_0x5c5c09(0x1a1)],onAttempt:onAttempt=(_0x498775,_0x55dd80)=>{},onError:onError=_0x2f8bd9=>console[_0x5c5c09(0x198)](_0x5c5c09(0x1af),_0x2f8bd9[_0x5c5c09(0x19c)])}=_0x3e884d;let _0x1169c5=null;for(let _0x598207=0x1;_0x598207<=maxAttempts;_0x598207++){const _0x48afd8=baseDelay*Math[_0x5c5c09(0x1aa)](0x2,_0x598207-0x1);try{onAttempt(_0x598207,_0x48afd8);_0x598207>0x1&&await new Promise(_0x412f01=>setTimeout(_0x412f01,_0x48afd8));const _0x577b2f=await _0xe118ca();if(shouldStop(_0x577b2f)){const _0x100af9=_0x5c5c09(0x1c0)+(maxAttempts>0x1?_0x598207+'/'+maxAttempts+'次尝试':_0x5c5c09(0x19d))+')';return console[_0x5c5c09(0x190)](_0x5c5c09(0x1be)+_0x100af9),_0x577b2f;}}catch(_0x42bb41){_0x1169c5=_0x42bb41,onError(_0x42bb41,_0x598207);if(_0x598207===maxAttempts)break;}}const _0x58d485=maxAttempts>0x1?'('+maxAttempts+_0x5c5c09(0x195):'',_0x213932=_0x1169c5?_0x1169c5[_0x5c5c09(0x19c)]+'\x20'+_0x58d485:_0x5c5c09(0x1bf)+_0x58d485;throw new Error(_0x5c5c09(0x1a8)+_0x213932);}export function createGooglePollingTask(_0x219080,_0x1b403e,_0x2adf47){return async()=>{const _0x154315=_0x2073,_0x32f92d=_0x1b403e+'/operations/'+_0x219080,_0x40541d=await fetch(_0x32f92d,{'method':'GET','headers':_0x2adf47});if(!_0x40541d['ok']){const _0x169bfe=await _0x40541d[_0x154315(0x1bb)]();throw new Error(_0x154315(0x1ad)+_0x40541d[_0x154315(0x1a3)]+_0x154315(0x1c3)+(_0x169bfe||_0x154315(0x1ab)));}return _0x40541d['json']();};}export function progressTracker(_0x1bf589,_0x389951){const _0x521dd7=_0x2073,_0x387510=Date[_0x521dd7(0x18e)]();let _0x3c5be9=0x0;const _0x533b92=document[_0x521dd7(0x1b9)](_0x521dd7(0x19f));_0x533b92['id']=_0x521dd7(0x193)+_0x1bf589,_0x533b92[_0x521dd7(0x1b3)][_0x521dd7(0x1a2)]=_0x521dd7(0x1ac);const _0x179267=document[_0x521dd7(0x1b9)]('h3');_0x179267['textContent']='AI任务处理中...',_0x179267[_0x521dd7(0x1b3)][_0x521dd7(0x18d)]=_0x521dd7(0x18b);const _0x10559e=document[_0x521dd7(0x1b9)](_0x521dd7(0x192));_0x10559e['id']=_0x521dd7(0x189)+_0x1bf589,_0x10559e['max']=_0x389951,_0x10559e[_0x521dd7(0x1b0)]=0x0,_0x10559e[_0x521dd7(0x1b3)][_0x521dd7(0x191)]=_0x521dd7(0x1bc);const _0x303577=document['createElement'](_0x521dd7(0x19f));return _0x303577['id']=_0x521dd7(0x1b1)+_0x1bf589,_0x303577[_0x521dd7(0x1b3)][_0x521dd7(0x1a9)]=_0x521dd7(0x1a6),_0x303577[_0x521dd7(0x1a0)]='初始连接...',_0x533b92[_0x521dd7(0x194)](_0x179267),_0x533b92[_0x521dd7(0x194)](_0x10559e),_0x533b92[_0x521dd7(0x194)](_0x303577),document[_0x521dd7(0x187)][_0x521dd7(0x194)](_0x533b92),{'start':()=>{const _0x41e9d6=_0x521dd7;_0x533b92[_0x41e9d6(0x1b3)][_0x41e9d6(0x1c2)]=_0x41e9d6(0x1c4);},'onAttempt':(_0x1fa2ec,_0x28b57b)=>{const _0x29e256=_0x521dd7;_0x10559e[_0x29e256(0x1b0)]=_0x1fa2ec,_0x3c5be9=Math[_0x29e256(0x186)](0x64,Math['round'](_0x1fa2ec/_0x389951*0x64));const _0x25831e=Math[_0x29e256(0x1ae)]((Date['now']()-_0x387510)/0x3e8);_0x303577[_0x29e256(0x18a)]=_0x29e256(0x18f)+_0x3c5be9+'%\x20<br>\x0a\x20\x20\x20\x20\x20\x20\x20\x20尝试:\x20'+_0x1fa2ec+'/'+_0x389951+_0x29e256(0x19a)+Math[_0x29e256(0x1ae)](_0x28b57b/0x3e8)+_0x29e256(0x19b)+_0x25831e+'秒\x0a\x20\x20\x20\x20\x20\x20';},'complete':()=>{const _0x3afe51=_0x521dd7;_0x533b92[_0x3afe51(0x1a5)]();},'error':_0x3241ec=>{const _0x229f79=_0x521dd7;_0x179267[_0x229f79(0x1a0)]=_0x229f79(0x19e),_0x179267['style'][_0x229f79(0x1bd)]=_0x229f79(0x1b7),_0x533b92[_0x229f79(0x1b3)]['backgroundColor']=_0x229f79(0x18c),_0x10559e[_0x229f79(0x1b3)][_0x229f79(0x1c2)]=_0x229f79(0x199),_0x303577['style']['whiteSpace']=_0x229f79(0x1ba),_0x303577[_0x229f79(0x18a)]=_0x229f79(0x1b4)+_0x3241ec;}};}
+export async function intelligentPoll(promiseFactory, options = {}) {
+  // 解析配置选项
+  const {
+    maxAttempts = 8,
+    baseDelay = 1000,
+    shouldStop = res => !!res.complete,
+    onAttempt = (attempt, delay) => {/* 默认不执行操作 */},
+    onError = error => console.error('[轮询错误]', error.message)
+  } = options;
+  
+  let lastError = null;
+  
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    // 计算当前延迟时间（指数退避）
+    const delay = baseDelay * Math.pow(2, attempt - 1);
+    
+    try {
+      // 调用回调通知尝试开始
+      onAttempt(attempt, delay);
+      
+      // 如果首次尝试不需延迟
+      if (attempt > 1) {
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+      
+      // 执行真实的任务
+      const result = await promiseFactory();
+      
+      // 检查是否满足停止条件
+      if (shouldStop(result)) {
+        const successMsg = `轮询任务成功 (${
+          maxAttempts > 1 
+            ? `${attempt}/${maxAttempts}次尝试`
+            : '一次性尝试'
+        })`;
+        console.log(`[轮询管理器] ${successMsg}`);
+        return result;
+      }
+    } catch (error) {
+      lastError = error;
+      onError(error, attempt);
+      
+      // 如果是最后一次尝试，保留错误抛出
+      if (attempt === maxAttempts) break;
+    }
+  }
+  
+  // 所有尝试失败后抛出聚合错误
+  const attemptsStr = maxAttempts > 1 ? `(${maxAttempts}次尝试)` : '';
+  const message = lastError
+    ? `${lastError.message} ${attemptsStr}`
+    : `达到最大尝试次数但未完成 ${attemptsStr}`;
+  
+  throw new Error(`[轮询超时] ${message}`);
+}
+ 
+export function createGooglePollingTask(operationId, statusUrl, headers) {
+  return async () => {
+    // 在真实URL中插入操作ID
+    const taskUrl = `${statusUrl}/operations/${operationId}`;
+    
+    const response = await fetch(taskUrl, {
+      method: 'GET',
+      headers: headers,
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API请求失败 (${response.status}): ${errorText || '无错误详情'}`);
+    }
+    
+    return response.json();
+  };
+}
+export function progressTracker(operationId, maxAttempts) {
+  const startTime = Date.now();
+  let percentComplete = 0;
+  
+  const container = document.createElement('div');
+  container.id = `polling-progress-${operationId}`;
+  container.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 15px;
+    background: rgba(0,0,0,0.8);
+    color: white;
+    border-radius: 10px;
+    z-index: 10000;
+    max-width: 300px;
+  `;
+  
+  const title = document.createElement('h3');
+  title.textContent = 'AI任务处理中...';
+  title.style.margin = '0 0 10px 0';
+  
+  const progress = document.createElement('progress');
+  progress.id = `progress-bar-${operationId}`;
+  progress.max = maxAttempts;
+  progress.value = 0;
+  progress.style.width = '100%';
+  
+  const info = document.createElement('div');
+  info.id = `progress-info-${operationId}`;
+  info.style.fontSize = '0.8em';
+  info.textContent = '初始连接...';
+  
+  container.appendChild(title);
+  container.appendChild(progress);
+  container.appendChild(info);
+  document.body.appendChild(container);
+  
+  return {
+    start: () => {
+      container.style.display = 'block';
+    },
+    
+    onAttempt: (attempt, delay) => {
+      progress.value = attempt;
+      percentComplete = Math.min(100, Math.round((attempt / maxAttempts) * 100));
+      const elapsed = Math.round((Date.now() - startTime) / 1000);
+      info.innerHTML = `
+        进度: ${percentComplete}% <br>
+        尝试: ${attempt}/${maxAttempts} <br>
+        延迟: ${Math.round(delay / 1000)}秒 <br>
+        用时: ${elapsed}秒
+      `;
+    },
+    
+    complete: () => {
+      container.remove();
+    },
+    
+    error: errorMsg => {
+      title.textContent = '任务处理失败';
+      title.style.color = 'red';
+      container.style.backgroundColor = 'rgba(80,0,0,0.9)';
+      progress.style.display = 'none';
+      info.style.whiteSpace = 'pre-wrap';
+      info.innerHTML = `<span style="color:#ff9494">错误详情:</span>\n${errorMsg}`;
+    }
+  };
+}

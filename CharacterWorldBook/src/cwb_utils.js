@@ -12,6 +12,8 @@ export function logError(...args) {
     console.error(`[${SCRIPT_ID_PREFIX}]`, ...args);
 }
 
+import { extensionName } from '../../utils/settings.js';
+
 export function isCwbEnabled() {
     try {
         const overrides = JSON.parse(localStorage.getItem('cwb_boolean_settings_override') || '{}');
@@ -19,7 +21,7 @@ export function isCwbEnabled() {
             return overrides.cwb_master_enabled === true;
         }
 
-        const settingsString = localStorage.getItem('extensions_settings_ST-Amily2-Chat-Optimisation');
+        const settingsString = localStorage.getItem(`extensions_settings_${extensionName}`);
         if (settingsString) {
             const settings = JSON.parse(settingsString);
             if (settings?.cwb_master_enabled !== undefined) {

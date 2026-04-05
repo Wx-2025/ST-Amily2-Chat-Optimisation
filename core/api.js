@@ -1,5 +1,6 @@
 import { extension_settings, getContext } from "/scripts/extensions.js";
 import { characters } from "/script.js";
+import { getSlotProfile } from './api/api-resolver.js';
 import { world_names } from "/scripts/world-info.js";
 import { extensionName } from "../utils/settings.js";
 import { extractContentByTag, replaceContentByTag, extractFullTagBlock } from '../utils/tagProcessor.js';
@@ -193,9 +194,10 @@ export async function fetchModels() {
     window.AMILY2_LOCK_MODEL_FETCHING = true;
 
     try {
-        const apiProvider = $("#amily2_api_provider").val() || 'openai';
-        const apiUrl = $("#amily2_api_url").val().trim();
-        const apiKey = $("#amily2_api_key").val().trim();
+        const apiSettings = await getApiSettings('main');
+        const apiProvider = apiSettings.apiProvider || 'openai';
+        const apiUrl = apiSettings.apiUrl;
+        const apiKey = apiSettings.apiKey;
         const $button = $("#amily2_refresh_models");
         const $selector = $("#amily2_model");
 
@@ -433,28 +435,46 @@ async function fetchSillyTavernPresetModels() {
 }
  
 
-export function getApiSettings() {
+export async function getApiSettings(slot = 'main') {
+    const s = extension_settings[extensionName] || {};
+
+    // 优先读取槽位分配的 Profile（仅接管连接参数）
+    const profile = await getSlotProfile(slot);
+    if (profile) {
+        return {
+            apiProvider:  profile.provider,
+            apiUrl:       profile.apiUrl,
+            apiKey:       profile.apiKey ?? '',
+            model:        profile.model,
+            // 温度 / MaxTokens 读面板值（profile-sync 保留了这些输入框）
+            maxTokens:    s.maxTokens    ?? profile.maxTokens   ?? 65500,
+            temperature:  s.temperature  ?? profile.temperature ?? 1.0,
+            tavernProfile: '',
+        };
+    }
+
+    // 降级：读旧 DOM 面板配置
     const settings = extension_settings[extensionName] || {};
     const apiProvider = document.getElementById('amily2_api_provider')?.value || 'openai';
-    
+
     let model;
     if (apiProvider === 'sillytavern_preset') {
         const context = getContext();
         const profileId = document.getElementById('amily2_preset_selector')?.value;
-        const profile = context.extensionSettings?.connectionManager?.profiles?.find(p => p.id === profileId);
-        model = profile?.openai_model || 'Preset Model';
+        const stProfile = context.extensionSettings?.connectionManager?.profiles?.find(p => p.id === profileId);
+        model = stProfile?.openai_model || 'Preset Model';
     } else {
         model = document.getElementById('amily2_model')?.value;
     }
 
     return {
-        apiProvider: apiProvider,
-        apiUrl: document.getElementById('amily2_api_url')?.value.trim() || '',
-        apiKey: document.getElementById('amily2_api_key')?.value.trim() || '',
-        model: model,
-        maxTokens: settings.maxTokens || 4000,
-        temperature: settings.temperature || 0.7,
-        tavernProfile: document.getElementById('amily2_preset_selector')?.value || ''
+        apiProvider,
+        apiUrl:       document.getElementById('amily2_api_url')?.value.trim() || '',
+        apiKey:       document.getElementById('amily2_api_key')?.value.trim() || '',
+        model,
+        maxTokens:    settings.maxTokens    || 4000,
+        temperature:  settings.temperature  || 0.7,
+        tavernProfile: document.getElementById('amily2_preset_selector')?.value || '',
     };
 }
 
@@ -468,8 +488,8 @@ export async function testApiConnection() {
     $button.prop("disabled", true).html('<i class="fas fa-spinner fa-spin"></i> 测试中');
 
     try {
-        const apiSettings = getApiSettings();
-        
+        const apiSettings = await getApiSettings();
+
         if (apiSettings.apiProvider === 'sillytavern_preset') {
             if (!apiSettings.tavernProfile) {
                 throw new Error("请先在下方选择一个SillyTavern预设");
@@ -518,7 +538,7 @@ export async function callAI(messages, options = {}) {
         return null;
     }
 
-    const apiSettings = getApiSettings();
+    const apiSettings = await getApiSettings(options.slot || 'main');
 
     const finalOptions = {
         maxTokens: apiSettings.maxTokens,

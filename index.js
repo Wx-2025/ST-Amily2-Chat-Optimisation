@@ -15,12 +15,11 @@ import {
     checkForUpdates, fetchMessageBoardContent,
     setUpdateInfo, applyUpdateIndicator,
     pluginVersion, extensionName, defaultSettings,
+    configManager, apiProfileManager,
     checkAuthorization, refreshUserInfo,
     tableSystemDefaultSettings,
     manageLorebookEntriesForChat,
-    initializeCharacterWorldBook,
     cwbDefaultSettings,
-    bindGlossaryEvents,
     updateOrInsertTableInChat, startContinuousRendering, stopContinuousRendering,
     initializeRenderer,
     initializeApiListener, registerApiHandler, amilyHelper, initializeAmilyHelper,
@@ -514,68 +513,6 @@ function mergePluginSettings() {
 }
 
 /**
- * 等待术语表面板加载完毕并绑定事件。
- * 包含重试机制，防止面板尚未渲染导致绑定失败。
- */
-function waitForGlossaryPanelAndBindEvents() {
-    let attempts = 0;
-    const maxAttempts = 50;
-    const interval = 100; 
-
-    const checker = setInterval(() => {
-        const glossaryPanel = document.getElementById('amily2_glossary_panel');
-
-        if (glossaryPanel) {
-            clearInterval(checker);
-            try {
-                console.log("[Amily2号-开国大典] 步骤3.6：侦测到术语表停泊位，开始绑定事件...");
-                bindGlossaryEvents();
-                console.log("[Amily2号-开国大典] 术语表事件已成功绑定。");
-            } catch (error) {
-                console.error("!!!【术语表事件绑定失败】:", error);
-            }
-        } else {
-            attempts++;
-            if (attempts >= maxAttempts) {
-                clearInterval(checker);
-                console.error("!!!【术语表事件绑定失败】: 等待面板 #amily2_glossary_panel 超时。");
-            }
-        }
-    }, interval);
-}
-
-/**
- * 等待角色世界书面板加载完毕并进行初始化。
- * 包含重试机制。
- */
-function waitForCwbPanelAndInitialize() {
-    let attempts = 0;
-    const maxAttempts = 50;
-    const interval = 100; 
-
-    const checker = setInterval(async () => {
-        const $cwbPanel = $('#amily2_character_world_book_panel');
-
-        if ($cwbPanel.length > 0) {
-            clearInterval(checker);
-            try {
-                console.log("[Amily2号-开国大典] 步骤3.5：侦测到角色世界书停泊位，开始构建...");
-                await initializeCharacterWorldBook($cwbPanel);
-                console.log("[Amily2号-开国大典] 角色世界书已成功构建并融入帝国。");
-            } catch (error) {
-                console.error("!!!【角色世界书构建失败】:", error);
-            }
-        } else {
-            attempts++;
-            if (attempts >= maxAttempts) {
-                clearInterval(checker);
-                console.error("!!!【角色世界书构建失败】: 等待面板 #amily2_character_world_book_panel 超时。");
-            }
-        }
-    }, interval);
-}
-
-/**
  * 注册用于表格内容的 SillyTavern 宏。
  * 允许在 Prompt 中使用 {{Amily2EditContent}} 来插入动态生成的表格数据。
  */
@@ -631,10 +568,11 @@ async function onPlotGenerationAfterCommands(type, params, dryRun) {
     if (globalSettings?.plotOpt_enabled === false) return false;
 
     const isJqyhEnabled = globalSettings?.jqyhEnabled === true;
-    const isMainApiConfigured = !!globalSettings?.apiUrl || !!globalSettings?.tavernProfile;
+    const hasMainProfile = !!apiProfileManager.getAssignment('main') || !!apiProfileManager.getAssignment('plotOpt');
+    const isMainApiConfigured = hasMainProfile || !!globalSettings?.apiUrl || !!globalSettings?.tavernProfile;
 
     if (!isJqyhEnabled && !isMainApiConfigured) {
-        console.log("[Amily2-剧情优化] 优化已启用，但Jqyh API已禁用且主页API未配置。");
+        console.log("[Amily2-剧情优化] 优化已启用，但Jqyh API已禁用且主API未配置（无 Profile 分配亦无旧设置）。");
         return false;
     }
 
@@ -736,7 +674,7 @@ function registerEventListeners() {
         eventSource.on(event_types.GENERATION_AFTER_COMMANDS, onPlotGenerationAfterCommands);
         eventSource.on(event_types.MESSAGE_RECEIVED, onMessageReceived);
         eventSource.on(event_types.IMPERSONATE_READY, onMessageReceived);
-        eventSource.on(event_types.MESSAGE_RECEIVED, (chat_id) => handleTableUpdate(chat_id));
+        // handleTableUpdate for MESSAGE_RECEIVED removed — now handled by pipeline Stage 3 inside onMessageReceived
         eventSource.on(event_types.MESSAGE_SWIPED, async (chat_id) => {
             const context = getContext();
             if (context.chat.length < 2) {
@@ -913,11 +851,11 @@ async function runAmily2Deployment() {
         console.log("[Amily2号-开国大典] 步骤二：皇家仪仗队就位...");
         await registerSlashCommands();
 
-        console.log("[Amily2号-开国大典] 步骤三：开始召唤府邸...");
-        createDrawer();
+        console.log("[Amily2号-开国大典] 步骤三：开始召唤府邸（模块注册式架构）...");
+        await createDrawer();
 
-        waitForGlossaryPanelAndBindEvents();
-        waitForCwbPanelAndInitialize();
+        // Glossary 和 CWB 的初始化已由 ModuleRegistry 在 mount 阶段完成，
+        // 不再需要 waitForGlossaryPanelAndBindEvents / waitForCwbPanelAndInitialize 轮询。
         registerTableMacros();
 
         registerEventListeners();
@@ -940,6 +878,7 @@ jQuery(async () => {
     registerAllApiHandlers();
     initializeAmilyHelper();
     mergePluginSettings();
+    configManager.migrate(); // 将 extension_settings 中残留的敏感字段迁移到 localStorage
 
     let attempts = 0;
     const maxAttempts = 100;

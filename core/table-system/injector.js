@@ -14,7 +14,7 @@ export function generateTableContent() {
     const settings = extension_settings[extensionName] || {};
     let injectionContent = '';
 
-    if (!settings.table_injection_enabled) {
+    if (settings.table_system_enabled === false || !settings.table_injection_enabled) {
         return '';
     }
 
@@ -57,6 +57,12 @@ export function generateTableContent() {
 
 
 export async function injectTableData(chat, contextSize, abort, type) {
+    const masterOff = (extension_settings[extensionName] || {}).table_system_enabled === false;
+    if (masterOff) {
+        setExtensionPrompt(INJECTION_KEY, '', 0, 0, false, 'SYSTEM');
+        return;
+    }
+
     // 【V15.3 核心修正】将提交删除的逻辑移至此处，确保在用户发送消息时立即触发
     try {
         const hasDeletions = commitPendingDeletions();

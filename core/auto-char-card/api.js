@@ -1,6 +1,7 @@
 import { extension_settings } from "/scripts/extensions.js";
 import { getRequestHeaders } from "/script.js";
 import { extensionName } from "../../utils/settings.js";
+import { getSlotProfile } from '../api/api-resolver.js';
 
 const DEFAULT_CONFIG = {
     apiUrl: "",
@@ -10,10 +11,26 @@ const DEFAULT_CONFIG = {
     temperature: 0.7
 };
 
+/** 同步读取旧版配置（UI 加载 / 保存用） */
 export function getApiConfig(role) {
     const settings = extension_settings[extensionName] || {};
     const configKey = `acc_${role}_config`;
     return { ...DEFAULT_CONFIG, ...(settings[configKey] || {}) };
+}
+
+/** 异步读取配置：Profile 优先，fallback 到旧版 */
+async function _resolveConfig(role) {
+    const profile = await getSlotProfile('autoCharCard');
+    if (profile) {
+        return {
+            apiUrl:      profile.apiUrl,
+            apiKey:      profile.apiKey ?? '',
+            model:       profile.model,
+            maxTokens:   profile.maxTokens ?? DEFAULT_CONFIG.maxTokens,
+            temperature: profile.temperature ?? DEFAULT_CONFIG.temperature,
+        };
+    }
+    return getApiConfig(role);
 }
 
 export function setApiConfig(role, config) {
@@ -25,7 +42,7 @@ export function setApiConfig(role, config) {
 }
 
 export async function callAi(role, messages, options = {}, onChunk = null) {
-    const config = { ...getApiConfig(role), ...options };
+    const config = { ...(await _resolveConfig(role)), ...options };
     const roleName = role === 'executor' ? '执行者(模型A)' : '规划者(模型B)';
 
     if (!config.apiUrl || !config.apiKey || !config.model) {
@@ -143,6 +160,13 @@ export async function testConnection(role, config = {}) {
 }
 
 export async function fetchModels(apiUrl, apiKey) {
+    // 若未传参，尝试从 Profile 或旧配置读取
+    if (!apiUrl || !apiKey) {
+        const resolved = await _resolveConfig('executor');
+        apiUrl  = apiUrl  || resolved.apiUrl;
+        apiKey  = apiKey  || resolved.apiKey;
+    }
+
     try {
         const response = await fetch('/api/backends/chat-completions/status', {
             method: 'POST',
@@ -158,7 +182,7 @@ export async function fetchModels(apiUrl, apiKey) {
 
         const data = await response.json();
         const models = Array.isArray(data) ? data : (data.data || data.models || []);
-        
+
         return models.map(m => {
             const id = m.id || m.model || m.name || m;
             return typeof id === 'string' ? id : JSON.stringify(id);

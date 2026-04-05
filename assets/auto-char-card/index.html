@@ -38,6 +38,18 @@
                 
                 <div class="acc-divider"></div>
                 
+                <div class="acc-panel-header" style="cursor: pointer;" id="acc-sessions-toggle">
+                    <i class="fas fa-history"></i> 历史会话 <i class="fas fa-chevron-down" style="float: right;"></i>
+                </div>
+                <div id="acc-sessions-content" style="display: none; padding-top: 10px;">
+                    <button id="acc-new-session-btn" class="acc-btn-primary" style="width: 100%; margin-bottom: 10px;"><i class="fas fa-plus"></i> 新建会话</button>
+                    <div id="acc-sessions-list" class="acc-sessions-list" style="max-height: 150px; overflow-y: auto;">
+                        <!-- Sessions will be added here -->
+                    </div>
+                </div>
+
+                <div class="acc-divider"></div>
+                
                 <div class="acc-section-title">当前任务</div>
                 <div id="acc-task-list" class="acc-task-list">
                     <div class="acc-task-item pending">等待指令...</div>

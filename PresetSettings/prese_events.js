@@ -98,6 +98,61 @@ function importSectionPreset(sectionKey, context) {
     input.click();
 }
 
+function exportAllPresets() {
+    const activePresetName = state.getPresetManager().activePreset;
+    const exportData = {
+        version: 'v2.1',
+        presets: state.getCurrentPresets(),
+        mixedOrder: state.getCurrentMixedOrder(),
+        presetName: activePresetName,
+        exportTime: new Date().toISOString()
+    };
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `amily2_all_presets_${activePresetName}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    toastr.success(`预设 "${activePresetName}" 的所有配置已导出！`);
+}
+
+function importAllPresets(context) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    
+                    if (imported.version === 'v2.1' && imported.presets && imported.mixedOrder) {
+                        state.setCurrentPresets(imported.presets);
+                        state.setCurrentMixedOrder(imported.mixedOrder);
+                        state.savePresets();
+                        toastr.success(`所有配置已成功导入！`);
+                        if (context && context.length) {
+                            ui.renderEditor(context);
+                        }
+                    } else {
+                        throw new Error("无法识别的文件格式或不是完整的预设配置");
+                    }
+                } catch (error) {
+                    console.error("Import all presets error:", error);
+                    toastr.error(`导入失败：${error.message}`);
+                }
+            };
+            reader.readAsText(file);
+        }
+    };
+    input.click();
+}
+
 export function bindEvents(context) {
     context.find('.add-prompt-item').off('click.amily2').on('click.amily2', function() {
         const sectionKey = $(this).closest('.prompt-section').data('section');
@@ -199,6 +254,28 @@ export function bindEvents(context) {
         const sectionKey = $(this).closest('.prompt-section').data('section');
         if (confirm(`您确定要将 ${sectionTitles[sectionKey]} 恢复为默认设置吗？`)) {
             state.resetSectionPreset(sectionKey);
+            ui.renderEditor(context);
+        }
+    });
+
+    // 全局按钮事件绑定
+    context.find('#save-all-presets').off('click.amily2').on('click.amily2', function() {
+        updatePresetsFromUI(context);
+        state.savePresets();
+        toastr.success(`预设 "${state.getPresetManager().activePreset}" 的所有配置已保存！`);
+    });
+
+    context.find('#export-all-presets').off('click.amily2').on('click.amily2', function() {
+        exportAllPresets();
+    });
+
+    context.find('#import-all-presets').off('click.amily2').on('click.amily2', function() {
+        importAllPresets(context);
+    });
+
+    context.find('#reset-all-presets').off('click.amily2').on('click.amily2', function() {
+        if (confirm("您确定要将当前预设的所有配置恢复为默认状态吗？此操作无法撤销。")) {
+            state.resetPresets();
             ui.renderEditor(context);
         }
     });

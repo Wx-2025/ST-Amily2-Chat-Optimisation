@@ -2,6 +2,7 @@ import { amilyHelper } from "../tavern-helper/main.js";
 import { extension_settings, getContext } from "/scripts/extensions.js";
 import { extensionName } from "../../utils/settings.js";
 import { this_chid, characters } from "/script.js";
+import { withLoreLock } from "../lore-service.js";
 
 export function getMemoryBookName() {
     let charName = "Global";
@@ -17,10 +18,27 @@ export function getMemoryBookName() {
     return `Amily2_Memory_${safeCharName}`;
 }
 
+/** 无锁内核：在已持有写锁时调用（避免嵌套死锁） */
+async function _doEnsureBook(bookName) {
+    const books = await amilyHelper.getLorebooks();
+    if (!books.includes(bookName)) {
+        console.log(`[Amily2-Bridge] 创建角色专用世界书: ${bookName}`);
+        await amilyHelper.createLorebook(bookName);
+    }
+    const settings = extension_settings[extensionName] || {};
+    const shouldBind = settings.superMemory_autoBind === true;
+    if (shouldBind && bookName.startsWith("Amily2_Memory_") && bookName !== "Amily2_Memory_Global") {
+        console.log(`[Amily2-Bridge] 自动绑定世界书到当前角色...`);
+        await amilyHelper.bindLorebookToCharacter(bookName);
+    } else if (!shouldBind) {
+        console.log(`[Amily2-Bridge] 跳过自动绑定 (设置已禁用)。请手动在世界书管理中激活: ${bookName}`);
+    }
+}
+
 export async function syncToLorebook(tableName, data, indexText, role, headers, rowStatuses, depth = 100, isIndexConstant = true) {
     console.log(`[Amily2-Bridge] 开始同步表格: ${tableName} (Depth: ${depth}, IndexConstant: ${isIndexConstant})`);
-
-    await ensureMemoryBook();
+    return withLoreLock(`syncToLorebook(${tableName})`, async () => {
+    await _doEnsureBook(getMemoryBookName());
 
     const bookName = getMemoryBookName();
 
@@ -213,26 +231,12 @@ export async function syncToLorebook(tableName, data, indexText, role, headers, 
     }
 
     console.log(`[Amily2-Bridge] 同步完成: ${tableName}`);
+    }); // end withLoreLock
 }
 
 export async function ensureMemoryBook() {
     const bookName = getMemoryBookName();
-    const books = await amilyHelper.getLorebooks();
-    
-    if (!books.includes(bookName)) {
-        console.log(`[Amily2-Bridge] 创建角色专用世界书: ${bookName}`);
-        await amilyHelper.createLorebook(bookName);
-    }
-
-    const settings = extension_settings[extensionName] || {};
-    const shouldBind = settings.superMemory_autoBind === true;
-
-    if (shouldBind && bookName.startsWith("Amily2_Memory_") && bookName !== "Amily2_Memory_Global") {
-        console.log(`[Amily2-Bridge] 自动绑定世界书到当前角色...`);
-        await amilyHelper.bindLorebookToCharacter(bookName);
-    } else if (!shouldBind) {
-        console.log(`[Amily2-Bridge] 跳过自动绑定 (设置已禁用)。请手动在世界书管理中激活: ${bookName}`);
-    }
+    return withLoreLock(`ensureMemoryBook(${bookName})`, () => _doEnsureBook(bookName));
 }
 
 function createEntryTemplate() {

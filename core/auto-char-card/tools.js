@@ -477,6 +477,14 @@ Output ONLY valid JSON.`;
             _action: "stop_and_wait",
             data: { question }
         });
+    },
+
+    task_complete: async ({ summary }) => {
+        return JSON.stringify({
+            status: "success",
+            message: `任务已完成。总结: ${summary}`,
+            _action: "stop_and_wait"
+        });
     }
 };
 
@@ -674,6 +682,17 @@ export function getToolDefinitions() {
                     question: { type: "string", description: "要问的问题。" }
                 },
                 required: ["question"]
+            }
+        },
+        {
+            name: "task_complete",
+            description: "当所有任务步骤都已完成时调用此工具以结束流程。",
+            parameters: {
+                type: "object",
+                properties: {
+                    summary: { type: "string", description: "对已完成工作的简短总结。" }
+                },
+                required: ["summary"]
             }
         }
     ];

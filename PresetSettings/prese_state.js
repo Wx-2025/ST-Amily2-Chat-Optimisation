@@ -1,5 +1,6 @@
 import { SETTINGS_KEY, defaultPrompts, defaultMixedOrder } from './config.js';
 import { compatibleTriggerSlash } from '../core/tavernhelper-compatibility.js';
+import { showHtmlModal } from '../ui/page-window.js';
 
 let presetManager = {
     activePreset: '默认预设',
@@ -38,6 +39,42 @@ export function setCurrentMixedOrder(newOrder) {
     currentMixedOrder = newOrder;
 }
 
+const CURRENT_PROMPT_VERSION = 'v3.1_soft_prompt';
+
+function checkPromptVersion() {
+    const savedVersion = localStorage.getItem('amily2_prompt_version');
+    if (savedVersion !== CURRENT_PROMPT_VERSION) {
+        setTimeout(() => {
+            showUpdateDialog();
+        }, 1500);
+    }
+}
+
+function showUpdateDialog() {
+    const htmlContent = `
+        <div style="text-align: left; line-height: 1.6; font-size: 15px; padding: 10px;">
+            <p>检测到当前提示词版本为旧版本。</p>
+            <p>为更好的体验，请点击 <strong>一键更新</strong>，会将提示词恢复成最新版本提示词链默认状态。</p>
+            <p>或者点击 <strong>保留自定义</strong> 按钮，则保留您之前的提示词。</p>
+        </div>
+    `;
+
+    showHtmlModal('Amily2 提示词更新', htmlContent, {
+        okText: '一键更新',
+        cancelText: '保留自定义',
+        showCancel: true,
+        onOk: () => {
+            resetPresets();
+            localStorage.setItem('amily2_prompt_version', CURRENT_PROMPT_VERSION);
+            toastr.success("已更新为最新版本提示词！");
+        },
+        onCancel: () => {
+            localStorage.setItem('amily2_prompt_version', CURRENT_PROMPT_VERSION);
+            toastr.info("已保留您的自定义提示词。");
+        }
+    });
+}
+
 export function loadPresets() {
     const saved = localStorage.getItem(SETTINGS_KEY);
     if (saved) {
@@ -56,6 +93,7 @@ export function loadPresets() {
     }
     
     loadActivePreset();
+    checkPromptVersion();
 }
 
 function migrateFromOldVersion() {

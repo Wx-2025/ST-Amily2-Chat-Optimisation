@@ -449,10 +449,21 @@
     border-radius: 4px;
     width: 40px;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .acc-send-btn:hover {
     background-color: #1177bb;
+}
+
+.acc-btn-success {
+    background-color: #4caf50 !important;
+}
+
+.acc-btn-success:hover {
+    background-color: #45a049 !important;
 }
 
 .acc-btn-danger {

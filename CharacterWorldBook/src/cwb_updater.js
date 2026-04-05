@@ -3,8 +3,9 @@ import { showToastr } from './cwb_utils.js';
 const { SillyTavern } = window;
 
 const GIT_REPO_OWNER = 'Wx-2025';
+import { extensionName } from '../../utils/settings.js';
 const GIT_REPO_NAME = 'ST-Amily2-Chat-Optimisation';
-const EXTENSION_NAME = 'ST-Amily2-Chat-Optimisation'; 
+const EXTENSION_NAME = extensionName;
 const EXTENSION_FOLDER_PATH = `scripts/extensions/third-party/${EXTENSION_NAME}`;
 
 let currentVersion = '0.0.0';

@@ -1,7 +1,7 @@
 
 import { world_names, loadWorldInfo, saveWorldInfo, deleteWorldInfo, updateWorldInfoList } from "/scripts/world-info.js";
 import { eventSource, event_types } from '/script.js';
-import { showHtmlModal } from '/scripts/extensions/third-party/ST-Amily2-Chat-Optimisation/ui/page-window.js';
+import { showHtmlModal } from '../ui/page-window.js';
 import { safeLorebooks, safeLorebookEntries, safeUpdateLorebookEntries, compatibleWriteToLorebook } from '../core/tavernhelper-compatibility.js';
 import { amilyHelper } from '../core/tavern-helper/main.js';
 import { escapeHTML } from '../utils/utils.js';

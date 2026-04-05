@@ -2,10 +2,30 @@ export class ContextManager {
     constructor() {
         this.keepToolOutputTurns = 5; 
         this.tokenLimit = 100000; 
-        this.rules = [];
+        this.rules = this.loadRules();
         this.worldInfo = [];
         this.activeWorldInfoCache = new Map();
         this.cacheDuration = 3; 
+    }
+
+    loadRules() {
+        try {
+            const savedRules = localStorage.getItem('amily2_acc_rules');
+            if (savedRules) {
+                return JSON.parse(savedRules);
+            }
+        } catch (e) {
+            console.error('[AutoCharCard] Failed to load rules:', e);
+        }
+        return [];
+    }
+
+    saveRules() {
+        try {
+            localStorage.setItem('amily2_acc_rules', JSON.stringify(this.rules));
+        } catch (e) {
+            console.error('[AutoCharCard] Failed to save rules:', e);
+        }
     }
 
     addRule(rule) {
@@ -15,6 +35,14 @@ export class ContextManager {
             content: rule.content,
             enabled: rule.enabled !== undefined ? rule.enabled : true
         });
+        this.saveRules();
+    }
+
+    removeRule(index) {
+        if (index >= 0 && index < this.rules.length) {
+            this.rules.splice(index, 1);
+            this.saveRules();
+        }
     }
 
     setWorldInfo(entries) {

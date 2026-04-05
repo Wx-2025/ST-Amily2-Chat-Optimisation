@@ -1,11 +1,12 @@
 import { amilyHelper } from './tavern-helper/main.js';
-import { 
+import {
     world_names,
     loadWorldInfo,
     createNewWorldInfo,
     createWorldInfoEntry,
     saveWorldInfo
 } from "/scripts/world-info.js";
+import { withLoreLock } from './lore-service.js';
 
 let reloadEditor = () => {
     console.warn("[Amily助手 - 兼容性] reloadEditor 函数不可用，可能是旧版本。已使用空函数代替。");
@@ -49,6 +50,7 @@ export async function safeUpdateLorebookEntries(bookName, entries) {
 
 export async function compatibleWriteToLorebook(targetLorebookName, entryComment, contentUpdateCallback, options = {}) {
     console.log('[兼容写入模块] 接收到的写入选项:', options);
+    return withLoreLock(`compatibleWriteToLorebook(${targetLorebookName}:${entryComment})`, async () => {
 
     if (isTavernHelperAvailable()) {
         try {
@@ -134,4 +136,6 @@ export async function compatibleWriteToLorebook(targetLorebookName, entryComment
         toastr.error(`写入世界书失败: ${error.message}`, "传统逻辑");
         return false;
     }
+
+    }); // end withLoreLock
 }

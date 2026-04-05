@@ -8,6 +8,7 @@ import {
   createWorldInfoEntry,
   saveWorldInfo,
 } from "/scripts/world-info.js";
+import { saveBook as loreSaveBook } from "./lore-service.js";
 import { extensionName } from "../utils/settings.js";
 import { getChatIdentifier } from "./lore.js";
 import { compatibleWriteToLorebook } from "./tavernhelper-compatibility.js";
@@ -330,7 +331,7 @@ function getRawMessagesForSummary(startFloor, endFloor) {
     return messages;
 }
 
-async function getSummary(formattedHistory, toastTitle) {
+async function getSummary(formattedHistory, toastTitle, retryCount = 0) {
     toastr.info(`正在为您熔铸对话历史...`, toastTitle);
     const settings = extension_settings[extensionName];
     const presetPrompts = await getPresetPrompts('small_summary');
@@ -383,6 +384,21 @@ async function getSummary(formattedHistory, toastTitle) {
 
     const summary = settings.ngmsEnabled ? await callNgmsAI(messages) : await callAI(messages);
     console.log('[大史官-微言录] AI回复的全部内容:', summary);
+    
+    if (!summary || !summary.trim()) {
+        const maxRetries = settings.historiographyMaxRetries ?? 2;
+        if (retryCount < maxRetries) {
+            console.warn(`[大史官-微言录] AI返回空内容，正在进行第 ${retryCount + 1}/${maxRetries} 次重试...`);
+            toastr.warning(`AI返回空内容，正在进行第 ${retryCount + 1}/${maxRetries} 次重试...`, toastTitle);
+            await new Promise(resolve => setTimeout(resolve, 3000)); // 等待3秒后重试
+            return await getSummary(formattedHistory, toastTitle, retryCount + 1);
+        } else {
+            console.error(`[大史官-微言录] 达到最大重试次数 (${maxRetries})，总结失败。`);
+            toastr.error(`达到最大重试次数 (${maxRetries})，总结失败。`, toastTitle);
+            return null;
+        }
+    }
+    
     return summary;
 }
 
@@ -583,15 +599,29 @@ export async function executeRefinement(worldbook, loreKey) {
             }
         }
 
-        const getRefinedContent = async () => {
+        const getRefinedContent = async (retryCount = 0) => {
             toastr.info("正在召唤模型进行内容精炼...", "宏史卷重铸");
-            return settings.ngmsEnabled ? await callNgmsAI(messages) : await callAI(messages);
+            const content = settings.ngmsEnabled ? await callNgmsAI(messages) : await callAI(messages);
+            
+            if (!content || !content.trim()) {
+                const maxRetries = settings.historiographyMaxRetries ?? 2;
+                if (retryCount < maxRetries) {
+                    console.warn(`[大史官-宏史卷重铸] AI返回空内容，正在进行第 ${retryCount + 1}/${maxRetries} 次重试...`);
+                    toastr.warning(`AI返回空内容，正在进行第 ${retryCount + 1}/${maxRetries} 次重试...`, "宏史卷重铸");
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                    return await getRefinedContent(retryCount + 1);
+                } else {
+                    console.error(`[大史官-宏史卷重铸] 达到最大重试次数 (${maxRetries})，重铸失败。`);
+                    toastr.error(`达到最大重试次数 (${maxRetries})，重铸失败。`, "宏史卷重铸失败");
+                    return null;
+                }
+            }
+            return content;
         };
 
         const initialRefinedContent = await getRefinedContent();
         if (!initialRefinedContent) {
-            toastr.error("模型未能返回有效的精炼内容。", "宏史卷重铸失败");
-            return;
+            return; // 错误提示已在 getRefinedContent 中处理
         }
 
         const processLoop = async (currentRefinedContent) => {
@@ -637,7 +667,7 @@ export async function executeRefinement(worldbook, loreKey) {
                     }
 
                     entry.content = finalContent;
-                    await saveWorldInfo(worldbook, bookData, true);
+                    await loreSaveBook(worldbook, bookData);
                     reloadEditor(worldbook);
                     toastr.success(`史册已成功重铸，并保存于《${worldbook}》！`, "宏史卷重铸完毕");
                 },
@@ -891,7 +921,7 @@ export async function archiveCurrentLedger() {
         entry.comment = newComment;
         entry.disable = true;
 
-        await saveWorldInfo(targetLorebookName, bookData, true);
+        await loreSaveBook(targetLorebookName, bookData);
         reloadEditor(targetLorebookName);
         toastr.success(`已将当前流水总帐归档为：\n${newComment}`, "归档成功");
         return true;
@@ -963,7 +993,7 @@ export async function restoreArchivedLedger(targetLoreKey) {
         targetEntry.comment = RUNNING_LOG_COMMENT;
         targetEntry.disable = false;
 
-        await saveWorldInfo(targetLorebookName, bookData, true);
+        await loreSaveBook(targetLorebookName, bookData);
         reloadEditor(targetLorebookName);
         toastr.success("史册回溯成功！时光已倒流，旧史重现。", "回溯成功");
         return true;

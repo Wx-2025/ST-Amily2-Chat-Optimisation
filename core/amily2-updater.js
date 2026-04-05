@@ -1,6 +1,7 @@
 const GIT_REPO_OWNER = 'Wx-2025';
 const GIT_REPO_NAME = 'ST-Amily2-Chat-Optimisation';
-const EXTENSION_NAME = 'ST-Amily2-Chat-Optimisation';
+import { extensionName } from '../utils/settings.js';
+const EXTENSION_NAME = extensionName;
 const EXTENSION_FOLDER_PATH = `scripts/extensions/third-party/${EXTENSION_NAME}`;
 
 class Amily2Updater {

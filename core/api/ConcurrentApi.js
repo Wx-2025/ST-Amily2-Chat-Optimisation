@@ -1,16 +1,33 @@
 import { extension_settings, getContext } from "/scripts/extensions.js";
 import { getRequestHeaders } from "/script.js";
 import { extensionName } from "../../utils/settings.js";
+import { getSlotProfile, providerToApiMode } from './api-resolver.js';
 
-function getConcurrentApiSettings() {
-    const settings = extension_settings[extensionName] || {};
+async function getConcurrentApiSettings() {
+    const s = extension_settings[extensionName] || {};
+
+    // 优先读取槽位分配的 Profile（仅接管连接参数）
+    const profile = await getSlotProfile('plotOptConc');
+    if (profile) {
+        return {
+            apiProvider: providerToApiMode(profile.provider),
+            apiUrl:      profile.apiUrl,
+            apiKey:      profile.apiKey ?? '',
+            model:       profile.model,
+            // MaxTokens 读面板值
+            maxTokens:   s.plotOpt_concurrentMaxTokens ?? profile.maxTokens ?? 8100,
+            temperature: profile.temperature ?? 1,
+        };
+    }
+
+    // 降级：读旧 extension_settings
     return {
-        apiProvider: settings.plotOpt_concurrentApiProvider || 'openai',
-        apiUrl: settings.plotOpt_concurrentApiUrl?.trim() || '',
-        apiKey: settings.plotOpt_concurrentApiKey?.trim() || '',
-        model: settings.plotOpt_concurrentModel || '',
-        maxTokens: settings.plotOpt_concurrentMaxTokens || 8100,
-        temperature: settings.plotOpt_concurrentTemperature || 1,
+        apiProvider: s.plotOpt_concurrentApiProvider || 'openai',
+        apiUrl:      s.plotOpt_concurrentApiUrl?.trim() || '',
+        apiKey:      s.plotOpt_concurrentApiKey?.trim() || '',
+        model:       s.plotOpt_concurrentModel || '',
+        maxTokens:   s.plotOpt_concurrentMaxTokens || 8100,
+        temperature: s.plotOpt_concurrentTemperature || 1,
     };
 }
 
@@ -20,7 +37,7 @@ export async function callConcurrentAI(messages, options = {}) {
         return null;
     }
 
-    const apiSettings = getConcurrentApiSettings();
+    const apiSettings = await getConcurrentApiSettings();
 
     const finalOptions = {
         ...apiSettings,
@@ -124,7 +141,7 @@ async function callConcurrentOpenAITest(messages, options) {
 export async function testConcurrentApiConnection() {
     console.log('[Amily2号-Concurrent外交部] 开始API连接测试');
     
-    const apiSettings = getConcurrentApiSettings();
+    const apiSettings = await getConcurrentApiSettings();
 
     if (!apiSettings.apiUrl || !apiSettings.apiKey || !apiSettings.model) {
         toastr.error('并发API配置不完整，请检查URL、Key和模型', 'Concurrent API连接测试失败');
@@ -163,8 +180,8 @@ export async function testConcurrentApiConnection() {
 export async function fetchConcurrentModels() {
     console.log('[Amily2号-Concurrent外交部] 开始获取模型列表');
     
-    const apiSettings = getConcurrentApiSettings();
-    
+    const apiSettings = await getConcurrentApiSettings();
+
     try {
         if (!apiSettings.apiUrl || !apiSettings.apiKey) {
             throw new Error('API URL或Key未配置');

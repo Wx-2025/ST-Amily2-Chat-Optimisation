@@ -67,7 +67,18 @@ export function bindSuperMemoryEvents() {
 
     // 处理 Input 变更 (归档阈值等)
     panel.on('change', 'input[type="number"], input[type="text"]', function() {
+        if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
         const id = this.id;
+
+        // SuperMemory 自身设置
+        if (id === 'sm-min-trigger-floor') {
+            extension_settings[extensionName]['superMemory_minTriggerFloor'] = Math.max(0, parseInt(this.value, 10) || 0);
+            saveSettingsDebounced();
+            console.log(`[Amily2-SuperMemory] Input updated: ${id} = ${this.value}`);
+            return;
+        }
+
+        // RAG 归档设置
         const ragSettings = getRagSettings();
         if (!ragSettings.archive) ragSettings.archive = {};
 
@@ -167,8 +178,9 @@ function loadSuperMemorySettings() {
     const ragSettings = getRagSettings();
     
     // Super Memory 设置
-    $('#sm-system-enabled').prop('checked', settings.super_memory_enabled ?? false); 
-    $('#sm-bridge-enabled').prop('checked', settings.superMemory_bridgeEnabled ?? false); 
+    $('#sm-system-enabled').prop('checked', settings.super_memory_enabled ?? false);
+    $('#sm-bridge-enabled').prop('checked', settings.superMemory_bridgeEnabled ?? false);
+    $('#sm-min-trigger-floor').val(settings.superMemory_minTriggerFloor ?? 0);
 
     // 归档设置
     if (ragSettings.archive) {

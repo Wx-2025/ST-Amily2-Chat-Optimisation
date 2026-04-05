@@ -1,7 +1,7 @@
 import { getSlideToggleOptions } from '/script.js';
 import { slideToggle } from '/lib.js';
 import { extension_settings, renderExtensionTemplateAsync } from "/scripts/extensions.js";
-import { extensionName, defaultSettings } from "../utils/settings.js";
+import { extensionName, extensionBasePath, defaultSettings } from "../utils/settings.js";
 import {
   checkAuthorization,
   displayExpiryInfo,
@@ -15,12 +15,8 @@ import {
 } from "./state.js";
 import { bindModalEvents } from "./bindings.js";
 import { fetchModels } from "../core/api.js";
-import { bindHistoriographyEvents } from "./historiography-bindings.js";
-import { bindHanlinyuanEvents } from "./hanlinyuan-bindings.js";
-import { bindTableEvents } from './table-bindings.js';
-import { showContentModal } from "./page-window.js";
-import { initializeRendererBindings } from "../core/tavern-helper/renderer-bindings.js";
-import { bindSuperMemoryEvents } from "../core/super-memory/bindings.js";
+import registry from '../SL/module/ModuleRegistry.js';
+import { registerAllModules } from '../SL/module/register-all.js';
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
 
@@ -70,78 +66,35 @@ async function initializePanel(contentPanel, errorContainer) {
     if (contentPanel.data("initialized")) return;
 
     try {
+        // 1. 加载主面板外壳
         const modalContent = await $.get(`${extensionFolderPath}/assets/amily2-modal.html`);
         contentPanel.html(modalContent);
         const mainContainer = contentPanel.find('#amily2_chat_optimiser');
 
         if (mainContainer.length) {
-            const additionalFeaturesContent = await $.get(`${extensionFolderPath}/assets/amily-additional-features/Amily2-AdditionalFeatures.html`);
-            const additionalPanelHtml = `<div id="amily2_additional_features_panel" style="display: none;">${additionalFeaturesContent}</div>`;
-            mainContainer.append(additionalPanelHtml);
-
-            const textOptimizationContent = await $.get(`${extensionFolderPath}/assets/Amily2-TextOptimization.html`);
-            const textOptimizationPanelHtml = `<div id="amily2_text_optimization_panel" style="display: none;">${textOptimizationContent}</div>`;
-            mainContainer.append(textOptimizationPanelHtml);
-
-            const hanlinyuanContent = await $.get(`${extensionFolderPath}/assets/amily-hanlinyuan-system/hanlinyuan.html`);
-            const hanlinyuanPanelHtml = `<div id="amily2_hanlinyuan_panel" style="display: none;">${hanlinyuanContent}</div>`;
-            mainContainer.append(hanlinyuanPanelHtml);
-
-            const memorisationFormsContent = await $.get(`${extensionFolderPath}/assets/amily-data-table/Memorisation-forms.html`);
-            const memorisationFormsPanelHtml = `<div id="amily2_memorisation_forms_panel" style="display: none;">${memorisationFormsContent}</div>`;
-            mainContainer.append(memorisationFormsPanelHtml);
-
-            const plotOptimizationContent = await $.get(`${extensionFolderPath}/assets/Amily2-optimization.html`);
-            const plotOptimizationPanelHtml = `<div id="amily2_plot_optimization_panel" style="display: none;">${plotOptimizationContent}</div>`;
-            mainContainer.append(plotOptimizationPanelHtml);
-
-            const cwbContent = await $.get(`${extensionFolderPath}/CharacterWorldBook/cwb_settings.html`);
-            const cwbPanelHtml = `<div id="amily2_character_world_book_panel" style="display: none;">${cwbContent}</div>`;
-            mainContainer.append(cwbPanelHtml);
-
-            const worldEditorContent = await $.get(`${extensionFolderPath}/WorldEditor.html`);
-            const worldEditorPanelHtml = `<div id="amily2_world_editor_panel" style="display: none;">${worldEditorContent}</div>`;
-            mainContainer.append(worldEditorPanelHtml);
-
-            const glossaryContent = await $.get(`${extensionFolderPath}/assets/amily-glossary-system/amily2-glossary.html`);
-            const glossaryPanelHtml = `<div id="amily2_glossary_panel" style="display: none;">${glossaryContent}</div>`;
-            mainContainer.append(glossaryPanelHtml);
-
-            const rendererContent = await $.get(`${extensionFolderPath}/core/tavern-helper/renderer.html`);
-            const rendererPanelHtml = `<div id="amily2_renderer_panel" style="display: none;">${rendererContent}</div>`;
-            mainContainer.append(rendererPanelHtml);
-
-            const superMemoryContent = await $.get(`${extensionFolderPath}/core/super-memory/index.html`);
-            const superMemoryPanelHtml = `<div id="amily2_super_memory_panel" style="display: none;">${superMemoryContent}</div>`;
-            mainContainer.append(superMemoryPanelHtml);
-
-            // 在面板创建后，加载世界书编辑器脚本
-            const worldEditorScriptId = 'world-editor-script';
-            if (!document.getElementById(worldEditorScriptId)) {
-                const worldEditorScript = document.createElement("script");
-                worldEditorScript.id = worldEditorScriptId;
-                worldEditorScript.type = "module"; // 必须作为模块加载
-                worldEditorScript.src = `${extensionFolderPath}/WorldEditor/WorldEditor.js?v=${Date.now()}`;
-                document.head.appendChild(worldEditorScript);
-            }
+            // 2. 注册所有模块 → 统一 init + mount
+            registerAllModules();
+            await registry.mountAll({
+                baseUrl: extensionFolderPath + '/',
+                root:    mainContainer[0],   // 所有模块挂载到此 DOM 元素下
+            });
         }
 
+        // 3. 主面板跨模块绑定（导航、授权、API provider 切换等）
         bindModalEvents();
-        bindHistoriographyEvents();
+
+        // 4. 加载设置（模型列表等）
         await loadSettings();
-        bindHanlinyuanEvents();
-        bindTableEvents();
-        initializeRendererBindings();
-        bindSuperMemoryEvents();
+
         contentPanel.data("initialized", true);
-        console.log("[Amily-重构] 宫殿模块已按蓝图竣工。");
+        console.log("[Amily-重构] 模块注册式架构已就绪，已挂载模块:", registry.names().join(', '));
         applyUpdateIndicator();
     } catch (error) {
         console.error("[Amily-建设部] 紧急报告：加载模块化蓝图时发生意外:", error);
-        const errorMessage = errorContainer 
+        const errorMessage = errorContainer
             ? '<p style="color:red; padding:10px; border:1px solid red; border-radius:5px;">紧急报告：在扩展区域建造Amily2号府邸时发生意外。</p>'
             : '<p style="color:red; padding: 20px;">紧急报告：无法加载Amily2号府邸内饰。</p>';
-        
+
         if (errorContainer) {
             errorContainer.append(errorMessage);
         } else {

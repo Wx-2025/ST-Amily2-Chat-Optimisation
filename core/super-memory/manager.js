@@ -4,14 +4,26 @@ import { amilyHelper } from "../tavern-helper/main.js";
 import { generateIndex } from "./smart-indexer.js";
 import { syncToLorebook, ensureMemoryBook, updateTransientHint, getMemoryBookName } from "./lorebook-bridge.js";
 import { getMemoryState, loadMemoryState, saveMemoryState } from "../table-system/manager.js";
+import { TABLE_UPDATED_EVENT } from "../table-system/events-schema.js";
 import { eventSource, event_types } from "/script.js";
 
+/* ── [AMILY2-MODIFIED] ── pipeline integration: awaitSync() export ── */
 let isInitialized = false;
 let updateQueue = [];
 let isProcessing = false;
 let lastChatId = null;
+let _syncPromise = null; // tracks the running processQueue() promise for pipeline awaiting
 
 const METADATA_KEY = 'Amily2_Memory_Data';
+
+/**
+ * [AMILY2-MODIFIED] Pipeline integration:
+ * Allows MessagePipeline Stage 4 to await the super-memory sync triggered
+ * by the AMILY2_TABLE_UPDATED CustomEvent during Stage 3.
+ */
+export async function awaitSync() {
+    if (_syncPromise) await _syncPromise;
+}
 
 export async function initializeSuperMemory() {
     const userType = parseInt(localStorage.getItem("plugin_user_type") || "0");
@@ -39,7 +51,7 @@ export async function initializeSuperMemory() {
         return;
     }
 
-    document.addEventListener('AMILY2_TABLE_UPDATED', handleTableUpdate);
+    document.addEventListener(TABLE_UPDATED_EVENT, handleTableUpdate);
     
     eventSource.on(event_types.CHAT_CHANGED, async () => {
         const settings = extension_settings[extensionName] || {};
@@ -75,15 +87,34 @@ async function checkWorldBookStatus() {
     }
 }
 
-function handleTableUpdate(event) {
+/**
+ * Bus 直调路径：由 TableSystem 通过 query('SuperMemory').pushUpdate(payload) 调用。
+ * 接受纯对象 payload（events-schema.js 中 createTableUpdateEvent 的 detail 结构）。
+ */
+export function pushUpdate(payload) {
     const settings = extension_settings[extensionName] || {};
     if (settings.super_memory_enabled === false) return;
 
-    const { tableName, data, role, hint, headers, rowStatuses } = event.detail; 
-    console.log(`[Amily2-SuperMemory] 检测到表格更新: ${tableName} (Role: ${role})`);
-    
-    updateQueue.push({ tableName, data, role, hint, headers, rowStatuses });
-    processQueue();
+    // 楼层数检查：聊天消息数不足时跳过同步
+    const minFloor = settings.superMemory_minTriggerFloor ?? 0;
+    if (minFloor > 0) {
+        const chatLength = getContext()?.chat?.length ?? 0;
+        if (chatLength < minFloor) {
+            console.log(`[Amily2-SuperMemory] 当前楼层 ${chatLength} < 最低触发楼层 ${minFloor}，跳过同步。`);
+            return;
+        }
+    }
+
+    const { tableName, data, role, headers, rowStatuses } = payload;
+    console.log(`[Amily2-SuperMemory] 收到表格更新 (Bus): ${tableName} (Role: ${role})`);
+
+    updateQueue.push({ tableName, data, role, headers, rowStatuses });
+    _syncPromise = processQueue();
+}
+
+/** CustomEvent 降级路径（Bus 未就绪时的兜底监听器） */
+function handleTableUpdate(event) {
+    pushUpdate(event.detail);
 }
 
 async function processQueue() {
@@ -214,8 +245,20 @@ function updateDashboardCounters() {
 
 export async function forceSyncAll() {
     console.log('[Amily2-SuperMemory] 正在执行全量同步...');
+
+    // 楼层数检查
+    const settings = extension_settings[extensionName] || {};
+    const minFloor = settings.superMemory_minTriggerFloor ?? 0;
+    if (minFloor > 0) {
+        const chatLength = getContext()?.chat?.length ?? 0;
+        if (chatLength < minFloor) {
+            console.log(`[Amily2-SuperMemory] 全量同步跳过：当前楼层 ${chatLength} < 最低触发楼层 ${minFloor}。`);
+            return;
+        }
+    }
+
     const tables = getMemoryState();
-    
+
     if (!tables || tables.length === 0) {
         console.warn('[Amily2-SuperMemory] 没有可同步的表格数据。');
         return;

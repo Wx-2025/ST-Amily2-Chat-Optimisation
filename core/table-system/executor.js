@@ -204,13 +204,24 @@ function parseValue(val) {
 function tryParseObject(str) {
     if (!str.startsWith('{') || !str.endsWith('}')) return null;
     
-    const content = str.slice(1, -1);
+    let content = str.slice(1, -1);
     const result = {};
     let hasMatch = false;
     
-    // 匹配键：(开头或逗号/分号/冒号) + (数字 或 "键" 或 '键') + 冒号
-    // 增强容错：允许逗号、分号甚至冒号作为分隔符
-    const keyRegex = /(?:^|[,;:]+\s*)(?:(\d+)|"([^"]+)"|'([^']+)')\s*:/g;
+    const strings = [];
+    let placeholderIndex = 0;
+    
+    // 提取字符串并替换为占位符，避免正则在字符串内部匹配
+    const stringRegex = /"([^"\\]|\\.)*"|'([^'\\]|\\.)*'/g;
+    content = content.replace(stringRegex, (match) => {
+        const placeholder = `__STR_${placeholderIndex}__`;
+        strings.push(match);
+        placeholderIndex++;
+        return placeholder;
+    });
+    
+    // 匹配键：(开头或逗号/分号/冒号) + (数字 或 字母数字下划线 或 占位符) + 冒号
+    const keyRegex = /(?:^|[,;:]+\s*)(?:(\d+)|([a-zA-Z0-9_]+)|(__STR_\d+__))\s*:/g;
     
     let match;
     let lastIndex = 0;
@@ -220,9 +231,10 @@ function tryParseObject(str) {
         hasMatch = true;
         if (lastKey !== null) {
             let valStr = content.slice(lastIndex, match.index).trim();
-            // 去掉末尾可能的分隔符
             valStr = valStr.replace(/[,;:]+$/, '').trim();
-            result[lastKey] = cleanValueStr(valStr);
+            
+            let actualKey = restoreStrings(lastKey, strings);
+            result[actualKey] = restoreStrings(valStr, strings);
         }
         
         lastKey = match[1] || match[2] || match[3];
@@ -232,10 +244,22 @@ function tryParseObject(str) {
     if (lastKey !== null) {
         let valStr = content.slice(lastIndex).trim();
         valStr = valStr.replace(/[,;:]+$/, '').trim();
-        result[lastKey] = cleanValueStr(valStr);
+        
+        let actualKey = restoreStrings(lastKey, strings);
+        result[actualKey] = restoreStrings(valStr, strings);
     }
     
     return hasMatch ? result : null;
+}
+
+function restoreStrings(str, strings) {
+    if (!str) return str;
+    let restored = str;
+    const placeholderRegex = /__STR_(\d+)__/g;
+    restored = restored.replace(placeholderRegex, (match, index) => {
+        return strings[parseInt(index, 10)];
+    });
+    return cleanValueStr(restored);
 }
 
 function cleanValueStr(str) {

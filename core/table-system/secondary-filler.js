@@ -67,18 +67,24 @@ async function getWorldBookContext() {
 export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
     clearHighlights();
 
+    const settings = extension_settings[extensionName];
+
+    // 总开关关闭时，分步填表同样禁用
+    if (settings.table_system_enabled === false) {
+        log('【分步填表】表格系统总开关已关闭，跳过。', 'info');
+        return;
+    }
+
     const context = getContext();
     if (context.chat.length <= 1) {
         console.log("[Amily2-副API] 聊天刚开始，跳过本次自动填表。");
         return;
     }
 
-    const settings = extension_settings[extensionName];
-
     const fillingMode = settings.filling_mode || 'main-api';
     if (fillingMode !== 'secondary-api' && !forceRun) {
         log('当前非分步填表模式，且未强制执行，跳过。', 'info');
-        return; 
+        return;
     }
 
     if (window.AMILY2_SYSTEM_PARALYZED === true) {
@@ -132,7 +138,8 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
             return hash;
         };
 
-        for (let i = validEndIndex; i >= scanStartIndex; i--) {
+        // 【修复】改为正向扫描，优先处理最老的未处理消息，防止遗留消息被挤出扫描区
+        for (let i = scanStartIndex; i <= validEndIndex; i++) {
             const msg = chat[i];
             
             if (msg.is_user) continue;
@@ -144,14 +151,12 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
             const isChanged = savedHash && savedHash !== currentHash;
 
             if (isUnprocessed || isChanged) {
-                targetMessages.unshift({ index: i, msg: msg, hash: currentHash });
+                targetMessages.push({ index: i, msg: msg, hash: currentHash });
                 
                 if (batchSize > 0 && targetMessages.length >= batchSize) {
                     needsProcessing = true;
                     break;
                 }
-            } else {
-                continue;
             }
         }
 
@@ -289,6 +294,11 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
 
         console.log("[Amily2号-副API-原始回复]:", rawContent);
 
+        // 【修复】检查 AI 是否返回了有效的指令块，防止 AI 偷懒或格式错误被误判为成功
+        if (!rawContent.includes('<Amily2Edit>')) {
+            throw new Error('AI未返回有效的 <Amily2Edit> 指令块，可能格式错误或未产生实质性变更。');
+        }
+
         updateTableFromText(rawContent);
 
         const memoryState = getMemoryState();
@@ -310,48 +320,76 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
 
     } catch (error) {
         console.error(`[Amily2-副API] 发生严重错误:`, error);
-        toastr.error(`副API填表失败: ${error.message}`, "严重错误");
+        
+        // 【新增】自定义重试逻辑
+        const maxRetries = parseInt(settings.secondary_filler_max_retries || 0, 10);
+        const currentRetryCount = latestMessage?.metadata?.Amily2_Retry_Count || 0;
+
+        if (currentRetryCount < maxRetries) {
+            const nextRetryCount = currentRetryCount + 1;
+            console.log(`[Amily2-副API] 准备进行第 ${nextRetryCount}/${maxRetries} 次重试...`);
+            toastr.warning(`副API填表失败: ${error.message}。将在3秒后进行第 ${nextRetryCount} 次重试...`, "自动重试");
+            
+            // 记录重试次数到最新消息的 metadata 中，以便跨调用传递状态
+            if (latestMessage) {
+                if (!latestMessage.metadata) latestMessage.metadata = {};
+                latestMessage.metadata.Amily2_Retry_Count = nextRetryCount;
+            }
+
+            setTimeout(() => {
+                fillWithSecondaryApi(latestMessage, forceRun);
+            }, 3000);
+        } else {
+            console.log(`[Amily2-副API] 已达到最大重试次数 (${maxRetries})，放弃本次填表。`);
+            toastr.error(`副API填表失败: ${error.message}。已达到最大重试次数，任务终止。`, "严重错误");
+            
+            // 清除重试计数器
+            if (latestMessage && latestMessage.metadata) {
+                delete latestMessage.metadata.Amily2_Retry_Count;
+            }
+        }
     }
 }
 
-async function getHistoryContext(messagesToFetch, historyEndIndex, tagsToExtract, exclusionRules) {
-    const context = getContext();
-    const chat = context.chat;
-    
-    if (!chat || chat.length === 0 || messagesToFetch <= 0) {
-        return null;
-    }
-
-    const historyUntil = Math.max(0, historyEndIndex); 
-    const messagesToExtract = Math.min(messagesToFetch, historyUntil);
-    const startIndex = Math.max(0, historyUntil - messagesToExtract);
-    const endIndex = historyUntil;
-
-    const historySlice = chat.slice(startIndex, endIndex);
-    const userName = context.name1 || '用户';
-    const characterName = context.name2 || '角色';
-
-    const messages = historySlice.map((msg, index) => {
-        let content = msg.mes;
-
-        if (!msg.is_user && tagsToExtract && tagsToExtract.length > 0) {
-            const blocks = extractBlocksByTags(content, tagsToExtract);
-            content = blocks.join('\n\n');
-        }
+    async function getHistoryContext(messagesToFetch, historyEndIndex, tagsToExtract, exclusionRules) {
+        const context = getContext();
+        const chat = context.chat;
         
-        if (content && exclusionRules) {
-            content = applyExclusionRules(content, exclusionRules);
+        if (!chat || chat.length === 0 || messagesToFetch <= 0) {
+            return null;
         }
 
-        if (!content.trim()) return null;
-        
-        return {
-            floor: startIndex + index + 1, 
-            author: msg.is_user ? userName : characterName,
-            authorType: msg.is_user ? 'user' : 'char',
-            content: content.trim()
-        };
-    }).filter(Boolean);
+        const historyUntil = Math.max(0, historyEndIndex); 
+        // 【修复】slice 的 end 索引是不包含的，为了包含 historyUntil，end 必须 +1
+        const sliceEnd = historyUntil + 1;
+        const messagesToExtract = Math.min(messagesToFetch, sliceEnd);
+        const sliceStart = Math.max(0, sliceEnd - messagesToExtract);
+
+        const historySlice = chat.slice(sliceStart, sliceEnd);
+        const userName = context.name1 || '用户';
+        const characterName = context.name2 || '角色';
+
+        const messages = historySlice.map((msg, index) => {
+            let content = msg.mes;
+
+            if (!msg.is_user && tagsToExtract && tagsToExtract.length > 0) {
+                const blocks = extractBlocksByTags(content, tagsToExtract);
+                content = blocks.join('\n\n');
+            }
+            
+            if (content && exclusionRules) {
+                content = applyExclusionRules(content, exclusionRules);
+            }
+
+            if (!content.trim()) return null;
+            
+            return {
+                floor: sliceStart + index + 1, 
+                author: msg.is_user ? userName : characterName,
+                authorType: msg.is_user ? 'user' : 'char',
+                content: content.trim()
+            };
+        }).filter(Boolean);
     
     if (messages.length === 0) {
         return null;

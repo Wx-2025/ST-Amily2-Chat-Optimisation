@@ -712,3 +712,42 @@ export function initializeApiListener() {
     });
     console.log('[Amily2-IframeAPI] 主窗口监听器已初始化 (已启用安全验证)');
 }
+
+// ── Bus 注册 ──────────────────────────────────────────────────────────────
+// 注册名：'TavernHelper'
+// 暴露 amilyHelper 的全部公开方法，供其他模块通过 Bus query 访问，
+// 替代各处的直接 import { amilyHelper } from '...tavern-helper/main.js'。
+setTimeout(() => {
+    try {
+        const _ctx = window.Amily2Bus?.register('TavernHelper');
+        if (!_ctx) {
+            console.warn('[TavernHelper] Amily2Bus 尚未就绪，服务注册跳过。');
+            return;
+        }
+        _ctx.expose({
+            // Chat 消息操作
+            getChatMessages:         (...a) => amilyHelper.getChatMessages(...a),
+            setChatMessages:         (...a) => amilyHelper.setChatMessages(...a),
+            setChatMessage:          (...a) => amilyHelper.setChatMessage(...a),
+            createChatMessages:      (...a) => amilyHelper.createChatMessages(...a),
+            deleteChatMessages:      (...a) => amilyHelper.deleteChatMessages(...a),
+            getLastMessageId:        (...a) => amilyHelper.getLastMessageId(...a),
+            // 世界书 / Lorebook 操作
+            getLorebooks:            (...a) => amilyHelper.getLorebooks(...a),
+            getCharLorebooks:        (...a) => amilyHelper.getCharLorebooks(...a),
+            getLorebookEntries:      (...a) => amilyHelper.getLorebookEntries(...a),
+            setLorebookEntries:      (...a) => amilyHelper.setLorebookEntries(...a),
+            createLorebookEntries:   (...a) => amilyHelper.createLorebookEntries(...a),
+            deleteLorebookEntries:   (...a) => amilyHelper.deleteLorebookEntries(...a),
+            createLorebook:          (...a) => amilyHelper.createLorebook(...a),
+            loadWorldInfo:           (...a) => amilyHelper.loadWorldInfo(...a),
+            saveWorldInfo:           (...a) => amilyHelper.saveWorldInfo(...a),
+            bindLorebookToCharacter: (...a) => amilyHelper.bindLorebookToCharacter(...a),
+            // 其他
+            triggerSlash:            (...a) => amilyHelper.triggerSlash(...a),
+        });
+        _ctx.log('TavernHelper', 'info', 'TavernHelper 服务已注册到 Bus。');
+    } catch (e) {
+        console.error('[TavernHelper] Bus 注册失败:', e);
+    }
+}, 0);

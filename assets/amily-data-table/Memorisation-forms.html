@@ -243,6 +243,13 @@
                             <input type="number" id="secondary-filler-buffer" min="0" max="10" step="1" value="0" class="text_pole" style="width: 80px; margin-top: 5px;">
                             <small class="notes" style="margin-top: 5px; display: block;">始终保留不填表的最新消息数量 (缓冲防抖)。</small>
                         </div>
+
+                        <!-- 最大重试次数 -->
+                        <div class="control-block-with-switch" style="margin-bottom: 10px; flex-direction: column; align-items: flex-start;">
+                            <label for="secondary-filler-max-retries">最大重试次数</label>
+                            <input type="number" id="secondary-filler-max-retries" min="0" max="10" step="1" value="2" class="text_pole" style="width: 80px; margin-top: 5px;">
+                            <small class="notes" style="margin-top: 5px; display: block;">分步填表失败时的自动重试次数 (0 = 不重试)。</small>
+                        </div>
                     </div>
                     
                     <div id="table-independent-rules-container" class="control-block-with-switch" style="margin-bottom: 10px; display: none; flex-direction: column; align-items: flex-start; gap: 8px;">
@@ -326,15 +333,6 @@
                                 </div>
                             </div>
 
-                            <div class="amily2_opt_settings_block" style="margin-bottom: 10px;">
-                                <label for="nccs-max-tokens">最大Token数: <span id="nccs-max-tokens-value">2000</span></label>
-                                <input type="number" class="text_pole" id="nccs-max-tokens" min="100" max="100000" value="2000">
-                            </div>
-
-                            <div class="amily2_opt_settings_block" style="margin-bottom: 10px;">
-                                <label for="nccs-temperature">Temperature: <span id="nccs-temperature-value">0.7</span></label>
-                                <input type="number" class="text_pole" id="nccs-temperature" min="0" max="2" value="0.7">
-                            </div>
 
                             <div class="amily2_opt_settings_block" style="margin-bottom: 10px;">
                                 <label for="nccs-api-fakestream-enabled">启用流式支持: </label>

@@ -1,1 +1,52 @@
-function _0x2003(){const _0x262052=['4AcCkkG','Connection\x20successful!\x20API\x20endpoint\x20is\x20valid.','slice','Connection\x20failed:\x20','trim','3177507RNmXZF','API\x20URL\x20or\x20Key\x20is\x20not\x20provided.','1261632VQmIPE','message','localeCompare','GET','Invalid\x20response\x20format\x20from\x20models\x20API:\x20\x27data\x27\x20array\x20not\x20found.','status','2134198faGeNE','endsWith','text','85127EohiQl','isArray','3221840BInRET','11buyHDb','765zvzuyQ','sort','Failed\x20to\x20fetch\x20models\x20(','json','17129510bPrLGT','750rkDFpM','/v1/models','114088qjSqPj','application/json','data'];_0x2003=function(){return _0x262052;};return _0x2003();}(function(_0x55af80,_0x2d43e0){const _0x33592e=_0x4686,_0x47d490=_0x55af80();while(!![]){try{const _0x2e369a=-parseInt(_0x33592e(0x13f))/0x1+parseInt(_0x33592e(0x145))/0x2+parseInt(_0x33592e(0x13d))/0x3*(-parseInt(_0x33592e(0x138))/0x4)+parseInt(_0x33592e(0x14a))/0x5+-parseInt(_0x33592e(0x133))/0x6*(parseInt(_0x33592e(0x148))/0x7)+-parseInt(_0x33592e(0x135))/0x8*(-parseInt(_0x33592e(0x14c))/0x9)+parseInt(_0x33592e(0x132))/0xa*(parseInt(_0x33592e(0x14b))/0xb);if(_0x2e369a===_0x2d43e0)break;else _0x47d490['push'](_0x47d490['shift']());}catch(_0x54cbc4){_0x47d490['push'](_0x47d490['shift']());}}}(_0x2003,0xc241d));function getSanitizedBaseUrl(_0x290691){const _0x2e6701=_0x4686;let _0x507aff=_0x290691[_0x2e6701(0x13c)]();return _0x507aff[_0x2e6701(0x146)]('/')&&(_0x507aff=_0x507aff[_0x2e6701(0x13a)](0x0,-0x1)),_0x507aff[_0x2e6701(0x146)]('/v1')&&(_0x507aff=_0x507aff['slice'](0x0,-0x3)),_0x507aff;}function _0x4686(_0x4a70e4,_0x38094a){const _0x200337=_0x2003();return _0x4686=function(_0x468631,_0x2e7f16){_0x468631=_0x468631-0x131;let _0x3828ba=_0x200337[_0x468631];return _0x3828ba;},_0x4686(_0x4a70e4,_0x38094a);}export async function fetchEmbeddingModels(_0x112441,_0x27b76c){const _0xaa1738=_0x4686;if(!_0x112441||!_0x27b76c)throw new Error(_0xaa1738(0x13e));const _0x5f1807=getSanitizedBaseUrl(_0x112441),_0x517e35=_0x5f1807+_0xaa1738(0x134);console['log']('[Embedding\x20Adapter]\x20Fetching\x20models\x20from:\x20'+_0x517e35);const _0x4da766=await fetch(_0x517e35,{'method':_0xaa1738(0x142),'headers':{'Authorization':'Bearer\x20'+_0x27b76c,'Content-Type':_0xaa1738(0x136)}});if(!_0x4da766['ok']){const _0x48ce89=await _0x4da766[_0xaa1738(0x147)]();throw new Error(_0xaa1738(0x14e)+_0x4da766[_0xaa1738(0x144)]+'):\x20'+_0x48ce89);}const _0x5dbdf4=await _0x4da766[_0xaa1738(0x131)]();if(!_0x5dbdf4[_0xaa1738(0x137)]||!Array[_0xaa1738(0x149)](_0x5dbdf4['data']))throw new Error(_0xaa1738(0x143));return _0x5dbdf4[_0xaa1738(0x137)][_0xaa1738(0x14d)]((_0x2acdad,_0x4efac8)=>_0x2acdad['id'][_0xaa1738(0x141)](_0x4efac8['id']));}export async function testEmbeddingConnection(_0x981051,_0x456762){const _0x2ef137=_0x4686;try{return await fetchEmbeddingModels(_0x981051,_0x456762),{'success':!![],'message':_0x2ef137(0x139)};}catch(_0x5d7faf){return console['error']('[Embedding\x20Adapter]\x20Connection\x20test\x20failed:',_0x5d7faf),{'success':![],'message':_0x2ef137(0x13b)+_0x5d7faf[_0x2ef137(0x140)]};}}
+function getSanitizedBaseUrl(rawApiUrl) {
+    let baseUrl = rawApiUrl.trim();
+    if (baseUrl.endsWith('/')) {
+        baseUrl = baseUrl.slice(0, -1);
+    }
+    if (baseUrl.endsWith('/v1')) {
+        baseUrl = baseUrl.slice(0, -3);
+    }
+    return baseUrl;
+}
+
+export async function fetchEmbeddingModels(rawApiUrl, apiKey) {
+    if (!rawApiUrl || !apiKey) {
+        throw new Error("API URL or Key is not provided.");
+    }
+    const baseUrl = getSanitizedBaseUrl(rawApiUrl);
+    const modelsUrl = `${baseUrl}/v1/models`;
+
+    console.log(`[Embedding Adapter] Fetching models from: ${modelsUrl}`);
+
+    const response = await fetch(modelsUrl, {
+        method: 'GET',
+        headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+        },
+    });
+
+    if (!response.ok) {
+        const errorBody = await response.text();
+        throw new Error(`Failed to fetch models (${response.status}): ${errorBody}`);
+    }
+
+    const data = await response.json();
+
+    if (!data.data || !Array.isArray(data.data)) {
+        throw new Error("Invalid response format from models API: 'data' array not found.");
+    }
+
+    // Return all models, sorted alphabetically. The user can choose.
+    return data.data.sort((a, b) => a.id.localeCompare(b.id));
+}
+
+export async function testEmbeddingConnection(rawApiUrl, apiKey) {
+    try {
+        await fetchEmbeddingModels(rawApiUrl, apiKey);
+        return { success: true, message: "Connection successful! API endpoint is valid." };
+    } catch (error) {
+        console.error('[Embedding Adapter] Connection test failed:', error);
+        return { success: false, message: `Connection failed: ${error.message}` };
+    }
+}

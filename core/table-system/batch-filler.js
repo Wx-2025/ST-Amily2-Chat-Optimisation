@@ -272,6 +272,11 @@ async function runBatchAttempt(batchNum, attemptNum) {
             throw new Error('API返回内容为空。');
         }
 
+        // 【修复】检查 AI 是否返回了有效的指令块，防止 AI 偷懒或格式错误被误判为成功
+        if (!resultText.includes('<Amily2Edit>')) {
+            throw new Error('AI未返回有效的 <Amily2Edit> 指令块，可能格式错误或未产生实质性变更。');
+        }
+
         // 【V155.0】批量填表时，启用立即删除模式，避免红色待删除行残留
         updateTableFromText(resultText, { immediateDelete: true });
         renderTables();
@@ -482,6 +487,11 @@ export async function startFloorRangeFilling(startFloor, endFloor) {
         
         if (!resultText) {
             throw new Error('API返回内容为空。');
+        }
+
+        // 【修复】检查 AI 是否返回了有效的指令块
+        if (!resultText.includes('<Amily2Edit>')) {
+            throw new Error('AI未返回有效的 <Amily2Edit> 指令块，可能格式错误或未产生实质性变更。');
         }
 
         updateTableFromText(resultText, { immediateDelete: true });

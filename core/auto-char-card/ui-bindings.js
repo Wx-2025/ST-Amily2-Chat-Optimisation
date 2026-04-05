@@ -42,6 +42,9 @@ export async function openAutoCharCardWindow() {
         try {
             populateDropdowns();
             loadApiSettings();
+            renderRulesList();
+            renderSessionsList();
+            restoreChatHistory();
         } catch (dataError) {
             console.error('[Amily2 AutoCharCard] Failed to load data:', dataError);
             toastr.warning('数据加载部分失败，请检查控制台。');
@@ -137,6 +140,111 @@ function handlePromptLog(messages) {
     }
 }
 
+function restoreChatHistory() {
+    const stream = $('#acc-chat-stream');
+    stream.empty();
+    
+    if (agentManager && agentManager.history && agentManager.history.length > 0) {
+        agentManager.history.forEach(msg => {
+            addMessage(msg.role, msg.content);
+        });
+    } else {
+        stream.append(`
+            <div class="acc-message system">
+                <div class="acc-message-content">
+                    欢迎使用 Amily2 自动构建器。<br>
+                    请在左侧配置工作区，然后在下方输入您的需求。<br>
+                    当使用时，最好不要进入所选的角色卡中，以便后台执行即时生效。
+                </div>
+            </div>
+        `);
+    }
+}
+
+function renderSessionsList() {
+    const list = $('#acc-sessions-list');
+    list.empty();
+
+    if (!agentManager) return;
+
+    const sessions = agentManager.getSessionsList();
+    if (sessions.length === 0) {
+        list.append('<div class="acc-empty-state" style="padding: 10px;">暂无历史会话</div>');
+        return;
+    }
+
+    sessions.forEach(session => {
+        const isActive = session.id === agentManager.sessionId;
+        const item = $('<div>').addClass('acc-session-item').css({
+            'background': isActive ? 'rgba(76, 175, 80, 0.2)' : 'rgba(0,0,0,0.1)',
+            'border': isActive ? '1px solid #4caf50' : '1px solid transparent',
+            'padding': '8px',
+            'margin-bottom': '5px',
+            'border-radius': '4px',
+            'display': 'flex',
+            'justify-content': 'space-between',
+            'align-items': 'center',
+            'cursor': 'pointer'
+        });
+
+        const date = new Date(session.timestamp).toLocaleString();
+        const textContainer = $('<div>').css({
+            'display': 'flex',
+            'flex-direction': 'column',
+            'flex': '1',
+            'overflow': 'hidden',
+            'margin-right': '10px'
+        });
+        
+        const titleSpan = $('<span>').text(session.title).css({
+            'font-weight': 'bold',
+            'white-space': 'nowrap',
+            'overflow': 'hidden',
+            'text-overflow': 'ellipsis'
+        });
+        const dateSpan = $('<span>').text(date).css({
+            'font-size': '10px',
+            'color': '#888'
+        });
+
+        textContainer.append(titleSpan).append(dateSpan);
+
+        const delBtn = $('<button>').addClass('acc-btn-danger').html('<i class="fas fa-trash"></i>').css({
+            'padding': '4px 8px',
+            'font-size': '12px'
+        });
+
+        item.on('click', (e) => {
+            if (e.target === delBtn[0] || delBtn.has(e.target).length > 0) return;
+            if (!isActive) {
+                if (agentManager.loadSession(session.id)) {
+                    restoreChatHistory();
+                    renderSessionsList();
+                    populateDropdowns();
+                    toastr.success('已切换会话');
+                } else {
+                    toastr.error('加载会话失败');
+                }
+            }
+        });
+
+        delBtn.on('click', (e) => {
+            e.stopPropagation();
+            if (confirm('确定要删除这个会话吗？')) {
+                agentManager.deleteSession(session.id);
+                renderSessionsList();
+                if (isActive) {
+                    restoreChatHistory();
+                    populateDropdowns();
+                }
+            }
+        });
+
+        item.append(textContainer).append(delBtn);
+        list.append(item);
+    });
+}
+
 function renderRulesList() {
     const list = $('#acc-rules-list');
     list.empty();
@@ -167,7 +275,7 @@ function renderRulesList() {
         });
 
         delBtn.on('click', () => {
-            agentManager.contextManager.rules.splice(index, 1);
+            agentManager.contextManager.removeRule(index);
             renderRulesList();
         });
 
@@ -382,6 +490,28 @@ function bindEvents() {
         });
     }
     
+    $('#acc-sessions-toggle').on('click', function() {
+        const content = $('#acc-sessions-content');
+        const icon = $(this).find('.fa-chevron-down, .fa-chevron-up');
+        if (content.is(':visible')) {
+            content.slideUp();
+            icon.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+        } else {
+            content.slideDown();
+            icon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+        }
+    });
+
+    $('#acc-new-session-btn').on('click', () => {
+        if (agentManager) {
+            agentManager.createNewSession();
+            restoreChatHistory();
+            renderSessionsList();
+            populateDropdowns();
+            toastr.success('已创建新会话');
+        }
+    });
+
     $('#acc-rules-toggle').on('click', function() {
         const content = $('#acc-rules-content');
         const icon = $(this).find('.fa-chevron-down, .fa-chevron-up');
@@ -955,6 +1085,7 @@ function renderEditor() {
                                         .attr('title', '点击恢复 (Click to restore)');
                                     
                                     const added = $('<div>')
+                                        .text(segment.new)
                                         .attr('contenteditable', 'true')
                                         .css({
                                             'background-color': 'rgba(0, 255, 0, 0.2)',
@@ -1222,13 +1353,19 @@ async function loadContextToEditor() {
 async function updatePreview(toolName, args, isPartial = false, isExecuted = false) {
     let chid = args.chid;
     if (chid === undefined || chid === null || chid === '') {
-        chid = $('#acc-target-char').val();
+        const uiVal = $('#acc-target-char').val();
+        if (uiVal !== 'new' && uiVal !== '') {
+            chid = uiVal;
+        }
     }
     chid = String(chid);
 
     let bookName = args.book_name;
     if (bookName === undefined || bookName === null || bookName === '') {
-        bookName = $('#acc-target-world').val();
+        const uiVal = $('#acc-target-world').val();
+        if (uiVal !== 'new' && uiVal !== '') {
+            bookName = uiVal;
+        }
     }
     bookName = String(bookName);
 
@@ -1252,28 +1389,34 @@ async function updatePreview(toolName, args, isPartial = false, isExecuted = fal
 
     } else if (toolName === 'edit_character_text') {
         const field = args.field || 'Unknown Field';
-
-        
-        if (field !== 'Unknown Field') {
-            const unknownDiffId = `diff-${chid}-Unknown Field`;
-            if (openedFiles.has(unknownDiffId)) {
-                openedFiles.delete(unknownDiffId);
-            }
-            
-            
-            const unknownId = `char-${chid}-Unknown Field`;
-            if (openedFiles.has(unknownId)) {
-                const file = openedFiles.get(unknownId);
-                openedFiles.delete(unknownId);
-                file.title = field;
-                file.metadata.field = field;
-                openedFiles.set(id, file); 
-                if (activeFileId === unknownId) activeFileId = id;
-            }
-        }
-
         const diff = args.diff || '';
         const id = `char-${chid}-${field}`;
+
+        // Clean up any tabs with undefined chid or Unknown Field
+        openedFiles.forEach((file, fileId) => {
+            if (fileId.startsWith('diff-') && !fileId.startsWith('diff-wi-')) {
+                if (fileId.includes('-undefined') || fileId.includes('-Unknown Field')) {
+                    if (fileId !== `diff-${chid}-${field}`) {
+                        openedFiles.delete(fileId);
+                    }
+                }
+            }
+            if (fileId.startsWith('char-')) {
+                if (fileId.includes('-undefined') || fileId.includes('-Unknown Field')) {
+                    if (fileId !== id) {
+                        const fileToRename = openedFiles.get(fileId);
+                        openedFiles.delete(fileId);
+                        fileToRename.title = field;
+                        if (fileToRename.metadata) {
+                            fileToRename.metadata.chid = chid;
+                            fileToRename.metadata.field = field;
+                        }
+                        openedFiles.set(id, fileToRename);
+                        if (activeFileId === fileId) activeFileId = id;
+                    }
+                }
+            }
+        });
         
         if (isPartial) {
             const diffId = `diff-${chid}-${field}`;
@@ -1370,12 +1513,15 @@ async function updatePreview(toolName, args, isPartial = false, isExecuted = fal
             
             renderEditor();
         } else {
+            const diffId = `diff-${chid}-${field}`;
+            if (openedFiles.has(diffId)) {
+                openedFiles.delete(diffId);
+            }
             
-            let originalContent = '';
+            let originalContent = null;
             if (openedFiles.has(id)) {
-                originalContent = openedFiles.get(id).content;
+                originalContent = openedFiles.get(id).content || '';
             } else {
-                
                 try {
                     const charData = await tools.read_character_card({ chid });
                     const response = JSON.parse(charData);
@@ -1383,9 +1529,9 @@ async function updatePreview(toolName, args, isPartial = false, isExecuted = fal
                         const char = response.data;
                         if (field.startsWith('greeting_')) {
                             const index = parseInt(field.split('_')[1]);
-                            originalContent = char.alternate_greetings[index];
+                            originalContent = char.alternate_greetings[index] || '';
                         } else {
-                            originalContent = char[field];
+                            originalContent = char[field] || '';
                         }
                     }
                 } catch (e) {
@@ -1393,7 +1539,7 @@ async function updatePreview(toolName, args, isPartial = false, isExecuted = fal
                 }
             }
 
-            if (originalContent) {
+            if (originalContent !== null) {
                 const segments = parseDiff(originalContent, diff);
                 openedFiles.set(id, {
                     title: field,
@@ -1403,10 +1549,7 @@ async function updatePreview(toolName, args, isPartial = false, isExecuted = fal
                     metadata: { type: 'char', chid, field }
                 });
                 activeFileId = id;
-                openedFiles.delete(`diff-${chid}-${field}`);
             } else {
-                 
-                 const diffId = `diff-${chid}-${field}`;
                  openedFiles.set(diffId, {
                      title: `Diff: ${field}`,
                      content: diff,
@@ -1419,22 +1562,32 @@ async function updatePreview(toolName, args, isPartial = false, isExecuted = fal
 
     } else if (toolName === 'edit_world_info_entry') {
         const uid = args.uid;
-
-        
-        if (uid !== undefined) {
-            const unknownDiffId = `diff-wi-${bookName}-undefined`;
-            if (openedFiles.has(unknownDiffId)) {
-                openedFiles.delete(unknownDiffId);
-            }
-        }
-
         const diff = args.diff || '';
         const id = `wi-${bookName}-${uid}`;
+
+        // Clean up any tabs with undefined bookName or uid
+        openedFiles.forEach((file, fileId) => {
+            if (fileId.startsWith('diff-wi-') || fileId.startsWith('wi-')) {
+                if (fileId.includes('-undefined')) {
+                    if (fileId !== `diff-wi-${bookName}-${uid}` && fileId !== id) {
+                        openedFiles.delete(fileId);
+                    }
+                }
+            }
+        });
         
         if (isPartial) {
             const diffId = `diff-wi-${bookName}-${uid}`;
+            
+            // Clean up any other diff tabs for this book to prevent duplicates during streaming
+            openedFiles.forEach((file, fileId) => {
+                if (fileId.startsWith(`diff-wi-${bookName}-`) && fileId !== diffId) {
+                    openedFiles.delete(fileId);
+                }
+            });
+
             openedFiles.set(diffId, {
-                title: `Diff: WI ${uid}`,
+                title: uid !== undefined ? `Diff: WI ${uid}` : 'Diff: WI (Generating...)',
                 content: diff,
                 type: 'diff',
                 metadata: null
@@ -1461,22 +1614,34 @@ async function updatePreview(toolName, args, isPartial = false, isExecuted = fal
                 console.error("Failed to refresh WI content after edit", e);
             }
         } else {
-            let originalContent = '';
+            const diffId = `diff-wi-${bookName}-${uid}`;
+            if (openedFiles.has(diffId)) {
+                openedFiles.delete(diffId);
+            }
+            
+            // Clean up any other diff tabs for this book to prevent duplicates
+            openedFiles.forEach((file, fileId) => {
+                if (fileId.startsWith(`diff-wi-${bookName}-`) && fileId !== diffId) {
+                    openedFiles.delete(fileId);
+                }
+            });
+            
+            let originalContent = null;
             if (openedFiles.has(id)) {
-                originalContent = openedFiles.get(id).content;
+                originalContent = openedFiles.get(id).content || '';
             } else {
                 try {
                     const entryData = await tools.read_world_entry({ book_name: bookName, uid: uid });
                     const response = JSON.parse(entryData);
                     if (response.status === 'success' && response.data) {
-                        originalContent = response.data.content;
+                        originalContent = response.data.content || '';
                     }
                 } catch (e) {
                     console.error("Failed to fetch original content for WI diff view", e);
                 }
             }
             
-            if (originalContent) {
+            if (originalContent !== null) {
                 const segments = parseDiff(originalContent, diff);
                 openedFiles.set(id, {
                     title: `WI: ${uid}`,
@@ -1486,11 +1651,9 @@ async function updatePreview(toolName, args, isPartial = false, isExecuted = fal
                     metadata: { type: 'wi', bookName, uid }
                 });
                 activeFileId = id;
-                openedFiles.delete(`diff-wi-${bookName}-${uid}`);
             } else {
-                 const diffId = `diff-wi-${bookName}-${uid}`;
                  openedFiles.set(diffId, {
-                     title: `Diff: WI ${uid}`,
+                     title: uid !== undefined ? `Diff: WI ${uid}` : 'Diff: WI (Generating...)',
                      content: diff,
                      type: 'diff',
                      metadata: null
@@ -1550,13 +1713,26 @@ function parseDiff(originalContent, diff) {
         const split1 = part.split('=======');
         if (split1.length < 2) continue;
         
-        const searchContent = split1[0].trim();
+        // Remove only the first and last newline to preserve indentation
+        let searchContent = split1[0].replace(/^\r?\n|\r?\n$/g, '');
         const split2 = split1[1].split('+++++++ REPLACE');
         if (split2.length < 1) continue;
         
-        const replaceContent = split2[0].trim();
+        let replaceContent = split2[0].replace(/^\r?\n|\r?\n$/g, '');
         
-        const foundIndex = originalContent.indexOf(searchContent, currentIndex);
+        let foundIndex = originalContent.indexOf(searchContent, currentIndex);
+        
+        // Fallback: try normalizing line endings if exact match fails
+        if (foundIndex === -1) {
+            const normalizedOriginal = originalContent.replace(/\r\n/g, '\n');
+            const normalizedSearch = searchContent.replace(/\r\n/g, '\n');
+            foundIndex = normalizedOriginal.indexOf(normalizedSearch, currentIndex);
+            
+            if (foundIndex !== -1) {
+                // Use the actual original string for the matched portion
+                searchContent = originalContent.substring(foundIndex, foundIndex + normalizedSearch.length);
+            }
+        }
         
         if (foundIndex !== -1) {
             if (foundIndex > currentIndex) {
@@ -1574,6 +1750,26 @@ function parseDiff(originalContent, diff) {
             });
             
             currentIndex = foundIndex + searchContent.length;
+        } else {
+            // If still not found, append it anyway so it doesn't silently disappear
+            console.warn("Diff search block not found in original content:", searchContent);
+            
+            // If we haven't added any text yet, add the whole original content first
+            if (currentIndex === 0 && i === 1) {
+                segments.push({
+                    type: 'text',
+                    content: originalContent
+                });
+                currentIndex = originalContent.length;
+            }
+            
+            segments.push({
+                type: 'change',
+                original: searchContent,
+                new: replaceContent,
+                active: true,
+                error: true
+            });
         }
     }
     

@@ -12,16 +12,169 @@ export class AgentManager {
         this.memorySystem = new MemorySystem();
         this.currentChid = undefined;
         this.currentBookName = undefined;
+        this.intentNewChar = false;
+        this.intentNewWorld = false;
         this.status = 'idle';
         this.approvalRequired = false;
         this.pendingToolCall = null;
+        this.sessionId = Date.now().toString();
+        this.loadState();
+    }
+
+    saveState() {
+        try {
+            const state = {
+                id: this.sessionId,
+                timestamp: Date.now(),
+                history: this.history,
+                taskState: this.taskState.toJSON(),
+                currentChid: this.currentChid,
+                currentBookName: this.currentBookName
+            };
+            
+            // Save current session
+            localStorage.setItem(`amily2_acc_session_${this.sessionId}`, JSON.stringify(state));
+            
+            // Update sessions list
+            let sessions = this.getSessionsList();
+            const existingIndex = sessions.findIndex(s => s.id === this.sessionId);
+            
+            const sessionMeta = {
+                id: this.sessionId,
+                timestamp: state.timestamp,
+                title: this.generateSessionTitle()
+            };
+
+            if (existingIndex >= 0) {
+                sessions[existingIndex] = sessionMeta;
+            } else {
+                sessions.push(sessionMeta);
+            }
+            
+            // Sort by timestamp descending
+            sessions.sort((a, b) => b.timestamp - a.timestamp);
+            localStorage.setItem('amily2_acc_sessions_list', JSON.stringify(sessions));
+            
+            // Save last active session ID
+            localStorage.setItem('amily2_acc_last_session_id', this.sessionId);
+            
+        } catch (e) {
+            console.error('[AutoCharCard] Failed to save agent state:', e);
+        }
+    }
+
+    generateSessionTitle() {
+        if (this.history.length === 0) return "新会话";
+        
+        // Find the first user message
+        const firstUserMsg = this.history.find(m => m.role === 'user');
+        if (firstUserMsg) {
+            let title = firstUserMsg.content.substring(0, 20).replace(/\n/g, ' ');
+            if (firstUserMsg.content.length > 20) title += '...';
+            return title;
+        }
+        return "未命名会话";
+    }
+
+    getSessionsList() {
+        try {
+            const list = localStorage.getItem('amily2_acc_sessions_list');
+            return list ? JSON.parse(list) : [];
+        } catch (e) {
+            return [];
+        }
+    }
+
+    loadSession(sessionId) {
+        try {
+            const savedState = localStorage.getItem(`amily2_acc_session_${sessionId}`);
+            if (savedState) {
+                const state = JSON.parse(savedState);
+                this.sessionId = state.id || sessionId;
+                this.history = state.history || [];
+                this.taskState.reset();
+                if (state.taskState) {
+                    this.taskState.fromJSON(state.taskState);
+                }
+                this.currentChid = state.currentChid;
+                this.currentBookName = state.currentBookName;
+                localStorage.setItem('amily2_acc_last_session_id', this.sessionId);
+                return true;
+            }
+            return false;
+        } catch (e) {
+            console.error('[AutoCharCard] Failed to load session:', e);
+            return false;
+        }
+    }
+
+    loadState() {
+        const lastSessionId = localStorage.getItem('amily2_acc_last_session_id');
+        if (lastSessionId) {
+            if (this.loadSession(lastSessionId)) {
+                return;
+            }
+        }
+        
+        // Fallback to old state format if exists, then migrate
+        try {
+            const oldState = localStorage.getItem('amily2_acc_agent_state');
+            if (oldState) {
+                const state = JSON.parse(oldState);
+                this.history = state.history || [];
+                if (state.taskState) {
+                    this.taskState.fromJSON(state.taskState);
+                }
+                this.currentChid = state.currentChid;
+                this.currentBookName = state.currentBookName;
+                localStorage.removeItem('amily2_acc_agent_state'); // Clean up old format
+                this.saveState(); // Save in new format
+            }
+        } catch (e) {
+            console.error('[AutoCharCard] Failed to load old agent state:', e);
+        }
+    }
+
+    createNewSession() {
+        this.history = [];
+        this.taskState.reset();
+        this.currentChid = undefined;
+        this.currentBookName = undefined;
+        this.sessionId = Date.now().toString();
+        this.saveState();
+    }
+
+    deleteSession(sessionId) {
+        try {
+            localStorage.removeItem(`amily2_acc_session_${sessionId}`);
+            let sessions = this.getSessionsList();
+            sessions = sessions.filter(s => s.id !== sessionId);
+            localStorage.setItem('amily2_acc_sessions_list', JSON.stringify(sessions));
+            
+            if (this.sessionId === sessionId) {
+                if (sessions.length > 0) {
+                    this.loadSession(sessions[0].id);
+                } else {
+                    this.createNewSession();
+                }
+            }
+        } catch (e) {
+            console.error('[AutoCharCard] Failed to delete session:', e);
+        }
+    }
+
+    clearState() {
+        this.createNewSession();
     }
 
     async setContext(chid, bookName) {
-        this.currentChid = chid;
-        this.currentBookName = bookName;
+        this.intentNewChar = (chid === 'new');
+        this.intentNewWorld = (bookName === 'new');
         
-        if (bookName && bookName !== 'new') {
+        this.currentChid = this.intentNewChar ? undefined : chid;
+        this.currentBookName = this.intentNewWorld ? undefined : bookName;
+        
+        if (this.currentBookName) {
             try {
                 const bookData = await tools.read_world_info({ book_name: bookName, return_full: true });
                 const entries = JSON.parse(bookData);
@@ -91,14 +244,17 @@ ${this.taskState.getPromptContext()}
 # Current Context
 `;
 
-        if (this.currentChid === 'new') {
+        if (this.intentNewChar && this.currentChid === undefined) {
             prompt += `- **Status**: Creating a NEW character.\n`;
             prompt += `- **Action Required**: Use \`create_character\` first to get a Character ID.\n`;
         } else if (this.currentChid !== undefined) {
             prompt += `- **Character ID**: ${this.currentChid}\n`;
         }
         
-        if (this.currentBookName) {
+        if (this.intentNewWorld && this.currentBookName === undefined) {
+            prompt += `- **Status**: Creating a NEW World Book.\n`;
+            prompt += `- **Action Required**: Use \`create_world_book\` first to get a World Book Name.\n`;
+        } else if (this.currentBookName) {
             prompt += `- **World Info Book**: ${this.currentBookName}\n`;
         }
 
@@ -124,7 +280,7 @@ ${this.taskState.getPromptContext()}
         let envDetails = `\n<environment_details>\n`;
         envDetails += `# Current Time\n${new Date().toLocaleString()}\n\n`;
         
-        if (this.currentChid !== undefined && this.currentChid !== 'new') {
+        if (this.currentChid !== undefined) {
             try {
                 const charData = await tools.read_character_card({ chid: this.currentChid });
                 const response = JSON.parse(charData);
@@ -144,7 +300,7 @@ ${this.taskState.getPromptContext()}
             }
         }
         
-        if (this.currentBookName && this.currentBookName !== 'new') {
+        if (this.currentBookName) {
              try {
                 const bookData = await tools.read_world_info({ book_name: this.currentBookName, return_full: false });
                 const result = JSON.parse(bookData);
@@ -211,7 +367,7 @@ Example:
    - **Use \`update_character_card\`** only when populating empty fields or rewriting the entire content of a field.
    - **Use \`write_world_info_entry\`** only when creating new entries or rewriting the entire content of an entry.
 - **Do not ask for more information than necessary**: Use the tools provided to accomplish the user's request efficiently and effectively.
-- **Completion**: When the task is done, provide a final summary to the user.
+- **Completion**: When the task is done, you MUST use the \`task_complete\` tool to explicitly end the process. Provide a final summary in the tool's parameter.
 `;
         return prompt;
     }
@@ -231,6 +387,7 @@ Example:
         }
         
         this.history.push({ role: 'user', content: message });
+        this.saveState();
         this.status = 'running';
         await this.runTaskLoop(onStreamUpdate, onPreviewUpdate, onApprovalRequest, onContextUpdate, onPromptGenerated);
     }
@@ -316,6 +473,7 @@ Example:
             }
 
             this.history.push({ role: 'assistant', content: responseContent });
+            this.saveState();
             
             const thinkingMatch = responseContent.match(/<thinking>([\s\S]*?)<\/thinking>/);
             if (thinkingMatch) {
@@ -402,7 +560,7 @@ Example:
                         }
                     }
 
-                    if (jsonResult._action === 'stop_and_wait') {
+                    if (jsonResult._action === 'stop_and_wait' || toolCall.name === 'task_complete') {
                         this.status = 'idle';
                     }
                 } catch (e) {
@@ -431,6 +589,7 @@ Example:
 
         const toolResultMsg = `[工具 '${toolCall.name}' 的执行结果]\n${result}`;
         this.history.push({ role: 'user', content: toolResultMsg });
+        this.saveState();
 
         let isError = false;
         try {
@@ -524,5 +683,6 @@ Example:
     
     clearHistory() {
         this.history = [];
+        this.saveState();
     }
 }

@@ -1,1 +1,274 @@
-const _0x2923df=_0x870e;(function(_0x55c8c5,_0x322d13){const _0x44e7ec=_0x870e,_0x397650=_0x55c8c5();while(!![]){try{const _0x4e14d7=-parseInt(_0x44e7ec(0x1a2))/0x1+-parseInt(_0x44e7ec(0x1b4))/0x2*(-parseInt(_0x44e7ec(0x189))/0x3)+-parseInt(_0x44e7ec(0x1b5))/0x4*(parseInt(_0x44e7ec(0x184))/0x5)+parseInt(_0x44e7ec(0x19c))/0x6+-parseInt(_0x44e7ec(0x1bd))/0x7*(parseInt(_0x44e7ec(0x1cd))/0x8)+parseInt(_0x44e7ec(0x1b8))/0x9+parseInt(_0x44e7ec(0x1aa))/0xa*(-parseInt(_0x44e7ec(0x195))/0xb);if(_0x4e14d7===_0x322d13)break;else _0x397650['push'](_0x397650['shift']());}catch(_0x310f0f){_0x397650['push'](_0x397650['shift']());}}}(_0x597a,0x731c6));const GOOGLE_DOMAINS=[_0x2923df(0x1d3),_0x2923df(0x19e),_0x2923df(0x1b2)];export function isGoogleEndpoint(_0x5dec1a){const _0x3e802e=_0x2923df;try{if(!_0x5dec1a||typeof _0x5dec1a!=='string')return![];const _0x2d3dcc=new URL(_0x5dec1a),_0x4e984f=_0x2d3dcc[_0x3e802e(0x1a6)][_0x3e802e(0x1c6)](),_0x42a06e=_0x2d3dcc[_0x3e802e(0x192)]['toLowerCase']();if(_0x42a06e[_0x3e802e(0x1ba)](_0x3e802e(0x1cc)))return![];return GOOGLE_DOMAINS[_0x3e802e(0x1a8)](_0x16d9ea=>_0x4e984f['includes'](_0x16d9ea));}catch(_0x2e87e8){return console[_0x3e802e(0x197)]('[GoogleAdapter]\x20URL解析错误:',_0x5dec1a,_0x2e87e8),![];}}function _0x870e(_0x39bcc0,_0x11db59){const _0x597a48=_0x597a();return _0x870e=function(_0x870e62,_0x249d22){_0x870e62=_0x870e62-0x184;let _0x150f93=_0x597a48[_0x870e62];return _0x150f93;},_0x870e(_0x39bcc0,_0x11db59);}export function convertToGoogleRequest(_0xc31358){const _0x5e43a2=_0x2923df,{model:_0x4f96ac,..._0x4223db}=_0xc31358,_0x5d4320=_0xc31358[_0x5e43a2(0x190)][_0x5e43a2(0x1cb)](_0x3f096c=>{const _0x446f63=_0x5e43a2;let _0x6cccf2;return _0x3f096c[_0x446f63(0x1c7)]==='assistant'?_0x6cccf2=_0x446f63(0x1bc):_0x6cccf2=_0x446f63(0x1ca),{'role':_0x6cccf2,'parts':[{'text':_0x3f096c[_0x446f63(0x1ab)]}]};});return{'contents':_0x5d4320,'generationConfig':{'maxOutputTokens':_0xc31358[_0x5e43a2(0x1c9)],'temperature':_0xc31358[_0x5e43a2(0x1bf)]||0.7,'topP':0.95},'safetySettings':[{'category':_0x5e43a2(0x1c0),'threshold':'BLOCK_NONE'},{'category':_0x5e43a2(0x18a),'threshold':'BLOCK_NONE'},{'category':_0x5e43a2(0x18f),'threshold':'BLOCK_NONE'},{'category':'HARM_CATEGORY_DANGEROUS_CONTENT','threshold':_0x5e43a2(0x1af)}]};}export function parseGoogleResponse(_0x5a146d){const _0x15edd8=_0x2923df;try{if(_0x5a146d[_0x15edd8(0x197)])throw new Error(_0x15edd8(0x188)+(_0x5a146d[_0x15edd8(0x197)]['message']||'未知错误')+_0x15edd8(0x186)+_0x5a146d[_0x15edd8(0x197)][_0x15edd8(0x1ae)]);const _0x3c0ae5=_0x5a146d[_0x15edd8(0x1d2)]?.[0x0];if(!_0x3c0ae5||!_0x3c0ae5[_0x15edd8(0x1ab)])throw new Error('无效的Google\x20API响应:\x20未找到候选内容');const _0x1ba684=_0x3c0ae5[_0x15edd8(0x1ab)]['parts']['map'](_0x5851ce=>_0x5851ce['text']||'')['join']('\x0a')[_0x15edd8(0x1b3)]();return{'choices':[{'index':0x0,'message':{'role':_0x15edd8(0x193),'content':_0x1ba684},'finish_reason':_0x3c0ae5[_0x15edd8(0x1c3)]||'stop'}]};}catch(_0x1801ad){console[_0x15edd8(0x197)](_0x15edd8(0x1d4),_0x1801ad),console[_0x15edd8(0x1ad)]('原始Google响应:',_0x5a146d);throw _0x1801ad;}}export function buildGoogleApiUrl(_0x5f09ce,_0x42bad5){const _0x5c0cce=_0x2923df;try{const _0x594385=new URL(_0x5f09ce),_0x182977=_0x594385[_0x5c0cce(0x192)][_0x5c0cce(0x19b)](/\/$/,'');if(_0x182977[_0x5c0cce(0x1a5)](_0x5c0cce(0x1a9))||_0x182977[_0x5c0cce(0x1a5)](_0x5c0cce(0x191))){if(!_0x42bad5)throw new Error(_0x5c0cce(0x1a1));const _0x2c2c8a=_0x182977[_0x5c0cce(0x1a5)](_0x5c0cce(0x1a9))?_0x5c0cce(0x18c):'v1';return _0x594385[_0x5c0cce(0x192)]='/'+_0x2c2c8a+_0x5c0cce(0x18e)+_0x42bad5+_0x5c0cce(0x19a),_0x594385[_0x5c0cce(0x1a7)];}return _0x594385[_0x5c0cce(0x1a7)];}catch(_0x33b49e){console[_0x5c0cce(0x197)](_0x5c0cce(0x1a0),_0x5f09ce,_0x42bad5,_0x33b49e);throw new Error(_0x5c0cce(0x185)+_0x5f09ce);}}export function buildGoogleEmbeddingRequest(_0x4d935c,_0x3307f9){const _0x55ba0e=_0x2923df,_0x25dd73=_0x4d935c[_0x55ba0e(0x1cb)](_0x2ceecd=>({'model':_0x55ba0e(0x1a4)+_0x3307f9,'content':{'parts':[{'text':_0x2ceecd}]}}));return{'requests':_0x25dd73};}export function parseGoogleEmbeddingResponse(_0x308125,_0x31970e){const _0x11f1a0=_0x2923df;if(!_0x308125||!Array[_0x11f1a0(0x1ac)](_0x308125['embeddings'])){console['error']('[GoogleAdapter]\x20Google向量API响应格式无效，缺少\x20\x22embeddings\x22\x20数组:',_0x308125);throw new Error(_0x11f1a0(0x1ce));}return _0x308125[_0x11f1a0(0x1a3)]['map'](_0x27ccf1=>_0x27ccf1[_0x11f1a0(0x1c5)]);}export function buildGoogleEmbeddingApiUrl(_0x3dfc7d,_0x19a25b){const _0x19979f=_0x2923df,_0x295dd2=new URL(_0x3dfc7d),_0x1d9044=_0x19a25b['includes'](_0x19979f(0x1b6))?_0x19979f(0x18c):'v1';return _0x295dd2[_0x19979f(0x192)]='/'+_0x1d9044+_0x19979f(0x18e)+_0x19a25b+_0x19979f(0x196),_0x295dd2[_0x19979f(0x1a7)];}function convertOaiToGoogleForPlotOptimization(_0x42e8bc){const _0x26ff00=_0x2923df,_0x3a1d0a=[];let _0x673c24=null,_0x1a9726='';for(const _0x7a7e5c of _0x42e8bc){if(_0x7a7e5c['role']===_0x26ff00(0x1ca)&&_0x1a9726==='user'){const _0x339949=_0x3a1d0a[_0x3a1d0a[_0x26ff00(0x1d0)]-0x1];_0x339949[_0x26ff00(0x1be)][_0x26ff00(0x1c4)]({'text':'\x0a\x0a'+_0x7a7e5c[_0x26ff00(0x1ab)]});continue;}_0x7a7e5c[_0x26ff00(0x1c7)]==='assistant'?(_0x3a1d0a[_0x26ff00(0x1c4)]({'role':'model','parts':[{'text':_0x7a7e5c[_0x26ff00(0x1ab)]}]}),_0x1a9726=_0x26ff00(0x1bc)):(_0x3a1d0a[_0x26ff00(0x1c4)]({'role':'user','parts':[{'text':_0x7a7e5c[_0x26ff00(0x1ab)]}]}),_0x1a9726=_0x26ff00(0x1ca));}return{'contents':_0x3a1d0a,'system_instruction':_0x673c24};}export function buildPlotOptimizationGoogleRequest(_0xa36e70,_0x2759a9){const _0x25cb2d=_0x2923df,{contents:_0x2c652f}=convertOaiToGoogleForPlotOptimization(_0xa36e70),_0x3e2a85={'temperature':_0x2759a9['temperature'],'topP':_0x2759a9[_0x25cb2d(0x19f)],'topK':_0x2759a9[_0x25cb2d(0x1d5)],'maxOutputTokens':_0x2759a9[_0x25cb2d(0x1c9)]};if(_0x3e2a85[_0x25cb2d(0x19d)])_0x3e2a85[_0x25cb2d(0x19d)]=Math[_0x25cb2d(0x1b1)](_0x3e2a85[_0x25cb2d(0x19d)]);Object['keys'](_0x3e2a85)[_0x25cb2d(0x1b0)](_0x7627b1=>{(_0x3e2a85[_0x7627b1]===undefined||_0x3e2a85[_0x7627b1]===null)&&delete _0x3e2a85[_0x7627b1];});_0x2c652f['length']===0x0&&_0x2c652f['push']({'role':_0x25cb2d(0x1ca),'parts':[{'text':'Hi'}]});const _0x424b73=[{'category':_0x25cb2d(0x1c0),'threshold':_0x25cb2d(0x1af)},{'category':_0x25cb2d(0x18a),'threshold':'BLOCK_NONE'},{'category':_0x25cb2d(0x18f),'threshold':_0x25cb2d(0x1af)},{'category':_0x25cb2d(0x1bb),'threshold':_0x25cb2d(0x1af)}],_0x4d35ca={'contents':_0x2c652f,'generationConfig':_0x3e2a85,'safetySettings':_0x424b73};return _0x4d35ca;}export function parsePlotOptimizationGoogleResponse(_0x6a0529){const _0x365ecb=_0x2923df;try{const _0x49249c=_0x6a0529?.['candidates'];if(!_0x49249c||_0x49249c['length']===0x0){let _0x179647='Google\x20API\x20returned\x20no\x20candidates.';return _0x6a0529?.[_0x365ecb(0x199)]?.[_0x365ecb(0x198)]&&(_0x179647+=_0x365ecb(0x1d1)+_0x6a0529[_0x365ecb(0x199)]['blockReason'],console[_0x365ecb(0x197)](_0x179647,_0x6a0529[_0x365ecb(0x199)][_0x365ecb(0x1b9)])),{'choices':[{'message':{'content':_0x365ecb(0x18d)+_0x179647}}]};}const _0xc6e478=_0x49249c[0x0][_0x365ecb(0x1ab)],_0x29f236=_0xc6e478?.['parts']?.[_0x365ecb(0x1cb)](_0x42139d=>_0x42139d[_0x365ecb(0x1c1)])[_0x365ecb(0x187)]('')||'';if(!_0x29f236){let _0x537224=_0x365ecb(0x1cf);return console[_0x365ecb(0x1b7)](_0x537224,_0x6a0529),{'choices':[{'message':{'content':_0x365ecb(0x1c2)}}]};}return{'choices':[{'message':{'content':_0x29f236}}]};}catch(_0xc6c5d7){return console[_0x365ecb(0x197)](_0x365ecb(0x18b),_0xc6c5d7,_0x6a0529),{'choices':[{'message':{'content':_0x365ecb(0x1c8)+_0xc6c5d7[_0x365ecb(0x194)]}}]};}}function _0x597a(){const _0x2ad756=['Error:\x20Received\x20an\x20empty\x20response\x20from\x20the\x20API.','finishReason','push','values','toLowerCase','role','Error:\x20Failed\x20to\x20parse\x20Google\x20API\x20response.\x20Details:\x20','max_tokens','user','map','/openai','137136iuLZtD','Google\x20API返回的向量数据格式不正确。','Google\x20API\x20response\x20text\x20is\x20empty.','length','\x0aPrompt\x20was\x20blocked\x20due\x20to:\x20','candidates','generativelanguage.googleapis.com','[GoogleAdapter]\x20响应解析错误:','top_k','185taCXoq','无效的API地址:\x20','\x0a代码:\x20','join','Google\x20API错误:\x20','24ZahhKQ','HARM_CATEGORY_HATE_SPEECH','Error\x20parsing\x20Google\x20response:','v1beta','Error:\x20','/models/','HARM_CATEGORY_SEXUALLY_EXPLICIT','messages','/v1','pathname','assistant','message','11apETjI',':batchEmbedContents','error','blockReason','promptFeedback',':generateContent','replace','3609582PRfkyG','topK','ai.google.dev','top_p','[GoogleAdapter]\x20URL构建错误:','Google\x20API需要模型名称','46463SAtDWr','embeddings','models/','endsWith','hostname','href','some','/v1beta','3743270lssfcm','content','isArray','log','code','BLOCK_NONE','forEach','round','us-central1-aiplatform.googleapis.com','trim','113758IZqZmZ','19332xjaTMJ','gemini','warn','6147126ASHbqN','safetyRatings','includes','HARM_CATEGORY_DANGEROUS_CONTENT','model','273BqNEmY','parts','temperature','HARM_CATEGORY_HARASSMENT','text'];_0x597a=function(){return _0x2ad756;};return _0x597a();}
+// 所有Google专用域名后缀 - 检测是否需要激活适配器
+const GOOGLE_DOMAINS = [
+  "generativelanguage.googleapis.com",
+  "ai.google.dev",
+  "us-central1-aiplatform.googleapis.com"  // 添加Vertex AI专用域名
+];
+
+// 工具函数：检测URL是否是Google API端点
+export function isGoogleEndpoint(url) {
+  try {
+    if (!url || typeof url !== 'string') return false;
+    const parsedUrl = new URL(url);
+    const hostname = parsedUrl.hostname.toLowerCase();
+    const pathname = parsedUrl.pathname.toLowerCase();
+
+    // 如果是OpenAI兼容层，则不视为Google原生API
+    if (pathname.includes('/openai')) {
+      return false;
+    }
+
+    return GOOGLE_DOMAINS.some(domain => hostname.includes(domain));
+  } catch (error) {
+    console.error('[GoogleAdapter] URL解析错误:', url, error);
+    return false;
+  }
+}
+
+// 转换OpenAI格式请求为Google API所需格式
+export function convertToGoogleRequest(openaiRequest) {
+  const { model: _, ...rest } = openaiRequest; // 忽略model参数(Google放在URL中)
+
+  // 将messages数组转换为Google的内容结构
+  const contents = openaiRequest.messages.map(message => {
+    let role;
+    // Google API只支持 'user' 和 'model' 角色
+    if (message.role === 'assistant') {
+      role = 'model';
+    } else {
+      // 'system' 和 'user' 都转换为 'user'
+      role = 'user';
+    }
+
+    return {
+      role: role,
+      parts: [{ text: message.content }]
+    };
+  });
+
+  return {
+    contents,
+    generationConfig: {
+      maxOutputTokens: openaiRequest.max_tokens,
+      temperature: openaiRequest.temperature || 0.7,
+      topP: 0.95,
+    },
+    safetySettings: [
+      {
+        category: "HARM_CATEGORY_HARASSMENT",
+        threshold: "BLOCK_NONE"
+      },
+      {
+        category: "HARM_CATEGORY_HATE_SPEECH",
+        threshold: "BLOCK_NONE"
+      },
+      {
+        category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        threshold: "BLOCK_NONE"
+      },
+      {
+        category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+        threshold: "BLOCK_NONE"
+      }
+    ]
+  };
+}
+
+// 将Google API响应转换为标准OpenAI格式
+export function parseGoogleResponse(googleResponse) {
+  try {
+    // 处理Google的错误响应格式
+    if (googleResponse.error) {
+      throw new Error(
+        `Google API错误: ${googleResponse.error.message || '未知错误'}\n代码: ${googleResponse.error.code}`
+      );
+    }
+
+    // 处理候选数据
+    const candidate = googleResponse.candidates?.[0];
+    if (!candidate || !candidate.content) {
+      throw new Error('无效的Google API响应: 未找到候选内容');
+    }
+
+    // 合并多部分内容
+    const content = candidate.content.parts
+      .map(part => part.text || '')
+      .join('\n')
+      .trim();
+
+    // 转换为OpenAI兼容格式
+    return {
+      choices: [
+        {
+          index: 0,
+          message: {
+            role: 'assistant',
+            content
+          },
+          finish_reason: candidate.finishReason || 'stop'
+        }
+      ]
+    };
+  } catch (error) {
+    console.error('[GoogleAdapter] 响应解析错误:', error);
+    console.log('原始Google响应:', googleResponse);
+    throw error;
+  }
+}
+
+// 构建GoogleAPI的完整端点URL
+export function buildGoogleApiUrl(baseUrl, modelName) {
+  try {
+    const url = new URL(baseUrl);
+    const pathname = url.pathname.replace(/\/$/, ''); // 移除末尾的斜杠
+
+    // 检查是否为v1或v1beta的基础路径
+    if (pathname.endsWith('/v1beta') || pathname.endsWith('/v1')) {
+      if (!modelName) {
+        throw new Error('Google API需要模型名称');
+      }
+
+      const apiVersion = pathname.endsWith('/v1beta') ? 'v1beta' : 'v1';
+
+      // 构建完整的模型调用URL
+      url.pathname = `/${apiVersion}/models/${modelName}:generateContent`;
+      return url.href;
+    }
+
+    // 如果已经是完整API路径或自定义路径，则直接返回
+    return url.href;
+  } catch (error) {
+    console.error('[GoogleAdapter] URL构建错误:', baseUrl, modelName, error);
+    throw new Error(`无效的API地址: ${baseUrl}`);
+  }
+}
+
+export function buildGoogleEmbeddingRequest(texts, modelName) {
+    const requests = texts.map(text => ({
+        model: `models/${modelName}`,
+        content: {
+            parts: [{ text: text }]
+        }
+    }));
+
+    return { requests };
+}
+
+export function parseGoogleEmbeddingResponse(googleResponse, originalTexts) {
+    if (!googleResponse || !Array.isArray(googleResponse.embeddings)) {
+        console.error('[GoogleAdapter] Google向量API响应格式无效，缺少 "embeddings" 数组:', googleResponse);
+        throw new Error('Google API返回的向量数据格式不正确。');
+    }
+
+    // Google API 返回的字段名是 "values" 而不是 "value"
+    return googleResponse.embeddings.map(emb => emb.values);
+}
+
+export function buildGoogleEmbeddingApiUrl(baseUrl, modelName) {
+    const url = new URL(baseUrl);
+    const apiVersion = modelName.includes('gemini') ? 'v1beta' : 'v1';
+    url.pathname = `/${apiVersion}/models/${modelName}:batchEmbedContents`;
+    return url.href;
+}
+
+function convertOaiToGoogleForPlotOptimization(messages) {
+    const contents = [];
+    let system_instruction = null;
+    let lastRole = '';
+
+    for (const message of messages) {
+        if (message.role === 'user' && lastRole === 'user') {
+            const lastContent = contents[contents.length - 1];
+            lastContent.parts.push({ text: `\n\n${message.content}` });
+            continue;
+        }
+        
+        if (message.role === 'assistant') {
+            contents.push({
+                role: 'model',
+                parts: [{ text: message.content }],
+            });
+            lastRole = 'model';
+        } else {
+            contents.push({
+                role: 'user',
+                parts: [{ text: message.content }],
+            });
+            lastRole = 'user';
+        }
+    }
+
+    return { contents, system_instruction };
+}
+
+export function buildPlotOptimizationGoogleRequest(messages, apiSettings) {
+    const { contents } = convertOaiToGoogleForPlotOptimization(messages);
+
+    const generationConfig = {
+        temperature: apiSettings.temperature,
+        topP: apiSettings.top_p,
+        topK: apiSettings.top_k,
+        maxOutputTokens: apiSettings.max_tokens,
+    };
+    
+    if(generationConfig.topK) generationConfig.topK = Math.round(generationConfig.topK);
+
+    Object.keys(generationConfig).forEach(key => {
+        if (generationConfig[key] === undefined || generationConfig[key] === null) {
+            delete generationConfig[key];
+        }
+    });
+
+    if (contents.length === 0) {
+        contents.push({ role: 'user', parts: [{ text: 'Hi' }] });
+    }
+
+    const safetySettings = [
+        { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+        { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+    ];
+
+    const payload = {
+        contents,
+        generationConfig,
+        safetySettings,
+    };
+
+    return payload;
+}
+
+export function parsePlotOptimizationGoogleResponse(googleResponse) {
+    try {
+        const candidates = googleResponse?.candidates;
+        if (!candidates || candidates.length === 0) {
+            let message = `Google API returned no candidates.`;
+            if (googleResponse?.promptFeedback?.blockReason) {
+                message += `\nPrompt was blocked due to: ${googleResponse.promptFeedback.blockReason}`;
+                console.error(message, googleResponse.promptFeedback.safetyRatings);
+            }
+            return { choices: [{ message: { content: `Error: ${message}` } }] };
+        }
+
+        const responseContent = candidates[0].content;
+        const responseText = responseContent?.parts?.map(part => part.text).join('') || '';
+        
+        if (!responseText) {
+            let message = `Google API response text is empty.`;
+            console.warn(message, googleResponse);
+            return { choices: [{ message: { content: 'Error: Received an empty response from the API.' } }] };
+        }
+
+        return {
+            choices: [{
+                message: {
+                    content: responseText
+                }
+            }]
+        };
+    } catch (error) {
+        console.error(`Error parsing Google response:`, error, googleResponse);
+        return { choices: [{ message: { content: `Error: Failed to parse Google API response. Details: ${error.message}` } }] };
+    }
+}

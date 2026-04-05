@@ -4,6 +4,7 @@ import { getRequestHeaders } from '/script.js';
 import { extensionName } from '../../utils/settings.js';
 import { extension_settings, getContext } from "/scripts/extensions.js";
 import { compatibleTriggerSlash } from '../../core/tavernhelper-compatibility.js';
+import { getSlotProfile, providerToApiMode } from '../../core/api/api-resolver.js';
 
 function normalizeApiResponse(responseData) {
     let data = responseData;
@@ -36,7 +37,22 @@ function normalizeApiResponse(responseData) {
 }
 
 
-function getCwbApiSettings() {
+async function getCwbApiSettings() {
+    // 优先读取槽位分配的 Profile
+    const profile = await getSlotProfile('cwb');
+    if (profile) {
+        return {
+            apiMode:       providerToApiMode(profile.provider),
+            apiUrl:        profile.apiUrl,
+            apiKey:        profile.apiKey ?? '',
+            model:         profile.model,
+            tavernProfile: '',
+            temperature:   profile.temperature ?? 0.7,
+            maxTokens:     profile.maxTokens   ?? 65000,
+        };
+    }
+
+    // 降级：读旧 extension_settings
     const settings = extension_settings[extensionName] || {};
     return {
         apiMode: settings.cwb_api_mode || 'openai_test',
@@ -260,7 +276,7 @@ async function callCwbOpenAITest(messages, options) {
 }
 
 export async function callCwbAPI(systemPrompt, userPromptContent, options = {}) {
-    const apiSettings = getCwbApiSettings();
+    const apiSettings = await getCwbApiSettings();
     
     const finalOptions = {
         maxTokens: apiSettings.maxTokens,
@@ -335,7 +351,7 @@ export async function callCwbAPI(systemPrompt, userPromptContent, options = {}) 
 }
 
 export async function loadModels($panel) {
-    const apiSettings = getCwbApiSettings();
+    const apiSettings = await getCwbApiSettings();
     const $modelSelect = $panel.find('#cwb-api-model');
     const $apiStatus = $panel.find('#cwb-api-status');
 
@@ -422,14 +438,14 @@ export async function loadModels($panel) {
         logError('加载模型列表时出错:', error);
         showToastr('error', `加载模型列表失败: ${error.message}`);
     } finally {
-        updateApiStatusDisplay($panel);
+        await updateApiStatusDisplay($panel);
     }
 }
 
 export async function fetchCwbModels() {
     console.log('[CWB] 开始获取模型列表');
     
-    const apiSettings = getCwbApiSettings();
+    const apiSettings = await getCwbApiSettings();
     
     try {
         if (apiSettings.apiMode === 'sillytavern_preset') {
@@ -510,7 +526,7 @@ export async function fetchCwbModels() {
 export async function testCwbConnection() {
     console.log('[CWB] 开始API连接测试');
     
-    const apiSettings = getCwbApiSettings();
+    const apiSettings = await getCwbApiSettings();
     
     if (apiSettings.apiMode !== 'sillytavern_preset' && (!apiSettings.apiUrl || !apiSettings.apiKey || !apiSettings.model)) {
         showToastr('error', 'API配置不完整，请检查URL、Key和模型', 'CWB API连接测试失败');
@@ -545,7 +561,7 @@ export async function testCwbConnection() {
 }
 
 export async function fetchModelsAndConnect($panel) {
-    const apiSettings = getCwbApiSettings();
+    const apiSettings = await getCwbApiSettings();
     const $modelSelect = $panel.find('#cwb-api-model');
     const $apiStatus = $panel.find('#cwb-api-status');
 
@@ -584,15 +600,15 @@ export async function fetchModelsAndConnect($panel) {
         logError('加载模型列表时出错:', error);
         showToastr('error', `加载模型列表失败: ${error.message}`);
     } finally {
-        updateApiStatusDisplay($panel);
+        await updateApiStatusDisplay($panel);
     }
 }
 
 
-export function updateApiStatusDisplay($panel) {
+export async function updateApiStatusDisplay($panel) {
     if (!$panel) return;
     const $apiStatus = $panel.find('#cwb-api-status');
-    const apiSettings = getCwbApiSettings();
+    const apiSettings = await getCwbApiSettings();
     
     if (apiSettings.apiMode === 'sillytavern_preset') {
         if (apiSettings.tavernProfile) {
@@ -622,7 +638,7 @@ export function updateApiStatusDisplay($panel) {
 }
 
 export async function callCustomOpenAI(messages) {
-    const apiSettings = getCwbApiSettings();
+    const apiSettings = await getCwbApiSettings();
 
     if (apiSettings.apiMode === 'sillytavern_preset') {
         return await callCwbSillyTavernPreset(messages, { tavernProfile: apiSettings.tavernProfile, maxTokens: 65000 });
@@ -705,8 +721,8 @@ export class CWBApiService {
         return await callCwbAPI(systemPrompt, userPromptContent, options);
     }
 
-    static getSettings() {
-        return getCwbApiSettings();
+    static async getSettings() {
+        return await getCwbApiSettings();
     }
 
     static async loadModels($panel) {
