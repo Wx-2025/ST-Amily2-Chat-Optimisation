@@ -274,6 +274,26 @@ class ApiProfileManager {
 // ── 单例导出 ─────────────────────────────────────────────────────────────────
 export const apiProfileManager = new ApiProfileManager();
 
+// ── 历史槽位迁移 ──────────────────────────────────────────────────────────────
+// v2.0.1: jqyh 槽合并入 plotOpt，superMemory 槽已移除（无 API 调用）
+;(() => {
+    try {
+        const s = extension_settings[extensionName];
+        if (!s) return;
+        const assignments = s[EXT_ASSIGNMENTS];
+        if (!assignments) return;
+        if (assignments['jqyh'] && !assignments['plotOpt']) {
+            assignments['plotOpt'] = assignments['jqyh'];
+            console.info('[ApiProfiles] 迁移: jqyh 分配已合并至 plotOpt:', assignments['plotOpt']);
+        }
+        delete assignments['jqyh'];
+        delete assignments['superMemory'];
+        saveSettingsDebounced();
+    } catch (e) {
+        console.warn('[ApiProfiles] 历史槽位迁移失败:', e);
+    }
+})();
+
 // ── Bus 注册 ──────────────────────────────────────────────────────────────────
 setTimeout(() => {
     try {

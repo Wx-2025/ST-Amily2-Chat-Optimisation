@@ -3,6 +3,7 @@ import { characters, this_chid, getRequestHeaders, saveSettingsDebounced, eventS
 import { extensionName } from "../../utils/settings.js";
 import { amilyHelper } from '../../core/tavern-helper/main.js';
 import { getSlotProfile, providerToApiMode } from './api-resolver.js';
+import { configManager } from '../../utils/config/ConfigManager.js';
 
 let ChatCompletionService = undefined;
 try {
@@ -66,7 +67,7 @@ export async function getNgmsApiSettings() {
     return {
         apiMode:       s.ngmsApiMode    || 'openai_test',
         apiUrl:        s.ngmsApiUrl?.trim() || '',
-        apiKey:        s.ngmsApiKey?.trim() || '',
+        apiKey:        configManager.get('ngmsApiKey') || '',
         model:         s.ngmsModel      || '',
         maxTokens:     s.ngmsMaxTokens  ?? 30000,
         temperature:   s.ngmsTemperature ?? 1.0,

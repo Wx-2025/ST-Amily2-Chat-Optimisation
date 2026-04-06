@@ -3,6 +3,7 @@ import { characters, this_chid, getRequestHeaders, saveSettingsDebounced, eventS
 import { extensionName } from "../../utils/settings.js";
 import { amilyHelper } from '../../core/tavern-helper/main.js';
 import { getSlotProfile, providerToApiMode } from './api-resolver.js';
+import { configManager } from '../../utils/config/ConfigManager.js';
 
 let ChatCompletionService = undefined;
 try {
@@ -62,7 +63,7 @@ export async function getNccsApiSettings() {
         nccsEnabled:   s.nccsEnabled   || false,
         apiMode:       s.nccsApiMode    || 'openai_test',
         apiUrl:        s.nccsApiUrl?.trim() || '',
-        apiKey:        s.nccsApiKey?.trim() || '',
+        apiKey:        configManager.get('nccsApiKey') || '',
         model:         s.nccsModel      || '',
         maxTokens:     s.nccsMaxTokens  ?? 8192,
         temperature:   s.nccsTemperature ?? 1,

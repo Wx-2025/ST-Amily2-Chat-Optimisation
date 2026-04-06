@@ -2,6 +2,7 @@ import { extension_settings, getContext } from "/scripts/extensions.js";
 import { getRequestHeaders } from "/script.js";
 import { extensionName } from "../../utils/settings.js";
 import { getSlotProfile, providerToApiMode } from './api-resolver.js';
+import { configManager } from '../../utils/config/ConfigManager.js';
 
 async function getConcurrentApiSettings() {
     const s = extension_settings[extensionName] || {};
@@ -24,7 +25,7 @@ async function getConcurrentApiSettings() {
     return {
         apiProvider: s.plotOpt_concurrentApiProvider || 'openai',
         apiUrl:      s.plotOpt_concurrentApiUrl?.trim() || '',
-        apiKey:      s.plotOpt_concurrentApiKey?.trim() || '',
+        apiKey:      configManager.get('plotOpt_concurrentApiKey') || '',
         model:       s.plotOpt_concurrentModel || '',
         maxTokens:   s.plotOpt_concurrentMaxTokens || 8100,
         temperature: s.plotOpt_concurrentTemperature || 1,

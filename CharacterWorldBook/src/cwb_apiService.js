@@ -5,6 +5,7 @@ import { extensionName } from '../../utils/settings.js';
 import { extension_settings, getContext } from "/scripts/extensions.js";
 import { compatibleTriggerSlash } from '../../core/tavernhelper-compatibility.js';
 import { getSlotProfile, providerToApiMode } from '../../core/api/api-resolver.js';
+import { configManager } from '../../utils/config/ConfigManager.js';
 
 function normalizeApiResponse(responseData) {
     let data = responseData;
@@ -57,7 +58,7 @@ async function getCwbApiSettings() {
     return {
         apiMode: settings.cwb_api_mode || 'openai_test',
         apiUrl: settings.cwb_api_url?.trim() || '',
-        apiKey: settings.cwb_api_key?.trim() || '',
+        apiKey: configManager.get('cwb_api_key') || '',
         model: settings.cwb_api_model || '',
         tavernProfile: settings.cwb_tavern_profile || '',
         temperature: settings.cwb_temperature ?? 0.7,

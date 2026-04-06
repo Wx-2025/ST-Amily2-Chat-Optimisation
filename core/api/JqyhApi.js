@@ -3,6 +3,7 @@ import { characters, this_chid, getRequestHeaders, saveSettingsDebounced, eventS
 import { extensionName } from "../../utils/settings.js";
 import { amilyHelper } from '../../core/tavern-helper/main.js';
 import { getSlotProfile, providerToApiMode } from './api-resolver.js';
+import { configManager } from '../../utils/config/ConfigManager.js';
 
 let ChatCompletionService = undefined;
 try {
@@ -61,11 +62,11 @@ export async function getJqyhApiSettings() {
         };
     }
 
-    // 降级：读旧 extension_settings 字段
+    // 降级：读旧 extension_settings 字段（apiKey 经 ConfigManager 从 localStorage 读取）
     return {
         apiMode:       s.jqyhApiMode    || 'openai_test',
         apiUrl:        s.jqyhApiUrl?.trim() || '',
-        apiKey:        s.jqyhApiKey?.trim() || '',
+        apiKey:        configManager.get('jqyhApiKey') || '',
         model:         s.jqyhModel      || '',
         maxTokens:     s.jqyhMaxTokens  || 4000,
         temperature:   s.jqyhTemperature || 0.7,
