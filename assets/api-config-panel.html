@@ -75,8 +75,8 @@
 </fieldset>
 
 <!-- 新建/编辑 Profile 弹窗 -->
-<div id="amily2_profile_modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
-    <div style="background:var(--SmartThemeBlurTintColor); border:1px solid var(--SmartThemeBorderColor); border-radius:8px; padding:20px; width:min(500px,94vw); max-height:88vh; overflow-y:auto;">
+<div id="amily2_profile_modal" class="amily2-modal-overlay" style="display:none;">
+    <div class="amily2-modal-content">
 
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
             <strong id="amily2_profile_modal_title"><i class="fas fa-key"></i> 新建连接配置</strong>
@@ -130,10 +130,9 @@
             <label for="amily2_pf_model">模型</label>
             <div style="display:flex; gap:6px; align-items:stretch;">
                 <input id="amily2_pf_model" type="text" class="text_pole"
-                       list="amily2_pf_model_list"
                        placeholder="手动填写或点击「获取」"
                        style="flex:1;" />
-                <datalist id="amily2_pf_model_list"></datalist>
+                <select id="amily2_pf_model_select" class="text_pole" style="flex:1; display:none;"></select>
                 <button id="amily2_pf_fetch_models" class="menu_button small_button interactable" type="button" title="从 API 获取可用模型列表（需先填写地址和 Key）">
                     <i class="fas fa-list"></i> 获取
                 </button>

@@ -751,3 +751,57 @@ hr.header-divider {
         transform: scale(1);
     }
 }
+
+/* === Profile 弹窗 === */
+.amily2-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    box-sizing: border-box;
+}
+
+.amily2-modal-content {
+    background: var(--SmartThemeBlurTintColor);
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 8px;
+    padding: 20px;
+    width: min(500px, 100%);
+    max-height: 90dvh;
+    overflow-y: auto;
+    box-sizing: border-box;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 600px) {
+    .amily2-modal-overlay {
+        align-items: flex-end;
+        padding: 0;
+    }
+
+    .amily2-modal-content {
+        width: 100%;
+        max-height: 92dvh;
+        border-radius: 12px 12px 0 0;
+        padding: 16px 14px;
+    }
+
+    /* 按钮行在窄屏下撑满宽度 */
+    .amily2-modal-content > div:last-child {
+        flex-wrap: wrap;
+    }
+
+    .amily2-modal-content > div:last-child .menu_button {
+        flex: 1;
+        min-width: 80px;
+    }
+
+    /* 模型获取按钮行 */
+    .amily2-modal-content #amily2_pf_fetch_models {
+        white-space: nowrap;
+    }
+}

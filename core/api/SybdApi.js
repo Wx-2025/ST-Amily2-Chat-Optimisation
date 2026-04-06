@@ -2,6 +2,8 @@ import { extension_settings, getContext } from "/scripts/extensions.js";
 import { characters, this_chid, getRequestHeaders, saveSettingsDebounced, eventSource, event_types } from "/script.js";
 import { extensionName } from "../../utils/settings.js";
 import { amilyHelper } from '../../core/tavern-helper/main.js';
+import { getSlotProfile, providerToApiMode } from './api-resolver.js';
+import { configManager } from '../../utils/config/ConfigManager.js';
 
 let ChatCompletionService = undefined;
 try {
@@ -42,15 +44,32 @@ function normalizeApiResponse(responseData) {
     return data;
 }
 
-export function getSybdApiSettings() {
+export async function getSybdApiSettings() {
+    const s = extension_settings[extensionName] || {};
+
+    // 优先读取 'sybd' 槽位分配的 Profile
+    const profile = await getSlotProfile('sybd');
+    if (profile) {
+        return {
+            apiMode:      providerToApiMode(profile.provider),
+            apiUrl:       profile.apiUrl,
+            apiKey:       profile.apiKey ?? '',
+            model:        profile.model,
+            maxTokens:    s.sybdMaxTokens    ?? profile.maxTokens   ?? 4000,
+            temperature:  s.sybdTemperature  ?? profile.temperature ?? 0.7,
+            tavernProfile: '',
+        };
+    }
+
+    // 降级：读旧 extension_settings 字段
     return {
-        apiMode: extension_settings[extensionName]?.sybdApiMode || 'openai_test',
-        apiUrl: extension_settings[extensionName]?.sybdApiUrl?.trim() || '',
-        apiKey: extension_settings[extensionName]?.sybdApiKey?.trim() || '',
-        model: extension_settings[extensionName]?.sybdModel || '',
-        maxTokens: extension_settings[extensionName]?.sybdMaxTokens || 4000,
-        temperature: extension_settings[extensionName]?.sybdTemperature || 0.7,
-        tavernProfile: extension_settings[extensionName]?.sybdTavernProfile || ''
+        apiMode:      s.sybdApiMode      || 'openai_test',
+        apiUrl:       s.sybdApiUrl?.trim() || '',
+        apiKey:       configManager.get('sybdApiKey') || '',
+        model:        s.sybdModel        || '',
+        maxTokens:    s.sybdMaxTokens    || 4000,
+        temperature:  s.sybdTemperature  || 0.7,
+        tavernProfile: s.sybdTavernProfile || '',
     };
 }
 
@@ -60,7 +79,7 @@ export async function callSybdAI(messages, options = {}) {
         return null;
     }
 
-    const apiSettings = getSybdApiSettings();
+    const apiSettings = await getSybdApiSettings();
 
     const finalOptions = {
         maxTokens: apiSettings.maxTokens,
@@ -257,8 +276,8 @@ async function callSybdSillyTavernPreset(messages, options) {
 
 export async function fetchSybdModels() {
     console.log('[Amily2号-Sybd外交部] 开始获取模型列表');
-    
-    const apiSettings = getSybdApiSettings();
+
+    const apiSettings = await getSybdApiSettings();
     
     try {
         if (apiSettings.apiMode === 'sillytavern_preset') {
@@ -340,8 +359,8 @@ export async function fetchSybdModels() {
 
 export async function testSybdApiConnection() {
     console.log('[Amily2号-Sybd外交部] 开始API连接测试');
-    
-    const apiSettings = getSybdApiSettings();
+
+    const apiSettings = await getSybdApiSettings();
 
     if (apiSettings.apiMode === 'sillytavern_preset') {
         if (!apiSettings.tavernProfile) {

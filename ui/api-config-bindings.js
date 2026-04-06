@@ -371,9 +371,10 @@ async function openModal($c, id) {
         _switchParamSections($c, 'chat');
     }
 
-    // 清空上次测试结果和模型列表缓存
+    // 清空上次测试结果，重置模型选择器为手动输入状态
     $c.find('#amily2_pf_test_result').text('');
-    $c.find('#amily2_pf_model_list').empty();
+    $c.find('#amily2_pf_model_select').hide().empty();
+    $c.find('#amily2_pf_model').show();
 
     $modal.css('display', 'flex');
 }
@@ -390,7 +391,8 @@ async function saveProfile($c) {
     const provider = $c.find('#amily2_pf_provider').val();
     const apiUrl   = $c.find('#amily2_pf_url').val().trim();
     const apiKey   = $c.find('#amily2_pf_key').val();
-    const model    = $c.find('#amily2_pf_model').val().trim();
+    const $sel = $c.find('#amily2_pf_model_select');
+    const model = ($sel.is(':visible') ? $sel.val() : $c.find('#amily2_pf_model').val()).trim();
 
     if (!name) { toastr.warning('请填写配置名称。'); return; }
 
@@ -504,11 +506,12 @@ async function _fetchModels($c) {
             return;
         }
 
-        const $dl = $c.find('#amily2_pf_model_list');
-        $dl.html(models.map(m => `<option value="${_escapeHtml(m)}">`).join(''));
-
-        const $modelInput = $c.find('#amily2_pf_model');
-        if (!$modelInput.val()) $modelInput.val(models[0]);
+        const currentVal = $c.find('#amily2_pf_model').val().trim();
+        const $sel = $c.find('#amily2_pf_model_select');
+        $sel.html(models.map(m => `<option value="${_escapeHtml(m)}">${_escapeHtml(m)}</option>`).join(''));
+        if (currentVal && models.includes(currentVal)) $sel.val(currentVal);
+        $c.find('#amily2_pf_model').hide();
+        $sel.show();
 
         toastr.success(`已获取 ${models.length} 个可用模型。`);
     } catch (e) {

@@ -70,6 +70,7 @@ export const SLOTS = {
     nccs:          { label: 'NCCS 并发',             type: 'chat' },
     cwb:           { label: '角色世界书',              type: 'chat' },
     autoCharCard:  { label: '一键生卡',              type: 'chat' },
+    sybd:          { label: '术语表填写',             type: 'chat' },
     // Embedding 槽
     ragEmbed:      { label: 'RAG 向量化',            type: 'embedding' },
     // Rerank 槽

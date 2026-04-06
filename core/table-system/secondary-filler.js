@@ -6,7 +6,7 @@ import { updateOrInsertTableInChat } from '../../ui/message-table-renderer.js';
 import { extensionName } from "../../utils/settings.js";
 import { updateTableFromText, getBatchFillerRuleTemplate, getBatchFillerFlowTemplate, convertTablesToCsvString, saveStateToMessage, getMemoryState, clearHighlights } from './manager.js';
 import { getPresetPrompts, getMixedOrder } from '../../PresetSettings/index.js';
-import { callAI, generateRandomSeed } from '../api.js';
+import { callAI, generateRandomSeed, getApiSettings } from '../api.js';
 import { callNccsAI } from '../api/NccsApi.js';
 import { extractBlocksByTags, applyExclusionRules } from '../utils/rag-tag-extractor.js';
 import { safeLorebookEntries } from '../tavernhelper-compatibility.js';
@@ -92,7 +92,8 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
         return;
     }
 
-    const { apiUrl, apiKey, model, temperature, maxTokens, forceProxyForCustomApi } = settings;
+    const resolvedApi = await getApiSettings('main');
+    const { apiUrl, apiKey, model, temperature, maxTokens, forceProxyForCustomApi } = resolvedApi ?? settings;
     if (!apiUrl || !model) {
         if (!window.secondaryApiUrlWarned) {
             toastr.error("主API的URL或模型未配置，分步填表功能无法启动。", "Amily2-分步填表");
