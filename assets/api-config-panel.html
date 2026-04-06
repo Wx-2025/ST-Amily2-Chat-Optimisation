@@ -74,15 +74,14 @@
     </div>
 </fieldset>
 
-<!-- 新建/编辑 Profile 弹窗 -->
-<div id="amily2_profile_modal" class="amily2-modal-overlay" style="display:none;">
-    <div class="amily2-modal-content">
+<!-- 新建/编辑 Profile 表单（details 折叠） -->
+<details id="amily2_profile_form_details" class="settings-group amily2-profile-form">
+    <summary>
+        <i id="amily2_profile_form_icon" class="fas fa-plus"></i>
+        <span id="amily2_profile_modal_title">新建连接配置</span>
+    </summary>
 
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-            <strong id="amily2_profile_modal_title"><i class="fas fa-key"></i> 新建连接配置</strong>
-            <button id="amily2_profile_modal_close" class="menu_button small_button secondary interactable">✕</button>
-        </div>
-
+    <div style="padding-top:10px;">
         <!-- 类型选择 -->
         <div class="amily2_settings_block">
             <label for="amily2_pf_type">配置类型</label>
@@ -111,7 +110,7 @@
             <label for="amily2_pf_url">API 地址</label>
             <input id="amily2_pf_url" type="text" class="text_pole" placeholder="https://api.example.com/v1" />
         </div>
-        <!-- Google 专属提示（选 Google 时显示） -->
+        <!-- Google 专属提示 -->
         <div id="amily2_pf_google_note" style="display:none; margin-bottom:8px;">
             <small class="notes" style="display:block; padding:6px 10px; background:var(--black10a); border-radius:4px; border-left:3px solid #4285f4;">
                 <i class="fas fa-info-circle" style="color:#4285f4;"></i>
@@ -125,13 +124,11 @@
             <small class="notes">留空则不修改现有 Key。</small>
         </div>
 
-        <!-- 模型选择（带获取按钮） -->
+        <!-- 模型选择 -->
         <div class="amily2_settings_block">
             <label for="amily2_pf_model">模型</label>
             <div style="display:flex; gap:6px; align-items:stretch;">
-                <input id="amily2_pf_model" type="text" class="text_pole"
-                       placeholder="手动填写或点击「获取」"
-                       style="flex:1;" />
+                <input id="amily2_pf_model" type="text" class="text_pole" placeholder="手动填写或点击「获取」" style="flex:1;" />
                 <select id="amily2_pf_model_select" class="text_pole" style="flex:1; display:none;"></select>
                 <button id="amily2_pf_fetch_models" class="menu_button small_button interactable" type="button" title="从 API 获取可用模型列表（需先填写地址和 Key）">
                     <i class="fas fa-list"></i> 获取
@@ -147,7 +144,7 @@
             <span id="amily2_pf_test_result" style="font-size:0.85em;"></span>
         </div>
 
-        <!-- Chat 高级参数（折叠） -->
+        <!-- Chat 高级参数 -->
         <div id="amily2_pf_chat_params">
             <details class="amily2_advanced_section" style="margin-top:4px;">
                 <summary style="cursor:pointer; font-size:0.88em; color:var(--SmartThemeQuoteColor); user-select:none; padding:4px 0;">
@@ -166,7 +163,7 @@
             </details>
         </div>
 
-        <!-- Embedding 高级参数（折叠） -->
+        <!-- Embedding 高级参数 -->
         <div id="amily2_pf_embedding_params" style="display:none;">
             <details class="amily2_advanced_section" style="margin-top:4px;">
                 <summary style="cursor:pointer; font-size:0.88em; color:var(--SmartThemeQuoteColor); user-select:none; padding:4px 0;">
@@ -208,11 +205,13 @@
         </div>
 
         <!-- 操作按钮 -->
-        <div style="display:flex; gap:8px; margin-top:16px; justify-content:flex-end;">
-            <button id="amily2_profile_modal_cancel" class="menu_button secondary interactable">取消</button>
+        <div style="display:flex; gap:8px; margin-top:16px;">
+            <button id="amily2_profile_modal_cancel" class="menu_button secondary interactable">
+                <i class="fas fa-times"></i> 取消
+            </button>
             <button id="amily2_profile_modal_save" class="menu_button interactable">
                 <i class="fas fa-save"></i> 保存
             </button>
         </div>
     </div>
-</div>
+</details>

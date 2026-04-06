@@ -80,11 +80,8 @@ export function bindApiConfigPanel(container) {
     // 弹窗：测试连接
     $c.find('#amily2_pf_test_conn').on('click', () => _testConnection($c));
 
-    // 弹窗：关闭
-    $c.find('#amily2_profile_modal_close, #amily2_profile_modal_cancel').on('click', () => closeModal($c));
-    $c.find('#amily2_profile_modal').on('click', function (e) {
-        if (e.target === this) closeModal($c);
-    });
+    // 表单：取消
+    $c.find('#amily2_profile_modal_cancel').on('click', () => closeModal($c));
 
     // 弹窗：保存
     $c.find('#amily2_profile_modal_save').on('click', () => saveProfile($c));
@@ -329,13 +326,13 @@ export function renderSlotAssignments($c) {
 
 async function openModal($c, id) {
     _editingId = id;
-    const $modal = $c.find('#amily2_profile_modal');
 
     if (id) {
         // 编辑模式
         const p = apiProfileManager.getProfile(id);
         if (!p) return;
-        $c.find('#amily2_profile_modal_title').html('<i class="fas fa-edit"></i> 编辑连接配置');
+        $c.find('#amily2_profile_modal_title').text('编辑连接配置');
+        $c.find('#amily2_profile_form_icon').attr('class', 'fas fa-edit');
         $c.find('#amily2_pf_type').val(p.type).prop('disabled', true);   // 不允许修改类型
         $c.find('#amily2_pf_name').val(p.name);
         $c.find('#amily2_pf_provider').val(p.provider);
@@ -357,7 +354,8 @@ async function openModal($c, id) {
         _handleProviderChange($c, p.provider);
     } else {
         // 新建模式
-        $c.find('#amily2_profile_modal_title').html('<i class="fas fa-plus"></i> 新建连接配置');
+        $c.find('#amily2_profile_modal_title').text('新建连接配置');
+        $c.find('#amily2_profile_form_icon').attr('class', 'fas fa-plus');
         $c.find('#amily2_pf_type').val('chat').prop('disabled', false);
         $c.find('#amily2_pf_name, #amily2_pf_url, #amily2_pf_key, #amily2_pf_model').val('');
         $c.find('#amily2_pf_provider').val('openai');
@@ -376,11 +374,13 @@ async function openModal($c, id) {
     $c.find('#amily2_pf_model_select').hide().empty();
     $c.find('#amily2_pf_model').show();
 
-    $modal.css('display', 'flex');
+    const $details = $c.find('#amily2_profile_form_details');
+    $details.prop('open', true);
+    $details[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
 function closeModal($c) {
-    $c.find('#amily2_profile_modal').hide();
+    $c.find('#amily2_profile_form_details').prop('open', false);
     $c.find('#amily2_pf_type').prop('disabled', false);
     _editingId = null;
 }
@@ -442,8 +442,13 @@ async function saveProfile($c) {
 
 async function _fetchModels($c) {
     const apiUrl   = $c.find('#amily2_pf_url').val().trim();
-    const apiKey   = $c.find('#amily2_pf_key').val().trim();
     const provider = $c.find('#amily2_pf_provider').val();
+
+    // 编辑模式下 Key 不回显，字段为空时从 ApiKeyStore 读取已存储的 Key
+    let apiKey = $c.find('#amily2_pf_key').val().trim();
+    if (!apiKey && _editingId) {
+        apiKey = await apiProfileManager.getKey(_editingId) ?? '';
+    }
 
     if (!apiUrl) { toastr.warning('请先填写 API 地址。'); return; }
 
@@ -497,7 +502,8 @@ async function _fetchModels($c) {
             }
             const rawData = await resp.json();
             // ST 返回原始数组或包含 data/models 字段的对象
-            const list = Array.isArray(rawData) ? rawData : (rawData.data ?? rawData.models ?? []);
+            const rawList = Array.isArray(rawData) ? rawData : (rawData.data ?? rawData.models ?? []);
+            const list = Array.isArray(rawList) ? rawList : [];
             models = list.map(m => m.id ?? m.name ?? m).filter(m => typeof m === 'string' && m);
         }
 
@@ -523,8 +529,13 @@ async function _fetchModels($c) {
 
 async function _testConnection($c) {
     const apiUrl   = $c.find('#amily2_pf_url').val().trim();
-    const apiKey   = $c.find('#amily2_pf_key').val().trim();
     const provider = $c.find('#amily2_pf_provider').val();
+
+    // 编辑模式下 Key 不回显，字段为空时从 ApiKeyStore 读取已存储的 Key
+    let apiKey = $c.find('#amily2_pf_key').val().trim();
+    if (!apiKey && _editingId) {
+        apiKey = await apiProfileManager.getKey(_editingId) ?? '';
+    }
 
     if (!apiUrl) { toastr.warning('请先填写 API 地址。'); return; }
 

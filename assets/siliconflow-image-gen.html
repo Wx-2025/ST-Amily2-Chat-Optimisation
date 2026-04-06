@@ -1,0 +1,77 @@
+<div class="amily2-header">
+    <button id="amily2_sfigen_back_to_main" class="menu_button secondary small_button interactable">
+        <i class="fas fa-arrow-left"></i> 返回主殿
+    </button>
+    <div class="additional-features-title interactable" title="SiliconFlow Image Gen">
+        <i class="fas fa-image"></i> 硅基流动生图
+    </div>
+</div>
+<hr class="header-divider">
+
+<fieldset class="settings-group">
+    <legend><i class="fas fa-cog"></i> 基础配置</legend>
+    <div class="flex-container">
+        <label for="sfigen_api_key">API Key (Bearer Token):</label>
+        <input id="sfigen_api_key" class="text_pole" type="password" placeholder="sk-..." />
+    </div>
+    <div class="flex-container">
+        <label for="sfigen_model">Model (模型):</label>
+        <input id="sfigen_model" class="text_pole" type="text" value="Qwen/Qwen-Image" />
+    </div>
+    <div class="flex-container">
+        <label for="sfigen_negative_prompt">Negative Prompt (反向提示词):</label>
+        <input id="sfigen_negative_prompt" class="text_pole" type="text" value="模糊, 低分辨率, 水印, 文字" />
+    </div>
+    <div class="flex-container">
+        <label for="sfigen_image_size">Image Size (分辨率):</label>
+        <select id="sfigen_image_size" class="text_pole">
+            <option value="1024x1024">1024x1024</option>
+            <option value="512x1024">512x1024</option>
+            <option value="768x512">768x512</option>
+            <option value="768x1024">768x1024</option>
+            <option value="1024x576">1024x576</option>
+            <option value="576x1024">576x1024</option>
+            <option value="1664x928" selected>1664x928</option>
+        </select>
+    </div>
+    <div class="flex-container">
+        <label for="sfigen_steps">Steps (步数):</label>
+        <input id="sfigen_steps" class="text_pole" type="number" value="50" min="1" max="100" />
+    </div>
+    <div class="flex-container">
+        <label for="sfigen_cfg">CFG Scale:</label>
+        <input id="sfigen_cfg" class="text_pole" type="number" value="4.0" step="0.1" min="1.0" max="20.0" />
+    </div>
+    <div class="flex-container">
+        <label for="sfigen_regex_tag">触发标签 (Tag):</label>
+        <input id="sfigen_regex_tag" class="text_pole" type="text" value="sfigen" title="例如填入 sfigen，则会抓取 [sfigen: 提示词] 标签" />
+    </div>
+</fieldset>
+
+<fieldset class="settings-group">
+    <legend><i class="fas fa-paint-brush"></i> 风格预设</legend>
+    <div class="flex-container" style="flex-direction: column; align-items: flex-start;">
+        <label for="sfigen_prefix_prompt">固定前缀提示词 (Prefix Prompt):</label>
+        <div id="sfigen_style_tags" style="display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0;">
+            <span class="sfigen-style-tag" data-prompt="masterpiece, best quality, high detail anime art, sharp line art, 8K, ultra HD" style="background: var(--SmartThemeQuoteColor); color: var(--SmartThemeBodyColor); padding: 4px 12px; border-radius: 16px; cursor: pointer; font-size: 0.85em; border: 1px solid var(--SmartThemeBorderColor); user-select: none; transition: opacity 0.2s;">日系高清二次元</span>
+            <span class="sfigen-style-tag" data-prompt="doujinshi style, illustration, vibrant colors, detailed background, pixiv" style="background: var(--SmartThemeQuoteColor); color: var(--SmartThemeBodyColor); padding: 4px 12px; border-radius: 16px; cursor: pointer; font-size: 0.85em; border: 1px solid var(--SmartThemeBorderColor); user-select: none; transition: opacity 0.2s;">同人插画风</span>
+            <span class="sfigen-style-tag" data-prompt="ancient chinese style, hanfu, traditional clothes, ink painting style, wuxia" style="background: var(--SmartThemeQuoteColor); color: var(--SmartThemeBodyColor); padding: 4px 12px; border-radius: 16px; cursor: pointer; font-size: 0.85em; border: 1px solid var(--SmartThemeBorderColor); user-select: none; transition: opacity 0.2s;">古风</span>
+            <span class="sfigen-style-tag" data-prompt="photorealistic, realistic, RAW photo, 8k uhd, dslr, soft lighting, high quality" style="background: var(--SmartThemeQuoteColor); color: var(--SmartThemeBodyColor); padding: 4px 12px; border-radius: 16px; cursor: pointer; font-size: 0.85em; border: 1px solid var(--SmartThemeBorderColor); user-select: none; transition: opacity 0.2s;">写实摄影</span>
+            <span class="sfigen-style-tag" data-prompt="cyberpunk style, neon lights, futuristic, sci-fi, dark city" style="background: var(--SmartThemeQuoteColor); color: var(--SmartThemeBodyColor); padding: 4px 12px; border-radius: 16px; cursor: pointer; font-size: 0.85em; border: 1px solid var(--SmartThemeBorderColor); user-select: none; transition: opacity 0.2s;">赛博朋克</span>
+            <span class="sfigen-style-tag" data-prompt="watercolor painting, soft edges, artistic, brush strokes" style="background: var(--SmartThemeQuoteColor); color: var(--SmartThemeBodyColor); padding: 4px 12px; border-radius: 16px; cursor: pointer; font-size: 0.85em; border: 1px solid var(--SmartThemeBorderColor); user-select: none; transition: opacity 0.2s;">水彩画</span>
+            <span class="sfigen-style-tag" data-prompt="clear skin texture, obvious body contour, soft warm dim lamp shadow" style="background: var(--SmartThemeQuoteColor); color: var(--SmartThemeBodyColor); padding: 4px 12px; border-radius: 16px; cursor: pointer; font-size: 0.85em; border: 1px solid var(--SmartThemeBorderColor); user-select: none; transition: opacity 0.2s;">质感光影</span>
+            <span class="sfigen-style-tag" data-prompt="1girl, solo, beautiful face, detailed eyes" style="background: var(--SmartThemeQuoteColor); color: var(--SmartThemeBodyColor); padding: 4px 12px; border-radius: 16px; cursor: pointer; font-size: 0.85em; border: 1px solid var(--SmartThemeBorderColor); user-select: none; transition: opacity 0.2s;">单人特写</span>
+        </div>
+        <textarea id="sfigen_prefix_prompt" class="text_pole" rows="3" placeholder="点击上方标签快速插入，或在此手动输入..." style="width: 100%; box-sizing: border-box;"></textarea>
+    </div>
+</fieldset>
+
+<fieldset class="settings-group">
+    <legend><i class="fas fa-info-circle"></i> 使用说明</legend>
+    <small>
+        <b>仅需填入硅基流动密钥，注：0.3元（赠金亦可，模型默认）一张图。</b><br><br>
+        <b>使用方法 1：</b> 在聊天框输入 <code>/sfigen 你的提示词</code><br>
+        <b>使用方法 2：</b> 让 AI 在回复中输出 <code>[sfigen: 生图提示词]</code>，插件会自动将其替换为生图按钮。<br>
+        <b>固定前缀：</b> 每次生成时，会自动将“固定前缀提示词”加在您的提示词前面，以保证画风统一。
+    </small>
+</fieldset>
