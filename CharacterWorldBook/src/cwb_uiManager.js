@@ -7,6 +7,7 @@
     import { extension_settings } from '/scripts/extensions.js';
     import { saveSettingsDebounced } from '/script.js';
     import { amilyHelper } from '../../core/tavern-helper/main.js';
+    import { configManager } from '../../utils/config/ConfigManager.js';
 
     const { jQuery: $, SillyTavern } = window;
 
@@ -675,8 +676,7 @@
 
         $('#cwb-api-key').off('input').on('input', function() {
             const value = $(this).val();
-            extension_settings[extensionName].cwb_api_key = value;
-            saveSettingsDebounced();
+            configManager.set('cwb_api_key', value);
         });
 
         $('#cwb-model').off('input').on('input', function() {

@@ -13,6 +13,8 @@ import { testConcurrentApiConnection, fetchConcurrentModels } from '../core/api/
 import { safeLorebooks, safeCharLorebooks, safeLorebookEntries } from "../core/tavernhelper-compatibility.js";
 import { createDrawer } from '../ui/drawer.js';
 import { pluginAuthStatus } from "../utils/auth.js";
+import { configManager } from '../utils/config/ConfigManager.js';
+import { SENSITIVE_KEYS } from '../utils/config/sensitive-keys.js';
 
 // ========== Prompt Cache (module-level state) ==========
 
@@ -161,6 +163,9 @@ async function opt_saveSetting(key, value) {
             console.error(`[${extensionName}] 保存角色数据失败:`, error);
             toastr.error('无法保存角色卡设置，请检查控制台。');
         }
+    } else if (SENSITIVE_KEYS.has(key)) {
+        // 敏感字段（API Key）经 configManager 写入 localStorage
+        configManager.set(key, value);
     } else {
         if (!extension_settings[extensionName]) {
             extension_settings[extensionName] = {};
@@ -622,7 +627,8 @@ function opt_loadSettings(panel) {
     panel.find('#amily2_opt_worldbook_enabled').prop('checked', settings.plotOpt_worldbookEnabled);
     panel.find('#amily2_opt_new_memory_logic_enabled').prop('checked', settings.plotOpt_newMemoryLogicEnabled);
     panel.find('#amily2_opt_api_url').val(settings.plotOpt_apiUrl);
-    panel.find('#amily2_opt_api_key').val(settings.plotOpt_apiKey);
+    // plotOpt_apiKey 是敏感字段，从 configManager（localStorage）读取
+    panel.find('#amily2_opt_api_key').val(configManager.get('plotOpt_apiKey') || '');
 
     const modelInput = panel.find('#amily2_opt_model');
     const modelSelect = panel.find('#amily2_opt_model_select');
@@ -701,14 +707,17 @@ function bindConcurrentApiEvents() {
     const fields = [
         { id: 'amily2_plotOpt_concurrentApiProvider', key: 'plotOpt_concurrentApiProvider' },
         { id: 'amily2_plotOpt_concurrentApiUrl', key: 'plotOpt_concurrentApiUrl' },
-        { id: 'amily2_plotOpt_concurrentApiKey', key: 'plotOpt_concurrentApiKey' },
+        { id: 'amily2_plotOpt_concurrentApiKey', key: 'plotOpt_concurrentApiKey', sensitive: true },
         { id: 'amily2_plotOpt_concurrentModel', key: 'plotOpt_concurrentModel' }
     ];
 
     fields.forEach(field => {
         const element = document.getElementById(field.id);
         if (element) {
-            element.value = settings[field.key] || '';
+            // 敏感字段（API Key）从 configManager（localStorage）读取
+            element.value = field.sensitive
+                ? (configManager.get(field.key) || '')
+                : (settings[field.key] || '');
         }
     });
 
@@ -787,9 +796,13 @@ function bindConcurrentApiEvents() {
         const element = document.getElementById(field.id);
         if (element) {
             element.addEventListener('change', function() {
-                if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
-                extension_settings[extensionName][field.key] = this.value;
-                saveSettingsDebounced();
+                if (field.sensitive) {
+                    configManager.set(field.key, this.value);
+                } else {
+                    if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
+                    extension_settings[extensionName][field.key] = this.value;
+                    saveSettingsDebounced();
+                }
             });
         }
     });
@@ -1384,16 +1397,23 @@ function bindJqyhApiEvents() {
     // API配置字段绑定
     const apiFields = [
         { id: 'amily2_jqyh_api_url', key: 'jqyhApiUrl' },
-        { id: 'amily2_jqyh_api_key', key: 'jqyhApiKey' },
+        { id: 'amily2_jqyh_api_key', key: 'jqyhApiKey', sensitive: true },
         { id: 'amily2_jqyh_model', key: 'jqyhModel' }
     ];
 
     apiFields.forEach(field => {
         const element = document.getElementById(field.id);
         if (element) {
-            element.value = extension_settings[extensionName][field.key] || '';
+            // 敏感字段（API Key）从 configManager（localStorage）读取
+            element.value = field.sensitive
+                ? (configManager.get(field.key) || '')
+                : (extension_settings[extensionName][field.key] || '');
             element.addEventListener('change', function() {
-                updateAndSaveSetting(field.key, this.value);
+                if (field.sensitive) {
+                    configManager.set(field.key, this.value);
+                } else {
+                    updateAndSaveSetting(field.key, this.value);
+                }
             });
         }
     });

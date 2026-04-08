@@ -159,6 +159,13 @@
                         <label for="amily2_pf_temperature">温度（Temperature）</label>
                         <input id="amily2_pf_temperature" type="number" class="text_pole" min="0" max="2" step="0.1" value="1.0" />
                     </div>
+                    <div class="amily2_settings_block" style="flex-direction:row; align-items:center; gap:8px;">
+                        <input id="amily2_pf_fake_stream" type="checkbox" />
+                        <label for="amily2_pf_fake_stream">
+                            启用假流式（防 CF 超时）
+                            <small class="notes" style="display:block; font-weight:normal;">以 stream:true 接收 SSE 后拼接，适用于经 CloudFlare 免费代理的接口</small>
+                        </label>
+                    </div>
                 </div>
             </details>
         </div>

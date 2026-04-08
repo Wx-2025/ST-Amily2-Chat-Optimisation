@@ -2,6 +2,7 @@ import { extension_settings } from "/scripts/extensions.js";
 import { characters, this_chid } from '/script.js';
 import { extensionName, defaultSettings } from "../utils/settings.js";
 import { pluginAuthStatus } from "../utils/auth.js";
+import { configManager } from '../utils/config/ConfigManager.js';
 
 
 
@@ -82,7 +83,7 @@ export function updateUI() {
     $("#amily2_api_provider").val(settings.apiProvider || 'openai');
     $("#amily2_api_url").val(settings.apiUrl);
     $("#amily2_api_url").attr('type', 'text');
-    $("#amily2_api_key").val(settings.apiKey);
+    $("#amily2_api_key").val(configManager.get('apiKey') || '');
     $("#amily2_model").val(settings.model);
     $("#amily2_preset_selector").val(settings.tavernProfile);
 

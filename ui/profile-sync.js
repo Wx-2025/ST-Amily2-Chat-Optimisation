@@ -29,6 +29,10 @@ import { testNccsApiConnection } from '../core/api/NccsApi.js';
 // 用于通过子元素定位父 block 的选择器
 const BLOCK_SEL = '.amily2_settings_block, .control-group, .amily2_opt_settings_block';
 
+// 每个槽位在回填 Profile 值前的 DOM 字段快照（用于取消分配时还原）
+// 结构：{ [slot]: { [selector]: value } }
+const _fieldSnapshots = {};
+
 const CARD_CLASS     = 'amily2_profile_status_card';
 const CARD_SLOT_ATTR = 'data-card-slot';
 const HIDDEN_ATTR    = 'data-profile-hidden';
@@ -115,10 +119,36 @@ export async function syncSlot(slot) {
     _removeCard(slot);
     _restoreHidden(slot);
 
-    if (!profile) return;
+    if (!profile) {
+        // 取消分配：将 DOM 字段值还原为分配 Profile 前的快照，
+        // 防止残留的 Profile 回填值（尤其是 '••••••••' 的 Key 占位符）
+        // 因 blur 事件被误存入 extension_settings / localStorage。
+        const snap = _fieldSnapshots[slot];
+        if (snap) {
+            for (const [sel, val] of Object.entries(snap)) {
+                const el = document.querySelector(sel);
+                if (el) el.value = val;
+            }
+            delete _fieldSnapshots[slot];
+        }
+        return;
+    }
 
     const container = _resolveContainer(config.container);
     if (!container) return;
+
+    // 回填前先快照各字段当前值（即 extension_settings / configManager 中的真实值），
+    // 以便取消分配时能还原，避免 Profile 值污染旧配置。
+    const snap = {};
+    for (const sel of Object.values(config.fields || {})) {
+        const el = document.querySelector(sel);
+        if (el) snap[sel] = el.value;
+    }
+    if (config.keyField) {
+        const keyEl = document.querySelector(config.keyField);
+        if (keyEl) snap[config.keyField] = keyEl.value;
+    }
+    _fieldSnapshots[slot] = snap;
 
     // 回填值（向下兼容：部分代码仍从 DOM 读取 fallback）
     for (const [key, sel] of Object.entries(config.fields || {})) {

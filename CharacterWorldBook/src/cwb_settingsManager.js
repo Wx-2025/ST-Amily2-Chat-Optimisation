@@ -1,6 +1,7 @@
 import { extension_settings } from '/scripts/extensions.js';
 import { extensionName } from '../../utils/settings.js';
 import { saveSettingsDebounced } from '/script.js';
+import { configManager } from '../../utils/config/ConfigManager.js';
 import { world_names } from '/scripts/world-info.js';
 import { state } from './cwb_state.js';
 import { cwbCompleteDefaultSettings } from './cwb_config.js';
@@ -38,7 +39,7 @@ function saveApiConfig() {
     const settings = getSettings();
     settings.cwb_api_mode = $panel.find('#cwb-api-mode').val();
     settings.cwb_api_url = $panel.find('#cwb-api-url').val().trim();
-    settings.cwb_api_key = $panel.find('#cwb-api-key').val();
+    configManager.set('cwb_api_key', $panel.find('#cwb-api-key').val());
     settings.cwb_api_model = $panel.find('#cwb-api-model').val();
     settings.cwb_tavern_profile = $panel.find('#cwb-tavern-profile').val();
 
@@ -63,7 +64,7 @@ function saveApiConfig() {
 function clearApiConfig() {
     const settings = getSettings();
     settings.cwb_api_url = '';
-    settings.cwb_api_key = '';
+    configManager.set('cwb_api_key', '');
     settings.cwb_api_model = '';
     saveSettingsDebounced();
     state.customApiConfig.url = '';
@@ -283,13 +284,11 @@ export function bindSettingsEvents($settingsPanel) {
     $panel.on('input', '#cwb-api-key', function() {
         const apiKey = $(this).val();
         
-        // 同时更新设置和状态
-        getSettings().cwb_api_key = apiKey;
+        // 同时更新设置和状态（API Key 经 configManager 写入 localStorage）
+        configManager.set('cwb_api_key', apiKey);
         state.customApiConfig.apiKey = apiKey;
-        
-        saveSettingsDebounced();
-        
-        console.log('[CWB] API Key已更新 - 设置长度:', getSettings().cwb_api_key?.length || 0, ', 状态长度:', state.customApiConfig.apiKey?.length || 0);
+
+        console.log('[CWB] API Key已更新 - 状态长度:', state.customApiConfig.apiKey?.length || 0);
     });
     
     $panel.on('change', '#cwb-api-model', function() {
@@ -489,7 +488,7 @@ function updateUiWithSettings() {
     }
 
     $panel.find('#cwb-api-url').val(settings.cwb_api_url);
-    $panel.find('#cwb-api-key').val(settings.cwb_api_key);
+    $panel.find('#cwb-api-key').val(configManager.get('cwb_api_key') || '');
     $panel.find('#cwb-tavern-profile').val(settings.cwb_tavern_profile);
     
     const $modelSelect = $panel.find('#cwb-api-model');
@@ -574,7 +573,7 @@ export function loadSettings() {
     state.isIncrementalUpdateEnabled = finalSettings.cwb_incremental_update_enabled;
     
     state.customApiConfig.url = finalSettings.cwb_api_url || '';
-    state.customApiConfig.apiKey = finalSettings.cwb_api_key || '';
+    state.customApiConfig.apiKey = configManager.get('cwb_api_key') || '';
     state.customApiConfig.model = finalSettings.cwb_api_model || '';
     
     state.currentBreakArmorPrompt = finalSettings.cwb_break_armor_prompt;

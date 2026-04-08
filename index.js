@@ -568,11 +568,12 @@ async function onPlotGenerationAfterCommands(type, params, dryRun) {
     if (globalSettings?.plotOpt_enabled === false) return false;
 
     const isJqyhEnabled = globalSettings?.jqyhEnabled === true;
-    const hasMainProfile = !!apiProfileManager.getAssignment('main') || !!apiProfileManager.getAssignment('plotOpt');
-    const isMainApiConfigured = hasMainProfile || !!globalSettings?.apiUrl || !!globalSettings?.tavernProfile;
+    const hasProfile = !!apiProfileManager.getAssignment('main') || !!apiProfileManager.getAssignment('plotOpt');
+    const hasLegacyConfig = !!globalSettings?.apiUrl || !!globalSettings?.tavernProfile
+        || !!globalSettings?.plotOpt_apiUrl || !!globalSettings?.plotOpt_tavernProfile;
 
-    if (!isJqyhEnabled && !isMainApiConfigured) {
-        console.log("[Amily2-剧情优化] 优化已启用，但Jqyh API已禁用且主API未配置（无 Profile 分配亦无旧设置）。");
+    if (!isJqyhEnabled && !hasProfile && !hasLegacyConfig) {
+        console.log("[Amily2-剧情优化] 优化已启用，但未配置任何可用的 API（无 Profile 分配亦无独立配置）。");
         return false;
     }
 

@@ -4,7 +4,7 @@ import { renderTables } from '../../ui/table-bindings.js';
 import { extensionName } from "../../utils/settings.js";
 import { convertTablesToCsvString, convertSelectedTablesToCsvString, saveStateToMessage, getMemoryState, updateTableFromText, getBatchFillerRuleTemplate, getBatchFillerFlowTemplate } from './manager.js';
 import { getPresetPrompts, getMixedOrder } from '../../PresetSettings/index.js';
-import { callAI, generateRandomSeed, getApiSettings } from '../api.js';
+import { callAI, generateRandomSeed } from '../api.js';
 import { callNccsAI } from '../api/NccsApi.js';
 
 export async function reorganizeTableContent(selectedTableIndices) {
@@ -17,13 +17,6 @@ export async function reorganizeTableContent(selectedTableIndices) {
 
     if (window.AMILY2_SYSTEM_PARALYZED === true) {
         console.error("[Amily2-制裁] 系统完整性已受损，所有外交活动被无限期中止。");
-        return;
-    }
-
-    const resolvedApi = await getApiSettings('main');
-    const { apiUrl, apiKey, model, temperature, maxTokens, forceProxyForCustomApi } = resolvedApi ?? settings;
-    if (!apiUrl || !model) {
-        toastr.error("主API的URL或模型未配置，重新整理功能无法启动。", "Amily2-重新整理");
         return;
     }
 

@@ -343,6 +343,7 @@ async function openModal($c, id) {
         if (p.type === 'chat') {
             $c.find('#amily2_pf_max_tokens').val(p.maxTokens);
             $c.find('#amily2_pf_temperature').val(p.temperature);
+            $c.find('#amily2_pf_fake_stream').prop('checked', p.fakeStream ?? false);
         } else if (p.type === 'embedding') {
             $c.find('#amily2_pf_dimensions').val(p.dimensions ?? '');
             $c.find('#amily2_pf_encoding_format').val(p.encodingFormat);
@@ -362,6 +363,7 @@ async function openModal($c, id) {
         _handleProviderChange($c, 'openai');
         $c.find('#amily2_pf_max_tokens').val(65500);
         $c.find('#amily2_pf_temperature').val(1.0);
+        $c.find('#amily2_pf_fake_stream').prop('checked', false);
         $c.find('#amily2_pf_dimensions').val('');
         $c.find('#amily2_pf_encoding_format').val('float');
         $c.find('#amily2_pf_top_n').val(5);
@@ -401,6 +403,7 @@ async function saveProfile($c) {
     if (type === 'chat') {
         data.maxTokens   = parseInt($c.find('#amily2_pf_max_tokens').val(), 10) || 65500;
         data.temperature = parseFloat($c.find('#amily2_pf_temperature').val()) || 1.0;
+        data.fakeStream  = $c.find('#amily2_pf_fake_stream').prop('checked');
     } else if (type === 'embedding') {
         const dim = $c.find('#amily2_pf_dimensions').val();
         data.dimensions     = dim ? parseInt(dim, 10) : null;
@@ -582,8 +585,39 @@ async function _testConnection($c) {
 
         if (modelsResp.ok) {
             const rawData = await modelsResp.json();
-            const list    = Array.isArray(rawData) ? rawData : (rawData.data ?? rawData.models ?? []);
+            const rawList = Array.isArray(rawData) ? rawData : (rawData.data ?? rawData.models ?? []);
+            const list    = Array.isArray(rawList) ? rawList : [];
             const count   = list.length;
+
+            // chat 类型额外发一次假补全，验证 completion 端点也能正常鉴权
+            const type  = $c.find('#amily2_pf_type').val();
+            const $sel  = $c.find('#amily2_pf_model_select');
+            const model = ($sel.is(':visible') ? $sel.val() : $c.find('#amily2_pf_model').val()).trim();
+
+            if (type === 'chat' && model) {
+                $result.text('模型列表 ✓，正在验证补全端点…').css('color', 'var(--SmartThemeQuoteColor)');
+                const genResp = await fetch('/api/backends/chat-completions/generate', {
+                    method: 'POST',
+                    headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        reverse_proxy:          apiUrl,
+                        proxy_password:         apiKey,
+                        chat_completion_source: 'openai',
+                        model,
+                        messages:   [{ role: 'user', content: 'Hi' }],
+                        max_tokens: 1,
+                        stream:     false,
+                    }),
+                });
+                if (!genResp.ok) {
+                    const genErr = await genResp.json().catch(() => ({}));
+                    const genMsg = genErr?.error?.message || `补全端点返回 HTTP ${genResp.status}`;
+                    $result.text(`模型列表 ✓，补全失败：${genMsg}`).css('color', 'var(--warning-color)');
+                    toastr.warning(`补全端点测试失败：${genMsg}`);
+                    return;
+                }
+            }
+
             $result.text(`连接成功${count ? `，${count} 个可用模型` : ''}`).css('color', 'var(--green)');
             toastr.success('连接测试通过！');
             return;

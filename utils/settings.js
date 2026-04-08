@@ -997,65 +997,8 @@ export const defaultSettings = {
 
 
 export function validateSettings() {
-    const settings = extension_settings[extensionName] || {};
-
-    // 新版 Profile 系统管理 API 配置时，跳过旧版字段验证
-    const assignments = settings.amily2_profile_assignments || {};
-    if (assignments.main) {
-        return null;
-    }
-
-    // 如果启用了Ngms或Nccs，则跳过主API验证
-    if (settings.ngmsEnabled || settings.nccsEnabled) {
-        return null;
-    }
-
-    const apiProvider = settings.apiProvider || 'openai';
-    const errors = [];
-
-    switch (apiProvider) {
-        case 'openai':
-        case 'openai_test':
-            if (!settings.apiUrl) {
-                errors.push("当前模式需要配置API URL");
-            } else if (!/^https?:\/\//.test(settings.apiUrl)) {
-                errors.push("API URL必须以http://或https://开头");
-            }
-            if (apiProvider === 'openai' && !settings.apiKey) {
-                errors.push("当前模式需要配置API Key");
-            }
-            break;
-        case 'sillytavern_backend':
-            if (!settings.apiUrl) {
-                errors.push("SillyTavern后端模式需要配置API URL");
-            }
-            break;
-        case 'google':
-            if (!settings.apiKey) {
-                errors.push("Google直连模式需要配置API Key");
-            }
-            break;
-        case 'sillytavern_preset':
-            break;
-        default:
-            if (!settings.apiUrl) {
-                errors.push("API URL未配置");
-            }
-            if (!settings.apiKey) {
-                errors.push("API Key未配置");
-            }
-            break;
-    }
-
-    if (!settings.model && apiProvider !== 'sillytavern_preset') {
-        errors.push("未选择模型");
-    }
-
-    if (settings.maxTokens < 100 || settings.maxTokens > 100000) {
-        errors.push(`Token数超限 (${settings.maxTokens}) - 必须在100-100000之间`);
-    }
-
-    return errors.length ? errors : null;
+    // 主 API 概念已移除，各功能模块通过 Profile 槽位或独立配置管理 API。
+    return null;
 }
 
 export function saveSettings() {

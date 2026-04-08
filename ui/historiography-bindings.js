@@ -6,6 +6,7 @@ import {
 } from "../utils/settings.js";
 import { showHtmlModal } from './page-window.js';
 import { applyExclusionRules, extractBlocksByTags } from '../core/utils/rag-tag-extractor.js';
+import { configManager } from '../utils/config/ConfigManager.js';
 
 import {
   getAvailableWorldbooks, getLoresForWorldbook,
@@ -459,16 +460,23 @@ function bindNgmsApiEvents() {
     // API配置字段绑定
     const apiFields = [
         { id: 'amily2_ngms_api_url', key: 'ngmsApiUrl' },
-        { id: 'amily2_ngms_api_key', key: 'ngmsApiKey' },
+        { id: 'amily2_ngms_api_key', key: 'ngmsApiKey', sensitive: true },
         { id: 'amily2_ngms_model', key: 'ngmsModel' }
     ];
 
     apiFields.forEach(field => {
         const element = document.getElementById(field.id);
         if (element) {
-            element.value = extension_settings[extensionName][field.key] || '';
+            // 敏感字段（API Key）从 configManager（localStorage）读取
+            element.value = field.sensitive
+                ? (configManager.get(field.key) || '')
+                : (extension_settings[extensionName][field.key] || '');
             element.addEventListener('change', function() {
-                updateAndSaveSetting(field.key, this.value);
+                if (field.sensitive) {
+                    configManager.set(field.key, this.value);
+                } else {
+                    updateAndSaveSetting(field.key, this.value);
+                }
             });
         }
     });

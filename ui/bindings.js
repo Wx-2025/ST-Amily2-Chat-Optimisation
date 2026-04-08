@@ -4,6 +4,7 @@ import { defaultSettings, extensionName, saveSettings, extensionBasePath } from 
 import { pluginAuthStatus, activatePluginAuthorization, getPasswordForDate } from "../utils/auth.js";
 import { fetchModels, testApiConnection } from "../core/api.js";
 import { safeLorebooks, safeCharLorebooks, safeLorebookEntries } from "../core/tavernhelper-compatibility.js";
+import { configManager } from '../utils/config/ConfigManager.js';
 
 import { setAvailableModels, populateModelDropdown, getLatestUpdateInfo } from "./state.js";
 import { fixCommand, testReplyChecker } from "../core/commands.js";
@@ -1038,7 +1039,12 @@ export function bindModalEvents() {
         .on("change.amily2.text", "#amily2_api_url, #amily2_api_key, #amily2_optimization_target_tag", function () {
             if (!pluginAuthStatus.authorized) return;
             const key = snakeToCamel(this.id.replace("amily2_", ""));
-            updateAndSaveSetting(key, this.value);
+            // apiKey 是敏感字段，必须经 configManager 写入 localStorage
+            if (key === 'apiKey') {
+                configManager.set(key, this.value);
+            } else {
+                updateAndSaveSetting(key, this.value);
+            }
             toastr.success(`配置 [${key}] 已自动保存!`, "Amily2号");
         });
 

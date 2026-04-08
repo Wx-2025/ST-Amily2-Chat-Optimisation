@@ -1,6 +1,7 @@
 import { extension_settings, getContext } from "/scripts/extensions.js";
 import { characters } from "/script.js";
 import { getSlotProfile } from './api/api-resolver.js';
+import { configManager } from '../utils/config/ConfigManager.js';
 import { world_names } from "/scripts/world-info.js";
 import { extensionName } from "../utils/settings.js";
 import { extractContentByTag, replaceContentByTag, extractFullTagBlock } from '../utils/tagProcessor.js';
@@ -449,12 +450,44 @@ export async function getApiSettings(slot = 'main') {
             // 温度 / MaxTokens 读面板值（profile-sync 保留了这些输入框）
             maxTokens:    s.maxTokens    ?? profile.maxTokens   ?? 65500,
             temperature:  s.temperature  ?? profile.temperature ?? 1.0,
+            fakeStream:   profile.fakeStream ?? false,
             tavernProfile: '',
         };
     }
 
-    // 降级：读旧 DOM 面板配置
+    // 降级：按槽位读取各自的独立配置
     const settings = extension_settings[extensionName] || {};
+
+    // plotOpt 槽有独立 API 面板（剧情优化），优先读其专属设置
+    if (slot === 'plotOpt') {
+        const apiMode = settings.plotOpt_apiMode || 'openai_test';
+        if (apiMode === 'sillytavern_preset') {
+            const context = getContext();
+            const profileId = settings.plotOpt_tavernProfile || '';
+            const stProfile = context.extensionSettings?.connectionManager?.profiles?.find(p => p.id === profileId);
+            return {
+                apiProvider:  'sillytavern_preset',
+                apiUrl:       '',
+                apiKey:       '',
+                model:        stProfile?.openai_model || 'Preset Model',
+                maxTokens:    settings.plotOpt_max_tokens   ?? 65500,
+                temperature:  settings.plotOpt_temperature  ?? 1.0,
+                tavernProfile: profileId,
+            };
+        }
+        return {
+            apiProvider:  apiMode,
+            apiUrl:       settings.plotOpt_apiUrl?.trim() || '',
+            apiKey:       configManager.get('plotOpt_apiKey') || '',
+            model:        document.getElementById('amily2_opt_model')?.value?.trim()
+                          || settings.plotOpt_model || '',
+            maxTokens:    settings.plotOpt_max_tokens   ?? 65500,
+            temperature:  settings.plotOpt_temperature  ?? 1.0,
+            tavernProfile: '',
+        };
+    }
+
+    // main 槽（及其余未明确处理的槽）：读主面板 DOM 配置
     const apiProvider = document.getElementById('amily2_api_provider')?.value || 'openai';
 
     let model;

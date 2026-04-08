@@ -13,6 +13,7 @@ import { characters, this_chid, eventSource, event_types } from "/script.js";
 import { fetchNccsModels, testNccsApiConnection } from '../core/api/NccsApi.js';
 import { showGraphVisualization } from '../core/relationship-graph/visualizer.js';
 import { escapeHTML } from '../utils/utils.js';
+import { configManager } from '../utils/config/ConfigManager.js';
 
 const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches;
 const getAllTablesContainer = () => document.getElementById('all-tables-container');
@@ -1994,7 +1995,6 @@ function bindNccsApiEvents() {
     if (settings.nccsFakeStreamEnabled === undefined) settings.nccsFakeStreamEnabled = false;
     if (settings.nccsApiMode === undefined) settings.nccsApiMode = 'openai_test';
     if (settings.nccsApiUrl === undefined) settings.nccsApiUrl = 'https://api.openai.com/v1';
-    if (settings.nccsApiKey === undefined) settings.nccsApiKey = '';
     if (settings.nccsModel === undefined) settings.nccsModel = '';
     if (settings.nccsTavernProfile === undefined) settings.nccsTavernProfile = '';
 
@@ -2015,7 +2015,7 @@ function bindNccsApiEvents() {
     enabledFakeStreamToggle.checked = settings.nccsFakeStreamEnabled;
     if (modeSelect) modeSelect.value = settings.nccsApiMode;
     if (urlInput) urlInput.value = settings.nccsApiUrl;
-    if (keyInput) keyInput.value = settings.nccsApiKey;
+    if (keyInput) keyInput.value = configManager.get('nccsApiKey') || '';
     if (modelInput) modelInput.value = settings.nccsModel;
     if (presetSelect) presetSelect.value = settings.nccsTavernProfile || '';
 
@@ -2089,10 +2089,9 @@ function bindNccsApiEvents() {
 
     if (keyInput) {
         const saveKey = () => {
-            settings.nccsApiKey = keyInput.value;
-            saveSettingsDebounced();
+            configManager.set('nccsApiKey', keyInput.value);
         };
-        
+
         keyInput.addEventListener('blur', saveKey);
     }
 
@@ -2144,11 +2143,11 @@ function bindNccsApiEvents() {
 
             if (urlInput) {
                 settings.nccsApiUrl = urlInput.value;
+                saveSettingsDebounced();
             }
             if (keyInput) {
-                settings.nccsApiKey = keyInput.value;
+                configManager.set('nccsApiKey', keyInput.value);
             }
-            saveSettingsDebounced();
             
             try {
                 const models = await fetchNccsModels();

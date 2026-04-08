@@ -1,6 +1,8 @@
 import { extension_settings, getContext } from "/scripts/extensions.js";
 import { saveSettingsDebounced, eventSource, event_types } from "/script.js";
 import { extensionName } from "../utils/settings.js";
+import { configManager } from '../utils/config/ConfigManager.js';
+import { SENSITIVE_KEYS } from '../utils/config/sensitive-keys.js';
 import { safeLorebooks, safeLorebookEntries, safeUpdateLorebookEntries } from '../core/tavernhelper-compatibility.js';
 import { testSybdApiConnection, fetchSybdModels } from '../core/api/SybdApi.js';
 import { handleFileUpload, processNovel } from './index.js';
@@ -29,18 +31,21 @@ function loadSettingsToUI() {
     const inputs = container.querySelectorAll('[data-setting-key]');
     inputs.forEach(target => {
         const key = target.dataset.settingKey;
-        const value = settings[key];
+        // 敏感字段从 configManager（localStorage）读取，其余从 extension_settings 读取
+        const value = SENSITIVE_KEYS.has(key) ? configManager.get(key) : settings[key];
 
-        if (value === undefined) {
-            let defaultValue;
-            if (target.type === 'checkbox') {
-                defaultValue = target.checked;
-            } else if (target.type === 'range') {
-                defaultValue = target.dataset.type === 'float' ? parseFloat(target.value) : parseInt(target.value, 10);
-            } else {
-                defaultValue = target.value;
+        if (value === undefined || value === null || value === '') {
+            if (!SENSITIVE_KEYS.has(key)) {
+                let defaultValue;
+                if (target.type === 'checkbox') {
+                    defaultValue = target.checked;
+                } else if (target.type === 'range') {
+                    defaultValue = target.dataset.type === 'float' ? parseFloat(target.value) : parseInt(target.value, 10);
+                } else {
+                    defaultValue = target.value;
+                }
+                updateAndSaveSetting(key, defaultValue);
             }
-            updateAndSaveSetting(key, defaultValue);
             return;
         };
 
@@ -90,8 +95,13 @@ function bindAutoSaveEvents() {
             case 'float': value = parseFloat(value); break;
             case 'boolean': value = (typeof value === 'boolean') ? value : (value === 'true'); break;
         }
-        
-        updateAndSaveSetting(key, value);
+
+        // 敏感字段（API Key）经 configManager 写入 localStorage
+        if (SENSITIVE_KEYS.has(key)) {
+            configManager.set(key, value);
+        } else {
+            updateAndSaveSetting(key, value);
+        }
 
         if (key === 'sybdApiMode') {
             updateConfigVisibility(value);
