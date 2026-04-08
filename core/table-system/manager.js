@@ -1264,7 +1264,7 @@ export function getAiFlowTemplateForInjection() {
 }
 
 export async function updateTableFromText(textContent, options = {}) {
-    const settings = extension_settings[extensionName];
+    const settings = extension_settings[extensionName] || {};
     if (settings.table_system_enabled === false) {
         log('表格系统总开关已关闭，跳过 <Amily2Edit> 标签处理。', 'info');
         return;
@@ -1575,7 +1575,7 @@ export async function rollbackState() {
 
 export async function rollbackAndRefill() {
     // 检查表格系统总开关
-    const settings = extension_settings[extensionName];
+    const settings = extension_settings[extensionName] || {};
     if (settings.table_system_enabled === false) {
         log('表格系统总开关已关闭，跳过回退填表。', 'info');
         toastr.info('表格系统总开关已关闭，无法执行回退填表。');

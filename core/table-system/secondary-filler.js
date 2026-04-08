@@ -13,7 +13,7 @@ import { safeLorebookEntries } from '../tavernhelper-compatibility.js';
 
 
 async function getWorldBookContext() {
-    const settings = extension_settings[extensionName];
+    const settings = extension_settings[extensionName] || {};
 
     if (!settings.table_worldbook_enabled) {
         return '';
@@ -67,7 +67,7 @@ async function getWorldBookContext() {
 export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
     clearHighlights();
 
-    const settings = extension_settings[extensionName];
+    const settings = extension_settings[extensionName] || {};
 
     // 总开关关闭时，分步填表同样禁用
     if (settings.table_system_enabled === false) {

@@ -18,6 +18,18 @@ import { configManager } from '../utils/config/ConfigManager.js';
 const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches;
 const getAllTablesContainer = () => document.getElementById('all-tables-container');
 
+function getLiveExtensionSettings() {
+    if (!extension_settings[extensionName]) {
+        extension_settings[extensionName] = {};
+    }
+
+    return extension_settings[extensionName];
+}
+
+function isTableSystemEnabled() {
+    return getLiveExtensionSettings().table_system_enabled !== false;
+}
+
 let isResizing = false;
 let activeTableIndex = 0; // 【V155.0】当前激活的表格索引
 
@@ -768,7 +780,7 @@ export function renderTables() {
 
 
 function openTableRuleEditor() {
-    const settings = extension_settings[extensionName];
+    const settings = getLiveExtensionSettings();
     const tags = settings.table_tags_to_extract || '';
     const exclusionRules = settings.table_exclusion_rules || [];
 
@@ -1011,8 +1023,6 @@ function openRuleEditor(tableIndex) {
 
 
 function bindInjectionSettings() {
-    const settings = extension_settings[extensionName];
-
     const masterSwitchCheckbox = document.getElementById('table-system-master-switch');
     const enabledCheckbox = document.getElementById('table-injection-enabled');
     const optimizationCheckbox = document.getElementById('context-optimization-enabled'); // 【V144.0】
@@ -1023,6 +1033,15 @@ function bindInjectionSettings() {
     if (!masterSwitchCheckbox || !enabledCheckbox || !positionSelect || !depthInput || !roleRadioGroup.length) {
         return;
     }
+
+    const getLiveSettings = () => {
+        const liveSettings = getLiveExtensionSettings();
+        if (!liveSettings.injection) {
+            liveSettings.injection = { position: 1, depth: 0, role: 0 };
+        }
+
+        return liveSettings;
+    };
 
     const updateInjectionUI = () => {
         const position = positionSelect.value;
@@ -1077,6 +1096,7 @@ function bindInjectionSettings() {
         }
     };
 
+    const settings = getLiveSettings();
     masterSwitchCheckbox.checked = settings.table_system_enabled !== false;
     enabledCheckbox.checked = settings.table_injection_enabled;
     if (optimizationCheckbox) { // 【V144.0】
@@ -1095,7 +1115,8 @@ function bindInjectionSettings() {
     if (masterSwitchCheckbox.dataset.eventsBound) return;
 
     masterSwitchCheckbox.addEventListener('change', () => {
-        settings.table_system_enabled = masterSwitchCheckbox.checked;
+        const currentSettings = getLiveSettings();
+        currentSettings.table_system_enabled = masterSwitchCheckbox.checked;
         saveSettingsDebounced();
         updateInjectionUI();
         
@@ -1105,35 +1126,40 @@ function bindInjectionSettings() {
     });
 
     enabledCheckbox.addEventListener('change', () => {
-        settings.table_injection_enabled = enabledCheckbox.checked;
+        const currentSettings = getLiveSettings();
+        currentSettings.table_injection_enabled = enabledCheckbox.checked;
         saveSettingsDebounced();
     });
 
     // 【V144.0】
     if (optimizationCheckbox) {
         optimizationCheckbox.addEventListener('change', () => {
-            settings.context_optimization_enabled = optimizationCheckbox.checked;
+            const currentSettings = getLiveSettings();
+            currentSettings.context_optimization_enabled = optimizationCheckbox.checked;
             saveSettingsDebounced();
             toastr.info(`上下文优化（世界书合并）已${optimizationCheckbox.checked ? '启用' : '禁用'}。`);
         });
     }
 
     positionSelect.addEventListener('change', () => {
-        settings.injection.position = parseInt(positionSelect.value, 10);
+        const currentSettings = getLiveSettings();
+        currentSettings.injection.position = parseInt(positionSelect.value, 10);
         saveSettingsDebounced();
 
         updateInjectionUI();
     });
 
     depthInput.addEventListener('input', () => {
-        settings.injection.depth = parseInt(depthInput.value, 10);
+        const currentSettings = getLiveSettings();
+        currentSettings.injection.depth = parseInt(depthInput.value, 10);
         saveSettingsDebounced();
     });
 
     roleRadioGroup.forEach(radio => {
         radio.addEventListener('change', () => {
             if (radio.checked) {
-                settings.injection.role = parseInt(radio.value, 10);
+                const currentSettings = getLiveSettings();
+                currentSettings.injection.role = parseInt(radio.value, 10);
                 saveSettingsDebounced();
             }
         });
@@ -1145,15 +1171,12 @@ function bindInjectionSettings() {
 
 
 function updateAndSaveTableSetting(key, value) {
-    if (!extension_settings[extensionName]) {
-        extension_settings[extensionName] = {};
-    }
-    extension_settings[extensionName][key] = value;
+    getLiveExtensionSettings()[key] = value;
     saveSettingsDebounced();
 }
 
 function bindWorldBookSettings() {
-    const settings = extension_settings[extensionName];
+    const settings = getLiveExtensionSettings();
 
     if (settings.table_worldbook_enabled === undefined) settings.table_worldbook_enabled = false;
     if (settings.table_worldbook_char_limit === undefined) settings.table_worldbook_char_limit = 30000;
@@ -1176,6 +1199,7 @@ function bindWorldBookSettings() {
     }
 
     const saveSelectedEntries = () => {
+        const currentSettings = getLiveExtensionSettings();
         const selected = {};
         entryListContainer.querySelectorAll('input[type="checkbox"]:checked').forEach(cb => {
             const book = cb.dataset.book;
@@ -1185,17 +1209,18 @@ function bindWorldBookSettings() {
             }
             selected[book].push(uid);
         });
-        settings.table_selected_entries = selected;
+        currentSettings.table_selected_entries = selected;
         saveSettingsDebounced();
     };
 
     const renderWorldBookEntries = async () => {
         entryListContainer.innerHTML = '<p>加载条目中...</p>';
-        const source = settings.table_worldbook_source || 'character';
+        const currentSettings = getLiveExtensionSettings();
+        const source = currentSettings.table_worldbook_source || 'character';
         let bookNames = [];
 
         if (source === 'manual') {
-            bookNames = settings.table_selected_worldbooks || [];
+            bookNames = currentSettings.table_selected_worldbooks || [];
         } else {
             if (this_chid !== undefined && this_chid >= 0 && characters[this_chid]) {
                 try {
@@ -1242,7 +1267,7 @@ function bindWorldBookSettings() {
                 checkbox.dataset.book = entry.bookName;
                 checkbox.dataset.uid = entry.uid;
                 
-                const isChecked = settings.table_selected_entries[entry.bookName]?.includes(String(entry.uid));
+                const isChecked = currentSettings.table_selected_entries[entry.bookName]?.includes(String(entry.uid));
                 checkbox.checked = !!isChecked;
 
                 const label = document.createElement('label');
@@ -1272,15 +1297,16 @@ function bindWorldBookSettings() {
                 checkbox.type = 'checkbox';
                 checkbox.id = `wb-check-${book.file_name}`;
                 checkbox.value = book.file_name;
-                checkbox.checked = settings.table_selected_worldbooks.includes(book.file_name);
+                checkbox.checked = getLiveExtensionSettings().table_selected_worldbooks.includes(book.file_name);
 
                 checkbox.addEventListener('change', () => {
+                    const currentSettings = getLiveExtensionSettings();
                     if (checkbox.checked) {
-                        if (!settings.table_selected_worldbooks.includes(book.file_name)) {
-                            settings.table_selected_worldbooks.push(book.file_name);
+                        if (!currentSettings.table_selected_worldbooks.includes(book.file_name)) {
+                            currentSettings.table_selected_worldbooks.push(book.file_name);
                         }
                     } else {
-                        settings.table_selected_worldbooks = settings.table_selected_worldbooks.filter(name => name !== book.file_name);
+                        currentSettings.table_selected_worldbooks = currentSettings.table_selected_worldbooks.filter(name => name !== book.file_name);
                     }
                     saveSettingsDebounced();
                     renderWorldBookEntries();
@@ -1301,7 +1327,7 @@ function bindWorldBookSettings() {
     };
     
     const updateManualSelectVisibility = () => {
-        const isManual = settings.table_worldbook_source === 'manual';
+        const isManual = getLiveExtensionSettings().table_worldbook_source === 'manual';
         manualSelectWrapper.style.display = isManual ? 'block' : 'none';
         renderWorldBookEntries();
         if (isManual) {
@@ -1321,20 +1347,23 @@ function bindWorldBookSettings() {
     if (enabledCheckbox.dataset.eventsBound) return;
 
     enabledCheckbox.addEventListener('change', () => {
-        settings.table_worldbook_enabled = enabledCheckbox.checked;
+        const currentSettings = getLiveExtensionSettings();
+        currentSettings.table_worldbook_enabled = enabledCheckbox.checked;
         saveSettingsDebounced();
     });
 
     limitSlider.addEventListener('input', () => { limitValueSpan.textContent = limitSlider.value; });
     limitSlider.addEventListener('change', () => {
-        settings.table_worldbook_char_limit = parseInt(limitSlider.value, 10);
+        const currentSettings = getLiveExtensionSettings();
+        currentSettings.table_worldbook_char_limit = parseInt(limitSlider.value, 10);
         saveSettingsDebounced();
     });
 
     sourceRadios.forEach(radio => {
         radio.addEventListener('change', () => {
             if (radio.checked) {
-                settings.table_worldbook_source = radio.value;
+                const currentSettings = getLiveExtensionSettings();
+                currentSettings.table_worldbook_source = radio.value;
                 updateManualSelectVisibility();
                 saveSettingsDebounced();
             }
@@ -1685,7 +1714,7 @@ export function bindTableEvents() {
         renderAll();
 
         setTimeout(() => {
-            const settings = extension_settings[extensionName];
+            const settings = getLiveExtensionSettings();
             if (settings && settings.table_worldbook_enabled) {
                 try {
                     bindWorldBookSettings();
@@ -1704,8 +1733,7 @@ function bindBatchFillButton() {
         if (fillButton.dataset.batchEventBound) return;
         
         fillButton.addEventListener('click', (event) => {
-            const settings = extension_settings[extensionName];
-            const tableSystemEnabled = settings.table_system_enabled !== false;
+            const tableSystemEnabled = isTableSystemEnabled();
             
             if (!tableSystemEnabled) {
                 event.preventDefault();
@@ -1728,8 +1756,7 @@ function bindReorganizeButton() {
         if (reorganizeBtn.dataset.reorganizeEventBound) return;
         
         reorganizeBtn.addEventListener('click', async (event) => {
-            const settings = extension_settings[extensionName];
-            const tableSystemEnabled = settings.table_system_enabled !== false;
+            const tableSystemEnabled = isTableSystemEnabled();
             
             if (!tableSystemEnabled) {
                 event.preventDefault();
@@ -1843,8 +1870,7 @@ function bindFloorFillButtons() {
         if (selectedFloorsBtn.dataset.floorEventBound) return;
         
         selectedFloorsBtn.addEventListener('click', (event) => {
-            const settings = extension_settings[extensionName];
-            const tableSystemEnabled = settings.table_system_enabled !== false;
+            const tableSystemEnabled = isTableSystemEnabled();
             
             if (!tableSystemEnabled) {
                 event.preventDefault();
@@ -1886,8 +1912,7 @@ function bindFloorFillButtons() {
         if (currentFloorBtn.dataset.currentEventBound) return;
         
         currentFloorBtn.addEventListener('click', (event) => {
-            const settings = extension_settings[extensionName];
-            const tableSystemEnabled = settings.table_system_enabled !== false;
+            const tableSystemEnabled = isTableSystemEnabled();
             
             if (!tableSystemEnabled) {
                 event.preventDefault();
@@ -1908,8 +1933,7 @@ function bindFloorFillButtons() {
         if (rollbackBtn.dataset.rollbackEventBound) return;
 
         rollbackBtn.addEventListener('click', async (event) => {
-            const settings = extension_settings[extensionName];
-            const tableSystemEnabled = settings.table_system_enabled !== false;
+            const tableSystemEnabled = isTableSystemEnabled();
             
             if (!tableSystemEnabled) {
                 event.preventDefault();
@@ -1989,7 +2013,7 @@ function bindTemplateEditors() {
 }
 
 function bindNccsApiEvents() {
-    const settings = extension_settings[extensionName];
+    const settings = getLiveExtensionSettings();
     
     if (settings.nccsEnabled === undefined) settings.nccsEnabled = false;
     if (settings.nccsFakeStreamEnabled === undefined) settings.nccsFakeStreamEnabled = false;
@@ -2057,21 +2081,24 @@ function bindNccsApiEvents() {
     updateModeBasedVisibility();
 
     enabledToggle.addEventListener('change', () => {
-        settings.nccsEnabled = enabledToggle.checked;
+        const currentSettings = getLiveExtensionSettings();
+        currentSettings.nccsEnabled = enabledToggle.checked;
         saveSettingsDebounced();
         updateConfigVisibility();
         log(`Nccs API ${enabledToggle.checked ? '已启用' : '已禁用'}`, 'info');
     });
 
     enabledFakeStreamToggle.addEventListener('change', () => {
-        settings.nccsFakeStreamEnabled = enabledFakeStreamToggle.checked;
+        const currentSettings = getLiveExtensionSettings();
+        currentSettings.nccsFakeStreamEnabled = enabledFakeStreamToggle.checked;
         saveSettingsDebounced();
         log(`Nccs API FakeStream ${enabledFakeStreamToggle.checked ? 'Enabled' : 'Disabled'}`, 'info');
     });
 
     if (modeSelect) {
         modeSelect.addEventListener('change', () => {
-            settings.nccsApiMode = modeSelect.value;
+            const currentSettings = getLiveExtensionSettings();
+            currentSettings.nccsApiMode = modeSelect.value;
             saveSettingsDebounced();
             updateModeBasedVisibility();
             log(`Nccs API模式已切换为: ${modeSelect.value}`, 'info');
@@ -2080,7 +2107,8 @@ function bindNccsApiEvents() {
 
     if (urlInput) {
         const saveUrl = () => {
-            settings.nccsApiUrl = urlInput.value;
+            const currentSettings = getLiveExtensionSettings();
+            currentSettings.nccsApiUrl = urlInput.value;
             saveSettingsDebounced();
         };
         
@@ -2097,7 +2125,8 @@ function bindNccsApiEvents() {
 
     if (modelInput) {
         const saveModel = () => {
-            settings.nccsModel = modelInput.value;
+            const currentSettings = getLiveExtensionSettings();
+            currentSettings.nccsModel = modelInput.value;
             saveSettingsDebounced();
         };
         
@@ -2107,7 +2136,8 @@ function bindNccsApiEvents() {
 
     if (presetSelect) {
         presetSelect.addEventListener('change', () => {
-            settings.nccsTavernProfile = presetSelect.value;
+            const currentSettings = getLiveExtensionSettings();
+            currentSettings.nccsTavernProfile = presetSelect.value;
             saveSettingsDebounced();
         });
     }
@@ -2142,7 +2172,8 @@ function bindNccsApiEvents() {
             fetchModelsButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 获取中...';
 
             if (urlInput) {
-                settings.nccsApiUrl = urlInput.value;
+                const currentSettings = getLiveExtensionSettings();
+                currentSettings.nccsApiUrl = urlInput.value;
                 saveSettingsDebounced();
             }
             if (keyInput) {
@@ -2176,7 +2207,8 @@ function bindNccsApiEvents() {
 
                     modelSelect.addEventListener('change', () => {
                         const selectedModel = modelSelect.value;
-                        settings.nccsModel = selectedModel;
+                        const currentSettings = getLiveExtensionSettings();
+                        currentSettings.nccsModel = selectedModel;
                         modelInput.value = selectedModel;
                         saveSettingsDebounced();
                     });
@@ -2243,7 +2275,7 @@ function bindNccsApiEvents() {
 }
 
 function bindChatTableDisplaySetting() {
-    const settings = extension_settings[extensionName];
+    const settings = getLiveExtensionSettings();
     const showInChatToggle = document.getElementById('show-table-in-chat-toggle');
     const continuousRenderToggle = document.getElementById('render-on-every-message-toggle');
 
@@ -2268,14 +2300,16 @@ function bindChatTableDisplaySetting() {
     updateContinuousRenderState();
 
     showInChatToggle.addEventListener('change', () => {
-        settings.show_table_in_chat = showInChatToggle.checked;
+        const currentSettings = getLiveExtensionSettings();
+        currentSettings.show_table_in_chat = showInChatToggle.checked;
         saveSettingsDebounced();
         toastr.info(`聊天内表格显示已${showInChatToggle.checked ? '开启' : '关闭'}。`);
         updateContinuousRenderState();
     });
 
     continuousRenderToggle.addEventListener('change', () => {
-        settings.render_on_every_message = continuousRenderToggle.checked;
+        const currentSettings = getLiveExtensionSettings();
+        currentSettings.render_on_every_message = continuousRenderToggle.checked;
         saveSettingsDebounced();
         toastr.info(`持续渲染最新消息功能已${continuousRenderToggle.checked ? '开启' : '关闭'}。请切换聊天以应用更改。`);
     });

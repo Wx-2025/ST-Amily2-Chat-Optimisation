@@ -46,7 +46,7 @@ import { renderTables } from '../../ui/table-bindings.js';
 async function processMessageUpdate(messageId) {
     TableManager.clearHighlights();
 
-    const settings = extension_settings[extensionName];
+    const settings = extension_settings[extensionName] || {};
     const tableSystemEnabled = settings.table_system_enabled !== false;
     if (!tableSystemEnabled) {
         log('【表格服务】表格系统总开关已关闭，跳过所有表格处理。', 'info');

@@ -8,7 +8,7 @@ import { callAI, generateRandomSeed } from '../api.js';
 import { callNccsAI } from '../api/NccsApi.js';
 
 export async function reorganizeTableContent(selectedTableIndices) {
-    const settings = extension_settings[extensionName];
+    const settings = extension_settings[extensionName] || {};
 
     if (settings.table_system_enabled === false) {
         toastr.warning('表格系统总开关已关闭。');

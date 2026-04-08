@@ -22,7 +22,7 @@ const MAX_RETRIES = 2;
 
 
 async function getWorldBookContext() {
-    const settings = extension_settings[extensionName];
+    const settings = extension_settings[extensionName] || {};
     if (!settings.table_worldbook_enabled) {
         return '';
     }
@@ -114,7 +114,7 @@ function updateButtonState(state, batchNum = 0, attemptNum = 0) {
 
 async function callTableModel(messages) {
     try {
-        const settings = extension_settings[extensionName];
+        const settings = extension_settings[extensionName] || {};
 
         if (settings.nccsEnabled) {
             log('使用 Nccs API 进行表格填充...', 'info');
@@ -141,7 +141,7 @@ async function callTableModel(messages) {
 function getRawMessagesForSummary(startFloor, endFloor) {
     const context = getContext();
     const chat = context.chat;
-    const settings = extension_settings[extensionName];
+    const settings = extension_settings[extensionName] || {};
 
     const historySlice = chat.slice(startFloor - 1, endFloor);
     if (historySlice.length === 0) return null;
@@ -319,7 +319,7 @@ export function startBatchFilling() {
     const button = fillButton();
     if (!button) return;
 
-    const settings = extension_settings[extensionName];
+    const settings = extension_settings[extensionName] || {};
     const tableSystemEnabled = settings.table_system_enabled !== false; 
     if (!tableSystemEnabled) {
         log('表格系统总开关已关闭，跳过批量填表。', 'info');
@@ -387,7 +387,7 @@ export function startBatchFilling() {
 
 
 export async function startFloorRangeFilling(startFloor, endFloor) {
-    const settings = extension_settings[extensionName];
+    const settings = extension_settings[extensionName] || {};
     const tableSystemEnabled = settings.table_system_enabled !== false;
     if (!tableSystemEnabled) {
         log('表格系统总开关已关闭，跳过楼层填表。', 'info');

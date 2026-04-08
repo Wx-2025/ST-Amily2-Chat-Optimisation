@@ -131,6 +131,7 @@ export {
 };
 
 export const tableSystemDefaultSettings = {
+    table_system_enabled: true,
     table_injection_enabled: false,
     
     injection: {
