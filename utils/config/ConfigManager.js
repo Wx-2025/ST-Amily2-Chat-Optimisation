@@ -23,6 +23,7 @@ import { extension_settings } from "/scripts/extensions.js";
 import { saveSettingsDebounced } from "/script.js";
 import { extensionName } from "../settings.js";
 import { SENSITIVE_KEYS } from "./sensitive-keys.js";
+import { apiKeyStore } from "./api-key-store/ApiKeyStore.js";
 
 // localStorage key 前缀，避免与其他插件冲突
 const LS_PREFIX = 'amily2_secure_';
@@ -30,6 +31,10 @@ const LS_PREFIX = 'amily2_secure_';
 // ── ConfigManager ────────────────────────────────────────────────────────────
 
 class ConfigManager {
+    async init() {
+        await apiKeyStore.init();
+        await this.syncSensitiveCache({ force: true });
+    }
 
     /**
      * 读取配置项。
@@ -53,16 +58,17 @@ class ConfigManager {
      */
     set(key, value) {
         if (SENSITIVE_KEYS.has(key)) {
-            if (value !== null && value !== undefined && value !== '') {
-                localStorage.setItem(LS_PREFIX + key, value);
-            } else {
-                localStorage.removeItem(LS_PREFIX + key);
-            }
+            this._setSensitiveCacheValue(key, value);
             // 确保 extension_settings 中不保留该敏感字段
             const settings = extension_settings[extensionName];
             if (settings && Object.prototype.hasOwnProperty.call(settings, key)) {
                 delete settings[key];
                 saveSettingsDebounced();
+            }
+            if (apiKeyStore.getMode() === 'cloud') {
+                apiKeyStore.setKey(key, value).catch(e => {
+                    console.error(`[ConfigManager] 云同步敏感字段 "${key}" 失败:`, e);
+                });
             }
         } else {
             if (!extension_settings[extensionName]) {
@@ -128,6 +134,28 @@ class ConfigManager {
             console.info('[Amily2-Config] 敏感配置迁移完成，已从云同步配置中清除密钥。');
         }
     }
+
+    async syncSensitiveCache({ force = false } = {}) {
+        if (apiKeyStore.getMode() !== 'cloud') return;
+        await apiKeyStore.init();
+        if (!apiKeyStore.isCloudReady()) return;
+
+        for (const key of SENSITIVE_KEYS) {
+            const cached = localStorage.getItem(LS_PREFIX + key);
+            if (!force && cached !== null && cached !== '') continue;
+
+            const value = await apiKeyStore.getKey(key);
+            this._setSensitiveCacheValue(key, value);
+        }
+    }
+
+    _setSensitiveCacheValue(key, value) {
+        if (value !== null && value !== undefined && value !== '') {
+            localStorage.setItem(LS_PREFIX + key, value);
+        } else {
+            localStorage.removeItem(LS_PREFIX + key);
+        }
+    }
 }
 
 // ── 单例导出 ─────────────────────────────────────────────────────────────────
@@ -147,6 +175,8 @@ setTimeout(() => {
             set:         (key, value) => configManager.set(key, value),
             getSettings: ()           => configManager.getSettings(),
             migrate:     ()           => configManager.migrate(),
+            init:        ()           => configManager.init(),
+            syncSensitiveCache: (options) => configManager.syncSensitiveCache(options),
         });
         _ctx.log('ConfigManager', 'info', 'Config 服务已注册到 Bus。');
     } catch (e) {

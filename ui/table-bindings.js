@@ -14,6 +14,9 @@ import { fetchNccsModels, testNccsApiConnection } from '../core/api/NccsApi.js';
 import { showGraphVisualization } from '../core/relationship-graph/visualizer.js';
 import { escapeHTML } from '../utils/utils.js';
 import { configManager } from '../utils/config/ConfigManager.js';
+import { bindTableTemplateEditors } from './table/template-bindings.js';
+import { bindNccsApiEvents as bindNccsApiSettingsEvents } from './table/nccs-bindings.js';
+import { bindChatTableDisplaySetting as bindChatTableDisplaySettings } from './table/chat-display-bindings.js';
 
 const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches;
 const getAllTablesContainer = () => document.getElementById('all-tables-container');
@@ -1381,8 +1384,8 @@ function bindWorldBookSettings() {
     log('世界书设置已成功绑定。', 'success');
 }
 
-export function bindTableEvents() {
-    const panel = document.getElementById('amily2_memorisation_forms_panel');
+export function bindTableEvents(panelElement = null) {
+    const panel = panelElement || document.getElementById('amily2_memorisation_forms_panel');
     if (!panel || panel.dataset.eventsBound) {
         return;
     }
@@ -1492,7 +1495,12 @@ export function bindTableEvents() {
     const renderAll = () => {
         renderTables();
         bindInjectionSettings();
-        bindTemplateEditors(); 
+        bindTableTemplateEditors({
+            TableManager,
+            log,
+            defaultRuleTemplate: DEFAULT_AI_RULE_TEMPLATE,
+            defaultFlowTemplate: DEFAULT_AI_FLOW_TEMPLATE,
+        });
     };
 
     renderAll();
@@ -1501,8 +1509,20 @@ export function bindTableEvents() {
     bindFloorFillButtons(); // 【新增】绑定楼层填表按钮
     bindReorganizeButton(); // 【新增】绑定重新整理按钮
     bindClearRecordsButton(); // 【新增】绑定清除记录按钮
-    bindNccsApiEvents(); // 【新增】绑定Nccs API系统事件
-    bindChatTableDisplaySetting(); // 【新增】绑定聊天内表格显示开关
+    bindNccsApiSettingsEvents({
+        getLiveExtensionSettings,
+        saveSettingsDebounced,
+        getContext,
+        fetchNccsModels,
+        testNccsApiConnection,
+        configManager,
+        log,
+    }); // 【新增】绑定Nccs API系统事件
+    bindChatTableDisplaySettings({
+        getLiveExtensionSettings,
+        saveSettingsDebounced,
+        log,
+    }); // 【新增】绑定聊天内表格显示开关
 
     const navDeck = document.querySelector('#amily2_memorisation_forms_panel .sinan-navigation-deck');
     if (navDeck) {
@@ -1956,363 +1976,3 @@ function bindFloorFillButtons() {
     }
 }
 
-function bindTemplateEditors() {
-    const ruleEditor = document.getElementById('ai-rule-template-editor');
-    const ruleSaveBtn = document.getElementById('ai-rule-template-save-btn');
-    const ruleRestoreBtn = document.getElementById('ai-rule-template-restore-btn');
-
-    const flowEditor = document.getElementById('ai-flow-template-editor');
-    const flowSaveBtn = document.getElementById('ai-flow-template-save-btn');
-    const flowRestoreBtn = document.getElementById('ai-flow-template-restore-btn');
-
-    if (!ruleEditor || !flowEditor || !ruleSaveBtn || !flowSaveBtn) {
-        log('无法找到指令模板编辑器或其按钮，绑定失败。', 'warn');
-        return;
-    }
-
-    if (ruleSaveBtn.dataset.templateEventsBound) {
-        return;
-    }
-
-    ruleEditor.value = TableManager.getBatchFillerRuleTemplate();
-    flowEditor.value = TableManager.getBatchFillerFlowTemplate();
-
-    ruleSaveBtn.addEventListener('click', () => {
-        TableManager.saveBatchFillerRuleTemplate(ruleEditor.value);
-        toastr.success('规则提示词已保存。');
-        log('批量填表-规则提示词已保存。', 'success');
-    });
-
-    flowSaveBtn.addEventListener('click', () => {
-        TableManager.saveBatchFillerFlowTemplate(flowEditor.value);
-        toastr.success('流程提示词已保存。');
-        log('批量填表-流程提示词已保存。', 'success');
-    });
-
-    ruleRestoreBtn.addEventListener('click', () => {
-        if (confirm('您确定要将规则提示词恢复为默认设置吗？')) {
-            ruleEditor.value = DEFAULT_AI_RULE_TEMPLATE;
-            TableManager.saveBatchFillerRuleTemplate(ruleEditor.value);
-            toastr.info('规则提示词已恢复为默认。');
-            log('批量填表-规则提示词已恢复默认。', 'info');
-        }
-    });
-
-    flowRestoreBtn.addEventListener('click', () => {
-        if (confirm('您确定要将流程提示词恢复为默认设置吗？')) {
-            flowEditor.value = DEFAULT_AI_FLOW_TEMPLATE;
-            TableManager.saveBatchFillerFlowTemplate(flowEditor.value);
-            toastr.info('流程提示词已恢复为默认。');
-            log('批量填表-流程提示词已恢复默认。', 'info');
-        }
-    });
-
-    ruleSaveBtn.dataset.templateEventsBound = 'true';
-    flowSaveBtn.dataset.templateEventsBound = 'true';
-    log('指令模板编辑器已成功绑定。', 'success');
-}
-
-function bindNccsApiEvents() {
-    const settings = getLiveExtensionSettings();
-    
-    if (settings.nccsEnabled === undefined) settings.nccsEnabled = false;
-    if (settings.nccsFakeStreamEnabled === undefined) settings.nccsFakeStreamEnabled = false;
-    if (settings.nccsApiMode === undefined) settings.nccsApiMode = 'openai_test';
-    if (settings.nccsApiUrl === undefined) settings.nccsApiUrl = 'https://api.openai.com/v1';
-    if (settings.nccsModel === undefined) settings.nccsModel = '';
-    if (settings.nccsTavernProfile === undefined) settings.nccsTavernProfile = '';
-
-    const enabledToggle = document.getElementById('nccs-api-enabled');
-    const enabledFakeStreamToggle = document.getElementById('nccs-api-fakestream-enabled');
-    const configDiv = document.getElementById('nccs-api-config');
-    const modeSelect = document.getElementById('nccs-api-mode');
-    const urlInput = document.getElementById('nccs-api-url');
-    const keyInput = document.getElementById('nccs-api-key');
-    const modelInput = document.getElementById('nccs-api-model');
-    const presetSelect = document.getElementById('nccs-sillytavern-preset');
-    const testButton = document.getElementById('nccs-test-connection');
-    const fetchModelsButton = document.getElementById('nccs-fetch-models');
-
-    if (!enabledToggle || !configDiv) return;
-
-    enabledToggle.checked = settings.nccsEnabled;
-    enabledFakeStreamToggle.checked = settings.nccsFakeStreamEnabled;
-    if (modeSelect) modeSelect.value = settings.nccsApiMode;
-    if (urlInput) urlInput.value = settings.nccsApiUrl;
-    if (keyInput) keyInput.value = configManager.get('nccsApiKey') || '';
-    if (modelInput) modelInput.value = settings.nccsModel;
-    if (presetSelect) presetSelect.value = settings.nccsTavernProfile || '';
-
-    const updateConfigVisibility = () => {
-        configDiv.style.display = enabledToggle.checked ? 'block' : 'none';
-    };
-    updateConfigVisibility();
-
-    const updateModeBasedVisibility = () => {
-        if (!modeSelect) return;
-        const isSillyTavernMode = modeSelect.value === 'sillytavern_preset';
-        const isOpenAIMode = modeSelect.value === 'openai_test';
-
-        const presetContainer = presetSelect?.closest('.amily2_opt_settings_block');
-        if (presetContainer) {
-            presetContainer.style.display = isSillyTavernMode ? 'block' : 'none';
-        }
-
-        const fieldsToHideInPresetMode = [
-            { element: urlInput, containerId: null },
-            { element: keyInput, containerId: null },
-            { element: modelInput, containerId: null }
-        ];
-
-        fieldsToHideInPresetMode.forEach(({ element }) => {
-            if (element) {
-                const container = element.closest('.amily2_opt_settings_block');
-                if (container) {
-                    container.style.display = isSillyTavernMode ? 'none' : 'block';
-                }
-            }
-        });
-
-        const buttonsContainer = testButton?.closest('.nccs-button-row');
-        if (buttonsContainer) {
-            buttonsContainer.style.display = 'flex'; 
-        }
-    };
-    updateModeBasedVisibility();
-
-    enabledToggle.addEventListener('change', () => {
-        const currentSettings = getLiveExtensionSettings();
-        currentSettings.nccsEnabled = enabledToggle.checked;
-        saveSettingsDebounced();
-        updateConfigVisibility();
-        log(`Nccs API ${enabledToggle.checked ? '已启用' : '已禁用'}`, 'info');
-    });
-
-    enabledFakeStreamToggle.addEventListener('change', () => {
-        const currentSettings = getLiveExtensionSettings();
-        currentSettings.nccsFakeStreamEnabled = enabledFakeStreamToggle.checked;
-        saveSettingsDebounced();
-        log(`Nccs API FakeStream ${enabledFakeStreamToggle.checked ? 'Enabled' : 'Disabled'}`, 'info');
-    });
-
-    if (modeSelect) {
-        modeSelect.addEventListener('change', () => {
-            const currentSettings = getLiveExtensionSettings();
-            currentSettings.nccsApiMode = modeSelect.value;
-            saveSettingsDebounced();
-            updateModeBasedVisibility();
-            log(`Nccs API模式已切换为: ${modeSelect.value}`, 'info');
-        });
-    }
-
-    if (urlInput) {
-        const saveUrl = () => {
-            const currentSettings = getLiveExtensionSettings();
-            currentSettings.nccsApiUrl = urlInput.value;
-            saveSettingsDebounced();
-        };
-        
-        urlInput.addEventListener('blur', saveUrl);
-    }
-
-    if (keyInput) {
-        const saveKey = () => {
-            configManager.set('nccsApiKey', keyInput.value);
-        };
-
-        keyInput.addEventListener('blur', saveKey);
-    }
-
-    if (modelInput) {
-        const saveModel = () => {
-            const currentSettings = getLiveExtensionSettings();
-            currentSettings.nccsModel = modelInput.value;
-            saveSettingsDebounced();
-        };
-        
-        modelInput.addEventListener('blur', saveModel);
-        modelInput.addEventListener('input', saveModel);
-    }
-
-    if (presetSelect) {
-        presetSelect.addEventListener('change', () => {
-            const currentSettings = getLiveExtensionSettings();
-            currentSettings.nccsTavernProfile = presetSelect.value;
-            saveSettingsDebounced();
-        });
-    }
-
-    if (testButton) {
-        testButton.addEventListener('click', async () => {
-            testButton.disabled = true;
-            testButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 测试中...';
-            
-            try {
-                const success = await testNccsApiConnection();
-                if (success) {
-                    toastr.success('Nccs API连接测试成功！');
-                    log('Nccs API连接测试成功', 'success');
-                } else {
-                    toastr.error('Nccs API连接测试失败，请检查配置');
-                    log('Nccs API连接测试失败', 'error');
-                }
-            } catch (error) {
-                toastr.error('Nccs API连接测试出错：' + error.message);
-                log('Nccs API连接测试出错：' + error.message, 'error');
-            } finally {
-                testButton.disabled = false;
-                testButton.innerHTML = '<i class="fas fa-plug"></i> 测试连接';
-            }
-        });
-    }
-
-    if (fetchModelsButton) {
-        fetchModelsButton.addEventListener('click', async () => {
-            fetchModelsButton.disabled = true;
-            fetchModelsButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 获取中...';
-
-            if (urlInput) {
-                const currentSettings = getLiveExtensionSettings();
-                currentSettings.nccsApiUrl = urlInput.value;
-                saveSettingsDebounced();
-            }
-            if (keyInput) {
-                configManager.set('nccsApiKey', keyInput.value);
-            }
-            
-            try {
-                const models = await fetchNccsModels();
-                if (models && models.length > 0) {
-                    let modelSelect = document.getElementById('nccs-api-model-select');
-                    if (!modelSelect) {
-                        modelSelect = document.createElement('select');
-                        modelSelect.id = 'nccs-api-model-select';
-                        modelSelect.className = 'text_pole';
-                        modelInput.parentNode.insertBefore(modelSelect, modelInput.nextSibling);
-                    }
-
-                    modelSelect.innerHTML = '<option value="">-- 请选择模型 --</option>';
-                    models.forEach(model => {
-                        const option = document.createElement('option');
-                        option.value = model.id || model.name;
-                        option.textContent = model.name || model.id;
-                        if ((model.id || model.name) === settings.nccsModel) {
-                            option.selected = true;
-                        }
-                        modelSelect.appendChild(option);
-                    });
-
-                    modelInput.style.display = 'none';
-                    modelSelect.style.display = 'block';
-
-                    modelSelect.addEventListener('change', () => {
-                        const selectedModel = modelSelect.value;
-                        const currentSettings = getLiveExtensionSettings();
-                        currentSettings.nccsModel = selectedModel;
-                        modelInput.value = selectedModel;
-                        saveSettingsDebounced();
-                    });
-
-                    toastr.success(`成功获取 ${models.length} 个模型`);
-                    log(`Nccs API获取到 ${models.length} 个模型`, 'success');
-                } else {
-                    toastr.warning('未获取到可用模型');
-                    log('Nccs API未获取到可用模型', 'warn');
-                }
-            } catch (error) {
-                toastr.error('获取模型失败：' + error.message);
-                log('Nccs API获取模型失败：' + error.message, 'error');
-            } finally {
-                fetchModelsButton.disabled = false;
-                fetchModelsButton.innerHTML = '<i class="fas fa-download"></i> 获取模型';
-            }
-        });
-    }
-
-    const loadSillyTavernPresets = async () => {
-        if (!presetSelect) return;
-        try {
-            const context = getContext();
-            if (!context?.extensionSettings?.connectionManager?.profiles) {
-                throw new Error('无法获取SillyTavern配置文件列表');
-            }
-            
-            const profiles = context.extensionSettings.connectionManager.profiles;
-
-            const currentProfileId = settings.nccsTavernProfile;
-
-            presetSelect.innerHTML = '';
-            presetSelect.appendChild(new Option('选择预设', '', false, false));
-            
-            if (profiles && profiles.length > 0) {
-                profiles.forEach(profile => {
-                    const isSelected = profile.id === currentProfileId;
-                    const option = new Option(profile.name, profile.id, isSelected, isSelected);
-                    presetSelect.appendChild(option);
-                });
-                log(`成功加载 ${profiles.length} 个SillyTavern配置文件`, 'success');
-            } else {
-                log('未找到可用的SillyTavern配置文件', 'warn');
-            }
-        } catch (error) {
-            log('加载SillyTavern预设失败：' + error.message, 'error');
-        }
-    };
-
-    if (modeSelect && presetSelect) {
-        modeSelect.addEventListener('change', () => {
-            if (modeSelect.value === 'sillytavern_preset') {
-                loadSillyTavernPresets();
-            }
-        });
-
-        if (settings.nccsApiMode === 'sillytavern_preset') {
-            loadSillyTavernPresets();
-        }
-    }
-
-    log('Nccs API事件绑定完成', 'success');
-}
-
-function bindChatTableDisplaySetting() {
-    const settings = getLiveExtensionSettings();
-    const showInChatToggle = document.getElementById('show-table-in-chat-toggle');
-    const continuousRenderToggle = document.getElementById('render-on-every-message-toggle');
-
-    if (!showInChatToggle || !continuousRenderToggle) {
-        log('找不到聊天内表格相关的开关，绑定失败。', 'warn');
-        return;
-    }
-
-    showInChatToggle.checked = settings.show_table_in_chat === true;
-    continuousRenderToggle.checked = settings.render_on_every_message === true;
-
-    const updateContinuousRenderState = () => {
-        if (showInChatToggle.checked) {
-            continuousRenderToggle.disabled = false;
-            continuousRenderToggle.closest('.control-block-with-switch').style.opacity = '1';
-        } else {
-            continuousRenderToggle.disabled = true;
-            continuousRenderToggle.closest('.control-block-with-switch').style.opacity = '0.5';
-        }
-    };
-
-    updateContinuousRenderState();
-
-    showInChatToggle.addEventListener('change', () => {
-        const currentSettings = getLiveExtensionSettings();
-        currentSettings.show_table_in_chat = showInChatToggle.checked;
-        saveSettingsDebounced();
-        toastr.info(`聊天内表格显示已${showInChatToggle.checked ? '开启' : '关闭'}。`);
-        updateContinuousRenderState();
-    });
-
-    continuousRenderToggle.addEventListener('change', () => {
-        const currentSettings = getLiveExtensionSettings();
-        currentSettings.render_on_every_message = continuousRenderToggle.checked;
-        saveSettingsDebounced();
-        toastr.info(`持续渲染最新消息功能已${continuousRenderToggle.checked ? '开启' : '关闭'}。请切换聊天以应用更改。`);
-    });
-
-    log('聊天内表格显示设置及其依赖关系已成功绑定。', 'success');
-}

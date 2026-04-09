@@ -30,6 +30,15 @@
                     <i class="fas fa-sync-alt"></i> 重新生成
                 </button>
             </div>
+            <div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;">
+                <button id="amily2_export_key_bundle" class="menu_button interactable small_button" title="导出当前设备的私钥包，用于新设备恢复解密权限">
+                    <i class="fas fa-download"></i> 导出私钥
+                </button>
+                <button id="amily2_import_key_bundle" class="menu_button interactable small_button" title="导入先前导出的私钥包，恢复云同步密钥的解密能力">
+                    <i class="fas fa-upload"></i> 导入私钥
+                </button>
+                <input id="amily2_import_key_bundle_input" type="file" accept=".json,application/json" style="display:none;" />
+            </div>
             <small class="notes" style="color: var(--warning-color);">
                 ⚠️ 重新生成密钥对后，所有已加密存储的 API Key 将失效，需重新输入。
             </small>

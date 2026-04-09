@@ -16,6 +16,13 @@ import {
 
 'use strict';
 
+function escapeTextareaContent(text) {
+    return String(text ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
 function setupGlobalEventHandlers() {
 
     window.saveHLYSettings = () => saveSettingsFromUI(false); // false表示非自动保存
@@ -1758,7 +1765,7 @@ function previewCondensation() {
                         <textarea class="hly-preview-textarea" 
                                   data-floor="${item.floor}" 
                                   data-is-user="${item.is_user}" 
-                                  data-send-date="${item.send_date}">${item.content}</textarea>
+                                  data-send-date="${item.send_date}">${escapeTextareaContent(item.content)}</textarea>
                     </div>
                 </details>
                 <button class="hly-preview-delete-btn-v2" data-target="${item.id}" title="删除此条">&times;</button>

@@ -8,6 +8,7 @@
 
 import { apiProfileManager, PROFILE_TYPES, SLOTS } from '../utils/config/ApiProfileManager.js';
 import { apiKeyStore } from '../utils/config/api-key-store/ApiKeyStore.js';
+import { configManager } from '../utils/config/ConfigManager.js';
 import { getRequestHeaders, saveSettingsDebounced } from '/script.js';
 import { extension_settings } from '/scripts/extensions.js';
 import { extensionName } from '../utils/settings.js';
@@ -97,6 +98,7 @@ function _bindStorageMode($c) {
     const $select = $c.find('#amily2_keystore_mode');
     const $cloud  = $c.find('#amily2_cloud_key_section');
     const $note   = $c.find('#amily2_keystore_mode_note');
+    const $importInput = $c.find('#amily2_import_key_bundle_input');
 
     const MODE_NOTES = {
         local: '本地存储：API Key 仅存于本设备浏览器，绝不上传服务端。换设备需重新填写。',
@@ -124,6 +126,9 @@ function _bindStorageMode($c) {
 
         try {
             await apiKeyStore.setMode(newMode);
+            if (newMode === 'cloud') {
+                await configManager.syncSensitiveCache({ force: true });
+            }
             $cloud.toggle(newMode === 'cloud');
             $note.text(MODE_NOTES[newMode]);
             if (newMode === 'cloud') _refreshFingerprint($c);
@@ -142,11 +147,66 @@ function _bindStorageMode($c) {
         _refreshFingerprint($c);
         toastr.warning('新密钥对已生成，请重新输入各 Profile 的 API Key。');
     });
+
+    $c.find('#amily2_export_key_bundle').on('click', async () => {
+        try {
+            const bundle = await apiKeyStore.exportPrivateKeyBundle();
+            _downloadJson(
+                `amily2-keystore-${_timestampForFilename()}.json`,
+                bundle
+            );
+            toastr.success('私钥包已导出，请妥善保管。');
+        } catch (e) {
+            console.error('[ApiConfig] 导出私钥包失败:', e);
+            toastr.error(e.message || '导出私钥包失败。');
+        }
+    });
+
+    $c.find('#amily2_import_key_bundle').on('click', () => {
+        $importInput.val('');
+        $importInput.trigger('click');
+    });
+
+    $importInput.on('change', async function () {
+        const file = this.files?.[0];
+        if (!file) return;
+
+        try {
+            const text = await file.text();
+            await apiKeyStore.importPrivateKeyBundle(text);
+            await configManager.syncSensitiveCache({ force: true });
+            await _refreshFingerprint($c);
+            toastr.success('私钥包导入成功，已尝试恢复云同步的 API Key 缓存。');
+        } catch (e) {
+            console.error('[ApiConfig] 导入私钥包失败:', e);
+            toastr.error(e.message || '导入私钥包失败。');
+        } finally {
+            $importInput.val('');
+        }
+    });
 }
 
 async function _refreshFingerprint($c) {
     const fp = await apiKeyStore.getPublicKeyInfo();
     $c.find('#amily2_keypair_fingerprint').text(fp);
+}
+
+function _downloadJson(filename, data) {
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+}
+
+function _timestampForFilename() {
+    const now = new Date();
+    const pad = n => String(n).padStart(2, '0');
+    return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
 }
 
 // ── Profile 列表渲染 ──────────────────────────────────────────────────────────

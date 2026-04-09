@@ -16,7 +16,8 @@ export default class TableModule extends Module {
         if (this.el) {
             this.el.id = 'amily2_memorisation_forms_panel';
             this.el.style.display = 'none';
+            this.el.dataset.module = 'TableModule';
         }
-        bindTableEvents();
+        bindTableEvents(this.el);
     }
 }

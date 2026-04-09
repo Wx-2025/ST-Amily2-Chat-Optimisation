@@ -880,6 +880,7 @@ jQuery(async () => {
     initializeAmilyHelper();
     mergePluginSettings();
     configManager.migrate(); // 将 extension_settings 中残留的敏感字段迁移到 localStorage
+    await configManager.init();
 
     let attempts = 0;
     const maxAttempts = 100;
