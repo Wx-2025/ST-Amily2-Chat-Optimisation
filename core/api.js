@@ -1,6 +1,6 @@
 import { extension_settings, getContext } from "/scripts/extensions.js";
 import { characters } from "/script.js";
-import { getSlotProfile } from './api/api-resolver.js';
+import { getSlotProfile, providerToApiMode } from './api/api-resolver.js';
 import { configManager } from '../utils/config/ConfigManager.js';
 import { world_names } from "/scripts/world-info.js";
 import { extensionName } from "../utils/settings.js";
@@ -442,8 +442,12 @@ export async function getApiSettings(slot = 'main') {
     // 优先读取槽位分配的 Profile（仅接管连接参数）
     const profile = await getSlotProfile(slot);
     if (profile) {
+        const resolvedProvider = profile.provider === 'sillytavern_backend'
+            ? 'sillytavern_backend'
+            : providerToApiMode(profile.provider);
+
         return {
-            apiProvider:  profile.provider,
+            apiProvider:  resolvedProvider,
             apiUrl:       profile.apiUrl,
             apiKey:       profile.apiKey ?? '',
             model:        profile.model,
