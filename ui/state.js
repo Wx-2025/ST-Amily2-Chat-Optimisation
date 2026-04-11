@@ -198,10 +198,20 @@ export function updatePlotOptimizationUI() {
     const settings = getMergedPlotOptSettings();
     if (!settings) return;
 
+    const contextLimit = settings.plotOpt_contextLimit ?? settings.plotOpt_contextTurnCount ?? defaultSettings.plotOpt_contextLimit;
+    const worldbookCharLimit = settings.plotOpt_worldbookCharLimit ?? defaultSettings.plotOpt_worldbookCharLimit;
+    const worldbookEnabled = settings.plotOpt_worldbookEnabled ?? settings.plotOpt_worldbook_enabled ?? defaultSettings.plotOpt_worldbookEnabled;
+    let tableEnabledValue = settings.plotOpt_tableEnabled;
+    if (tableEnabledValue === true) {
+        tableEnabledValue = 'main';
+    } else if (tableEnabledValue === false || tableEnabledValue === undefined) {
+        tableEnabledValue = 'disabled';
+    }
+
     $('#amily2_opt_enabled').prop('checked', settings.plotOpt_enabled);
     $('#amily2_opt_ejs_enabled').prop('checked', settings.plotOpt_ejsEnabled);
-    $('#amily2_opt_worldbook_enabled').prop('checked', settings.plotOpt_worldbook_enabled);
-    $('#amily2_opt_table_enabled').prop('checked', settings.plotOpt_tableEnabled);
+    $('#amily2_opt_worldbook_enabled').prop('checked', worldbookEnabled);
+    $('#amily2_opt_table_enabled').val(tableEnabledValue);
 
     $('#amily2_opt_main_prompt').val(settings.plotOpt_mainPrompt);
     $('#amily2_opt_system_prompt').val(settings.plotOpt_systemPrompt);
@@ -213,13 +223,12 @@ export function updatePlotOptimizationUI() {
     $('#amily2_opt_rate_cuckold').val(settings.plotOpt_rateCuckold);
 
     const sliders = {
-        '#amily2_opt_context_limit': 'plotOpt_contextLimit',
-        '#amily2_opt_worldbook_char_limit': 'plotOpt_worldbookCharLimit',
+        '#amily2_opt_context_limit': contextLimit,
+        '#amily2_opt_worldbook_char_limit': worldbookCharLimit,
     };
 
     for (const sliderId in sliders) {
-        const key = sliders[sliderId];
-        const value = settings[key];
+        const value = sliders[sliderId];
         const valueDisplayId = `${sliderId}_value`;
 
         if (value !== undefined) {

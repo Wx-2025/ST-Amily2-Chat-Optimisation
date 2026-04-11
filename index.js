@@ -610,7 +610,7 @@ async function onPlotGenerationAfterCommands(type, params, dryRun) {
             }, 100);
         });
 
-        const contextTurnCount = globalSettings.plotOpt_contextLimit || 10;
+        const contextTurnCount = globalSettings.plotOpt_contextLimit ?? globalSettings.plotOpt_contextTurnCount ?? 10;
         const contextSource = isFromTextarea ? context.chat : context.chat.slice(0, -1);
         const slicedContext = contextTurnCount > 0 ? contextSource.slice(-contextTurnCount) : contextSource;
 

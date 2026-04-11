@@ -1035,8 +1035,8 @@ export function bindModalEvents() {
         });
 
     container
-        .off("change.amily2.text")
-        .on("change.amily2.text", "#amily2_api_url, #amily2_api_key, #amily2_optimization_target_tag", function () {
+        .off("input.amily2.text change.amily2.text")
+        .on("input.amily2.text change.amily2.text", "#amily2_api_url, #amily2_api_key, #amily2_optimization_target_tag", function () {
             if (!pluginAuthStatus.authorized) return;
             const key = snakeToCamel(this.id.replace("amily2_", ""));
             // apiKey 是敏感字段，必须经 configManager 写入 localStorage
@@ -1082,6 +1082,25 @@ export function bindModalEvents() {
             },
         );
 
+    container
+        .off("input.amily2.number change.amily2.number")
+        .on(
+            "input.amily2.number change.amily2.number",
+            "#amily2_max_tokens, #amily2_temperature, #amily2_context_messages",
+            function () {
+                if (!pluginAuthStatus.authorized) return;
+                const key = snakeToCamel(this.id.replace("amily2_", ""));
+                const value = this.id.includes("temperature")
+                    ? parseFloat(this.value)
+                    : parseInt(this.value, 10);
+
+                if (Number.isNaN(value)) return;
+
+                $(`#${this.id}_value`).text(value);
+                updateAndSaveSetting(key, value);
+            },
+        );
+
     const promptMap = {
         mainPrompt: "#amily2_main_prompt",
         systemPrompt: "#amily2_system_prompt",
@@ -1102,6 +1121,14 @@ export function bindModalEvents() {
     container
         .off("change.amily2.prompt_selector")
         .on("change.amily2.prompt_selector", selector, updateEditorView);
+
+    container
+        .off("input.amily2.unified_editor change.amily2.unified_editor")
+        .on("input.amily2.unified_editor change.amily2.unified_editor", editor, function () {
+            const selectedKey = $(selector).val();
+            if (!selectedKey) return;
+            updateAndSaveSetting(selectedKey, $(this).val());
+        });
 
     container
         .off("click.amily2.unified_save")
@@ -1125,8 +1152,8 @@ export function bindModalEvents() {
         });
 
     container
-        .off("change.amily2.lore_settings")
-        .on("change.amily2.lore_settings",
+        .off("input.amily2.lore_settings change.amily2.lore_settings")
+        .on("input.amily2.lore_settings change.amily2.lore_settings",
             'select[id^="amily2_lore_"], input#amily2_lore_depth_input',
             function () {
                 if (!pluginAuthStatus.authorized) return;

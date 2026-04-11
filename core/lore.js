@@ -329,7 +329,7 @@ export async function getPlotOptimizedWorldbookContent(context, apiSettings, isC
             selectedWorldbooks: apiSettings.plotOpt_selectedWorldbooks,
             autoSelectWorldbooks: apiSettings.plotOpt_autoSelectWorldbooks || [],
             worldbookCharLimit: apiSettings.plotOpt_worldbookCharLimit,
-            contextLimit: apiSettings.plotOpt_contextLimit || 5,
+            contextLimit: apiSettings.plotOpt_contextLimit ?? apiSettings.plotOpt_contextTurnCount ?? 5,
             enabledWorldbookEntries: apiSettings.plotOpt_enabledWorldbookEntries,
         };
     }

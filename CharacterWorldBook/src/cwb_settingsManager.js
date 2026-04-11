@@ -87,6 +87,13 @@ function saveBreakArmorPrompt() {
     showToastr('success', '破甲预设已保存！');
 }
 
+function autosaveBreakArmorPrompt() {
+    const newPrompt = $panel.find('#cwb-break-armor-prompt-textarea').val();
+    getSettings().cwb_break_armor_prompt = newPrompt;
+    state.currentBreakArmorPrompt = newPrompt;
+    saveSettingsDebounced();
+}
+
 function resetBreakArmorPrompt() {
     getSettings().cwb_break_armor_prompt = cwbCompleteDefaultSettings.cwb_break_armor_prompt;
     state.currentBreakArmorPrompt = cwbCompleteDefaultSettings.cwb_break_armor_prompt;
@@ -105,6 +112,13 @@ function saveCharCardPrompt() {
     state.currentCharCardPrompt = newPrompt;
     saveSettingsDebounced();
     showToastr('success', '角色卡预设已保存！');
+}
+
+function autosaveCharCardPrompt() {
+    const newPrompt = $panel.find('#cwb-char-card-prompt-textarea').val();
+    getSettings().cwb_char_card_prompt = newPrompt;
+    state.currentCharCardPrompt = newPrompt;
+    saveSettingsDebounced();
 }
 
 function resetCharCardPrompt() {
@@ -129,6 +143,16 @@ function saveAutoUpdateThreshold() {
     }
 }
 
+function autosaveAutoUpdateThreshold() {
+    const valStr = $panel.find('#cwb-auto-update-threshold').val();
+    const newT = parseInt(valStr, 10);
+    if (!isNaN(newT) && newT >= 1) {
+        getSettings().cwb_auto_update_threshold = newT;
+        state.autoUpdateThreshold = newT;
+        saveSettingsDebounced();
+    }
+}
+
 function saveScanDepth() {
     const valStr = $panel.find('#cwb-scan-depth').val();
     const newT = parseInt(valStr, 10);
@@ -140,6 +164,16 @@ function saveScanDepth() {
     } else {
         showToastr('warning', `深度 "${valStr}" 无效。`);
         $panel.find('#cwb-scan-depth').val(getSettings().cwb_scan_depth);
+    }
+}
+
+function autosaveScanDepth() {
+    const valStr = $panel.find('#cwb-scan-depth').val();
+    const newT = parseInt(valStr, 10);
+    if (!isNaN(newT) && newT >= 1) {
+        getSettings().cwb_scan_depth = newT;
+        state.scanDepth = newT;
+        saveSettingsDebounced();
     }
 }
 
@@ -287,11 +321,12 @@ export function bindSettingsEvents($settingsPanel) {
         // 同时更新设置和状态（API Key 经 configManager 写入 localStorage）
         configManager.set('cwb_api_key', apiKey);
         state.customApiConfig.apiKey = apiKey;
+        updateApiStatusDisplay($panel);
 
         console.log('[CWB] API Key已更新 - 状态长度:', state.customApiConfig.apiKey?.length || 0);
     });
     
-    $panel.on('change', '#cwb-api-model', function() {
+    $panel.on('input change', '#cwb-api-model', function(event) {
         const model = $(this).val();
         
         // 同时更新设置和状态
@@ -303,10 +338,15 @@ export function bindSettingsEvents($settingsPanel) {
         
         console.log('[CWB] 模型已更新 - 设置:', getSettings().cwb_api_model, ', 状态:', state.customApiConfig.model);
         
-        if (model) {
+        if (model && event.type === 'change') {
             showToastr('success', `模型已选择: ${model}`);
         }
     });
+
+    $panel.on('input change', '#cwb-break-armor-prompt-textarea', autosaveBreakArmorPrompt);
+    $panel.on('input change', '#cwb-char-card-prompt-textarea', autosaveCharCardPrompt);
+    $panel.on('input change', '#cwb-auto-update-threshold', autosaveAutoUpdateThreshold);
+    $panel.on('input change', '#cwb-scan-depth', autosaveScanDepth);
 
     $panel.on('click', '#cwb-load-models', () => fetchModelsAndConnect($panel));
 

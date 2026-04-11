@@ -522,13 +522,15 @@ export async function testApiConnection() {
 
     try {
         const apiSettings = await getApiSettings();
+        const apiProvider = apiSettings.apiProvider || 'openai';
+        const requiresApiKey = !['sillytavern_backend', 'sillytavern_preset'].includes(apiProvider);
 
-        if (apiSettings.apiProvider === 'sillytavern_preset') {
+        if (apiProvider === 'sillytavern_preset') {
             if (!apiSettings.tavernProfile) {
                 throw new Error("请先在下方选择一个SillyTavern预设");
             }
         } else {
-            if (!apiSettings.apiUrl || !apiSettings.apiKey || !apiSettings.model) {
+            if (!apiSettings.apiUrl || !apiSettings.model) {
                 throw new Error("API配置不完整，请检查URL、Key和模型选择");
             }
         }

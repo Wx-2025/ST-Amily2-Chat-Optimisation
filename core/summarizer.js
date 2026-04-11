@@ -423,7 +423,7 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
         }
 
         let history = '';
-        const contextLimit = settings.plotOpt_contextLimit || 0;
+        const contextLimit = settings.plotOpt_contextLimit ?? settings.plotOpt_contextTurnCount ?? 0;
         if (contextLimit > 0 && contextMessages.length > 0) {
             const historyMessages = contextMessages.slice(-contextLimit);
             

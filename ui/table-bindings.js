@@ -1195,6 +1195,8 @@ function bindWorldBookSettings() {
     const refreshButton = document.getElementById('table_refresh_worldbooks');
     const bookListContainer = document.getElementById('table_worldbook_checkbox_list');
     const entryListContainer = document.getElementById('table_worldbook_entry_list');
+    const bookSearchInput = document.getElementById('table_worldbook_search');
+    const entrySearchInput = document.getElementById('table_entry_search');
 
     if (!enabledCheckbox || !limitSlider || !limitValueSpan || !sourceRadios.length || !manualSelectWrapper || !refreshButton || !bookListContainer || !entryListContainer) {
         log('无法找到世界书设置的相关UI元素，绑定失败。', 'warn');
@@ -1379,6 +1381,26 @@ function bindWorldBookSettings() {
             saveSelectedEntries();
         }
     });
+
+    if (bookSearchInput) {
+        bookSearchInput.addEventListener('input', () => {
+            const keyword = bookSearchInput.value.trim().toLowerCase();
+            bookListContainer.querySelectorAll('.checkbox-item').forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(keyword) ? '' : 'none';
+            });
+        });
+    }
+
+    if (entrySearchInput) {
+        entrySearchInput.addEventListener('input', () => {
+            const keyword = entrySearchInput.value.trim().toLowerCase();
+            entryListContainer.querySelectorAll('.checkbox-item').forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(keyword) ? '' : 'none';
+            });
+        });
+    }
 
     enabledCheckbox.dataset.eventsBound = 'true';
     log('世界书设置已成功绑定。', 'success');

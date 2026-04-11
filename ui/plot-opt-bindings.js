@@ -184,6 +184,25 @@ function opt_getMergedSettings() {
     return { ...globalSettings, ...characterSettings };
 }
 
+function bindInputLikeSave(element, handler) {
+    if (!element) return;
+    element.oninput = handler;
+    element.onchange = handler;
+}
+
+function syncModelMirror(inputElement, selectElement) {
+    if (!inputElement || !selectElement) return;
+    const value = inputElement.value || '';
+    if (!value) return;
+
+    let option = Array.from(selectElement.options || []).find(item => item.value === value);
+    if (!option) {
+        option = new Option(value, value, true, true);
+        selectElement.add(option);
+    }
+    selectElement.value = value;
+}
+
 
 
 function opt_bindSlider(panel, sliderId, displayId) {
@@ -641,14 +660,15 @@ function opt_loadSettings(panel) {
         modelSelect.append(new Option('<-请先获取模型', '', true, true));
     }
 
+    syncModelMirror(modelInput.get(0), modelSelect.get(0));
     panel.find('#amily2_opt_max_tokens').val(settings.plotOpt_max_tokens);
     panel.find('#amily2_opt_temperature').val(settings.plotOpt_temperature);
     panel.find('#amily2_opt_top_p').val(settings.plotOpt_top_p);
     panel.find('#amily2_opt_presence_penalty').val(settings.plotOpt_presence_penalty);
     panel.find('#amily2_opt_frequency_penalty').val(settings.plotOpt_frequency_penalty);
-    panel.find('#amily2_opt_context_turn_count').val(settings.plotOpt_contextTurnCount);
+    const contextLimit = settings.plotOpt_contextLimit ?? settings.plotOpt_contextTurnCount ?? defaultSettings.plotOpt_contextLimit;
     panel.find('#amily2_opt_worldbook_char_limit').val(settings.plotOpt_worldbookCharLimit);
-    panel.find('#amily2_opt_context_limit').val(settings.plotOpt_contextLimit);
+    panel.find('#amily2_opt_context_limit').val(contextLimit);
 
     panel.find('#amily2_opt_rate_main').val(settings.plotOpt_rateMain);
     panel.find('#amily2_opt_rate_personal').val(settings.plotOpt_ratePersonal);
@@ -680,7 +700,6 @@ function opt_loadSettings(panel) {
     opt_bindSlider(panel, '#amily2_opt_top_p', '#amily2_opt_top_p_value');
     opt_bindSlider(panel, '#amily2_opt_presence_penalty', '#amily2_opt_presence_penalty_value');
     opt_bindSlider(panel, '#amily2_opt_frequency_penalty', '#amily2_opt_frequency_penalty_value');
-    opt_bindSlider(panel, '#amily2_opt_context_turn_count', '#amily2_opt_context_turn_count_value');
     opt_bindSlider(panel, '#amily2_opt_worldbook_char_limit', '#amily2_opt_worldbook_char_limit_value');
     opt_bindSlider(panel, '#amily2_opt_context_limit', '#amily2_opt_context_limit_value');
 
@@ -795,15 +814,22 @@ function bindConcurrentApiEvents() {
     fields.forEach(field => {
         const element = document.getElementById(field.id);
         if (element) {
-            element.addEventListener('change', function() {
+            const saveField = function() {
                 if (field.sensitive) {
                     configManager.set(field.key, this.value);
                 } else {
                     if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
                     extension_settings[extensionName][field.key] = this.value;
                     saveSettingsDebounced();
+                    if (field.key === 'plotOpt_concurrentModel') {
+                        syncModelMirror(
+                            document.getElementById('amily2_plotOpt_concurrentModel'),
+                            document.getElementById('amily2_plotOpt_concurrentModel_select')
+                        );
+                    }
                 }
-            });
+            };
+            bindInputLikeSave(element, saveField);
         }
     });
 
@@ -1192,6 +1218,13 @@ export function initializePlotOptimizationBindings() {
         handleSettingChange(this);
     });
 
+    panel.on('input.amily2_opt change.amily2_opt', '#amily2_opt_model', function() {
+        syncModelMirror(
+            panel.find('#amily2_opt_model').get(0),
+            panel.find('#amily2_opt_model_select').get(0)
+        );
+    });
+
     panel.on('change.amily2_opt', '#amily2_opt_model_select', function() {
         const selectedModel = $(this).val();
         if (selectedModel) {
@@ -1408,13 +1441,20 @@ function bindJqyhApiEvents() {
             element.value = field.sensitive
                 ? (configManager.get(field.key) || '')
                 : (extension_settings[extensionName][field.key] || '');
-            element.addEventListener('change', function() {
+            const saveField = function() {
                 if (field.sensitive) {
                     configManager.set(field.key, this.value);
                 } else {
                     updateAndSaveSetting(field.key, this.value);
+                    if (field.key === 'jqyhModel') {
+                        syncModelMirror(
+                            document.getElementById('amily2_jqyh_model'),
+                            document.getElementById('amily2_jqyh_model_select')
+                        );
+                    }
                 }
-            });
+            };
+            bindInputLikeSave(element, saveField);
         }
     });
 
