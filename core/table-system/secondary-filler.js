@@ -9,6 +9,7 @@ import { getPresetPrompts, getMixedOrder } from '../../PresetSettings/index.js';
 import { callAI, generateRandomSeed } from '../api.js';
 import { callNccsAI } from '../api/NccsApi.js';
 import { extractBlocksByTags, applyExclusionRules } from '../utils/rag-tag-extractor.js';
+import { resolveTableRuleConfig } from '../../utils/config/RuleProfileManager.js';
 import { safeLorebookEntries } from '../tavernhelper-compatibility.js';
 
 
@@ -171,9 +172,10 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
 
         let tagsToExtract = [];
         let exclusionRules = [];
-        if (settings.table_independent_rules_enabled) {
-            tagsToExtract = (settings.table_tags_to_extract || '').split(',').map(t => t.trim()).filter(Boolean);
-            exclusionRules = settings.table_exclusion_rules || [];
+        const tableRuleConfig = resolveTableRuleConfig(settings);
+        if (tableRuleConfig.tags || (tableRuleConfig.exclusionRules && tableRuleConfig.exclusionRules.length)) {
+            tagsToExtract = (tableRuleConfig.tags || '').split(',').map(t => t.trim()).filter(Boolean);
+            exclusionRules = tableRuleConfig.exclusionRules || [];
         }
 
         let coreContentText = "";

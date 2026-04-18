@@ -1,0 +1,45 @@
+<div class="settings-group" id="amily2_rule_config_panel_root">
+    <fieldset class="settings-group">
+        <legend><i class="fas fa-list-check"></i> 规则配置中心</legend>
+        <div style="display:flex; gap:16px; align-items:flex-start;">
+            <div style="width: 260px; flex-shrink:0;">
+                <div style="display:flex; gap:8px; margin-bottom:10px;">
+                    <button id="amily2_rule_profile_new" class="menu_button small_button amily2-vbtn"><span class="vbtn-icon"><i class="fas fa-plus"></i></span><span class="vbtn-label">新建</span></button>
+                </div>
+                <div id="amily2_rule_profile_list" style="display:flex; flex-direction:column; gap:8px;"></div>
+            </div>
+            <div style="flex:1; min-width:0;">
+                <div class="amily2_settings_block">
+                    <label for="amily2_rule_profile_name">配置名称</label>
+                    <input id="amily2_rule_profile_name" class="text_pole" type="text" placeholder="例如：通用提取规则">
+                </div>
+                <div class="amily2_settings_block" style="margin-top:10px;">
+                    <label><input id="amily2_rule_profile_tag_toggle" type="checkbox"> 启用标签提取</label>
+                </div>
+                <div id="amily2_rule_profile_tags_wrap" class="amily2_settings_block" style="display:none; margin-top:10px;">
+                    <label for="amily2_rule_profile_tags">标签列表</label>
+                    <textarea id="amily2_rule_profile_tags" class="text_pole" rows="3" placeholder="例如：content,details,summary"></textarea>
+                </div>
+                <div class="amily2_settings_block" style="margin-top:10px;">
+                    <label>排除规则</label>
+                    <div id="amily2_rule_profile_rules" style="display:flex; flex-direction:column; gap:8px; margin:8px 0;"></div>
+                    <button id="amily2_rule_profile_add_rule" class="menu_button small_button amily2-vbtn"><span class="vbtn-icon"><i class="fas fa-plus"></i></span><span class="vbtn-label">添加规则</span></button>
+                </div>
+                <div style="display:flex; gap:8px; margin-top:16px;">
+                    <button id="amily2_rule_profile_save" class="menu_button menu_button_primary amily2-vbtn"><span class="vbtn-icon"><i class="fas fa-save"></i></span><span class="vbtn-label">保存</span></button>
+                    <button id="amily2_rule_profile_delete" class="menu_button danger amily2-vbtn"><span class="vbtn-icon"><i class="fas fa-trash-alt"></i></span><span class="vbtn-label">删除</span></button>
+                    <button id="amily2_back_to_main_from_rule_config" class="menu_button amily2-vbtn"><span class="vbtn-icon"><i class="fas fa-arrow-left"></i></span><span class="vbtn-label">返回</span></button>
+                </div>
+            </div>
+        </div>
+    </fieldset>
+</div>
+<style>
+    #amily2_rule_config_panel .amily2-rule-row,
+    #amily2_rule_config_panel_root .amily2-rule-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 8px;
+        align-items: center;
+    }
+</style>

@@ -9,6 +9,7 @@ import { getPresetPrompts, getMixedOrder } from '../../PresetSettings/index.js';
 import { callAI, generateRandomSeed } from '../api.js';
 import { callNccsAI } from '../api/NccsApi.js';
 import { extractBlocksByTags, applyExclusionRules } from '../utils/rag-tag-extractor.js';
+import { resolveTableRuleConfig } from '../../utils/config/RuleProfileManager.js';
 
 import { getBatchFillerRuleTemplate, getBatchFillerFlowTemplate, convertTablesToCsvString } from './manager.js';
 
@@ -152,10 +153,11 @@ function getRawMessagesForSummary(startFloor, endFloor) {
     let tagsToExtract = [];
     let exclusionRules = [];
 
-    if (settings.table_independent_rules_enabled) {
-        log('批量填表：使用独立提取规则。', 'info');
-        tagsToExtract = (settings.table_tags_to_extract || '').split(',').map(t => t.trim()).filter(Boolean);
-        exclusionRules = settings.table_exclusion_rules || [];
+    const tableRuleConfig = resolveTableRuleConfig(settings);
+    if (tableRuleConfig.tags || (tableRuleConfig.exclusionRules && tableRuleConfig.exclusionRules.length)) {
+        log('批量填表：使用提取规则配置。', 'info');
+        tagsToExtract = (tableRuleConfig.tags || '').split(',').map(t => t.trim()).filter(Boolean);
+        exclusionRules = tableRuleConfig.exclusionRules || [];
     }
 
     const messages = historySlice.map((msg, index) => {

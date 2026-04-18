@@ -435,6 +435,10 @@ export function bindModalEvents() {
     bindAmily2ModalWorldBookSettings();
 
     const container = $("#amily2_drawer_content").length ? $("#amily2_drawer_content") : $("#amily2_chat_optimiser");
+    const apiConfigButton = container.find('#amily2_open_api_config');
+    if (apiConfigButton.length && !container.find('#amily2_open_rule_config').length) {
+        apiConfigButton.after(' <button id="amily2_open_rule_config" class="menu_button wide_button"><i class="fas fa-list-check"></i> 规则配置</button>');
+    }
 
     // Collapsible sections logic
     container.find('.collapsible-legend').each(function() {
@@ -802,7 +806,7 @@ export function bindModalEvents() {
     container
         .off("click.amily2.chamber_nav")
         .on("click.amily2.chamber_nav",
-             "#amily2_open_text_optimization, #amily2_open_plot_optimization, #amily2_open_additional_features, #amily2_open_rag_palace, #amily2_open_memorisation_forms, #amily2_open_character_world_book, #amily2_open_world_editor, #amily2_open_glossary, #amily2_open_renderer, #amily2_open_super_memory, #amily2_open_auto_char_card, #amily2_open_api_config, #amily2_open_sfigen, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan, #amily2_back_to_main_from_forms, #amily2_back_to_main_from_optimization, #amily2_back_to_main_from_text_optimization, #amily2_back_to_main_from_cwb, #amily2_back_to_main_from_world_editor, #amily2_back_to_main_from_glossary, #amily2_renderer_back_button, #amily2_back_to_main_from_super_memory, #amily2_back_to_main_from_api_config, #amily2_sfigen_back_to_main", function () {
+             "#amily2_open_text_optimization, #amily2_open_plot_optimization, #amily2_open_additional_features, #amily2_open_rag_palace, #amily2_open_memorisation_forms, #amily2_open_character_world_book, #amily2_open_world_editor, #amily2_open_glossary, #amily2_open_renderer, #amily2_open_super_memory, #amily2_open_auto_char_card, #amily2_open_api_config, #amily2_open_rule_config, #amily2_open_sfigen, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan, #amily2_back_to_main_from_forms, #amily2_back_to_main_from_optimization, #amily2_back_to_main_from_text_optimization, #amily2_back_to_main_from_cwb, #amily2_back_to_main_from_world_editor, #amily2_back_to_main_from_glossary, #amily2_renderer_back_button, #amily2_back_to_main_from_super_memory, #amily2_back_to_main_from_api_config, #amily2_back_to_main_from_rule_config, #amily2_sfigen_back_to_main", function () {
         if (!pluginAuthStatus.authorized) return;
 
         const mainPanel = container.find('.plugin-features');
@@ -817,6 +821,7 @@ export function bindModalEvents() {
         const rendererPanel = container.find('#amily2_renderer_panel');
         const superMemoryPanel = container.find('#amily2_super_memory_panel');
         const apiConfigPanel = container.find('#amily2_api_config_panel');
+        const ruleConfigPanel = container.find('#amily2_rule_config_panel');
         const sfigenPanel = container.find('#amily2_sfigen_panel');
 
         mainPanel.hide();
@@ -831,6 +836,7 @@ export function bindModalEvents() {
         rendererPanel.hide();
         superMemoryPanel.hide();
         apiConfigPanel.hide();
+        ruleConfigPanel.hide();
         sfigenPanel.hide();
 
         switch (this.id) {
@@ -879,6 +885,9 @@ export function bindModalEvents() {
             case 'amily2_open_api_config':
                 apiConfigPanel.show();
                 break;
+            case 'amily2_open_rule_config':
+                ruleConfigPanel.show();
+                break;
             case 'amily2_open_sfigen':
                 sfigenPanel.show();
                 break;
@@ -893,6 +902,7 @@ export function bindModalEvents() {
             case 'amily2_renderer_back_button':
             case 'amily2_back_to_main_from_super_memory':
             case 'amily2_back_to_main_from_api_config':
+            case 'amily2_back_to_main_from_rule_config':
             case 'amily2_sfigen_back_to_main':
                 mainPanel.show();
                 break;

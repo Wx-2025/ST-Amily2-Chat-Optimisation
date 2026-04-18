@@ -14,12 +14,30 @@ import { fetchNccsModels, testNccsApiConnection } from '../core/api/NccsApi.js';
 import { showGraphVisualization } from '../core/relationship-graph/visualizer.js';
 import { escapeHTML } from '../utils/utils.js';
 import { configManager } from '../utils/config/ConfigManager.js';
+import { ruleProfileManager } from '../utils/config/RuleProfileManager.js';
 import { bindTableTemplateEditors } from './table/template-bindings.js';
 import { bindNccsApiEvents as bindNccsApiSettingsEvents } from './table/nccs-bindings.js';
 import { bindChatTableDisplaySetting as bindChatTableDisplaySettings } from './table/chat-display-bindings.js';
 
 const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches;
 const getAllTablesContainer = () => document.getElementById('all-tables-container');
+
+/**
+ * 通用：填充规则配置下拉选单
+ * @param {HTMLSelectElement} select
+ * @param {string} slot — RULE_SLOTS 中的功能槽名
+ */
+function _populateRuleProfileSelect(select, slot) {
+    const profiles = ruleProfileManager.listProfiles();
+    const assigned = ruleProfileManager.getAssignment(slot) || '';
+    const options = [
+        '<option value="">— 未分配 —</option>',
+        ...profiles.map(p =>
+            `<option value="${p.id}" ${p.id === assigned ? 'selected' : ''}>${escapeHTML(p.name || p.id)}</option>`
+        ),
+    ];
+    select.innerHTML = options.join('');
+}
 
 function getLiveExtensionSettings() {
     if (!extension_settings[extensionName]) {
@@ -782,73 +800,6 @@ export function renderTables() {
 }
 
 
-function openTableRuleEditor() {
-    const settings = getLiveExtensionSettings();
-    const tags = settings.table_tags_to_extract || '';
-    const exclusionRules = settings.table_exclusion_rules || [];
-
-    const rulesHtml = exclusionRules.map((rule, index) => `
-        <div class="exclusion-rule-item" data-index="${index}">
-            <input type="text" class="text_pole rule-start" value="${rule.start}" placeholder="起始标记">
-            <span>-</span>
-            <input type="text" class="text_pole rule-end" value="${rule.end}" placeholder="结束标记">
-            <button class="menu_button danger small_button remove-rule-btn"><i class="fas fa-trash-alt"></i></button>
-        </div>
-    `).join('');
-
-    const modalHtml = `
-        <div id="table-rules-editor" style="display: flex; flex-direction: column; gap: 20px;">
-            <div>
-                <label for="table-tags-input"><b>标签提取 (半角逗号分隔)</b></label>
-                <input type="text" id="table-tags-input" class="text_pole" value="${tags}" placeholder="例如: content,game,time">
-                <small class="notes">仅提取指定XML标签的内容，例如填“content”，即提取<content>...</content>中的内容。</small>
-            </div>
-            <div>
-                <label><b>内容排除规则</b></label>
-                <div id="exclusion-rules-list" style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">${rulesHtml}</div>
-                <button id="add-exclusion-rule-btn" class="menu_button small_button" style="margin-top: 10px;"><i class="fas fa-plus"></i> 添加规则</button>
-                <small class="notes">移除所有被起始和结束标记包裹的内容（例如 OOC 部分）。</small>
-            </div>
-        </div>
-    `;
-
-    const dialog = showHtmlModal('配置独立提取规则', modalHtml, {
-        onOk: () => {
-            const newTags = document.getElementById('table-tags-input').value;
-            updateAndSaveTableSetting('table_tags_to_extract', newTags);
-
-            const newExclusionRules = [];
-            document.querySelectorAll('#exclusion-rules-list .exclusion-rule-item').forEach(item => {
-                const start = item.querySelector('.rule-start').value.trim();
-                const end = item.querySelector('.rule-end').value.trim();
-                if (start && end) {
-                    newExclusionRules.push({ start, end });
-                }
-            });
-            updateAndSaveTableSetting('table_exclusion_rules', newExclusionRules);
-            toastr.success('独立提取规则已保存。');
-        },
-        onShow: (dialogElement) => {
-            const rulesList = dialogElement.find('#exclusion-rules-list');
-
-            dialogElement.find('#add-exclusion-rule-btn').on('click', () => {
-                const newIndex = rulesList.children().length;
-                const newItemHtml = `
-                    <div class="exclusion-rule-item" data-index="${newIndex}">
-                        <input type="text" class="text_pole rule-start" value="" placeholder="起始标记">
-                        <span>-</span>
-                        <input type="text" class="text_pole rule-end" value="" placeholder="结束标记">
-                        <button class="menu_button danger small_button remove-rule-btn"><i class="fas fa-trash-alt"></i></button>
-                    </div>`;
-                rulesList.append(newItemHtml);
-            });
-
-            rulesList.on('click', '.remove-rule-btn', function() {
-                $(this).closest('.exclusion-rule-item').remove();
-            });
-        }
-    });
-}
 
 function openRuleEditor(tableIndex) {
     const tables = TableManager.getMemoryState();
@@ -1421,9 +1372,7 @@ export function bindTableEvents(panelElement = null) {
     const bufferSlider = document.getElementById('secondary-filler-buffer');
     const maxRetriesSlider = document.getElementById('secondary-filler-max-retries'); // 【新增】
 
-    const independentRulesContainer = document.getElementById('table-independent-rules-container');
-    const independentRulesToggle = document.getElementById('table-independent-rules-enabled');
-    const configureRulesBtn = document.getElementById('table-configure-rules-btn');
+    const tableRuleProfileSelect = document.getElementById('table-rule-profile-select');
     
     const updateFillingModeUI = () => {
         const currentMode = extension_settings[extensionName]?.filling_mode || 'main-api';
@@ -1437,12 +1386,8 @@ export function bindTableEvents(panelElement = null) {
             secondaryFillerControls.style.display = isSecondaryMode ? 'block' : 'none';
         }
 
-        if (independentRulesContainer) {
-            independentRulesContainer.style.display = 'flex';
-        }
-
-        if (independentRulesToggle && configureRulesBtn) {
-            configureRulesBtn.style.display = independentRulesToggle.checked ? 'block' : 'none';
+        if (tableRuleProfileSelect) {
+            _populateRuleProfileSelect(tableRuleProfileSelect, 'table');
         }
     };
 
@@ -1500,18 +1445,18 @@ export function bindTableEvents(panelElement = null) {
         });
     }
 
-    if (independentRulesToggle) {
-        independentRulesToggle.checked = extension_settings[extensionName]?.table_independent_rules_enabled ?? false;
-        independentRulesToggle.addEventListener('change', () => {
-            updateAndSaveTableSetting('table_independent_rules_enabled', independentRulesToggle.checked);
-            updateFillingModeUI();
-        });
-    }
-
     updateFillingModeUI();
 
-    if (configureRulesBtn) {
-        configureRulesBtn.addEventListener('click', openTableRuleEditor);
+    if (tableRuleProfileSelect) {
+        _populateRuleProfileSelect(tableRuleProfileSelect, 'table');
+        tableRuleProfileSelect.addEventListener('change', () => {
+            ruleProfileManager.setAssignment('table', tableRuleProfileSelect.value || null);
+            const name = tableRuleProfileSelect.selectedOptions[0]?.textContent || '';
+            toastr.info(tableRuleProfileSelect.value ? `表格提取规则已切换为「${name}」` : '表格提取规则已取消分配');
+        });
+        document.addEventListener('amily2:ruleProfilesChanged', () => {
+            _populateRuleProfileSelect(tableRuleProfileSelect, 'table');
+        });
     }
 
     const renderAll = () => {

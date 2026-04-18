@@ -10,6 +10,7 @@ import { generateRandomSeed } from '../../core/api.js';
 import { getChatIdentifier } from '../../core/lore.js';
 import { safeLorebookEntries } from '../../core/tavernhelper-compatibility.js';
 import { amilyHelper } from '../../core/tavern-helper/main.js';
+import { resolveHistoriographyRuleConfig } from '../../utils/config/RuleProfileManager.js';
 
 const { SillyTavern, jQuery, characters } = window;
 
@@ -127,9 +128,10 @@ function processChatMessages(messages) {
             return messages.map(msg => `${msg.is_user ? SillyTavern?.name1 || '用户' : msg.name || '角色'}: ${msg.message}`).join('\n\n');
         }
         
-        const useTagExtraction = mainSettings.historiographyTagExtractionEnabled ?? false;
-        const tagsToExtract = useTagExtraction ? (mainSettings.historiographyTags || '').split(',').map(t => t.trim()).filter(Boolean) : [];
-        const exclusionRules = mainSettings.historiographyExclusionRules || [];
+        const historiographyRuleConfig = resolveHistoriographyRuleConfig(mainSettings);
+        const useTagExtraction = historiographyRuleConfig.tagExtractionEnabled ?? false;
+        const tagsToExtract = useTagExtraction ? (historiographyRuleConfig.tags || '').split(',').map(t => t.trim()).filter(Boolean) : [];
+        const exclusionRules = historiographyRuleConfig.exclusionRules || [];
 
         logDebug(`[CWB] 标签提取: ${useTagExtraction}, 标签: ${tagsToExtract.join(', ')}, 排除规则: ${exclusionRules.length}`);
 

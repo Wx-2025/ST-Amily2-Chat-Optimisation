@@ -772,3 +772,18 @@ hr.header-divider {
     padding-bottom: 8px;
     border-bottom: 1px solid var(--SmartThemeBorderColor);
 }
+
+/* 图标在上、文字在下的垂直按钮 */
+.amily2-vbtn {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px 12px;
+    min-width: 56px;
+    text-align: center;
+    line-height: 1;
+}
+.amily2-vbtn .vbtn-icon { font-size: 1.15em; }
+.amily2-vbtn .vbtn-label { font-size: 0.82em; white-space: nowrap; }

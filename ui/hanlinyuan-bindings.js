@@ -7,6 +7,7 @@ import * as ContextUtils from '../core/utils/context-utils.js';
 import * as IngestionManager from '../core/ingestion-manager.js';
 import { showContentModal, showHtmlModal } from './page-window.js';
 import { extractBlocksByTags, applyExclusionRules } from '../core/utils/rag-tag-extractor.js';
+import { ruleProfileManager, resolveCondensationRuleConfig } from '../utils/config/RuleProfileManager.js';
 import {
     filterWorldbooks,
     filterWorldbookEntries,
@@ -22,6 +23,27 @@ function escapeTextareaContent(text) {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
 }
+
+function escapeAttribute(text) {
+    return String(text ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+
+function _populateHlyRuleProfileSelect(select, slot) {
+    const profiles = ruleProfileManager.listProfiles();
+    const assigned = ruleProfileManager.getAssignment(slot) || '';
+    select.innerHTML = [
+        '<option value="">— 未分配 —</option>',
+        ...profiles.map(p =>
+            `<option value="${p.id}" ${p.id === assigned ? 'selected' : ''}>${escapeTextareaContent(p.name || p.id)}</option>`
+        ),
+    ].join('');
+}
+
 
 function setupGlobalEventHandlers() {
 
@@ -53,6 +75,17 @@ function updateAndSaveSetting(key, value) {
     current[keys[keys.length - 1]] = value;
 
     HanlinyuanCore.saveSettings();
+
+    if (key === 'condensation.tagExtractionEnabled') {
+        syncHanlinLinkedRuleProfile('condensation', { tagExtractionEnabled: value });
+    } else if (key === 'condensation.tags') {
+        syncHanlinLinkedRuleProfile('condensation', { tags: value });
+    } else if (key === 'queryPreprocessing.tagExtractionEnabled') {
+        syncHanlinLinkedRuleProfile('queryPreprocessing', { tagExtractionEnabled: value });
+    } else if (key === 'queryPreprocessing.tags') {
+        syncHanlinLinkedRuleProfile('queryPreprocessing', { tags: value });
+    }
+
     log(`[自动保存] 设置项 '${key}' 已更新为: ${JSON.stringify(value)}`, 'success');
 }
 
@@ -358,17 +391,33 @@ function bindInternalUIEvents() {
         librarySelect.addEventListener('change', handleWorldbookSelectionChange);
     }
 
-    // 为规则配置按钮绑定通用弹窗事件
-    const condensationRulesBtn = document.getElementById('hly-exclusion-rules-btn');
-    if (condensationRulesBtn) {
-        condensationRulesBtn.addEventListener('click', () => showRulesModal('condensation'));
+    // 浓缩 — 提取规则下拉选单
+    const condensationRuleSelect = document.getElementById('hly-condensation-rule-profile-select');
+    if (condensationRuleSelect) {
+        _populateHlyRuleProfileSelect(condensationRuleSelect, 'condensation');
+        condensationRuleSelect.addEventListener('change', () => {
+            ruleProfileManager.setAssignment('condensation', condensationRuleSelect.value || null);
+            const name = condensationRuleSelect.selectedOptions[0]?.textContent || '';
+            toastr.info(condensationRuleSelect.value ? `浓缩提取规则已切换为「${name}」` : '浓缩提取规则已取消分配');
+        });
     }
 
-    // 为“检索预处理”的配置按钮绑定事件
-    const queryPreprocessingBtn = document.getElementById('hly-query-preprocessing-rules-btn');
-    if (queryPreprocessingBtn) {
-        queryPreprocessingBtn.addEventListener('click', () => showRulesModal('queryPreprocessing'));
+    // 查询预处理 — 提取规则下拉选单
+    const queryPrepRuleSelect = document.getElementById('hly-query-preprocessing-rule-profile-select');
+    if (queryPrepRuleSelect) {
+        _populateHlyRuleProfileSelect(queryPrepRuleSelect, 'queryPreprocessing');
+        queryPrepRuleSelect.addEventListener('change', () => {
+            ruleProfileManager.setAssignment('queryPreprocessing', queryPrepRuleSelect.value || null);
+            const name = queryPrepRuleSelect.selectedOptions[0]?.textContent || '';
+            toastr.info(queryPrepRuleSelect.value ? `查询预处理规则已切换为「${name}」` : '查询预处理规则已取消分配');
+        });
     }
+
+    // 规则配置中心保存/删除后自动刷新翰林院下拉选单
+    document.addEventListener('amily2:ruleProfilesChanged', () => {
+        if (condensationRuleSelect) _populateHlyRuleProfileSelect(condensationRuleSelect, 'condensation');
+        if (queryPrepRuleSelect) _populateHlyRuleProfileSelect(queryPrepRuleSelect, 'queryPreprocessing');
+    });
 
     // 为自定义多选下拉框绑定事件
     const multiSelectBtn = document.getElementById('hly-hist-entry-multiselect-btn');
@@ -1570,134 +1619,20 @@ API端点: ${settings.retrieval.apiEndpoint}
         log(`查询宝库状态失败: ${error.message}`, 'error');
     }
 }
-function showRulesModal(type) {
-    const settings = HanlinyuanCore.getSettings();
-    const config = settings[type];
-    if (!config) {
-        console.error(`[翰林院-枢纽] 未找到类型为 "${type}" 的配置项。`);
-        return;
-    }
-
-    const title = type === 'condensation' ? '编辑凝识内容排除规则' : '编辑检索内容排除规则';
-    const rules = config.exclusionRules || [];
-
-    const createRuleRowHtml = (rule = { start: '', end: '' }, index) => `
-        <div class="hly-exclusion-rule-row" data-index="${index}">
-            <input type="text" class="hly-imperial-brush" value="${(rule.start || '').replace(/"/g, '"')}" placeholder="开始字符串, 如 <!--">
-            <span style="margin: 0 5px;">到</span>
-            <input type="text" class="hly-imperial-brush" value="${(rule.end || '').replace(/"/g, '"')}" placeholder="结束字符串, 如 -->">
-            <button class="hly-delete-rule-btn" title="删除此规则">&times;</button>
-        </div>
-    `;
-
-    const rulesHtml = rules.map(createRuleRowHtml).join('');
-
-    // 标签提取部分只在“检索预处理”设置中显示
-    const tagExtractionFieldset = type === 'queryPreprocessing' ? `
-        <fieldset class="hly-settings-group">
-            <legend><i class="fas fa-tags"></i> 标签提取</legend>
-            <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
-                <label for="hly-modal-tag-extraction-enabled">启用标签提取</label>
-                <label class="hly-toggle-switch">
-                    <input type="checkbox" id="hly-modal-tag-extraction-enabled" ${config.tagExtractionEnabled ? 'checked' : ''}>
-                    <span class="slider"></span>
-                </label>
-            </div>
-            <div id="hly-modal-tag-input-container" class="hly-control-block" style="display: ${config.tagExtractionEnabled ? 'block' : 'none'};">
-                <label for="hly-modal-tag-input">输入标签 (以逗号分隔):</label>
-                <textarea id="hly-modal-tag-input" class="hly-imperial-brush" rows="2" placeholder="例如: content,details,摘要">${config.tags || ''}</textarea>
-            </div>
-        </fieldset>
-    ` : '';
-
-    const modalHtml = `
-        <div id="hly-rules-modal-container">
-            ${tagExtractionFieldset}
-            <fieldset class="hly-settings-group">
-                <legend><i class="fas fa-ban"></i> 内容排除规则</legend>
-                <p class="hly-notes">在这里定义需要从提取内容中排除的文本片段。例如，排除HTML注释，可以设置开始字符串为 \`<!--\`，结束字符串为 \`-->\`。</p>
-                <div id="hly-rules-list">${rulesHtml.length > 0 ? rulesHtml : '<p class="hly-notes" style="text-align:center;">暂无规则</p>'}</div>
-                <button id="hly-add-rule-btn" class="hly-action-button" style="margin-top: 10px;">
-                    <i class="fas fa-plus"></i> 添加新规则
-                </button>
-            </fieldset>
-        </div>
-        <style>
-            .hly-exclusion-rule-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-            .hly-exclusion-rule-row input { flex-grow: 1; }
-            .hly-delete-rule-btn { background: #c0392b; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 16px; line-height: 24px; text-align: center; padding: 0; flex-shrink: 0; }
-        </style>
-    `;
-
-    showHtmlModal(title, modalHtml, {
-        okText: '保存规则',
-        onOk: (dialogElement) => {
-            const newRules = [];
-            dialogElement.find('.hly-exclusion-rule-row').each(function () {
-                const start = $(this).find('input').eq(0).val().trim();
-                const end = $(this).find('input').eq(1).val().trim();
-                // 规则必须至少有一个开始字符串
-                if (start) {
-                    newRules.push({ start, end });
-                }
-            });
-
-            const newConfig = { ...config, exclusionRules: newRules };
-
-            // 如果是检索预处理设置，则同时保存标签提取的设置
-            if (type === 'queryPreprocessing') {
-                newConfig.tagExtractionEnabled = dialogElement.find('#hly-modal-tag-extraction-enabled').is(':checked');
-                newConfig.tags = dialogElement.find('#hly-modal-tag-input').val();
-            }
-
-            updateAndSaveSetting(type, newConfig);
-            toastr.success('规则已保存。', '圣旨已达');
-        },
-        onShow: (dialogElement) => {
-            const rulesList = dialogElement.find('#hly-rules-list');
-
-            dialogElement.find('#hly-add-rule-btn').on('click', () => {
-                const newIndex = rulesList.children('.hly-exclusion-rule-row').length;
-                const newRowHtml = createRuleRowHtml(undefined, newIndex);
-                if (rulesList.find('p').length > 0) {
-                    rulesList.html(newRowHtml);
-                } else {
-                    rulesList.append(newRowHtml);
-                }
-            });
-
-            rulesList.on('click', '.hly-delete-rule-btn', function () {
-                $(this).closest('.hly-exclusion-rule-row').remove();
-                if (rulesList.children().length === 0) {
-                    rulesList.html('<p class="hly-notes" style="text-align:center;">暂无规则</p>');
-                }
-            });
-
-            // 如果是检索预处理设置，则绑定标签提取的UI事件
-            if (type === 'queryPreprocessing') {
-                const tagToggle = dialogElement.find('#hly-modal-tag-extraction-enabled');
-                const tagInputContainer = dialogElement.find('#hly-modal-tag-input-container');
-                tagToggle.on('change', () => {
-                    tagInputContainer.css('display', tagToggle.is(':checked') ? 'block' : 'none');
-                });
-            }
-        }
-    });
-}
-
 function previewCondensation() {
     const resultsEl = document.getElementById('hly-condensation-results');
     try {
         // 1. 获取UI设置和新规则
         const settings = HanlinyuanCore.getSettings();
-        const exclusionRules = settings.condensation.exclusionRules || [];
+        const condensationRuleConfig = resolveCondensationRuleConfig(settings);
+        const exclusionRules = condensationRuleConfig.exclusionRules || [];
         const overrideMessageTypes = {
             user: document.getElementById('hly-include-user').checked,
             ai: document.getElementById('hly-include-ai').checked,
         };
-        const useTagExtraction = document.getElementById('hly-tag-extraction-toggle').checked;
+        const useTagExtraction = condensationRuleConfig.tagExtractionEnabled;
         const tagsToExtract = useTagExtraction
-            ? document.getElementById('hly-tag-input').value.split(',').map(t => t.trim()).filter(Boolean)
+            ? (condensationRuleConfig.tags || '').split(',').map(t => t.trim()).filter(Boolean)
             : [];
 
         // 2. 获取原始消息

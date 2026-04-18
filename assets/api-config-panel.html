@@ -2,8 +2,8 @@
     <div class="additional-features-title">
         <i class="fas fa-key"></i> API 连接配置
     </div>
-    <button id="amily2_back_to_main_from_api_config" class="menu_button secondary small_button interactable">
-        返回主殿 <i class="fas fa-arrow-right"></i>
+    <button id="amily2_back_to_main_from_api_config" class="menu_button secondary small_button interactable amily2-vbtn">
+        <span class="vbtn-icon"><i class="fas fa-arrow-right"></i></span><span class="vbtn-label">返回主殿</span>
     </button>
 </div>
 <hr class="header-divider" style="margin-top: 5px; margin-bottom: 10px;">
@@ -26,16 +26,16 @@
             <label>当前密钥对指纹</label>
             <div style="display:flex; gap:6px; align-items:center;">
                 <code id="amily2_keypair_fingerprint" style="flex:1; padding:4px 8px; background:var(--black30a); border-radius:4px; font-size:0.85em;">（未生成）</code>
-                <button id="amily2_generate_keypair" class="menu_button interactable small_button" title="生成新密钥对（会清除所有已加密的 Key）">
-                    <i class="fas fa-sync-alt"></i> 重新生成
+                <button id="amily2_generate_keypair" class="menu_button interactable small_button amily2-vbtn" title="生成新密钥对（会清除所有已加密的 Key）">
+                    <span class="vbtn-icon"><i class="fas fa-sync-alt"></i></span><span class="vbtn-label">重新生成</span>
                 </button>
             </div>
             <div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;">
-                <button id="amily2_export_key_bundle" class="menu_button interactable small_button" title="导出当前设备的私钥包，用于新设备恢复解密权限">
-                    <i class="fas fa-download"></i> 导出私钥
+                <button id="amily2_export_key_bundle" class="menu_button interactable small_button amily2-vbtn" title="导出当前设备的私钥包，用于新设备恢复解密权限">
+                    <span class="vbtn-icon"><i class="fas fa-download"></i></span><span class="vbtn-label">导出私钥</span>
                 </button>
-                <button id="amily2_import_key_bundle" class="menu_button interactable small_button" title="导入先前导出的私钥包，恢复云同步密钥的解密能力">
-                    <i class="fas fa-upload"></i> 导入私钥
+                <button id="amily2_import_key_bundle" class="menu_button interactable small_button amily2-vbtn" title="导入先前导出的私钥包，恢复云同步密钥的解密能力">
+                    <span class="vbtn-icon"><i class="fas fa-upload"></i></span><span class="vbtn-label">导入私钥</span>
                 </button>
                 <input id="amily2_import_key_bundle_input" type="file" accept=".json,application/json" style="display:none;" />
             </div>
@@ -52,17 +52,17 @@
 
     <div style="display:flex; gap:6px; margin-bottom:10px; flex-wrap:wrap;">
         <button class="menu_button small_button amily2_profile_type_filter active" data-type="all">全部</button>
-        <button class="menu_button small_button amily2_profile_type_filter" data-type="chat">
-            <i class="fas fa-comments"></i> 对话模型
+        <button class="menu_button small_button amily2_profile_type_filter amily2-vbtn" data-type="chat">
+            <span class="vbtn-icon"><i class="fas fa-comments"></i></span><span class="vbtn-label">对话模型</span>
         </button>
-        <button class="menu_button small_button amily2_profile_type_filter" data-type="embedding">
-            <i class="fas fa-project-diagram"></i> 向量嵌入
+        <button class="menu_button small_button amily2_profile_type_filter amily2-vbtn" data-type="embedding">
+            <span class="vbtn-icon"><i class="fas fa-project-diagram"></i></span><span class="vbtn-label">向量嵌入</span>
         </button>
-        <button class="menu_button small_button amily2_profile_type_filter" data-type="rerank">
-            <i class="fas fa-sort-amount-down"></i> 重排序
+        <button class="menu_button small_button amily2_profile_type_filter amily2-vbtn" data-type="rerank">
+            <span class="vbtn-icon"><i class="fas fa-sort-amount-down"></i></span><span class="vbtn-label">重排序</span>
         </button>
-        <button id="amily2_add_profile" class="menu_button small_button interactable" style="margin-left:auto;">
-            <i class="fas fa-plus"></i> 新建配置
+        <button id="amily2_add_profile" class="menu_button small_button interactable amily2-vbtn" style="margin-left:auto;">
+            <span class="vbtn-icon"><i class="fas fa-plus"></i></span><span class="vbtn-label">新建配置</span>
         </button>
     </div>
 
@@ -139,16 +139,16 @@
             <div style="display:flex; gap:6px; align-items:stretch;">
                 <input id="amily2_pf_model" type="text" class="text_pole" placeholder="手动填写或点击「获取」" style="flex:1;" />
                 <select id="amily2_pf_model_select" class="text_pole" style="flex:1; display:none;"></select>
-                <button id="amily2_pf_fetch_models" class="menu_button small_button interactable" type="button" title="从 API 获取可用模型列表（需先填写地址和 Key）">
-                    <i class="fas fa-list"></i> 获取
+                <button id="amily2_pf_fetch_models" class="menu_button small_button interactable amily2-vbtn" type="button" title="从 API 获取可用模型列表（需先填写地址和 Key）">
+                    <span class="vbtn-icon"><i class="fas fa-list"></i></span><span class="vbtn-label">获取</span>
                 </button>
             </div>
         </div>
 
         <!-- 测试连接 -->
         <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
-            <button id="amily2_pf_test_conn" class="menu_button small_button interactable" type="button">
-                <i class="fas fa-plug"></i> 测试连接
+            <button id="amily2_pf_test_conn" class="menu_button small_button interactable amily2-vbtn" type="button">
+                <span class="vbtn-icon"><i class="fas fa-plug"></i></span><span class="vbtn-label">测试连接</span>
             </button>
             <span id="amily2_pf_test_result" style="font-size:0.85em;"></span>
         </div>
@@ -222,11 +222,11 @@
 
         <!-- 操作按钮 -->
         <div style="display:flex; gap:8px; margin-top:16px;">
-            <button id="amily2_profile_modal_cancel" class="menu_button secondary interactable">
-                <i class="fas fa-times"></i> 取消
+            <button id="amily2_profile_modal_cancel" class="menu_button secondary interactable amily2-vbtn">
+                <span class="vbtn-icon"><i class="fas fa-times"></i></span><span class="vbtn-label">取消</span>
             </button>
-            <button id="amily2_profile_modal_save" class="menu_button interactable">
-                <i class="fas fa-save"></i> 保存
+            <button id="amily2_profile_modal_save" class="menu_button interactable amily2-vbtn">
+                <span class="vbtn-icon"><i class="fas fa-save"></i></span><span class="vbtn-label">保存</span>
             </button>
         </div>
     </div>

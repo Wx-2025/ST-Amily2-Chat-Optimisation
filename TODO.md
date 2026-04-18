@@ -80,4 +80,23 @@
 - **史官系统 (Historiographer) 优化**：
   - **Ngms API 强制参数**：在 `core/api/Ngms_api.js` 中，移除了旧版 UI 中的温度和最大 Token 设置，强制将默认温度设为 `1.0`，最大 Token 设为 `30000`，以确保总结任务的稳定性和完整性。
   - **总结失败自动重试**：在 `core/historiographer.js` 中为“微言录”和“宏史卷”的生成过程添加了自定义重试逻辑。用户可在 UI 中设置重试次数，当 AI 返回空内容时，系统会自动等待并重试，降低了因 API 波动导致的总结失败率。
-  - **时间跨度标识优化**：修改了 `utils/settings.js` 中的“微言录”和“宏史卷”提示词，强制要求 AI 在提取时间时加入相对时间跨度标识 `(Xd)`（如 `2023-09-15(2d)-星期五-15:00`），以解决长篇剧情中因缺乏具体日期导致的时间线混乱问题。
+  - **时间跨度标识优化**：修改了 `utils/settings.js` 中的”微言录”和”宏史卷”提示词，强制要求 AI 在提取时间时加入相对时间跨度标识 `(Xd)`（如 `2023-09-15(2d)-星期五-15:00`），以解决长篇剧情中因缺乏具体日期导致的时间线混乱问题。
+
+### 2.1.0 (2026/04/18)
+
+以下为更新内容：
+- **提取规则配置通用化重构**：
+  - `RuleProfileManager` 新增功能槽（SLOTS）+ 统一分配（assignments）机制，参照 `ApiProfileManager` 的架构模式，将提取规则预设存储在 `extension_settings`（settings.json）中实现云同步。
+  - 定义四个功能槽：`table`（表格提取）、`historiography`（史官/总结提取）、`condensation`（翰林院·浓缩）、`queryPreprocessing`（翰林院·查询预处理）。
+  - 新增 `resolveSlotRuleConfig(slot)` 统一解析接口，优先读取 assignments 分配，回退兼容旧字段。
+  - 新增一次性迁移逻辑：自动将旧版分散的 `table_rule_profile_id`、`historiographyRuleProfileId`、`condensation.ruleProfileId`、`queryPreprocessing.ruleProfileId` 迁移到统一的 `ruleProfileAssignments`。
+- **消费方 UI 统一改为下拉选单**：
+  - **表格系统**：移除”启用独立提取规则”开关和”配置规则”弹窗，替换为规则配置下拉选单，onChange 即时生效。
+  - **史官系统**：移除标签提取开关、标签输入框和”内容排除”弹窗按钮，替换为规则配置下拉选单。
+  - **翰林院（浓缩 + 查询预处理）**：移除各自的规则配置弹窗按钮，分别替换为独立的规则配置下拉选单；修复了翰林院旧弹窗存在的 HTML 注入隐患。
+  - 新建/编辑规则统一通过「规则配置中心」面板完成。
+- **遗留代码清理**：
+  - 删除 `openTableRuleEditor`（table-bindings.js）、`showHistoriographyExclusionRulesModal`（historiography-bindings.js）、`showRulesModal` / `saveHanlinRuleProfile` / `syncHanlinLinkedRuleProfile`（hanlinyuan-bindings.js）等旧弹窗函数。
+  - 删除 `saveHistoriographyRuleProfile` / `syncHistoriographyLinkedRuleProfile` 等旧同步函数。
+  - 移除 `table_independent_rules_enabled` 开关判断，批量填表和分步填表改为检查 resolved config 是否有实际内容。
+  - 修复 `previewCondensation` 引用已移除 DOM 元素（`hly-tag-extraction-toggle` / `hly-tag-input`）的问题，改为从 resolved config 读取。

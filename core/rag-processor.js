@@ -11,6 +11,7 @@ import * as ContextUtils from './utils/context-utils.js';
 import { getCollectionIdInfo, getCharacterId, getCharacterStableId } from './utils/context-utils.js';
 import { defaultSettings as ragDefaultSettings } from './rag-settings.js';
 import { extractBlocksByTags, applyExclusionRules } from './utils/rag-tag-extractor.js';
+import { resolveQueryPreprocessingRuleConfig } from '../utils/config/RuleProfileManager.js';
 import * as IngestionManager from './ingestion-manager.js'; 
 import {
     getEmbeddings,
@@ -1324,7 +1325,7 @@ function preprocessQueryText(queryText) {
     }
 
     let processedText = queryText;
-    const { tagExtractionEnabled, tags, exclusionRules } = settings.queryPreprocessing;
+    const { tagExtractionEnabled, tags, exclusionRules } = resolveQueryPreprocessingRuleConfig(settings);
 
     if (tagExtractionEnabled && tags) {
         const tagsToExtract = tags.split(',').map(t => t.trim()).filter(Boolean);
@@ -1438,7 +1439,7 @@ async function rearrangeChat(chat, contextSize, abort, type) {
     const queryMessages = chat.slice(-settings.advanced.queryMessageCount);
     if (queryMessages.length === 0) return;
     
-    const queryPreprocessingSettings = settings.queryPreprocessing;
+    const queryPreprocessingSettings = resolveQueryPreprocessingRuleConfig(settings);
     let queryText = '';
     const relevantTexts = [];
 

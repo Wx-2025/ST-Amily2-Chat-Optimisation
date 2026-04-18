@@ -252,16 +252,10 @@
                         </div>
                     </div>
                     
-                    <div id="table-independent-rules-container" class="control-block-with-switch" style="margin-bottom: 10px; display: none; flex-direction: column; align-items: flex-start; gap: 8px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                            <label for="table-independent-rules-enabled">启用独立提取规则</label>
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="table-independent-rules-enabled">
-                                <span class="slider"></span>
-                            </label>
-                        </div>
-                        <button id="table-configure-rules-btn" class="menu_button small_button" style="display: none;"><i class="fas fa-cog"></i> 配置规则</button>
-                        <small class="notes">启用后，分步填表和批量填表将使用下方配置的专属规则，而非微言录的规则。</small>
+                    <div class="control-block-with-switch" style="margin-bottom: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
+                        <label style="font-weight: bold;">提取规则配置</label>
+                        <select id="table-rule-profile-select" class="text_pole" style="width: 100%;"></select>
+                        <small class="notes">选择在「规则配置中心」里创建的提取规则，应用于分步填表和批量填表。未选择时使用默认行为。</small>
                     </div>
                     <div class="action-center-buttons" style="gap: 8px;">
                         <button id="amily2-open-relationship-graph-btn" class="menu_button accent small_button interactable"><i class="fas fa-project-diagram"></i> 关系图谱</button>

@@ -2,7 +2,7 @@ import { extension_settings } from "/scripts/extensions.js";
 import { saveSettingsDebounced } from "/script.js";
 import { pluginAuthStatus } from "./auth.js";
 
-export const pluginVersion = "1.4.5";
+export const pluginVersion = "2.1.0";
 
 // 从当前文件 URL 动态推导插件文件夹名和根路径，兼容任意文件夹名（Dev / 正式版均适用）
 // URL 结构：.../scripts/extensions/third-party/<folderName>/utils/settings.js

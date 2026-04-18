@@ -18,6 +18,7 @@ import { getPresetPrompts, getMixedOrder } from '../PresetSettings/index.js';
 import { callAI, generateRandomSeed } from "./api.js";
 import { callNgmsAI } from "./api/Ngms_api.js";
 import { executeAutoHide } from "./autoHideManager.js";
+import { resolveHistoriographyRuleConfig } from "../utils/config/RuleProfileManager.js";
 
 let reloadEditor = () => {
     console.warn("[大史官] reloadEditor 函数不可用，可能是旧版本。已使用空函数代替。");
@@ -302,9 +303,10 @@ function getRawMessagesForSummary(startFloor, endFloor) {
     const userName = context.name1 || '用户';
     const characterName = context.name2 || '角色';
     
-    const useTagExtraction = settings.historiographyTagExtractionEnabled ?? false;
-    const tagsToExtract = useTagExtraction ? (settings.historiographyTags || '').split(',').map(t => t.trim()).filter(Boolean) : [];
-    const exclusionRules = settings.historiographyExclusionRules || [];
+    const historiographyRuleConfig = resolveHistoriographyRuleConfig(settings);
+    const useTagExtraction = historiographyRuleConfig.tagExtractionEnabled ?? false;
+    const tagsToExtract = useTagExtraction ? (historiographyRuleConfig.tags || '').split(',').map(t => t.trim()).filter(Boolean) : [];
+    const exclusionRules = historiographyRuleConfig.exclusionRules || [];
 
     const messages = historySlice.map((msg, index) => {
         let content = msg.mes;

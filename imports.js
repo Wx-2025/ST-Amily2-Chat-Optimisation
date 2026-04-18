@@ -7,6 +7,7 @@ import './SL/bus/Amily2Bus.js'
 import './utils/config/ConfigManager.js'
 import './utils/config/api-key-store/ApiKeyStore.js'
 import './utils/config/ApiProfileManager.js'
+import './utils/config/RuleProfileManager.js'
 import './core/table-system/TableSystemService.js'
 
 // Re-exports (重新导出供 index.js 使用)
@@ -33,7 +34,9 @@ export { pluginVersion, extensionName, defaultSettings } from './utils/settings.
 export { configManager } from './utils/config/ConfigManager.js';
 export { apiKeyStore } from './utils/config/api-key-store/ApiKeyStore.js';
 export { apiProfileManager, PROFILE_TYPES, SLOTS } from './utils/config/ApiProfileManager.js';
+export { ruleProfileManager, RULE_SLOTS, resolveSlotRuleConfig, resolveCondensationRuleConfig, resolveQueryPreprocessingRuleConfig, resolveTableRuleConfig, resolveHistoriographyRuleConfig, resolveRuleConfig } from './utils/config/RuleProfileManager.js';
 export { bindApiConfigPanel } from './ui/api-config-bindings.js';
+export { bindRuleConfigPanel } from './ui/rule-config-bindings.js';
 export { checkAuthorization, refreshUserInfo } from './utils/auth.js';
 export { tableSystemDefaultSettings } from './core/table-system/settings.js';
 export { manageLorebookEntriesForChat } from './core/lore.js';

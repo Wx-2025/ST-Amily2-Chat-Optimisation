@@ -5,8 +5,8 @@ import {
   saveSettings,
 } from "../utils/settings.js";
 import { showHtmlModal } from './page-window.js';
-import { applyExclusionRules, extractBlocksByTags } from '../core/utils/rag-tag-extractor.js';
 import { configManager } from '../utils/config/ConfigManager.js';
+import { ruleProfileManager, resolveHistoriographyRuleConfig } from '../utils/config/RuleProfileManager.js';
 
 import {
   getAvailableWorldbooks, getLoresForWorldbook,
@@ -16,6 +16,25 @@ import {
 } from "../core/historiographer.js";
 
 import { getNgmsApiSettings, testNgmsApiConnection, fetchNgmsModels } from "../core/api/Ngms_api.js";
+
+function getHistoriographyRuleConfig() {
+  return resolveHistoriographyRuleConfig(extension_settings[extensionName] || {});
+}
+
+function _escapeHtml(text) {
+  return String(text ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function _populateHistRuleProfileSelect(select) {
+  const profiles = ruleProfileManager.listProfiles();
+  const assigned = ruleProfileManager.getAssignment('historiography') || '';
+  select.innerHTML = [
+    '<option value="">— 未分配 —</option>',
+    ...profiles.map(p =>
+      `<option value="${p.id}" ${p.id === assigned ? 'selected' : ''}>${_escapeHtml(p.name || p.id)}</option>`
+    ),
+  ].join('');
+}
 
 
 function setupPromptEditor(type) {
@@ -199,29 +218,19 @@ export function bindHistoriographyEvents() {
         saveSettings();
     });
 
-    // ========== 🏷️ 标签与排除规则绑定 (新增) ==========
-    const tagExtractionToggle = document.getElementById("historiography-tag-extraction-toggle");
-    const tagInputContainer = document.getElementById("historiography-tag-input-container");
-    const tagInput = document.getElementById("historiography-tag-input");
-    const exclusionRulesBtn = document.getElementById("historiography-exclusion-rules-btn");
-
-    tagExtractionToggle.checked = extension_settings[extensionName].historiographyTagExtractionEnabled ?? false;
-    tagInput.value = extension_settings[extensionName].historiographyTags ?? '';
-    tagInputContainer.style.display = tagExtractionToggle.checked ? 'block' : 'none';
-
-    tagExtractionToggle.addEventListener("change", (event) => {
-        const isEnabled = event.target.checked;
-        extension_settings[extensionName].historiographyTagExtractionEnabled = isEnabled;
-        tagInputContainer.style.display = isEnabled ? 'block' : 'none';
-        saveSettings();
-    });
-
-    tagInput.addEventListener("change", (event) => {
-        extension_settings[extensionName].historiographyTags = event.target.value;
-        saveSettings();
-    });
-    
-    exclusionRulesBtn.addEventListener("click", showHistoriographyExclusionRulesModal);
+    // ========== 提取规则下拉选单 ==========
+    const histRuleSelect = document.getElementById("historiography-rule-profile-select");
+    if (histRuleSelect) {
+        _populateHistRuleProfileSelect(histRuleSelect);
+        histRuleSelect.addEventListener("change", () => {
+            ruleProfileManager.setAssignment('historiography', histRuleSelect.value || null);
+            const name = histRuleSelect.selectedOptions[0]?.textContent || '';
+            toastr.info(histRuleSelect.value ? `史官提取规则已切换为「${name}」` : '史官提取规则已取消分配');
+        });
+        document.addEventListener('amily2:ruleProfilesChanged', () => {
+            _populateHistRuleProfileSelect(histRuleSelect);
+        });
+    }
 
 
     const expeditionExecuteBtn = document.getElementById("amily2_mhb_small_expedition_execute");
@@ -616,62 +625,3 @@ async function loadNgmsTavernPresets() {
     }
 }
 
-function showHistoriographyExclusionRulesModal() {
-    const rules = extension_settings[extensionName].historiographyExclusionRules || [];
-
-    const createRuleRowHtml = (rule = { start: '', end: '' }, index) => `
-        <div class="hly-exclusion-rule-row" data-index="${index}">
-            <input type="text" class="hly-imperial-brush" value="${rule.start}" placeholder="开始字符, 如 <!--">
-            <span>到</span>
-            <input type="text" class="hly-imperial-brush" value="${rule.end}" placeholder="结束字符, 如 -->">
-            <button class="hly-delete-rule-btn" title="删除此规则">&times;</button>
-        </div>
-    `;
-
-    const rulesHtml = rules.map(createRuleRowHtml).join('');
-
-    const modalHtml = `
-        <div id="historiography-exclusion-rules-container">
-            <p class="hly-notes">在这里定义需要从提取内容中排除的文本片段。例如，排除HTML注释，可以设置开始字符为 \`<!--\`，结束字符为 \`-->\`。</p>
-            <div id="historiography-rules-list">${rulesHtml}</div>
-            <button id="historiography-add-rule-btn" class="hly-action-button" style="margin-top: 10px;">
-                <i class="fas fa-plus"></i> 添加新规则
-            </button>
-        </div>
-        <style>
-            .hly-exclusion-rule-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-            .hly-exclusion-rule-row input { flex-grow: 1; }
-            .hly-delete-rule-btn { background: #c0392b; color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 16px; line-height: 24px; text-align: center; padding: 0; }
-        </style>
-    `;
-
-    showHtmlModal('编辑内容排除规则', modalHtml, {
-        okText: '保存规则',
-        onOk: (dialogElement) => {
-            const newRules = [];
-            dialogElement.find('.hly-exclusion-rule-row').each(function() {
-                const start = $(this).find('input').eq(0).val().trim();
-                const end = $(this).find('input').eq(1).val().trim();
-                if (start && end) {
-                    newRules.push({ start, end });
-                }
-            });
-            extension_settings[extensionName].historiographyExclusionRules = newRules;
-            saveSettings();
-            toastr.success('内容排除规则已保存。', '圣旨已达');
-        },
-        onShow: (dialogElement) => {
-            const rulesList = dialogElement.find('#historiography-rules-list');
-
-            dialogElement.find('#historiography-add-rule-btn').on('click', () => {
-                const newIndex = rulesList.children().length;
-                const newRowHtml = createRuleRowHtml({ start: '', end: '' }, newIndex);
-                rulesList.append(newRowHtml);
-            });
-
-            rulesList.on('click', '.hly-delete-rule-btn', function() {
-                $(this).closest('.hly-exclusion-rule-row').remove();
-            });
-        }
-    });
-}

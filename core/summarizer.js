@@ -11,6 +11,7 @@ import {
 import { getBatchFillerFlowTemplate, convertTablesToCsvString, updateTableFromText, saveStateToMessage, getMemoryState } from './table-system/manager.js';
 import { saveChat } from "/script.js";
 import { renderTables } from '../ui/table-bindings.js';
+import { resolveHistoriographyRuleConfig } from "../utils/config/RuleProfileManager.js";
 
 import { getPresetPrompts, getMixedOrder } from '../PresetSettings/index.js';
 import { callAI, generateRandomSeed } from './api.js';
@@ -428,9 +429,10 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
             const historyMessages = contextMessages.slice(-contextLimit);
             
             // 复刻 Historiographer 的标签提取与内容排除逻辑
-            const useTagExtraction = settings.historiographyTagExtractionEnabled ?? false;
-            const tagsToExtract = useTagExtraction ? (settings.historiographyTags || '').split(',').map(t => t.trim()).filter(Boolean) : [];
-            const exclusionRules = settings.historiographyExclusionRules || [];
+            const historiographyRuleConfig = resolveHistoriographyRuleConfig(settings);
+            const useTagExtraction = historiographyRuleConfig.tagExtractionEnabled ?? false;
+            const tagsToExtract = useTagExtraction ? (historiographyRuleConfig.tags || '').split(',').map(t => t.trim()).filter(Boolean) : [];
+            const exclusionRules = historiographyRuleConfig.exclusionRules || [];
 
             history = historyMessages
                 .map(msg => {
