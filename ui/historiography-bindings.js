@@ -25,9 +25,9 @@ function _escapeHtml(text) {
   return String(text ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function _populateHistRuleProfileSelect(select) {
-  const profiles = ruleProfileManager.listProfiles();
-  const assigned = ruleProfileManager.getAssignment('historiography') || '';
+function _populateHistRuleProfileSelect(select, detail) {
+  const profiles = detail?.profiles ?? ruleProfileManager.listProfiles();
+  const assigned = detail?.assignments?.historiography ?? ruleProfileManager.getAssignment('historiography') ?? '';
   select.innerHTML = [
     '<option value="">— 未分配 —</option>',
     ...profiles.map(p =>
@@ -227,8 +227,8 @@ export function bindHistoriographyEvents() {
             const name = histRuleSelect.selectedOptions[0]?.textContent || '';
             toastr.info(histRuleSelect.value ? `史官提取规则已切换为「${name}」` : '史官提取规则已取消分配');
         });
-        document.addEventListener('amily2:ruleProfilesChanged', () => {
-            _populateHistRuleProfileSelect(histRuleSelect);
+        document.addEventListener('amily2:ruleProfilesChanged', (e) => {
+            _populateHistRuleProfileSelect(histRuleSelect, e.detail);
         });
     }
 

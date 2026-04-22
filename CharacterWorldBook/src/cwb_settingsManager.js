@@ -322,8 +322,6 @@ export function bindSettingsEvents($settingsPanel) {
         configManager.set('cwb_api_key', apiKey);
         state.customApiConfig.apiKey = apiKey;
         updateApiStatusDisplay($panel);
-
-        console.log('[CWB] API Key已更新 - 状态长度:', state.customApiConfig.apiKey?.length || 0);
     });
     
     $panel.on('input change', '#cwb-api-model', function(event) {

@@ -58,21 +58,28 @@ function replaceContentByTag(xmlString, tagName, newContent) {
 export { extractContentByTag, replaceContentByTag, extractFullTagBlock, opt_extractContentByTag, opt_replaceContentByTag, opt_extractFullTagBlock };
 
 
+function escapeRegex(s) {
+    return String(s ?? '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 function opt_extractContentByTag(text, tagName) {
-    const regex = new RegExp(`<${tagName}[^>]*>([\\s\\S]*?)<\\/${tagName}>`);
+    const safe = escapeRegex(tagName);
+    const regex = new RegExp(`<${safe}[^>]*>([\\s\\S]*?)<\\/${safe}>`);
     const match = text.match(regex);
     return match ? match[1] : null;
 }
 
 function opt_extractFullTagBlock(text, tagName) {
-    const regex = new RegExp(`(<${tagName}[^>]*>[\\s\\S]*?<\\/${tagName}>)`);
+    const safe = escapeRegex(tagName);
+    const regex = new RegExp(`(<${safe}[^>]*>[\\s\\S]*?<\\/${safe}>)`);
     const match = text.match(regex);
     return match ? match[0] : null;
 }
 
 
 function opt_replaceContentByTag(originalText, tagName, newContent) {
-    const regex = new RegExp(`(<${tagName}[^>]*>)([\\s\\S]*?)(<\\/${tagName}>)`);
+    const safe = escapeRegex(tagName);
+    const regex = new RegExp(`(<${safe}[^>]*>)([\\s\\S]*?)(<\\/${safe}>)`);
     const match = originalText.match(regex);
 
     if (match) {

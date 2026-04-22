@@ -102,6 +102,16 @@ function mergeRuleConfig(profile, fallback = {}) {
     };
 }
 
+function _dispatchChange() {
+    const profiles = Object.values(ensureProfileMap())
+        .map(p => cloneRuleProfile(p))
+        .sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id, 'zh-Hans-CN'));
+    const assignments = { ...ensureAssignments() };
+    document.dispatchEvent(new CustomEvent('amily2:ruleProfilesChanged', {
+        detail: { profiles, assignments },
+    }));
+}
+
 export class RuleProfileManager {
     listProfiles() {
         const profiles = Object.values(ensureProfileMap())
@@ -131,6 +141,7 @@ export class RuleProfileManager {
 
         ensureProfileMap()[profileId] = nextProfile;
         saveSettingsDebounced();
+        _dispatchChange();
         return cloneRuleProfile(nextProfile);
     }
 
@@ -140,6 +151,7 @@ export class RuleProfileManager {
         if (!profiles[id]) return false;
         delete profiles[id];
         saveSettingsDebounced();
+        _dispatchChange();
         return true;
     }
 
@@ -163,6 +175,7 @@ export class RuleProfileManager {
             delete assignments[slot];
         }
         saveSettingsDebounced();
+        _dispatchChange();
         return true;
     }
 

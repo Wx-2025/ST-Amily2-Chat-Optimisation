@@ -321,7 +321,7 @@ async function renderWorldBookEntries() {
                 </div>
                 <div class="entry-content-display">${renderContent(entry.content)}</div>
                 <div class="entry-content-editor" style="display: none;">
-                    <textarea class="text_pole" style="width: 98%; min-height: 150px;">${entry.content}</textarea>
+                    <textarea class="text_pole" style="width: 98%; min-height: 150px;">${escapeHTML(entry.content || '')}</textarea>
                 </div>
             `;
 
@@ -377,7 +377,12 @@ async function renderWorldBookEntries() {
         
     } catch (error) {
         console.error('加载世界书条目失败:', error);
-        container.innerHTML = `<p style="text-align:center; color: #ff8a8a;">加载失败: ${error.message}</p>`;
+        const p = document.createElement('p');
+        p.style.textAlign = 'center';
+        p.style.color = '#ff8a8a';
+        p.textContent = `加载失败: ${error?.message ?? '未知错误'}`;
+        container.innerHTML = '';
+        container.appendChild(p);
     }
 }
 

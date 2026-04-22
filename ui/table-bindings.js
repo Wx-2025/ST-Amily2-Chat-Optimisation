@@ -27,9 +27,9 @@ const getAllTablesContainer = () => document.getElementById('all-tables-containe
  * @param {HTMLSelectElement} select
  * @param {string} slot — RULE_SLOTS 中的功能槽名
  */
-function _populateRuleProfileSelect(select, slot) {
-    const profiles = ruleProfileManager.listProfiles();
-    const assigned = ruleProfileManager.getAssignment(slot) || '';
+function _populateRuleProfileSelect(select, slot, detail) {
+    const profiles = detail?.profiles ?? ruleProfileManager.listProfiles();
+    const assigned = detail?.assignments?.[slot] ?? ruleProfileManager.getAssignment(slot) ?? '';
     const options = [
         '<option value="">— 未分配 —</option>',
         ...profiles.map(p =>
@@ -1454,8 +1454,8 @@ export function bindTableEvents(panelElement = null) {
             const name = tableRuleProfileSelect.selectedOptions[0]?.textContent || '';
             toastr.info(tableRuleProfileSelect.value ? `表格提取规则已切换为「${name}」` : '表格提取规则已取消分配');
         });
-        document.addEventListener('amily2:ruleProfilesChanged', () => {
-            _populateRuleProfileSelect(tableRuleProfileSelect, 'table');
+        document.addEventListener('amily2:ruleProfilesChanged', (e) => {
+            _populateRuleProfileSelect(tableRuleProfileSelect, 'table', e.detail);
         });
     }
 

@@ -522,10 +522,11 @@ async function _fetchModels($c) {
         let models;
 
         if (provider === 'google') {
-            // Google 用原生 API，以 ?key= 传参，返回 models[] 而非 data[]
+            // Google 用原生 API，Key 通过 x-goog-api-key 头传递避免 URL 泄露
             if (!apiKey) { toastr.warning('请先填写 Google API Key。'); return; }
             const resp = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`
+                'https://generativelanguage.googleapis.com/v1beta/models',
+                { headers: { 'x-goog-api-key': apiKey } }
             );
             if (!resp.ok) {
                 const status = resp.status;
@@ -614,7 +615,8 @@ async function _testConnection($c) {
                 return;
             }
             const resp = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`
+                'https://generativelanguage.googleapis.com/v1beta/models',
+                { headers: { 'x-goog-api-key': apiKey } }
             );
             if (resp.ok) {
                 const data  = await resp.json();

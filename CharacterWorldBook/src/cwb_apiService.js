@@ -679,11 +679,6 @@ export async function callCustomOpenAI(messages) {
         const headers = { ...getRequestHeaders(), 'Content-Type': 'application/json' };
         const body = JSON.stringify(requestBody);
 
-        console.groupCollapsed(`[CWB] API Call @ ${new Date().toLocaleTimeString()}`);
-        console.log('Request URL:', fullApiUrl);
-        console.log('Request Headers:', headers);
-        console.log('Request Body:', requestBody);
-
         try {
             const response = await fetch(fullApiUrl, {
                 method: 'POST',
@@ -693,27 +688,19 @@ export async function callCustomOpenAI(messages) {
 
             if (!response.ok) {
                 const errTxt = await response.text();
-                console.error('API Error Response:', errTxt);
                 throw new Error(`API请求失败: ${response.status} ${errTxt}`);
             }
             const data = await response.json();
-            console.log('API Full Response:', data);
-            
+
             if (data.choices && data.choices[0]?.message?.content) {
-                console.log('Extracted Content:', data.choices[0].message.content.trim());
-                console.groupEnd();
                 return data.choices[0].message.content.trim();
             }
-            
+
             throw new Error('API响应格式不正确。');
 
         } catch (error) {
-            console.error('API Call Failed:', error);
+            console.error('[CWB] API Call Failed:', error);
             throw error;
-        } finally {
-            if (console.groupEnd) { 
-                 console.groupEnd();
-            }
         }
     }
 }

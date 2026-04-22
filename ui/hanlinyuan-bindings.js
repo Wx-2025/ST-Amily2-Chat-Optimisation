@@ -33,9 +33,9 @@ function escapeAttribute(text) {
 }
 
 
-function _populateHlyRuleProfileSelect(select, slot) {
-    const profiles = ruleProfileManager.listProfiles();
-    const assigned = ruleProfileManager.getAssignment(slot) || '';
+function _populateHlyRuleProfileSelect(select, slot, detail) {
+    const profiles = detail?.profiles ?? ruleProfileManager.listProfiles();
+    const assigned = detail?.assignments?.[slot] ?? ruleProfileManager.getAssignment(slot) ?? '';
     select.innerHTML = [
         '<option value="">— 未分配 —</option>',
         ...profiles.map(p =>
@@ -414,9 +414,9 @@ function bindInternalUIEvents() {
     }
 
     // 规则配置中心保存/删除后自动刷新翰林院下拉选单
-    document.addEventListener('amily2:ruleProfilesChanged', () => {
-        if (condensationRuleSelect) _populateHlyRuleProfileSelect(condensationRuleSelect, 'condensation');
-        if (queryPrepRuleSelect) _populateHlyRuleProfileSelect(queryPrepRuleSelect, 'queryPreprocessing');
+    document.addEventListener('amily2:ruleProfilesChanged', (e) => {
+        if (condensationRuleSelect) _populateHlyRuleProfileSelect(condensationRuleSelect, 'condensation', e.detail);
+        if (queryPrepRuleSelect) _populateHlyRuleProfileSelect(queryPrepRuleSelect, 'queryPreprocessing', e.detail);
     });
 
     // 为自定义多选下拉框绑定事件
@@ -920,8 +920,8 @@ async function renderKnowledgeBases() {
 
     } catch (error) {
         console.error('[翰林院-枢纽] 渲染知识库列表失败:', error);
-        localContainer.innerHTML = `<p class="hly-notes log-error"><i>加载失败: ${error.message}</i></p>`;
-        globalContainer.innerHTML = `<p class="hly-notes log-error"><i>加载失败: ${error.message}</i></p>`;
+        localContainer.innerHTML = `<p class="hly-notes log-error"><i>加载失败: ${escapeTextareaContent(error.message)}</i></p>`;
+        globalContainer.innerHTML = `<p class="hly-notes log-error"><i>加载失败: ${escapeTextareaContent(error.message)}</i></p>`;
     }
 }
 
@@ -1020,8 +1020,8 @@ function _createKbItemElement(id, kb, scope, vectorCount) {
 
     item.innerHTML = `
         <div class="hly-kb-name-container">
-            <input type="checkbox" class="hly-kb-item-checkbox" data-kb-id="${id}">
-            <span class="hly-kb-name" title="ID: ${id}">${kb.name} (${vectorCount}条)</span>
+            <input type="checkbox" class="hly-kb-item-checkbox" data-kb-id="${escapeAttribute(id)}">
+            <span class="hly-kb-name" title="ID: ${escapeAttribute(id)}">${escapeTextareaContent(kb.name || '')} (${Number(vectorCount) || 0}条)</span>
         </div>
         <div class="hly-kb-actions">
             ${moveButtonHtml}
@@ -1529,11 +1529,11 @@ function updateEntryOptions(query, allEntries) {
     filteredEntries.forEach(entry => {
         const displayText = query ?
             highlightSearchMatch(entry.comment, query) :
-            entry.comment;
+            escapeTextareaContent(entry.comment);
 
         const optionHtml = `
-            <label class="hly-multiselect-option" title="${entry.comment} (Key: ${entry.key})">
-                <input type="checkbox" class="hly-hist-entry-checkbox" value="${entry.key}">
+            <label class="hly-multiselect-option" title="${escapeAttribute(entry.comment)} (Key: ${escapeAttribute(entry.key)})">
+                <input type="checkbox" class="hly-hist-entry-checkbox" value="${escapeAttribute(entry.key)}">
                 <span>${displayText}</span>
             </label>`;
         optionsContainer.insertAdjacentHTML('beforeend', optionHtml);
@@ -1778,7 +1778,7 @@ function log(message, type = 'info') {
     }
 
     p.className = `hly-log-entry ${colorClass}`;
-    p.innerHTML = `<i class="fa-solid ${icon}"></i> [${timestamp}] ${message}`;
+    p.innerHTML = `<i class="fa-solid ${escapeAttribute(icon)}"></i> [${escapeTextareaContent(timestamp)}] ${escapeTextareaContent(message)}`;
 
     // 移除初始的占位符
     const placeholder = logOutput.querySelector('.hly-log-placeholder');

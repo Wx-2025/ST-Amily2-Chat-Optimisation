@@ -137,7 +137,12 @@ export function progressTracker(operationId, maxAttempts) {
       container.style.backgroundColor = 'rgba(80,0,0,0.9)';
       progress.style.display = 'none';
       info.style.whiteSpace = 'pre-wrap';
-      info.innerHTML = `<span style="color:#ff9494">错误详情:</span>\n${errorMsg}`;
+      info.innerHTML = '';
+      const label = document.createElement('span');
+      label.style.color = '#ff9494';
+      label.textContent = '错误详情:';
+      info.appendChild(label);
+      info.appendChild(document.createTextNode('\n' + String(errorMsg ?? '')));
     }
   };
 }

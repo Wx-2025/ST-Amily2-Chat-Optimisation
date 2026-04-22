@@ -2,6 +2,7 @@ import { getMemoryState, getHighlights } from '../core/table-system/manager.js';
 import { extension_settings } from '/scripts/extensions.js';
 import { extensionName } from '../utils/settings.js';
 import { getContext } from '/scripts/extensions.js';
+import { escapeHTML } from '../utils/utils.js';
 
 const TABLE_CONTAINER_ID = 'amily2-chat-table-container';
 const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches;
@@ -366,10 +367,11 @@ function renderTablesToHtml(tables, highlights) {
         const icon = getTableIcon(table.name);
         
         // 侧边栏按钮 (现在包含文字)
+        const safeTableName = escapeHTML(table.name || '');
         sidebarHtml += `
-            <div class="amily2-game-tab ${isActive}" data-target="game-panel-${index}" title="${table.name}">
+            <div class="amily2-game-tab ${isActive}" data-target="game-panel-${index}" title="${safeTableName}">
                 <i class="fas ${icon}"></i>
-                <span class="tab-text">${table.name}</span>
+                <span class="tab-text">${safeTableName}</span>
             </div>
         `;
 
@@ -380,7 +382,7 @@ function renderTablesToHtml(tables, highlights) {
         const theadHtml = `
             <thead>
                 <tr>
-                    ${table.headers.map(header => `<th>${header}</th>`).join('')}
+                    ${table.headers.map(header => `<th>${escapeHTML(String(header ?? ''))}</th>`).join('')}
                 </tr>
             </thead>
         `;
@@ -396,7 +398,7 @@ function renderTablesToHtml(tables, highlights) {
                 const highlightKey = `${table.originalIndex}-${rowIndex}-${colIndex}`;
                 const isHighlighted = highlights.has(highlightKey);
                 const style = isHighlighted ? 'style="color: #00ff7f; font-weight: bold;"' : '';
-                tbodyHtml += `<td ${style}>${cell}</td>`;
+                tbodyHtml += `<td ${style}>${escapeHTML(String(cell ?? ''))}</td>`;
             });
             tbodyHtml += '</tr>';
         });
@@ -413,7 +415,7 @@ function renderTablesToHtml(tables, highlights) {
 
         contentHtml += `
             <div id="game-panel-${index}" class="amily2-game-panel ${isActive}">
-                <div class="amily2-panel-title"><i class="fas ${icon}"></i> ${table.name}</div>
+                <div class="amily2-panel-title"><i class="fas ${icon}"></i> ${safeTableName}</div>
                 ${tableHtml}
             </div>
         `;

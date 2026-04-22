@@ -372,7 +372,8 @@ async function _fetchSlotModels(slot, card) {
                 return;
             }
             const resp = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(profile.apiKey)}`
+                'https://generativelanguage.googleapis.com/v1beta/models',
+                { headers: { 'x-goog-api-key': profile.apiKey } }
             );
             if (!resp.ok) {
                 $result.text(`失败：HTTP ${resp.status}`).css('color', 'var(--warning-color)');

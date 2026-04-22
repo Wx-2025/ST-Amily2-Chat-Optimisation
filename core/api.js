@@ -330,10 +330,12 @@ async function fetchGoogleDirectModels(apiUrl, apiKey) {
     const GOOGLE_API_BASE_URL = 'https://generativelanguage.googleapis.com';
     
     const fetchGoogleModels = async (version) => {
-        const url = `${GOOGLE_API_BASE_URL}/${version}/models?key=${apiKey}`;
+        const url = `${GOOGLE_API_BASE_URL}/${version}/models`;
         console.log(`[Amily2号-使节团] 正在从 Google API (${version}) 获取模型列表: ${url}`);
-        
-        const response = await fetch(url);
+
+        const response = await fetch(url, {
+            headers: { 'x-goog-api-key': apiKey },
+        });
         if (!response.ok) {
             console.warn(`获取 Google API (${version}) 模型列表失败: ${response.status}`);
             return [];
@@ -745,12 +747,13 @@ async function callGoogleDirect(messages, options) {
     const GOOGLE_API_BASE_URL = 'https://generativelanguage.googleapis.com';
 
     const apiVersion = options.model.includes('gemini-1.5') ? 'v1beta' : 'v1';
-    const finalApiUrl = `${GOOGLE_API_BASE_URL}/${apiVersion}/models/${options.model}:generateContent?key=${options.apiKey}`;
-    
+    const finalApiUrl = `${GOOGLE_API_BASE_URL}/${apiVersion}/models/${options.model}:generateContent`;
+
     console.log(`[Amily2号-Google直连] API地址: ${finalApiUrl}`);
 
-    const headers = { 
-        "Content-Type": "application/json"
+    const headers = {
+        "Content-Type": "application/json",
+        "x-goog-api-key": options.apiKey,
     };
 
     const requestBody = JSON.stringify(convertToGoogleRequest({ 

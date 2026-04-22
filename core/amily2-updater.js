@@ -179,9 +179,12 @@ class Amily2Updater {
         if (this.compareVersions(this.latestVersion, this.currentVersion) > 0) {
             $updateIndicator.show();
             $updateButton.attr('title', `发现新版本 ${this.latestVersion}！点击查看详情`);
+            const safeVersion = /^[\w.+\-]{1,40}$/.test(String(this.latestVersion ?? '')) ? this.latestVersion : '未知';
             $updateButtonNew
                 .show()
-                .html(`<i class="fas fa-gift"></i> 新版 ${this.latestVersion}`)
+                .empty()
+                .append($('<i>').addClass('fas fa-gift'))
+                .append(document.createTextNode(` 新版 ${safeVersion}`))
                 .off('click')
                 .on('click', () => this.showUpdateConfirmDialog());
         } else {

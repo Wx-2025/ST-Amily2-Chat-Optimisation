@@ -112,9 +112,11 @@ export async function fetchEmbeddingModels(overrideSettings = null) {
             if (!apiKey) throw new Error("Google直连模式需要API Key。");
             
             const fetchGoogleModels = async (version) => {
-                const url = `${GOOGLE_API_BASE_URL}/${version}/models?key=${apiKey}`;
+                const url = `${GOOGLE_API_BASE_URL}/${version}/models`;
                 console.log(`[翰林院] 正在从 Google API (${version}) 获取模型列表: ${url}`);
-                const response = await fetch(url);
+                const response = await fetch(url, {
+                    headers: { 'x-goog-api-key': apiKey },
+                });
                 if (!response.ok) {
                     console.warn(`获取 Google API (${version}) 模型列表失败: ${response.status}`);
                     return [];
@@ -345,8 +347,8 @@ export async function getEmbeddings(texts, signal = null) {
                 console.log('[翰林院-API] 使用Google直连模式获取向量。');
                 if (!apiKey) throw new Error('Google直连模式需要API Key。');
 
-                // 使用适配器构建URL和请求体
-                const googleUrl = `${buildGoogleEmbeddingApiUrl(GOOGLE_API_BASE_URL, embeddingModel)}?key=${apiKey}`;
+                // 使用适配器构建URL和请求体；Key 通过 x-goog-api-key 头传递避免 URL 泄露
+                const googleUrl = buildGoogleEmbeddingApiUrl(GOOGLE_API_BASE_URL, embeddingModel);
                 const googleBody = buildGoogleEmbeddingRequest(batch, embeddingModel);
 
                 console.log(`[翰林院-API] 发送到 Google API 的请求 URL: ${googleUrl}`);
@@ -356,6 +358,7 @@ export async function getEmbeddings(texts, signal = null) {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'x-goog-api-key': apiKey,
                     },
                     body: JSON.stringify(googleBody),
                     signal: signal,

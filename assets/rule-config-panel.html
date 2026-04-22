@@ -1,14 +1,14 @@
 <div class="settings-group" id="amily2_rule_config_panel_root">
     <fieldset class="settings-group">
         <legend><i class="fas fa-list-check"></i> 规则配置中心</legend>
-        <div style="display:flex; gap:16px; align-items:flex-start;">
-            <div style="width: 260px; flex-shrink:0;">
+        <div class="amily2-rule-layout">
+            <div class="amily2-rule-sidebar">
                 <div style="display:flex; gap:8px; margin-bottom:10px;">
                     <button id="amily2_rule_profile_new" class="menu_button small_button amily2-vbtn"><span class="vbtn-icon"><i class="fas fa-plus"></i></span><span class="vbtn-label">新建</span></button>
                 </div>
                 <div id="amily2_rule_profile_list" style="display:flex; flex-direction:column; gap:8px;"></div>
             </div>
-            <div style="flex:1; min-width:0;">
+            <div class="amily2-rule-main">
                 <div class="amily2_settings_block">
                     <label for="amily2_rule_profile_name">配置名称</label>
                     <input id="amily2_rule_profile_name" class="text_pole" type="text" placeholder="例如：通用提取规则">
@@ -25,7 +25,7 @@
                     <div id="amily2_rule_profile_rules" style="display:flex; flex-direction:column; gap:8px; margin:8px 0;"></div>
                     <button id="amily2_rule_profile_add_rule" class="menu_button small_button amily2-vbtn"><span class="vbtn-icon"><i class="fas fa-plus"></i></span><span class="vbtn-label">添加规则</span></button>
                 </div>
-                <div style="display:flex; gap:8px; margin-top:16px;">
+                <div class="amily2-rule-actions">
                     <button id="amily2_rule_profile_save" class="menu_button menu_button_primary amily2-vbtn"><span class="vbtn-icon"><i class="fas fa-save"></i></span><span class="vbtn-label">保存</span></button>
                     <button id="amily2_rule_profile_delete" class="menu_button danger amily2-vbtn"><span class="vbtn-icon"><i class="fas fa-trash-alt"></i></span><span class="vbtn-label">删除</span></button>
                     <button id="amily2_back_to_main_from_rule_config" class="menu_button amily2-vbtn"><span class="vbtn-icon"><i class="fas fa-arrow-left"></i></span><span class="vbtn-label">返回</span></button>
@@ -41,5 +41,40 @@
         grid-template-columns: 1fr 1fr auto;
         gap: 8px;
         align-items: center;
+    }
+    #amily2_rule_config_panel_root .amily2-rule-layout {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+    #amily2_rule_config_panel_root .amily2-rule-sidebar {
+        width: 260px;
+        flex-shrink: 0;
+    }
+    #amily2_rule_config_panel_root .amily2-rule-main {
+        flex: 1;
+        min-width: 0;
+    }
+    #amily2_rule_config_panel_root .amily2-rule-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+        flex-wrap: wrap;
+    }
+    @media (max-width: 768px) {
+        #amily2_rule_config_panel_root .amily2-rule-sidebar {
+            width: 100%;
+        }
+        #amily2_rule_config_panel_root .amily2-rule-actions > .amily2-vbtn {
+            flex: 1 1 calc(33.333% - 8px);
+            min-width: 72px;
+        }
+        #amily2_rule_config_panel_root .amily2-rule-row {
+            grid-template-columns: 1fr 1fr !important;
+        }
+        #amily2_rule_config_panel_root .amily2-rule-row > :last-child {
+            grid-column: 1 / -1;
+        }
     }
 </style>

@@ -80,12 +80,23 @@ function containsPinyinMatch(text, query) {
 
 
 function highlightSearchMatch(text, query) {
+    const safeText = String(text ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     if (!query || !query.trim()) {
-        return text;
+        return safeText;
     }
-    
-    const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-    return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+    const safeQuery = String(query)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    const regex = new RegExp(`(${safeQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return safeText.replace(regex, '<mark class="search-highlight">$1</mark>');
 }
 
 function debounce(func, wait) {

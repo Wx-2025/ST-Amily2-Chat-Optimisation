@@ -485,7 +485,8 @@ Example:
                 .replace(/<\/thinking>/gi, '');
 
             const toolNames = Object.keys(tools);
-            const toolRegex = new RegExp(`<(${toolNames.join('|')})(?:\\s+[^>]*)?>[\\s\\S]*?<\\/\\1>`, 'gi');
+            const escapedToolNames = toolNames.map(n => String(n).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+            const toolRegex = new RegExp(`<(${escapedToolNames.join('|')})(?:\\s+[^>]*)?>[\\s\\S]*?<\\/\\1>`, 'gi');
             cleanContent = cleanContent.replace(toolRegex, '').trim();
             
             if (cleanContent) {

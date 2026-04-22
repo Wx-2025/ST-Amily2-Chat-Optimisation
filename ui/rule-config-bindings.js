@@ -131,7 +131,7 @@ export function bindRuleConfigPanel(container) {
         const saved = ruleProfileManager.saveProfile(profile);
         fillEditor($c, saved);
         renderProfileList($c);
-        document.dispatchEvent(new CustomEvent('amily2:ruleProfilesChanged'));
+
         toastr.success('规则配置已保存。');
     });
 
@@ -145,7 +145,7 @@ export function bindRuleConfigPanel(container) {
         ruleProfileManager.deleteProfile(currentEditingId);
         fillEditor($c, createEmptyProfile());
         renderProfileList($c);
-        document.dispatchEvent(new CustomEvent('amily2:ruleProfilesChanged'));
+
         toastr.success('规则配置已删除。');
     });
 }
