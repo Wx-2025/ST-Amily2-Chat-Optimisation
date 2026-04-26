@@ -161,14 +161,26 @@ export function bindHanlinyuanEvents() {
 
     // 确保核心已经初始化
     if (HanlinyuanCore.initialize) {
-        HanlinyuanCore.initialize();
+        try {
+            HanlinyuanCore.initialize();
+        } catch (e) {
+            console.error('[翰林院-枢纽] 核心初始化抛出异常：', e);
+        }
     } else {
         console.error('[翰林院-枢纽] 核心法典未能提供初始化圣旨！');
         return;
     }
 
-    loadSettingsToUI();
-    loadWorldbookList(); // 【新增】加载书库列表
+    try {
+        loadSettingsToUI();
+    } catch (e) {
+        console.error('[翰林院-枢纽] loadSettingsToUI 抛出异常：', e);
+    }
+    try {
+        loadWorldbookList();
+    } catch (e) {
+        console.error('[翰林院-枢纽] loadWorldbookList 抛出异常：', e);
+    }
     log('[翰林院-枢纽] 已成功连接各部，政令畅通。', 'info');
     const fileInput = document.getElementById('hanlinyuan-ingest-novel-file-input');
     const fileNameSpan = document.getElementById('hanlinyuan-ingest-novel-file-name');

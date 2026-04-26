@@ -9,20 +9,20 @@ import {
     buildGoogleEmbeddingApiUrl
 } from './utils/googleAdapter.js';
 import { getSlotProfile } from './api/api-resolver.js';
+import { extensionName } from '../utils/settings.js';
 
 const MODULE_NAME = 'hanlinyuan-rag-core';
 const GOOGLE_API_BASE_URL = 'https://generativelanguage.googleapis.com';
 
 function getSettings() {
-    const context = SillyTavern.getContext();
-    if (!context || !context.extensionSettings || !context.extensionSettings[MODULE_NAME]) {
-        console.error('[翰林院-API] 无法获取设置，API调用可能失败。');
-        return {
-            retrieval: {},
-            rerank: {}
-        };
-    }
-    return context.extensionSettings[MODULE_NAME];
+    const root = extension_settings[extensionName];
+    const nested = root && root[MODULE_NAME];
+    if (nested) return nested;
+    // 读侧兼容：若迁移尚未触发（极早期调用），回退至旧顶层位置，避免空配置。
+    const legacy = extension_settings[MODULE_NAME];
+    if (legacy) return legacy;
+    console.error('[翰林院-API] 无法获取设置，API调用可能失败。');
+    return { retrieval: {}, rerank: {} };
 }
 
 /**

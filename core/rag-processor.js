@@ -4,14 +4,17 @@ import {
     extension_prompt_roles,
     setExtensionPrompt,
     eventSource,
-    event_types
+    event_types,
+    saveSettingsDebounced
 } from '/script.js';
+import { extension_settings } from '/scripts/extensions.js';
 
 import * as ContextUtils from './utils/context-utils.js';
 import { getCollectionIdInfo, getCharacterId, getCharacterStableId } from './utils/context-utils.js';
 import { defaultSettings as ragDefaultSettings } from './rag-settings.js';
 import { extractBlocksByTags, applyExclusionRules } from './utils/rag-tag-extractor.js';
 import { resolveQueryPreprocessingRuleConfig } from '../utils/config/RuleProfileManager.js';
+import { extensionName } from '../utils/settings.js';
 import * as IngestionManager from './ingestion-manager.js'; 
 import {
     getEmbeddings,
@@ -148,6 +151,7 @@ function initialize() {
         console.error('[翰林院] 未能获取SillyTavern上下文，初始化失败。');
         return;
     }
+    migrateLegacyRagSettings();
     settings = getSettings();
     if (!window.hanlinyuanRagProcessor) {
         window.hanlinyuanRagProcessor = {};
@@ -296,17 +300,16 @@ async function ingestTextToHanlinyuan(text, source = 'manual', metadata = {}, pr
 }
 
 function getSettings() {
-    if (!context || !context.extensionSettings) {
-
-        return structuredClone(ragDefaultSettings);
+    if (!extension_settings[extensionName]) {
+        extension_settings[extensionName] = {};
     }
-    
+    const root = extension_settings[extensionName];
 
-    let s = context.extensionSettings[MODULE_NAME];
+    let s = root[MODULE_NAME];
 
     if (!s) {
         s = {};
-        context.extensionSettings[MODULE_NAME] = s;
+        root[MODULE_NAME] = s;
     }
 
     if (s.condensationHistory === undefined) {
@@ -343,16 +346,49 @@ function getSettings() {
 }
 
 function saveSettings() {
-
-    if (context) context.saveSettingsDebounced();
+    saveSettingsDebounced();
 }
 
 function resetSettings() {
-
-    if (context) {
-        context.extensionSettings[MODULE_NAME] = structuredClone(ragDefaultSettings);
-        saveSettings();
+    if (!extension_settings[extensionName]) {
+        extension_settings[extensionName] = {};
     }
+    extension_settings[extensionName][MODULE_NAME] = structuredClone(ragDefaultSettings);
+    saveSettings();
+}
+
+function migrateLegacyRagSettings() {
+    const legacy = extension_settings[MODULE_NAME];
+    if (!legacy || typeof legacy !== 'object') return;
+
+    if (!extension_settings[extensionName]) {
+        extension_settings[extensionName] = {};
+    }
+    const root = extension_settings[extensionName];
+
+    // legacy 是用户此前实际交互过的真数据来源；nested 可能已被 super-memory 等模块用默认值填过，
+    // 因此采用 legacy-优先的深合并：legacy 中的叶子值覆盖 nested，nested 中 legacy 没有的键保留。
+    if (!root[MODULE_NAME] || typeof root[MODULE_NAME] !== 'object') {
+        root[MODULE_NAME] = legacy;
+        console.log(`[翰林院] 已迁移旧版 '${MODULE_NAME}' 设置到 extension_settings['${extensionName}']。`);
+    } else {
+        const merged = root[MODULE_NAME];
+        const overlayLegacy = (src, dst) => {
+            for (const key of Object.keys(src)) {
+                const sv = src[key];
+                if (sv && typeof sv === 'object' && !Array.isArray(sv) && dst[key] && typeof dst[key] === 'object' && !Array.isArray(dst[key])) {
+                    overlayLegacy(sv, dst[key]);
+                } else {
+                    dst[key] = sv;
+                }
+            }
+        };
+        overlayLegacy(legacy, merged);
+        console.log(`[翰林院] 发现新旧两处配置；已将顶层 '${MODULE_NAME}' 深合并覆盖到 extension_settings['${extensionName}']。`);
+    }
+
+    delete extension_settings[MODULE_NAME];
+    saveSettingsDebounced();
 }
 
 function showNotification(message, type = 'info') {

@@ -1043,11 +1043,31 @@ function bindConcurrentWorldbookEvents() {
     });
 }
 
+function opt_purgeGarbageKeys() {
+    const store = extension_settings[extensionName];
+    if (!store) return;
+    let removed = 0;
+    for (const key of Object.keys(store)) {
+        // 历史 bug 造成的污染 key：handleSettingChange 误把世界书/条目复选框当作设置项，
+        // 生成形如 plotOpt_amily2-opt-wb-*、plotOpt_amily2-opt-entry-*、plotOpt_amily2-opt-concurrent-wb-* 的键
+        if (/^plotOpt_amily2-opt-/.test(key)) {
+            delete store[key];
+            removed++;
+        }
+    }
+    if (removed > 0) {
+        console.log(`[${extensionName}] 清理残留的 ${removed} 条无效 plotOpt_* 设置键。`);
+        saveSettingsDebounced();
+    }
+}
+
 export function initializePlotOptimizationBindings() {
     const panel = $('#amily2_plot_optimization_panel');
     if (panel.length === 0 || panel.data('events-bound')) {
         return;
     }
+
+    opt_purgeGarbageKeys();
 
     // Tab switching logic
     panel.find('.sinan-navigation-deck').on('click', '.sinan-nav-item', function() {
@@ -1179,7 +1199,11 @@ export function initializePlotOptimizationBindings() {
 
     const handleSettingChange = function(element) {
         const el = $(element);
-        const key_part = (element.name || element.id).replace('amily2_opt_', '');
+        const rawName = element.name || element.id || '';
+        // 仅处理下划线前缀的真实设置项；动态生成的世界书/条目复选框用连字符命名（amily2-opt-wb-*、amily2-opt-entry-*），
+        // 它们有自己的专属 handler，若被此处捕获会生成 plotOpt_amily2-opt-... 的垃圾 key 污染 settings
+        if (!rawName.startsWith('amily2_opt_')) return;
+        const key_part = rawName.replace('amily2_opt_', '');
         const key = 'plotOpt_' + key_part.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
 
         let value = element.type === 'checkbox' ? element.checked : el.val();

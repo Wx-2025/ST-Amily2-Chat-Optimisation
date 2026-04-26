@@ -1,4 +1,5 @@
 import { getContext, extension_settings } from "/scripts/extensions.js";
+import { saveSettingsDebounced } from "/script.js";
 import { getCharacterStableId } from "../utils/context-utils.js";
 import { getMemoryState } from "../table-system/manager.js";
 import { extensionName } from "../../utils/settings.js";
@@ -160,26 +161,62 @@ export function getRelatedNodes(nodeId, maxDepth = 1) {
     return related;
 }
 
+function getGraphStore(create = false) {
+    if (!extension_settings[extensionName]) {
+        if (!create) return null;
+        extension_settings[extensionName] = {};
+    }
+    const root = extension_settings[extensionName];
+    if (!root.relationship_graphs) {
+        if (!create) return null;
+        root.relationship_graphs = {};
+    }
+    return root.relationship_graphs;
+}
+
+function migrateLegacyRelationshipGraphs() {
+    const legacy = extension_settings.relationship_graphs;
+    if (!legacy || typeof legacy !== 'object') return;
+
+    if (!extension_settings[extensionName]) {
+        extension_settings[extensionName] = {};
+    }
+    const root = extension_settings[extensionName];
+
+    if (!root.relationship_graphs) {
+        root.relationship_graphs = legacy;
+        console.log(`[关系图谱] 已迁移旧版 'relationship_graphs' 到 extension_settings['${extensionName}']。`);
+    } else {
+        console.log(`[关系图谱] 发现遗留顶层 'relationship_graphs'，但新位置已存在；合并遗留数据并清理顶层。`);
+        for (const [cid, data] of Object.entries(legacy)) {
+            if (!root.relationship_graphs[cid]) {
+                root.relationship_graphs[cid] = data;
+            }
+        }
+    }
+
+    delete extension_settings.relationship_graphs;
+    saveSettingsDebounced();
+}
+
 export async function saveGraph() {
-    const context = getContext();
     const charId = getCharacterStableId();
     if (!charId) return;
 
-    if (!context.extensionSettings.relationship_graphs) {
-        context.extensionSettings.relationship_graphs = {};
-    }
-    
-    context.extensionSettings.relationship_graphs[charId] = graphData;
-    context.saveSettingsDebounced();
+    const store = getGraphStore(true);
+    if (!store) return;
+
+    store[charId] = graphData;
+    saveSettingsDebounced();
 }
 
 export async function loadGraph() {
-    const context = getContext();
     const charId = getCharacterStableId();
     if (!charId) return;
 
-    if (context.extensionSettings.relationship_graphs && context.extensionSettings.relationship_graphs[charId]) {
-        graphData = context.extensionSettings.relationship_graphs[charId];
+    const store = getGraphStore(false);
+    if (store && store[charId]) {
+        graphData = store[charId];
         console.log(`[关系图谱] 已加载角色 ${charId} 的图谱: ${graphData.nodes.length} 个节点, ${graphData.edges.length} 条边。`);
     } else {
         graphData = { nodes: [], edges: [] };
@@ -188,6 +225,7 @@ export async function loadGraph() {
 
 const context = getContext();
 if (context) {
+    migrateLegacyRelationshipGraphs();
     loadGraph();
     document.addEventListener('AMILY2_TABLE_UPDATED', (e) => {
         const { tableName } = e.detail;
