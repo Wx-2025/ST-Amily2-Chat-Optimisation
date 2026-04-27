@@ -615,7 +615,7 @@ function handleApiModeChange() {
     }
 }
 
-function loadSettingsToUI() {
+export function loadSettingsToUI() {
     const settings = HanlinyuanCore.getSettings();
     if (!settings) return;
 
@@ -661,14 +661,17 @@ function loadSettingsToUI() {
         histMaxRetriesEl.value = settings.historiographyMaxRetries ?? 2;
     }
 
-    // 新增：加载标签提取设置
+    // 注：hly-tag-extraction-toggle / hly-tag-input / hly-tag-input-container 已从 HTML 移除，
+    // 标签提取规则改由 RuleProfileManager 管理。此处保留兼容性 null 检查，避免抛错吞掉后续段落加载。
     const tagExtractionToggle = document.getElementById('hly-tag-extraction-toggle');
     const tagInput = document.getElementById('hly-tag-input');
     const tagInputContainer = document.getElementById('hly-tag-input-container');
 
-    tagExtractionToggle.checked = settings.condensation.tagExtractionEnabled;
-    tagInput.value = settings.condensation.tags; // 直接使用从核心获取的值
-    tagInputContainer.style.display = tagExtractionToggle.checked ? 'block' : 'none';
+    if (tagExtractionToggle) tagExtractionToggle.checked = settings.condensation.tagExtractionEnabled;
+    if (tagInput) tagInput.value = settings.condensation.tags;
+    if (tagInputContainer && tagExtractionToggle) {
+        tagInputContainer.style.display = tagExtractionToggle.checked ? 'block' : 'none';
+    }
 
     // Rerank 设置
     document.getElementById('hly-rerank-enabled').checked = settings.rerank.enabled;

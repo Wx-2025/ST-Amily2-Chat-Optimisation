@@ -8,6 +8,7 @@ import {
     characters, this_chid, eventSource, event_types, saveSettingsDebounced,
     injectTableData, generateTableContent,
     initializeRagProcessor,
+    loadHanlinyuanSettingsToUI,
     loadTables, clearHighlights, rollbackAndRefill, rollbackState, commitPendingDeletions, saveStateToMessage, getMemoryState, clearUpdatedTables,
     fillWithSecondaryApi,
     renderTables,
@@ -771,6 +772,15 @@ function initializeRagAndInjection() {
         console.log('[Amily2-翰林院] RAG处理器已成功初始化');
     } catch (error) {
         console.error('[Amily2-翰林院] RAG处理器初始化失败:', error);
+    }
+
+    // 此时 ST settings hydration 已完成，且 RAG 第二次 init 拿到的是真实 saved settings 引用。
+    // mount 阶段那次 loadSettingsToUI 跑得过早（hydration 之前），UI 拿到的是默认值；
+    // 在此重跑一次以让翰林院面板显示真实持久化值。
+    try {
+        loadHanlinyuanSettingsToUI();
+    } catch (error) {
+        console.error('[Amily2-翰林院] 步骤五重载面板设置失败:', error);
     }
 
     console.log("[Amily2号-开国大典] 步骤六：智能冲突检测与注入策略...");

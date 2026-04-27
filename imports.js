@@ -24,6 +24,7 @@ export { characters, this_chid, eventSource, event_types, saveSettingsDebounced 
 // Core Systems
 export { injectTableData, generateTableContent } from "./core/table-system/injector.js";
 export { initialize as initializeRagProcessor } from "./core/rag-processor.js";
+export { loadSettingsToUI as loadHanlinyuanSettingsToUI } from "./ui/hanlinyuan-bindings.js";
 export { loadTables, clearHighlights, rollbackAndRefill, rollbackState, commitPendingDeletions, saveStateToMessage, getMemoryState, clearUpdatedTables } from './core/table-system/manager.js';
 export { fillWithSecondaryApi } from './core/table-system/secondary-filler.js';
 export { renderTables } from './ui/table-bindings.js';

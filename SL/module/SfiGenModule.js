@@ -2,8 +2,7 @@ import { Module, ModuleBuilder } from './Module.js';
 import { extension_settings, getContext } from '../../../../../extensions.js';
 import { saveSettingsDebounced, saveChat, reloadCurrentChat, eventSource, event_types } from '../../../../../../script.js';
 import { registerSlashCommand } from '../../../../../slash-commands.js';
-
-const extensionName = 'ST-Amily2-Chat-Optimisation-Dev'; // Use main extension name for settings
+import { extensionName } from '../../utils/settings.js';
 const sfigenSettingsKey = 'sfigen_settings';
 
 const defaultSettings = {
