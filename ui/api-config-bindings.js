@@ -576,6 +576,8 @@ async function _fetchModels($c) {
             return;
         }
 
+        models.sort((a, b) => a.localeCompare(b));
+
         const currentVal = $c.find('#amily2_pf_model').val().trim();
         const $sel = $c.find('#amily2_pf_model_select');
         $sel.html(models.map(m => `<option value="${_escapeHtml(m)}">${_escapeHtml(m)}</option>`).join(''));
