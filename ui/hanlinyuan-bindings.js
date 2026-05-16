@@ -8,6 +8,7 @@ import * as IngestionManager from '../core/ingestion-manager.js';
 import { showContentModal, showHtmlModal } from './page-window.js';
 import { extractBlocksByTags, applyExclusionRules } from '../core/utils/rag-tag-extractor.js';
 import { ruleProfileManager, resolveCondensationRuleConfig } from '../utils/config/RuleProfileManager.js';
+import { syncSlot } from './profile-sync.js';
 import {
     filterWorldbooks,
     filterWorldbookEntries,
@@ -152,6 +153,8 @@ export function bindHanlinyuanEvents() {
     }
 
     setupGlobalEventHandlers();
+    syncSlot('ragEmbed');
+    syncSlot('ragRerank');
     bindPanelToggleEvents();
     bindInternalUIEvents();
     bindTutorialEvents(); // 【新增】绑定教程按钮事件

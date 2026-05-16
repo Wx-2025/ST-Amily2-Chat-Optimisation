@@ -4,6 +4,7 @@ import { extensionName } from "../../utils/settings.js";
 import { amilyHelper } from '../../core/tavern-helper/main.js';
 import { getSlotProfile, providerToApiMode } from './api-resolver.js';
 import { configManager } from '../../utils/config/ConfigManager.js';
+import { detectVendor } from '../../utils/api-vendor.js';
 
 let ChatCompletionService = undefined;
 try {
@@ -47,7 +48,7 @@ function normalizeApiResponse(responseData) {
 export async function getJqyhApiSettings() {
     const s = extension_settings[extensionName] || {};
 
-    // JQYH 与剧情优化互斥，共用 'plotOpt' 槽位
+    // JQYH 与剧情优化互斥，共用 'plotOpt' 槽位（profile 一旦分配即权威，slider 残值不再覆盖）
     const profile = await getSlotProfile('plotOpt');
     if (profile) {
         return {
@@ -55,9 +56,9 @@ export async function getJqyhApiSettings() {
             apiUrl:       profile.apiUrl,
             apiKey:       profile.apiKey ?? '',
             model:        profile.model,
-            // 温度 / MaxTokens 读面板值
-            maxTokens:    s.jqyhMaxTokens    ?? profile.maxTokens   ?? 65500,
-            temperature:  s.jqyhTemperature  ?? profile.temperature ?? 1.0,
+            maxTokens:    profile.maxTokens   ?? 65500,
+            temperature:  profile.temperature ?? 1.0,
+            customParams: profile.customParams ?? {},
             tavernProfile: '',
         };
     }
@@ -70,6 +71,7 @@ export async function getJqyhApiSettings() {
         model:         s.jqyhModel      || '',
         maxTokens:     s.jqyhMaxTokens  || 4000,
         temperature:   s.jqyhTemperature || 0.7,
+        customParams:  {},
         tavernProfile: s.jqyhTavernProfile || '',
     };
 }
@@ -96,7 +98,7 @@ export async function callJqyhAI(messages, options = {}) {
     if (finalOptions.apiMode !== 'sillytavern_preset') {
         if (!finalOptions.apiUrl || !finalOptions.model || !finalOptions.apiKey) {
             console.warn("[Amily2-Jqyh外交部] API配置不完整，无法调用AI");
-            toastr.error("API配置不完整，请检查URL、Key和模型配置。", "Jqyh-外交部");
+            toastr.error("剧情优化前置（JQYH）未配置 API 连接配置，请前往 API 连接配置面板分配 profile 或填写 JQYH 独立设置。", "Amily2-JQYH 未配置");
             return null;
         }
     }
@@ -160,9 +162,11 @@ export async function callJqyhAI(messages, options = {}) {
 }
 
 async function callJqyhOpenAITest(messages, options) {
-    const isGoogleApi = options.apiUrl.includes('googleapis.com');
+    const isGoogleApi = (await detectVendor(options.apiUrl)) === 'google';
 
     const body = {
+        top_p: options.top_p || 1,
+        ...(options.customParams || {}),
         chat_completion_source: 'openai',
         messages: messages,
         model: options.model,
@@ -171,7 +175,6 @@ async function callJqyhOpenAITest(messages, options) {
         stream: false,
         max_tokens: options.maxTokens || 30000,
         temperature: options.temperature || 1,
-        top_p: options.top_p || 1,
     };
 
     if (!isGoogleApi) {
@@ -245,7 +248,8 @@ async function callJqyhSillyTavernPreset(messages, options) {
         responsePromise = context.ConnectionManagerRequestService.sendRequest(
             targetProfile.id,
             messages,
-            options.maxTokens || 4000
+            options.maxTokens || 4000,
+            options.customParams || {}
         );
 
     } finally {

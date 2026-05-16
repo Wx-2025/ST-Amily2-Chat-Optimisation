@@ -441,7 +441,7 @@ async function fetchSillyTavernPresetModels() {
 export async function getApiSettings(slot = 'main') {
     const s = extension_settings[extensionName] || {};
 
-    // 优先读取槽位分配的 Profile（仅接管连接参数）
+    // 优先读取槽位分配的 Profile（profile 一旦分配即为权威，不再被主面板/模块独立设置压制）
     const profile = await getSlotProfile(slot);
     if (profile) {
         const resolvedProvider = profile.provider === 'sillytavern_backend'
@@ -453,10 +453,10 @@ export async function getApiSettings(slot = 'main') {
             apiUrl:       profile.apiUrl,
             apiKey:       profile.apiKey ?? '',
             model:        profile.model,
-            // 温度 / MaxTokens 读面板值（profile-sync 保留了这些输入框）
-            maxTokens:    s.maxTokens    ?? profile.maxTokens   ?? 65500,
-            temperature:  s.temperature  ?? profile.temperature ?? 1.0,
+            maxTokens:    profile.maxTokens   ?? 65500,
+            temperature:  profile.temperature ?? 1.0,
             fakeStream:   profile.fakeStream ?? false,
+            customParams: profile.customParams ?? {},
             tavernProfile: '',
         };
     }
@@ -588,7 +588,10 @@ export async function callAI(messages, options = {}) {
         apiUrl: apiSettings.apiUrl,
         apiKey: apiSettings.apiKey,
         apiProvider: apiSettings.apiProvider,
-        ...options
+        customParams: apiSettings.customParams ?? {},
+        ...options,
+        // options 可显式覆盖 customParams，体现"代码内显式 > profile 配置"
+        customParams: { ...(apiSettings.customParams ?? {}), ...(options.customParams ?? {}) },
     };
 
     if (finalOptions.apiProvider !== 'sillytavern_preset') {
@@ -680,11 +683,14 @@ async function callOpenAICompatible(messages, options) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
+            // 用户自定义参数（profile.customParams + 显式 options.customParams 已在 callAI 合并）
+            ...(options.customParams || {}),
+            // 表单托管的核心字段总是覆盖 customParams
             model: options.model,
             messages: messages,
             max_tokens: options.maxTokens,
             temperature: options.temperature,
-            stream: false
+            stream: false,
         })
     });
 
@@ -699,6 +705,21 @@ async function callOpenAICompatible(messages, options) {
 
 async function callOpenAITest(messages, options) {
     const body = {
+        // 1. 可调默认值（用户 customParams 可覆盖）
+        top_p: options.top_p || 1,
+        frequency_penalty: 0,
+        presence_penalty: 0.12,
+        include_reasoning: false,
+        reasoning_effort: 'medium',
+        enable_web_search: false,
+        request_images: false,
+        custom_prompt_post_processing: 'strict',
+        group_names: [],
+
+        // 2. 用户 customParams 覆盖上层默认值
+        ...(options.customParams || {}),
+
+        // 3. 表单托管的核心字段总是 win
         chat_completion_source: 'openai',
         messages: messages,
         model: options.model,
@@ -707,15 +728,6 @@ async function callOpenAITest(messages, options) {
         stream: false,
         max_tokens: options.maxTokens || 30000,
         temperature: options.temperature || 1,
-        top_p: options.top_p || 1,
-        custom_prompt_post_processing: 'strict',
-        enable_web_search: false,
-        frequency_penalty: 0,
-        group_names: [],
-        include_reasoning: false,
-        presence_penalty: 0.12,
-        reasoning_effort: 'medium',
-        request_images: false,
     };
 
     const response = await fetch('/api/backends/chat-completions/generate', {
@@ -816,6 +828,9 @@ async function callSillyTavernBackend(messages, options) {
         type: 'POST',
         contentType: 'application/json',
         data: JSON.stringify({
+            // 用户 customParams（可被核心字段覆盖）
+            ...(options.customParams || {}),
+            // 表单托管字段总是 win
             chat_completion_source: 'custom',
             custom_url: options.apiUrl,
             api_key: options.apiKey,
@@ -823,7 +838,7 @@ async function callSillyTavernBackend(messages, options) {
             messages: messages,
             max_tokens: options.maxTokens,
             temperature: options.temperature,
-            stream: false
+            stream: false,
         })
     });
 

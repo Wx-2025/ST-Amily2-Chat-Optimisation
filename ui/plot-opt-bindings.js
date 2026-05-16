@@ -661,8 +661,6 @@ function opt_loadSettings(panel) {
     }
 
     syncModelMirror(modelInput.get(0), modelSelect.get(0));
-    panel.find('#amily2_opt_max_tokens').val(settings.plotOpt_max_tokens);
-    panel.find('#amily2_opt_temperature').val(settings.plotOpt_temperature);
     panel.find('#amily2_opt_top_p').val(settings.plotOpt_top_p);
     panel.find('#amily2_opt_presence_penalty').val(settings.plotOpt_presence_penalty);
     panel.find('#amily2_opt_frequency_penalty').val(settings.plotOpt_frequency_penalty);
@@ -695,8 +693,6 @@ function opt_loadSettings(panel) {
     opt_updateApiUrlVisibility(panel, settings.plotOpt_apiMode);
     opt_updateWorldbookSourceVisibility(panel, settings.plotOpt_worldbookSource || 'character');
 
-    opt_bindSlider(panel, '#amily2_opt_max_tokens', '#amily2_opt_max_tokens_value');
-    opt_bindSlider(panel, '#amily2_opt_temperature', '#amily2_opt_temperature_value');
     opt_bindSlider(panel, '#amily2_opt_top_p', '#amily2_opt_top_p_value');
     opt_bindSlider(panel, '#amily2_opt_presence_penalty', '#amily2_opt_presence_penalty_value');
     opt_bindSlider(panel, '#amily2_opt_frequency_penalty', '#amily2_opt_frequency_penalty_value');

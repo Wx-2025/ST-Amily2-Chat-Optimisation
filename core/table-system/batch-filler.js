@@ -125,8 +125,8 @@ async function callTableModel(messages) {
             }
             return result;
         } else {
-            log('使用默认 API 进行表格填充...', 'info');
-            const result = await callAI(messages);
+            log('使用 tableFilling slot 进行表格填充...', 'info');
+            const result = await callAI(messages, { slot: 'tableFilling' });
             if (!result) {
                 throw new Error('API返回内容为空。');
             }

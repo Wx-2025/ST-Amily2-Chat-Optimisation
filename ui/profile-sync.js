@@ -1,144 +1,200 @@
 /**
- * ui/profile-sync.js — API Profile → 子面板 UI 同步
+ * ui/profile-sync.js - Synchronize central API profiles into legacy sub-panels.
  *
- * 当某功能槽分配了 Profile 时：
- *   1. 隐藏对应功能区的 API 连接配置字段（保留温度/Token 等生成参数）
- *   2. 注入一张状态卡，显示 Profile 信息 + 测试连接 / 获取模型按钮
- *
- * 当槽位未分配时：恢复旧字段显示，移除状态卡。
- *
- * 用法：
- *   import { syncAllSlots, syncSlot } from './profile-sync.js';
- *   await syncAllSlots();      // 面板初始化时全量同步
- *   await syncSlot('main');    // 单个槽位分配变更时调用
- *
- * 外部事件：
- *   document 上监听 'amily2:slotAssigned'，detail = { slot }
- *   由 api-config-bindings.js 在分配变更后 dispatch。
+ * The central API profile assignment is authoritative. Sub-panels only show a
+ * profile selector card and keep legacy URL/key/model fields hidden. When a
+ * profile is assigned we still backfill those hidden fields so older fallback
+ * code that reads from DOM continues to work during the migration.
  */
 
-import { apiProfileManager } from '../utils/config/ApiProfileManager.js';
+import { apiProfileManager, PROFILE_TYPES, SLOTS } from '../utils/config/ApiProfileManager.js';
 import { getRequestHeaders } from '/script.js';
 import { testApiConnection } from '../core/api.js';
+import { testJqyhApiConnection } from '../core/api/JqyhApi.js';
 import { testConcurrentApiConnection } from '../core/api/ConcurrentApi.js';
 import { testNgmsApiConnection } from '../core/api/Ngms_api.js';
 import { testNccsApiConnection } from '../core/api/NccsApi.js';
+import { testSybdApiConnection } from '../core/api/SybdApi.js';
+import { testCwbConnection } from '../CharacterWorldBook/src/cwb_apiService.js';
+import { testConnection as testAutoCharCardConnection } from '../core/auto-char-card/api.js';
+import {
+    executeRerank as executeRagRerank,
+    fetchEmbeddingModels as fetchRagEmbeddingModels,
+    fetchRerankModels as fetchRagRerankModels,
+    testApiConnection as testRagEmbeddingConnection,
+} from '../core/rag-api.js';
 
-// ── 常量 ──────────────────────────────────────────────────────────────────────
-
-// 用于通过子元素定位父 block 的选择器
-const BLOCK_SEL = '.amily2_settings_block, .control-group, .amily2_opt_settings_block';
-
-// 每个槽位在回填 Profile 值前的 DOM 字段快照（用于取消分配时还原）
-// 结构：{ [slot]: { [selector]: value } }
-const _fieldSnapshots = {};
-
-const CARD_CLASS     = 'amily2_profile_status_card';
+const BLOCK_SEL = '.amily2_settings_block, .control-group, .amily2_opt_settings_block, .acc-form-group, .hly-control-block';
+const CARD_CLASS = 'amily2_profile_status_card';
 const CARD_SLOT_ATTR = 'data-card-slot';
-const HIDDEN_ATTR    = 'data-profile-hidden';
+const HIDDEN_ATTR = 'data-profile-hidden';
+const MASKED_KEY = '••••••••';
 
-// ── 槽位 → DOM 映射 ───────────────────────────────────────────────────────────
-//
-// container      : 状态卡注入的父容器（CSS 选择器或 'closest-fieldset:xxx'）
-// hideParentBlock: 通过子元素选择器找到其最近的 BLOCK_SEL 父元素并隐藏
-// hideDirectly   : 直接隐藏的元素选择器
-// hideWithLabel  : 隐藏元素（上溯到容器直接子元素）+ 前一个兄弟 <label>（inline-grid 布局用）
-// hideInContainer: 在容器内 querySelector 查找并隐藏
-// fields         : { profileKey: domSelector } — 用于回填值（向下兼容 fallback 读取）
-// keyField       : API Key 输入框（回填遮蔽值）
-// testFn         : 测试连接函数（发送真实聊天请求）
+const _fieldSnapshots = {};
 
 const SLOT_CONFIGS = {
     main: {
-        container:      'closest-fieldset:#amily2_api_provider',
+        container: 'closest-fieldset:#amily2_api_provider',
         hideParentBlock: ['#amily2_api_provider', '#amily2_model_selector'],
-        hideDirectly:    ['#amily2_api_url_wrapper', '#amily2_api_key_wrapper', '#amily2_preset_wrapper'],
-        hideWithLabel:   [],
-        hideInContainer: [],
-        fields:   { provider: '#amily2_api_provider', apiUrl: '#amily2_api_url', model: '#amily2_manual_model_input' },
+        hideDirectly: ['#amily2_api_url_wrapper', '#amily2_api_key_wrapper', '#amily2_preset_wrapper'],
+        fields: { provider: '#amily2_api_provider', apiUrl: '#amily2_api_url', model: '#amily2_manual_model_input' },
         keyField: '#amily2_api_key',
-        testFn:   testApiConnection,
+        testFn: testApiConnection,
     },
     plotOpt: {
-        container:      '#amily2_opt_custom_api_settings_block',
-        hideParentBlock: [],
-        hideDirectly:    [],
-        hideWithLabel:   [],
-        hideInContainer: [],
-        fields:   { apiUrl: '#amily2_opt_api_url', model: '#amily2_opt_model' },
-        keyField: '#amily2_opt_api_key',
-        testFn:   null,
+        container: '#amily2_jqyh_content',
+        hideParentBlock: ['#amily2_jqyh_api_mode'],
+        hideDirectly: ['#amily2_jqyh_compatible_config', '#amily2_jqyh_preset_config'],
+        hideInContainer: ['.jqyh-button-row'],
+        fields: { provider: '#amily2_jqyh_api_mode', apiUrl: '#amily2_jqyh_api_url', model: '#amily2_jqyh_model' },
+        keyField: '#amily2_jqyh_api_key',
+        testFn: testJqyhApiConnection,
     },
     plotOptConc: {
-        container:      '#amily2_concurrent_content',
-        hideParentBlock: [],
-        hideDirectly:    [],
-        hideWithLabel:   [
+        container: '#amily2_concurrent_content',
+        hideWithLabel: [
             '#amily2_plotOpt_concurrentApiProvider',
             '#amily2_plotOpt_concurrentApiUrl',
             '#amily2_plotOpt_concurrentApiKey',
             '#amily2_plotOpt_concurrentModel',
         ],
         hideInContainer: ['.jqyh-button-row'],
-        fields:   { provider: '#amily2_plotOpt_concurrentApiProvider', apiUrl: '#amily2_plotOpt_concurrentApiUrl', model: '#amily2_plotOpt_concurrentModel' },
+        fields: {
+            provider: '#amily2_plotOpt_concurrentApiProvider',
+            apiUrl: '#amily2_plotOpt_concurrentApiUrl',
+            model: '#amily2_plotOpt_concurrentModel',
+        },
         keyField: '#amily2_plotOpt_concurrentApiKey',
-        testFn:   testConcurrentApiConnection,
+        testFn: testConcurrentApiConnection,
     },
     nccs: {
-        container:      '#nccs-api-config',
-        hideParentBlock: ['#nccs-api-mode', '#nccs-api-url', '#nccs-api-key', '#nccs-api-model', '#nccs-api-fakestream-enabled', '#nccs-sillytavern-preset'],
-        hideDirectly:    [],
-        hideWithLabel:   [],
+        container: '#nccs-api-config',
+        hideParentBlock: [
+            '#nccs-api-mode',
+            '#nccs-api-url',
+            '#nccs-api-key',
+            '#nccs-api-model',
+            '#nccs-api-fakestream-enabled',
+            '#nccs-sillytavern-preset',
+        ],
         hideInContainer: ['.nccs-button-row'],
-        fields:   { apiUrl: '#nccs-api-url', model: '#nccs-api-model' },
+        fields: { provider: '#nccs-api-mode', apiUrl: '#nccs-api-url', model: '#nccs-api-model' },
         keyField: '#nccs-api-key',
-        testFn:   testNccsApiConnection,
+        testFn: testNccsApiConnection,
     },
     ngms: {
-        container:      '#amily2_ngms_content',
+        container: '#amily2_ngms_content',
         hideParentBlock: ['#amily2_ngms_api_mode', '#amily2_ngms_fakestream_enabled'],
-        hideDirectly:    ['#amily2_ngms_compatible_config', '#amily2_ngms_preset_config'],
-        hideWithLabel:   [],
+        hideDirectly: ['#amily2_ngms_compatible_config', '#amily2_ngms_preset_config'],
         hideInContainer: ['.ngms-button-row'],
-        fields:   { apiUrl: '#amily2_ngms_api_url', model: '#amily2_ngms_model' },
+        fields: { provider: '#amily2_ngms_api_mode', apiUrl: '#amily2_ngms_api_url', model: '#amily2_ngms_model' },
         keyField: '#amily2_ngms_api_key',
-        testFn:   testNgmsApiConnection,
+        testFn: testNgmsApiConnection,
+    },
+    sybd: {
+        container: '#amily2_sybd_content',
+        hideParentBlock: ['#amily2_sybd_api_mode'],
+        hideDirectly: ['#amily2_sybd_compatible_config', '#amily2_sybd_preset_config'],
+        hideInContainer: ['.sybd-button-row'],
+        fields: { provider: '#amily2_sybd_api_mode', apiUrl: '#amily2_sybd_api_url', model: '#amily2_sybd_model' },
+        keyField: '#amily2_sybd_api_key',
+        testFn: testSybdApiConnection,
+    },
+    cwb: {
+        container: '#cwb-api-settings-tab',
+        hideDirectly: [
+            'label[for="cwb-api-mode"]',
+            '#cwb-api-mode',
+            'label[for="cwb-api-url"]',
+            '#cwb-api-url',
+            'label[for="cwb-api-key"]',
+            '#cwb-api-key',
+            'label[for="cwb-api-model"]',
+            '#cwb-api-model',
+            'label[for="cwb-tavern-profile"]',
+            '#cwb-tavern-profile',
+        ],
+        hideInContainer: ['.jqyh-button-row'],
+        fields: { provider: '#cwb-api-mode', apiUrl: '#cwb-api-url', model: '#cwb-api-model' },
+        keyField: '#cwb-api-key',
+        testFn: testCwbConnection,
+    },
+    autoCharCard: {
+        container: '#acc-api-settings-content',
+        hideParentBlock: ['#acc-executor-url', '#acc-executor-key', '#acc-executor-model'],
+        hideDirectly: ['#acc-executor-refresh-models', '#acc-executor-test', '#acc-save-api'],
+        fields: { apiUrl: '#acc-executor-url', model: '#acc-executor-model' },
+        keyField: '#acc-executor-key',
+        testFn: async () => testAutoCharCardConnection('executor'),
+    },
+    ragEmbed: {
+        container: '#hly-retrieval-tab .hly-settings-group',
+        hideParentBlock: ['#hly-api-endpoint', '#hly-custom-api-url', '#hly-api-key', '#hly-embedding-model'],
+        hideDirectly: [
+            'button[onclick="testHLYApi()"]',
+            'button[onclick="fetchHLYEmbeddingModels()"]',
+        ],
+        fields: { provider: '#hly-api-endpoint', apiUrl: '#hly-custom-api-url', model: '#hly-embedding-model' },
+        keyField: '#hly-api-key',
+        testFn: async () => {
+            await testRagEmbeddingConnection();
+            return true;
+        },
+        fetchModelsFn: fetchRagEmbeddingModels,
+    },
+    ragRerank: {
+        container: '#hly-rerank-tab .hly-settings-group',
+        hideParentBlock: ['#hly-rerank-api-mode', '#hly-rerank-url', '#hly-rerank-api-key', '#hly-rerank-model'],
+        fields: { provider: '#hly-rerank-api-mode', apiUrl: '#hly-rerank-url', model: '#hly-rerank-model' },
+        keyField: '#hly-rerank-api-key',
+        testFn: async () => {
+            await executeRagRerank('test', ['test'], null);
+            return true;
+        },
+        fetchModelsFn: fetchRagRerankModels,
     },
 };
 
-// ── 公开 API ──────────────────────────────────────────────────────────────────
-
-/** 同步单个槽位到对应 DOM 区域。 */
 export async function syncSlot(slot) {
     const config = SLOT_CONFIGS[slot];
     if (!config) return;
 
-    const profile = await apiProfileManager.getAssignedProfile(slot);
-
-    // 先清理：移除旧卡片、恢复被隐藏的元素
-    _removeCard(slot);
-    _restoreHidden(slot);
-
-    if (!profile) {
-        // 取消分配：将 DOM 字段值还原为分配 Profile 前的快照，
-        // 防止残留的 Profile 回填值（尤其是 '••••••••' 的 Key 占位符）
-        // 因 blur 事件被误存入 extension_settings / localStorage。
-        const snap = _fieldSnapshots[slot];
-        if (snap) {
-            for (const [sel, val] of Object.entries(snap)) {
-                const el = document.querySelector(sel);
-                if (el) el.value = val;
-            }
-            delete _fieldSnapshots[slot];
-        }
-        return;
-    }
-
     const container = _resolveContainer(config.container);
     if (!container) return;
 
-    // 回填前先快照各字段当前值（即 extension_settings / configManager 中的真实值），
-    // 以便取消分配时能还原，避免 Profile 值污染旧配置。
+    _removeCard(slot);
+    _restoreHidden(slot);
+    _snapshotLegacyFields(slot, config);
+
+    const profile = await apiProfileManager.getAssignedProfile(slot);
+    if (profile) _fillLegacyFields(config, profile);
+
+    _hideApiFields(config, container, slot);
+    _injectCard(slot, profile, config, container);
+}
+
+export async function syncAllSlots() {
+    await Promise.all(Object.keys(SLOT_CONFIGS).map(syncSlot));
+}
+
+document.addEventListener('amily2:slotAssigned', (e) => {
+    const slot = e.detail?.slot;
+    if (slot) syncSlot(slot);
+});
+
+function _resolveContainer(spec) {
+    if (!spec) return null;
+    if (spec.startsWith('closest-fieldset:')) {
+        const anchorSel = spec.slice('closest-fieldset:'.length);
+        const anchor = document.querySelector(anchorSel);
+        return anchor?.closest('fieldset') ?? null;
+    }
+    return document.querySelector(spec);
+}
+
+function _snapshotLegacyFields(slot, config) {
+    if (_fieldSnapshots[slot]) return;
+
     const snap = {};
     for (const sel of Object.values(config.fields || {})) {
         const el = document.querySelector(sel);
@@ -149,52 +205,18 @@ export async function syncSlot(slot) {
         if (keyEl) snap[config.keyField] = keyEl.value;
     }
     _fieldSnapshots[slot] = snap;
+}
 
-    // 回填值（向下兼容：部分代码仍从 DOM 读取 fallback）
+function _fillLegacyFields(config, profile) {
     for (const [key, sel] of Object.entries(config.fields || {})) {
         const el = document.querySelector(sel);
         if (el) el.value = profile[key] ?? '';
     }
     if (config.keyField) {
         const keyEl = document.querySelector(config.keyField);
-        if (keyEl) keyEl.value = profile.apiKey ? '••••••••' : '';
+        if (keyEl) keyEl.value = profile.apiKey ? MASKED_KEY : '';
     }
-
-    // 隐藏 API 连接字段（保留温度 / 最大 Token 等生成参数）
-    _hideApiFields(config, container, slot);
-
-    // 注入状态卡
-    _injectCard(slot, profile, config, container);
 }
-
-/** 同步所有槽位（面板初始化时调用）。 */
-export async function syncAllSlots() {
-    await Promise.all(Object.keys(SLOT_CONFIGS).map(syncSlot));
-}
-
-// ── 事件监听：响应 api-config-bindings 的 slotAssigned 事件 ──────────────────
-
-document.addEventListener('amily2:slotAssigned', (e) => {
-    const slot = e.detail?.slot;
-    if (slot) syncSlot(slot);
-});
-
-// ── 内部：容器定位 ──────────────────────────────────────────────────────────────
-
-function _resolveContainer(spec) {
-    if (!spec) return null;
-
-    // 'closest-fieldset:#amily2_api_provider' → 从该元素向上找 fieldset
-    if (spec.startsWith('closest-fieldset:')) {
-        const anchorSel = spec.slice('closest-fieldset:'.length);
-        const anchor = document.querySelector(anchorSel);
-        return anchor?.closest('fieldset') ?? null;
-    }
-
-    return document.querySelector(spec);
-}
-
-// ── 内部：隐藏 / 恢复 API 字段 ──────────────────────────────────────────────────
 
 function _hideEl(el, slot) {
     if (!el || el.hasAttribute(HIDDEN_ATTR)) return;
@@ -212,7 +234,6 @@ function _restoreHidden(slot) {
 }
 
 function _hideApiFields(config, container, slot) {
-    // 1. 通过子元素找到其父 block 并隐藏
     (config.hideParentBlock || []).forEach(sel => {
         const el = document.querySelector(sel);
         if (!el) return;
@@ -220,34 +241,29 @@ function _hideApiFields(config, container, slot) {
         if (block && block !== container) _hideEl(block, slot);
     });
 
-    // 2. 直接隐藏指定元素
     (config.hideDirectly || []).forEach(sel => {
         const el = document.querySelector(sel);
         if (el) _hideEl(el, slot);
     });
 
-    // 3. 隐藏元素（上溯到容器直接子元素）+ 前一个兄弟 label（inline-grid 布局）
     (config.hideWithLabel || []).forEach(sel => {
         const el = document.querySelector(sel);
         if (!el) return;
-        // 沿 DOM 树上溯到容器的直接子元素
+
         let target = el;
         while (target.parentElement && target.parentElement !== container) {
             target = target.parentElement;
         }
+
         _hideEl(target, slot);
         const prev = target.previousElementSibling;
         if (prev && prev.tagName === 'LABEL') _hideEl(prev, slot);
     });
 
-    // 4. 在容器内查找并隐藏
     (config.hideInContainer || []).forEach(sel => {
-        const el = container.querySelector(sel);
-        if (el) _hideEl(el, slot);
+        container.querySelectorAll(sel).forEach(el => _hideEl(el, slot));
     });
 }
-
-// ── 内部：状态卡 ──────────────────────────────────────────────────────────────
 
 function _removeCard(slot) {
     document.querySelectorAll(`.${CARD_CLASS}[${CARD_SLOT_ATTR}="${slot}"]`)
@@ -255,55 +271,82 @@ function _removeCard(slot) {
 }
 
 function _injectCard(slot, profile, _config, container) {
+    const slotInfo = SLOTS[slot] || { label: slot, type: 'chat' };
+    const typeInfo = PROFILE_TYPES[slotInfo.type] || {};
+    const assigned = apiProfileManager.getAssignment(slot) || '';
+    const profiles = apiProfileManager.getProfiles(slotInfo.type);
+    const providerLabel = _providerLabel(profile?.provider);
+
+    const options = [
+        `<option value="">-- 未分配，请选择 API 连接 --</option>`,
+        ...profiles.map(p =>
+            `<option value="${_esc(p.id)}" ${p.id === assigned ? 'selected' : ''}>${_esc(p.name)}</option>`
+        ),
+    ].join('');
+
+    const detailHtml = profile ? `
+        <span style="color:var(--SmartThemeQuoteColor); font-size:0.85em;">
+            ${providerLabel ? `<i class="fas fa-cloud"></i> ${_esc(providerLabel)}` : ''}
+            ${profile.model ? ` · <i class="fas fa-robot"></i> ${_esc(profile.model)}` : ''}
+        </span>
+    ` : `
+        <span style="color:var(--warning-color); font-size:0.85em;">
+            未分配时该模块不会继续展示/保存独立 API 输入项。
+        </span>
+    `;
+
     const card = document.createElement('div');
     card.className = CARD_CLASS;
     card.setAttribute(CARD_SLOT_ATTR, slot);
     card.style.cssText = [
-        'padding:10px 14px', 'margin:6px 0 10px',
+        'padding:10px 14px',
+        'margin:6px 0 10px',
         'background:var(--black10a)',
         'border:1px solid var(--SmartThemeBorderColor)',
-        'border-radius:6px', 'font-size:0.88em',
+        'border-radius:6px',
+        'font-size:0.88em',
     ].join(';');
 
-    const providerLabel = {
-        openai:              'OpenAI 兼容',
-        openai_test:         '全兼容',
-        google:              'Google Gemini',
-        sillytavern_backend: 'ST 后端',
-        sillytavern_preset:  'ST 预设',
-    }[profile.provider] || profile.provider || '';
-
     card.innerHTML = `
-        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-            <i class="fas fa-link" style="color:var(--green,#4caf50);"></i>
-            <span style="font-weight:600;">${_esc(profile.name)}</span>
-            <span style="color:var(--SmartThemeQuoteColor); font-size:0.85em;">
-                ${providerLabel ? `<i class="fas fa-cloud"></i> ${_esc(providerLabel)}` : ''}
-                ${profile.model ? ` · <i class="fas fa-robot"></i> ${_esc(profile.model)}` : ''}
-            </span>
-            <span class="amily2_psc_goto" style="margin-left:auto; opacity:0.6; font-size:0.85em; cursor:pointer;"
-                  title="前往 API 配置页面">
+        <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+            <i class="fas ${_esc(typeInfo.icon || 'fa-link')}" style="color:var(--green,#4caf50);"></i>
+            <span style="font-weight:600;">${_esc(slotInfo.label)}</span>
+            ${detailHtml}
+            <span class="amily2_psc_goto" style="margin-left:auto; opacity:0.7; font-size:0.85em; cursor:pointer;"
+                  title="前往统一 API 配置页">
                 <i class="fas fa-cog"></i> 管理
             </span>
         </div>
+        <select class="text_pole amily2_psc_select" data-slot="${_esc(slot)}" style="width:100%; margin-bottom:8px;">
+            ${options}
+        </select>
         <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            <button class="menu_button small_button interactable amily2_psc_test" type="button">
+            <button class="menu_button small_button interactable amily2_psc_test" type="button" ${profile ? '' : 'disabled'}>
                 <i class="fas fa-plug"></i> 测试连接
             </button>
-            <button class="menu_button small_button interactable amily2_psc_fetch" type="button">
+            <button class="menu_button small_button interactable amily2_psc_fetch" type="button" ${profile ? '' : 'disabled'}>
                 <i class="fas fa-list"></i> 获取模型
             </button>
             <span class="amily2_psc_result" style="font-size:0.85em; display:flex; align-items:center; margin-left:4px;"></span>
         </div>`;
 
-    // 绑定按钮事件
     card.querySelector('.amily2_psc_goto').addEventListener('click', () => {
         document.getElementById('amily2_open_api_config')?.click();
     });
+
+    card.querySelector('.amily2_psc_select').addEventListener('change', function () {
+        const id = this.value || null;
+        if (!apiProfileManager.setAssignment(slot, id)) {
+            toastr.error('配置类型不匹配，分配失败。');
+            syncSlot(slot);
+            return;
+        }
+        document.dispatchEvent(new CustomEvent('amily2:slotAssigned', { detail: { slot } }));
+    });
+
     card.querySelector('.amily2_psc_test').addEventListener('click', () => _testSlot(slot, card));
     card.querySelector('.amily2_psc_fetch').addEventListener('click', () => _fetchSlotModels(slot, card));
 
-    // 插入到 legend 之后（fieldset）或容器开头
     const legend = container.querySelector(':scope > legend');
     if (legend) {
         legend.insertAdjacentElement('afterend', card);
@@ -312,30 +355,33 @@ function _injectCard(slot, profile, _config, container) {
     }
 }
 
-// ── 内部：测试连接（调用各模块的真实测试函数，发送聊天请求）──────────────────────
-
 async function _testSlot(slot, card) {
-    const $btn    = $(card.querySelector('.amily2_psc_test')).prop('disabled', true);
+    const $btn = $(card.querySelector('.amily2_psc_test')).prop('disabled', true);
     const $result = $(card.querySelector('.amily2_psc_result'));
     $btn.html('<i class="fas fa-spinner fa-spin"></i> 测试中...');
     $result.text('').css('color', '');
 
     try {
-        const testFn = SLOT_CONFIGS[slot]?.testFn;
-        if (!testFn) {
-            $result.text('该槽位不支持测试').css('color', 'var(--warning-color)');
+        const profile = await apiProfileManager.getAssignedProfile(slot);
+        if (!profile) {
+            $result.text('槽位未分配').css('color', 'var(--warning-color)');
             return;
         }
 
-        // 调用模块原生测试函数（发送 "你好！" 聊天请求验证连接）
-        const success = await testFn();
+        const testFn = SLOT_CONFIGS[slot]?.testFn;
+        if (!testFn) {
+            $result.text('该槽位暂不支持快捷测试').css('color', 'var(--warning-color)');
+            return;
+        }
+
+        const result = await testFn();
+        const success = typeof result === 'object' ? result?.success : result;
 
         if (success === true) {
             $result.text('测试通过').css('color', 'var(--green)');
         } else if (success === false) {
-            $result.text('测试失败（详见弹窗）').css('color', 'var(--warning-color)');
+            $result.text(result?.error || '测试失败，请查看弹窗/控制台').css('color', 'var(--warning-color)');
         }
-        // undefined = 函数未执行（如 DOM 依赖缺失），不更新卡片
     } catch (e) {
         $result.text(`错误：${e.message}`).css('color', 'var(--warning-color)');
     } finally {
@@ -343,10 +389,8 @@ async function _testSlot(slot, card) {
     }
 }
 
-// ── 内部：获取模型列表 ──────────────────────────────────────────────────────────
-
 async function _fetchSlotModels(slot, card) {
-    const $btn    = $(card.querySelector('.amily2_psc_fetch')).prop('disabled', true);
+    const $btn = $(card.querySelector('.amily2_psc_fetch')).prop('disabled', true);
     const $result = $(card.querySelector('.amily2_psc_result'));
     $btn.html('<i class="fas fa-spinner fa-spin"></i> 获取中...');
     $result.text('').css('color', '');
@@ -358,60 +402,20 @@ async function _fetchSlotModels(slot, card) {
             return;
         }
 
-        // ST 预设由酒馆管理，无法获取模型列表
         if (profile.provider === 'sillytavern_preset' || profile.provider === 'sillytavern_backend') {
             $result.text('ST 预设/后端管理，无需获取').css('color', 'var(--SmartThemeQuoteColor)');
             return;
         }
 
-        let models = [];
-
-        if (profile.provider === 'google') {
-            if (!profile.apiKey) {
-                $result.text('API Key 为空').css('color', 'var(--warning-color)');
-                return;
-            }
-            const resp = await fetch(
-                'https://generativelanguage.googleapis.com/v1beta/models',
-                { headers: { 'x-goog-api-key': profile.apiKey } }
-            );
-            if (!resp.ok) {
-                $result.text(`失败：HTTP ${resp.status}`).css('color', 'var(--warning-color)');
-                return;
-            }
-            const data = await resp.json();
-            models = (data.models ?? [])
-                .filter(m => m.supportedGenerationMethods?.some(
-                    method => ['generateContent', 'embedContent'].includes(method)
-                ))
-                .map(m => m.name.replace(/^models\//, ''));
-        } else {
-            // OpenAI 兼容 — 通过 ST 后端代理获取模型列表
-            const resp = await fetch('/api/backends/chat-completions/status', {
-                method: 'POST',
-                headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    reverse_proxy: profile.apiUrl,
-                    proxy_password: profile.apiKey,
-                    chat_completion_source: 'openai',
-                }),
-            });
-            if (!resp.ok) {
-                $result.text(`失败：HTTP ${resp.status}`).css('color', 'var(--warning-color)');
-                return;
-            }
-            const rawData = await resp.json();
-            const list = Array.isArray(rawData) ? rawData : (rawData.data ?? rawData.models ?? []);
-            models = list.map(m => m.id ?? m.name ?? m).filter(m => typeof m === 'string' && m);
-        }
-
+        const customFetch = SLOT_CONFIGS[slot]?.fetchModelsFn;
+        const models = customFetch ? await customFetch() : await _loadModels(profile);
         if (models.length === 0) {
             $result.text('未获取到模型').css('color', 'var(--warning-color)');
             return;
         }
 
         const current = profile.model;
-        const inList  = current && models.includes(current);
+        const inList = current && models.includes(current);
         $result.html(
             `<span style="color:var(--green);">${models.length} 个模型</span>` +
             (current ? ` · 当前: <b>${_esc(current)}</b> ${inList ? '✓' : '<span style="color:var(--warning-color);">（不在列表中）</span>'}` : '')
@@ -424,10 +428,54 @@ async function _fetchSlotModels(slot, card) {
     }
 }
 
-// ── 工具 ──────────────────────────────────────────────────────────────────────
+async function _loadModels(profile) {
+    if (profile.provider === 'google') {
+        if (!profile.apiKey) throw new Error('API Key 为空');
+        const resp = await fetch(
+            'https://generativelanguage.googleapis.com/v1beta/models',
+            { headers: { 'x-goog-api-key': profile.apiKey } }
+        );
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        return (data.models ?? [])
+            .filter(m => m.supportedGenerationMethods?.some(method => ['generateContent', 'embedContent'].includes(method)))
+            .map(m => m.name.replace(/^models\//, ''))
+            .sort((a, b) => a.localeCompare(b));
+    }
+
+    const resp = await fetch('/api/backends/chat-completions/status', {
+        method: 'POST',
+        headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            reverse_proxy: profile.apiUrl,
+            proxy_password: profile.apiKey,
+            chat_completion_source: 'openai',
+        }),
+    });
+    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+
+    const rawData = await resp.json();
+    const list = Array.isArray(rawData) ? rawData : (rawData.data ?? rawData.models ?? []);
+    return list
+        .map(m => m.id ?? m.name ?? m)
+        .filter(m => typeof m === 'string' && m)
+        .sort((a, b) => a.localeCompare(b));
+}
+
+function _providerLabel(provider) {
+    return {
+        openai: 'OpenAI 兼容',
+        openai_test: '全兼容',
+        google: 'Google Gemini',
+        sillytavern_backend: 'ST 后端',
+        sillytavern_preset: 'ST 预设',
+    }[provider] || provider || '';
+}
 
 function _esc(str) {
     return String(str)
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
 }

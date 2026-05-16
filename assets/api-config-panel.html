@@ -83,6 +83,20 @@
     </div>
 </fieldset>
 
+<!-- 旧配置清理 -->
+<fieldset class="settings-group">
+    <legend><i class="fas fa-broom"></i> 旧配置清理</legend>
+    <small class="notes" style="display:block; margin-bottom:10px;">
+        旧版各模块独立的 API 配置（URL / Key / Model / 温度等）已自动迁移到上方"连接配置"。
+        若上方分配无误且使用一切正常，可点击下方按钮清除 <code>extension_settings</code> 中的旧字段
+        与 <code>localStorage</code> 中的旧 API Key，避免残留卡 bug。<br/>
+        <strong>清理前会校验所有旧字段所属槽位都已分配 profile</strong>，未分配的槽位会阻止清理并提示。
+    </small>
+    <button id="amily2_clear_legacy_config" class="menu_button caution interactable small_button amily2-vbtn">
+        <span class="vbtn-icon"><i class="fas fa-trash-alt"></i></span><span class="vbtn-label">清除旧配置残留</span>
+    </button>
+</fieldset>
+
 <!-- 新建/编辑 Profile 表单（details 折叠） -->
 <details id="amily2_profile_form_details" class="settings-group amily2-profile-form">
     <summary>
@@ -109,22 +123,33 @@
         <div class="amily2_settings_block">
             <label for="amily2_pf_provider">接口类型</label>
             <select id="amily2_pf_provider" class="text_pole">
-                <option value="openai">OpenAI / 兼容接口（推荐）</option>
-                <option value="google">Google Gemini 直连</option>
-                <option value="sillytavern_backend">SillyTavern 后端代理</option>
-                <option value="sillytavern_preset">SillyTavern 预设转发</option>
+                <optgroup label="官方预设（自动填默认 URL）">
+                    <option value="openai">OpenAI (GPT)</option>
+                    <option value="anthropic">Anthropic Claude</option>
+                    <option value="google">Google Gemini</option>
+                    <option value="openrouter">OpenRouter (聚合)</option>
+                    <option value="deepseek">DeepSeek</option>
+                    <option value="xai">xAI Grok</option>
+                </optgroup>
+                <optgroup label="自定义 / 高级">
+                    <option value="custom_oai">Custom OpenAI 兼容（自填 URL）</option>
+                    <option value="sillytavern_backend">SillyTavern 后端代理</option>
+                    <option value="sillytavern_preset">SillyTavern 预设转发</option>
+                </optgroup>
             </select>
         </div>
         <div class="amily2_settings_block" id="amily2_pf_url_row">
             <label for="amily2_pf_url">API 地址</label>
             <input id="amily2_pf_url" type="text" class="text_pole" placeholder="https://api.example.com/v1" />
         </div>
-        <!-- Google 专属提示 -->
-        <div id="amily2_pf_google_note" style="display:none; margin-bottom:8px;">
-            <small class="notes" style="display:block; padding:6px 10px; background:var(--black10a); border-radius:4px; border-left:3px solid #4285f4;">
-                <i class="fas fa-info-circle" style="color:#4285f4;"></i>
-                Google AI Studio — 接口地址已自动配置，只需填写 API Key 即可。
-                在 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" style="color:#4285f4;">aistudio.google.com</a> 生成密钥。
+        <!-- Vendor 提示（动态内容由 JS 填充） -->
+        <div id="amily2_pf_vendor_note" style="display:none; margin-bottom:8px;">
+            <small class="notes" style="display:block; padding:6px 10px; background:var(--black10a); border-radius:4px; border-left:3px solid var(--SmartThemeQuoteColor);">
+                <i class="fas fa-info-circle"></i>
+                <span id="amily2_pf_vendor_note_text"></span>
+                <span id="amily2_pf_vendor_note_link_wrap" style="display:none;">
+                    <a id="amily2_pf_vendor_note_link" href="#" target="_blank" rel="noopener" style="color:var(--SmartThemeQuoteColor);"></a>
+                </span>
             </small>
         </div>
         <div class="amily2_settings_block">
@@ -174,6 +199,30 @@
                             启用假流式（防 CF 超时）
                             <small class="notes" style="display:block; font-weight:normal;">以 stream:true 接收 SSE 后拼接，适用于经 CloudFlare 免费代理的接口</small>
                         </label>
+                    </div>
+                    <div class="amily2_settings_block">
+                        <label for="amily2_pf_custom_params">
+                            自定义参数 (JSON)
+                            <small class="notes" style="display:block; font-weight:normal;">
+                                透传到 LLM 请求 body 的额外参数。留空或 <code>{}</code> 表示不附加。
+                            </small>
+                        </label>
+                        <textarea id="amily2_pf_custom_params"
+                                  class="text_pole"
+                                  rows="6"
+                                  spellcheck="false"
+                                  style="font-family:monospace; font-size:0.85em;"
+                                  placeholder='{
+  "top_p": 0.9,
+  "frequency_penalty": 0.3,
+  "stop": ["\n###"]
+}'></textarea>
+                        <small id="amily2_pf_custom_params_hint"
+                               class="notes"
+                               style="display:block; margin-top:4px; color:var(--SmartThemeQuoteColor); font-size:0.82em;"></small>
+                        <small id="amily2_pf_custom_params_error"
+                               class="notes"
+                               style="display:none; margin-top:4px; color:var(--warning, #d9534f); font-size:0.82em;"></small>
                     </div>
                 </div>
             </details>

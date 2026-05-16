@@ -71,8 +71,8 @@ export async function reorganizeTableContent(selectedTableIndices) {
             console.log('[Amily2-重新整理] 使用 Nccs API 进行表格重整...');
             rawContent = await callNccsAI(messages);
         } else {
-            console.log('[Amily2-重新整理] 使用默认 API 进行表格重整...');
-            rawContent = await callAI(messages);
+            console.log('[Amily2-重新整理] 使用 tableFilling slot 进行表格重整...');
+            rawContent = await callAI(messages, { slot: 'tableFilling' });
         }
 
         if (!rawContent) {

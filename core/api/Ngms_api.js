@@ -4,6 +4,7 @@ import { extensionName } from "../../utils/settings.js";
 import { amilyHelper } from '../../core/tavern-helper/main.js';
 import { getSlotProfile, providerToApiMode } from './api-resolver.js';
 import { configManager } from '../../utils/config/ConfigManager.js';
+import { detectVendor } from '../../utils/api-vendor.js';
 
 let ChatCompletionService = undefined;
 try {
@@ -47,7 +48,7 @@ function normalizeApiResponse(responseData) {
 export async function getNgmsApiSettings() {
     const s = extension_settings[extensionName] || {};
 
-    // 优先读取 'ngms' 槽位分配的 Profile（仅接管连接参数）
+    // 优先读取 'ngms' 槽位分配的 Profile（profile 一旦分配即权威，旧 slider 残值不再覆盖）
     const profile = await getSlotProfile('ngms');
     if (profile) {
         return {
@@ -55,9 +56,9 @@ export async function getNgmsApiSettings() {
             apiUrl:       profile.apiUrl,
             apiKey:       profile.apiKey ?? '',
             model:        profile.model,
-            // 温度 / MaxTokens / FakeStream 读面板值
-            maxTokens:    s.ngmsMaxTokens    ?? profile.maxTokens   ?? 65500,
-            temperature:  s.ngmsTemperature  ?? profile.temperature ?? 1.0,
+            maxTokens:    profile.maxTokens   ?? 65500,
+            temperature:  profile.temperature ?? 1.0,
+            customParams: profile.customParams ?? {},
             tavernProfile: '',
             useFakeStream: s.ngmsFakeStreamEnabled ?? false,
         };
@@ -71,6 +72,7 @@ export async function getNgmsApiSettings() {
         model:         s.ngmsModel      || '',
         maxTokens:     s.ngmsMaxTokens  ?? 30000,
         temperature:   s.ngmsTemperature ?? 1.0,
+        customParams:  {},
         tavernProfile: s.ngmsTavernProfile || '',
         useFakeStream: s.ngmsFakeStreamEnabled || false,
     };
@@ -101,7 +103,7 @@ export async function callNgmsAI(messages, options = {}) {
     if (finalOptions.apiMode !== 'sillytavern_preset') {
         if (!finalOptions.apiUrl || !finalOptions.model || !finalOptions.apiKey) {
             console.warn("[Amily2-Ngms外交部] API配置不完整，无法调用AI");
-            toastr.error("API配置不完整，请检查URL、Key和模型配置。", "Ngms-外交部");
+            toastr.error("总结模块（NGMS）未配置 API 连接配置，请前往 API 连接配置面板分配 profile 或填写 NGMS 独立设置。", "Amily2-NGMS 未配置");
             return null;
         }
     } else {
@@ -221,9 +223,11 @@ async function fetchFakeStream(url, opts) {
 }
 
 async function callNgmsOpenAITest(messages, options) {
-    const isGoogleApi = options.apiUrl.includes('googleapis.com');
+    const isGoogleApi = (await detectVendor(options.apiUrl)) === 'google';
 
     const body = {
+        top_p: options.top_p || 1,
+        ...(options.customParams || {}),
         chat_completion_source: 'openai',
         messages: messages,
         model: options.model,
@@ -232,7 +236,6 @@ async function callNgmsOpenAITest(messages, options) {
         stream: !!options.stream,
         max_tokens: options.maxTokens || 30000,
         temperature: options.temperature || 1,
-        top_p: options.top_p || 1,
     };
 
     if (!isGoogleApi) {
@@ -312,7 +315,8 @@ async function callNgmsSillyTavernPreset(messages, options) {
         responsePromise = context.ConnectionManagerRequestService.sendRequest(
             targetProfile.id,
             messages,
-            options.maxTokens || 4000
+            options.maxTokens || 4000,
+            options.customParams || {}
         );
 
     } finally {

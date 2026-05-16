@@ -1,4 +1,7 @@
 import Options from './Options.js';
+import { detectVendorSync, getRegistry } from '../../../utils/api-vendor.js';
+
+getRegistry().catch(() => {});
 
 /**
  * RequestBody (DTO)
@@ -24,7 +27,10 @@ export class RequestBody {
      */
     toPayload() {
         const { apiUrl, apiKey, model, maxTokens, temperature, params, fakeStream } = this.options;
-        const isGoogle = apiUrl && apiUrl.includes('googleapis.com');
+        const detectedVendor = detectVendorSync(apiUrl);
+        const isGoogle = detectedVendor
+            ? detectedVendor === 'google'
+            : Boolean(apiUrl && apiUrl.includes('googleapis.com'));
 
         // 基础字段 (Base Fields)
         const payload = {

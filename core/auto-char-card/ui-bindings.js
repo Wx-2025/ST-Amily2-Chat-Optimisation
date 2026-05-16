@@ -4,6 +4,7 @@ import { characters, this_chid, saveSettingsDebounced, getCharacters } from "/sc
 import { world_names } from "/scripts/world-info.js";
 import { getApiConfig, setApiConfig, testConnection, fetchModels } from "./api.js";
 import { tools } from "./tools.js";
+import { syncSlot } from "../../ui/profile-sync.js";
 
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
@@ -42,6 +43,7 @@ export async function openAutoCharCardWindow() {
         try {
             populateDropdowns();
             loadApiSettings();
+            await syncSlot('autoCharCard');
             renderRulesList();
             renderSessionsList();
             restoreChatHistory();

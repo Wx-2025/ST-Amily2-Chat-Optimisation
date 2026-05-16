@@ -4,6 +4,7 @@ import { extensionName } from "../../utils/settings.js";
 import { amilyHelper } from '../../core/tavern-helper/main.js';
 import { getSlotProfile, providerToApiMode } from './api-resolver.js';
 import { configManager } from '../../utils/config/ConfigManager.js';
+import { detectVendor } from '../../utils/api-vendor.js';
 
 let ChatCompletionService = undefined;
 try {
@@ -41,7 +42,7 @@ if (window.Amily2Bus) {
 export async function getNccsApiSettings() {
     const s = extension_settings[extensionName] || {};
 
-    // 优先读取 'nccs' 槽位分配的 Profile（仅接管连接参数）
+    // 优先读取 'nccs' 槽位分配的 Profile（profile 一旦分配即权威，旧 slider 残值不再覆盖）
     const profile = await getSlotProfile('nccs');
     if (profile) {
         return {
@@ -50,9 +51,9 @@ export async function getNccsApiSettings() {
             apiUrl:       profile.apiUrl,
             apiKey:       profile.apiKey ?? '',
             model:        profile.model,
-            // 温度 / MaxTokens / FakeStream 读面板值（profile-sync 保留了这些输入框）
-            maxTokens:    s.nccsMaxTokens    ?? profile.maxTokens   ?? 65500,
-            temperature:  s.nccsTemperature  ?? profile.temperature ?? 1.0,
+            maxTokens:    profile.maxTokens   ?? 65500,
+            temperature:  profile.temperature ?? 1.0,
+            customParams: profile.customParams ?? {},
             tavernProfile: '',
             useFakeStream: s.nccsFakeStreamEnabled ?? false,
         };
@@ -67,6 +68,7 @@ export async function getNccsApiSettings() {
         model:         s.nccsModel      || '',
         maxTokens:     s.nccsMaxTokens  ?? 8192,
         temperature:   s.nccsTemperature ?? 1,
+        customParams:  {},
         tavernProfile: s.nccsTavernProfile || '',
         useFakeStream: s.nccsFakeStreamEnabled || false,
     };
@@ -94,7 +96,7 @@ export async function callNccsAI(messages, options = {}) {
     if (finalOptions.apiMode !== 'sillytavern_preset') {
         if (!finalOptions.apiUrl || !finalOptions.model || !finalOptions.apiKey) {
             console.warn("[Amily2-Nccs外交部] API配置不完整，无法调用AI");
-            toastr.error("API配置不完整，请检查URL、Key和模型配置。", "Nccs-外交部");
+            toastr.error("并发模块（NCCS）未配置 API 连接配置，请前往 API 连接配置面板分配 profile 或填写 NCCS 独立设置。", "Amily2-NCCS 未配置");
             return null;
         }
     } else {
@@ -187,8 +189,10 @@ function normalizeApiResponse(responseData) {
 }
 
 async function callNccsOpenAITest(messages, options) {
-    const isGoogleApi = options.apiUrl.includes('googleapis.com');
+    const isGoogleApi = (await detectVendor(options.apiUrl)) === 'google';
     const body = {
+        top_p: options.top_p || 1,
+        ...(options.customParams || {}),
         chat_completion_source: 'openai',
         messages: messages,
         model: options.model,
@@ -197,7 +201,6 @@ async function callNccsOpenAITest(messages, options) {
         stream: !!options.stream,
         max_tokens: 8192,
         temperature: 1,
-        top_p: options.top_p || 1,
     };
 
     if (!isGoogleApi) {
@@ -244,7 +247,8 @@ async function callNccsSillyTavernPreset(messages, options) {
         const result = await context.ConnectionManagerRequestService.sendRequest(
             targetProfile.id,
             messages,
-            8192
+            8192,
+            options.customParams || {}
         );
 
         return normalizeApiResponse(result);

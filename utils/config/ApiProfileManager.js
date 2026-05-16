@@ -35,6 +35,7 @@ import { extension_settings } from "/scripts/extensions.js";
 import { saveSettingsDebounced } from "/script.js";
 import { extensionName } from "../settings.js";
 import { apiKeyStore } from "./api-key-store/ApiKeyStore.js";
+import { configManager } from "./ConfigManager.js";
 
 // ── 类型与功能槽定义 ──────────────────────────────────────────────────────────
 
@@ -71,6 +72,7 @@ export const SLOTS = {
     cwb:           { label: '角色世界书',              type: 'chat' },
     autoCharCard:  { label: '一键生卡',              type: 'chat' },
     sybd:          { label: '术语表填写',             type: 'chat' },
+    tableFilling:  { label: '表格填表 / 重整',        type: 'chat' },
     // Embedding 槽
     ragEmbed:      { label: 'RAG 向量化',            type: 'embedding' },
     // Rerank 槽
@@ -252,6 +254,11 @@ class ApiProfileManager {
                 ...base,
                 maxTokens:   data.maxTokens   ?? 65500,
                 temperature: data.temperature ?? 1.0,
+                // 自定义参数：透传到 LLM 请求 body 的额外 key/value（top_p、frequency_penalty 等）
+                // 由 utils/api-vendor.js 提供 vendor 标准参数提示，但不强校验。
+                customParams: (typeof data.customParams === 'object' && data.customParams !== null)
+                    ? data.customParams
+                    : {},
             };
         }
         if (type === 'embedding') {
@@ -294,6 +301,278 @@ export const apiProfileManager = new ApiProfileManager();
         console.warn('[ApiProfiles] 历史槽位迁移失败:', e);
     }
 })();
+
+// ── Profile.provider 迁移 ────────────────────────────────────────────────────
+// Phase B 改造：旧 'openai' 是"OpenAI 兼容总称"，现在拆为 6 个具体 vendor + 'custom_oai'。
+// 按 URL substring 推断真实 vendor；推断不出来 → 改成 'custom_oai'；URL 为空 → 保持 'openai'。
+// 仅迁移 provider==='openai' 的旧 profile，新值（anthropic/openrouter/deepseek/xai/custom_oai/google/...）一概不动。
+function _detectVendorFromUrlSync(url) {
+    if (!url) return null;
+    const lower = String(url).toLowerCase();
+    if (lower.includes('anthropic.com'))                              return 'anthropic';
+    if (lower.includes('openrouter.ai'))                              return 'openrouter';
+    if (lower.includes('googleapis.com') || lower.includes('aistudio.google.com')) return 'google';
+    if (lower.includes('deepseek.com'))                               return 'deepseek';
+    if (lower.includes('x.ai') || lower.includes('xai.com'))          return 'xai';
+    if (lower.includes('openai.com'))                                 return 'openai';
+    return null;
+}
+
+;(() => {
+    try {
+        const s = extension_settings[extensionName];
+        if (!s || !Array.isArray(s[EXT_PROFILES])) return;
+        let migratedCount = 0;
+        for (const profile of s[EXT_PROFILES]) {
+            if (profile?.provider !== 'openai') continue; // 已是新值或非 chat profile
+            const detected = _detectVendorFromUrlSync(profile.apiUrl);
+            if (detected && detected !== 'openai') {
+                profile.provider = detected;
+                migratedCount++;
+            } else if (profile.apiUrl && !detected) {
+                // URL 填了但不匹配任何已知厂商 → 标记为 custom_oai
+                profile.provider = 'custom_oai';
+                migratedCount++;
+            }
+            // URL 为空（新建中）或确实是 openai.com → 保持 'openai'
+        }
+        if (migratedCount > 0) {
+            console.info(`[ApiProfiles] 迁移: ${migratedCount} 个 profile 的 provider 字段已按 URL 重分类。`);
+            saveSettingsDebounced();
+        }
+    } catch (e) {
+        console.warn('[ApiProfiles] provider 迁移失败:', e);
+    }
+})();
+
+// ── Legacy → Profile 自动迁移（v2.1.x）─────────────────────────────────────
+// 对每个 chat slot：若没分配 profile 且旧字段（apiUrl + model 都填了）存在，
+// 自动建一个 profile + 迁移 API Key + 分配给该 slot。
+// 幂等：通过 _legacyProfileMigrationDone 标记，只在首次 ship 后跑一次。
+// 旧字段保留不动，由"清除旧配置残留"按钮显式清理。
+
+/**
+ * 每个 slot 的 legacy 字段映射。jqyh 已合并到 plotOpt 不单独迁移。
+ * cwb / autoCharCard / ragEmbed / ragRerank 字段结构差异较大，留作后续。
+ */
+const LEGACY_PROFILE_MIGRATION_MAP = [
+    {
+        slot: 'main',
+        urlKey: 'apiUrl',
+        modelKey: 'model',
+        keyName: 'apiKey',
+        maxTokensKey: 'maxTokens',
+        temperatureKey: 'temperature',
+        name: '主面板 旧配置',
+    },
+    {
+        slot: 'plotOpt',
+        urlKey: 'plotOpt_apiUrl',
+        modelKey: 'plotOpt_model',
+        keyName: 'plotOpt_apiKey',
+        maxTokensKey: 'plotOpt_max_tokens',
+        temperatureKey: 'plotOpt_temperature',
+        name: '剧情优化 旧配置',
+    },
+    {
+        slot: 'plotOptConc',
+        urlKey: 'plotOpt_concurrentApiUrl',
+        modelKey: 'plotOpt_concurrentModel',
+        keyName: 'plotOpt_concurrentApiKey',
+        maxTokensKey: 'plotOpt_concurrentMaxTokens',
+        temperatureKey: null, // 并发优化无独立 temperature 旧字段
+        name: '并发剧情优化 旧配置',
+    },
+    {
+        slot: 'ngms',
+        urlKey: 'ngmsApiUrl',
+        modelKey: 'ngmsModel',
+        keyName: 'ngmsApiKey',
+        maxTokensKey: 'ngmsMaxTokens',
+        temperatureKey: 'ngmsTemperature',
+        name: 'NGMS 旧配置',
+    },
+    {
+        slot: 'nccs',
+        urlKey: 'nccsApiUrl',
+        modelKey: 'nccsModel',
+        keyName: 'nccsApiKey',
+        maxTokensKey: 'nccsMaxTokens',
+        temperatureKey: 'nccsTemperature',
+        name: 'NCCS 旧配置',
+    },
+    {
+        slot: 'sybd',
+        urlKey: 'sybdApiUrl',
+        modelKey: 'sybdModel',
+        keyName: 'sybdApiKey',
+        maxTokensKey: 'sybdMaxTokens',
+        temperatureKey: 'sybdTemperature',
+        name: 'SYBD 旧配置',
+    },
+];
+
+;(async () => {
+    try {
+        const s = extension_settings[extensionName];
+        if (!s) return;
+        if (s._legacyProfileMigrationDone) return; // 幂等
+
+        const migrated = [];
+        for (const m of LEGACY_PROFILE_MIGRATION_MAP) {
+            // 已分配 profile 的 slot 跳过
+            if (apiProfileManager.getAssignment(m.slot)) continue;
+
+            const url   = String(s[m.urlKey]   ?? '').trim();
+            const model = String(s[m.modelKey] ?? '').trim();
+            if (!url || !model) continue; // 旧配置不完整，跳过
+
+            const provider = _detectVendorFromUrlSync(url) || 'custom_oai';
+
+            const profileId = apiProfileManager.createProfile({
+                type: 'chat',
+                name: m.name,
+                provider,
+                apiUrl: url,
+                model,
+                maxTokens:   s[m.maxTokensKey]      ?? undefined,
+                temperature: m.temperatureKey ? s[m.temperatureKey] : undefined,
+            });
+
+            // 旧 API Key 从 configManager（localStorage）读出，写入 ApiKeyStore
+            try {
+                const legacyKey = configManager.get(m.keyName);
+                if (legacyKey) await apiProfileManager.setKey(profileId, legacyKey);
+            } catch (keyErr) {
+                console.warn(`[ApiProfiles] ${m.slot} Key 迁移失败:`, keyErr);
+            }
+
+            apiProfileManager.setAssignment(m.slot, profileId);
+            migrated.push(`${m.slot} → ${profileId}`);
+        }
+
+        // 新引入的 slot（无 legacy 字段可迁移）默认借用其他 slot 的 profile，
+        // 让升级用户的功能不至于因为没主动分配而中断。用户可以随后改成专属 profile。
+        const SLOT_INHERITANCE = {
+            tableFilling: 'main',  // 表格填表历史上默认走主 API，升级后默认沿用 main 的 profile
+        };
+        const linked = [];
+        for (const [newSlot, sourceSlot] of Object.entries(SLOT_INHERITANCE)) {
+            if (apiProfileManager.getAssignment(newSlot)) continue;
+            const sourceId = apiProfileManager.getAssignment(sourceSlot);
+            if (sourceId) {
+                apiProfileManager.setAssignment(newSlot, sourceId);
+                linked.push(`${newSlot} ← ${sourceSlot} (${sourceId})`);
+            }
+        }
+
+        s._legacyProfileMigrationDone = true;
+        saveSettingsDebounced();
+
+        if (migrated.length > 0 || linked.length > 0) {
+            if (migrated.length > 0) {
+                console.info(`[ApiProfiles] 自动迁移 ${migrated.length} 个旧配置 → profile:`, migrated);
+            }
+            if (linked.length > 0) {
+                console.info(`[ApiProfiles] 自动 link ${linked.length} 个新 slot 借用现有 profile:`, linked);
+            }
+            // 延迟提示，等 toastr 就绪
+            setTimeout(() => {
+                if (typeof toastr !== 'undefined' && migrated.length > 0) {
+                    toastr.success(
+                        `已自动迁移 ${migrated.length} 个旧 API 配置到新连接配置${linked.length > 0 ? `（含 ${linked.length} 个新槽位借用）` : ''}。请检查"API 连接配置"面板，确认无误后可点"清除旧配置残留"。`,
+                        'Amily2 配置迁移',
+                        { timeOut: 8000 }
+                    );
+                }
+            }, 2000);
+        }
+    } catch (e) {
+        console.warn('[ApiProfiles] Legacy → profile 自动迁移失败:', e);
+    }
+})();
+
+/**
+ * 清除旧配置残留 —— 用户在 UI 点击按钮时调用。
+ *
+ * 行为：
+ *   1. 校验所有有 legacy 字段的 slot 都已分配 profile（防止误删导致功能没配置）
+ *   2. 删除 extension_settings 里的 legacy URL / model / maxTokens / temperature / apiMode / tavernProfile / fakeStream 字段
+ *   3. 删除 configManager（localStorage）里的 legacy API Key
+ *   4. 不删 _legacyProfileMigrationDone 标记（避免再次运行迁移）
+ *
+ * @returns {{ ok: boolean, error?: string, clearedFields: number, clearedKeys: number }}
+ */
+export function clearLegacyConfig() {
+    const s = extension_settings[extensionName];
+    if (!s) return { ok: false, error: 'extension_settings 不存在', clearedFields: 0, clearedKeys: 0 };
+
+    // 前置校验：每个有 legacy 数据的 slot 必须已分配 profile
+    for (const m of LEGACY_PROFILE_MIGRATION_MAP) {
+        const url   = String(s[m.urlKey]   ?? '').trim();
+        const model = String(s[m.modelKey] ?? '').trim();
+        const hasLegacy = url || model;
+        if (!hasLegacy) continue;
+        if (!apiProfileManager.getAssignment(m.slot)) {
+            return {
+                ok: false,
+                error: `槽位 "${m.slot}" 仍有旧配置但未分配 profile，清除会导致该模块不可用。请先在 API 连接配置面板为它分配 profile。`,
+                clearedFields: 0,
+                clearedKeys: 0,
+            };
+        }
+    }
+
+    // 全套 legacy 字段（含 maxTokens / temperature / apiMode / tavernProfile / fakeStream / enabled 等）
+    const ALL_LEGACY_FIELDS = {
+        main:        ['apiUrl', 'model', 'maxTokens', 'temperature', 'apiProvider', 'tavernProfile'],
+        plotOpt:     ['plotOpt_apiUrl', 'plotOpt_model', 'plotOpt_apiMode', 'plotOpt_tavernProfile', 'plotOpt_max_tokens', 'plotOpt_temperature', 'plotOpt_top_p', 'plotOpt_presence_penalty', 'plotOpt_frequency_penalty'],
+        plotOptConc: ['plotOpt_concurrentApiUrl', 'plotOpt_concurrentModel', 'plotOpt_concurrentApiProvider', 'plotOpt_concurrentMaxTokens'],
+        ngms:        ['ngmsApiUrl', 'ngmsModel', 'ngmsApiMode', 'ngmsTavernProfile', 'ngmsMaxTokens', 'ngmsTemperature', 'ngmsFakeStreamEnabled'],
+        nccs:        ['nccsApiUrl', 'nccsModel', 'nccsApiMode', 'nccsTavernProfile', 'nccsMaxTokens', 'nccsTemperature', 'nccsFakeStreamEnabled'],
+        sybd:        ['sybdApiUrl', 'sybdModel', 'sybdApiMode', 'sybdTavernProfile', 'sybdMaxTokens', 'sybdTemperature'],
+        // jqyh 字段也清掉（已合并到 plotOpt 但残留可能还在）
+        jqyh:        ['jqyhApiUrl', 'jqyhModel', 'jqyhApiMode', 'jqyhTavernProfile', 'jqyhMaxTokens', 'jqyhTemperature', 'jqyhEnabled'],
+    };
+
+    const LEGACY_KEY_NAMES = {
+        main:        'apiKey',
+        plotOpt:     'plotOpt_apiKey',
+        plotOptConc: 'plotOpt_concurrentApiKey',
+        ngms:        'ngmsApiKey',
+        nccs:        'nccsApiKey',
+        sybd:        'sybdApiKey',
+        jqyh:        'jqyhApiKey',
+    };
+
+    let clearedFields = 0;
+    let clearedKeys = 0;
+
+    for (const slot of Object.keys(ALL_LEGACY_FIELDS)) {
+        for (const field of ALL_LEGACY_FIELDS[slot]) {
+            if (field in s) {
+                delete s[field];
+                clearedFields++;
+            }
+        }
+        const keyName = LEGACY_KEY_NAMES[slot];
+        if (keyName) {
+            try {
+                if (configManager.get(keyName)) {
+                    // configManager.set(key, '') 对敏感字段会同时清除 localStorage + extension_settings
+                    configManager.set(keyName, '');
+                    clearedKeys++;
+                }
+            } catch (e) {
+                console.warn(`[ApiProfiles] 清除旧 Key ${keyName} 失败:`, e);
+            }
+        }
+    }
+
+    saveSettingsDebounced();
+    console.info(`[ApiProfiles] 清除旧配置残留：${clearedFields} 个字段 + ${clearedKeys} 个 Key。`);
+    return { ok: true, clearedFields, clearedKeys };
+}
 
 // ── Bus 注册 ──────────────────────────────────────────────────────────────────
 setTimeout(() => {

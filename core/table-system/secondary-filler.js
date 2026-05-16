@@ -277,8 +277,8 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
             console.log('[Amily2-副API] 使用 Nccs API 进行分步填表...');
             rawContent = await callNccsAI(messages);
         } else {
-            console.log('[Amily2-副API] 使用默认 API 进行分步填表...');
-            rawContent = await callAI(messages);
+            console.log('[Amily2-副API] 使用 tableFilling slot 进行分步填表...');
+            rawContent = await callAI(messages, { slot: 'tableFilling' });
         }
 
         if (!rawContent) {

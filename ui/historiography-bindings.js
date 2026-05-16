@@ -490,28 +490,6 @@ function bindNgmsApiEvents() {
         }
     });
 
-    // 滑块控件绑定
-    const sliderFields = [
-        { id: 'amily2_ngms_max_tokens', key: 'ngmsMaxTokens', defaultValue: 4000 },
-        { id: 'amily2_ngms_temperature', key: 'ngmsTemperature', defaultValue: 0.7 }
-    ];
-
-    sliderFields.forEach(field => {
-        const slider = document.getElementById(field.id);
-        const display = document.getElementById(field.id + '_value');
-        if (slider && display) {
-            const value = extension_settings[extensionName][field.key] || field.defaultValue;
-            slider.value = value;
-            display.textContent = value;
-
-            slider.addEventListener('input', function() {
-                const newValue = parseFloat(this.value);
-                display.textContent = newValue;
-                updateAndSaveSetting(field.key, newValue);
-            });
-        }
-    });
-
     // SillyTavern预设选择器
     const tavernProfileSelect = document.getElementById('amily2_ngms_tavern_profile');
     if (tavernProfileSelect) {

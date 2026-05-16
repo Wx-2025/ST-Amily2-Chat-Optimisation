@@ -6,7 +6,7 @@
  *   ApiKeyStore（密钥存储）
  */
 
-import { apiProfileManager, PROFILE_TYPES, SLOTS } from '../utils/config/ApiProfileManager.js';
+import { apiProfileManager, PROFILE_TYPES, SLOTS, clearLegacyConfig } from '../utils/config/ApiProfileManager.js';
 import { apiKeyStore } from '../utils/config/api-key-store/ApiKeyStore.js';
 import { configManager } from '../utils/config/ConfigManager.js';
 import { getRequestHeaders, saveSettingsDebounced } from '/script.js';
@@ -17,6 +17,12 @@ import { testJqyhApiConnection } from '../core/api/JqyhApi.js';
 import { testConcurrentApiConnection } from '../core/api/ConcurrentApi.js';
 import { testNgmsApiConnection } from '../core/api/Ngms_api.js';
 import { testNccsApiConnection } from '../core/api/NccsApi.js';
+import {
+    getRegistry,
+    detectVendorSync,
+    listVendorParamsSync,
+    getVendorEntry,
+} from '../utils/api-vendor.js';
 
 // 槽位 → 真实测试函数映射（发送聊天请求验证连接）
 // plotOpt 槽位同时服务剧情优化和 JQYH（互斥），根据启用状态选择测试函数
@@ -45,11 +51,21 @@ const SLOT_TOGGLES = {
 
 let _editingId      = null;   // 当前编辑的 Profile ID（null = 新建）
 let _currentFilter  = 'all';  // 当前类型筛选
+let _slotAssignmentPanel = null;
+let _slotAssignmentRefreshBound = false;
 
 // ── 入口：绑定整个面板 ────────────────────────────────────────────────────────
 
 export function bindApiConfigPanel(container) {
     const $c = $(container);
+    _slotAssignmentPanel = $c;
+
+    if (!_slotAssignmentRefreshBound) {
+        _slotAssignmentRefreshBound = true;
+        document.addEventListener('amily2:slotAssigned', () => {
+            if (_slotAssignmentPanel) renderSlotAssignments(_slotAssignmentPanel);
+        });
+    }
 
     // 存储模式
     _bindStorageMode($c);
@@ -70,9 +86,11 @@ export function bindApiConfigPanel(container) {
         _switchParamSections($c, $(this).val());
     });
 
-    // 弹窗：接口类型切换（Google 自动填 URL）
-    $c.find('#amily2_pf_provider').on('change', function () {
-        _handleProviderChange($c, $(this).val());
+    // 弹窗：接口类型切换 —— vendor preset 自动填 defaultUrl + 切换提示框
+    $c.find('#amily2_pf_provider').on('change', async function () {
+        const provider = $(this).val();
+        _handleProviderChange($c, provider);
+        await _autofillVendorUrl($c, provider);
     });
 
     // 弹窗：获取模型列表
@@ -80,6 +98,30 @@ export function bindApiConfigPanel(container) {
 
     // 弹窗：测试连接
     $c.find('#amily2_pf_test_conn').on('click', () => _testConnection($c));
+
+    // 弹窗：URL 变更 → 更新 customParams hint
+    $c.find('#amily2_pf_url').on('input change blur', () => _updateCustomParamsHint($c));
+
+    // 弹窗：customParams 文本框实时校验 JSON
+    $c.find('#amily2_pf_custom_params').on('blur input', () => {
+        _validateCustomParamsLive($c);
+        _updateCustomParamsHint($c);
+    });
+
+    $c.on('click', '.amily2_param_hint_btn', function () {
+        if (this.disabled) return;
+        _insertParamToCustomParams(
+            $c,
+            $(this).data('paramName'),
+            $(this).data('paramType')
+        );
+    });
+
+    // 预加载 vendor registry（异步，UI 不阻塞）
+    getRegistry().catch(() => { /* 失败已在 api-vendor 内部 fallback，无需再处理 */ });
+
+    // 旧配置清理按钮
+    $c.find('#amily2_clear_legacy_config').on('click', () => _handleClearLegacyConfig($c));
 
     // 表单：取消
     $c.find('#amily2_profile_modal_cancel').on('click', () => closeModal($c));
@@ -404,6 +446,11 @@ async function openModal($c, id) {
             $c.find('#amily2_pf_max_tokens').val(p.maxTokens);
             $c.find('#amily2_pf_temperature').val(p.temperature);
             $c.find('#amily2_pf_fake_stream').prop('checked', p.fakeStream ?? false);
+            // customParams 写回成格式化 JSON 字符串
+            const cp = p.customParams ?? {};
+            $c.find('#amily2_pf_custom_params').val(
+                Object.keys(cp).length ? JSON.stringify(cp, null, 2) : ''
+            );
         } else if (p.type === 'embedding') {
             $c.find('#amily2_pf_dimensions').val(p.dimensions ?? '');
             $c.find('#amily2_pf_encoding_format').val(p.encodingFormat);
@@ -421,9 +468,12 @@ async function openModal($c, id) {
         $c.find('#amily2_pf_name, #amily2_pf_url, #amily2_pf_key, #amily2_pf_model').val('');
         $c.find('#amily2_pf_provider').val('openai');
         _handleProviderChange($c, 'openai');
+        // 新建模式下自动填充默认 URL（编辑模式不调，避免覆盖用户已配置的代理 URL）
+        _autofillVendorUrl($c, 'openai');
         $c.find('#amily2_pf_max_tokens').val(65500);
         $c.find('#amily2_pf_temperature').val(1.0);
         $c.find('#amily2_pf_fake_stream').prop('checked', false);
+        $c.find('#amily2_pf_custom_params').val('');
         $c.find('#amily2_pf_dimensions').val('');
         $c.find('#amily2_pf_encoding_format').val('float');
         $c.find('#amily2_pf_top_n').val(5);
@@ -435,6 +485,10 @@ async function openModal($c, id) {
     $c.find('#amily2_pf_test_result').text('');
     $c.find('#amily2_pf_model_select').hide().empty();
     $c.find('#amily2_pf_model').show();
+
+    // 刷新 customParams 旁的 vendor 提示 + 清空错误
+    _updateCustomParamsHint($c);
+    _validateCustomParamsLive($c);
 
     const $details = $c.find('#amily2_profile_form_details');
     $details.prop('open', true);
@@ -464,6 +518,14 @@ async function saveProfile($c) {
         data.maxTokens   = parseInt($c.find('#amily2_pf_max_tokens').val(), 10) || 65500;
         data.temperature = parseFloat($c.find('#amily2_pf_temperature').val()) || 1.0;
         data.fakeStream  = $c.find('#amily2_pf_fake_stream').prop('checked');
+
+        // customParams：JSON 校验失败则中止保存
+        const cp = _parseCustomParamsOrFail($c);
+        if (cp === null) {
+            toastr.error('自定义参数 JSON 解析失败，请修正后再保存。', '保存中止');
+            return;
+        }
+        data.customParams = cp;
     } else if (type === 'embedding') {
         const dim = $c.find('#amily2_pf_dimensions').val();
         data.dimensions     = dim ? parseInt(dim, 10) : null;
@@ -705,15 +767,71 @@ async function _testConnection($c) {
 
 // ── Provider 切换 ─────────────────────────────────────────────────────────────
 
-const GOOGLE_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/openai';
+/**
+ * 6 个享受 defaultUrl 自动填充的 vendor preset id。registry 之外的 provider
+ * （sillytavern_backend / sillytavern_preset / custom_oai）走各自的特殊逻辑。
+ */
+const VENDOR_PRESETS = new Set(['anthropic', 'openai', 'google', 'openrouter', 'deepseek', 'xai']);
 
-function _handleProviderChange($c, provider) {
-    const isGoogle = provider === 'google';
-    $c.find('#amily2_pf_url_row').toggle(!isGoogle);
-    $c.find('#amily2_pf_google_note').toggle(isGoogle);
+/**
+ * 处理 provider 变化的"展示侧"逻辑：URL row 可见性 + vendor 提示框。
+ * 不修改 URL 输入值（避免编辑现有 profile 时被覆盖）。
+ * URL 自动填充由 _autofillVendorUrl 单独负责，仅在用户主动 change 时触发。
+ */
+async function _handleProviderChange($c, provider) {
+    const $urlRow   = $c.find('#amily2_pf_url_row');
+    const $note     = $c.find('#amily2_pf_vendor_note');
+    const $noteText = $c.find('#amily2_pf_vendor_note_text');
+    const $linkWrap = $c.find('#amily2_pf_vendor_note_link_wrap');
+    const $link     = $c.find('#amily2_pf_vendor_note_link');
 
-    if (isGoogle) {
-        $c.find('#amily2_pf_url').val(GOOGLE_API_BASE);
+    // URL row 一律可见（包括 preset vendor —— 用户可能要切到代理/镜像）
+    $urlRow.show();
+
+    if (VENDOR_PRESETS.has(provider)) {
+        try {
+            const entry = await getVendorEntry(provider);
+            if (entry) {
+                $noteText.text(`${entry.displayName} — 默认接口地址已自动填写，如需走代理/镜像可在下方修改。`);
+                if (entry.doc) {
+                    $link.attr('href', entry.doc).text('查看官方文档');
+                    $linkWrap.show();
+                } else {
+                    $linkWrap.hide();
+                }
+                $note.show();
+                return;
+            }
+        } catch (e) {
+            console.warn('[ApiConfig] vendor entry 加载失败:', e);
+        }
+    }
+    $note.hide();
+}
+
+/**
+ * 用户主动切换 provider 时，把 URL 字段写为该 vendor 的 defaultUrl。
+ * Custom 模式清空 URL；ST backend/preset 不动 URL。
+ * 同时刷新 customParams hint 与校验状态。
+ */
+async function _autofillVendorUrl($c, provider) {
+    if (provider === 'custom_oai') {
+        $c.find('#amily2_pf_url').val('');
+        _updateCustomParamsHint($c);
+        return;
+    }
+    if (!VENDOR_PRESETS.has(provider)) {
+        // sillytavern_backend / sillytavern_preset 等不修改 URL
+        return;
+    }
+    try {
+        const entry = await getVendorEntry(provider);
+        if (entry?.defaultUrl) {
+            $c.find('#amily2_pf_url').val(entry.defaultUrl);
+            _updateCustomParamsHint($c);
+        }
+    } catch (e) {
+        console.warn('[ApiConfig] autofill defaultUrl 失败:', e);
     }
 }
 
@@ -740,4 +858,154 @@ function _escapeHtml(str) {
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;');
+}
+
+function _getCustomParamsEditorState($c) {
+    const raw = ($c.find('#amily2_pf_custom_params').val() || '').trim();
+    if (!raw) {
+        return { valid: true, parsed: {}, empty: true };
+    }
+
+    try {
+        const parsed = JSON.parse(raw);
+        if (typeof parsed !== 'object' || Array.isArray(parsed) || parsed === null) {
+            return { valid: false, parsed: null, empty: false };
+        }
+        return { valid: true, parsed, empty: false };
+    } catch {
+        return { valid: false, parsed: null, empty: false };
+    }
+}
+
+function _getDefaultValueForParamType(type) {
+    const normalized = String(type || '').toLowerCase();
+    if (normalized.includes('array')) return [];
+    if (normalized.includes('object')) return {};
+    if (normalized.includes('integer') || normalized.includes('number')) return 0;
+    if (normalized.includes('boolean')) return false;
+    return '';
+}
+
+// ── customParams 辅助 ────────────────────────────────────────────────────────
+
+/**
+ * 根据当前 URL 输入识别 vendor，并把已知参数列表渲染到 hint 行。
+ * registry 还没异步加载完时（detectVendorSync 返回 null）静默跳过。
+ */
+function _updateCustomParamsHint($c) {
+    const $hint = $c.find('#amily2_pf_custom_params_hint');
+    if (!$hint.length) return;
+
+    const apiUrl = $c.find('#amily2_pf_url').val()?.trim() || '';
+    const vendorId = detectVendorSync(apiUrl);
+    if (!vendorId) {
+        $hint.empty();
+        return;
+    }
+
+    const params = listVendorParamsSync(vendorId);
+    if (!params.length) {
+        $hint.empty();
+        return;
+    }
+
+    const editorState = _getCustomParamsEditorState($c);
+    getVendorEntry(vendorId).then(entry => {
+        const label = entry?.displayName || vendorId;
+        const disabledAttr = editorState.valid ? '' : ' disabled';
+        const buttons = params.map(param => `
+            <button type="button"
+                    class="menu_button small_button amily2_param_hint_btn"
+                    data-param-name="${_escapeHtml(param.name)}"
+                    data-param-type="${_escapeHtml(param.type || '')}"
+                    style="margin:2px 6px 2px 0;"
+                    ${disabledAttr}>${_escapeHtml(param.name)}</button>
+        `).join('');
+        const invalidNote = editorState.valid
+            ? ''
+            : '<span style="margin-left:6px; color:var(--warning, #d9534f);">请先修复 JSON，再插入参数。</span>';
+        $hint.html(`${_escapeHtml(label)} 已知参数：${buttons}${invalidNote}`);
+    });
+}
+
+/**
+ * 实时校验 customParams 文本框内容。空 / 合法 JSON object → 清空错误。
+ * 非 JSON 或非 object → 在 #_error 行显示。仅做提示，不阻断输入。
+ */
+function _validateCustomParamsLive($c) {
+    const $err = $c.find('#amily2_pf_custom_params_error');
+    if (!$err.length) return;
+
+    const state = _getCustomParamsEditorState($c);
+    if (state.empty) {
+        $err.hide().text('');
+        return;
+    }
+    if (state.valid) {
+        $err.hide().text('');
+        return;
+    }
+    try {
+        JSON.parse(($c.find('#amily2_pf_custom_params').val() || '').trim());
+        $err.show().text('需要是 JSON 对象（{} 形式），不能是数组或基本类型。');
+    } catch (e) {
+        $err.show().text(`JSON 解析失败：${e.message}`);
+    }
+}
+
+function _insertParamToCustomParams($c, paramName, paramType) {
+    const state = _getCustomParamsEditorState($c);
+    if (!state.valid) return;
+
+    const next = { ...(state.parsed || {}) };
+    if (Object.prototype.hasOwnProperty.call(next, paramName)) {
+        return;
+    }
+
+    next[paramName] = _getDefaultValueForParamType(paramType);
+    $c.find('#amily2_pf_custom_params').val(JSON.stringify(next, null, 2));
+    _validateCustomParamsLive($c);
+    _updateCustomParamsHint($c);
+}
+
+/**
+ * 清除旧配置残留 —— 二次确认 → 调 clearLegacyConfig → 反馈结果。
+ */
+function _handleClearLegacyConfig($c) {
+    const confirmed = window.confirm(
+        '【清除旧配置残留】\n\n' +
+        '即将删除以下数据：\n' +
+        '• extension_settings 中各模块的旧 URL / Model / 温度 / maxTokens / 模式等字段\n' +
+        '• localStorage 中各模块的旧 API Key\n\n' +
+        '⚠️ 操作不可恢复。如果某个槽位还没分配 profile，操作会被阻止。\n\n' +
+        '确定继续吗？'
+    );
+    if (!confirmed) return;
+
+    try {
+        const result = clearLegacyConfig();
+        if (!result.ok) {
+            toastr.error(result.error || '清除失败，未知错误。', '清除被阻止');
+            return;
+        }
+        toastr.success(
+            `已清除 ${result.clearedFields} 个旧字段、${result.clearedKeys} 个旧 API Key。建议刷新页面验证。`,
+            '清除完成',
+            { timeOut: 6000 }
+        );
+    } catch (e) {
+        console.error('[ApiConfig] 清除旧配置失败:', e);
+        toastr.error(`清除失败: ${e.message}`, '错误');
+    }
+}
+
+/**
+ * saveProfile 调用：解析 customParams 文本，失败返回 null（调用方中止保存）。
+ * 空文本视为空对象 {}。
+ *
+ * @returns {Object | null}
+ */
+function _parseCustomParamsOrFail($c) {
+    const state = _getCustomParamsEditorState($c);
+    return state.valid ? (state.parsed || {}) : null;
 }

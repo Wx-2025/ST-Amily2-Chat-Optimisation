@@ -3,11 +3,12 @@ import { getRequestHeaders } from "/script.js";
 import { extensionName } from "../../utils/settings.js";
 import { getSlotProfile, providerToApiMode } from './api-resolver.js';
 import { configManager } from '../../utils/config/ConfigManager.js';
+import { detectVendor } from '../../utils/api-vendor.js';
 
 async function getConcurrentApiSettings() {
     const s = extension_settings[extensionName] || {};
 
-    // 优先读取槽位分配的 Profile（仅接管连接参数）
+    // 优先读取槽位分配的 Profile（profile 一旦分配即权威，slider 残值不再覆盖）
     const profile = await getSlotProfile('plotOptConc');
     if (profile) {
         return {
@@ -15,8 +16,7 @@ async function getConcurrentApiSettings() {
             apiUrl:      profile.apiUrl,
             apiKey:      profile.apiKey ?? '',
             model:       profile.model,
-            // MaxTokens 读面板值
-            maxTokens:   s.plotOpt_concurrentMaxTokens ?? profile.maxTokens ?? 8100,
+            maxTokens:   profile.maxTokens   ?? 8100,
             temperature: profile.temperature ?? 1,
         };
     }
@@ -47,7 +47,7 @@ export async function callConcurrentAI(messages, options = {}) {
 
     if (!finalOptions.apiUrl || !finalOptions.model || !finalOptions.apiKey) {
         console.warn("[Amily2-Concurrent外交部] API配置不完整，无法调用AI");
-        toastr.error("并发API配置不完整，请检查URL、Key和模型配置。", "Concurrent-外交部");
+        toastr.error("并发剧情优化（plotOptConc）未配置 API 连接配置，请前往 API 连接配置面板分配 profile 或填写并发优化独立设置。", "Amily2-并发优化未配置");
         return null;
     }
 
@@ -97,7 +97,7 @@ export async function callConcurrentAI(messages, options = {}) {
 }
 
 async function callConcurrentOpenAITest(messages, options) {
-    const isGoogleApi = options.apiUrl.includes('googleapis.com');
+    const isGoogleApi = (await detectVendor(options.apiUrl)) === 'google';
 
     const body = {
         chat_completion_source: 'openai',

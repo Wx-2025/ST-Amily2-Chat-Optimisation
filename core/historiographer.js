@@ -15,7 +15,7 @@ import { compatibleWriteToLorebook } from "./tavernhelper-compatibility.js";
 import { ingestTextToHanlinyuan } from "./rag-processor.js";
 import { showSummaryModal, showHtmlModal } from "../ui/page-window.js";
 import { getPresetPrompts, getMixedOrder } from '../PresetSettings/index.js';
-import { callAI, generateRandomSeed } from "./api.js";
+import { generateRandomSeed } from "./api.js";
 import { callNgmsAI } from "./api/Ngms_api.js";
 import { executeAutoHide } from "./autoHideManager.js";
 import { resolveHistoriographyRuleConfig } from "../utils/config/RuleProfileManager.js";
@@ -384,7 +384,9 @@ async function getSummary(formattedHistory, toastTitle, retryCount = 0) {
         }
     }
 
-    const summary = settings.ngmsEnabled ? await callNgmsAI(messages) : await callAI(messages);
+    // 历史总结统一走 NGMS slot；ngms 未配置时 callNgmsAI 自带模块名错误提示。
+    // 旧 ngmsEnabled 三元式 fallback 到 main 的设计已在主 API 移除后失效。
+    const summary = await callNgmsAI(messages);
     console.log('[大史官-微言录] AI回复的全部内容:', summary);
     
     if (!summary || !summary.trim()) {
@@ -603,7 +605,8 @@ export async function executeRefinement(worldbook, loreKey) {
 
         const getRefinedContent = async (retryCount = 0) => {
             toastr.info("正在召唤模型进行内容精炼...", "宏史卷重铸");
-            const content = settings.ngmsEnabled ? await callNgmsAI(messages) : await callAI(messages);
+            // 历史总结统一走 NGMS slot；ngms 未配置时 callNgmsAI 自带错误提示。
+            const content = await callNgmsAI(messages);
             
             if (!content || !content.trim()) {
                 const maxRetries = settings.historiographyMaxRetries ?? 2;

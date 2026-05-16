@@ -1,0 +1,208 @@
+{
+    "version": 1,
+    "_doc": "API 厂商参数 registry。用作自定义参数编辑器的提示导航，不做强制约束 —— 用户写厂商不认识的参数会被原样发送，至多被服务端忽略。新增厂商：在 vendors 数组追加一项；新增参数：在对应 vendor.params 加一条。",
+    "vendors": [
+        {
+            "id": "anthropic",
+            "displayName": "Anthropic Claude",
+            "match": ["api.anthropic.com", "anthropic.com"],
+            "defaultUrl": "https://api.anthropic.com/v1",
+            "doc": "https://docs.anthropic.com/en/api/openai-sdk",
+            "_note": "通过 Anthropic 官方的 OpenAI 兼容层接入。需要 anthropic-version header 走 ST backend 自动加。",
+            "params": {
+                "top_p": {
+                    "type": "number",
+                    "range": [0, 1],
+                    "desc": "核采样阈值。与 temperature 二选一，不要同时调。"
+                },
+                "top_k": {
+                    "type": "integer",
+                    "desc": "采样候选词数量上限。"
+                },
+                "stop_sequences": {
+                    "type": "array<string>",
+                    "desc": "停止序列（注意 Anthropic 用复数形式）。"
+                },
+                "thinking": {
+                    "type": "object",
+                    "desc": "Claude 3.7+ 思考模式：{ \"type\": \"enabled\", \"budget_tokens\": 1024 }。"
+                },
+                "metadata": {
+                    "type": "object",
+                    "desc": "{ \"user_id\": \"...\" } 用于厂商侧滥用追踪。"
+                }
+            }
+        },
+        {
+            "id": "openai",
+            "displayName": "OpenAI (GPT)",
+            "match": ["api.openai.com", "openai.com"],
+            "defaultUrl": "https://api.openai.com/v1",
+            "doc": "https://platform.openai.com/docs/api-reference/chat/create",
+            "params": {
+                "top_p": {
+                    "type": "number",
+                    "range": [0, 1],
+                    "desc": "核采样阈值。与 temperature 二选一。"
+                },
+                "frequency_penalty": {
+                    "type": "number",
+                    "range": [-2, 2],
+                    "desc": "已出现 token 的惩罚（频次基础）。"
+                },
+                "presence_penalty": {
+                    "type": "number",
+                    "range": [-2, 2],
+                    "desc": "已出现 token 的惩罚（存在与否）。"
+                },
+                "seed": {
+                    "type": "integer",
+                    "desc": "随机数种子，相同 seed + 相同输入 ≈ 相同输出（不保证）。"
+                },
+                "stop": {
+                    "type": "string | array<string>",
+                    "desc": "停止序列，最多 4 个。"
+                },
+                "response_format": {
+                    "type": "object",
+                    "desc": "{ \"type\": \"json_object\" } 或 { \"type\": \"json_schema\", \"json_schema\": {...} }。"
+                },
+                "reasoning_effort": {
+                    "type": "string",
+                    "values": ["low", "medium", "high"],
+                    "desc": "o 系列推理强度。"
+                },
+                "logit_bias": {
+                    "type": "object",
+                    "desc": "{ tokenId: bias } 调整特定 token 概率。"
+                }
+            }
+        },
+        {
+            "id": "openrouter",
+            "displayName": "OpenRouter (聚合)",
+            "match": ["openrouter.ai"],
+            "defaultUrl": "https://openrouter.ai/api/v1",
+            "doc": "https://openrouter.ai/docs",
+            "params": {
+                "top_p": { "type": "number", "range": [0, 1], "desc": "核采样阈值。" },
+                "top_k": { "type": "integer", "desc": "部分模型支持。" },
+                "frequency_penalty": { "type": "number", "range": [-2, 2], "desc": "频次惩罚。" },
+                "presence_penalty": { "type": "number", "range": [-2, 2], "desc": "存在惩罚。" },
+                "seed": { "type": "integer", "desc": "随机数种子。" },
+                "stop": { "type": "string | array<string>", "desc": "停止序列。" },
+                "provider": {
+                    "type": "object",
+                    "desc": "OR 路由配置：{ \"order\": [\"Anthropic\"], \"allow_fallbacks\": true, \"require_parameters\": false, \"data_collection\": \"deny\" }。"
+                },
+                "transforms": {
+                    "type": "array<string>",
+                    "desc": "[\"middle-out\"] 启用中间挤压防 context 超限。"
+                },
+                "models": {
+                    "type": "array<string>",
+                    "desc": "fallback 模型列表，主模型失败时按顺序尝试。"
+                },
+                "route": {
+                    "type": "string",
+                    "values": ["fallback"],
+                    "desc": "\"fallback\" 启用 models 列表。"
+                }
+            }
+        },
+        {
+            "id": "google",
+            "displayName": "Google Gemini",
+            "match": ["googleapis.com", "generativelanguage.googleapis.com"],
+            "defaultUrl": "https://generativelanguage.googleapis.com/v1beta/openai",
+            "doc": "https://ai.google.dev/gemini-api/docs/openai",
+            "_note": "走 Gemini 的 OpenAI 兼容端点 /v1beta/openai。原生 generate-content 端点不在此模式覆盖范围，需用 Custom 模式手填。",
+            "params": {
+                "top_p": { "type": "number", "range": [0, 1], "desc": "核采样阈值。" },
+                "top_k": { "type": "integer", "desc": "Gemini 支持 top_k 采样。" },
+                "stop_sequences": {
+                    "type": "array<string>",
+                    "desc": "停止序列（数组形式）。"
+                },
+                "safety_settings": {
+                    "type": "array<object>",
+                    "desc": "[{\"category\": \"HARM_CATEGORY_HARASSMENT\", \"threshold\": \"BLOCK_NONE\"}, ...] 安全过滤。"
+                },
+                "response_mime_type": {
+                    "type": "string",
+                    "values": ["text/plain", "application/json"],
+                    "desc": "强制响应格式。"
+                },
+                "thinking_config": {
+                    "type": "object",
+                    "desc": "Gemini 2.5 思考配置：{ \"thinking_budget\": 1024 }。"
+                }
+            }
+        },
+        {
+            "id": "deepseek",
+            "displayName": "DeepSeek",
+            "match": ["api.deepseek.com", "deepseek.com"],
+            "defaultUrl": "https://api.deepseek.com/v1",
+            "doc": "https://api-docs.deepseek.com",
+            "params": {
+                "top_p": { "type": "number", "range": [0, 1], "desc": "核采样阈值。" },
+                "frequency_penalty": { "type": "number", "range": [-2, 2], "desc": "频次惩罚。" },
+                "presence_penalty": { "type": "number", "range": [-2, 2], "desc": "存在惩罚。" },
+                "stop": { "type": "string | array<string>", "desc": "停止序列。" },
+                "response_format": {
+                    "type": "object",
+                    "desc": "{ \"type\": \"json_object\" } 强制 JSON 输出。"
+                },
+                "thinking": {
+                    "type": "object",
+                    "desc": "V3.2+ 思考模式开关：{ \"type\": \"enabled\" } 或 { \"type\": \"disabled\" }，默认 enabled。"
+                },
+                "reasoning_effort": {
+                    "type": "string",
+                    "values": ["high", "max"],
+                    "desc": "思考强度，默认 high；复杂 Agent 请求会自动升至 max。"
+                },
+                "_warning_reasoner": "deepseek-reasoner 模型会忽略 temperature/top_p/frequency_penalty/presence_penalty。"
+            }
+        },
+        {
+            "id": "xai",
+            "displayName": "xAI Grok",
+            "match": ["api.x.ai", "x.ai", "xai.com"],
+            "defaultUrl": "https://api.x.ai/v1",
+            "doc": "https://docs.x.ai/api",
+            "params": {
+                "top_p": { "type": "number", "range": [0, 1], "desc": "核采样阈值。" },
+                "frequency_penalty": { "type": "number", "range": [-2, 2], "desc": "频次惩罚。" },
+                "presence_penalty": { "type": "number", "range": [-2, 2], "desc": "存在惩罚。" },
+                "seed": { "type": "integer", "desc": "随机数种子。" },
+                "stop": { "type": "string | array<string>", "desc": "停止序列。" },
+                "response_format": {
+                    "type": "object",
+                    "desc": "{ \"type\": \"json_object\" }。"
+                },
+                "search_parameters": {
+                    "type": "object",
+                    "desc": "Live Search 配置：{ \"mode\": \"auto\" | \"on\" | \"off\", \"sources\": [...] }。"
+                }
+            }
+        }
+    ],
+    "fallback": {
+        "id": "openai-compat",
+        "displayName": "OpenAI-compatible (通用)",
+        "doc": "Mistral / Together / Fireworks / 本地 KoboldCpp / Ollama 等。匹配不到具体 vendor 时归到此条，提示 OpenAI 标准参数。",
+        "params": {
+            "top_p": { "type": "number", "range": [0, 1], "desc": "核采样阈值。" },
+            "top_k": { "type": "integer", "desc": "部分实现支持。" },
+            "frequency_penalty": { "type": "number", "range": [-2, 2], "desc": "频次惩罚。" },
+            "presence_penalty": { "type": "number", "range": [-2, 2], "desc": "存在惩罚。" },
+            "min_p": { "type": "number", "range": [0, 1], "desc": "本地模型常用，OpenAI 没有。" },
+            "seed": { "type": "integer", "desc": "随机数种子。" },
+            "stop": { "type": "string | array<string>", "desc": "停止序列。" },
+            "response_format": { "type": "object", "desc": "{ \"type\": \"json_object\" }。" },
+            "repetition_penalty": { "type": "number", "desc": "本地模型常用，OpenAI 没有。" }
+        }
+    }
+}

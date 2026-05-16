@@ -33,7 +33,7 @@ export async function getEmbedRetrievalSettings() {
     const profile = await getSlotProfile('ragEmbed');
     if (profile) {
         return {
-            apiEndpoint:    'custom',
+            apiEndpoint:    profile.provider === 'google' ? 'google_direct' : 'custom',
             customApiUrl:   profile.apiUrl,
             apiKey:         profile.apiKey ?? '',
             embeddingModel: profile.model,

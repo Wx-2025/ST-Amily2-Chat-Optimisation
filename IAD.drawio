@@ -1,0 +1,178 @@
+<mxfile host="65bd71144e" modified="2026-04-29T00:00:00.000Z" agent="Claude" version="22.0.0" type="device">
+  <diagram id="iad" name="Interface-Action-DTO">
+    <mxGraphModel dx="1422" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="表格模块 — Interface → Action → DTO 架构" style="text;html=1;align=center;fontSize=20;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="280" y="20" width="640" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="数据形状(DTO) ← 契约+实现(Interface) ← 业务动词(Action) ← 门面(Service)" style="text;html=1;align=center;fontSize=12;fontStyle=2;fontColor=#666666" vertex="1" parent="1">
+          <mxGeometry x="200" y="50" width="800" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="serviceLayer" value="Service Layer — 顶层门面" style="swimlane;fontStyle=1;fillColor=#dae8fc;strokeColor=#6c8ebf;startSize=30;horizontal=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="80" width="1120" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="svc" value="TableSystemService&#xa;(Bus 注册 + 事件分发 + Action 编排)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12" vertex="1" parent="serviceLayer">
+          <mxGeometry x="380" y="35" width="360" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="actionLayer" value="Action Layer — 业务动词，纯函数，注入 Interface" style="swimlane;fontStyle=1;fillColor=#d5e8d4;strokeColor=#82b366;startSize=30" vertex="1" parent="1">
+          <mxGeometry x="40" y="200" width="1120" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="a1" value="applyOperations" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="actionLayer">
+          <mxGeometry x="20" y="50" width="130" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="a2" value="fillSecondary" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="actionLayer">
+          <mxGeometry x="170" y="50" width="130" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="a3" value="fillBatch" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="actionLayer">
+          <mxGeometry x="320" y="50" width="130" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="a4" value="reorganize" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="actionLayer">
+          <mxGeometry x="470" y="50" width="130" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="a5" value="loadTables" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="actionLayer">
+          <mxGeometry x="620" y="50" width="130" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="a6" value="rollback" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366" vertex="1" parent="actionLayer">
+          <mxGeometry x="770" y="50" width="130" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="a7" value="ui-mutations&#xa;(addRow / addCol / ...)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10" vertex="1" parent="actionLayer">
+          <mxGeometry x="920" y="50" width="160" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="interfaceLayer" value="Interface Layer — 契约(斜体) + 实现(橙色)" style="swimlane;fontStyle=1;fillColor=#fff2cc;strokeColor=#d6b656;startSize=30" vertex="1" parent="1">
+          <mxGeometry x="40" y="340" width="1120" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="i1" value="ITableStore" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=2" vertex="1" parent="interfaceLayer">
+          <mxGeometry x="20" y="50" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="i1impl" value="infra/store.js&#xa;getState/setState/subscribe" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10" vertex="1" parent="interfaceLayer">
+          <mxGeometry x="20" y="130" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="i2" value="ITablePersistence" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=2" vertex="1" parent="interfaceLayer">
+          <mxGeometry x="220" y="50" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="i2impl" value="infra/persistence.js&#xa;saveStateToMessage&#xa;loadFromMessage" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10" vertex="1" parent="interfaceLayer">
+          <mxGeometry x="220" y="130" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="i3" value="IModelCaller" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=2" vertex="1" parent="interfaceLayer">
+          <mxGeometry x="420" y="50" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="i3impl" value="infra/modelCaller.js&#xa;封装 callAI / callNccsAI" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10" vertex="1" parent="interfaceLayer">
+          <mxGeometry x="420" y="130" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="i4" value="IFormatter&#xa;buildPrompt(state) / parseResponse(raw) → Op[]" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=2;fontSize=10" vertex="1" parent="interfaceLayer">
+          <mxGeometry x="620" y="50" width="280" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="i4a" value="legacy.js&#xa;&lt;Amily2Edit&gt;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10" vertex="1" parent="interfaceLayer">
+          <mxGeometry x="620" y="130" width="85" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="i4b" value="json.js&#xa;{operations}" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10" vertex="1" parent="interfaceLayer">
+          <mxGeometry x="715" y="130" width="85" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="i4c" value="toolcall.js&#xa;Bus tools" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10" vertex="1" parent="interfaceLayer">
+          <mxGeometry x="810" y="130" width="90" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="i5" value="IEventBus" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontStyle=2" vertex="1" parent="interfaceLayer">
+          <mxGeometry x="920" y="50" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="i5impl" value="infra/eventBus.js&#xa;UI 通过订阅刷新" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10" vertex="1" parent="interfaceLayer">
+          <mxGeometry x="920" y="130" width="180" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="dtoLayer" value="DTO Layer — 纯数据形状（@typedef + 工厂函数）" style="swimlane;fontStyle=1;fillColor=#f5f5f5;strokeColor=#666666;startSize=30" vertex="1" parent="1">
+          <mxGeometry x="40" y="580" width="1120" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="d1" value="TableState" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666" vertex="1" parent="dtoLayer">
+          <mxGeometry x="20" y="40" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="d2" value="Table" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666" vertex="1" parent="dtoLayer">
+          <mxGeometry x="170" y="40" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="d3" value="Operation" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1" vertex="1" parent="dtoLayer">
+          <mxGeometry x="320" y="40" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="d4" value="Change" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666" vertex="1" parent="dtoLayer">
+          <mxGeometry x="470" y="40" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="d5" value="FillRequest" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666" vertex="1" parent="dtoLayer">
+          <mxGeometry x="620" y="40" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="d6" value="FillResult" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666" vertex="1" parent="dtoLayer">
+          <mxGeometry x="770" y="40" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="d7" value="PromptContext" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666" vertex="1" parent="dtoLayer">
+          <mxGeometry x="920" y="40" width="130" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="e_svc_a1" style="endArrow=classic;html=1" edge="1" parent="1" source="svc" target="a1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_svc_a2" style="endArrow=classic;html=1" edge="1" parent="1" source="svc" target="a2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_svc_a4" style="endArrow=classic;html=1" edge="1" parent="1" source="svc" target="a4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_svc_a6" style="endArrow=classic;html=1" edge="1" parent="1" source="svc" target="a6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_a2_i2" value="uses" style="endArrow=classic;html=1;dashed=1;strokeColor=#82b366;fontSize=9" edge="1" parent="1" source="a2" target="i2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_a2_i3" value="uses" style="endArrow=classic;html=1;dashed=1;strokeColor=#82b366;fontSize=9" edge="1" parent="1" source="a2" target="i3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_a2_i4" value="uses" style="endArrow=classic;html=1;dashed=1;strokeColor=#82b366;fontSize=9" edge="1" parent="1" source="a2" target="i4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_a1_i1" value="uses" style="endArrow=classic;html=1;dashed=1;strokeColor=#82b366;fontSize=9" edge="1" parent="1" source="a1" target="i1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_a7_i5" value="emits" style="endArrow=classic;html=1;dashed=1;strokeColor=#82b366;fontSize=9" edge="1" parent="1" source="a7" target="i5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_i1_impl" value="impl" style="endArrow=open;html=1;dashed=1;endFill=0;fontSize=9" edge="1" parent="1" source="i1" target="i1impl">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_i2_impl" value="impl" style="endArrow=open;html=1;dashed=1;endFill=0;fontSize=9" edge="1" parent="1" source="i2" target="i2impl">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_i3_impl" value="impl" style="endArrow=open;html=1;dashed=1;endFill=0;fontSize=9" edge="1" parent="1" source="i3" target="i3impl">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_i4_a" style="endArrow=open;html=1;dashed=1;endFill=0" edge="1" parent="1" source="i4" target="i4a">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_i4_b" style="endArrow=open;html=1;dashed=1;endFill=0" edge="1" parent="1" source="i4" target="i4b">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_i4_c" style="endArrow=open;html=1;dashed=1;endFill=0" edge="1" parent="1" source="i4" target="i4c">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_i5_impl" value="impl" style="endArrow=open;html=1;dashed=1;endFill=0;fontSize=9" edge="1" parent="1" source="i5" target="i5impl">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_a1_d3" value="ops" style="endArrow=classic;html=1;dashed=1;strokeColor=#666666;fontSize=9" edge="1" parent="1" source="a1" target="d3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_a1_d4" value="changes" style="endArrow=classic;html=1;dashed=1;strokeColor=#666666;fontSize=9" edge="1" parent="1" source="a1" target="d4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_a2_d5" value="req" style="endArrow=classic;html=1;dashed=1;strokeColor=#666666;fontSize=9" edge="1" parent="1" source="a2" target="d5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_a2_d6" value="result" style="endArrow=classic;html=1;dashed=1;strokeColor=#666666;fontSize=9" edge="1" parent="1" source="a2" target="d6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_i4_d3" value="produces" style="endArrow=classic;html=1;dashed=1;strokeColor=#666666;fontSize=9" edge="1" parent="1" source="i4" target="d3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="legend" value="实线箭头 → 直接调用&#10;虚线箭头 → 依赖 / 数据流向 / 接口实现关系&#10;斜体 = 抽象契约（@typedef），橙色 = 具体实现" style="text;html=1;align=left;fontSize=11;fillColor=#ffffff;strokeColor=#cccccc;rounded=0" vertex="1" parent="1">
+          <mxGeometry x="40" y="710" width="380" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="note1" value="特点：&#10;• DTO 层独立，三模式 formatter 输出统一吐 Op[]&#10;• Action 是纯函数，注入 Interface 后可单元测试&#10;• 文件多（~25），目录树是主导航&#10;• 适合未来 TS 化" style="text;html=1;align=left;fontSize=11;fillColor=#fff8e1;strokeColor=#ffb300;rounded=0" vertex="1" parent="1">
+          <mxGeometry x="450" y="700" width="350" height="80" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
