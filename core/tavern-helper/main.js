@@ -393,8 +393,12 @@ class AmilyHelper {
                 keys: entry.key || [],
                 enabled: !entry.disable,
                 constant: entry.constant || false,
-                position: positionMap[entry.position] || 'at_depth_as_system', 
-                depth: entry.depth || 998,
+                position: positionMap[entry.position ?? entry.extensions?.position] || 'at_depth_as_system', 
+                depth: entry.depth ?? entry.extensions?.depth ?? 998,
+                scanDepth: entry.scanDepth ?? entry.extensions?.scan_depth,
+                order: entry.order ?? entry.extensions?.display_index,
+                exclude_recursion: entry.excludeRecursion ?? entry.extensions?.exclude_recursion ?? false,
+                prevent_recursion: entry.preventRecursion ?? entry.extensions?.prevent_recursion ?? false,
             }));
         } catch (error) {
             console.error(`[Amily助手] 获取世界书《${bookName}》条目时出错:`, error);
@@ -429,13 +433,36 @@ class AmilyHelper {
                             'at_depth': 4, 
                             'at_depth_as_system': 4 
                         };
-                        existingEntry.position = positionMap[entryUpdate.position] ?? 4;
+                        const mappedPos = positionMap[entryUpdate.position] ?? 4;
+                        existingEntry.position = mappedPos;
+                        if (!existingEntry.extensions) existingEntry.extensions = {};
+                        existingEntry.extensions.position = mappedPos;
                     }
-                    if (entryUpdate.depth !== undefined) existingEntry.depth = entryUpdate.depth;
-                    if (entryUpdate.scanDepth !== undefined) existingEntry.scanDepth = entryUpdate.scanDepth;
-                    if (entryUpdate.order !== undefined) existingEntry.order = entryUpdate.order;
-                    if (entryUpdate.exclude_recursion !== undefined) existingEntry.excludeRecursion = entryUpdate.exclude_recursion;
-                    if (entryUpdate.prevent_recursion !== undefined) existingEntry.preventRecursion = entryUpdate.prevent_recursion;
+                    if (entryUpdate.depth !== undefined) {
+                        existingEntry.depth = entryUpdate.depth;
+                        if (!existingEntry.extensions) existingEntry.extensions = {};
+                        existingEntry.extensions.depth = entryUpdate.depth;
+                    }
+                    if (entryUpdate.scanDepth !== undefined) {
+                        existingEntry.scanDepth = entryUpdate.scanDepth;
+                        if (!existingEntry.extensions) existingEntry.extensions = {};
+                        existingEntry.extensions.scan_depth = entryUpdate.scanDepth;
+                    }
+                    if (entryUpdate.order !== undefined) {
+                        existingEntry.order = entryUpdate.order;
+                        if (!existingEntry.extensions) existingEntry.extensions = {};
+                        existingEntry.extensions.display_index = entryUpdate.order;
+                    }
+                    if (entryUpdate.exclude_recursion !== undefined) {
+                        existingEntry.excludeRecursion = entryUpdate.exclude_recursion;
+                        if (!existingEntry.extensions) existingEntry.extensions = {};
+                        existingEntry.extensions.exclude_recursion = entryUpdate.exclude_recursion;
+                    }
+                    if (entryUpdate.prevent_recursion !== undefined) {
+                        existingEntry.preventRecursion = entryUpdate.prevent_recursion;
+                        if (!existingEntry.extensions) existingEntry.extensions = {};
+                        existingEntry.extensions.prevent_recursion = entryUpdate.prevent_recursion;
+                    }
                 }
             }
             await saveWorldInfo(bookName, bookData, true);
@@ -470,19 +497,37 @@ class AmilyHelper {
                     'at_depth': 4, 
                     'at_depth_as_system': 4 
                 };
+                const mappedPos = typeof newEntryData.position === 'string' ? (positionMap[newEntryData.position] ?? 4) : (newEntryData.position ?? 4);
                 Object.assign(newEntry, {
                     comment: newEntryData.comment || '新条目',
                     content: newEntryData.content || '',
                     key: newEntryData.keys || newEntryData.key || [],
                     constant: newEntryData.type === 'constant' ? true : (newEntryData.constant || false),
-                    position: typeof newEntryData.position === 'string' ? (positionMap[newEntryData.position] ?? 4) : (newEntryData.position ?? 4),
+                    position: mappedPos,
                     depth: newEntryData.depth ?? 998,
                     scanDepth: newEntryData.scanDepth ?? null,
+                    order: newEntryData.order ?? 100,
                     disable: !(newEntryData.enabled ?? true),
                     excludeRecursion: newEntryData.excludeRecursion ?? newEntryData.exclude_recursion ?? false,
                     preventRecursion: newEntryData.preventRecursion ?? newEntryData.prevent_recursion ?? false,
                 });
                 if (newEntryData.type === 'selective') newEntry.constant = false;
+                
+                // 兼容新版酒馆的防递归等扩展逻辑 (v1.17.0+)
+                if (!newEntry.extensions) newEntry.extensions = {};
+                newEntry.extensions.position = mappedPos;
+                newEntry.extensions.depth = newEntry.depth;
+                if (newEntry.scanDepth !== null) newEntry.extensions.scan_depth = newEntry.scanDepth;
+                if (newEntryData.order !== undefined) newEntry.extensions.display_index = newEntryData.order;
+
+                const hasExclude = newEntryData.excludeRecursion !== undefined || newEntryData.exclude_recursion !== undefined;
+                const hasPrevent = newEntryData.preventRecursion !== undefined || newEntryData.prevent_recursion !== undefined;
+                if (hasExclude) {
+                    newEntry.extensions.exclude_recursion = newEntryData.excludeRecursion ?? newEntryData.exclude_recursion ?? false;
+                }
+                if (hasPrevent) {
+                    newEntry.extensions.prevent_recursion = newEntryData.preventRecursion ?? newEntryData.prevent_recursion ?? false;
+                }
             }
             await saveWorldInfo(bookName, bookData, true);
             reloadEditor(bookName);
