@@ -6,12 +6,28 @@ import { updateTableFromText } from './manager.js';
 import { extensionName } from '../../utils/settings.js';
 import { renderTables } from '../../ui/table-bindings.js';
 import { getPresetPrompts, getMixedOrder } from '../../PresetSettings/index.js';
-import { callAI, generateRandomSeed } from '../api.js';
+import { callAI, callAIForTools, generateRandomSeed } from '../api.js';
 import { callNccsAI } from '../api/NccsApi.js';
+import { TABLE_FILL_TOOL, parseToolCallArgs } from './formatters/tool-call.js';
+import { updateTableFromOps } from './manager.js';
 import { extractBlocksByTags, applyExclusionRules } from '../utils/rag-tag-extractor.js';
 import { resolveTableRuleConfig } from '../../utils/config/RuleProfileManager.js';
+import { showTableFillReviewModal } from '../../ui/page-window.js';
 
 import { getBatchFillerRuleTemplate, getBatchFillerFlowTemplate, convertTablesToCsvString } from './manager.js';
+
+const CONTINUE_PROMPT = '上一条回复不完整或缺少 <Amily2Edit> 指令块。请直接从中断处继续生成剩余内容，不要重复已输出的文本，也不要添加任何解释或寒暄，确保最终输出中包含完整的 <Amily2Edit>...</Amily2Edit> 指令块。';
+
+async function requestContinuation(baseMessages, partialResponse) {
+    const continueMessages = [
+        ...baseMessages,
+        { role: 'assistant', content: partialResponse || '' },
+        { role: 'user', content: CONTINUE_PROMPT },
+    ];
+    const continued = await callTableModel(continueMessages);
+    if (!continued) return null;
+    return `${partialResponse || ''}${continued}`;
+}
 
 let isFilling = false;
 let manualStopRequested = false;
@@ -268,24 +284,80 @@ async function runBatchAttempt(batchNum, attemptNum) {
         console.dir(messages);
         console.groupEnd();
 
-        const resultText = await callTableModel(messages);
-        console.log(`[Amily2 立即远征] 批次 ${batchNum}/${totalBatches} - 收到 API 原始回复:`, resultText);
-        if (!resultText) {
-            throw new Error('API返回内容为空。');
+        const batchSettings = extension_settings[extensionName] || {};
+        if (batchSettings.tableFillFunctionCall) {
+            // Function Call 路径：结构化输出，无需检查 <Amily2Edit>
+            const argsString = await callAIForTools(messages, TABLE_FILL_TOOL, { slot: 'tableFilling' });
+            if (!argsString) throw new Error('Function Call 返回为空。');
+            const ops = parseToolCallArgs(argsString);
+            if (ops.length === 0) {
+                log(`批次 ${batchNum} 的 Function Call 返回操作列表为空，AI 判断此批次无需变更。`, 'warn');
+                toastr.info('AI 判断此批次无需修改。', `批次 ${batchNum}`);
+            } else {
+                await updateTableFromOps(ops, { immediateDelete: true });
+                renderTables();
+                log(`批次 ${batchNum} Function Call 处理成功（${ops.length} 条操作）。`, 'success');
+            }
+        } else {
+            // Legacy 文本路径
+            const resultText = await callTableModel(messages);
+            console.log(`[Amily2 立即远征] 批次 ${batchNum}/${totalBatches} - 收到 API 原始回复:`, resultText);
+            if (!resultText) throw new Error('API返回内容为空。');
+
+            if (!resultText.includes('<Amily2Edit>')) {
+                log(`批次 ${batchNum} 的响应未包含 <Amily2Edit> 指令块，弹出检查窗口等待用户处理。`, 'warn');
+                updateButtonState('paused');
+                showTableFillReviewModal(resultText, {
+                    title: `填表响应检查 - 批次 ${batchNum}/${totalBatches}`,
+                    subtitle: `批次 ${batchNum}/${totalBatches}（楼层 ${startFloor}-${endFloor}）的 AI 响应未包含有效的 <Amily2Edit> 指令块。请检查原始响应并选择处理方式。`,
+                    onContinue: async (currentText) => {
+                        const merged = await requestContinuation(messages, currentText);
+                        if (!merged) { toastr.error('补全请求失败或返回为空。', '继续补全'); return null; }
+                        if (!merged.includes('<Amily2Edit>')) {
+                            toastr.warning('补全后仍未包含 <Amily2Edit> 指令块，可继续补全、手动应用或重新填表。', '继续补全');
+                        } else {
+                            toastr.success('已获得包含指令块的补全内容，可点击”手动应用”写入。', '继续补全');
+                        }
+                        return merged;
+                    },
+                    onApply: (editedText) => {
+                        if (!editedText || !editedText.includes('<Amily2Edit>')) {
+                            toastr.warning('应用的文本中未检测到 <Amily2Edit> 指令块，已按原文尝试写入。', '手动应用');
+                        }
+                        try {
+                            updateTableFromText(editedText, { immediateDelete: true });
+                            renderTables();
+                            log(`批次 ${batchNum} 已由用户手动处理完成。`, 'success');
+                        } catch (err) {
+                            log(`批次 ${batchNum} 手动应用失败: ${err.message}`, 'error');
+                            toastr.error(`手动应用失败: ${err.message}`, '写入异常');
+                            currentBatch = batchNum - 1;
+                            updateButtonState('error');
+                            return;
+                        }
+                        currentBatch = batchNum;
+                        setTimeout(processNextBatch, 500);
+                    },
+                    onRetry: () => {
+                        log(`用户选择重新填表，批次 ${batchNum} 将重新执行。`, 'warn');
+                        setTimeout(() => runBatchAttempt(batchNum, 0), 300);
+                    },
+                    onCancel: () => {
+                        log(`用户取消了批次 ${batchNum} 的处理，任务已暂停。`, 'warn');
+                        currentBatch = batchNum - 1;
+                        updateButtonState('error');
+                    },
+                });
+                return;
+            }
+
+            updateTableFromText(resultText, { immediateDelete: true });
+            renderTables();
+            log(`批次 ${batchNum} 处理成功。`, 'success');
         }
 
-        // 【修复】检查 AI 是否返回了有效的指令块，防止 AI 偷懒或格式错误被误判为成功
-        if (!resultText.includes('<Amily2Edit>')) {
-            throw new Error('AI未返回有效的 <Amily2Edit> 指令块，可能格式错误或未产生实质性变更。');
-        }
-
-        // 【V155.0】批量填表时，启用立即删除模式，避免红色待删除行残留
-        updateTableFromText(resultText, { immediateDelete: true });
-        renderTables();
-        log(`批次 ${batchNum} 处理成功。`, 'success');
-        
-        currentBatch = batchNum; 
-        setTimeout(processNextBatch, 1000); 
+        currentBatch = batchNum;
+        setTimeout(processNextBatch, 1000);
 
     } catch (error) {
         log(`批次 ${batchNum} 尝试 ${attemptNum + 1} 失败: ${error.message}`, 'error');
@@ -484,24 +556,72 @@ export async function startFloorRangeFilling(startFloor, endFloor) {
         console.dir(messages);
         console.groupEnd();
 
-        const resultText = await callTableModel(messages);
-        console.log(`[Amily2 楼层填表] 楼层 ${startFloor}-${endFloor} - 收到 API 原始回复:`, resultText);
-        
-        if (!resultText) {
-            throw new Error('API返回内容为空。');
+        const floorSettings = extension_settings[extensionName] || {};
+        if (floorSettings.tableFillFunctionCall) {
+            const argsString = await callAIForTools(messages, TABLE_FILL_TOOL, { slot: 'tableFilling' });
+            if (!argsString) throw new Error('Function Call 返回为空。');
+            const ops = parseToolCallArgs(argsString);
+            if (ops.length === 0) {
+                log(`楼层 ${startFloor}-${endFloor} Function Call 返回操作列表为空，无需变更。`, 'warn');
+                toastr.info('AI 判断此楼层范围无需修改。', `楼层 ${startFloor}-${endFloor}`);
+            } else {
+                await updateTableFromOps(ops, { immediateDelete: true });
+                renderTables();
+                toastr.success(`楼层 ${startFloor}-${endFloor} 填表完成！`);
+                log(`楼层 ${startFloor}-${endFloor} Function Call 处理成功（${ops.length} 条操作）。`, 'success');
+            }
+        } else {
+            const resultText = await callTableModel(messages);
+            console.log(`[Amily2 楼层填表] 楼层 ${startFloor}-${endFloor} - 收到 API 原始回复:`, resultText);
+            if (!resultText) throw new Error('API返回内容为空。');
+
+            if (!resultText.includes('<Amily2Edit>')) {
+                log(`楼层 ${startFloor}-${endFloor} 的响应未包含 <Amily2Edit> 指令块，弹出检查窗口等待用户处理。`, 'warn');
+                showTableFillReviewModal(resultText, {
+                    title: `填表响应检查 - 楼层 ${startFloor}-${endFloor}`,
+                    subtitle: `楼层 ${startFloor}-${endFloor} 的 AI 响应未包含有效的 <Amily2Edit> 指令块。请检查原始响应并选择处理方式。`,
+                    onContinue: async (currentText) => {
+                        const merged = await requestContinuation(messages, currentText);
+                        if (!merged) { toastr.error('补全请求失败或返回为空。', '继续补全'); return null; }
+                        if (!merged.includes('<Amily2Edit>')) {
+                            toastr.warning('补全后仍未包含 <Amily2Edit> 指令块，可继续补全、手动应用或重新填表。', '继续补全');
+                        } else {
+                            toastr.success('已获得包含指令块的补全内容，可点击”手动应用”写入。', '继续补全');
+                        }
+                        return merged;
+                    },
+                    onApply: (editedText) => {
+                        if (!editedText || !editedText.includes('<Amily2Edit>')) {
+                            toastr.warning('应用的文本中未检测到 <Amily2Edit> 指令块，已按原文尝试写入。', '手动应用');
+                        }
+                        try {
+                            updateTableFromText(editedText, { immediateDelete: true });
+                            renderTables();
+                            toastr.success(`楼层 ${startFloor}-${endFloor} 填表完成！`);
+                            log(`楼层 ${startFloor}-${endFloor} 填表由用户手动处理完成。`, 'success');
+                        } catch (err) {
+                            log(`楼层 ${startFloor}-${endFloor} 手动应用失败: ${err.message}`, 'error');
+                            toastr.error(`手动应用失败: ${err.message}`, '写入异常');
+                        }
+                    },
+                    onRetry: () => {
+                        log(`用户请求重新填写楼层 ${startFloor}-${endFloor}。`, 'warn');
+                        setTimeout(() => startFloorRangeFilling(startFloor, endFloor), 300);
+                    },
+                    onCancel: () => {
+                        log(`用户取消了楼层 ${startFloor}-${endFloor} 的填表。`, 'warn');
+                        toastr.info(`已取消楼层 ${startFloor}-${endFloor} 的填表。`);
+                    },
+                });
+                return;
+            }
+
+            updateTableFromText(resultText, { immediateDelete: true });
+            renderTables();
+            toastr.success(`楼层 ${startFloor}-${endFloor} 填表完成！`);
+            log(`楼层 ${startFloor}-${endFloor} 填表处理完成。`, 'success');
         }
 
-        // 【修复】检查 AI 是否返回了有效的指令块
-        if (!resultText.includes('<Amily2Edit>')) {
-            throw new Error('AI未返回有效的 <Amily2Edit> 指令块，可能格式错误或未产生实质性变更。');
-        }
-
-        updateTableFromText(resultText, { immediateDelete: true });
-        renderTables();
-        
-        toastr.success(`楼层 ${startFloor}-${endFloor} 填表完成！`);
-        log(`楼层 ${startFloor}-${endFloor} 填表处理完成。`, 'success');
-        
     } catch (error) {
         log(`楼层 ${startFloor}-${endFloor} 填表失败: ${error.message}`, 'error');
         toastr.error(`楼层填表失败: ${error.message}`, '处理失败');

@@ -4,13 +4,58 @@ import { saveChat } from "/script.js";
 import { renderTables } from '../../ui/table-bindings.js';
 import { updateOrInsertTableInChat } from '../../ui/message-table-renderer.js';
 import { extensionName } from "../../utils/settings.js";
-import { updateTableFromText, getBatchFillerRuleTemplate, getBatchFillerFlowTemplate, convertTablesToCsvString, saveStateToMessage, getMemoryState, clearHighlights } from './manager.js';
+import { updateTableFromText, updateTableFromOps, getBatchFillerRuleTemplate, getBatchFillerFlowTemplate, convertTablesToCsvString, saveStateToMessage, getMemoryState, clearHighlights } from './manager.js';
 import { getPresetPrompts, getMixedOrder } from '../../PresetSettings/index.js';
-import { callAI, generateRandomSeed } from '../api.js';
+import { callAI, callAIForTools, generateRandomSeed } from '../api.js';
+import { TABLE_FILL_TOOL, parseToolCallArgs } from './formatters/tool-call.js';
 import { callNccsAI } from '../api/NccsApi.js';
 import { extractBlocksByTags, applyExclusionRules } from '../utils/rag-tag-extractor.js';
 import { resolveTableRuleConfig } from '../../utils/config/RuleProfileManager.js';
 import { safeLorebookEntries } from '../tavernhelper-compatibility.js';
+import { log } from './logger.js';
+import { showTableFillReviewModal } from '../../ui/page-window.js';
+
+const CONTINUE_PROMPT_SECONDARY = '上一条回复不完整或缺少 <Amily2Edit> 指令块。请直接从中断处继续生成剩余内容，不要重复已输出的文本，也不要添加任何解释或寒暄，确保最终输出中包含完整的 <Amily2Edit>...</Amily2Edit> 指令块。';
+
+let secondaryFillerDebounceTimer = null;
+
+async function callSecondaryModel(messages) {
+    const settings = extension_settings[extensionName] || {};
+    if (settings.nccsEnabled) {
+        return await callNccsAI(messages);
+    }
+    return await callAI(messages);
+}
+
+async function requestSecondaryContinuation(baseMessages, partialResponse) {
+    const continueMessages = [
+        ...baseMessages,
+        { role: 'assistant', content: partialResponse || '' },
+        { role: 'user', content: CONTINUE_PROMPT_SECONDARY },
+    ];
+    const continued = await callSecondaryModel(continueMessages);
+    if (!continued) return null;
+    return `${partialResponse || ''}${continued}`;
+}
+
+function commitSecondaryFillResult(rawContent, targetMessages) {
+    updateTableFromText(rawContent);
+
+    const memoryState = getMemoryState();
+    const lastProcessedMsg = targetMessages[targetMessages.length - 1].msg;
+
+    for (const target of targetMessages) {
+        if (!target.msg.metadata) target.msg.metadata = {};
+        target.msg.metadata.Amily2_Process_Hash = target.hash;
+    }
+
+    if (saveStateToMessage(memoryState, lastProcessedMsg)) {
+        renderTables();
+        updateOrInsertTableInChat();
+    }
+
+    saveChat();
+}
 
 
 async function getWorldBookContext() {
@@ -66,9 +111,28 @@ async function getWorldBookContext() {
 }
 
 export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
-    clearHighlights();
-
     const settings = extension_settings[extensionName] || {};
+
+    // 【V2.1.1】分步填表触发延迟 / 防抖：自动触发时若配置了延迟，则延后执行，
+    // 延迟期内再次到来的事件会重置计时器，避免消息连续到达时重复拉起填表。
+    const delay = Math.max(0, parseInt(settings.secondary_filler_delay || 0, 10));
+    if (!forceRun && delay > 0) {
+        if (secondaryFillerDebounceTimer) {
+            clearTimeout(secondaryFillerDebounceTimer);
+        }
+        secondaryFillerDebounceTimer = setTimeout(() => {
+            secondaryFillerDebounceTimer = null;
+            fillWithSecondaryApi(latestMessage, forceRun);
+        }, delay);
+        console.log(`[Amily2-副API] 分步填表已按防抖延迟 ${delay}ms 调度。`);
+        return;
+    }
+    if (secondaryFillerDebounceTimer) {
+        clearTimeout(secondaryFillerDebounceTimer);
+        secondaryFillerDebounceTimer = null;
+    }
+
+    clearHighlights();
 
     // 总开关关闭时，分步填表同样禁用
     if (settings.table_system_enabled === false) {
@@ -272,44 +336,87 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
         console.dir(messages);
         console.groupEnd();
 
-        let rawContent;
-        if (settings.nccsEnabled) {
-            console.log('[Amily2-副API] 使用 Nccs API 进行分步填表...');
-            rawContent = await callNccsAI(messages);
+        if (settings.tableFillFunctionCall) {
+            // Function Call 路径
+            const argsString = await callAIForTools(messages, TABLE_FILL_TOOL, { slot: 'tableFilling' });
+            if (!argsString) {
+                console.error('[Amily2-副API] Function Call 返回为空。');
+                return;
+            }
+            const ops = parseToolCallArgs(argsString);
+            if (ops.length === 0) {
+                console.warn('[Amily2-副API] Function Call 返回操作列表为空，无需变更。');
+                toastr.info('AI 判断此范围无需修改。', 'Amily2-分步填表');
+            } else {
+                await updateTableFromOps(ops);
+                toastr.success('分步填表（Function Call）执行完毕。', 'Amily2-分步填表');
+            }
         } else {
-            console.log('[Amily2-副API] 使用 tableFilling slot 进行分步填表...');
-            rawContent = await callAI(messages, { slot: 'tableFilling' });
+            // Legacy 文本路径
+            let rawContent;
+            if (settings.nccsEnabled) {
+                console.log('[Amily2-副API] 使用 Nccs API 进行分步填表...');
+                rawContent = await callNccsAI(messages);
+            } else {
+                console.log('[Amily2-副API] 使用 tableFilling slot 进行分步填表...');
+                rawContent = await callAI(messages, { slot: 'tableFilling' });
+            }
+
+            if (!rawContent) {
+                console.error('[Amily2-副API] 未能获取AI响应内容。');
+                return;
+            }
+
+            console.log('[Amily2号-副API-原始回复]:', rawContent);
+
+            if (!rawContent.includes('<Amily2Edit>')) {
+                const rangeLabel = `${targetMessages[0].index + 1} - ${targetMessages[targetMessages.length - 1].index + 1}`;
+                console.warn(`[Amily2-副API] 响应未包含 <Amily2Edit> 指令块（楼层 ${rangeLabel}），弹出检查窗口等待用户处理。`);
+                toastr.warning(`分步填表（楼层 ${rangeLabel}）的响应缺少 <Amily2Edit> 指令块，请在弹窗中处理。`, 'Amily2-分步填表');
+                if (latestMessage && latestMessage.metadata) {
+                    delete latestMessage.metadata.Amily2_Retry_Count;
+                }
+                showTableFillReviewModal(rawContent, {
+                    title: `分步填表响应检查 - 楼层 ${rangeLabel}`,
+                    subtitle: `分步填表（楼层 ${rangeLabel}）的 AI 响应未包含有效的 <Amily2Edit> 指令块。请检查原始响应并选择处理方式。`,
+                    onContinue: async (currentText) => {
+                        const merged = await requestSecondaryContinuation(messages, currentText);
+                        if (!merged) { toastr.error('补全请求失败或返回为空。', '继续补全'); return null; }
+                        if (!merged.includes('<Amily2Edit>')) {
+                            toastr.warning('补全后仍未包含 <Amily2Edit> 指令块，可继续补全、手动应用或重新填表。', '继续补全');
+                        } else {
+                            toastr.success('已获得包含指令块的补全内容，可点击”手动应用”写入。', '继续补全');
+                        }
+                        return merged;
+                    },
+                    onApply: (editedText) => {
+                        if (!editedText || !editedText.includes('<Amily2Edit>')) {
+                            toastr.warning('应用的文本中未检测到 <Amily2Edit> 指令块，已按原文尝试写入。', '手动应用');
+                        }
+                        try {
+                            commitSecondaryFillResult(editedText, targetMessages);
+                            toastr.success('分步填表已由用户手动处理完成。', 'Amily2-分步填表');
+                        } catch (err) {
+                            console.error('[Amily2-副API] 手动应用失败:', err);
+                            toastr.error(`手动应用失败: ${err.message}`, '写入异常');
+                        }
+                    },
+                    onRetry: () => {
+                        if (latestMessage && latestMessage.metadata) {
+                            delete latestMessage.metadata.Amily2_Retry_Count;
+                        }
+                        toastr.info('将重新执行分步填表...', 'Amily2-分步填表');
+                        setTimeout(() => fillWithSecondaryApi(latestMessage, forceRun), 300);
+                    },
+                    onCancel: () => {
+                        toastr.info('已取消本次分步填表。', 'Amily2-分步填表');
+                    },
+                });
+                return;
+            }
+
+            commitSecondaryFillResult(rawContent, targetMessages);
         }
-
-        if (!rawContent) {
-            console.error('[Amily2-副API] 未能获取AI响应内容。');
-            return;
-        }
-
-        console.log("[Amily2号-副API-原始回复]:", rawContent);
-
-        // 【修复】检查 AI 是否返回了有效的指令块，防止 AI 偷懒或格式错误被误判为成功
-        if (!rawContent.includes('<Amily2Edit>')) {
-            throw new Error('AI未返回有效的 <Amily2Edit> 指令块，可能格式错误或未产生实质性变更。');
-        }
-
-        updateTableFromText(rawContent);
-
-        const memoryState = getMemoryState();
-        
-        const lastProcessedMsg = targetMessages[targetMessages.length - 1].msg;
-        
-        for (const target of targetMessages) {
-            if (!target.msg.metadata) target.msg.metadata = {};
-            target.msg.metadata.Amily2_Process_Hash = target.hash;
-        }
-
-        if (saveStateToMessage(memoryState, lastProcessedMsg)) {
-            renderTables();
-            updateOrInsertTableInChat();
-        }
-        
-        saveChat();
         toastr.success("分步填表执行完毕。", "Amily2-分步填表");
 
     } catch (error) {

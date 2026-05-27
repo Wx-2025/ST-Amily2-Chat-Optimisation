@@ -250,6 +250,13 @@
                             <input type="number" id="secondary-filler-max-retries" min="0" max="10" step="1" value="2" class="text_pole" style="width: 80px; margin-top: 5px;">
                             <small class="notes" style="margin-top: 5px; display: block;">分步填表失败时的自动重试次数 (0 = 不重试)。</small>
                         </div>
+
+                        <!-- 触发延迟（防抖） -->
+                        <div class="control-block-with-switch" style="margin-bottom: 10px; flex-direction: column; align-items: flex-start;">
+                            <label for="secondary-filler-delay">触发延迟 (毫秒)</label>
+                            <input type="number" id="secondary-filler-delay" min="0" max="60000" step="100" value="0" class="text_pole" style="width: 80px; margin-top: 5px;">
+                            <small class="notes" style="margin-top: 5px; display: block;">收到新消息后延迟多少毫秒再触发分步填表 (0 = 立即触发)；延迟期内若再次收到消息会重置计时，起到防抖作用。</small>
+                        </div>
                     </div>
                     
                     <div class="control-block-with-switch" style="margin-bottom: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
@@ -288,7 +295,19 @@
                     </fieldset>
                     
                     <hr class="section-divider" style="margin: 10px 0;">
-                    
+
+                    <!-- Function Call 填表 -->
+                    <div class="control-block-with-switch" style="margin-bottom: 6px;">
+                        <label for="table-fill-function-call-enabled" title="使用 OpenAI Function Call（工具调用）进行填表，模型直接返回结构化操作列表，无需解析 &lt;Amily2Edit&gt; 指令块。仅支持 openai 直连模式。">使用 Function Call 填表</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="table-fill-function-call-enabled">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <p class="notes" style="margin-bottom: 10px;">仅支持 openai 直连接口（tableFilling 槽位）。启用后跳过 &lt;Amily2Edit&gt; 文本解析，由模型直接返回操作列表。</p>
+
+                    <hr class="section-divider" style="margin: 10px 0;">
+
                     <!-- Nccs API 控制区域 -->
                     <fieldset class="settings-group" style="border-style: dashed; padding: 8px; margin-bottom: 10px;">
                         <legend><i class="fas fa-brain"></i> Nccs API 系统</legend>

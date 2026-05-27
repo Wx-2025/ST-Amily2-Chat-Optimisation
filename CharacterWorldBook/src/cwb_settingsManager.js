@@ -449,6 +449,30 @@ export function bindSettingsEvents($settingsPanel) {
 
         $(document).trigger('cwb:master-switch-changed', { isEnabled: isChecked });
     });
+
+    // 处理来自 API 配置面板总开关同步的 change 事件（该面板通过 dispatchEvent 设置 checkbox 状态）
+    // jQuery 的 .prop('checked') 不触发 change，故与上方 click 处理器不会双重触发
+    $panel.on('change', '#cwb_master_enabled-checkbox', function () {
+        const isChecked = $(this).prop('checked');
+
+        getSettings().cwb_master_enabled = isChecked;
+
+        const overrides = JSON.parse(localStorage.getItem(CWB_BOOLEAN_SETTINGS_OVERRIDE_KEY) || '{}');
+        overrides.cwb_master_enabled = isChecked;
+        localStorage.setItem(CWB_BOOLEAN_SETTINGS_OVERRIDE_KEY, JSON.stringify(overrides));
+
+        state.masterEnabled = isChecked;
+        saveSettingsDebounced();
+        updateControlsLockState();
+
+        const $viewerButton = $(`#${CHAR_CARD_VIEWER_BUTTON_ID}`);
+        if ($viewerButton.length > 0) {
+            $viewerButton.toggle(isChecked && state.viewerEnabled);
+        }
+
+        showToastr('info', `CharacterWorldBook 已 ${isChecked ? '启用' : '禁用'}`);
+        $(document).trigger('cwb:master-switch-changed', { isEnabled: isChecked });
+    });
 }
 
 function updateApiModeUI(mode) {

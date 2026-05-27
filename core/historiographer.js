@@ -307,8 +307,11 @@ function getRawMessagesForSummary(startFloor, endFloor) {
     const useTagExtraction = historiographyRuleConfig.tagExtractionEnabled ?? false;
     const tagsToExtract = useTagExtraction ? (historiographyRuleConfig.tags || '').split(',').map(t => t.trim()).filter(Boolean) : [];
     const exclusionRules = historiographyRuleConfig.exclusionRules || [];
+    const excludeUserMessages = historiographyRuleConfig.excludeUserMessages ?? false;
 
     const messages = historySlice.map((msg, index) => {
+        if (excludeUserMessages && msg.is_user) return null;
+
         let content = msg.mes;
 
         if (useTagExtraction && tagsToExtract.length > 0) {
@@ -319,7 +322,7 @@ function getRawMessagesForSummary(startFloor, endFloor) {
         }
 
         content = applyExclusionRules(content, exclusionRules);
-        
+
         if (!content.trim()) return null;
 
         return {

@@ -60,9 +60,16 @@ export function makeDraggable($element, onClick, storageKey) {
         });
     };
 
+    const DRAG_THRESHOLD = 5;
+
     const dragMove = (e) => {
         if (!isDragging) return;
         e.preventDefault();
+        if (!hasDragged) {
+            const coords = getEventCoords(e.originalEvent || e);
+            const dist = Math.abs(coords.x - startPos.x) + Math.abs(coords.y - startPos.y);
+            if (dist < DRAG_THRESHOLD) return;
+        }
         hasDragged = true;
         
         const coords = getEventCoords(e.originalEvent || e);

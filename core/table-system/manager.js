@@ -29,6 +29,7 @@ import { extensionName } from '../../utils/settings.js';
 
 import { log } from './logger.js';
 import { executeCommands } from './executor.js';
+import { applyOperations } from './actions/applyOperations.js';
 import { fillWithSecondaryApi } from './secondary-filler.js';
 import { renderTables } from '../../ui/table-bindings.js';
 import { updateOrInsertTableInChat } from '../../ui/message-table-renderer.js';
@@ -854,6 +855,65 @@ export async function updateTableFromText(textContent, options = {}) {
     });
 
     log(`成功执行了 ${changes.length} 处变更。`, 'success');
+
+    const affectedTables = [...new Set(changes.map(c => c.tableIndex))];
+    affectedTables.forEach(tableIndex => dispatchTableUpdate(tableIndex));
+
+    const context = getContext();
+    if (context.chat && context.chat.length > 0) {
+        const lastMessage = context.chat[context.chat.length - 1];
+        if (_persistSaveStateToMessage(getState(), lastMessage)) {
+            await saveChat();
+            toastr.success('已根据AI的指示成功更新表格！', '填表完成');
+            document.dispatchEvent(new CustomEvent('amily2-force-ui-reload'));
+            return;
+        }
+    }
+
+    saveChatDebounced();
+    toastr.success('已根据AI的指示成功更新表格！', '填表完成');
+    document.dispatchEvent(new CustomEvent('amily2-force-ui-reload'));
+}
+
+/**
+ * 直接从 Operation[] 应用变更（Function Call 路径），跳过文本解析。
+ * 后续流程与 updateTableFromText 完全一致。
+ *
+ * @param {import('./dto/Operation.js').Operation[]} ops
+ * @param {Object} options - 同 updateTableFromText 的 options
+ */
+export async function updateTableFromOps(ops, options = {}) {
+    const settings = extension_settings[extensionName] || {};
+    if (settings.table_system_enabled === false) return;
+
+    if (!Array.isArray(ops) || ops.length === 0) {
+        log('Function Call 返回操作列表为空，无需更新表格。', 'info');
+        return;
+    }
+
+    const { state, changes } = applyOperations(getState(), ops);
+
+    if (changes.length === 0) {
+        log('Function Call 操作未产生任何实质性变更。', 'info');
+        return;
+    }
+
+    setState(state);
+
+    if (options.immediateDelete) {
+        commitPendingDeletions();
+    }
+
+    changes.forEach(change => {
+        markTableUpdated(change.tableIndex);
+        if (change.type === 'update' || change.type === 'insert') {
+            if (change.rowIndex !== undefined && change.colIndex !== undefined) {
+                addHighlight(change.tableIndex, change.rowIndex, change.colIndex);
+            }
+        }
+    });
+
+    log(`Function Call 成功执行了 ${changes.length} 处变更。`, 'success');
 
     const affectedTables = [...new Set(changes.map(c => c.tableIndex))];
     affectedTables.forEach(tableIndex => dispatchTableUpdate(tableIndex));

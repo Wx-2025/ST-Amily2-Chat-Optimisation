@@ -158,4 +158,7 @@ export const tableSystemDefaultSettings = {
     // Nccs API 设置
     nccsEnabled: false,
     nccsFakeStreamEnabled: false,
+
+    // Function Call 填表
+    tableFillFunctionCall: false,
 };

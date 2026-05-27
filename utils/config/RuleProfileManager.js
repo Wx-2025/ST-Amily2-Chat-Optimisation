@@ -29,6 +29,7 @@ function sanitizeRuleProfile(profile = {}) {
         tagExtractionEnabled: Boolean(profile.tagExtractionEnabled),
         tags: String(profile.tags ?? ''),
         exclusionRules,
+        excludeUserMessages: Boolean(profile.excludeUserMessages),
     };
 }
 
@@ -44,6 +45,7 @@ function cloneRuleProfile(profile = {}) {
                 end: rule.end || '',
             }))
             : [],
+        excludeUserMessages: Boolean(profile.excludeUserMessages),
     };
 }
 

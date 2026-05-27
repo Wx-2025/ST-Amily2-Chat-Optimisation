@@ -9,10 +9,10 @@ const RAG_MODULE_NAME = 'hanlinyuan-rag-core';
 
 function getRagSettings() {
     if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
-    if (!extension_settings[extensionName][RAG_MODULE_NAME]) {
-        extension_settings[extensionName][RAG_MODULE_NAME] = structuredClone(ragDefaultSettings);
+    if (!extension_settings[RAG_MODULE_NAME]) {
+        extension_settings[RAG_MODULE_NAME] = structuredClone(ragDefaultSettings);
     }
-    return extension_settings[extensionName][RAG_MODULE_NAME];
+    return extension_settings[RAG_MODULE_NAME];
 }
 
 export function bindSuperMemoryEvents() {

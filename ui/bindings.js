@@ -10,8 +10,9 @@ import { setAvailableModels, populateModelDropdown, getLatestUpdateInfo } from "
 import { fixCommand, testReplyChecker } from "../core/commands.js";
 import { messageFormatting } from '/script.js';
 import { executeManualCommand } from '../core/autoHideManager.js';
-import { showContentModal, showHtmlModal } from './page-window.js';
+import { showContentModal, showHtmlModal, showCwbWarningModal } from './page-window.js';
 import { openAutoCharCardWindow } from '../core/auto-char-card/ui-bindings.js';
+import { showPresetSettings } from '../PresetSettings/prese_ui.js';
 
 function displayDailyAuthCode() {
     const displayEl = document.getElementById('amily2_daily_code_display');
@@ -806,7 +807,7 @@ export function bindModalEvents() {
     container
         .off("click.amily2.chamber_nav")
         .on("click.amily2.chamber_nav",
-             "#amily2_open_text_optimization, #amily2_open_plot_optimization, #amily2_open_additional_features, #amily2_open_rag_palace, #amily2_open_memorisation_forms, #amily2_open_character_world_book, #amily2_open_world_editor, #amily2_open_glossary, #amily2_open_renderer, #amily2_open_super_memory, #amily2_open_auto_char_card, #amily2_open_api_config, #amily2_open_rule_config, #amily2_open_sfigen, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan, #amily2_back_to_main_from_forms, #amily2_back_to_main_from_optimization, #amily2_back_to_main_from_text_optimization, #amily2_back_to_main_from_cwb, #amily2_back_to_main_from_world_editor, #amily2_back_to_main_from_glossary, #amily2_renderer_back_button, #amily2_back_to_main_from_super_memory, #amily2_back_to_main_from_api_config, #amily2_back_to_main_from_rule_config, #amily2_sfigen_back_to_main", function () {
+             "#amily2_open_text_optimization, #amily2_open_plot_optimization, #amily2_open_additional_features, #amily2_open_rag_palace, #amily2_open_memorisation_forms, #amily2_open_character_world_book, #amily2_open_world_editor, #amily2_open_glossary, #amily2_open_renderer, #amily2_open_super_memory, #amily2_open_auto_char_card, #amily2_open_api_config, #amily2_open_rule_config, #amily2_open_sfigen, #amily2_open_preset_editor, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan, #amily2_back_to_main_from_forms, #amily2_back_to_main_from_optimization, #amily2_back_to_main_from_text_optimization, #amily2_back_to_main_from_cwb, #amily2_back_to_main_from_world_editor, #amily2_back_to_main_from_glossary, #amily2_renderer_back_button, #amily2_back_to_main_from_super_memory, #amily2_back_to_main_from_api_config, #amily2_back_to_main_from_rule_config, #amily2_sfigen_back_to_main", function () {
         if (!pluginAuthStatus.authorized) return;
 
         const mainPanel = container.find('.plugin-features');
@@ -874,7 +875,10 @@ export function bindModalEvents() {
                 memorisationFormsPanel.show();
                 break;
             case 'amily2_open_character_world_book':
-                characterWorldBookPanel.show();
+                showCwbWarningModal(
+                    () => characterWorldBookPanel.show(),
+                    () => mainPanel.show()
+                );
                 break;
             case 'amily2_open_world_editor':
                 worldEditorPanel.show();
@@ -891,6 +895,10 @@ export function bindModalEvents() {
             case 'amily2_open_sfigen':
                 sfigenPanel.show();
                 break;
+            case 'amily2_open_preset_editor':
+                showPresetSettings();
+                mainPanel.show();
+                return;
             case 'amily2_back_to_main_settings':
             case 'amily2_back_to_main_from_hanlinyuan':
             case 'amily2_back_to_main_from_forms':

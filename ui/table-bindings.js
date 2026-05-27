@@ -1371,6 +1371,7 @@ export function bindTableEvents(panelElement = null) {
     const batchSlider = document.getElementById('secondary-filler-batch');
     const bufferSlider = document.getElementById('secondary-filler-buffer');
     const maxRetriesSlider = document.getElementById('secondary-filler-max-retries'); // 【新增】
+    const delaySlider = document.getElementById('secondary-filler-delay');
 
     const tableRuleProfileSelect = document.getElementById('table-rule-profile-select');
     
@@ -1438,10 +1439,31 @@ export function bindTableEvents(panelElement = null) {
     if (maxRetriesSlider) {
         const value = extension_settings[extensionName]?.secondary_filler_max_retries ?? 2;
         maxRetriesSlider.value = value;
-        
+
         maxRetriesSlider.addEventListener('change', function() {
             updateAndSaveTableSetting('secondary_filler_max_retries', parseInt(this.value, 10));
             toastr.info(`最大重试次数已设置为 ${this.value}。`);
+        });
+    }
+
+    if (delaySlider) {
+        const value = extension_settings[extensionName]?.secondary_filler_delay ?? 0;
+        delaySlider.value = value;
+
+        delaySlider.addEventListener('change', function() {
+            const parsed = Math.max(0, parseInt(this.value, 10) || 0);
+            this.value = parsed;
+            updateAndSaveTableSetting('secondary_filler_delay', parsed);
+            toastr.info(`触发延迟已设置为 ${parsed} 毫秒。`);
+        });
+    }
+
+    const fcToggle = document.getElementById('table-fill-function-call-enabled');
+    if (fcToggle) {
+        fcToggle.checked = extension_settings[extensionName]?.tableFillFunctionCall ?? false;
+        fcToggle.addEventListener('change', function() {
+            updateAndSaveTableSetting('tableFillFunctionCall', this.checked);
+            toastr.info(`Function Call 填表已${this.checked ? '启用' : '禁用'}。`);
         });
     }
 

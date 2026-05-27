@@ -9,6 +9,7 @@ function createEmptyProfile() {
         tagExtractionEnabled: false,
         tags: '',
         exclusionRules: [],
+        excludeUserMessages: false,
     };
 }
 
@@ -57,6 +58,7 @@ function collectProfile(container) {
         tagExtractionEnabled: container.find('#amily2_rule_profile_tag_toggle').is(':checked'),
         tags: container.find('#amily2_rule_profile_tags').val(),
         exclusionRules,
+        excludeUserMessages: container.find('#amily2_rule_profile_exclude_user').is(':checked'),
     };
 }
 
@@ -83,6 +85,7 @@ function fillEditor(container, profile) {
     container.find('#amily2_rule_profile_tag_toggle').prop('checked', !!current.tagExtractionEnabled);
     container.find('#amily2_rule_profile_tags').val(current.tags || '');
     container.find('#amily2_rule_profile_tags_wrap').toggle(!!current.tagExtractionEnabled);
+    container.find('#amily2_rule_profile_exclude_user').prop('checked', !!current.excludeUserMessages);
     renderRules(container, current.exclusionRules || []);
 }
 

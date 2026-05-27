@@ -938,7 +938,7 @@ export const mainOptDefaults = {
   suppressToast: false,
   optimizationMode: "intercept",
   optimizationTargetTag: 'content',
-  optimizationEnabled: true,
+  optimizationEnabled: false,
   optimizationExclusionEnabled: false,
   optimizationExclusionRules: [],
   greetingOptimizationEnabled: false,

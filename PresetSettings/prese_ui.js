@@ -194,7 +194,7 @@ export function toggleSettingsOrb() {
     }
 }
 
-async function showPresetSettings() {
+export async function showPresetSettings() {
     const template = $(await renderExtensionTemplateAsync(presetSettingsPath, 'prese-settings'));
 
     renderPresetManager(template);

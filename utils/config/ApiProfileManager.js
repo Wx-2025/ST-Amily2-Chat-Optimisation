@@ -67,8 +67,8 @@ export const SLOTS = {
     main:          { label: '主 API（正文优化）',   type: 'chat' },
     plotOpt:       { label: '剧情优化 / JQYH',      type: 'chat' },
     plotOptConc:   { label: '剧情优化（并发）',      type: 'chat' },
-    ngms:          { label: 'NGMS 历史记录',         type: 'chat' },
-    nccs:          { label: 'NCCS 并发',             type: 'chat' },
+    ngms:          { label: 'NGMS（总结）',            type: 'chat' },
+    nccs:          { label: 'NCCS（填表）',            type: 'chat' },
     cwb:           { label: '角色世界书',              type: 'chat' },
     autoCharCard:  { label: '一键生卡',              type: 'chat' },
     sybd:          { label: '术语表填写',             type: 'chat' },
@@ -254,6 +254,7 @@ class ApiProfileManager {
                 ...base,
                 maxTokens:   data.maxTokens   ?? 65500,
                 temperature: data.temperature ?? 1.0,
+                fakeStream:  data.fakeStream  ?? false,
                 // 自定义参数：透传到 LLM 请求 body 的额外 key/value（top_p、frequency_penalty 等）
                 // 由 utils/api-vendor.js 提供 vendor 标准参数提示，但不强校验。
                 customParams: (typeof data.customParams === 'object' && data.customParams !== null)

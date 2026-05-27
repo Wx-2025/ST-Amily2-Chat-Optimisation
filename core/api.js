@@ -949,3 +949,111 @@ export async function checkAndFixWithAPI(latestMessage, previousMessages) {
     const { processOptimization } = await import('./summarizer.js');
     return await processOptimization(latestMessage, previousMessages);
 }
+
+/**
+ * 使用 OpenAI Function Call 调用 AI，返回 tool_calls[0].function.arguments 字符串。
+ * 仅支持 openai / openai_test 接口（Google / ST preset / backend 不在标准 tool_calls 格式下工作）。
+ *
+ * @param {Array} messages
+ * @param {Object} tool     - OpenAI tools 定义对象（单个，含 type/function 字段）
+ * @param {Object} options  - 同 callAI 的 options，支持 slot / customParams 等
+ * @returns {Promise<string|null>} arguments JSON 字符串，失败返回 null
+ */
+export async function callAIForTools(messages, tool, options = {}) {
+    const apiSettings = await getApiSettings(options.slot || 'main');
+
+    const finalOptions = {
+        maxTokens: apiSettings.maxTokens,
+        temperature: apiSettings.temperature,
+        model: apiSettings.model,
+        apiUrl: apiSettings.apiUrl,
+        apiKey: apiSettings.apiKey,
+        apiProvider: apiSettings.apiProvider,
+        customParams: { ...(apiSettings.customParams ?? {}), ...(options.customParams ?? {}) },
+        ...options,
+    };
+
+    const FC_SUPPORTED_PROVIDERS = new Set(['openai', 'openai_test', 'custom_oai', 'openrouter', 'deepseek', 'xai']);
+    if (!FC_SUPPORTED_PROVIDERS.has(finalOptions.apiProvider)) {
+        console.warn(`[Amily2-外交部] Function Call 不支持当前接口类型: ${finalOptions.apiProvider}`);
+        toastr.warning(`当前 API 接口类型（${finalOptions.apiProvider}）不支持 Function Call。`, 'Function Call');
+        return null;
+    }
+
+    if (!finalOptions.apiUrl || !finalOptions.model) {
+        console.warn('[Amily2-外交部] API URL 或模型未配置，无法调用 Function Call AI');
+        toastr.error('API URL 或模型未配置。', 'Amily2-外交部');
+        return null;
+    }
+
+    const buildFCBody = (withToolChoice, overrideMessages) => ({
+        chat_completion_source: 'openai',
+        reverse_proxy: finalOptions.apiUrl,
+        proxy_password: finalOptions.apiKey,
+        model: finalOptions.model,
+        messages: overrideMessages ?? messages,
+        max_tokens: finalOptions.maxTokens || 30000,
+        temperature: finalOptions.temperature ?? 1,
+        stream: false,
+        ...(finalOptions.customParams || {}),
+        tools: [tool],
+        ...(withToolChoice ? { tool_choice: { type: 'function', function: { name: tool.function.name } } } : {}),
+    });
+
+    const doFCRequest = async (withToolChoice, overrideMessages) => {
+        const response = await fetch('/api/backends/chat-completions/generate', {
+            method: 'POST',
+            headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
+            body: JSON.stringify(buildFCBody(withToolChoice, overrideMessages)),
+        });
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Function Call 请求失败: ${response.status} - ${errorText}`);
+        }
+        const data = await response.json();
+        // ST 代理在上游报错时仍返回 HTTP 200，错误信息在 body 里
+        if (data?.error) {
+            throw new Error(`Function Call 请求失败: ${JSON.stringify(data.error)}`);
+        }
+        return data;
+    };
+
+    try {
+        console.groupCollapsed(`[Amily2号-Function Call] ${new Date().toLocaleTimeString()}`);
+        console.log('【工具】:', tool.function?.name, '【模型】:', finalOptions.model);
+        console.log('【消息】:', messages);
+        console.groupEnd();
+
+        let data;
+        try {
+            // 走 ST 后端代理，避免浏览器 CSP 拦截直连外部 URL
+            data = await doFCRequest(true);
+        } catch (firstError) {
+            // 首次失败（含 ST 代理吞掉错误码场景）无条件去掉 tool_choice 重试一次
+            // 思考模式模型支持 tools 但不支持强制 tool_choice，追加强制指令防止模型直接输出文本
+            console.warn('[Amily2-外交部] 首次 FC 请求失败，去掉 tool_choice 重试…', firstError.message);
+            const retryMessages = [
+                ...messages,
+                { role: 'user', content: `你必须通过调用 \`${tool.function.name}\` 函数来返回结果，禁止直接输出文本内容。` },
+            ];
+            data = await doFCRequest(false, retryMessages);
+        }
+
+        const toolCalls = data?.choices?.[0]?.message?.tool_calls;
+        if (!Array.isArray(toolCalls) || toolCalls.length === 0) {
+            console.warn('[Amily2-外交部] Function Call 响应中无 tool_calls，finish_reason:', data?.choices?.[0]?.finish_reason);
+            return null;
+        }
+
+        const argsString = toolCalls[0]?.function?.arguments;
+        console.groupCollapsed('[Amily2号-Function Call 响应]');
+        console.log(argsString);
+        console.groupEnd();
+        return argsString ?? null;
+
+    } catch (error) {
+        console.error('[Amily2-外交部] Function Call 调用失败:', error);
+        toastr.error(`Function Call 调用失败: ${error.message}`, 'Amily2-外交部');
+        return null;
+    }
+}

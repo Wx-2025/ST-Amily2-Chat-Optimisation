@@ -46,7 +46,7 @@
 
 - 添加记忆管理并发调用
 
-### 最新更新 (待发布)
+### 2.1.1 (2026/04/23)
 
 以下为修复内容：
 - **自动写卡系统 Diff 视图修复**：
@@ -81,6 +81,18 @@
   - **Ngms API 强制参数**：在 `core/api/Ngms_api.js` 中，移除了旧版 UI 中的温度和最大 Token 设置，强制将默认温度设为 `1.0`，最大 Token 设为 `30000`，以确保总结任务的稳定性和完整性。
   - **总结失败自动重试**：在 `core/historiographer.js` 中为“微言录”和“宏史卷”的生成过程添加了自定义重试逻辑。用户可在 UI 中设置重试次数，当 AI 返回空内容时，系统会自动等待并重试，降低了因 API 波动导致的总结失败率。
   - **时间跨度标识优化**：修改了 `utils/settings.js` 中的”微言录”和”宏史卷”提示词，强制要求 AI 在提取时间时加入相对时间跨度标识 `(Xd)`（如 `2023-09-15(2d)-星期五-15:00`），以解决长篇剧情中因缺乏具体日期导致的时间线混乱问题。
+- **翰林院设置回填中断修复（Rerank 等开关无法回显的根因）**：修复了 `ui/hanlinyuan-bindings.js` 的 `loadSettingsToUI` 在处理“标签提取”相关 DOM（`hly-tag-extraction-toggle` / `hly-tag-input` / `hly-tag-input-container`，已在 2.1.0 重构中删除）时对 `null` 赋值抛出 TypeError 的问题。由于该异常发生在 Rerank 设置回填之前，导致 Rerank 等开关虽已正确保存至 `extension_settings['hanlinyuan-rag-core']`，但刷新后 UI 不再回显，表现为“开关无法持久化”。清理相关 DOM 回填与 `bindInternalUIEvents` 中同名元素的事件绑定后，Rerank 等翰林院面板设置可正常持久化显示。
+- **翰林院孤儿引用清理**：移除 `ui/hanlinyuan-bindings.js` → `updateAndSaveSetting` 中对已删除函数 `syncHanlinLinkedRuleProfile` 的四处调用，修复了修改浓缩/查询预处理的标签提取或标签字段时抛出 ReferenceError 的问题（2.1.0 重构遗留）。
+- **超级记忆 RAG 设置路径修复**：修复了 `core/super-memory/bindings.js` 中 `getRagSettings` 使用错误路径 `extension_settings[extensionName]['hanlinyuan-rag-core']` 读写的问题。翰林院核心 (`core/rag-processor.js`) 使用的是顶层 `extension_settings['hanlinyuan-rag-core']`，改为一致路径后，归档开关 / 关联图谱开关 / 归档阈值等设置可正确持久化并与翰林院面板同步。
+- **分步填表防抖延迟参数落地**：之前 `utils/settings.js` 与 `core/table-system/settings.js` 均声明了 `secondary_filler_delay` 默认值，但既没有 UI 入口也没有在代码中被读取。现已：
+  - 在「分步填表高级控制」面板新增「触发延迟 (毫秒)」数值输入（`assets/amily-data-table/Memorisation-forms.html`）；
+  - 在 `ui/table-bindings.js` 中为该输入框补齐值回填与 `updateAndSaveTableSetting('secondary_filler_delay', ...)` 的 change 绑定；
+  - 在 `core/table-system/secondary-filler.js` 的 `fillWithSecondaryApi` 入口处实现真正的防抖：自动触发（`forceRun=false`）且延迟 > 0 时，会用模块级定时器调度本次调用，延迟期内再次到来的触发会重置计时器；`forceRun=true` 的手动触发及重新填表仍会立即执行，并清掉待触发的防抖任务。
+- **填表响应检查窗（Amily2Edit 指令块缺失处理）**：
+  - 新增 `ui/page-window.js` → `showTableFillReviewModal`，参照总结模块 `showSummaryModal` 的交互模式，提供原始响应查看/编辑、继续补全、重新填表、手动应用、取消五种操作。
+  - **批量填表 / 楼层填表**：修改 `core/table-system/batch-filler.js` 的 `runBatchAttempt` 与 `startFloorRangeFilling`，当 AI 响应缺少 `<Amily2Edit>` 指令块时不再直接抛错进入自动重试，而是弹出检查窗让用户查看原始报文；批次模式下会先将按钮置为“继续填表”暂停状态，操作结束后自动恢复流程；网络/空响应等其它异常仍走原有的 `MAX_RETRIES` 自动重试。
+  - **分步填表**：修改 `core/table-system/secondary-filler.js` 的 `fillWithSecondaryApi`，在缺少指令块时弹出同款检查窗，并将原先分散的“写表 → 存 hash → saveChat”流程抽取为 `commitSecondaryFillResult` 公共函数，供正常路径与手动应用路径复用；顺带补齐该文件缺失的 `log` 导入。
+  - **继续补全实现**：新增 `requestContinuation` / `requestSecondaryContinuation` 工具函数，将用户当前编辑的文本作为 `assistant` 消息追加到原始请求之后，并附加专用的“接续”用户提示词再次调用表格模型，将返回文本拼接到原文末尾回填到检查窗文本框中。
 
 ### 2.1.0 (2026/04/18)
 

@@ -433,9 +433,11 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
             const useTagExtraction = historiographyRuleConfig.tagExtractionEnabled ?? false;
             const tagsToExtract = useTagExtraction ? (historiographyRuleConfig.tags || '').split(',').map(t => t.trim()).filter(Boolean) : [];
             const exclusionRules = historiographyRuleConfig.exclusionRules || [];
+            const excludeUserMessages = historiographyRuleConfig.excludeUserMessages ?? false;
 
             history = historyMessages
                 .map(msg => {
+                    if (excludeUserMessages && msg.is_user) return null;
                     if (msg.mes && msg.mes.trim()) {
                         let content = msg.mes.trim();
 

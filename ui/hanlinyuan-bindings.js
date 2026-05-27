@@ -77,16 +77,6 @@ function updateAndSaveSetting(key, value) {
 
     HanlinyuanCore.saveSettings();
 
-    if (key === 'condensation.tagExtractionEnabled') {
-        syncHanlinLinkedRuleProfile('condensation', { tagExtractionEnabled: value });
-    } else if (key === 'condensation.tags') {
-        syncHanlinLinkedRuleProfile('condensation', { tags: value });
-    } else if (key === 'queryPreprocessing.tagExtractionEnabled') {
-        syncHanlinLinkedRuleProfile('queryPreprocessing', { tagExtractionEnabled: value });
-    } else if (key === 'queryPreprocessing.tags') {
-        syncHanlinLinkedRuleProfile('queryPreprocessing', { tags: value });
-    }
-
     log(`[自动保存] 设置项 '${key}' 已更新为: ${JSON.stringify(value)}`, 'success');
 }
 
@@ -390,15 +380,7 @@ function bindInternalUIEvents() {
     }
 
     // 注入设置的UI逻辑已由 initializeUnifiedInjectionEditor 函数统一处理。
-
-    // 【新增】为“标签提取”复选框绑定事件
-    const tagExtractionToggle = document.getElementById('hly-tag-extraction-toggle');
-    const tagInputContainer = document.getElementById('hly-tag-input-container');
-    if (tagExtractionToggle && tagInputContainer) {
-        tagExtractionToggle.addEventListener('change', () => {
-            tagInputContainer.style.display = tagExtractionToggle.checked ? 'block' : 'none';
-        });
-    }
+    // 标签提取开关/输入框已在 2.1.0 重构中移除，改为规则配置下拉选单管理。
 
     // 为“书库选择”下拉框绑定联动事件
     const librarySelect = document.getElementById('hly-hist-select-library');
@@ -664,17 +646,8 @@ export function loadSettingsToUI() {
         histMaxRetriesEl.value = settings.historiographyMaxRetries ?? 2;
     }
 
-    // 注：hly-tag-extraction-toggle / hly-tag-input / hly-tag-input-container 已从 HTML 移除，
-    // 标签提取规则改由 RuleProfileManager 管理。此处保留兼容性 null 检查，避免抛错吞掉后续段落加载。
-    const tagExtractionToggle = document.getElementById('hly-tag-extraction-toggle');
-    const tagInput = document.getElementById('hly-tag-input');
-    const tagInputContainer = document.getElementById('hly-tag-input-container');
-
-    if (tagExtractionToggle) tagExtractionToggle.checked = settings.condensation.tagExtractionEnabled;
-    if (tagInput) tagInput.value = settings.condensation.tags;
-    if (tagInputContainer && tagExtractionToggle) {
-        tagInputContainer.style.display = tagExtractionToggle.checked ? 'block' : 'none';
-    }
+    // 标签提取开关/输入框已在 2.1.0 重构中移除（改为规则配置下拉选单），
+    // 这里不再回填对应 DOM，避免因元素已不存在导致 loadSettingsToUI 中断。
 
     // Rerank 设置
     document.getElementById('hly-rerank-enabled').checked = settings.rerank.enabled;
