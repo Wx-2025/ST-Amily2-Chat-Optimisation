@@ -15,7 +15,6 @@ import { resolveHistoriographyRuleConfig } from "../utils/config/RuleProfileMana
 
 import { getPresetPrompts, getMixedOrder } from '../PresetSettings/index.js';
 import { callAI, generateRandomSeed } from './api.js';
-import { callJqyhAI } from './api/JqyhApi.js';
 import { callConcurrentAI } from './api/ConcurrentApi.js';
 
 export async function processOptimization(latestMessage, previousMessages) {
@@ -480,7 +479,7 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
             onProgress(getRandomText(['正在检索辅助记忆 (LLM-B)...', '正在扫描平行世界线 (LLM-B)...']), false);
 
             onProgress(getRandomText(['正在与核心意识同步 (LLM-A)...', '正在等待灵魂共鸣 (LLM-A)...']), false);
-            const promise1 = (settings.jqyhEnabled ? callJqyhAI(mainMessages) : callAI(mainMessages, { slot: 'plotOpt' })).then(res => {
+            const promise1 = callAI(mainMessages, { slot: 'plotOpt' }).then(res => {
                 onProgress(getRandomText(['正在与核心意识同步 (LLM-A)...', '正在等待灵魂共鸣 (LLM-A)...']), true);
                 return res;
             });
@@ -554,7 +553,7 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
                 attempt++;
                 console.log(`[${extensionName}] 剧情优化第 ${attempt} 次尝试...`);
                 
-                const rawResponse = settings.jqyhEnabled ? await callJqyhAI(mainMessages) : await callAI(mainMessages, { slot: 'plotOpt' });
+                const rawResponse = await callAI(mainMessages, { slot: 'plotOpt' });
 
                 if (cancellationState.isCancelled) {
                     console.log(`[${extensionName}] 优化任务在API调用后被中止。`);

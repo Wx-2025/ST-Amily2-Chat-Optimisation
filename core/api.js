@@ -485,8 +485,7 @@ export async function getApiSettings(slot = 'main') {
             apiProvider:  apiMode,
             apiUrl:       settings.plotOpt_apiUrl?.trim() || '',
             apiKey:       configManager.get('plotOpt_apiKey') || '',
-            model:        document.getElementById('amily2_opt_model')?.value?.trim()
-                          || settings.plotOpt_model || '',
+            model:        settings.plotOpt_model || '',
             maxTokens:    settings.plotOpt_max_tokens   ?? 65500,
             temperature:  settings.plotOpt_temperature  ?? 1.0,
             tavernProfile: '',

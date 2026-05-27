@@ -8,7 +8,6 @@
 import { extension_settings, getContext } from "/scripts/extensions.js";
 import { characters, this_chid, getRequestHeaders, saveSettingsDebounced, eventSource, event_types } from "/script.js";
 import { defaultSettings, extensionName } from "../utils/settings.js";
-import { testJqyhApiConnection, fetchJqyhModels } from '../core/api/JqyhApi.js';
 import { testConcurrentApiConnection, fetchConcurrentModels } from '../core/api/ConcurrentApi.js';
 import { safeLorebooks, safeCharLorebooks, safeLorebookEntries } from "../core/tavernhelper-compatibility.js";
 import { createDrawer } from '../ui/drawer.js';
@@ -45,30 +44,6 @@ function opt_toCamelCase(str) {
     return str.replace(/[-_]([a-z])/g, (g) => g[1].toUpperCase());
 }
 
-function opt_updateApiUrlVisibility(panel, apiMode) {
-    const customApiSettings = panel.find('#amily2_opt_custom_api_settings_block');
-    const tavernProfileSettings = panel.find('#amily2_opt_tavern_api_profile_block');
-    const apiUrlInput = panel.find('#amily2_opt_api_url');
-
-    customApiSettings.hide();
-    tavernProfileSettings.hide();
-
-    if (apiMode === 'tavern') {
-        tavernProfileSettings.show();
-    } else {
-        customApiSettings.show();
-        if (apiMode === 'google') {
-            panel.find('#amily2_opt_api_url_block').hide();
-            const googleUrl = 'https://generativelanguage.googleapis.com';
-            if (apiUrlInput.val() !== googleUrl) {
-                apiUrlInput.val(googleUrl).attr('type', 'text').trigger('change');
-            }
-        } else {
-            panel.find('#amily2_opt_api_url_block').show();
-        }
-    }
-}
-
 function opt_updateWorldbookSourceVisibility(panel, source) {
     const manualSelectionWrapper = panel.find('#amily2_opt_worldbook_select_wrapper');
     if (source === 'manual') {
@@ -82,49 +57,6 @@ function opt_updateWorldbookSourceVisibility(panel, source) {
         });
     } else {
         manualSelectionWrapper.hide();
-    }
-}
-
-async function opt_loadTavernApiProfiles(panel) {
-    const select = panel.find('#amily2_opt_tavern_api_profile_select');
-    const apiSettings = opt_getMergedSettings();
-    const currentProfileId = apiSettings.plotOpt_tavernProfile;
-
-    const currentValue = select.val();
-    select.empty().append(new Option('-- 请选择一个酒馆预设 --', ''));
-
-    try {
-        const tavernProfiles = getContext().extensionSettings?.connectionManager?.profiles || [];
-        if (!tavernProfiles || tavernProfiles.length === 0) {
-            select.append($('<option>', { value: '', text: '未找到酒馆预设', disabled: true }));
-            return;
-        }
-
-        let foundCurrentProfile = false;
-        tavernProfiles.forEach(profile => {
-            if (profile.api && profile.preset) {
-                const option = $('<option>', {
-                    value: profile.id,
-                    text: profile.name || profile.id,
-                    selected: profile.id === currentProfileId
-                });
-                select.append(option);
-                if (profile.id === currentProfileId) {
-                    foundCurrentProfile = true;
-                }
-            }
-        });
-
-        if (currentProfileId && !foundCurrentProfile) {
-            toastr.warning(`之前选择的酒馆预设 "${currentProfileId}" 已不存在，请重新选择。`);
-            opt_saveSetting('tavernProfile', '');
-        } else if (foundCurrentProfile) {
-             select.val(currentProfileId);
-        }
-
-    } catch (error) {
-        console.error(`[${extensionName}] 加载酒馆API预设失败:`, error);
-        toastr.error('无法加载酒馆API预设列表，请查看控制台。');
     }
 }
 
@@ -640,27 +572,9 @@ function opt_loadSettings(panel) {
     panel.find('#amily2_opt_table_enabled').val(tableEnabledValue);
 
     panel.find('#amily2_opt_ejs_enabled').prop('checked', settings.plotOpt_ejsEnabled);
-    panel.find(`input[name="amily2_opt_api_mode"][value="${settings.plotOpt_apiMode}"]`).prop('checked', true);
-    panel.find('#amily2_opt_tavern_api_profile_select').val(settings.plotOpt_tavernProfile);
     panel.find(`input[name="amily2_opt_worldbook_source"][value="${settings.plotOpt_worldbookSource || 'character'}"]`).prop('checked', true);
     panel.find('#amily2_opt_worldbook_enabled').prop('checked', settings.plotOpt_worldbookEnabled);
     panel.find('#amily2_opt_new_memory_logic_enabled').prop('checked', settings.plotOpt_newMemoryLogicEnabled);
-    panel.find('#amily2_opt_api_url').val(settings.plotOpt_apiUrl);
-    // plotOpt_apiKey 是敏感字段，从 configManager（localStorage）读取
-    panel.find('#amily2_opt_api_key').val(configManager.get('plotOpt_apiKey') || '');
-
-    const modelInput = panel.find('#amily2_opt_model');
-    const modelSelect = panel.find('#amily2_opt_model_select');
-
-    modelInput.val(settings.plotOpt_model);
-    modelSelect.empty();
-    if (settings.plotOpt_model) {
-        modelSelect.append(new Option(settings.plotOpt_model, settings.plotOpt_model, true, true));
-    } else {
-        modelSelect.append(new Option('<-请先获取模型', '', true, true));
-    }
-
-    syncModelMirror(modelInput.get(0), modelSelect.get(0));
     panel.find('#amily2_opt_top_p').val(settings.plotOpt_top_p);
     panel.find('#amily2_opt_presence_penalty').val(settings.plotOpt_presence_penalty);
     panel.find('#amily2_opt_frequency_penalty').val(settings.plotOpt_frequency_penalty);
@@ -690,7 +604,6 @@ function opt_loadSettings(panel) {
         }, 0);
     }
 
-    opt_updateApiUrlVisibility(panel, settings.plotOpt_apiMode);
     opt_updateWorldbookSourceVisibility(panel, settings.plotOpt_worldbookSource || 'character');
 
     opt_bindSlider(panel, '#amily2_opt_top_p', '#amily2_opt_top_p_value');
@@ -703,7 +616,6 @@ function opt_loadSettings(panel) {
         opt_loadWorldbookEntries(panel);
     });
 
-    opt_loadTavernApiProfiles(panel);
 }
 
 
@@ -1219,47 +1131,19 @@ export function initializePlotOptimizationBindings() {
              opt_saveSetting(key, value);
         }
 
-        if (key === 'plotOpt_api_mode') {
-            opt_updateApiUrlVisibility(panel, value);
-        }
-
         if (element.name === 'amily2_opt_worldbook_source') {
             opt_updateWorldbookSourceVisibility(panel, value);
             opt_loadWorldbookEntries(panel);
         }
     };
     const allInputSelectors = [
-        'input[type="checkbox"]', 'input[type="radio"]', 'select:not(#amily2_opt_model_select)',
+        'input[type="checkbox"]', 'input[type="radio"]', 'select',
         'input[type="text"]', 'input[type="password"]', 'textarea',
         'input[type="range"]', 'input[type="number"]'
     ].join(', ');
 
     panel.on('input.amily2_opt change.amily2_opt', allInputSelectors, function() {
         handleSettingChange(this);
-    });
-
-    panel.on('input.amily2_opt change.amily2_opt', '#amily2_opt_model', function() {
-        syncModelMirror(
-            panel.find('#amily2_opt_model').get(0),
-            panel.find('#amily2_opt_model_select').get(0)
-        );
-    });
-
-    panel.on('change.amily2_opt', '#amily2_opt_model_select', function() {
-        const selectedModel = $(this).val();
-        if (selectedModel) {
-            panel.find('#amily2_opt_model').val(selectedModel).trigger('change');
-        }
-    });
-
-
-    panel.on('click.amily2_opt', '#amily2_opt_refresh_tavern_api_profiles', () => {
-        opt_loadTavernApiProfiles(panel);
-    });
-
-    panel.on('change.amily2_opt', '#amily2_opt_tavern_api_profile_select', function() {
-        const value = $(this).val();
-        opt_saveSetting('tavernProfile', value);
     });
 
 
@@ -1391,220 +1275,9 @@ export function initializePlotOptimizationBindings() {
     });
 }
 
-// ========== Jqyh API 事件绑定函数 ==========
+// ========== Jqyh API 事件绑定函数（已迁移至 plotOpt 槽位，此处仅保留空壳） ==========
 function bindJqyhApiEvents() {
-    console.log("[Amily2号-Jqyh工部] 正在绑定Jqyh API事件...");
-
-    const updateAndSaveSetting = (key, value) => {
-        console.log(`[Amily2-Jqyh令] 收到指令: 将 [${key}] 设置为 ->`, value);
-        if (!extension_settings[extensionName]) {
-            extension_settings[extensionName] = {};
-        }
-        extension_settings[extensionName][key] = value;
-        saveSettingsDebounced();
-        console.log(`[Amily2-Jqyh录] [${key}] 的新状态已保存。`);
-    };
-
-    // Jqyh API 开关控制
-    const jqyhToggle = document.getElementById('amily2_jqyh_enabled');
-    const jqyhContent = document.getElementById('amily2_jqyh_content');
-
-    if (jqyhToggle && jqyhContent) {
-        jqyhToggle.checked = extension_settings[extensionName].jqyhEnabled ?? false;
-        jqyhContent.style.display = jqyhToggle.checked ? 'block' : 'none';
-
-        jqyhToggle.addEventListener('change', function() {
-            const isEnabled = this.checked;
-            updateAndSaveSetting('jqyhEnabled', isEnabled);
-            jqyhContent.style.display = isEnabled ? 'block' : 'none';
-        });
-    }
-
-    // API模式切换
-    const apiModeSelect = document.getElementById('amily2_jqyh_api_mode');
-    const compatibleConfig = document.getElementById('amily2_jqyh_compatible_config');
-    const presetConfig = document.getElementById('amily2_jqyh_preset_config');
-
-    if (apiModeSelect && compatibleConfig && presetConfig) {
-        apiModeSelect.value = extension_settings[extensionName].jqyhApiMode || 'openai_test';
-
-        const updateConfigVisibility = (mode) => {
-            if (mode === 'sillytavern_preset') {
-                compatibleConfig.style.display = 'none';
-                presetConfig.style.display = 'block';
-                loadJqyhTavernPresets();
-            } else {
-                compatibleConfig.style.display = 'block';
-                presetConfig.style.display = 'none';
-            }
-        };
-
-        updateConfigVisibility(apiModeSelect.value);
-
-        apiModeSelect.addEventListener('change', function() {
-            updateAndSaveSetting('jqyhApiMode', this.value);
-            updateConfigVisibility(this.value);
-        });
-    }
-
-    // API配置字段绑定
-    const apiFields = [
-        { id: 'amily2_jqyh_api_url', key: 'jqyhApiUrl' },
-        { id: 'amily2_jqyh_api_key', key: 'jqyhApiKey', sensitive: true },
-        { id: 'amily2_jqyh_model', key: 'jqyhModel' }
-    ];
-
-    apiFields.forEach(field => {
-        const element = document.getElementById(field.id);
-        if (element) {
-            // 敏感字段（API Key）从 configManager（localStorage）读取
-            element.value = field.sensitive
-                ? (configManager.get(field.key) || '')
-                : (extension_settings[extensionName][field.key] || '');
-            const saveField = function() {
-                if (field.sensitive) {
-                    configManager.set(field.key, this.value);
-                } else {
-                    updateAndSaveSetting(field.key, this.value);
-                    if (field.key === 'jqyhModel') {
-                        syncModelMirror(
-                            document.getElementById('amily2_jqyh_model'),
-                            document.getElementById('amily2_jqyh_model_select')
-                        );
-                    }
-                }
-            };
-            bindInputLikeSave(element, saveField);
-        }
-    });
-
-    // 滑块控件绑定
-    const sliderFields = [
-        { id: 'amily2_jqyh_max_tokens', key: 'jqyhMaxTokens', defaultValue: 4000 },
-        { id: 'amily2_jqyh_temperature', key: 'jqyhTemperature', defaultValue: 0.7 }
-    ];
-
-    sliderFields.forEach(field => {
-        const slider = document.getElementById(field.id);
-        const display = document.getElementById(field.id + '_value');
-        if (slider && display) {
-            const value = extension_settings[extensionName][field.key] || field.defaultValue;
-            slider.value = value;
-            display.textContent = value;
-
-            slider.addEventListener('input', function() {
-                const newValue = parseFloat(this.value);
-                display.textContent = newValue;
-                updateAndSaveSetting(field.key, newValue);
-            });
-        }
-    });
-
-    // SillyTavern预设选择器
-    const tavernProfileSelect = document.getElementById('amily2_jqyh_tavern_profile');
-    if (tavernProfileSelect) {
-        tavernProfileSelect.value = extension_settings[extensionName].jqyhTavernProfile || '';
-        tavernProfileSelect.addEventListener('change', function() {
-            updateAndSaveSetting('jqyhTavernProfile', this.value);
-        });
-    }
-
-    // 测试连接按钮
-    const testButton = document.getElementById('amily2_jqyh_test_connection');
-    if (testButton) {
-        testButton.addEventListener('click', async function() {
-            const button = $(this);
-            const originalHtml = button.html();
-            button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 测试中');
-
-            try {
-                await testJqyhApiConnection();
-            } catch (error) {
-                console.error('[Amily2号-Jqyh] 测试连接失败:', error);
-            } finally {
-                button.prop('disabled', false).html(originalHtml);
-            }
-        });
-    }
-
-    const fetchModelsButton = document.getElementById('amily2_jqyh_fetch_models');
-    const modelSelect = document.getElementById('amily2_jqyh_model_select');
-    const modelInput = document.getElementById('amily2_jqyh_model');
-
-    if (fetchModelsButton && modelSelect && modelInput) {
-        fetchModelsButton.addEventListener('click', async function() {
-            const button = $(this);
-            const originalHtml = button.html();
-            button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 获取中');
-
-            try {
-                const models = await fetchJqyhModels();
-
-                if (models && models.length > 0) {
-                    modelSelect.innerHTML = '<option value="">-- 请选择模型 --</option>';
-                    models.forEach(model => {
-                        const option = document.createElement('option');
-                        option.value = model.id || model.name || model;
-                        option.textContent = model.name || model.id || model;
-                        modelSelect.appendChild(option);
-                    });
-                    modelSelect.style.display = 'block';
-                    modelInput.style.display = 'none';
-
-                    modelSelect.addEventListener('change', function() {
-                        const selectedModel = this.value;
-                        modelInput.value = selectedModel;
-                        updateAndSaveSetting('jqyhModel', selectedModel);
-                        console.log(`[Amily2-Jqyh] 已选择模型: ${selectedModel}`);
-                    });
-
-                    toastr.success(`成功获取 ${models.length} 个模型`, 'Jqyh 模型获取');
-                } else {
-                    toastr.warning('未获取到任何模型', 'Jqyh 模型获取');
-                }
-
-            } catch (error) {
-                console.error('[Amily2号-Jqyh] 获取模型列表失败:', error);
-                toastr.error(`获取模型失败: ${error.message}`, 'Jqyh 模型获取');
-            } finally {
-                button.prop('disabled', false).html(originalHtml);
-            }
-        });
-    }
-}
-
-async function loadJqyhTavernPresets() {
-    const select = document.getElementById('amily2_jqyh_tavern_profile');
-    if (!select) return;
-
-    const currentValue = select.value;
-    select.innerHTML = '<option value="">-- 加载中 --</option>';
-
-    try {
-        const context = getContext();
-        const tavernProfiles = context.extensionSettings?.connectionManager?.profiles || [];
-
-        select.innerHTML = '<option value="">-- 请选择预设 --</option>';
-
-        if (tavernProfiles.length > 0) {
-            tavernProfiles.forEach(profile => {
-                if (profile.api && profile.preset) {
-                    const option = document.createElement('option');
-                    option.value = profile.id;
-                    option.textContent = profile.name || profile.id;
-                    if (profile.id === currentValue) {
-                        option.selected = true;
-                    }
-                    select.appendChild(option);
-                }
-            });
-        } else {
-            select.innerHTML = '<option value="">未找到可用预设</option>';
-        }
-    } catch (error) {
-        console.error('[Amily2号-Jqyh] 加载SillyTavern预设失败:', error);
-        select.innerHTML = '<option value="">加载失败</option>';
-    }
+    // Jqyh 直连配置已移除，剧情优化统一走 ApiProfile plotOpt 槽位
 }
 
 // ========== 图标位置切换（跨模块通用事件） ==========
