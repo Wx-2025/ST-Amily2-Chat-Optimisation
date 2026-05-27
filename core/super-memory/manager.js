@@ -6,6 +6,7 @@ import { syncToLorebook, ensureMemoryBook, updateTransientHint, getMemoryBookNam
 import { getMemoryState, loadMemoryState, saveMemoryState } from "../table-system/manager.js";
 import { TABLE_UPDATED_EVENT } from "../table-system/events-schema.js";
 import { eventSource, event_types } from "/script.js";
+import { handleArchiveUpdate } from "../archive-manager.js";
 
 /* ── [AMILY2-MODIFIED] ── pipeline integration: awaitSync() export ── */
 let isInitialized = false;
@@ -110,10 +111,15 @@ export function pushUpdate(payload) {
 
     updateQueue.push({ tableName, data, role, headers, rowStatuses });
     _syncPromise = processQueue();
+
+    // Bus 路径下 document event 不再分发，需直接通知归档管理器
+    handleArchiveUpdate(payload);
 }
 
 /** CustomEvent 降级路径（Bus 未就绪时的兜底监听器） */
 function handleTableUpdate(event) {
+    // Bus 已就绪时 pushUpdate 已由 dispatchTableUpdate 直调，跳过避免重复处理
+    if (window.Amily2Bus?.query('SuperMemory')?.pushUpdate) return;
     pushUpdate(event.detail);
 }
 

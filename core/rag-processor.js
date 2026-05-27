@@ -341,7 +341,12 @@ function getSettings() {
             }
         }
     }
-    
+
+    // 旧版设置 rerank.priorityRetrieval 可能只有 enabled 字段而缺少 sources，补全
+    if (s.rerank?.priorityRetrieval && !s.rerank.priorityRetrieval.sources) {
+        s.rerank.priorityRetrieval.sources = structuredClone(ragDefaultSettings.rerank.priorityRetrieval.sources);
+    }
+
     return s;
 }
 

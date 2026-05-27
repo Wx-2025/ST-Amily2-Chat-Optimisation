@@ -674,7 +674,7 @@ export function loadSettingsToUI() {
 
         const sources = ['novel', 'chat_history', 'lorebook', 'manual'];
         sources.forEach(source => {
-            const sourceSettings = prioritySettings.sources[source];
+            const sourceSettings = prioritySettings.sources?.[source];
             if (sourceSettings) {
                 const enabledCheckbox = document.querySelector(`[data-setting-key="rerank.priorityRetrieval.sources.${source}.enabled"]`);
                 const countInput = document.querySelector(`[data-setting-key="rerank.priorityRetrieval.sources.${source}.count"]`);

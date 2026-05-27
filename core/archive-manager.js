@@ -10,8 +10,16 @@ export function initializeArchiveManager() {
     console.log('[归档管理器] 已启动，正在监控表格状态...');
 }
 
+/** Bus 直调路径：由 super-memory/manager.js 的 pushUpdate 调用，接受纯 payload 对象。 */
+export function handleArchiveUpdate(payload) {
+    return handleArchivePayload(payload);
+}
+
 async function handleTableUpdate(event) {
-    const { tableName, data, role } = event.detail;
+    return handleArchivePayload(event.detail);
+}
+
+async function handleArchivePayload({ tableName, data, role }) {
     const settings = getSettings();
 
     if (!settings.archive || !settings.archive.enabled) return;
@@ -24,7 +32,8 @@ async function handleTableUpdate(event) {
     if (isArchiving) return;
 
     let hasNotice = false;
-    
+    let realRows = data;
+
     if (data.length > 0 && data[0][2] && data[0][2].includes('已自动归档')) {
         hasNotice = true;
         realRows = data.slice(1);
