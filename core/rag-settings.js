@@ -65,8 +65,9 @@ export const defaultSettings = {
     },
     rerank: {
         enabled: false,
+        apiMode: 'custom',
         url: 'https://api.siliconflow.cn/v1',
-        apiKey: '', 
+        apiKey: '',
         model: 'Pro/BAAI/bge-reranker-v2-m3',
         top_n: 5,
         hybrid_alpha: 0.7,

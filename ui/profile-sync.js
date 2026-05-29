@@ -145,7 +145,7 @@ const SLOT_CONFIGS = {
     ragRerank: {
         container: '#hly-rerank-tab .hly-settings-group',
         hideParentBlock: ['#hly-rerank-api-mode', '#hly-rerank-url', '#hly-rerank-api-key', '#hly-rerank-model'],
-        fields: { provider: '#hly-rerank-api-mode', apiUrl: '#hly-rerank-url', model: '#hly-rerank-model' },
+        fields: { apiUrl: '#hly-rerank-url', model: '#hly-rerank-model' },
         keyField: '#hly-rerank-api-key',
         testFn: async () => {
             await executeRagRerank('test', ['test'], null);

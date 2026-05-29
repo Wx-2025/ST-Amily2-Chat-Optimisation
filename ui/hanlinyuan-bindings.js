@@ -651,6 +651,7 @@ export function loadSettingsToUI() {
 
     // Rerank 设置
     document.getElementById('hly-rerank-enabled').checked = settings.rerank.enabled;
+    /** @type {HTMLSelectElement} */ (document.getElementById('hly-rerank-api-mode')).value = settings.rerank.apiMode ?? 'custom';
     document.getElementById('hly-rerank-url').value = settings.rerank.url;
     document.getElementById('hly-rerank-api-key').value = settings.rerank.apiKey;
     const rerankModelSelect = document.getElementById('hly-rerank-model');

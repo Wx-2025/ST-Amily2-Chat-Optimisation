@@ -49,12 +49,13 @@ export async function getEmbedRetrievalSettings() {
 export async function getRerankSettings() {
     const profile = await getSlotProfile('ragRerank');
     if (profile) {
+        const manualSettings = getSettings().rerank || {};
         return {
             url:     profile.apiUrl,
             apiKey:  profile.apiKey ?? '',
             model:   profile.model,
-            top_n:   getSettings().rerank?.top_n ?? 10,
-            apiMode: 'custom',
+            top_n:   manualSettings.top_n ?? 10,
+            apiMode: manualSettings.apiMode ?? 'custom',
         };
     }
     return getSettings().rerank || {};
