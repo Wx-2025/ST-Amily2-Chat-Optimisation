@@ -985,7 +985,11 @@ export async function callAIForTools(messages, tool, options = {}) {
         return null;
     }
 
-    const buildFCBody = (withToolChoice, overrideMessages) => ({
+    // deepseek.com 域名或模型名含 deepseek 时，第一次调用主动关闭思考模式，
+    // 让 tool_choice 强制走 Function Call（思考模式下 tool_choice 会报错/失败）
+    const isDeepSeek = /deepseek/i.test(finalOptions.apiUrl || '') || /deepseek/i.test(finalOptions.model || '');
+
+    const buildFCBody = (withToolChoice, overrideMessages, extraParams = {}) => ({
         chat_completion_source: 'openai',
         reverse_proxy: finalOptions.apiUrl,
         proxy_password: finalOptions.apiKey,
@@ -995,15 +999,16 @@ export async function callAIForTools(messages, tool, options = {}) {
         temperature: finalOptions.temperature ?? 1,
         stream: false,
         ...(finalOptions.customParams || {}),
+        ...extraParams,
         tools: [tool],
         ...(withToolChoice ? { tool_choice: { type: 'function', function: { name: tool.function.name } } } : {}),
     });
 
-    const doFCRequest = async (withToolChoice, overrideMessages) => {
+    const doFCRequest = async (withToolChoice, overrideMessages, extraParams) => {
         const response = await fetch('/api/backends/chat-completions/generate', {
             method: 'POST',
             headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
-            body: JSON.stringify(buildFCBody(withToolChoice, overrideMessages)),
+            body: JSON.stringify(buildFCBody(withToolChoice, overrideMessages, extraParams)),
         });
         if (!response.ok) {
             const errorText = await response.text();
@@ -1026,7 +1031,10 @@ export async function callAIForTools(messages, tool, options = {}) {
         let data;
         try {
             // 走 ST 后端代理，避免浏览器 CSP 拦截直连外部 URL
-            data = await doFCRequest(true);
+            // DeepSeek 思考模式与 tool_choice 不兼容，第一次请求时主动关闭思考模式
+            const firstAttemptExtra = isDeepSeek ? { thinking: { type: 'disabled' } } : {};
+            if (isDeepSeek) console.log('[Amily2-外交部] 检测到 DeepSeek 端点，首次 FC 请求附加 thinking:disabled');
+            data = await doFCRequest(true, undefined, firstAttemptExtra);
         } catch (firstError) {
             // 首次失败（含 ST 代理吞掉错误码场景）无条件去掉 tool_choice 重试一次
             // 思考模式模型支持 tools 但不支持强制 tool_choice，追加强制指令防止模型直接输出文本

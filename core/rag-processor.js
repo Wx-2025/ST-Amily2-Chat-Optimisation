@@ -346,6 +346,20 @@ function getSettings() {
     if (s.rerank?.priorityRetrieval && !s.rerank.priorityRetrieval.sources) {
         s.rerank.priorityRetrieval.sources = structuredClone(ragDefaultSettings.rerank.priorityRetrieval.sources);
     }
+    // 确保 sources 中每个来源条目完整（新增来源 / 新增字段时旧用户不会缺失）
+    if (s.rerank?.priorityRetrieval?.sources) {
+        const defaultSources = ragDefaultSettings.rerank.priorityRetrieval.sources;
+        for (const sourceName in defaultSources) {
+            if (!s.rerank.priorityRetrieval.sources[sourceName]) {
+                s.rerank.priorityRetrieval.sources[sourceName] = structuredClone(defaultSources[sourceName]);
+            } else {
+                const existing = s.rerank.priorityRetrieval.sources[sourceName];
+                for (const key in defaultSources[sourceName]) {
+                    if (existing[key] === undefined) existing[key] = defaultSources[sourceName][key];
+                }
+            }
+        }
+    }
 
     return s;
 }

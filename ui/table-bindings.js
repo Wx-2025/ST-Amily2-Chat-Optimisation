@@ -1370,8 +1370,9 @@ export function bindTableEvents(panelElement = null) {
     const contextSlider = document.getElementById('secondary-filler-context');
     const batchSlider = document.getElementById('secondary-filler-batch');
     const bufferSlider = document.getElementById('secondary-filler-buffer');
-    const maxRetriesSlider = document.getElementById('secondary-filler-max-retries'); // 【新增】
+    const maxRetriesSlider = document.getElementById('secondary-filler-max-retries');
     const delaySlider = document.getElementById('secondary-filler-delay');
+    const batchFillingThresholdInput = document.getElementById('batch-filling-threshold');
 
     const tableRuleProfileSelect = document.getElementById('table-rule-profile-select');
     
@@ -1455,6 +1456,18 @@ export function bindTableEvents(panelElement = null) {
             this.value = parsed;
             updateAndSaveTableSetting('secondary_filler_delay', parsed);
             toastr.info(`触发延迟已设置为 ${parsed} 毫秒。`);
+        });
+    }
+
+    if (batchFillingThresholdInput) {
+        const value = extension_settings[extensionName]?.batch_filling_threshold ?? 30;
+        batchFillingThresholdInput.value = value;
+
+        batchFillingThresholdInput.addEventListener('change', function() {
+            const parsed = Math.max(1, parseInt(this.value, 10) || 30);
+            this.value = parsed;
+            updateAndSaveTableSetting('batch_filling_threshold', parsed);
+            toastr.info(`批处理阈值已设置为 ${parsed}。`);
         });
     }
 

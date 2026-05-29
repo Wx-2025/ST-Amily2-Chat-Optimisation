@@ -417,7 +417,9 @@ export function startBatchFilling() {
     manualStopRequested = false;
     const context = getContext();
     chatHistoryLength = context.chat.length;
-    threshold = parseInt(document.getElementById('batch-filling-threshold')?.value, 10) || 30;
+    threshold = extension_settings[extensionName]?.batch_filling_threshold
+        ?? parseInt(/** @type {HTMLInputElement|null} */ (document.getElementById('batch-filling-threshold'))?.value, 10)
+        ?? 30;
     
     const ruleTemplate = getBatchFillerRuleTemplate();
     const flowTemplate = getBatchFillerFlowTemplate();

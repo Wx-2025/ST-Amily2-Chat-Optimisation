@@ -161,4 +161,7 @@ export const tableSystemDefaultSettings = {
 
     // Function Call 填表
     tableFillFunctionCall: false,
+
+    // 批量填表每批楼层数
+    batch_filling_threshold: 30,
 };
