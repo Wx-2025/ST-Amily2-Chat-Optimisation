@@ -39,10 +39,9 @@ async function requestSecondaryContinuation(baseMessages, partialResponse) {
     return `${partialResponse || ''}${continued}`;
 }
 
-async function commitSecondaryFillResult(rawContent, targetMessages) {
-    await updateTableFromText(rawContent);
+async function markTargetsProcessed(targetMessages, { skipTableSave = false } = {}) {
+    if (!targetMessages || targetMessages.length === 0) return;
 
-    const memoryState = getMemoryState();
     const lastProcessedMsg = targetMessages[targetMessages.length - 1].msg;
 
     for (const target of targetMessages) {
@@ -50,12 +49,20 @@ async function commitSecondaryFillResult(rawContent, targetMessages) {
         target.msg.extra.amily2_process_hash = target.hash;
     }
 
-    if (saveStateToMessage(memoryState, lastProcessedMsg)) {
-        renderTables();
-        updateOrInsertTableInChat();
+    if (!skipTableSave) {
+        const memoryState = getMemoryState();
+        if (saveStateToMessage(memoryState, lastProcessedMsg)) {
+            renderTables();
+            updateOrInsertTableInChat();
+        }
     }
 
     await saveChat();
+}
+
+async function commitSecondaryFillResult(rawContent, targetMessages) {
+    await updateTableFromText(rawContent);
+    await markTargetsProcessed(targetMessages);
 }
 
 
@@ -369,10 +376,20 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
             }
             const ops = parseToolCallArgs(argsString);
             if (ops.length === 0) {
-                console.warn('[Amily2-副API] Function Call 返回操作列表为空，无需变更。');
+                let parseHint = '';
+                try {
+                    const rawParsed = JSON.parse(argsString);
+                    const rawOpsLen = rawParsed?.operations?.length ?? 0;
+                    if (rawOpsLen > 0) parseHint = `（响应含 ${rawOpsLen} 条操作，但全部未通过格式校验）`;
+                } catch {
+                    parseHint = '（响应 JSON 解析失败）';
+                }
+                console.warn(`[Amily2-副API] Function Call 返回操作列表为空${parseHint}，原始响应：\n${argsString}`);
                 toastr.info('AI 判断此范围无需修改。', 'Amily2-分步填表');
+                await markTargetsProcessed(targetMessages, { skipTableSave: true });
             } else {
                 await updateTableFromOps(ops);
+                await markTargetsProcessed(targetMessages);
                 toastr.success('分步填表（Function Call）执行完毕。', 'Amily2-分步填表');
             }
         } else {

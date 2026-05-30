@@ -72,3 +72,5 @@
   - 修复 `secondary-filler.js` 把哈希/重试次数写入非持久化的 `msg.metadata` 字段（ST 标准位是 `msg.extra`），导致刷新后去重与重试计数失效
   - 修复扫描深度重复计入 `bufferSize`（`contextLimit + buffer + batch + redundancy` → `contextLimit + batch + redundancy`），避免越过预期窗口
   - SWIPED 事件改走扫描路径，不再用 `targetMessage` bypass 强填最末条，`保留缓冲区(bufferSize)` 设置在滑动场景下正确生效（手动"回退重填"按钮仍保留 bypass，意图明确）
+  - 修复 FC（Function Call）路径下成功填表与"AI 判断无需修改"两种结果均未写回 `amily2_process_hash` 与 `saveChat()` 的问题——之前导致 FC 模式去重完全失效，最旧的未处理楼层会被每次扫描重复发给 AI；现统一回写路径为 `markTargetsProcessed`
+  - FC 空操作时同步输出原始响应 JSON 到控制台（与批量回填日志面板保持一致），便于区分"无需变更"/"格式校验失败"/"JSON 解析失败"
