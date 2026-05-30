@@ -18,6 +18,7 @@ import { showTableFillReviewModal } from '../../ui/page-window.js';
 const CONTINUE_PROMPT_SECONDARY = '上一条回复不完整或缺少 <Amily2Edit> 指令块。请直接从中断处继续生成剩余内容，不要重复已输出的文本，也不要添加任何解释或寒暄，确保最终输出中包含完整的 <Amily2Edit>...</Amily2Edit> 指令块。';
 
 let secondaryFillerDebounceTimer = null;
+let secondaryFillerRunning = false;
 
 async function callSecondaryModel(messages) {
     const settings = extension_settings[extensionName] || {};
@@ -38,8 +39,8 @@ async function requestSecondaryContinuation(baseMessages, partialResponse) {
     return `${partialResponse || ''}${continued}`;
 }
 
-function commitSecondaryFillResult(rawContent, targetMessages) {
-    updateTableFromText(rawContent);
+async function commitSecondaryFillResult(rawContent, targetMessages) {
+    await updateTableFromText(rawContent);
 
     const memoryState = getMemoryState();
     const lastProcessedMsg = targetMessages[targetMessages.length - 1].msg;
@@ -54,7 +55,7 @@ function commitSecondaryFillResult(rawContent, targetMessages) {
         updateOrInsertTableInChat();
     }
 
-    saveChat();
+    await saveChat();
 }
 
 
@@ -111,6 +112,11 @@ async function getWorldBookContext() {
 }
 
 export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
+    if (secondaryFillerRunning) {
+        log('分步填表正在进行中，跳过本次触发。', 'warn');
+        return;
+    }
+    secondaryFillerRunning = true;
     const settings = extension_settings[extensionName] || {};
 
     // 【V2.1.1】分步填表触发延迟 / 防抖：自动触发时若配置了延迟，则延后执行，
@@ -389,12 +395,12 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
                         }
                         return merged;
                     },
-                    onApply: (editedText) => {
+                    onApply: async (editedText) => {
                         if (!editedText || !editedText.includes('<Amily2Edit>')) {
                             toastr.warning('应用的文本中未检测到 <Amily2Edit> 指令块，已按原文尝试写入。', '手动应用');
                         }
                         try {
-                            commitSecondaryFillResult(editedText, targetMessages);
+                            await commitSecondaryFillResult(editedText, targetMessages);
                             toastr.success('分步填表已由用户手动处理完成。', 'Amily2-分步填表');
                         } catch (err) {
                             console.error('[Amily2-副API] 手动应用失败:', err);
@@ -415,7 +421,7 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
                 return;
             }
 
-            commitSecondaryFillResult(rawContent, targetMessages);
+            await commitSecondaryFillResult(rawContent, targetMessages);
         }
         toastr.success("分步填表执行完毕。", "Amily2-分步填表");
 
@@ -449,7 +455,10 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
                 delete latestMessage.metadata.Amily2_Retry_Count;
             }
         }
+    } finally {
+        secondaryFillerRunning = false;
     }
+    secondaryFillerRunning = false;
 }
 
     async function getHistoryContext(messagesToFetch, historyEndIndex, tagsToExtract, exclusionRules) {

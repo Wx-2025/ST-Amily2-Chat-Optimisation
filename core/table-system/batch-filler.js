@@ -291,7 +291,17 @@ async function runBatchAttempt(batchNum, attemptNum) {
             if (!argsString) throw new Error('Function Call 返回为空。');
             const ops = parseToolCallArgs(argsString);
             if (ops.length === 0) {
-                log(`批次 ${batchNum} 的 Function Call 返回操作列表为空，AI 判断此批次无需变更。`, 'warn');
+                let parseHint = '';
+                try {
+                    const rawParsed = JSON.parse(argsString);
+                    const rawOpsLen = rawParsed?.operations?.length ?? 0;
+                    if (rawOpsLen > 0) {
+                        parseHint = `（响应含 ${rawOpsLen} 条操作，但全部未通过格式校验）`;
+                    }
+                } catch {
+                    parseHint = '（响应 JSON 解析失败）';
+                }
+                log(`批次 ${batchNum} FC 操作列表为空${parseHint}，原始响应：\n${argsString}`, 'warn');
                 toastr.info('AI 判断此批次无需修改。', `批次 ${batchNum}`);
             } else {
                 await updateTableFromOps(ops, { immediateDelete: true });
@@ -564,7 +574,17 @@ export async function startFloorRangeFilling(startFloor, endFloor) {
             if (!argsString) throw new Error('Function Call 返回为空。');
             const ops = parseToolCallArgs(argsString);
             if (ops.length === 0) {
-                log(`楼层 ${startFloor}-${endFloor} Function Call 返回操作列表为空，无需变更。`, 'warn');
+                let parseHint = '';
+                try {
+                    const rawParsed = JSON.parse(argsString);
+                    const rawOpsLen = rawParsed?.operations?.length ?? 0;
+                    if (rawOpsLen > 0) {
+                        parseHint = `（响应含 ${rawOpsLen} 条操作，但全部未通过格式校验）`;
+                    }
+                } catch {
+                    parseHint = '（响应 JSON 解析失败）';
+                }
+                log(`楼层 ${startFloor}-${endFloor} FC 操作列表为空${parseHint}，原始响应：\n${argsString}`, 'warn');
                 toastr.info('AI 判断此楼层范围无需修改。', `楼层 ${startFloor}-${endFloor}`);
             } else {
                 await updateTableFromOps(ops, { immediateDelete: true });

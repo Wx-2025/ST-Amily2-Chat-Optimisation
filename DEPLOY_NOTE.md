@@ -46,3 +46,25 @@
   - 修复自动归档失效问题
   - 修复归档管理器在同一事件中被三次触发的回归问题
   - 修复翰林院设置旧版迁移逻辑异常
+
+---
+
+## v2.2.4
+
+### 新功能
+
+- **Function Call 填表**：
+  - FC 首次请求时对 DeepSeek 系模型自动附加 `thinking: { type: "disabled" }`，避免思考模式与 tool_choice 冲突
+  - 操作列表为空时在日志面板输出原始响应 JSON，便于区分"AI 判断无需变更"、"格式校验全部不通过"和"JSON 解析失败"三种情况
+
+### 修复
+
+- **剧情优化**：移除剧情优化页面遗留的 Jqyh 直连配置字段（URL / Key / Model），统一走 API 连接配置功能分配槽位
+- **表格**：
+  - 补全 `batch-filling-threshold` 批处理阈值的持久化绑定（页面刷新后不再还原为默认值 30）
+  - 修复分步填表并发锁与 async/await 时序问题
+  - 修复外层多余 `try...finally` 导致的插件加载报错
+- **Rerank**：
+  - 修复选择连接配置后报"API Key 未配置"的问题（`apiMode` 现从设置读取而非硬编码 `custom`）
+  - 补全 `hly-rerank-api-mode` 加载绑定及默认值
+- **翰林院 RAG**：补全 `priorityRetrieval.sources` 各来源条目的缺失键，修复设置面板回填 TypeError
