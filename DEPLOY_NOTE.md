@@ -68,3 +68,7 @@
   - 修复选择连接配置后报"API Key 未配置"的问题（`apiMode` 现从设置读取而非硬编码 `custom`）
   - 补全 `hly-rerank-api-mode` 加载绑定及默认值
 - **翰林院 RAG**：补全 `priorityRetrieval.sources` 各来源条目的缺失键，修复设置面板回填 TypeError
+- **二次填表**：
+  - 修复 `secondary-filler.js` 把哈希/重试次数写入非持久化的 `msg.metadata` 字段（ST 标准位是 `msg.extra`），导致刷新后去重与重试计数失效
+  - 修复扫描深度重复计入 `bufferSize`（`contextLimit + buffer + batch + redundancy` → `contextLimit + batch + redundancy`），避免越过预期窗口
+  - SWIPED 事件改走扫描路径，不再用 `targetMessage` bypass 强填最末条，`保留缓冲区(bufferSize)` 设置在滑动场景下正确生效（手动"回退重填"按钮仍保留 bypass，意图明确）

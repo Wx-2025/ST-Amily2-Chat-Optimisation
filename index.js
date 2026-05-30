@@ -697,8 +697,8 @@ function registerEventListeners() {
                 log(`【监察系统】主填表模式，回退后强制刷新消息ID: ${chat_id}。`, 'info');
                 await handleTableUpdate(chat_id, true);
             } else if (fillingMode === 'secondary-api' || fillingMode === 'optimized') {
-                log('【监察系统】分步/优化模式，回退后强制二次填表最新消息。', 'info');
-                await fillWithSecondaryApi(latestMessage, true, { targetMessage: latestMessage });
+                log('【监察系统】分步/优化模式，回退后触发二次填表扫描（受保留缓冲区限制）。', 'info');
+                await fillWithSecondaryApi(latestMessage, true);
             } else {
                 log('【监察系统】未配置填表模式，跳过填表。', 'info');
             }
