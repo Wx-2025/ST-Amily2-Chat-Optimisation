@@ -46,8 +46,8 @@ async function commitSecondaryFillResult(rawContent, targetMessages) {
     const lastProcessedMsg = targetMessages[targetMessages.length - 1].msg;
 
     for (const target of targetMessages) {
-        if (!target.msg.metadata) target.msg.metadata = {};
-        target.msg.metadata.Amily2_Process_Hash = target.hash;
+        if (!target.msg.extra) target.msg.extra = {};
+        target.msg.extra.amily2_process_hash = target.hash;
     }
 
     if (saveStateToMessage(memoryState, lastProcessedMsg)) {
@@ -111,7 +111,7 @@ async function getWorldBookContext() {
     return content.trim() ? `<世界书>\n${content.trim()}\n</世界书>` : '';
 }
 
-export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
+export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts = {}) {
     if (secondaryFillerRunning) {
         log('分步填表正在进行中，跳过本次触发。', 'warn');
         return;
@@ -128,7 +128,7 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
         }
         secondaryFillerDebounceTimer = setTimeout(() => {
             secondaryFillerDebounceTimer = null;
-            fillWithSecondaryApi(latestMessage, forceRun);
+            fillWithSecondaryApi(latestMessage, forceRun, opts);
         }, delay);
         console.log(`[Amily2-副API] 分步填表已按防抖延迟 ${delay}ms 调度。`);
         return;
@@ -166,29 +166,18 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
 
     try {
         const bufferSize = parseInt(settings.secondary_filler_buffer || 0, 10);
-        const batchSize = parseInt(settings.secondary_filler_batch || 0, 10); 
+        const batchSize = parseInt(settings.secondary_filler_batch || 0, 10);
         const contextLimit = parseInt(settings.secondary_filler_context || 2, 10);
-        
+
         // 【V1.7.7 修复】限制最大回溯深度，防止更新后无限填补旧历史
-        // 响应用户反馈：扫描深度 = 上下文 + 填表批次 + 保留楼层 + 冗余量(10)
-        // redundancy (冗余量): 额外扫描 10 层作为安全缓冲，防止因消息索引计算偏差导致漏掉边缘消息
+        // 扫描深度 = 上下文 + 填表批次 + 冗余量(10)
+        // bufferSize（保留楼层）仅用于限定尾部边界 validEndIndex，
+        // 不再回流到扫描起点，避免重复影响范围
         const redundancy = 10;
-        const maxScanDepth = contextLimit + batchSize + bufferSize + redundancy;
+        const maxScanDepth = contextLimit + batchSize + redundancy;
 
         const chat = context.chat;
         const totalMessages = chat.length;
-        
-        const validEndIndex = totalMessages - 1 - bufferSize;
-        // 计算扫描的起始索引（不小于0）
-        const scanStartIndex = Math.max(0, validEndIndex - maxScanDepth);
-
-        if (validEndIndex < 0) {
-            console.log(`[Amily2-副API] 消息数量不足以超出保留区(${bufferSize})，跳过。`);
-            return;
-        }
-
-        let targetMessages = [];
-        let needsProcessing = false;
 
         const getContentHash = (content) => {
             let hash = 0, i, chr;
@@ -196,45 +185,74 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
             for (i = 0; i < content.length; i++) {
                 chr = content.charCodeAt(i);
                 hash = ((hash << 5) - hash) + chr;
-                hash |= 0; 
+                hash |= 0;
             }
             return hash;
         };
 
-        // 【修复】改为正向扫描，优先处理最老的未处理消息，防止遗留消息被挤出扫描区
-        for (let i = scanStartIndex; i <= validEndIndex; i++) {
-            const msg = chat[i];
-            
-            if (msg.is_user) continue;
+        let targetMessages = [];
 
-            const currentHash = getContentHash(msg.mes);
-            const savedHash = msg.metadata?.Amily2_Process_Hash;
-            
-            const isUnprocessed = !savedHash;
-            const isChanged = savedHash && savedHash !== currentHash;
-
-            if (isUnprocessed || isChanged) {
-                targetMessages.push({ index: i, msg: msg, hash: currentHash });
-                
-                if (batchSize > 0 && targetMessages.length >= batchSize) {
-                    needsProcessing = true;
-                    break;
-                }
-            }
-        }
-
-        if (targetMessages.length === 0) {
-            console.log("[Amily2-副API] 没有发现需要处理的消息。");
-            return;
-        }
-
-        if (batchSize > 0) {
-            if (targetMessages.length < batchSize) {
-                console.log(`[Amily2-副API] 批量模式: 当前累积 ${targetMessages.length}/${batchSize} 条未处理消息，暂不触发。`);
+        // 【SWIPED 旁路】swipe 后强制处理刚切出来的最新消息：
+        // 跳过扫描 / bufferSize / batchSize 累积逻辑，直接锁定目标
+        if (opts.targetMessage) {
+            const targetIndex = chat.indexOf(opts.targetMessage);
+            if (targetIndex < 0) {
+                console.log("[Amily2-副API] 旁路目标消息不在聊天列表中，跳过。");
                 return;
             }
+            if (opts.targetMessage.is_user) {
+                console.log("[Amily2-副API] 旁路目标是用户消息，跳过。");
+                return;
+            }
+            targetMessages.push({
+                index: targetIndex,
+                msg: opts.targetMessage,
+                hash: getContentHash(opts.targetMessage.mes),
+            });
         } else {
-            targetMessages = [targetMessages[targetMessages.length - 1]];
+            // 常规扫描路径
+            const validEndIndex = totalMessages - 1 - bufferSize;
+            const scanStartIndex = Math.max(0, validEndIndex - maxScanDepth);
+
+            if (validEndIndex < 0) {
+                console.log(`[Amily2-副API] 消息数量不足以超出保留区(${bufferSize})，跳过。`);
+                return;
+            }
+
+            // 【修复】改为正向扫描，优先处理最老的未处理消息，防止遗留消息被挤出扫描区
+            for (let i = scanStartIndex; i <= validEndIndex; i++) {
+                const msg = chat[i];
+
+                if (msg.is_user) continue;
+
+                const currentHash = getContentHash(msg.mes);
+                const savedHash = msg.extra?.amily2_process_hash;
+
+                const isUnprocessed = !savedHash;
+                const isChanged = savedHash && savedHash !== currentHash;
+
+                if (isUnprocessed || isChanged) {
+                    targetMessages.push({ index: i, msg: msg, hash: currentHash });
+
+                    if (batchSize > 0 && targetMessages.length >= batchSize) {
+                        break;
+                    }
+                }
+            }
+
+            if (targetMessages.length === 0) {
+                console.log("[Amily2-副API] 没有发现需要处理的消息。");
+                return;
+            }
+
+            if (batchSize > 0) {
+                if (targetMessages.length < batchSize) {
+                    console.log(`[Amily2-副API] 批量模式: 当前累积 ${targetMessages.length}/${batchSize} 条未处理消息，暂不触发。`);
+                    return;
+                }
+            } else {
+                targetMessages = [targetMessages[targetMessages.length - 1]];
+            }
         }
 
         console.log(`[Amily2-副API] 触发填表: 处理 ${targetMessages.length} 条消息。索引范围: ${targetMessages[0].index} - ${targetMessages[targetMessages.length-1].index}`);
@@ -379,8 +397,8 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
                 const rangeLabel = `${targetMessages[0].index + 1} - ${targetMessages[targetMessages.length - 1].index + 1}`;
                 console.warn(`[Amily2-副API] 响应未包含 <Amily2Edit> 指令块（楼层 ${rangeLabel}），弹出检查窗口等待用户处理。`);
                 toastr.warning(`分步填表（楼层 ${rangeLabel}）的响应缺少 <Amily2Edit> 指令块，请在弹窗中处理。`, 'Amily2-分步填表');
-                if (latestMessage && latestMessage.metadata) {
-                    delete latestMessage.metadata.Amily2_Retry_Count;
+                if (latestMessage && latestMessage.extra) {
+                    delete latestMessage.extra.amily2_retry_count;
                 }
                 showTableFillReviewModal(rawContent, {
                     title: `分步填表响应检查 - 楼层 ${rangeLabel}`,
@@ -408,11 +426,11 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
                         }
                     },
                     onRetry: () => {
-                        if (latestMessage && latestMessage.metadata) {
-                            delete latestMessage.metadata.Amily2_Retry_Count;
+                        if (latestMessage && latestMessage.extra) {
+                            delete latestMessage.extra.amily2_retry_count;
                         }
                         toastr.info('将重新执行分步填表...', 'Amily2-分步填表');
-                        setTimeout(() => fillWithSecondaryApi(latestMessage, forceRun), 300);
+                        setTimeout(() => fillWithSecondaryApi(latestMessage, forceRun, opts), 300);
                     },
                     onCancel: () => {
                         toastr.info('已取消本次分步填表。', 'Amily2-分步填表');
@@ -430,29 +448,29 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false) {
         
         // 【新增】自定义重试逻辑
         const maxRetries = parseInt(settings.secondary_filler_max_retries || 0, 10);
-        const currentRetryCount = latestMessage?.metadata?.Amily2_Retry_Count || 0;
+        const currentRetryCount = latestMessage?.extra?.amily2_retry_count || 0;
 
         if (currentRetryCount < maxRetries) {
             const nextRetryCount = currentRetryCount + 1;
             console.log(`[Amily2-副API] 准备进行第 ${nextRetryCount}/${maxRetries} 次重试...`);
             toastr.warning(`副API填表失败: ${error.message}。将在3秒后进行第 ${nextRetryCount} 次重试...`, "自动重试");
-            
-            // 记录重试次数到最新消息的 metadata 中，以便跨调用传递状态
+
+            // 记录重试次数到最新消息的 extra 中，以便跨调用传递状态（跟 amily2_tables_data 一起持久化）
             if (latestMessage) {
-                if (!latestMessage.metadata) latestMessage.metadata = {};
-                latestMessage.metadata.Amily2_Retry_Count = nextRetryCount;
+                if (!latestMessage.extra) latestMessage.extra = {};
+                latestMessage.extra.amily2_retry_count = nextRetryCount;
             }
 
             setTimeout(() => {
-                fillWithSecondaryApi(latestMessage, forceRun);
+                fillWithSecondaryApi(latestMessage, forceRun, opts);
             }, 3000);
         } else {
             console.log(`[Amily2-副API] 已达到最大重试次数 (${maxRetries})，放弃本次填表。`);
             toastr.error(`副API填表失败: ${error.message}。已达到最大重试次数，任务终止。`, "严重错误");
-            
+
             // 清除重试计数器
-            if (latestMessage && latestMessage.metadata) {
-                delete latestMessage.metadata.Amily2_Retry_Count;
+            if (latestMessage && latestMessage.extra) {
+                delete latestMessage.extra.amily2_retry_count;
             }
         }
     } finally {

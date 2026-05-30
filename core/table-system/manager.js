@@ -1021,7 +1021,7 @@ export async function rollbackAndRefill() {
     const lastMessage = context.chat[context.chat.length - 1];
 
     try {
-        await fillWithSecondaryApi(lastMessage, true);
+        await fillWithSecondaryApi(lastMessage, true, { targetMessage: lastMessage });
         log('回退并重新填表操作完成。', 'success');
     } catch (error) {
         log(`回退重填过程中发生错误: ${error.message}`, 'error');
