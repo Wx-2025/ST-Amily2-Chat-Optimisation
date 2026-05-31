@@ -74,3 +74,11 @@
   - SWIPED 事件改走扫描路径，不再用 `targetMessage` bypass 强填最末条，`保留缓冲区(bufferSize)` 设置在滑动场景下正确生效（手动"回退重填"按钮仍保留 bypass，意图明确）
   - 修复 FC（Function Call）路径下成功填表与"AI 判断无需修改"两种结果均未写回 `amily2_process_hash` 与 `saveChat()` 的问题——之前导致 FC 模式去重完全失效，最旧的未处理楼层会被每次扫描重复发给 AI；现统一回写路径为 `markTargetsProcessed`
   - FC 空操作时同步输出原始响应 JSON 到控制台（与批量回填日志面板保持一致），便于区分"无需变更"/"格式校验失败"/"JSON 解析失败"
+  - 修复 `fillWithSecondaryApi` 入口处过早设置 `secondaryFillerRunning = true`，导致防抖/总开关关闭/聊天过短/非分步模式/系统瘫痪五条早返路径均不解锁的死锁问题（特别是防抖路径——锁住后 setTimeout 回调撞上自己的锁，永久跳过后续触发）。锁的获取已挪到所有早返检查之后、`try` 块之前
+- **填表设置面板**：新增"手动解除填表锁"按钮（位于触发延迟下方），用于兜底应急——若仍遇到"分步填表正在进行中，跳过本次触发"反复刷屏，可手动点击释放
+- **API 调用层全面支持 AbortController**（`callAI` / `callAIForTools` / `callNccsAI` 及其全部下游 provider）：
+  - 新增 `options.signal` 透传，OpenAI 兼容 / OpenAI(测试) / Google 直连 / ST 后端 / FC 等所有 `fetch` 调用均接受 `AbortSignal`
+  - `callSillyTavernBackend` 由 `$.ajax` 改写为 `fetch`，以原生支持 signal
+  - `callSillyTavernPreset` / `callNccsSillyTavernPreset` 通过 `raceAgainstSignal` 兜底，外部不可终止的 `ConnectionManagerRequestService.sendRequest` 也能在 signal 触发时即时返回 AbortError
+  - 全部 catch 块识别 `AbortError`，rethrow 而不弹错误 toast；FC 重试逻辑识别中断后跳过重试
+- **填表设置面板**：在"手动解除填表锁"旁新增"强制中断当前填表"按钮——通过 AbortController 真正掐断 fetch 连接（fetch 立即抛错），结果会被丢弃，不会污染表格 / hash / `saveChat`

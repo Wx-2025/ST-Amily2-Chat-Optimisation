@@ -19,13 +19,14 @@ const CONTINUE_PROMPT_SECONDARY = '上一条回复不完整或缺少 <Amily2Edit
 
 let secondaryFillerDebounceTimer = null;
 let secondaryFillerRunning = false;
+let currentAbortController = null;
 
-async function callSecondaryModel(messages) {
+async function callSecondaryModel(messages, signal) {
     const settings = extension_settings[extensionName] || {};
     if (settings.nccsEnabled) {
-        return await callNccsAI(messages);
+        return await callNccsAI(messages, { signal });
     }
-    return await callAI(messages);
+    return await callAI(messages, { signal });
 }
 
 async function requestSecondaryContinuation(baseMessages, partialResponse) {
@@ -123,11 +124,11 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
         log('分步填表正在进行中，跳过本次触发。', 'warn');
         return;
     }
-    secondaryFillerRunning = true;
     const settings = extension_settings[extensionName] || {};
 
     // 【V2.1.1】分步填表触发延迟 / 防抖：自动触发时若配置了延迟，则延后执行，
     // 延迟期内再次到来的事件会重置计时器，避免消息连续到达时重复拉起填表。
+    // 注意：防抖与早返路径都不持锁，避免 setTimeout 回调撞上自己的锁导致死锁。
     const delay = Math.max(0, parseInt(settings.secondary_filler_delay || 0, 10));
     if (!forceRun && delay > 0) {
         if (secondaryFillerDebounceTimer) {
@@ -170,7 +171,10 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
         return;
     }
 
-
+    // 所有早返检查通过后再获取锁，确保 finally 一定能解锁
+    secondaryFillerRunning = true;
+    currentAbortController = new AbortController();
+    const signal = currentAbortController.signal;
     try {
         const bufferSize = parseInt(settings.secondary_filler_buffer || 0, 10);
         const batchSize = parseInt(settings.secondary_filler_batch || 0, 10);
@@ -369,7 +373,7 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
 
         if (settings.tableFillFunctionCall) {
             // Function Call 路径
-            const argsString = await callAIForTools(messages, TABLE_FILL_TOOL, { slot: 'tableFilling' });
+            const argsString = await callAIForTools(messages, TABLE_FILL_TOOL, { slot: 'tableFilling', signal });
             if (!argsString) {
                 console.error('[Amily2-副API] Function Call 返回为空。');
                 return;
@@ -397,10 +401,10 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
             let rawContent;
             if (settings.nccsEnabled) {
                 console.log('[Amily2-副API] 使用 Nccs API 进行分步填表...');
-                rawContent = await callNccsAI(messages);
+                rawContent = await callNccsAI(messages, { signal });
             } else {
                 console.log('[Amily2-副API] 使用 tableFilling slot 进行分步填表...');
-                rawContent = await callAI(messages, { slot: 'tableFilling' });
+                rawContent = await callAI(messages, { slot: 'tableFilling', signal });
             }
 
             if (!rawContent) {
@@ -461,8 +465,16 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
         toastr.success("分步填表执行完毕。", "Amily2-分步填表");
 
     } catch (error) {
+        if (error?.name === 'AbortError' || signal.aborted) {
+            console.warn('[Amily2-副API] 分步填表已被用户中断，跳过结果处理与重试。');
+            toastr.info('分步填表已中断。', 'Amily2-分步填表');
+            if (latestMessage && latestMessage.extra) {
+                delete latestMessage.extra.amily2_retry_count;
+            }
+            return;
+        }
         console.error(`[Amily2-副API] 发生严重错误:`, error);
-        
+
         // 【新增】自定义重试逻辑
         const maxRetries = parseInt(settings.secondary_filler_max_retries || 0, 10);
         const currentRetryCount = latestMessage?.extra?.amily2_retry_count || 0;
@@ -492,8 +504,37 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
         }
     } finally {
         secondaryFillerRunning = false;
+        currentAbortController = null;
+    }
+}
+
+export function resetSecondaryFillerLock() {
+    const wasLocked = secondaryFillerRunning;
+    if (secondaryFillerDebounceTimer) {
+        clearTimeout(secondaryFillerDebounceTimer);
+        secondaryFillerDebounceTimer = null;
+    }
+    if (currentAbortController) {
+        try { currentAbortController.abort(); } catch {}
+        currentAbortController = null;
     }
     secondaryFillerRunning = false;
+    return wasLocked;
+}
+
+export function isSecondaryFillerRunning() {
+    return secondaryFillerRunning;
+}
+
+export function abortCurrentSecondaryFiller() {
+    if (!secondaryFillerRunning && !currentAbortController) {
+        return false;
+    }
+    if (currentAbortController) {
+        try { currentAbortController.abort(); } catch {}
+    }
+    // 锁的释放由 finally 完成；这里只发出中断信号
+    return true;
 }
 
     async function getHistoryContext(messagesToFetch, historyEndIndex, tagsToExtract, exclusionRules) {

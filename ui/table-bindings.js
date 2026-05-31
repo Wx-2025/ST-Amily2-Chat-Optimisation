@@ -5,6 +5,7 @@ import { extensionName } from '../utils/settings.js';
 import { updateOrInsertTableInChat } from './message-table-renderer.js';
 import { saveSettingsDebounced } from '/script.js';
 import { startBatchFilling } from '../core/table-system/batch-filler.js';
+import { resetSecondaryFillerLock, isSecondaryFillerRunning, abortCurrentSecondaryFiller } from '../core/table-system/secondary-filler.js';
 import { showHtmlModal } from './page-window.js';
 import { DEFAULT_AI_RULE_TEMPLATE, DEFAULT_AI_FLOW_TEMPLATE } from '../core/table-system/settings.js';
 import { world_names, loadWorldInfo } from '/scripts/world-info.js';
@@ -1469,6 +1470,46 @@ export function bindTableEvents(panelElement = null) {
             updateAndSaveTableSetting('batch_filling_threshold', parsed);
             toastr.info(`批处理阈值已设置为 ${parsed}。`);
         });
+    }
+
+    const abortBtn = document.getElementById('amily2-abort-secondary-filler');
+    const resetLockBtn = document.getElementById('amily2-reset-secondary-filler-lock');
+    const lockStatusSpan = document.getElementById('amily2-secondary-filler-lock-status');
+    if ((abortBtn || resetLockBtn) && lockStatusSpan) {
+        const refreshLockStatus = () => {
+            const running = isSecondaryFillerRunning();
+            lockStatusSpan.textContent = running ? '状态：占用中' : '状态：空闲';
+            lockStatusSpan.style.color = running ? 'var(--SmartThemeQuoteColor, #d97706)' : '';
+        };
+        refreshLockStatus();
+        if (abortBtn) {
+            abortBtn.addEventListener('click', () => {
+                const signaled = abortCurrentSecondaryFiller();
+                if (signaled) {
+                    toastr.warning('已发出中断信号，进行中的请求将立即终止，结果会被丢弃。', 'Amily2');
+                    log('用户手动中断了当前分步填表（AbortController.abort）。', 'warn');
+                } else {
+                    toastr.info('当前没有正在进行的分步填表。', 'Amily2');
+                }
+                setTimeout(refreshLockStatus, 300);
+            });
+            abortBtn.addEventListener('mouseenter', refreshLockStatus);
+            abortBtn.addEventListener('focus', refreshLockStatus);
+        }
+        if (resetLockBtn) {
+            resetLockBtn.addEventListener('click', () => {
+                const wasLocked = resetSecondaryFillerLock();
+                refreshLockStatus();
+                if (wasLocked) {
+                    toastr.success('分步填表锁已手动释放。', 'Amily2');
+                    log('用户手动释放了分步填表锁（之前处于占用状态）。', 'warn');
+                } else {
+                    toastr.info('当前并无锁占用，无需释放。', 'Amily2');
+                }
+            });
+            resetLockBtn.addEventListener('mouseenter', refreshLockStatus);
+            resetLockBtn.addEventListener('focus', refreshLockStatus);
+        }
     }
 
     const fcToggle = document.getElementById('table-fill-function-call-enabled');

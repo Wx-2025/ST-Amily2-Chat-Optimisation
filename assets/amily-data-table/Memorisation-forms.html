@@ -257,6 +257,21 @@
                             <input type="number" id="secondary-filler-delay" min="0" max="60000" step="100" value="0" class="text_pole" style="width: 80px; margin-top: 5px;">
                             <small class="notes" style="margin-top: 5px; display: block;">收到新消息后延迟多少毫秒再触发分步填表 (0 = 立即触发)；延迟期内若再次收到消息会重置计时，起到防抖作用。</small>
                         </div>
+
+                        <!-- 中断与手动解锁（兜底） -->
+                        <div class="control-block-with-switch" style="margin-bottom: 10px; flex-direction: column; align-items: flex-start;">
+                            <label>填表运行控制</label>
+                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px; flex-wrap: wrap;">
+                                <button id="amily2-abort-secondary-filler" class="menu_button danger small_button interactable" type="button">
+                                    <i class="fas fa-stop-circle"></i> 强制中断当前填表
+                                </button>
+                                <button id="amily2-reset-secondary-filler-lock" class="menu_button warning small_button interactable" type="button">
+                                    <i class="fas fa-unlock"></i> 手动解除填表锁
+                                </button>
+                                <span id="amily2-secondary-filler-lock-status" class="notes" style="font-size: 12px;">状态：空闲</span>
+                            </div>
+                            <small class="notes" style="margin-top: 5px; display: block;"><b>强制中断</b>：通过 AbortController 真正掐断进行中的 API 请求并丢弃结果（写表/写 hash/saveChat 都不会执行）。<br><b>手动解除填表锁</b>：仅释放 UI 锁，用于"中断"也救不回来的极端死锁兜底——若遇到"分步填表正在进行中，跳过本次触发"反复出现且新消息无法触发，可手动点击释放。</small>
+                        </div>
                     </div>
                     
                     <div class="control-block-with-switch" style="margin-bottom: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">

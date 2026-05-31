@@ -588,6 +588,7 @@ export async function callAI(messages, options = {}) {
         apiKey: apiSettings.apiKey,
         apiProvider: apiSettings.apiProvider,
         customParams: apiSettings.customParams ?? {},
+        signal: options.signal,
         ...options,
         // options 可显式覆盖 customParams，体现"代码内显式 > profile 配置"
         customParams: { ...(apiSettings.customParams ?? {}), ...(options.customParams ?? {}) },
@@ -648,6 +649,10 @@ export async function callAI(messages, options = {}) {
         return responseContent;
 
     } catch (error) {
+        if (error?.name === 'AbortError') {
+            console.warn('[Amily2-外交部] API 调用被用户中断。');
+            throw error; // 让上层（如 secondary-filler）识别并跳过结果处理
+        }
         console.error(`[Amily2-外交部] API调用发生错误:`, error);
 
         if (error.message.includes('400')) {
@@ -663,7 +668,7 @@ export async function callAI(messages, options = {}) {
         } else {
             toastr.error(`API调用失败: ${error.message}`, "API调用失败");
         }
-        
+
         return null;
     }
 }
@@ -690,7 +695,8 @@ async function callOpenAICompatible(messages, options) {
             max_tokens: options.maxTokens,
             temperature: options.temperature,
             stream: false,
-        })
+        }),
+        signal: options.signal,
     });
 
     if (!response.ok) {
@@ -732,7 +738,8 @@ async function callOpenAITest(messages, options) {
     const response = await fetch('/api/backends/chat-completions/generate', {
         method: 'POST',
         headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        signal: options.signal,
     });
 
     if (!response.ok) {
@@ -774,10 +781,11 @@ async function callGoogleDirect(messages, options) {
         temperature: options.temperature 
     }));
 
-    const response = await fetch(finalApiUrl, { 
-        method: "POST", 
-        headers: headers, 
-        body: requestBody 
+    const response = await fetch(finalApiUrl, {
+        method: "POST",
+        headers: headers,
+        body: requestBody,
+        signal: options.signal,
     });
 
     if (!response.ok) {
@@ -822,11 +830,10 @@ async function callGoogleDirect(messages, options) {
 async function callSillyTavernBackend(messages, options) {
     console.log('[Amily2号-ST后端] 通过SillyTavern后端调用API');
 
-    const rawResponse = await $.ajax({
-        url: '/api/backends/chat-completions/generate',
-        type: 'POST',
-        contentType: 'application/json',
-        data: JSON.stringify({
+    const response = await fetch('/api/backends/chat-completions/generate', {
+        method: 'POST',
+        headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({
             // 用户 customParams（可被核心字段覆盖）
             ...(options.customParams || {}),
             // 表单托管字段总是 win
@@ -838,9 +845,16 @@ async function callSillyTavernBackend(messages, options) {
             max_tokens: options.maxTokens,
             temperature: options.temperature,
             stream: false,
-        })
+        }),
+        signal: options.signal,
     });
 
+    if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`SillyTavern后端API请求失败: ${response.status} - ${errorText}`);
+    }
+
+    const rawResponse = await response.json();
     const result = normalizeApiResponse(rawResponse);
     if (result.error) {
         throw new Error(result.error.message || 'SillyTavern后端API调用失败');
@@ -849,6 +863,28 @@ async function callSillyTavernBackend(messages, options) {
     return result.content;
 }
 
+
+function raceAgainstSignal(promise, signal) {
+    if (!signal) return promise;
+    if (signal.aborted) {
+        const err = new Error('Aborted');
+        err.name = 'AbortError';
+        return Promise.reject(err);
+    }
+    return new Promise((resolve, reject) => {
+        const onAbort = () => {
+            signal.removeEventListener('abort', onAbort);
+            const err = new Error('Aborted');
+            err.name = 'AbortError';
+            reject(err);
+        };
+        signal.addEventListener('abort', onAbort, { once: true });
+        promise.then(
+            (v) => { signal.removeEventListener('abort', onAbort); resolve(v); },
+            (e) => { signal.removeEventListener('abort', onAbort); reject(e); },
+        );
+    });
+}
 
 async function callSillyTavernPreset(messages, options) {
     console.log('[Amily2号-ST预设] 使用SillyTavern预设调用');
@@ -909,7 +945,7 @@ async function callSillyTavernPreset(messages, options) {
         }
     }
 
-    const result = await responsePromise;
+    const result = await raceAgainstSignal(responsePromise, options.signal);
 
     if (!result) {
         throw new Error('未收到API响应');
@@ -969,6 +1005,7 @@ export async function callAIForTools(messages, tool, options = {}) {
         apiKey: apiSettings.apiKey,
         apiProvider: apiSettings.apiProvider,
         customParams: { ...(apiSettings.customParams ?? {}), ...(options.customParams ?? {}) },
+        signal: options.signal,
         ...options,
     };
 
@@ -1009,6 +1046,7 @@ export async function callAIForTools(messages, tool, options = {}) {
             method: 'POST',
             headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
             body: JSON.stringify(buildFCBody(withToolChoice, overrideMessages, extraParams)),
+            signal: finalOptions.signal,
         });
         if (!response.ok) {
             const errorText = await response.text();
@@ -1036,6 +1074,7 @@ export async function callAIForTools(messages, tool, options = {}) {
             if (isDeepSeek) console.log('[Amily2-外交部] 检测到 DeepSeek 端点，首次 FC 请求附加 thinking:disabled');
             data = await doFCRequest(true, undefined, firstAttemptExtra);
         } catch (firstError) {
+            if (firstError?.name === 'AbortError') throw firstError; // 用户中断，不要重试
             // 首次失败（含 ST 代理吞掉错误码场景）无条件去掉 tool_choice 重试一次
             // 思考模式模型支持 tools 但不支持强制 tool_choice，追加强制指令防止模型直接输出文本
             console.warn('[Amily2-外交部] 首次 FC 请求失败，去掉 tool_choice 重试…', firstError.message);
@@ -1059,6 +1098,10 @@ export async function callAIForTools(messages, tool, options = {}) {
         return argsString ?? null;
 
     } catch (error) {
+        if (error?.name === 'AbortError') {
+            console.warn('[Amily2-外交部] Function Call 调用被用户中断。');
+            throw error;
+        }
         console.error('[Amily2-外交部] Function Call 调用失败:', error);
         toastr.error(`Function Call 调用失败: ${error.message}`, 'Amily2-外交部');
         return null;

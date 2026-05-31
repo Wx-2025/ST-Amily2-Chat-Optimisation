@@ -87,6 +87,7 @@ export async function callNccsAI(messages, options = {}) {
     const settings = await getNccsApiSettings();
     const finalOptions = {
         ...settings,
+        signal: options.signal,
         ...options
     };
 
@@ -123,14 +124,40 @@ export async function callNccsAI(messages, options = {}) {
         }
         return responseContent;
     } catch (error) {
+        if (error?.name === 'AbortError') {
+            console.warn('[Amily2-Nccs] API 调用被用户中断。');
+            throw error;
+        }
         console.error(`[Amily2-Nccs] API 调用失败:`, error);
         toastr.error(`调用失败: ${error.message}`, "Nccs API Error");
         return null;
     }
 }
 
-async function fetchFakeStream(url, opts) {
-    const res = await fetch(url, opts);
+function raceAgainstSignal(promise, signal) {
+    if (!signal) return promise;
+    if (signal.aborted) {
+        const err = new Error('Aborted');
+        err.name = 'AbortError';
+        return Promise.reject(err);
+    }
+    return new Promise((resolve, reject) => {
+        const onAbort = () => {
+            signal.removeEventListener('abort', onAbort);
+            const err = new Error('Aborted');
+            err.name = 'AbortError';
+            reject(err);
+        };
+        signal.addEventListener('abort', onAbort, { once: true });
+        promise.then(
+            (v) => { signal.removeEventListener('abort', onAbort); resolve(v); },
+            (e) => { signal.removeEventListener('abort', onAbort); reject(e); },
+        );
+    });
+}
+
+async function fetchFakeStream(url, opts, signal) {
+    const res = await fetch(url, { ...opts, signal });
     if (!res.ok) throw new Error(`Stream HTTP ${res.status}: ${await res.text()}`);
     
     const reader = res.body.getReader();
@@ -217,10 +244,10 @@ async function callNccsOpenAITest(messages, options) {
     };
 
     if (options.stream) {
-        return await fetchFakeStream('/api/backends/chat-completions/generate', fetchOpts);
+        return await fetchFakeStream('/api/backends/chat-completions/generate', fetchOpts, options.signal);
     }
 
-    const response = await fetch('/api/backends/chat-completions/generate', fetchOpts);
+    const response = await fetch('/api/backends/chat-completions/generate', { ...fetchOpts, signal: options.signal });
     if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
     return normalizeApiResponse(await response.json());
 }
@@ -244,13 +271,14 @@ async function callNccsSillyTavernPreset(messages, options) {
 
         if (!context.ConnectionManagerRequestService) throw new Error('ConnectionManagerRequestService unavailable');
 
-        const result = await context.ConnectionManagerRequestService.sendRequest(
+        const sendPromise = context.ConnectionManagerRequestService.sendRequest(
             targetProfile.id,
             messages,
             8192,
             options.customParams || {}
         );
 
+        const result = await raceAgainstSignal(sendPromise, options.signal);
         return normalizeApiResponse(result);
 
     } finally {
