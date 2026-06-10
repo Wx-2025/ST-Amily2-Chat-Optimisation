@@ -14,6 +14,14 @@ import { extensionName } from '../utils/settings.js';
 const MODULE_NAME = 'hanlinyuan-rag-core';
 const GOOGLE_API_BASE_URL = 'https://generativelanguage.googleapis.com';
 
+// profile-sync 在 UI 隐藏字段时填入的掩码占位符（const MASKED_KEY = '••••••••'）。
+// 历史上 saveSettingsFromUI 曾把这个占位符写回 settings.{rerank,retrieval}.apiKey，
+// 导致取消 Profile 分配后实际请求带占位符 token 被 401。这里做防御性还原。
+const PROFILE_MASKED_KEY = '••••••••';
+function sanitizeMaskedKey(key) {
+    return key === PROFILE_MASKED_KEY ? '' : key;
+}
+
 function getSettings() {
     const root = extension_settings[extensionName];
     const nested = root && root[MODULE_NAME];
@@ -35,12 +43,13 @@ export async function getEmbedRetrievalSettings() {
         return {
             apiEndpoint:    profile.provider === 'google' ? 'google_direct' : 'custom',
             customApiUrl:   profile.apiUrl,
-            apiKey:         profile.apiKey ?? '',
+            apiKey:         sanitizeMaskedKey(profile.apiKey ?? ''),
             embeddingModel: profile.model,
             batchSize:      getSettings().retrieval?.batchSize ?? 5,
         };
     }
-    return getSettings().retrieval || {};
+    const fallback = getSettings().retrieval || {};
+    return { ...fallback, apiKey: sanitizeMaskedKey(fallback.apiKey ?? '') };
 }
 
 /**
@@ -52,13 +61,14 @@ export async function getRerankSettings() {
         const manualSettings = getSettings().rerank || {};
         return {
             url:     profile.apiUrl,
-            apiKey:  profile.apiKey ?? '',
+            apiKey:  sanitizeMaskedKey(profile.apiKey ?? ''),
             model:   profile.model,
             top_n:   manualSettings.top_n ?? 10,
             apiMode: manualSettings.apiMode ?? 'custom',
         };
     }
-    return getSettings().rerank || {};
+    const fallback = getSettings().rerank || {};
+    return { ...fallback, apiKey: sanitizeMaskedKey(fallback.apiKey ?? '') };
 }
 
 function normalizeApiResponse(responseData) {

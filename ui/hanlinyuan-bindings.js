@@ -706,6 +706,11 @@ function saveSettingsFromUI(isAutoSave = true) {
         const key = target.dataset.settingKey;
         if (!key) return;
 
+        // 被 profile-sync 接管的字段（祖先元素带 data-profile-hidden）会被填充
+        // MASKED_KEY 占位符并隐藏，若一并写回会污染 settings.{rerank,retrieval}.apiKey
+        // 等字段为 '••••••••'，导致取消 Profile 分配后实际请求带占位符 token 被 401。
+        if (target.closest('[data-profile-hidden]')) return;
+
         let value;
         const type = target.dataset.type || 'string';
 

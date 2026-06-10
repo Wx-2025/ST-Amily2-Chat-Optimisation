@@ -49,6 +49,16 @@
 
 ---
 
+## v2.2.5
+
+### 修复
+
+- **翰林院（RAG）API Key 污染**：
+  - 修复 `saveSettingsFromUI` 无差别遍历翰林院面板内全部 `[data-setting-key]` 输入（包含被 `profile-sync` 接管隐藏的字段），导致掩码占位符 `••••••••` 被当作真值写回 `settings.rerank.apiKey` / `settings.retrieval.apiKey`，URL / model 也被 Profile 值覆盖到 legacy 字段。修复后会跳过祖先带 `data-profile-hidden` 的输入
+  - `getRerankSettings` / `getEmbedRetrievalSettings` 同时加入防御性还原：识别历史污染留下的 `••••••••` 时归为空字符串，避免取消 Profile 分配后实际请求带占位符 token 被 401
+
+---
+
 ## v2.2.4
 
 ### 新功能

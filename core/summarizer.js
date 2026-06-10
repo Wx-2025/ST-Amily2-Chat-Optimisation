@@ -16,6 +16,7 @@ import { resolveHistoriographyRuleConfig } from "../utils/config/RuleProfileMana
 import { getPresetPrompts, getMixedOrder } from '../PresetSettings/index.js';
 import { callAI, generateRandomSeed } from './api.js';
 import { callConcurrentAI } from './api/ConcurrentApi.js';
+import { applyToTemplates } from './memory-blocks/index.js';
 
 export async function processOptimization(latestMessage, previousMessages) {
     if (window.AMILY2_SYSTEM_PARALYZED === true) {
@@ -276,22 +277,18 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
         const userName = context.name1 || '用户';
         const charName = context.name2 || '角色';
 
-        const replacements = {
-            'sulv1': settings.plotOpt_rateMain ?? 1.0,
-            'sulv2': settings.plotOpt_ratePersonal ?? 1.0,
-            'sulv3': settings.plotOpt_rateErotic ?? 1.0,
-            'sulv4': settings.plotOpt_rateCuckold ?? 1.0,
-        };
-
-        let mainPrompt = settings.plotOpt_mainPrompt || '';
-        let systemPrompt = settings.plotOpt_systemPrompt || '';
-        
-        for (const key in replacements) {
-            const value = replacements[key];
-            const regex = new RegExp(key.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'g');
-            mainPrompt = mainPrompt.replace(regex, value);
-            systemPrompt = systemPrompt.replace(regex, value);
-        }
+        // 【Phase 1 重构】sulv1-4 占位符替换迁入记忆块工作流。
+        // 块定义见 core/memory-blocks/builtin-blocks.js，行为与旧硬编码字节级一致：
+        //   - 同一 context 内 Promise.all 并发执行 generator
+        //   - 模板批量替换，块只跑一次复用结果
+        //   - 后续新增占位符（含战斗系统）走 register({...})，此处零改动
+        const { mainPrompt, systemPrompt } = await applyToTemplates(
+            {
+                mainPrompt: settings.plotOpt_mainPrompt || '',
+                systemPrompt: settings.plotOpt_systemPrompt || '',
+            },
+            { context: 'plotOptimization', settings },
+        );
 
         onProgress(getRandomText(['正在进行情感光谱分析...', '正在解析情绪波动频率...', '正在捕捉微表情信号...']), false);
         onProgress(getRandomText(['正在进行情感光谱分析...', '正在解析情绪波动频率...', '正在捕捉微表情信号...']), true);
