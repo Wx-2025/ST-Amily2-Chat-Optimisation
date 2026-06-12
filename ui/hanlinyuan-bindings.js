@@ -1015,10 +1015,15 @@ function _createKbItemElement(id, kb, scope, vectorCount) {
         ? `<button class="hly-kb-move-btn" title="上移到全局"><i class="fas fa-arrow-up"></i></button>`
         : `<button class="hly-kb-move-btn" title="下移到局部"><i class="fas fa-arrow-down"></i></button>`;
 
+    // 聊天级库（独立聊天记忆产物）标记：仅所属聊天可检索
+    const chatBadgeHtml = kb.chatId
+        ? `<span title="聊天专属记忆，仅在聊天 ${escapeAttribute(kb.chatId)} 中可被检索" style="font-size: 0.8em; padding: 0 5px; border-radius: 3px; background: rgba(88,166,255,0.25); margin-left: 4px; white-space: nowrap;"><i class="fas fa-comment"></i> 聊天级</span>`
+        : '';
+
     item.innerHTML = `
         <div class="hly-kb-name-container">
             <input type="checkbox" class="hly-kb-item-checkbox" data-kb-id="${escapeAttribute(id)}">
-            <span class="hly-kb-name" title="ID: ${escapeAttribute(id)}">${escapeTextareaContent(kb.name || '')} (${Number(vectorCount) || 0}条)</span>
+            <span class="hly-kb-name" title="ID: ${escapeAttribute(id)}">${escapeTextareaContent(kb.name || '')} (${Number(vectorCount) || 0}条)</span>${chatBadgeHtml}
         </div>
         <div class="hly-kb-actions">
             ${moveButtonHtml}

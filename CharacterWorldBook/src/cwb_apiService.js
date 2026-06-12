@@ -6,6 +6,7 @@ import { extension_settings, getContext } from "/scripts/extensions.js";
 import { compatibleTriggerSlash } from '../../core/tavernhelper-compatibility.js';
 import { getSlotProfile, providerToApiMode } from '../../core/api/api-resolver.js';
 import { configManager } from '../../utils/config/ConfigManager.js';
+import { detectVendor } from '../../utils/api-vendor.js';
 
 function normalizeApiResponse(responseData) {
     let data = responseData;
@@ -180,7 +181,7 @@ async function callCwbOpenAITest(messages, options) {
         };
     });
 
-    const isGoogleApi = validatedOptions.apiUrl.includes('googleapis.com');
+    const isGoogleApi = (await detectVendor(validatedOptions.apiUrl)) === 'google';
 
     const requestBody = {
         chat_completion_source: 'openai',
@@ -648,7 +649,7 @@ export async function callCustomOpenAI(messages) {
             throw new Error('API URL/Model未配置。');
         }
 
-        const isGoogleApi = state.customApiConfig.url.includes('googleapis.com');
+        const isGoogleApi = (await detectVendor(state.customApiConfig.url)) === 'google';
 
         const requestBody = {
             messages: messages,

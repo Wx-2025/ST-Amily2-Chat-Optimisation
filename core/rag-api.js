@@ -40,16 +40,31 @@ function getSettings() {
 export async function getEmbedRetrievalSettings() {
     const profile = await getSlotProfile('ragEmbed');
     if (profile) {
+        const apiKey = sanitizeMaskedKey(profile.apiKey ?? '');
         return {
             apiEndpoint:    profile.provider === 'google' ? 'google_direct' : 'custom',
             customApiUrl:   profile.apiUrl,
-            apiKey:         sanitizeMaskedKey(profile.apiKey ?? ''),
+            apiKey,
             embeddingModel: profile.model,
             batchSize:      getSettings().retrieval?.batchSize ?? 5,
+            // Key 存储是设备本地的（ApiKeyStore local/cloud 模式均不跨设备），
+            // 换设备/浏览器后 profile 同步而 Key 缺失——标记出来供报错说明
+            _keyMissingFromProfile: !apiKey,
+            _profileName: profile.name || profile.id,
         };
     }
     const fallback = getSettings().retrieval || {};
     return { ...fallback, apiKey: sanitizeMaskedKey(fallback.apiKey ?? '') };
+}
+
+/** Key 缺失时的统一文案：区分"profile 在本设备无 Key"与"未配置" */
+export function describeMissingKey(resolved, plainMessage) {
+    if (resolved?._keyMissingFromProfile) {
+        return `连接配置「${resolved._profileName}」在本设备上没有可用的 API Key。` +
+            `Key 仅保存在最初填写它的设备/浏览器上，不随云端设置同步。` +
+            `请在「API 连接配置」面板编辑该配置并重新填写 Key。`;
+    }
+    return plainMessage;
 }
 
 /**
@@ -59,12 +74,15 @@ export async function getRerankSettings() {
     const profile = await getSlotProfile('ragRerank');
     if (profile) {
         const manualSettings = getSettings().rerank || {};
+        const apiKey = sanitizeMaskedKey(profile.apiKey ?? '');
         return {
             url:     profile.apiUrl,
-            apiKey:  sanitizeMaskedKey(profile.apiKey ?? ''),
+            apiKey,
             model:   profile.model,
             top_n:   manualSettings.top_n ?? 10,
             apiMode: manualSettings.apiMode ?? 'custom',
+            _keyMissingFromProfile: !apiKey,
+            _profileName: profile.name || profile.id,
         };
     }
     const fallback = getSettings().rerank || {};
@@ -120,8 +138,8 @@ export async function fetchEmbeddingModels(overrideSettings = null) {
 
     switch (apiEndpoint) {
         case 'google_direct':
-            if (!apiKey) throw new Error("Google直连模式需要API Key。");
-            
+            if (!apiKey) throw new Error(describeMissingKey(settings, "Google直连模式需要API Key。"));
+
             const fetchGoogleModels = async (version) => {
                 const url = `${GOOGLE_API_BASE_URL}/${version}/models`;
                 console.log(`[翰林院] 正在从 Google API (${version}) 获取模型列表: ${url}`);
@@ -225,7 +243,7 @@ export async function fetchRerankModels() {
         throw new Error("Rerank API URL 未提供。");
     }
     if (apiMode === 'custom' && !apiKey) {
-        throw new Error("自定义模式下，Rerank API Key 未提供。");
+        throw new Error(describeMissingKey(settings, "自定义模式下，Rerank API Key 未提供。"));
     }
 
     const baseUrl = getRerankBaseUrl(url);
@@ -264,7 +282,7 @@ export async function executeRerank(query, documents, rerankSettings = null) {
     const { url, apiKey, model, top_n, apiMode = 'custom' } = resolved;
 
     if (!url) throw new Error("Rerank API URL 未提供。");
-    if (apiMode === 'custom' && !apiKey) throw new Error("自定义模式下，Rerank API Key 未提供。");
+    if (apiMode === 'custom' && !apiKey) throw new Error(describeMissingKey(resolved, "自定义模式下，Rerank API Key 未提供。"));
 
     const baseUrl = getRerankBaseUrl(url);
     const rerankUrl = `${baseUrl}/v1/rerank`;
@@ -309,10 +327,12 @@ export function getApiEndpointUrl(raw = false, overrideRetrieval = null) {
             break;
         case 'azure':
         case 'custom':
+        case 'local_proxy': // 本地代理（LM Studio/Ollama）同样使用用户填写的地址，此前漏掉落入 default 被错误定向到 openai.com
             url = customApiUrl;
             break;
         default:
-            url = 'https://api.openai.com';
+            // apiEndpoint 为空/非法（历史 profile-sync 污染）时，customApiUrl 比硬编码 openai.com 更可能是用户真实意图
+            url = customApiUrl || 'https://api.openai.com';
             break;
     }
     if (raw) {
@@ -356,7 +376,7 @@ export async function getEmbeddings(texts, signal = null) {
         switch (apiEndpoint) {
             case 'google_direct':
                 console.log('[翰林院-API] 使用Google直连模式获取向量。');
-                if (!apiKey) throw new Error('Google直连模式需要API Key。');
+                if (!apiKey) throw new Error(describeMissingKey(settings, 'Google直连模式需要API Key。'));
 
                 // 使用适配器构建URL和请求体；Key 通过 x-goog-api-key 头传递避免 URL 泄露
                 const googleUrl = buildGoogleEmbeddingApiUrl(GOOGLE_API_BASE_URL, embeddingModel);

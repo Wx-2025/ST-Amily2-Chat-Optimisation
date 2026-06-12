@@ -8,6 +8,7 @@
     import { saveSettingsDebounced } from '/script.js';
     import { amilyHelper } from '../../core/tavern-helper/main.js';
     import { configManager } from '../../utils/config/ConfigManager.js';
+    import { watchProfileSliderGuard } from '../../ui/profile-slider-guard.js';
 
     const { jQuery: $, SillyTavern } = window;
 
@@ -698,6 +699,9 @@
             extension_settings[extensionName].cwb_max_tokens = value;
             saveSettingsDebounced();
         });
+
+        // cwb 槽分配 profile 后，温度/maxTokens 由 profile 权威控制（T-006 informational 化）
+        watchProfileSliderGuard('cwb', ['#cwb-temperature', '#cwb-max-tokens']);
 
         $('#cwb-test-connection').off('click').on('click', async function() {
             const $button = $(this);

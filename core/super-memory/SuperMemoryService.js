@@ -11,14 +11,16 @@
  * 公开接口（query('SuperMemory')）：
  *   initialize()               — 初始化超级记忆系统
  *   forceSyncAll()             — 全量同步到世界书
- *   tryRestoreStateFromMetadata() — 从聊天元数据恢复状态
  *   awaitSync()                — 等待当前同步队列完成（Pipeline Stage 4 使用）
  *   purge()                    — 清空记忆世界书
+ *
+ * 注：tryRestoreStateFromMetadata 已删除——msg.metadata 非 ST 持久化字段，
+ * 该恢复路径从未真正工作过；表格状态的持久化与恢复由表格系统
+ * （loadTables / msg.extra.amily2_tables_data）唯一负责。
  */
 
 import {
     initializeSuperMemory,
-    tryRestoreStateFromMetadata,
     forceSyncAll,
     awaitSync,
     purgeSuperMemory,
@@ -34,12 +36,11 @@ setTimeout(() => {
             return;
         }
         _ctx.expose({
-            initialize:                  ()        => initializeSuperMemory(),
-            forceSyncAll:                ()        => forceSyncAll(),
-            tryRestoreStateFromMetadata: ()        => tryRestoreStateFromMetadata(),
-            awaitSync:                   ()        => awaitSync(),
-            purge:                       ()        => purgeSuperMemory(),
-            pushUpdate:                  (payload) => pushUpdate(payload),
+            initialize:   ()        => initializeSuperMemory(),
+            forceSyncAll: ()        => forceSyncAll(),
+            awaitSync:    ()        => awaitSync(),
+            purge:        ()        => purgeSuperMemory(),
+            pushUpdate:   (payload) => pushUpdate(payload),
         });
         _ctx.log('SuperMemoryService', 'info', 'SuperMemory 服务已注册到 Bus。');
     } catch (e) {
@@ -50,7 +51,6 @@ setTimeout(() => {
 // ── 向后兼容具名导出 ──────────────────────────────────────────────────────
 export {
     initializeSuperMemory,
-    tryRestoreStateFromMetadata,
     forceSyncAll,
     awaitSync,
     purgeSuperMemory,

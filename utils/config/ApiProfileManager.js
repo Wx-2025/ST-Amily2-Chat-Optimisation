@@ -220,6 +220,8 @@ class ApiProfileManager {
         }
         this._assignments()[slot] = profileId;
         this._save();
+        // 通知各模块面板刷新 profile 压制状态（见 ui/profile-slider-guard.js）
+        document.dispatchEvent(new CustomEvent('amily2-profile-assignment-changed', { detail: { slot, profileId } }));
         return true;
     }
 
@@ -354,7 +356,8 @@ function _detectVendorFromUrlSync(url) {
 
 /**
  * 每个 slot 的 legacy 字段映射。jqyh 已合并到 plotOpt 不单独迁移。
- * cwb / autoCharCard / ragEmbed / ragRerank 字段结构差异较大，留作后续。
+ * autoCharCard 字段是嵌套对象（acc_executor_config / acc_planner_config），
+ * 不走此平铺映射，在迁移 IIFE 里单独处理；ragEmbed / ragRerank 留作后续。
  */
 const LEGACY_PROFILE_MIGRATION_MAP = [
     {
@@ -411,13 +414,32 @@ const LEGACY_PROFILE_MIGRATION_MAP = [
         temperatureKey: 'sybdTemperature',
         name: 'SYBD 旧配置',
     },
+    {
+        slot: 'cwb',
+        urlKey: 'cwb_api_url',
+        modelKey: 'cwb_api_model',
+        keyName: 'cwb_api_key',
+        maxTokensKey: 'cwb_max_tokens',
+        temperatureKey: 'cwb_temperature',
+        modeKey: 'cwb_api_mode', // 预设模式下残留的 url/model 不可信，跳过迁移
+        name: '角色世界书 旧配置',
+    },
 ];
+
+/**
+ * 迁移版本号：首次发布的 6 槽迁移为 v1（旧布尔标记 _legacyProfileMigrationDone），
+ * v2 新增 cwb + autoCharCard。版本号小于当前值时重跑迁移循环——循环本身按
+ * "已分配 profile 的 slot 跳过"幂等，老用户只会补迁新增槽位，不会产生重复 profile。
+ */
+const LEGACY_MIGRATION_VERSION = 2;
 
 ;(async () => {
     try {
         const s = extension_settings[extensionName];
         if (!s) return;
-        if (s._legacyProfileMigrationDone) return; // 幂等
+        // 版本化幂等：旧布尔标记视为 v1，小于当前版本则重跑（循环内部按 slot 幂等）
+        const migratedVersion = s._legacyProfileMigrationVersion ?? (s._legacyProfileMigrationDone ? 1 : 0);
+        if (migratedVersion >= LEGACY_MIGRATION_VERSION) return;
 
         const migrated = [];
         for (const m of LEGACY_PROFILE_MIGRATION_MAP) {
@@ -427,6 +449,8 @@ const LEGACY_PROFILE_MIGRATION_MAP = [
             const url   = String(s[m.urlKey]   ?? '').trim();
             const model = String(s[m.modelKey] ?? '').trim();
             if (!url || !model) continue; // 旧配置不完整，跳过
+            // 模块运行在 ST 预设模式时，url/model 是切换模式前的残留，迁成权威 profile 会改变行为
+            if (m.modeKey && s[m.modeKey] === 'sillytavern_preset') continue;
 
             const provider = _detectVendorFromUrlSync(url) || 'custom_oai';
 
@@ -452,6 +476,40 @@ const LEGACY_PROFILE_MIGRATION_MAP = [
             migrated.push(`${m.slot} → ${profileId}`);
         }
 
+        // autoCharCard 特殊处理：legacy 配置是两份嵌套对象（executor=模型A / planner=模型B），
+        // 而 profile 分配后两个角色共用同一份配置。只有当 planner 未配置或与 executor
+        // 完全一致时才自动迁移，否则迁移会悄悄改变 planner 行为，留给用户手动处理。
+        if (!apiProfileManager.getAssignment('autoCharCard')) {
+            const exec = s.acc_executor_config || {};
+            const plan = s.acc_planner_config || {};
+            const execComplete = String(exec.apiUrl ?? '').trim() && String(exec.model ?? '').trim();
+            const planEmpty = !String(plan.apiUrl ?? '').trim();
+            const planSame = plan.apiUrl === exec.apiUrl && plan.model === exec.model && plan.apiKey === exec.apiKey;
+            if (execComplete && (planEmpty || planSame)) {
+                const provider = _detectVendorFromUrlSync(exec.apiUrl) || 'custom_oai';
+                const profileId = apiProfileManager.createProfile({
+                    type: 'chat',
+                    name: '一键生卡 旧配置',
+                    provider,
+                    apiUrl: exec.apiUrl,
+                    model: exec.model,
+                    maxTokens:   exec.maxTokens   ?? undefined,
+                    temperature: exec.temperature ?? undefined,
+                });
+                // acc 的 Key 明文存在嵌套对象里（不在 configManager），直接写入 ApiKeyStore。
+                // 排除 profile-sync 历史污染写回的掩码占位符，避免把 '••••••••' 当真 Key 迁移
+                try {
+                    if (exec.apiKey && exec.apiKey !== '••••••••') await apiProfileManager.setKey(profileId, exec.apiKey);
+                } catch (keyErr) {
+                    console.warn('[ApiProfiles] autoCharCard Key 迁移失败:', keyErr);
+                }
+                apiProfileManager.setAssignment('autoCharCard', profileId);
+                migrated.push(`autoCharCard → ${profileId}`);
+            } else if (execComplete) {
+                console.info('[ApiProfiles] autoCharCard 的规划者与执行者配置不同，跳过自动迁移（迁移会让两角色共用一份配置）。请在 API 连接配置面板手动处理。');
+            }
+        }
+
         // 新引入的 slot（无 legacy 字段可迁移）默认借用其他 slot 的 profile，
         // 让升级用户的功能不至于因为没主动分配而中断。用户可以随后改成专属 profile。
         const SLOT_INHERITANCE = {
@@ -467,7 +525,8 @@ const LEGACY_PROFILE_MIGRATION_MAP = [
             }
         }
 
-        s._legacyProfileMigrationDone = true;
+        s._legacyProfileMigrationDone = true; // 兼容旧版本读取
+        s._legacyProfileMigrationVersion = LEGACY_MIGRATION_VERSION;
         saveSettingsDebounced();
 
         if (migrated.length > 0 || linked.length > 0) {
@@ -524,6 +583,17 @@ export function clearLegacyConfig() {
         }
     }
 
+    // autoCharCard 不在平铺映射里，单独校验：嵌套配置仍有内容且未分配 profile 时拒绝清除
+    const accHasLegacy = String(s.acc_executor_config?.apiUrl ?? '').trim() || String(s.acc_planner_config?.apiUrl ?? '').trim();
+    if (accHasLegacy && !apiProfileManager.getAssignment('autoCharCard')) {
+        return {
+            ok: false,
+            error: '槽位 "autoCharCard" 仍有旧配置但未分配 profile，清除会导致一键生卡不可用。请先在 API 连接配置面板为它分配 profile。',
+            clearedFields: 0,
+            clearedKeys: 0,
+        };
+    }
+
     // 全套 legacy 字段（含 maxTokens / temperature / apiMode / tavernProfile / fakeStream / enabled 等）
     const ALL_LEGACY_FIELDS = {
         main:        ['apiUrl', 'model', 'maxTokens', 'temperature', 'apiProvider', 'tavernProfile'],
@@ -532,6 +602,9 @@ export function clearLegacyConfig() {
         ngms:        ['ngmsApiUrl', 'ngmsModel', 'ngmsApiMode', 'ngmsTavernProfile', 'ngmsMaxTokens', 'ngmsTemperature', 'ngmsFakeStreamEnabled'],
         nccs:        ['nccsApiUrl', 'nccsModel', 'nccsApiMode', 'nccsTavernProfile', 'nccsMaxTokens', 'nccsTemperature', 'nccsFakeStreamEnabled'],
         sybd:        ['sybdApiUrl', 'sybdModel', 'sybdApiMode', 'sybdTavernProfile', 'sybdMaxTokens', 'sybdTemperature'],
+        cwb:         ['cwb_api_url', 'cwb_api_model', 'cwb_api_mode', 'cwb_tavern_profile', 'cwb_max_tokens', 'cwb_temperature'],
+        // autoCharCard 的旧配置是两份嵌套对象（含明文 Key），整体删除
+        autoCharCard: ['acc_executor_config', 'acc_planner_config'],
         // jqyh 字段也清掉（已合并到 plotOpt 但残留可能还在）
         jqyh:        ['jqyhApiUrl', 'jqyhModel', 'jqyhApiMode', 'jqyhTavernProfile', 'jqyhMaxTokens', 'jqyhTemperature', 'jqyhEnabled'],
     };
@@ -543,6 +616,7 @@ export function clearLegacyConfig() {
         ngms:        'ngmsApiKey',
         nccs:        'nccsApiKey',
         sybd:        'sybdApiKey',
+        cwb:         'cwb_api_key',
         jqyh:        'jqyhApiKey',
     };
 

@@ -49,16 +49,6 @@
 
 ---
 
-## v2.2.5
-
-### 修复
-
-- **翰林院（RAG）API Key 污染**：
-  - 修复 `saveSettingsFromUI` 无差别遍历翰林院面板内全部 `[data-setting-key]` 输入（包含被 `profile-sync` 接管隐藏的字段），导致掩码占位符 `••••••••` 被当作真值写回 `settings.rerank.apiKey` / `settings.retrieval.apiKey`，URL / model 也被 Profile 值覆盖到 legacy 字段。修复后会跳过祖先带 `data-profile-hidden` 的输入
-  - `getRerankSettings` / `getEmbedRetrievalSettings` 同时加入防御性还原：识别历史污染留下的 `••••••••` 时归为空字符串，避免取消 Profile 分配后实际请求带占位符 token 被 401
-
----
-
 ## v2.2.4
 
 ### 新功能
@@ -78,6 +68,16 @@
   - 修复选择连接配置后报"API Key 未配置"的问题（`apiMode` 现从设置读取而非硬编码 `custom`）
   - 补全 `hly-rerank-api-mode` 加载绑定及默认值
 - **翰林院 RAG**：补全 `priorityRetrieval.sources` 各来源条目的缺失键，修复设置面板回填 TypeError
+
+---
+
+## v2.2.5
+
+### 修复
+
+- **翰林院（RAG）API Key 污染**：
+  - 修复 `saveSettingsFromUI` 无差别遍历翰林院面板内全部 `[data-setting-key]` 输入（包含被 `profile-sync` 接管隐藏的字段），导致掩码占位符 `••••••••` 被当作真值写回 `settings.rerank.apiKey` / `settings.retrieval.apiKey`，URL / model 也被 Profile 值覆盖到 legacy 字段。修复后会跳过祖先带 `data-profile-hidden` 的输入
+  - `getRerankSettings` / `getEmbedRetrievalSettings` 同时加入防御性还原：识别历史污染留下的 `••••••••` 时归为空字符串，避免取消 Profile 分配后实际请求带占位符 token 被 401
 - **二次填表**：
   - 修复 `secondary-filler.js` 把哈希/重试次数写入非持久化的 `msg.metadata` 字段（ST 标准位是 `msg.extra`），导致刷新后去重与重试计数失效
   - 修复扫描深度重复计入 `bufferSize`（`contextLimit + buffer + batch + redundancy` → `contextLimit + batch + redundancy`），避免越过预期窗口
@@ -92,3 +92,54 @@
   - `callSillyTavernPreset` / `callNccsSillyTavernPreset` 通过 `raceAgainstSignal` 兜底，外部不可终止的 `ConnectionManagerRequestService.sendRequest` 也能在 signal 触发时即时返回 AbortError
   - 全部 catch 块识别 `AbortError`，rethrow 而不弹错误 toast；FC 重试逻辑识别中断后跳过重试
 - **填表设置面板**：在"手动解除填表锁"旁新增"强制中断当前填表"按钮——通过 AbortController 真正掐断 fetch 连接（fetch 立即抛错），结果会被丢弃，不会污染表格 / hash / `saveChat`
+
+---
+
+## v2.2.6
+
+### 新功能
+
+- **翰林院向量化质量升级**：
+  - **边界感知切块**：替换四个来源（聊天记录/小说/世界书/手动）的纯字符硬切——优先在段落边界断开，其次句末标点（含中文引号闭合），极端长串才硬切；句子/对话不再被拦腰截断，embedding 质量同步受益。仅影响新录入，已有向量无需重建
+  - **注入时序重排**：检索结果注入提示词前按时序重排（聊天记录按楼层、小说按卷/章/节——中文数字章节号可解析），rerank 只决定"选哪些块"，不再决定呈现顺序；修复"不打不相识的剧情之后紧跟关系亲密"这类因按相关度排序导致的认知时间错乱
+  - **断层提示**：聊天记录相邻块楼层跳跃时自动插入"与上文相隔约 N 楼，并非连续发生"提示行，消除中间剧情缺失造成的割裂感
+  - **时间标识**：新录入的聊天记录块在来源标识中带上消息发送时间（ST 向量存储不持久化元数据，时间必须写入块文本才能在检索后取回；旧格式块兼容解析）
+- **记忆块工作流（memory-blocks）**：剧情优化新增"自定义记忆块"体系——占位符驱动的并发工作流框架
+  - 在剧情优化面板「匹配替换 (sulv)」下方可增删自定义块：每个块定义一个占位符，执行剧情优化时主/拦截提示词中的占位符会被块的产出替换
+  - **静态块**：直接输出固定内容；**AI 调用块**：用所选 API 功能槽独立请求一次，把回复（或其中指定 `<标签>` 的内容）作为替换值
+  - 原有 sulv1-4 速率占位符迁入同一框架，行为与旧版逐字节一致
+  - 块定义为纯 JSON、随设置持久化，为后续导入导出与战斗系统接入预留扩展点
+  - 框架层新增**顺序拼接式 Chain**（`composeChain`）：与占位符替换并列的第二种组合范式——同链的块并发执行后按 `order` 排序、以 `separator` 拼接并可选 `header/footer` 包裹，产出一个完整注入块；为记忆注入合成块与战斗系统"底部战报块"预留的承载结构，本版本暂无 UI 入口
+- **API 连接配置**：
+  - 角色世界书（cwb）与一键生卡（autoCharCard）纳入旧配置自动迁移：老用户首次加载会把旧 URL / Key / 模型自动迁移为连接配置并分配槽位（一键生卡仅在规划者与执行者配置一致或规划者为空时迁移，避免悄悄改变行为）
+  - **profile 已分配时参数控件 informational 化**：主面板 / 并发剧情优化 / 角色世界书 / 术语表的温度、maxTokens 控件在槽位分配 profile 后自动禁用并显示"由连接配置控制"提示，消除"改了没效果"的用户陷阱
+  - **profile 状态卡新增"本设备无 Key"警示**：API Key 仅保存在最初填写它的设备/浏览器上（安全设计，不随云端设置同步），换设备后状态卡会直接亮出警示徽标，不必等到调用报错才发现
+
+### 修复
+
+- **独立聊天记忆从摆设变真功能（原作遗留坑）**：此前向量数据"随卡不随聊天"——开启"独立聊天记忆"后录入仍存进角色库、查询却去查一个从未被写入过的聊天集合、计数恒为 0，整体静默失效。现已重构为聊天级分桶：
+  - 独立模式下，聊天记录类向量按当前聊天隔离存储与检索，同一张卡开多个聊天（不同剧情线）的记忆互不污染
+  - 小说 / 世界书 / 手动录入属于"知识"，仍随角色卡跨聊天共享；全局库不受影响
+  - 知识管理列表为聊天专属库显示"聊天级"徽标；聊天级库禁止移动到全局
+  - 统一模式（默认关闭独立记忆）的存量数据与行为完全不变
+  - 已知限制：聊天专属记忆跟随聊天文件，重命名聊天文件会使其失联（与 ST 官方向量扩展同等限制）
+- **超级排序截断顺序修正**：开启"超级排序"时，时序重排发生在 top_n 截断之前，导致保留的是"时序最早"而非"最相关"的块，检索结果长期偏向最旧的聊天记录。现改为先按相关度截取 top_n、再做时序排序
+- **翰林院向量化失败（"向量化块数量不识别"反馈）**：
+  - 一次性清洗 profile-sync 历史污染：`retrieval/rerank.apiKey` 中的掩码占位符在持久层根治（此前仅读取侧防御）；`apiEndpoint` / `rerank.apiMode` 的非法值（如被旧版写入的空字符串）归一化为 `custom`
+  - 修复 `apiEndpoint` 为空/非法时请求被硬定向到 `api.openai.com`、无视用户自定义 URL 的问题（CSP 拦截 / 401 的元凶）
+  - 修复**本地代理（LM Studio/Ollama）模式**自始就缺少 URL 分支、同样被错误定向到 openai.com 的问题
+  - API 模式下拉补全 `OpenAI 官方` / `Azure` 选项；默认 API 模式改为 `custom`（与默认 URL 配套），新用户不再因选项缺失导致首次保存写入空值
+  - profile-sync 给下拉框赋不存在选项值的污染源头修复（影响所有模块面板，不止翰林院）
+- **Rerank "API Key 未提供"报错升级**：当原因是"连接配置在本设备没有可用 Key"时，报错会直接说明 Key 的设备本地性并指引到 API 连接配置重新填写（向量化 Google 直连、获取模型列表同步处理）
+- **旧配置迁移**：一键生卡迁移时排除掩码占位符，避免把历史污染的假 Key 迁入新连接配置
+- **超级记忆稳定性专项**（针对"工作不大稳定"反馈，4 处根因一次修复）：
+  - **切聊天竞态污染**：CHAT_CHANGED 时超级记忆立即全量同步，而表格系统延迟 100ms 才加载新聊天的表格，导致【旧聊天】的表格内容被写进【新角色】的记忆世界书；两边表名不同时旧表条目无 GC 兜底会**永久残留**（"记忆串台"元凶）。现 CHAT_CHANGED 只确保世界书存在，新状态同步交由 `loadTables()` 完成后的自动推送，单次且时序正确
+  - **死代码双轨存储拆除**：`saveStateToMetadata` / `tryRestoreStateFromMetadata` 把表格状态写到 `msg.metadata`——该字段非 ST 持久化位（同 v2.2.5 二次填表修过的坑），写入即蒸发、恢复永远为空，且每次同步还白调一次 `saveChat()`。整条链路删除，表格状态唯一信源为表格系统的 `msg.extra.amily2_tables_data`
+  - **`awaitSync()` 穿透**：同步队列正忙时 `pushUpdate` 会用一个立即 resolve 的空 Promise 覆盖 `_syncPromise`，Pipeline Stage 4 等待形同虚设、后续阶段在同步未完成时被放行。现忙时不覆盖，正在运行的 drain 循环自然吃掉新入队项
+  - **开关打开不生效**：启动时若总开关为关，初始化早退且不注册监听器；此后在 UI 勾选开关只写设置，超级记忆直到刷新页面前都是死的。现勾选即触发初始化（幂等）
+  - 附带：`forceSyncAll` 的表格角色推断改为复用 `events-schema.inferTableRole`，消除两处重复逻辑漂移风险；每次切聊天的双倍全量同步（restore 路径一次 + 显式一次）随死代码移除归一
+
+### 重构
+
+- 表格核心 `manager.js` 瘦身（约 1050 → 600 行）：19 个 UI 突变操作拆分至 `actions/ui-mutations.js`，SuperMemory 事件分发拆分至 `events-dispatch.js`；全部经 re-export 保持兼容，外部调用路径零改动
+- 角色世界书最后 2 处散乱的厂商 URL 判断迁移至 `detectVendor` 统一入口，业务路径上不再有硬编码的 URL substring 判断

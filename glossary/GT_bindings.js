@@ -9,6 +9,7 @@ import { handleFileUpload, processNovel } from './index.js';
 import { reorganizeEntriesByHeadings, loadDatabaseFiles } from './executor.js';
 import { SETTINGS_KEY as PRESET_SETTINGS_KEY } from '../PresetSettings/config.js';
 import { escapeHTML } from '../utils/utils.js';
+import { watchProfileSliderGuard } from '../ui/profile-slider-guard.js';
 
 const moduleState = {
     selectedWorldBook: '',
@@ -669,6 +670,8 @@ export function bindGlossaryEvents() {
 
     loadSettingsToUI();
     bindAutoSaveEvents();
+    // sybd 槽分配 profile 后，温度/maxTokens 由 profile 权威控制（T-006 informational 化）
+    watchProfileSliderGuard('sybd', ['#amily2_sybd_max_tokens', '#amily2_sybd_temperature']);
     bindManualActionEvents();
     bindTabEvents();
     bindNovelProcessEvents();

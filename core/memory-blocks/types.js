@@ -18,11 +18,12 @@
  */
 
 /**
- * @typedef {Object} AiCallGenerator (Phase 2 预留)
+ * @typedef {Object} AiCallGenerator 独立 AI 调用（handler 见 ai-call-handler.js）
  * @property {'ai_call'} type
- * @property {string} apiSlot
- * @property {string} promptTemplate
- * @property {string} [extractTag]
+ * @property {string} [apiSlot='main'] - callAI 功能槽（ApiProfileManager.SLOTS 中的 chat 槽）
+ * @property {string} promptTemplate   - 作为 user 消息发送；空则块跳过
+ * @property {string} [systemPrompt]   - 可选的 system 消息
+ * @property {string} [extractTag]     - 只取回复中 <tag>...</tag> 的内容；缺失时回退完整回复
  */
 
 /**
@@ -36,7 +37,7 @@
 
 /**
  * @typedef {Object} BlockDefinition
- * @property {string} id              - 全局唯一
+ * @property {string} id              - 全局唯一；用户自定义块以 'custom.' 为前缀（见 custom-blocks.js）
  * @property {string} placeholder     - 在模板中要被替换的占位符（按字面量匹配，正则元字符自动转义）
  * @property {string} context         - 所属流水线，如 'plotOptimization'
  * @property {GeneratorSpec} generator

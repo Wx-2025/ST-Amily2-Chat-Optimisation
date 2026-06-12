@@ -13,6 +13,7 @@ import { executeManualCommand } from '../core/autoHideManager.js';
 import { showContentModal, showHtmlModal, showCwbWarningModal } from './page-window.js';
 import { openAutoCharCardWindow } from '../core/auto-char-card/ui-bindings.js';
 import { showPresetSettings } from '../PresetSettings/prese_ui.js';
+import { watchProfileSliderGuard } from './profile-slider-guard.js';
 
 function displayDailyAuthCode() {
     const displayEl = document.getElementById('amily2_daily_code_display');
@@ -1118,6 +1119,9 @@ export function bindModalEvents() {
                 updateAndSaveSetting(key, value);
             },
         );
+
+    // main 槽分配 profile 后，这两个参数由 profile 权威控制（T-006 informational 化）
+    watchProfileSliderGuard('main', ['#amily2_max_tokens', '#amily2_temperature']);
 
     const promptMap = {
         mainPrompt: "#amily2_main_prompt",

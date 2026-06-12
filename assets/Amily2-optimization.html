@@ -175,6 +175,17 @@
                 <input id="amily2_opt_rate_cuckold" type="number" class="text_pole" step="0.05" value="1.0">
             </div>
         </fieldset>
+        <fieldset class="settings-group">
+            <legend>自定义记忆块</legend>
+            <div style="font-size: 0.85em; opacity: 0.75; margin-bottom: 8px;">
+                每个块定义一个占位符：执行剧情优化时，主/拦截提示词中出现的占位符会被块的产出替换。
+                静态块直接输出固定内容；AI 调用块会用所选 API 槽独立请求一次，把回复作为替换值。
+            </div>
+            <div id="amily2_opt_custom_blocks_list"></div>
+            <button id="amily2_opt_add_custom_block" class="menu_button" style="margin-top: 8px;">
+                <i class="fa-solid fa-plus"></i> 新增记忆块
+            </button>
+        </fieldset>
     </div>
 
     <!-- Context Settings Tab -->

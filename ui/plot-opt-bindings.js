@@ -14,6 +14,18 @@ import { createDrawer } from '../ui/drawer.js';
 import { pluginAuthStatus } from "../utils/auth.js";
 import { configManager } from '../utils/config/ConfigManager.js';
 import { SENSITIVE_KEYS } from '../utils/config/sensitive-keys.js';
+import { showHtmlModal } from './page-window.js';
+import { escapeHTML } from '../utils/utils.js';
+import { SLOTS } from '../utils/config/ApiProfileManager.js';
+import {
+    listCustomBlocks,
+    getCustomBlock,
+    addCustomBlock,
+    updateCustomBlock,
+    deleteCustomBlock,
+    syncCustomBlocksFromSettings,
+} from '../core/memory-blocks/index.js';
+import { watchProfileSliderGuard } from './profile-slider-guard.js';
 
 // ========== Prompt Cache (module-level state) ==========
 
@@ -625,6 +637,9 @@ function bindConcurrentApiEvents() {
 
     if (!concurrentToggle || !concurrentContent) return;
 
+    // plotOptConc 槽分配 profile 后，maxTokens 由 profile 权威控制（T-006 informational 化）
+    watchProfileSliderGuard('plotOptConc', ['#amily2_plotOpt_concurrentMaxTokens']);
+
     const settings = extension_settings[extensionName] || {};
 
     // Initial Load
@@ -969,6 +984,180 @@ function opt_purgeGarbageKeys() {
     }
 }
 
+// ========== 自定义记忆块（memory-blocks Phase 2） ==========
+
+// 该面板管理的块固定挂在剧情优化流水线；其他 context（如战斗系统）由各自模块注册
+const MEMORY_BLOCK_CONTEXT = 'plotOptimization';
+
+function opt_renderCustomBlocks(panel) {
+    const list = panel.find('#amily2_opt_custom_blocks_list');
+    if (list.length === 0) return;
+
+    const blocks = listCustomBlocks(MEMORY_BLOCK_CONTEXT);
+    if (blocks.length === 0) {
+        list.html('<div style="opacity: 0.6; font-style: italic; padding: 4px 0;">尚无自定义块。</div>');
+        return;
+    }
+
+    const rows = blocks.map(b => {
+        const typeBadge = b.generator?.type === 'ai_call'
+            ? '<span style="font-size: 0.8em; padding: 1px 6px; border-radius: 3px; background: rgba(88,166,255,0.25);">AI 调用</span>'
+            : '<span style="font-size: 0.8em; padding: 1px 6px; border-radius: 3px; background: rgba(120,200,120,0.25);">静态</span>';
+        return `
+        <div class="amily2-custom-block-row" data-id="${escapeHTML(b.id)}" style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin-bottom: 4px; background: rgba(0,0,0,0.15); border-radius: 4px;">
+            <input type="checkbox" class="mb-enabled" ${b.enabled !== false ? 'checked' : ''} title="启用/停用此块">
+            <span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                <b>${escapeHTML(b.name || '(未命名)')}</b>
+                <code style="margin-left: 6px;">${escapeHTML(b.placeholder)}</code>
+            </span>
+            ${typeBadge}
+            <button class="menu_button mb-edit" title="编辑" style="padding: 2px 8px;"><i class="fa-solid fa-pen"></i></button>
+            <button class="menu_button mb-delete" title="删除" style="padding: 2px 8px;"><i class="fa-solid fa-trash-alt"></i></button>
+        </div>`;
+    });
+    list.html(rows.join(''));
+}
+
+function opt_showCustomBlockModal(panel, blockId) {
+    const existing = blockId ? getCustomBlock(blockId) : null;
+    const gen = existing?.generator || {};
+    const isAiCall = gen.type === 'ai_call';
+
+    // API 槽下拉：仅列出 chat 类型功能槽
+    const slotOptions = Object.entries(SLOTS)
+        .filter(([, def]) => def.type === 'chat')
+        .map(([key, def]) => `<option value="${key}" ${key === (gen.apiSlot || 'main') ? 'selected' : ''}>${escapeHTML(def.label)} (${key})</option>`)
+        .join('');
+
+    const formHtml = `
+    <div class="amily2-mb-form" style="display: flex; flex-direction: column; gap: 12px;">
+        <label>显示名称
+            <input id="mb_name" class="text_pole" type="text" value="${escapeHTML(existing?.name || '')}" placeholder="例如：战况摘要">
+        </label>
+        <label>占位符（在主/拦截提示词中按字面量匹配替换）
+            <input id="mb_placeholder" class="text_pole" type="text" value="${escapeHTML(existing?.placeholder || '')}" placeholder="例如：{{combat_state}} 或 myBlock1">
+        </label>
+        <label>生成方式
+            <select id="mb_type" class="text_pole">
+                <option value="static" ${!isAiCall ? 'selected' : ''}>静态内容</option>
+                <option value="ai_call" ${isAiCall ? 'selected' : ''}>AI 调用</option>
+            </select>
+        </label>
+        <div id="mb_static_fields" style="${isAiCall ? 'display: none;' : ''}">
+            <label>静态内容
+                <textarea id="mb_static_value" class="text_pole" rows="4">${escapeHTML(gen.value !== undefined ? String(gen.value) : '')}</textarea>
+            </label>
+        </div>
+        <div id="mb_ai_fields" style="display: ${isAiCall ? 'flex' : 'none'}; flex-direction: column; gap: 12px;">
+            <label>API 槽（使用该功能槽的连接配置独立请求一次）
+                <select id="mb_api_slot" class="text_pole">${slotOptions}</select>
+            </label>
+            <label>系统提示词（可选）
+                <textarea id="mb_system_prompt" class="text_pole" rows="3">${escapeHTML(gen.systemPrompt || '')}</textarea>
+            </label>
+            <label>用户提示词（必填）
+                <textarea id="mb_prompt_template" class="text_pole" rows="5">${escapeHTML(gen.promptTemplate || '')}</textarea>
+            </label>
+            <label>提取标签（可选，只取回复中 &lt;标签&gt;...&lt;/标签&gt; 的内容；标签缺失时回退完整回复）
+                <input id="mb_extract_tag" class="text_pole" type="text" value="${escapeHTML(gen.extractTag || '')}" placeholder="例如：result">
+            </label>
+        </div>
+    </div>`;
+
+    showHtmlModal(existing ? '编辑记忆块' : '新增记忆块', formHtml, {
+        okText: '保存',
+        onShow: (dialog) => {
+            dialog.find('#mb_type').on('change', function () {
+                const aiMode = $(this).val() === 'ai_call';
+                dialog.find('#mb_static_fields').toggle(!aiMode);
+                dialog.find('#mb_ai_fields').css('display', aiMode ? 'flex' : 'none');
+            });
+        },
+        onOk: (dialog) => {
+            const placeholder = String(dialog.find('#mb_placeholder').val() || '').trim();
+            if (!placeholder) {
+                toastr.warning('占位符不能为空。');
+                return false;
+            }
+            const conflict = listCustomBlocks(MEMORY_BLOCK_CONTEXT)
+                .find(b => b.placeholder === placeholder && b.id !== blockId);
+            if (conflict) {
+                toastr.warning(`占位符 "${placeholder}" 已被块 "${conflict.name || conflict.id}" 占用。`);
+                return false;
+            }
+
+            const type = dialog.find('#mb_type').val();
+            let generator;
+            if (type === 'ai_call') {
+                const promptTemplate = String(dialog.find('#mb_prompt_template').val() || '');
+                if (!promptTemplate.trim()) {
+                    toastr.warning('AI 调用块的用户提示词不能为空。');
+                    return false;
+                }
+                generator = {
+                    type: 'ai_call',
+                    apiSlot: dialog.find('#mb_api_slot').val() || 'main',
+                    promptTemplate,
+                };
+                const systemPrompt = String(dialog.find('#mb_system_prompt').val() || '');
+                if (systemPrompt.trim()) generator.systemPrompt = systemPrompt;
+                const extractTag = String(dialog.find('#mb_extract_tag').val() || '').trim();
+                if (extractTag) generator.extractTag = extractTag;
+            } else {
+                generator = { type: 'static', value: String(dialog.find('#mb_static_value').val() || '') };
+            }
+
+            const patch = {
+                name: String(dialog.find('#mb_name').val() || '').trim(),
+                placeholder,
+                context: MEMORY_BLOCK_CONTEXT,
+                generator,
+            };
+
+            try {
+                if (existing) {
+                    updateCustomBlock(blockId, patch);
+                    toastr.success('记忆块已更新。');
+                } else {
+                    addCustomBlock(patch);
+                    toastr.success('记忆块已创建。');
+                }
+            } catch (error) {
+                toastr.error(`保存失败: ${error.message}`);
+                return false;
+            }
+            opt_renderCustomBlocks(panel);
+        },
+    });
+}
+
+function bindCustomBlockEvents(panel) {
+    // settings → registry 重放一次，确保面板与执行器看到同一份块清单
+    syncCustomBlocksFromSettings();
+    opt_renderCustomBlocks(panel);
+
+    panel.on('click', '#amily2_opt_add_custom_block', () => opt_showCustomBlockModal(panel, null));
+
+    panel.on('click', '.amily2-custom-block-row .mb-edit', function () {
+        opt_showCustomBlockModal(panel, $(this).closest('[data-id]').attr('data-id'));
+    });
+
+    panel.on('click', '.amily2-custom-block-row .mb-delete', function () {
+        const row = $(this).closest('[data-id]');
+        const id = row.attr('data-id');
+        const block = getCustomBlock(id);
+        if (!confirm(`确定删除记忆块 "${block?.name || id}"？`)) return;
+        deleteCustomBlock(id);
+        opt_renderCustomBlocks(panel);
+        toastr.success('记忆块已删除。');
+    });
+
+    panel.on('change', '.amily2-custom-block-row .mb-enabled', function () {
+        const id = $(this).closest('[data-id]').attr('data-id');
+        updateCustomBlock(id, { enabled: this.checked });
+    });
+}
+
 export function initializePlotOptimizationBindings() {
     const panel = $('#amily2_plot_optimization_panel');
     if (panel.length === 0 || panel.data('events-bound')) {
@@ -1079,6 +1268,7 @@ export function initializePlotOptimizationBindings() {
     });
 
     opt_loadSettings(panel);
+    bindCustomBlockEvents(panel);
     bindJqyhApiEvents();
     bindConcurrentApiEvents();
     bindConcurrentPromptEvents();

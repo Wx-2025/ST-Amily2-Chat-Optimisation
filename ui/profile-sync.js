@@ -210,7 +210,15 @@ function _snapshotLegacyFields(slot, config) {
 function _fillLegacyFields(config, profile) {
     for (const [key, sel] of Object.entries(config.fields || {})) {
         const el = document.querySelector(sel);
-        if (el) el.value = profile[key] ?? '';
+        if (!el) continue;
+        const value = profile[key] ?? '';
+        // select 赋不存在的 option 值（如 provider 'custom_oai' 写进只有
+        // custom/google_direct 的 select）会让 value 静默变 ''，后续任何
+        // 全量保存会把 '' 污染进 settings——跳过这类赋值，保留原选项
+        if (el.tagName === 'SELECT' && ![...el.options].some(o => o.value === value)) {
+            continue;
+        }
+        el.value = value;
     }
     if (config.keyField) {
         const keyEl = document.querySelector(config.keyField);
@@ -284,11 +292,22 @@ function _injectCard(slot, profile, _config, container) {
         ),
     ].join('');
 
+    // Key 是设备本地存储（ApiKeyStore 不跨设备同步），profile 随云端设置同步而来
+    // 时本设备可能没有 Key——明确提示，否则用户只会在调用时收到"Key 未提供"报错
+    const needsKey = profile && !['sillytavern_preset', 'sillytavern_backend'].includes(profile.provider);
+    const keyWarnHtml = (needsKey && !profile.apiKey) ? `
+        <span style="color:var(--warning-color,#e6a23c); font-size:0.85em;"
+              title="API Key 仅保存在最初填写它的设备/浏览器上，不随云端设置同步。请点击「管理」编辑该配置并重新填写 Key。">
+            <i class="fas fa-key"></i> 本设备无 Key
+        </span>
+    ` : '';
+
     const detailHtml = profile ? `
         <span style="color:var(--SmartThemeQuoteColor); font-size:0.85em;">
             ${providerLabel ? `<i class="fas fa-cloud"></i> ${_esc(providerLabel)}` : ''}
             ${profile.model ? ` · <i class="fas fa-robot"></i> ${_esc(profile.model)}` : ''}
         </span>
+        ${keyWarnHtml}
     ` : `
         <span style="color:var(--warning-color); font-size:0.85em;">
             未分配时该模块不会继续展示/保存独立 API 输入项。

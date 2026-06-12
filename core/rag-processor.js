@@ -152,6 +152,7 @@ function initialize() {
         return;
     }
     migrateLegacyRagSettings();
+    sanitizeProfilePollution();
     settings = getSettings();
     if (!window.hanlinyuanRagProcessor) {
         window.hanlinyuanRagProcessor = {};
@@ -219,20 +220,27 @@ async function ingestTextToHanlinyuan(text, source = 'manual', metadata = {}, pr
                 break;
         }
 
+        // 独立聊天记忆模式：聊天记录类向量按聊天分桶（剧情线隔离），
+        // 其余来源（小说/世界书/手动）属于"知识"，仍随角色卡共享
+        const independentChatId = (source === 'chat_history' && settings.retrieval.independentChatMemoryEnabled)
+            ? getChatId()
+            : null;
+
         const existingKbs = Object.values(getKnowledgeBases());
-        const foundKb = existingKbs.find(kb => kb.name === kbName);
+        // 同名合并需限定在同一聊天命名空间内，避免独立模式下不同聊天的同名楼层段互相串库
+        const foundKb = existingKbs.find(kb => kb.name === kbName && (kb.chatId ?? null) === independentChatId);
 
         if (foundKb) {
             taskId = foundKb.id;
             logCallback(`[翰林院-核心] 检测到同名知识库 "${kbName}"，将数据合并入库。`, 'info');
         } else {
             logCallback(`[翰林院-核心] 准备为任务 "${kbName}" 创建专属知识库...`, 'info');
-            const newKb = addKnowledgeBase(kbName, source); 
+            const newKb = addKnowledgeBase(kbName, source, independentChatId);
             taskId = newKb.id;
         }
-        
+
         const charId = getCharacterStableId();
-        const collectionId = `${charId}_${taskId}`;
+        const collectionId = independentChatId ? `${independentChatId}_${taskId}` : `${charId}_${taskId}`;
         logCallback(`[翰林院-核心] 已创建并锁定知识库: ${kbName} (集合ID: ${collectionId})`, 'success');
         logCallback(`[翰林院-核心] 已锁定忆识宝库ID: ${collectionId}`, 'info');
 
@@ -410,6 +418,49 @@ function migrateLegacyRagSettings() {
     saveSettingsDebounced();
 }
 
+/**
+ * 一次性清洗 profile-sync 历史污染（2.2.5 之前的版本遗留）。
+ *
+ * 旧版 saveSettingsFromUI 会把被 Profile 接管的隐藏字段值写回 settings：
+ *   - apiKey 被写成掩码 '••••••••'（rag-api 已有读侧防御，这里根治持久层）
+ *   - apiEndpoint 的 select 被 _fillLegacyFields 赋了不存在的 option 值
+ *     （profile.provider 如 'custom_oai'）后 value 变 ''，'' 被写回 settings；
+ *     '' 在 getApiEndpointUrl 落 default 分支，请求被错误定向 → 向量化全失败
+ *
+ * 2.2.5 修复了"继续污染"，本函数清理已污染的存量数据。
+ */
+function sanitizeProfilePollution() {
+    const s = getSettings();
+    const MASKED = '••••••••';
+    let cleaned = [];
+
+    if (s.retrieval?.apiKey === MASKED) {
+        s.retrieval.apiKey = '';
+        cleaned.push('retrieval.apiKey 掩码');
+    }
+    if (s.rerank?.apiKey === MASKED) {
+        s.rerank.apiKey = '';
+        cleaned.push('rerank.apiKey 掩码');
+    }
+
+    // 合法值与 UI select 选项及 rag-api 的 switch 分支保持一致
+    const validEndpoints = ['custom', 'google_direct', 'local_proxy', 'openai', 'azure'];
+    if (s.retrieval && !validEndpoints.includes(s.retrieval.apiEndpoint)) {
+        cleaned.push(`retrieval.apiEndpoint 非法值 "${s.retrieval.apiEndpoint}"`);
+        s.retrieval.apiEndpoint = 'custom';
+    }
+    const validRerankModes = ['custom', 'local_proxy'];
+    if (s.rerank && !validRerankModes.includes(s.rerank.apiMode)) {
+        cleaned.push(`rerank.apiMode 非法值 "${s.rerank.apiMode}"`);
+        s.rerank.apiMode = 'custom';
+    }
+
+    if (cleaned.length > 0) {
+        console.warn(`[翰林院] 已清洗 profile-sync 历史污染字段: ${cleaned.join('、')}`);
+        saveSettings();
+    }
+}
+
 function showNotification(message, type = 'info') {
     toastr[type](message);
 }
@@ -430,6 +481,71 @@ function getTagForSource(source) {
     }
 }
 
+
+/**
+ * 边界感知切分：把 content 切成不超过 chunkSize 的片段，尽量在自然边界断开。
+ *
+ * 三级回退策略（替代旧的纯字符硬切，避免句子/对话被拦腰截断）：
+ *   1. 段落边界（最后一个换行符）
+ *   2. 句末边界（。！？!?… 及其后跟随的闭合引号/括号）
+ *   3. 都找不到（极端长串）才硬切
+ * 边界切点过于靠前（< 40% 块长）时视为无效，降级到下一策略——防止
+ * 一个超长段落开头的短句导致块碎片化。
+ *
+ * @param {string} content
+ * @param {number} chunkSize - 单块最大字符数
+ * @param {number} overlap   - 相邻块重叠字符数（语义衔接），从上一块尾部回看
+ * @returns {string[]}
+ */
+function splitBySemanticBoundary(content, chunkSize, overlap) {
+    const pieces = [];
+    if (!content || chunkSize <= 0) return pieces;
+
+    const minCut = Math.floor(chunkSize * 0.4);
+    const sentenceEndRegex = /[。！？!?…][”"』」)）】]?/g;
+
+    let pos = 0;
+    while (pos < content.length) {
+        let end = Math.min(pos + chunkSize, content.length);
+
+        if (end < content.length) {
+            const slice = content.substring(pos, end);
+
+            // 1. 段落边界：最后一个换行（切点含换行符本身）
+            let cut = slice.lastIndexOf('\n') + 1;
+
+            // 2. 段落边界无效时找最后一个句末边界
+            if (cut <= minCut) {
+                let lastSentenceEnd = -1;
+                sentenceEndRegex.lastIndex = 0;
+                let m;
+                while ((m = sentenceEndRegex.exec(slice)) !== null) {
+                    lastSentenceEnd = m.index + m[0].length;
+                }
+                if (lastSentenceEnd > minCut) cut = lastSentenceEnd;
+            }
+
+            // 3. 有效边界则收缩切点，否则保持硬切
+            if (cut > minCut) end = pos + cut;
+        }
+
+        const piece = content.substring(pos, end);
+        if (piece.trim().length > 0) pieces.push(piece);
+
+        if (end >= content.length) break;
+        // overlap 回看；Math.max 防止 overlap >= 块长时死循环
+        pos = Math.max(end - overlap, pos + 1);
+    }
+    return pieces;
+}
+
+/** 把 ISO/任意时间值格式化为写入块 prefix 的紧凑标识（不含逗号，便于正则反解） */
+function formatChunkTimeLabel(timestamp) {
+    const d = new Date(timestamp);
+    if (isNaN(d.getTime())) return '';
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 function splitIntoChunks(text, source, metadata = {}) {
     switch (source) {
@@ -465,30 +581,22 @@ function _chunkForNovel(text, metadata) {
     function processBuffer() {
         if (contentBuffer.length === 0) return;
         const content = contentBuffer.join('\n');
-        let start = 0;
-        let section = 1;
-        while (start < content.length) {
-            const end = Math.min(start + chunkSize, content.length);
-            const chunkText = content.substring(start, end);
-            if (chunkText.trim().length > 0) {
-                const chunkMetadata = {
-                    source: 'novel',
-                    sourceName: sourceName,
-                    timestamp: new Date().toISOString(),
-                    globalIndex: globalChunkIndex++,
-                    volume: currentVolumeTitle,
-                    chapter: currentChapterTitle,
-                    section: section,
-                };
-                const tagName = getTagForSource('novel');
-                const prefix = `[来源: ${sourceName}, ${currentVolumeTitle}, ${currentChapterTitle}, 第${section}节]`;
-                const wrappedText = `<${tagName}>\n${prefix}\n${chunkText}\n</${tagName}>`;
-                allChunks.push({ text: wrappedText, metadata: chunkMetadata });
-                section++;
-            }
-            start += (chunkSize - overlap);
-            if (start >= content.length) break;
-        }
+        const tagName = getTagForSource('novel');
+        splitBySemanticBoundary(content, chunkSize, overlap).forEach((chunkText, idx) => {
+            const section = idx + 1;
+            const chunkMetadata = {
+                source: 'novel',
+                sourceName: sourceName,
+                timestamp: new Date().toISOString(),
+                globalIndex: globalChunkIndex++,
+                volume: currentVolumeTitle,
+                chapter: currentChapterTitle,
+                section: section,
+            };
+            const prefix = `[来源: ${sourceName}, ${currentVolumeTitle}, ${currentChapterTitle}, 第${section}节]`;
+            const wrappedText = `<${tagName}>\n${prefix}\n${chunkText}\n</${tagName}>`;
+            allChunks.push({ text: wrappedText, metadata: chunkMetadata });
+        });
         contentBuffer = [];
     }
 
@@ -508,11 +616,9 @@ function _chunkForNovel(text, metadata) {
     processBuffer();
 
     if (allChunks.length === 0 && text.length > 0) {
-        let start = 0;
-        let section = 1;
-        while (start < text.length) {
-            const end = Math.min(start + chunkSize, text.length);
-            const chunkText = text.substring(start, end);
+        const tagName = getTagForSource('novel');
+        splitBySemanticBoundary(text, chunkSize, overlap).forEach((chunkText, idx) => {
+            const section = idx + 1;
             const chunkMetadata = {
                 source: 'novel',
                 sourceName: sourceName,
@@ -522,13 +628,10 @@ function _chunkForNovel(text, metadata) {
                 chapter: "第1章",
                 section: section,
             };
-            const tagName = getTagForSource('novel');
             const prefix = `[来源: ${sourceName}, 第1卷, 第1章, 第${section}节]`;
             const wrappedText = `<${tagName}>\n${prefix}\n${chunkText}\n</${tagName}>`;
             allChunks.push({ text: wrappedText, metadata: chunkMetadata });
-            section++;
-            start += (chunkSize - overlap);
-        }
+        });
     }
     return allChunks;
 }
@@ -540,15 +643,15 @@ function _chunkForChatHistory(text, metadata) {
     const allChunks = [];
     if (!text || chunkSize <= 0) return allChunks;
 
-    let part = 1;
-    let start = 0;
+    // 时间写进 prefix 才能在检索后被反解回来（ST 向量存储不持久化 metadata）
+    const timeLabel = formatChunkTimeLabel(timestamp);
+    const tagName = getTagForSource('chat_history');
 
-    while (start < text.length) {
-        const end = Math.min(start + chunkSize, text.length);
-        const chunkText = text.substring(start, end);
-        
-        const prefix = `[来源: 聊天记录, 楼层: #${floor}, 第${part}部分]`;
-        const tagName = getTagForSource('chat_history');
+    splitBySemanticBoundary(text, chunkSize, overlap).forEach((chunkText, idx) => {
+        const part = idx + 1;
+        const prefix = timeLabel
+            ? `[来源: 聊天记录, 楼层: #${floor}, 时间: ${timeLabel}, 第${part}部分]`
+            : `[来源: 聊天记录, 楼层: #${floor}, 第${part}部分]`;
         const wrappedText = `<${tagName}>\n${prefix}\n${chunkText}\n</${tagName}>`;
 
         allChunks.push({
@@ -562,11 +665,7 @@ function _chunkForChatHistory(text, metadata) {
                 timestamp: timestamp,
             }
         });
-        
-        part++;
-        start += (chunkSize - overlap);
-        if (start >= text.length) break;
-    }
+    });
     return allChunks;
 }
 
@@ -577,15 +676,11 @@ function _chunkForLorebook(text, metadata) {
     const allChunks = [];
     if (!text || chunkSize <= 0) return allChunks;
 
-    let part = 1;
-    let start = 0;
+    const tagName = getTagForSource('lorebook');
 
-    while (start < text.length) {
-        const end = Math.min(start + chunkSize, text.length);
-        const chunkText = text.substring(start, end);
-        
+    splitBySemanticBoundary(text, chunkSize, overlap).forEach((chunkText, idx) => {
+        const part = idx + 1;
         const prefix = `[来源: ${bookName}, 条目: ${entryName}, 第${part}部分]`;
-        const tagName = getTagForSource('lorebook');
         const wrappedText = `<${tagName}>\n${prefix}\n${chunkText}\n</${tagName}>`;
 
         allChunks.push({
@@ -599,11 +694,7 @@ function _chunkForLorebook(text, metadata) {
                 timestamp: new Date().toISOString(),
             }
         });
-        
-        part++;
-        start += (chunkSize - overlap);
-        if (start >= text.length) break;
-    }
+    });
     return allChunks;
 }
 
@@ -615,16 +706,12 @@ function _chunkForManual(text, metadata) {
     if (!text || chunkSize <= 0) return allChunks;
 
     const timestamp = new Date();
-    const readableTime = timestamp.toLocaleString('zh-CN');
-    let part = 1;
-    let start = 0;
+    const readableTime = formatChunkTimeLabel(timestamp);
+    const tagName = getTagForSource('manual');
 
-    while (start < text.length) {
-        const end = Math.min(start + chunkSize, text.length);
-        const chunkText = text.substring(start, end);
-        
+    splitBySemanticBoundary(text, chunkSize, overlap).forEach((chunkText, idx) => {
+        const part = idx + 1;
         const prefix = `[来源: ${sourceName}, 向量化录入时间: ${readableTime}, 第${part}部分]`;
-        const tagName = getTagForSource('manual');
         const wrappedText = `<${tagName}>\n${prefix}\n${chunkText}\n</${tagName}>`;
 
         allChunks.push({
@@ -636,11 +723,7 @@ function _chunkForManual(text, metadata) {
                 timestamp: timestamp.toISOString(),
             }
         });
-        
-        part++;
-        start += (chunkSize - overlap);
-        if (start >= text.length) break;
-    }
+    });
     return allChunks;
 }
 
@@ -708,7 +791,13 @@ function getKnowledgeBases() {
     return { ...globalBases, ...localBases };
 }
 
-function addKnowledgeBase(name, source = 'manual') { 
+/**
+ * @param {string} name
+ * @param {string} source
+ * @param {string|null} chatId - 非空时该库为"聊天级"：向量集合按 `${chatId}_${taskId}`
+ *   命名空间隔离（独立聊天记忆模式下的聊天记录库），查询时只对该聊天可见
+ */
+function addKnowledgeBase(name, source = 'manual', chatId = null) {
     if (!name || !name.trim()) {
         throw new Error('知识库名称不能为空');
     }
@@ -721,15 +810,26 @@ function addKnowledgeBase(name, source = 'manual') {
         name: name.trim(),
         enabled: true,
         createdAt: new Date().toISOString(),
-        owner: charId, 
-        source: source, 
+        owner: charId,
+        source: source,
+        ...(chatId ? { chatId } : {}),
     };
 
     bases[taskId] = newBase;
     saveSettings();
-    
-    console.log(`[翰林院-核心] 已为角色 ${charId} 添加新知识库: ${name} (ID: ${taskId})`);
+
+    console.log(`[翰林院-核心] 已为角色 ${charId} 添加新知识库: ${name} (ID: ${taskId}${chatId ? `, 聊天级: ${chatId}` : ''})`);
     return newBase;
+}
+
+/**
+ * 计算知识库的向量集合 ID（单一事实来源）。
+ * 聊天级库（kb.chatId）按聊天命名空间，其余按 owner/角色命名空间。
+ */
+function getKbCollectionId(kb, scope = 'local') {
+    if (kb.chatId) return `${kb.chatId}_${kb.id}`;
+    if (scope === 'global') return `${kb.owner || GLOBAL_SCOPE_ID}_${kb.id}`;
+    return `${getCharacterStableId()}_${kb.id}`;
 }
 
 async function removeKnowledgeBase(taskId, scope) {
@@ -743,9 +843,8 @@ async function removeKnowledgeBase(taskId, scope) {
         return;
     }
 
-    const ownerId = scope === 'global' ? (base.owner || GLOBAL_SCOPE_ID) : charId;
-    const collectionIdToPurge = `${ownerId}_${taskId}`;
-    
+    const collectionIdToPurge = getKbCollectionId(base, scope);
+
     console.log(`[翰林院-核心] 准备删除知识库 ${taskId}，将清空集合: ${collectionIdToPurge}`);
 
     const purged = await purgeStorage(collectionIdToPurge);
@@ -792,30 +891,38 @@ async function queryVectors(queryText, options = {}) {
     } 
     else if (settings.retrieval.independentChatMemoryEnabled) {
         console.log('[翰林院-日志] 独立聊天记忆模式开启...');
-        
+
         const chatId = getChatId();
-        if (chatId) {
-            console.log(`[翰林院-日志] 添加当前聊天宝库: ${chatId}`);
-            basesToQuery.push({ id: chatId, name: `当前聊天 (${chatId})`, scope: 'chat' });
-        } else {
-            console.warn('[翰林院-日志] 无法获取当前聊天ID，跳过聊天宝库。');
+        if (!chatId) {
+            console.warn('[翰林院-日志] 无法获取当前聊天ID，聊天级知识库将被跳过。');
         }
 
-        const globalBases = getGlobalKnowledgeBases();
-        const enabledGlobalBases = Object.values(globalBases).filter(b => b.enabled);
+        // 本地库过滤规则：知识类库（无 chatId）照常可查；
+        // 聊天级库（有 chatId）只对所属聊天可见——这就是"独立"的含义
+        const localBases = Object.values(getLocalKnowledgeBases())
+            .filter(b => b.enabled && (!b.chatId || b.chatId === chatId));
+        if (localBases.length > 0) {
+            const chatScoped = localBases.filter(b => b.chatId).length;
+            console.log(`[翰林院-日志] 添加 ${localBases.length} 个本地知识库（其中 ${chatScoped} 个为当前聊天专属）。`);
+            basesToQuery.push(...localBases.map(b => ({ ...b, scope: b.chatId ? 'chat' : 'local' })));
+        }
+
+        const enabledGlobalBases = Object.values(getGlobalKnowledgeBases()).filter(b => b.enabled);
         if (enabledGlobalBases.length > 0) {
             console.log(`[翰林院-日志] 添加 ${enabledGlobalBases.length} 个已启用的全局知识库。`);
             basesToQuery.push(...enabledGlobalBases.map(b => ({ ...b, scope: 'global' })));
         }
-    } 
+    }
     else {
         console.log('[翰林院-日志] 统一角色卡模式开启...');
         const localBases = getLocalKnowledgeBases();
         const globalBases = getGlobalKnowledgeBases();
         const enabledLocalBases = Object.values(localBases).filter(b => b.enabled);
         const enabledGlobalBases = Object.values(globalBases).filter(b => b.enabled);
-        
-        basesToQuery.push(...enabledLocalBases.map(b => ({ ...b, scope: 'local' })));
+
+        // 聊天级库（独立模式期间产生）在统一模式下也可见，但需用 'chat' scope
+        // 才能拼出正确的集合 ID（${chatId}_${taskId}）
+        basesToQuery.push(...enabledLocalBases.map(b => ({ ...b, scope: b.chatId ? 'chat' : 'local' })));
         basesToQuery.push(...enabledGlobalBases.map(b => ({ ...b, scope: 'global' })));
 
         if (basesToQuery.length === 0) {
@@ -879,7 +986,9 @@ async function _executeQueryForBase(base, queryText, queryEmbedding = null) {
             collectionId = await getDynamicCollectionId();
             break;
         case 'chat':
-            collectionId = base.id; 
+            // 聊天级库：${chatId}_${taskId} 命名空间（独立聊天记忆）。
+            // 旧语义的裸 chatId 集合从未被任何录入路径写入过，无存量兼容负担
+            collectionId = base.chatId ? `${base.chatId}_${base.id}` : base.id;
             break;
         case 'global':
             const ownerId = base.owner || GLOBAL_SCOPE_ID;
@@ -945,10 +1054,12 @@ async function _executeQueryForBase(base, queryText, queryEmbedding = null) {
             switch (sourceTag) {
                 case '聊天记录':
                     newMetadata.source = 'chat_history';
-                    const chatMatch = item.text.match(/楼层:\s*#(\d+),\s*第(\d+)部分/);
-                    if (chatMatch && chatMatch[1] && chatMatch[2]) {
+                    // 时间段为可选：兼容旧格式 [楼层: #X, 第Y部分] 与新格式 [楼层: #X, 时间: ..., 第Y部分]
+                    const chatMatch = item.text.match(/楼层:\s*#(\d+)(?:,\s*时间:\s*([^,\]]+))?,\s*第(\d+)部分/);
+                    if (chatMatch && chatMatch[1] && chatMatch[3]) {
                         newMetadata.floor = parseInt(chatMatch[1], 10);
-                        newMetadata.part = parseInt(chatMatch[2], 10);
+                        if (chatMatch[2]) newMetadata.timeLabel = chatMatch[2].trim();
+                        newMetadata.part = parseInt(chatMatch[3], 10);
                         newMetadata.sourceName = `聊天记录 #${newMetadata.floor}`;
                     }
                     break;
@@ -1051,43 +1162,40 @@ async function getVectorCount(taskId = null, scope = 'local') {
             console.warn(`[翰林院-计数] 在作用域 '${scope}' 中未找到ID为 ${taskId} 的知识库。`);
             return 0;
         }
-        const ownerId = scope === 'global' ? (base.owner || GLOBAL_SCOPE_ID) : charId;
-        const collectionId = `${ownerId}_${taskId}`;
-        return await countVectorsInCollection(collectionId);
+        // 聊天级库按 ${chatId}_${taskId} 命名空间计数（getKbCollectionId 统一处理）
+        return await countVectorsInCollection(getKbCollectionId(base, scope));
 
     } else {
-        if (settings.retrieval.independentChatMemoryEnabled) {
-            const chatId = getChatId();
-            if (!chatId) return 0;
-            const totalCount = await countVectorsInCollection(chatId);
-            console.log(`[翰林院-日志] 独立聊天记忆模式开启，聊天 ${chatId} 的向量总数: ${totalCount}`);
-            return totalCount;
-        }
+        // 总数统计与查询侧保持同一可见性规则：
+        //   独立模式 → 本地知识库 + 当前聊天的聊天级库 + 全局库
+        //   统一模式 → 全部本地库（含聊天级）+ 全局库 + legacy 宝库
+        const independent = settings.retrieval.independentChatMemoryEnabled;
+        const chatId = independent ? getChatId() : null;
+        console.log(`[翰林院-日志] 开始获取${independent ? '当前聊天可见的' : '所有'}知识库向量总数...`);
 
-        console.log('[翰林院-日志] 开始获取所有知识库的向量总数...');
-        const localBases = Object.values(getLocalKnowledgeBases());
+        const localBases = Object.values(getLocalKnowledgeBases())
+            .filter(base => !independent || !base.chatId || base.chatId === chatId);
         const globalBases = Object.values(getGlobalKnowledgeBases());
 
         const countPromises = [];
 
         localBases.forEach(base => {
-            const collectionId = `${charId}_${base.id}`;
-            countPromises.push(countVectorsInCollection(collectionId));
+            countPromises.push(countVectorsInCollection(getKbCollectionId(base, 'local')));
         });
 
         globalBases.forEach(base => {
-            const ownerId = base.owner || GLOBAL_SCOPE_ID; 
-            const collectionId = `${ownerId}_${base.id}`;
-            countPromises.push(countVectorsInCollection(collectionId));
+            countPromises.push(countVectorsInCollection(getKbCollectionId(base, 'global')));
         });
 
-        const legacyCollectionId = await getDynamicCollectionId();
-        countPromises.push(countVectorsInCollection(legacyCollectionId));
+        if (!independent) {
+            const legacyCollectionId = await getDynamicCollectionId();
+            countPromises.push(countVectorsInCollection(legacyCollectionId));
+        }
 
         const counts = await Promise.all(countPromises);
         const totalCount = counts.reduce((total, count) => total + count, 0);
-        
-        console.log(`[翰林院-日志] 所有知识库统计完成，总向量数: ${totalCount}`);
+
+        console.log(`[翰林院-日志] 知识库统计完成，总向量数: ${totalCount}`);
         return totalCount;
     }
 }
@@ -1202,20 +1310,23 @@ async function processCondensation(messages, logCallback = () => {}, range = nul
             kbName = `聊天记录: ${timestamp}`;
         }
 
-        const existingKbs = Object.values(getLocalKnowledgeBases()); 
-        const foundKb = existingKbs.find(kb => kb.name === kbName);
+        // 独立聊天记忆模式下凝识结果按聊天分桶，与 ingestTextToHanlinyuan 的语义一致
+        const independentChatId = settings.retrieval.independentChatMemoryEnabled ? getChatId() : null;
+
+        const existingKbs = Object.values(getLocalKnowledgeBases());
+        const foundKb = existingKbs.find(kb => kb.name === kbName && (kb.chatId ?? null) === independentChatId);
 
         if (foundKb) {
             taskId = foundKb.id;
             logCallback(`[翰林院-核心] 检测到同名知识库 "${kbName}"，将数据合并入库。`, 'info');
         } else {
             logCallback(`[翰林院-核心] 准备为任务 "${kbName}" 创建专属知识库...`, 'info');
-            const newKb = addKnowledgeBase(kbName, 'chat_history');
+            const newKb = addKnowledgeBase(kbName, 'chat_history', independentChatId);
             taskId = newKb.id;
         }
-        
+
         const charId = getCharacterStableId();
-        const collectionId = `${charId}_${taskId}`;
+        const collectionId = independentChatId ? `${independentChatId}_${taskId}` : `${charId}_${taskId}`;
         logCallback(`[翰林院-核心] 凝识任务已锁定知识库: ${kbName} (集合ID: ${collectionId})`, 'success');
 
         const allChunks = [];
@@ -1478,17 +1589,101 @@ async function rerankResults(allResults, queryText, settings) {
     finalScoredResults.sort((a, b) => (b.final_score || 0) - (a.final_score || 0));
     console.log('[翰林院-Rerank] 元数据加权排序完成。');
 
-    let finalResults = finalScoredResults;
+    // 先按相关度截断 top_n，再做时序排序——顺序反了会让"时序最早"而非"最相关"
+    // 的块占据名额（超级排序把最旧楼层排最前，slice 会扔掉高相关的靠后结果）
+    let finalResults = finalScoredResults.slice(0, settings.rerank.top_n);
     if (settings.rerank.superSortEnabled) {
-        finalResults = superSort(finalScoredResults);
+        finalResults = superSort(finalResults);
     }
-    
+
     return {
-        results: finalResults.slice(0, settings.rerank.top_n),
+        results: finalResults,
         reranked: rerankedSuccessfully
     };
 }
 
+
+/**
+ * 从"第十二章"/"第3卷"/"4"等字符串中解析序数，用于注入前的时序排序。
+ * 支持阿拉伯数字与常见中文数字（至万级）；解析失败返回 MAX_SAFE_INTEGER（排最后）。
+ */
+function _parseOrdinal(value) {
+    if (typeof value === 'number') return value;
+    if (!value) return Number.MAX_SAFE_INTEGER;
+    const str = String(value);
+    const arabic = str.match(/\d+/);
+    if (arabic) return parseInt(arabic[0], 10);
+
+    const cnDigit = { 零: 0, 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
+    const m = str.match(/[零一二两三四五六七八九十百千万]+/);
+    if (!m) return Number.MAX_SAFE_INTEGER;
+    let total = 0, current = 0;
+    for (const ch of m[0]) {
+        if (cnDigit[ch] !== undefined) {
+            current = cnDigit[ch];
+        } else if (ch === '十') {
+            total += (current || 1) * 10;
+            current = 0;
+        } else if (ch === '百') {
+            total += (current || 1) * 100;
+            current = 0;
+        } else if (ch === '千') {
+            total += (current || 1) * 1000;
+            current = 0;
+        } else if (ch === '万') {
+            total = (total + current) * 10000;
+            current = 0;
+        }
+    }
+    return total + current;
+}
+
+/**
+ * 注入前的组内时序重排 + 断层提示。
+ *
+ * rerank/相似度负责"选哪些块"，本函数负责"按什么顺序呈现"：
+ *   - chat_history 按楼层+部分升序；相邻块楼层跳跃时插入断层提示行，
+ *     避免 LLM 把"不打不相识"和"关系亲密"两个远隔的片段读成连续剧情
+ *   - novel 按卷/章/节序数升序（中文数字章节号可解析）
+ *   - lorebook / manual 按来源聚合 + part 升序，碎块归位
+ * 元数据缺失的块排在末尾、保持彼此原有顺序（sort 稳定性）。
+ */
+function _composeInjectionText(source, results) {
+    const sorted = [...results];
+    const ord = (v) => (Number.isFinite(v) ? v : Number.MAX_SAFE_INTEGER);
+
+    if (source === 'chat_history') {
+        sorted.sort((a, b) =>
+            ord(a.metadata?.floor) - ord(b.metadata?.floor)
+            || (a.metadata?.part ?? 0) - (b.metadata?.part ?? 0));
+
+        const parts = [];
+        let prevFloor = null;
+        for (const r of sorted) {
+            const floor = r.metadata?.floor;
+            if (prevFloor !== null && Number.isFinite(floor) && floor - prevFloor > 1) {
+                parts.push(`〔提示：以下内容与上文相隔约 ${floor - prevFloor} 楼，期间的剧情未被检索到，两段内容并非连续发生〕`);
+            }
+            parts.push(r.text);
+            if (Number.isFinite(floor)) prevFloor = floor;
+        }
+        return parts.join('\n\n');
+    }
+
+    if (source === 'novel') {
+        sorted.sort((a, b) =>
+            _parseOrdinal(a.metadata?.volume) - _parseOrdinal(b.metadata?.volume)
+            || _parseOrdinal(a.metadata?.chapter) - _parseOrdinal(b.metadata?.chapter)
+            || _parseOrdinal(a.metadata?.section) - _parseOrdinal(b.metadata?.section));
+        return sorted.map(r => r.text).join('\n\n');
+    }
+
+    // lorebook / manual：同源聚合 + part 升序
+    sorted.sort((a, b) =>
+        String(a.metadata?.sourceName ?? '').localeCompare(String(b.metadata?.sourceName ?? ''), 'zh')
+        || (a.metadata?.part ?? 0) - (b.metadata?.part ?? 0));
+    return sorted.map(r => r.text).join('\n\n');
+}
 
 async function rearrangeChat(chat, contextSize, abort, type) {
     const injectionKeys = {
@@ -1704,7 +1899,8 @@ async function rearrangeChat(chat, contextSize, abort, type) {
                 continue;
             }
 
-            const formattedText = results.map(r => r.text).join('\n\n');
+            // 组内按时序重排 + 断层提示（rerank 决定选哪些块，时序决定呈现顺序）
+            const formattedText = _composeInjectionText(source, results);
             const placeholder = `{{${source.replace('_history', '')}_text}}`;
             let injectionContent = injectionSettings.template.replace(placeholder, formattedText);
 
@@ -1748,6 +1944,13 @@ async function moveKnowledgeBase(taskId, fromScope) {
         const errorMsg = `在源作用域 '${fromScope}' 中未找到ID为 ${taskId} 的知识库。`;
         console.error(`[翰林院-配置] ${errorMsg}`);
         toastr.error('移动失败：未找到源条目。');
+        return;
+    }
+
+    // 聊天级库（独立聊天记忆产物）专属于单个聊天，移到全局会让所有角色
+    // 检索到某个特定聊天的记忆，语义矛盾，禁止
+    if (kbData.chatId && toScope === 'global') {
+        toastr.warning(`知识库【${kbData.name}】是聊天专属记忆，不能移动到全局。`);
         return;
     }
 

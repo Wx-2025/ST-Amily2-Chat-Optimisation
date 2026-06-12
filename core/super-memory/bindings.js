@@ -42,6 +42,12 @@ export function bindSuperMemoryEvents() {
         if (id === 'sm-system-enabled') {
             extension_settings[extensionName]['super_memory_enabled'] = this.checked;
             saveSettingsDebounced();
+            // 【修复】启动时若开关为关，initializeSuperMemory 会早退且不注册监听器；
+            // 旧实现勾选后只写设置不初始化，导致开关"打开了但没反应"直到刷新页面。
+            // initializeSuperMemory 幂等（isInitialized 防重入），此处直接补初始化。
+            if (this.checked) {
+                initializeSuperMemory();
+            }
             return;
         }
         if (id === 'sm-bridge-enabled') {

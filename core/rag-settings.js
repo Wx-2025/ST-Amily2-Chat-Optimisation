@@ -3,8 +3,10 @@
 
 export const defaultSettings = {
     retrieval: {
-        enabled: false, 
-        apiEndpoint: 'openai', 
+        enabled: false,
+        // 默认走 custom 与下面的 customApiUrl 配套；旧默认 'openai' 不在 UI select
+        // 选项里，会在首次保存时被写成 ''（已有用户的 'openai' 值仍合法、不迁移）
+        apiEndpoint: 'custom',
         customApiUrl: 'https://api.siliconflow.cn/v1',
         apiKey: '',
         embeddingModel: 'text-embedding-3-small',
