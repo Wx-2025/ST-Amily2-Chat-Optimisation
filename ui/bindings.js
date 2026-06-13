@@ -808,7 +808,7 @@ export function bindModalEvents() {
     container
         .off("click.amily2.chamber_nav")
         .on("click.amily2.chamber_nav",
-             "#amily2_open_text_optimization, #amily2_open_plot_optimization, #amily2_open_additional_features, #amily2_open_rag_palace, #amily2_open_memorisation_forms, #amily2_open_character_world_book, #amily2_open_world_editor, #amily2_open_glossary, #amily2_open_renderer, #amily2_open_super_memory, #amily2_open_auto_char_card, #amily2_open_api_config, #amily2_open_rule_config, #amily2_open_sfigen, #amily2_open_preset_editor, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan, #amily2_back_to_main_from_forms, #amily2_back_to_main_from_optimization, #amily2_back_to_main_from_text_optimization, #amily2_back_to_main_from_cwb, #amily2_back_to_main_from_world_editor, #amily2_back_to_main_from_glossary, #amily2_renderer_back_button, #amily2_back_to_main_from_super_memory, #amily2_back_to_main_from_api_config, #amily2_back_to_main_from_rule_config, #amily2_sfigen_back_to_main", function () {
+             "#amily2_open_text_optimization, #amily2_open_plot_optimization, #amily2_open_additional_features, #amily2_open_rag_palace, #amily2_open_memorisation_forms, #amily2_open_character_world_book, #amily2_open_world_editor, #amily2_open_glossary, #amily2_open_renderer, #amily2_open_super_memory, #amily2_open_progressive_memory, #amily2_open_auto_char_card, #amily2_open_api_config, #amily2_open_rule_config, #amily2_open_sfigen, #amily2_open_preset_editor, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan, #amily2_back_to_main_from_forms, #amily2_back_to_main_from_optimization, #amily2_back_to_main_from_text_optimization, #amily2_back_to_main_from_cwb, #amily2_back_to_main_from_world_editor, #amily2_back_to_main_from_glossary, #amily2_renderer_back_button, #amily2_back_to_main_from_super_memory, #amily2_back_to_main_from_progressive_memory, #amily2_back_to_main_from_api_config, #amily2_back_to_main_from_rule_config, #amily2_sfigen_back_to_main", function () {
         if (!pluginAuthStatus.authorized) return;
 
         const mainPanel = container.find('.plugin-features');
@@ -822,6 +822,7 @@ export function bindModalEvents() {
         const glossaryPanel = container.find('#amily2_glossary_panel');
         const rendererPanel = container.find('#amily2_renderer_panel');
         const superMemoryPanel = container.find('#amily2_super_memory_panel');
+        const progressiveMemoryPanel = container.find('#amily2_progressive_memory_panel');
         const apiConfigPanel = container.find('#amily2_api_config_panel');
         const ruleConfigPanel = container.find('#amily2_rule_config_panel');
         const sfigenPanel = container.find('#amily2_sfigen_panel');
@@ -837,6 +838,7 @@ export function bindModalEvents() {
         glossaryPanel.hide();
         rendererPanel.hide();
         superMemoryPanel.hide();
+        progressiveMemoryPanel.hide();
         apiConfigPanel.hide();
         ruleConfigPanel.hide();
         sfigenPanel.hide();
@@ -854,6 +856,16 @@ export function bindModalEvents() {
                 }
                 superMemoryPanel.show();
                 break;
+            case 'amily2_open_progressive_memory': {
+                const pmUserType = parseInt(localStorage.getItem("plugin_user_type") || "0");
+                if (pmUserType < 3) {
+                    toastr.info("该功能正在开发中，将于未来版本开放，敬请期待。", "开发中功能");
+                    mainPanel.show();
+                    return;
+                }
+                progressiveMemoryPanel.show();
+                break;
+            }
             case 'amily2_open_auto_char_card':
                 openAutoCharCardWindow();
                 // 自动构建器是独立窗口，不需要隐藏主面板，或者根据需求决定
@@ -910,6 +922,7 @@ export function bindModalEvents() {
             case 'amily2_back_to_main_from_glossary':
             case 'amily2_renderer_back_button':
             case 'amily2_back_to_main_from_super_memory':
+            case 'amily2_back_to_main_from_progressive_memory':
             case 'amily2_back_to_main_from_api_config':
             case 'amily2_back_to_main_from_rule_config':
             case 'amily2_sfigen_back_to_main':

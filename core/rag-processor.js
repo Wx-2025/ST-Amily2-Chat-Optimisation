@@ -21,6 +21,7 @@ import {
     fetchEmbeddingModels as apiFetchEmbeddingModels,
     fetchRerankModels as apiFetchRerankModels,
     executeRerank,
+    getRerankSettings,
     testApiConnection as apiTestApiConnection
 } from './rag-api.js';
 import { superSort } from './super-sorter.js';
@@ -1535,7 +1536,13 @@ async function rerankResults(allResults, queryText, settings) {
         console.log('[翰林院-Rerank] 开始外部API重排序...');
         try {
             const documentsToRerank = allResults.map(res => res.text);
-            const rerankedData = await executeRerank(queryText, documentsToRerank, settings.rerank);
+            // 【修复】实际重排必须走 getRerankSettings() 解析连接（profile 优先、legacy 兜底），
+            // 与「测试连接」路径一致。旧代码直接传 settings.rerank（legacy 嵌套对象），
+            // 在用户用 API Profile 配 rerank 时其 apiKey/url/model 是空/stale 的——
+            // 导致测试连接成功、实际请求却报「Rerank API Key 未提供」。
+            // enabled / notify / hybrid_alpha 等行为开关仍读 legacy settings.rerank。
+            const rerankConn = await getRerankSettings();
+            const rerankedData = await executeRerank(queryText, documentsToRerank, rerankConn);
             const indexedResults = allResults.map((res, index) => ({ ...res, original_index: index }));
             
             processedResults = indexedResults.map(result => {

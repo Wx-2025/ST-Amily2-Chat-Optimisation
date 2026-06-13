@@ -7,6 +7,7 @@ import {
     getContext, extension_settings,
     characters, this_chid, eventSource, event_types, saveSettingsDebounced,
     injectTableData, generateTableContent,
+    injectProgressiveMemory,
     initializeRagProcessor,
     loadHanlinyuanSettingsToUI,
     loadTables, clearHighlights, rollbackAndRefill, rollbackState, commitPendingDeletions, saveStateToMessage, getMemoryState, clearUpdatedTables,
@@ -750,6 +751,12 @@ async function executeAmily2Injection(...args) {
         await injectTableData(...args);
     } catch (error) {
         console.error('[Amily2-内存储司] 表格注入失败:', error);
+    }
+    try {
+        // 渐进记忆（内测，type2 门槛由引擎内部判定）；args[3] = type（'quiet' 时跳过）
+        injectProgressiveMemory(args[3]);
+    } catch (error) {
+        console.error('[Amily2-渐进记忆] 注入失败:', error);
     }
     if (window.hanlinyuanRagProcessor && typeof window.hanlinyuanRagProcessor.rearrangeChat === 'function') {
         try {

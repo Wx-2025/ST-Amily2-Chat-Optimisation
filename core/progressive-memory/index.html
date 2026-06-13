@@ -1,0 +1,76 @@
+<div class="amily2-header">
+    <div class="additional-features-title interactable" title="Amily2 渐进记忆（内测）">
+        <i class="fas fa-layer-group"></i> 渐进记忆 <span style="font-size: 0.6em; color: #ffc107; vertical-align: super;">BETA</span>
+    </div>
+    <button id="amily2_back_to_main_from_progressive_memory" class="menu_button secondary small_button interactable">
+        返回主殿 <i class="fas fa-arrow-right"></i>
+    </button>
+</div>
+<hr class="header-divider">
+
+<div id="pm-modal-container">
+    <div class="sm-intro-box">
+        <h3><i class="fas fa-layer-group"></i> 渐进记忆 (Progressive Memory)</h3>
+        <p>按"近期完整、远期摘要"的时间梯度，从指定表格采样历史并注入上下文——模拟人类记忆衰减，在有限 Token 内兼顾最近连贯与长期回顾。</p>
+        <p style="color: #ffc107; font-size: 0.9em;"><i class="fas fa-flask"></i> 内测功能：注入内容直达上下文、不写世界书、不随聊天导出，仅当回合生效。</p>
+    </div>
+
+    <fieldset class="sm-settings-group">
+        <legend><i class="fas fa-cogs"></i> 基础设置</legend>
+        <div class="sm-control-block">
+            <label>启用渐进记忆 (总开关):</label>
+            <label class="sm-toggle-switch">
+                <input type="checkbox" id="pm-enabled">
+                <span class="sm-slider"></span>
+            </label>
+        </div>
+        <div class="sm-control-block">
+            <label title="作为采样数据源的表格名称，需为追加式表格（行序从旧到新），推荐总结表">数据源表格:</label>
+            <input type="text" id="pm-target-table" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px;" value="总结表">
+        </div>
+    </fieldset>
+
+    <fieldset class="sm-settings-group">
+        <legend><i class="fas fa-sliders-h"></i> 采样参数</legend>
+        <div class="sm-control-block">
+            <label title="最新 N 行全量保留（最近发生的事，完整保真）">近期全量行数 (X):</label>
+            <input type="number" id="pm-recent" min="0" step="1" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 80px;" value="5">
+        </div>
+        <div class="sm-control-block">
+            <label title="除近期外的历史对半拆分，较近的一半（中区）等距取 N 行">中区采样行数 (Y):</label>
+            <input type="number" id="pm-mid" min="0" step="1" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 80px;" value="5">
+        </div>
+        <div class="sm-control-block">
+            <label title="历史较远的一半（远区）等距取 N 行">远区采样行数 (Z):</label>
+            <input type="number" id="pm-far" min="0" step="1" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 80px;" value="3">
+        </div>
+        <small style="color: #888; font-size: 0.8em; display: block; margin-top: -5px; margin-bottom: 10px; padding-left: 5px;">
+            行序按时间从旧到新：最新 X 行全量；其余历史对半拆，较近一半等距取 Y 行、较远一半等距取 Z 行（中心对齐等距采样，不随机、不首尾加权，避免内容扎堆或事件结局被规律性忽略）。
+        </small>
+    </fieldset>
+
+    <fieldset class="sm-settings-group">
+        <legend><i class="fas fa-syringe"></i> 注入设置</legend>
+        <div class="sm-control-block">
+            <label title="注入位置：0=系统提示前，1=系统提示后（@D 注入用深度控制）">注入位置 (position):</label>
+            <input type="number" id="pm-inj-position" min="0" max="1" step="1" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 80px;" value="1">
+        </div>
+        <div class="sm-control-block">
+            <label title="注入深度（楼层），0 = 最底部">注入深度 (depth):</label>
+            <input type="number" id="pm-inj-depth" min="0" step="1" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 80px;" value="0">
+        </div>
+        <div class="sm-control-block">
+            <label title="注入角色：0=系统，1=用户，2=AI">注入角色 (role):</label>
+            <select id="pm-inj-role" class="text_pole" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 100px;">
+                <option value="0">系统</option>
+                <option value="1">用户</option>
+                <option value="2">AI</option>
+            </select>
+        </div>
+        <div class="sm-control-block" style="display: block;">
+            <label title="占位符 {{progressive_memory}} 会被替换为采样后的行文本">注入模板:</label>
+            <textarea id="pm-template" rows="4" style="width: 100%; margin-top: 5px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; box-sizing: border-box;"></textarea>
+            <small style="color: #888; font-size: 0.8em; display: block; margin-top: 3px;">必须包含占位符 <code>{{progressive_memory}}</code>；缺失时采样内容会追加到模板末尾。</small>
+        </div>
+    </fieldset>
+</div>

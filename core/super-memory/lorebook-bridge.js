@@ -35,8 +35,19 @@ async function _doEnsureBook(bookName) {
     }
 }
 
-export async function syncToLorebook(tableName, data, indexText, role, headers, rowStatuses, depth = 100, isIndexConstant = true) {
-    console.log(`[Amily2-Bridge] 开始同步表格: ${tableName} (Depth: ${depth}, IndexConstant: ${isIndexConstant})`);
+/**
+ * @param {Object} [opts]
+ * @param {number}  [opts.depth=100]           详情条目的注入深度
+ * @param {boolean} [opts.isIndexConstant=true] 索引条目是否常驻（蓝灯）
+ * @param {boolean} [opts.pinFirstRow=false]    首行详情条目升为常驻（总调/全局定义行）
+ */
+export async function syncToLorebook(tableName, data, indexText, role, headers, rowStatuses, opts = {}) {
+    const {
+        depth = 100,
+        isIndexConstant = true,
+        pinFirstRow = false,
+    } = opts;
+    console.log(`[Amily2-Bridge] 开始同步表格: ${tableName} (Depth: ${depth}, IndexConstant: ${isIndexConstant}, PinFirstRow: ${pinFirstRow})`);
     return withLoreLock(`syncToLorebook(${tableName})`, async () => {
     await _doEnsureBook(getMemoryBookName());
 
@@ -133,34 +144,19 @@ export async function syncToLorebook(tableName, data, indexText, role, headers, 
         processEntry(indexComment, indexKey, indexContent, indexType, true, true, 0, 0);
     }
 
-    data.forEach((row, index) => {
-        if (!row || row.length === 0) return;
-        
-        const rawVal = row[0]; 
-        if (rawVal === undefined || rawVal === null) return;
+    const settings = extension_settings[extensionName] || {};
+    const optimizationEnabled = settings.context_optimization_enabled !== false;
 
-        const primaryVal = String(rawVal).trim();
-        if (primaryVal === '') return;
-
-        const isPendingDeletion = rowStatuses && rowStatuses[index] === 'pending-deletion';
-        const isEnabled = !isPendingDeletion;
-
-        const triggerKeys = [primaryVal];
-        const entryComment = `[Amily2] Detail: ${tableName} - ${primaryVal}`;
-        
+    const renderRowContent = (row) => {
         let finalHeaders = headers;
         if (!finalHeaders || finalHeaders.length < row.length) {
             finalHeaders = [];
-            for(let i=0; i<row.length; i++) {
+            for (let i = 0; i < row.length; i++) {
                 finalHeaders.push((headers && headers[i]) ? headers[i] : `Col_${i}`);
             }
         }
 
-        const settings = extension_settings[extensionName] || {};
-        const optimizationEnabled = settings.context_optimization_enabled !== false; 
-
         let entryContent;
-
         if (optimizationEnabled) {
             const primaryVal = row[0] || 'Unknown';
             entryContent = `【${tableName}档案: ${primaryVal}】\n`;
@@ -178,13 +174,34 @@ export async function syncToLorebook(tableName, data, indexText, role, headers, 
             }
             entryContent = textContent.trim();
         }
+        return entryContent.trim();
+    };
 
-        processEntry(entryComment, triggerKeys, entryContent.trim(), 'selective', isEnabled);
+    data.forEach((row, index) => {
+        if (!row || row.length === 0) return;
+
+        const rawVal = row[0];
+        if (rawVal === undefined || rawVal === null) return;
+
+        const primaryVal = String(rawVal).trim();
+        if (primaryVal === '') return;
+
+        const isPendingDeletion = rowStatuses && rowStatuses[index] === 'pending-deletion';
+        const isEnabled = !isPendingDeletion;
+
+        const triggerKeys = [primaryVal];
+        const entryComment = `[Amily2] Detail: ${tableName} - ${primaryVal}`;
+
+        // 首行常驻：第一行通常是总调/全局定义（基调、主线目标等），
+        // 绿灯模式下没人提到其主键就永远不注入；开启后升为蓝灯常驻。
+        const entryType = (pinFirstRow && index === 0) ? 'constant' : 'selective';
+
+        processEntry(entryComment, triggerKeys, renderRowContent(row), entryType, isEnabled);
     });
 
     const entriesToDelete = [];
     const tablePrefix = `[Amily2] Detail: ${tableName} -`;
-    
+
     const activeKeys = new Set();
     for(const row of data) {
         if(row && row.length > 0) {

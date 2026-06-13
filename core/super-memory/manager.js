@@ -178,12 +178,16 @@ async function processUpdateTask(task) {
 
     const activeData = data.filter((_, i) => !rowStatuses || rowStatuses[i] !== 'pending-deletion');
     const indexText = generateIndex(activeData, headers, role, tableName);
-    
+
     const allTables = getMemoryState();
     const tableIndex = allTables.findIndex(t => t.name === tableName);
     const depth = 8001 + (tableIndex >= 0 ? tableIndex : 99);
 
-    await syncToLorebook(tableName, data, indexText, role, headers, rowStatuses, depth, isIndexConstant);
+    await syncToLorebook(tableName, data, indexText, role, headers, rowStatuses, {
+        depth,
+        isIndexConstant,
+        pinFirstRow: tableSettings.pinFirstRow === true,
+    });
 
     if (hint) {
         console.log(`[Amily2-SuperMemory] 应用主动记忆提示: ${hint}`);

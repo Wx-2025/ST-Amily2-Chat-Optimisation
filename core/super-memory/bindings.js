@@ -1,7 +1,7 @@
 import { extensionName } from "../../utils/settings.js";
 import { extension_settings } from "/scripts/extensions.js";
 import { saveSettingsDebounced } from "/script.js";
-import { initializeSuperMemory, purgeSuperMemory } from "./manager.js";
+import { initializeSuperMemory, purgeSuperMemory, forceSyncAll } from "./manager.js";
 import { defaultSettings as ragDefaultSettings } from "../rag-settings.js";
 import { getMemoryState } from "../table-system/manager.js";
 
@@ -116,7 +116,7 @@ export function bindSuperMemoryEvents() {
         }
 
         const tableName = $(this).data('table');
-        const type = $(this).data('type'); // 'sync' or 'constant'
+        const type = $(this).data('type'); // 'sync' | 'constant' | 'pinFirstRow'
         const checked = this.checked;
 
         if (!extension_settings[extensionName].superMemory_tableSettings[tableName]) {
@@ -125,6 +125,8 @@ export function bindSuperMemoryEvents() {
 
         extension_settings[extensionName].superMemory_tableSettings[tableName][type] = checked;
         saveSettingsDebounced();
+        // 立即应用：首行常驻切换需要把该行详情条目在 蓝灯/绿灯 之间重写
+        forceSyncAll();
         console.log(`[Amily2-SuperMemory] Table setting updated: ${tableName}.${type} = ${checked}`);
     });
 
@@ -150,9 +152,10 @@ function renderTableSettingsList() {
         const tableName = table.name;
         const tableConfig = settings[tableName] || {};
         
-        // Default values: Sync=True, Constant=True
-        const isSyncEnabled = tableConfig.sync !== false; 
+        // Default values: Sync=True, Constant=True; PinFirstRow=False
+        const isSyncEnabled = tableConfig.sync !== false;
         const isConstant = tableConfig.constant !== false;
+        const isPinFirstRow = tableConfig.pinFirstRow === true;
 
         html += `
             <div class="sm-control-block" style="border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 10px; margin-bottom: 10px;">
@@ -171,6 +174,15 @@ function renderTableSettingsList() {
                             <span class="sm-slider"></span>
                         </label>
                         <span style="font-size: 0.9em; color: #ccc;">索引绿灯(常驻)</span>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: flex-start; margin-top: 5px;">
+                    <div style="display: flex; align-items: center;">
+                        <label class="sm-toggle-switch" style="transform: scale(0.8); margin-right: 5px;">
+                            <input type="checkbox" class="sm-table-setting-check" data-table="${tableName}" data-type="pinFirstRow" ${isPinFirstRow ? 'checked' : ''}>
+                            <span class="sm-slider"></span>
+                        </label>
+                        <span style="font-size: 0.9em; color: #ccc;" title="第一行通常是总调/全局定义行，开启后升为常驻注入，不再依赖关键词触发">首行常驻</span>
                     </div>
                 </div>
             </div>
