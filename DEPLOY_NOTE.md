@@ -95,6 +95,16 @@
 
 ---
 
+## v2.2.7
+
+### 修复
+
+- **分步填表 · 保留楼层场景下 swipe 最新楼会回退掉已填内容**：开启「保留楼层(bufferSize)」后，分步填表处理的是较早楼层、状态本应绑定到「被填楼层里最后一条」(E)。但 `updateTableFromText` / `updateTableFromOps` 在应用完操作后会**统一把表格状态写到聊天最新楼 L**，覆盖了随后 `markTargetsProcessed` 写到 E 的快照（`loadTables` 从尾部回溯先命中 L）。结果状态实际落在 L 上，**滑动/重新生成最新楼时 `rollbackState` 回退到上一轮快照，把本轮填入的内容一起丢掉、且因较早楼层的 hash 仍在而不再重填**。
+  - 修复：给 `updateTableFromText` / `updateTableFromOps` 增加 `skipPersist` 选项；分步填表（文本 / Function Call / 手动应用三条 commit 路径）统一传入，跳过"写最新楼"，改由 `markTargetsProcessed` 把状态保存到 E。
+  - `bufferSize=0`（默认）时 E 即最新楼，行为与旧版一致；仅 `bufferSize>0` 的保留楼层场景受影响并被修复。
+
+---
+
 ## v2.2.6
 
 ### 新功能

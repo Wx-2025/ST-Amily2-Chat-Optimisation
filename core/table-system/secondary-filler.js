@@ -62,7 +62,9 @@ async function markTargetsProcessed(targetMessages, { skipTableSave = false } = 
 }
 
 async function commitSecondaryFillResult(rawContent, targetMessages) {
-    await updateTableFromText(rawContent);
+    // skipPersist：不让 updateTableFromText 把状态写到最新楼 L，改由 markTargetsProcessed
+    // 存到 lastProcessedMsg(E)——否则保留楼层场景下 swipe 最新楼会回退掉本轮已填内容。
+    await updateTableFromText(rawContent, { skipPersist: true });
     await markTargetsProcessed(targetMessages);
 }
 
@@ -392,7 +394,8 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
                 toastr.info('AI 判断此范围无需修改。', 'Amily2-分步填表');
                 await markTargetsProcessed(targetMessages, { skipTableSave: true });
             } else {
-                await updateTableFromOps(ops);
+                // skipPersist：状态由 markTargetsProcessed 存到 E，不写最新楼（同文本路径）
+                await updateTableFromOps(ops, { skipPersist: true });
                 await markTargetsProcessed(targetMessages);
                 toastr.success('分步填表（Function Call）执行完毕。', 'Amily2-分步填表');
             }

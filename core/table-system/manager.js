@@ -414,6 +414,13 @@ export async function updateTableFromText(textContent, options = {}) {
     const affectedTables = [...new Set(changes.map(c => c.tableIndex))];
     affectedTables.forEach(tableIndex => dispatchTableUpdate(tableIndex));
 
+    // 【skipPersist】分步填表（保留楼层场景）下，状态应由调用方保存到“被填楼层的最后一条”(E)，
+    // 不能在此处统一写到最新楼 L——否则 L 上的快照会盖住 E 的，swipe 最新楼时回退掉本轮已填内容。
+    if (options.skipPersist) {
+        document.dispatchEvent(new CustomEvent('amily2-force-ui-reload'));
+        return;
+    }
+
     const context = getContext();
     if (context.chat && context.chat.length > 0) {
         const lastMessage = context.chat[context.chat.length - 1];
@@ -472,6 +479,12 @@ export async function updateTableFromOps(ops, options = {}) {
 
     const affectedTables = [...new Set(changes.map(c => c.tableIndex))];
     affectedTables.forEach(tableIndex => dispatchTableUpdate(tableIndex));
+
+    // 【skipPersist】见 updateTableFromText 同名说明：分步填表由调用方存到 E，不在此写最新楼。
+    if (options.skipPersist) {
+        document.dispatchEvent(new CustomEvent('amily2-force-ui-reload'));
+        return;
+    }
 
     const context = getContext();
     if (context.chat && context.chat.length > 0) {
