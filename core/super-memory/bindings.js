@@ -1,6 +1,6 @@
 import { extensionName } from "../../utils/settings.js";
 import { extension_settings } from "/scripts/extensions.js";
-import { saveSettingsDebounced } from "/script.js";
+import { saveSettingsDebounced, eventSource, event_types } from "/script.js";
 import { initializeSuperMemory, purgeSuperMemory, forceSyncAll } from "./manager.js";
 import { defaultSettings as ragDefaultSettings } from "../rag-settings.js";
 import { getMemoryState } from "../table-system/manager.js";
@@ -131,8 +131,27 @@ export function bindSuperMemoryEvents() {
     });
 
     loadSuperMemorySettings();
-    
+
+    // 切聊天后面板内容刷新：面板的表格列表只在挂载时渲染一次、之后仅靠手动「刷新表格列表」按钮，
+    // 无 CHAT_CHANGED 监听 → 切换同卡不同聊天后列表停在旧聊天。这里补上：
+    // 仅当面板可见时刷新；延后到表格系统的 loadTables（index.js 中 CHAT_CHANGED 后 100ms）之后，
+    // 否则会渲染出尚未更新的旧 state（同 super-memory 同步那处规避的竞态）。
+    eventSource.on(event_types.CHAT_CHANGED, () => {
+        if (!panel.is(':visible')) return;
+        setTimeout(refreshSuperMemoryPanel, 300);
+    });
+
     console.log('[Amily2-SuperMemory] Events bound successfully.');
+}
+
+/**
+ * 刷新超级记忆面板的动态内容（表格列表）。供「打开面板」与「切聊天」复用。
+ * 仅重渲染随聊天变化的部分；全局开关/阈值等设置不随聊天变，无需重读。
+ */
+export function refreshSuperMemoryPanel() {
+    const panel = $('#amily2_super_memory_panel');
+    if (panel.length === 0) return;
+    renderTableSettingsList();
 }
 
 function renderTableSettingsList() {

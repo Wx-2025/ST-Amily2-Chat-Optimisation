@@ -14,6 +14,7 @@ import { showContentModal, showHtmlModal, showCwbWarningModal } from './page-win
 import { openAutoCharCardWindow } from '../core/auto-char-card/ui-bindings.js';
 import { showPresetSettings } from '../PresetSettings/prese_ui.js';
 import { watchProfileSliderGuard } from './profile-slider-guard.js';
+import { refreshSuperMemoryPanel } from '../core/super-memory/bindings.js';
 
 function displayDailyAuthCode() {
     const displayEl = document.getElementById('amily2_daily_code_display');
@@ -855,6 +856,8 @@ export function bindModalEvents() {
                     return;
                 }
                 superMemoryPanel.show();
+                // 面板挂载后只渲染过一次，打开时按当前聊天的表格状态重渲染，避免显示上一个聊天的旧列表
+                refreshSuperMemoryPanel();
                 break;
             case 'amily2_open_progressive_memory': {
                 const pmUserType = parseInt(localStorage.getItem("plugin_user_type") || "0");

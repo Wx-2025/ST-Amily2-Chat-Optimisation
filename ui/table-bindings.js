@@ -2017,5 +2017,59 @@ function bindFloorFillButtons() {
         rollbackBtn.dataset.rollbackEventBound = 'true';
         log('"回退重填"按钮已成功绑定。', 'success');
     }
+
+    const fillHistoryBtn = document.getElementById('table-fill-history-btn');
+    if (fillHistoryBtn && !fillHistoryBtn.dataset.fillHistoryBound) {
+        fillHistoryBtn.addEventListener('click', () => {
+            const snapshots = TableManager.listFillSnapshots();
+            if (snapshots.length === 0) {
+                toastr.info('当前聊天还没有任何表格快照（先进行一次填表）。');
+                return;
+            }
+
+            // 最新在上
+            const itemsHtml = [...snapshots].reverse().map(s => {
+                const csv = escapeHTML(TableManager.getSnapshotCsv(s.index) || '（空表）');
+                const preview = escapeHTML(s.preview);
+                const roleTag = s.isUser ? '用户' : 'AI';
+                return `
+                    <details style="margin-bottom:8px; border:1px solid rgba(255,255,255,0.12); border-radius:5px; padding:6px 10px;">
+                        <summary style="cursor:pointer; color:#e0e0e0; user-select:none;">
+                            第 ${s.index + 1} 楼（${roleTag}） · ${s.tableCount} 表 / ${s.rowCount} 行
+                            <span style="color:#888; font-size:0.85em;">　${preview}…</span>
+                        </summary>
+                        <pre style="white-space:pre-wrap; word-break:break-all; font-size:0.78em; color:#ccc; max-height:220px; overflow:auto; margin:8px 0; background:rgba(0,0,0,0.25); padding:8px; border-radius:4px;">${csv}</pre>
+                        <button class="menu_button primary small_button amily2-snapshot-restore-btn" data-floor-index="${s.index}">
+                            恢复到此版本
+                        </button>
+                    </details>`;
+            }).join('');
+
+            const html = `
+                <p class="notes" style="margin-top:0;">每条 = 那一轮填表后保存在该楼层的表格快照（逐轮继承）。点开可预览内容。<br>
+                <b>恢复某版本</b>后，其后楼层的快照与填表标记会被清除——该版本成为最新状态，后续楼层下轮会自动重填。适合救回被模型误删/清空的表格。</p>
+                ${itemsHtml}`;
+
+            showHtmlModal('填表记录 · 版本恢复', html, {
+                showCancel: false,
+                okText: '关闭',
+                onShow: (dialog) => {
+                    dialog.on('click', '.amily2-snapshot-restore-btn', async function () {
+                        const idx = parseInt(this.getAttribute('data-floor-index'), 10);
+                        if (Number.isNaN(idx)) return;
+                        if (!confirm(`确定恢复到第 ${idx + 1} 楼的表格版本？\n该楼层之后的快照与填表标记将被清除。`)) return;
+                        const ok = await TableManager.restoreToSnapshot(idx);
+                        if (ok) {
+                            toastr.success(`已恢复到第 ${idx + 1} 楼的表格版本。`);
+                            dialog[0].close();
+                            dialog.remove();
+                        }
+                    });
+                },
+            });
+        });
+        fillHistoryBtn.dataset.fillHistoryBound = 'true';
+        log('"填表记录"按钮已成功绑定。', 'success');
+    }
 }
 

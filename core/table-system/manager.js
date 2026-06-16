@@ -141,6 +141,11 @@ export function getMemoryState() {
     return getState();
 }
 
+// 【死代码·保留标注】loadMemoryState / saveMemoryState 原为 super-memory 的 metadata
+// 状态恢复链路服务（saveStateToMetadata / tryRestoreStateFromMetadata）。该链路在
+// v2.2.7（commit 62b37f2）确认为死代码后停用——msg.metadata 非 ST 持久化字段，
+// 写入即蒸发。这两个函数随之无调用方（唯一引用在 super-memory/manager.js 已注释段内）。
+// 属原作者代码体系，功能本身正确无副作用，按惯例保留并标注，待确认无后续用途再清。
 export function loadMemoryState(state) {
     if (!state) return;
     setState(state);
@@ -264,6 +269,37 @@ function getDefaultTables() {
 
 // ── 加载 ──────────────────────────────────────────────────────────────────
 
+/**
+ * 表格状态字段兼容性归一（loadTables 与 恢复快照 共用）。
+ * 旧存档可能缺 note / rule_* / charLimitRules / rowStatuses 等字段，统一补齐。
+ * @param {Array} state TableState（会被原地修改并返回）
+ */
+function _normalizeTableState(state) {
+    state.forEach(table => {
+        if (table.note === undefined) table.note = '无';
+        if (table.rule_add === undefined) table.rule_add = '允许';
+        if (table.rule_delete === undefined) table.rule_delete = '允许';
+        if (table.rule_update === undefined) table.rule_update = '允许';
+
+        // 多列规则兼容
+        if (table.charLimitRule && !table.charLimitRules) {
+            table.charLimitRules = {};
+            if (table.charLimitRule.columnIndex !== -1 && table.charLimitRule.limit > 0) {
+                table.charLimitRules[table.charLimitRule.columnIndex] = table.charLimitRule.limit;
+            }
+        }
+        delete table.charLimitRule;
+
+        if (table.rowLimitRule === undefined) table.rowLimitRule = 0;
+        if (table.columnWidths === undefined) table.columnWidths = [];
+
+        if (!table.rowStatuses) {
+            table.rowStatuses = Array(table.rows.length).fill('normal');
+        }
+    });
+    return state;
+}
+
 export function loadTables(stopIndex = -1) {
     const context = getContext();
 
@@ -274,30 +310,7 @@ export function loadTables(stopIndex = -1) {
             const message = context.chat[i];
             if (message.extra && message.extra[TABLE_DATA_KEY]) {
                 log(`在第 ${i} 条消息中找到基准表格数据。`, 'info');
-                let loadedState = JSON.parse(JSON.stringify(message.extra[TABLE_DATA_KEY]));
-
-                loadedState.forEach(table => {
-                    if (table.note === undefined) table.note = '无';
-                    if (table.rule_add === undefined) table.rule_add = '允许';
-                    if (table.rule_delete === undefined) table.rule_delete = '允许';
-                    if (table.rule_update === undefined) table.rule_update = '允许';
-
-                    // 多列规则兼容
-                    if (table.charLimitRule && !table.charLimitRules) {
-                        table.charLimitRules = {};
-                        if (table.charLimitRule.columnIndex !== -1 && table.charLimitRule.limit > 0) {
-                            table.charLimitRules[table.charLimitRule.columnIndex] = table.charLimitRule.limit;
-                        }
-                    }
-                    delete table.charLimitRule;
-
-                    if (table.rowLimitRule === undefined) table.rowLimitRule = 0;
-                    if (table.columnWidths === undefined) table.columnWidths = [];
-
-                    if (!table.rowStatuses) {
-                        table.rowStatuses = Array(table.rows.length).fill('normal');
-                    }
-                });
+                const loadedState = _normalizeTableState(JSON.parse(JSON.stringify(message.extra[TABLE_DATA_KEY])));
 
                 setState(loadedState);
                 dispatchAllTablesUpdate();
@@ -595,6 +608,79 @@ export async function rollbackAndRefill() {
         log(`回退重填过程中发生错误: ${error.message}`, 'error');
         toastr.error(`重新填表失败: ${error.message}`);
     }
+}
+
+// ── 填表记录（版本恢复） ────────────────────────────────────────────────────
+// 复用各楼层 extra 里逐轮继承的 amily2_tables_data 快照，无需新建存储。
+
+const PROCESS_HASH_KEY = 'amily2_process_hash';
+
+/**
+ * 列出当前聊天里所有带表格快照的楼层（升序，最旧→最新）。
+ * @returns {Array<{index:number, isUser:boolean, preview:string, tableCount:number, rowCount:number}>}
+ */
+export function listFillSnapshots() {
+    const context = getContext();
+    if (!context || !context.chat) return [];
+    const result = [];
+    context.chat.forEach((msg, index) => {
+        const snap = msg.extra?.[TABLE_DATA_KEY];
+        if (snap && Array.isArray(snap)) {
+            const rowCount = snap.reduce((acc, t) => acc + (t.rows?.length || 0), 0);
+            result.push({
+                index,
+                isUser: !!msg.is_user,
+                preview: (msg.mes || '').replace(/\s+/g, ' ').slice(0, 30),
+                tableCount: snap.length,
+                rowCount,
+            });
+        }
+    });
+    return result;
+}
+
+/** 把指定楼层的快照渲染成 CSV 文本（供预览）。 */
+export function getSnapshotCsv(floorIndex) {
+    const context = getContext();
+    const snap = context?.chat?.[floorIndex]?.extra?.[TABLE_DATA_KEY];
+    if (!snap) return '';
+    return tablesToCsv(_normalizeTableState(JSON.parse(JSON.stringify(snap))));
+}
+
+/**
+ * 恢复到指定楼层的表格快照：把该快照设为当前状态，并清除其**之后**所有楼层的
+ * 快照与填表标记 hash——让该楼层成为最新有效状态，其后楼层无 hash → 下轮自动
+ * 重填会从恢复点往前重建。用于救回"模型把表删空"等场景。
+ * @param {number} floorIndex
+ * @returns {Promise<boolean>}
+ */
+export async function restoreToSnapshot(floorIndex) {
+    const context = getContext();
+    if (!context || !context.chat) return false;
+    const snap = context.chat[floorIndex]?.extra?.[TABLE_DATA_KEY];
+    if (!snap) {
+        toastr.error('该楼层没有可恢复的表格快照。');
+        return false;
+    }
+
+    const restored = _normalizeTableState(JSON.parse(JSON.stringify(snap)));
+    setState(restored);
+
+    // 从 floorIndex+1 起，清掉所有更新楼层的快照与 hash
+    let clearedSnap = 0;
+    for (let i = floorIndex + 1; i < context.chat.length; i++) {
+        const e = context.chat[i].extra;
+        if (!e) continue;
+        if (e[TABLE_DATA_KEY] !== undefined) { delete e[TABLE_DATA_KEY]; clearedSnap++; }
+        if (e[PROCESS_HASH_KEY] !== undefined) delete e[PROCESS_HASH_KEY];
+    }
+
+    await saveChat();
+    dispatchAllTablesUpdate();
+    renderTables();
+    updateOrInsertTableInChat();
+    log(`已恢复到第 ${floorIndex + 1} 楼的表格快照，清理其后 ${clearedSnap} 条快照与填表标记。`, 'success');
+    return true;
 }
 
 // ── 杂项 ──────────────────────────────────────────────────────────────────
