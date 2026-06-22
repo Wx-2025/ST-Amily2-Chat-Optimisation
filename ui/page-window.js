@@ -30,7 +30,7 @@ export async function showContentModal(title, contentUrl) {
         const htmlContent = converter.makeHtml(markdownContent);
 
         const dialogHtml = `
-            <dialog class="popup wide_dialogue_popup">
+            <dialog class="popup wide_dialogue_popup amily2-modal">
               <div class="popup-body">
                 <h3 style="margin-top:0; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">
                     <i class="fas fa-book-open" style="color: #58a6ff;"></i> ${title}
@@ -73,7 +73,7 @@ export function showHtmlModal(title, htmlContent, options = {}) {
     `;
 
     const dialogHtml = `
-        <dialog class="popup wide_dialogue_popup">
+        <dialog class="popup wide_dialogue_popup amily2-modal">
           <div class="popup-body">
             <h3 style="margin-top:0; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">
                 <i class="fas fa-edit" style="color: #58a6ff;"></i> ${title}
@@ -264,7 +264,7 @@ const CWB_WARNING_COUNTDOWN = 10;
  */
 export function showCwbWarningModal(onProceed, onClose) {
     const dialogHtml = `
-        <dialog class="popup wide_dialogue_popup">
+        <dialog class="popup wide_dialogue_popup amily2-modal">
           <div class="popup-body">
             <h3 style="margin-top:0; color:#e8a838; border-bottom:1px solid rgba(255,255,255,0.2); padding-bottom:10px;">
                 <i class="fas fa-exclamation-triangle" style="color:#e8a838;"></i> 注意 — 角色世界书功能维护状态

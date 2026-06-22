@@ -1,7 +1,7 @@
 import { getContext } from '/scripts/extensions.js';
 import { state, SCRIPT_ID_PREFIX } from './cwb_state.js';
 import { logDebug, logError, showToastr, escapeHtml, cleanChatName, parseCustomFormat, buildCustomFormat, isCwbEnabled } from './cwb_utils.js';
-import { callCustomOpenAI } from './cwb_apiService.js';
+import { callCustomOpenAI, isCwbApiConfigured } from './cwb_apiService.js';
 import { saveDescriptionToLorebook, updateCharacterRosterLorebookEntry, manageAutoCardUpdateLorebookEntry, getTargetWorldBook } from './cwb_lorebookManager.js';
 import { extractBlocksByTags, applyExclusionRules } from '../../core/utils/rag-tag-extractor.js';
 import { getExtensionSettings } from '../../utils/settings.js';
@@ -348,7 +348,7 @@ async function triggerAutomaticUpdate($panel) {
         logDebug('更新检查已跳过 - CharacterWorldBook总开关已关闭。');
         return;
     }
-    if (!state.autoUpdateEnabled || isUpdatingCard || !state.customApiConfig.url || !state.customApiConfig.model || state.allChatMessages.length === 0) {
+    if (!state.autoUpdateEnabled || isUpdatingCard || !isCwbApiConfigured() || state.allChatMessages.length === 0) {
         logDebug('更新检查已跳过（未启用、正在更新、未配置或无消息）。');
         return;
     }
@@ -573,7 +573,7 @@ export async function startBatchUpdate($panel) {
         return;
     }
     await loadAllChatMessages($panel);
-    if (!state.customApiConfig.url || !state.customApiConfig.model) {
+    if (!isCwbApiConfigured()) {
         showToastr('warning', '请先配置API信息。');
         return;
     }
@@ -619,7 +619,7 @@ export async function handleFloorRangeUpdate($panel) {
         return;
     }
     
-    if (!state.customApiConfig.url || !state.customApiConfig.model) {
+    if (!isCwbApiConfigured()) {
         showToastr('warning', '请先配置API信息。');
         return;
     }
@@ -679,7 +679,7 @@ export async function manualUpdateLogic($panel = null) {
         showToastr('info', '已有更新任务在进行中。');
         return;
     }
-    if (!state.customApiConfig.url || !state.customApiConfig.model) {
+    if (!isCwbApiConfigured()) {
         showToastr('warning', '请先配置API信息。');
         return;
     }

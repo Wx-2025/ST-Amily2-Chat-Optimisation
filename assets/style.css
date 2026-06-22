@@ -3,7 +3,15 @@
     --amily2-button-color: #4A4A4A;
     --amily2-text-color: #E0E0E0;
     --amily2-bg-image: url('https://cdn.jsdelivr.net/gh/Wx-2025/ST-Amily2-images@main/images2/guigubahuang_2024-09-27_11-20-00_v2.png');
-    --amily2-bg-opacity: 0.85; 
+    --amily2-bg-opacity: 0.85;
+}
+
+/* 插件弹窗（showHtmlModal 等，appendTo('body') 后逃出 #amily2_chat_optimiser 作用域）
+   里的按钮只吃 ST 核心 .menu_button 样式，窄容器下中文会逐字竖排。统一兜底：
+   弹窗内按钮不允许逐字换行、宽度按内容自适应。所有弹窗都带 .amily2-modal 标记类。 */
+.amily2-modal .menu_button {
+    white-space: nowrap;
+    width: auto;
 }
 
 #amily2_drawer_content .flex-container {

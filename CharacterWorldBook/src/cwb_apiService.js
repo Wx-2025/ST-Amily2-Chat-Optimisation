@@ -5,6 +5,7 @@ import { extensionName } from '../../utils/settings.js';
 import { extension_settings, getContext } from "/scripts/extensions.js";
 import { compatibleTriggerSlash } from '../../core/tavernhelper-compatibility.js';
 import { getSlotProfile, providerToApiMode } from '../../core/api/api-resolver.js';
+import { apiProfileManager } from '../../utils/config/ApiProfileManager.js';
 import { configManager } from '../../utils/config/ConfigManager.js';
 import { detectVendor } from '../../utils/api-vendor.js';
 
@@ -65,6 +66,27 @@ async function getCwbApiSettings() {
         temperature: settings.cwb_temperature ?? 0.7,
         maxTokens: settings.cwb_max_tokens ?? 65000
     };
+}
+
+/**
+ * 轻量判断角色世界书 API 是否已配置（仅看 profile 元数据 / 旧字段，
+ * 不解密 Key、不触网，可安全用于 auto-update 等高频检查路径）。
+ * 与 getCwbApiSettings 的优先级一致：先 slot profile，后旧配置。
+ * @returns {boolean}
+ */
+export function isCwbApiConfigured() {
+    // 优先：slot 分配的 profile（只读元数据）
+    const profile = apiProfileManager.getProfile(apiProfileManager.getAssignment('cwb'));
+    if (profile) {
+        if (providerToApiMode(profile.provider) === 'sillytavern_preset') return true;
+        return !!(profile.apiUrl && profile.model);
+    }
+    // 降级：旧 extension_settings
+    const settings = extension_settings[extensionName] || {};
+    if ((settings.cwb_api_mode || 'openai_test') === 'sillytavern_preset') {
+        return !!settings.cwb_tavern_profile;
+    }
+    return !!(settings.cwb_api_url?.trim() && settings.cwb_api_model);
 }
 
 async function callCwbSillyTavernPreset(messages, options) {
@@ -640,27 +662,29 @@ export async function updateApiStatusDisplay($panel) {
 }
 
 export async function callCustomOpenAI(messages) {
+    // 统一从解析后的配置取值：优先 slot profile，其次旧配置。
+    // 不再直接读 state.customApiConfig —— 那里只灌入旧字段，会绕过用户选的 profile。
     const apiSettings = await getCwbApiSettings();
 
     if (apiSettings.apiMode === 'sillytavern_preset') {
-        return await callCwbSillyTavernPreset(messages, { tavernProfile: apiSettings.tavernProfile, maxTokens: 65000 });
+        return await callCwbSillyTavernPreset(messages, { tavernProfile: apiSettings.tavernProfile, maxTokens: apiSettings.maxTokens || 65000 });
     } else {
-        if (!state.customApiConfig.url || !state.customApiConfig.model) {
+        if (!apiSettings.apiUrl || !apiSettings.model) {
             throw new Error('API URL/Model未配置。');
         }
 
-        const isGoogleApi = (await detectVendor(state.customApiConfig.url)) === 'google';
+        const isGoogleApi = (await detectVendor(apiSettings.apiUrl)) === 'google';
 
         const requestBody = {
             messages: messages,
-            model: state.customApiConfig.model,
-            temperature: 1,
+            model: apiSettings.model,
+            temperature: apiSettings.temperature ?? 1,
             top_p: 1,
-            max_tokens: 65000,
+            max_tokens: apiSettings.maxTokens ?? 65000,
             stream: false,
             chat_completion_source: 'openai',
-            reverse_proxy: state.customApiConfig.url,
-            proxy_password: state.customApiConfig.apiKey,
+            reverse_proxy: apiSettings.apiUrl,
+            proxy_password: apiSettings.apiKey,
         };
 
         if (!isGoogleApi) {

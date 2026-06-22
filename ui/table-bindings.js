@@ -2039,9 +2039,7 @@ function bindFloorFillButtons() {
                             <span style="color:#888; font-size:0.85em;">　${preview}…</span>
                         </summary>
                         <pre style="white-space:pre-wrap; word-break:break-all; font-size:0.78em; color:#ccc; max-height:220px; overflow:auto; margin:8px 0; background:rgba(0,0,0,0.25); padding:8px; border-radius:4px;">${csv}</pre>
-                        <button class="menu_button primary small_button amily2-snapshot-restore-btn" data-floor-index="${s.index}">
-                            恢复到此版本
-                        </button>
+                        <button class="menu_button primary small_button amily2-snapshot-restore-btn" data-floor-index="${s.index}">恢复到此版本</button>
                     </details>`;
             }).join('');
 
