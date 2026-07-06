@@ -1289,11 +1289,9 @@ export function initializePlotOptimizationBindings() {
         }
     };
 
+    // WORLDINFO_UPDATED 由 ST saveWorldInfo 统一发出（含条目增删改），单挂它即可；
+    // ST 无 WORLDINFO_ENTRY_CREATED/UPDATED/DELETED 事件（1.13.5–1.18.0 已核实）
     eventSource.on(event_types.WORLDINFO_UPDATED, refreshWorldbookUI);
-    // 尝试监听更多可能的世界书事件，确保第一时间更新
-    if (event_types.WORLDINFO_ENTRY_UPDATED) eventSource.on(event_types.WORLDINFO_ENTRY_UPDATED, refreshWorldbookUI);
-    if (event_types.WORLDINFO_ENTRY_CREATED) eventSource.on(event_types.WORLDINFO_ENTRY_CREATED, refreshWorldbookUI);
-    if (event_types.WORLDINFO_ENTRY_DELETED) eventSource.on(event_types.WORLDINFO_ENTRY_DELETED, refreshWorldbookUI);
 
     const handleSettingChange = function(element) {
         const el = $(element);

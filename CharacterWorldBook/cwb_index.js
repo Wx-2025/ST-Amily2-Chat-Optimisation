@@ -44,14 +44,7 @@ export async function initializeCharacterWorldBook($cwbSettingsPanel) {
             updateCardUpdateStatusDisplay($cwbSettingsPanel);
         });
 
-        eventSource.on(event_types.CHARACTER_CHANGED, async () => {
-            console.log('[CWB] Detected character change. Resetting state and updating UI.');
-            setTimeout(async () => {
-                const newChatName = await getLatestChatName();
-                await resetScriptStateForNewChat($cwbSettingsPanel, newChatName);
-                updateCardUpdateStatusDisplay($cwbSettingsPanel);
-            }, 150);
-        });
+        // 注：ST 无 CHARACTER_CHANGED 事件；切角色必触发上方 CHAT_CHANGED，已覆盖同样的重置逻辑。
 
         console.log('[CWB] Character World Book feature initialized successfully.');
 

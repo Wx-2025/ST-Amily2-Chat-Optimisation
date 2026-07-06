@@ -2,6 +2,7 @@ import Logger from './log/Logger.js';
 import FilePipe from './file/FilePipe.js';
 import ModelCaller from './api/ModelCaller.js';
 import Options from './api/Options.js';
+import ToolRegistry from './tool/ToolRegistry.js';
 
 // 【逃生通道】创建一个纯净的 Console 对象，绕过任何潜在的劫持
 const getSafeConsole = () => {
@@ -42,6 +43,10 @@ class Amily2Bus {
         // ModelCaller 不再包含 Bus，只包含 logger 代理
         /** @type {ModelCaller} */
         this.ModelCaller = new ModelCaller(loggerDelegate);
+
+        // 工具注册表（Phase A）：per-plugin function-call 工具集，供 callWithTools 使用
+        /** @type {ToolRegistry} */
+        this.ToolRegistry = new ToolRegistry();
 
         // 存储上下文引用（严格锁：每个插件名仅限一次成功注册）
         this.registry = new Map();
@@ -141,7 +146,26 @@ class Amily2Bus {
                 // 暴露 Options 类，方便插件直接 new context.model.Options() 或使用 builder
                 Options: Options,
                 // 插件调用时，Bus 负责将 pluginName 传给无状态的 ModelCaller
-                call: (messages, options) => this.ModelCaller.call(pluginName, messages, options)
+                call: (messages, options) => this.ModelCaller.call(pluginName, messages, options),
+                // Phase A：带工具的 agent loop。自动拼装本插件 tool.define 的工具集，
+                // 收到 tool_calls 串行 dispatch 回 handler，结果回喂后续轮，直到无工具调用或 maxSteps。
+                callWithTools: (messages, options, loopConfig) => this.ModelCaller.callWithTools(
+                    pluginName,
+                    messages,
+                    options,
+                    {
+                        getToolDefs: () => this.ToolRegistry.getToolDefs(pluginName),
+                        dispatch: (name, args) => this.ToolRegistry.dispatch(pluginName, name, args),
+                        ...loopConfig,
+                    },
+                ),
+            },
+
+            // 4. 工具能力 (Phase A)：本插件私有的 function-call 工具集
+            tool: {
+                define:   (name, schema, handler) => this.ToolRegistry.define(pluginName, name, schema, handler),
+                undefine: (name)                  => this.ToolRegistry.undefine(pluginName, name),
+                list:     ()                      => this.ToolRegistry.list(pluginName),
             },
 
             /**

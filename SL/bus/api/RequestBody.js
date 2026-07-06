@@ -26,7 +26,7 @@ export class RequestBody {
      * @returns {Object} 纯净的 JSON 对象
      */
     toPayload() {
-        const { apiUrl, apiKey, model, maxTokens, temperature, params, fakeStream } = this.options;
+        const { apiUrl, apiKey, model, maxTokens, temperature, params, fakeStream, tools, toolChoice } = this.options;
         const detectedVendor = detectVendorSync(apiUrl);
         const isGoogle = detectedVendor
             ? detectedVendor === 'google'
@@ -58,6 +58,12 @@ export class RequestBody {
                 include_reasoning: false,
                 reasoning_effort: 'medium'
             });
+        }
+
+        // function-call 工具透传（Phase A）：仅在显式提供 tools 时附加
+        if (Array.isArray(tools) && tools.length > 0) {
+            payload.tools = tools;
+            if (toolChoice) payload.tool_choice = toolChoice;
         }
 
         return payload;

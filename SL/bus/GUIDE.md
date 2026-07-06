@@ -152,6 +152,83 @@ const reply2 = await ctx.model.call(messages, presetOpt);
 > - 日志自动关联到你的服务名
 > - 统一的错误处理与响应解析
 
+### 4.4 工具调用 / Function Calling（ctx.tool + callWithTools）
+
+让模型直接调用你定义的函数，而非吐自定义文本格式让你手写解析器。实测：用 tool_calls 输入仅增加约 200 token 的工具描述，但输出 token 常**直接减半**，串表/格式错乱也显著减少。
+
+**两步：定义工具 → 跑 agent loop。**
+
+```javascript
+const ctx = window.Amily2Bus.register('MyService');
+
+// Step 1：定义工具（本插件私有，其他插件看不到）
+ctx.tool.define(
+    'get_weather',
+    {
+        description: '查询某城市的当前天气',
+        parameters: {
+            type: 'object',
+            properties: { city: { type: 'string', description: '城市名' } },
+            required: ['city'],
+        },
+    },
+    async ({ city }) => {              // handler：返回值会被自动回喂给模型
+        return await fetchWeather(city);
+    },
+);
+
+// Step 2：带工具跑 agent loop
+const opt = ctx.model.Options.builder()
+    .setApiUrl('https://api.example.com/v1')
+    .setApiKey('sk-...')
+    .setModel('gpt-4o')
+    .build();
+
+const result = await ctx.model.callWithTools(
+    [{ role: 'user', content: '北京今天天气怎么样？' }],
+    opt,
+    { maxSteps: 8, onToolError: 'feedback' },
+);
+
+console.log(result.content);       // 模型的最终文字答复
+console.log(result.toolCalls);     // 本次所有工具调用记录 [{ name, args, result }]
+console.log(result.finishReason);  // 'stop'（正常结束）| 'maxSteps'（触顶）
+```
+
+**循环自动做的事**：拼装本插件 `define` 的全部工具 → 模型返回 `tool_calls` → 串行 dispatch 到对应 handler → 把返回值以 `role:'tool'` 回喂 → 进入下一轮，直到模型给出文字答复（不再调工具）或触顶 `maxSteps`。
+
+**工具管理 API**：
+
+```javascript
+ctx.tool.define(name, { description, parameters }, handler);  // 定义/覆盖
+ctx.tool.undefine(name);   // 移除单个工具
+ctx.tool.list();           // 列出本插件已定义的工具名
+```
+
+**`callWithTools` 选项**：
+
+| 选项 | 默认 | 说明 |
+|---|---|---|
+| `maxSteps` | `8` | 最多模型轮次，防 handler↔模型 死循环 |
+| `onToolError` | `'feedback'` | handler 抛错时：`'feedback'` 把错误当工具结果回喂让模型自纠；`'throw'` 直接抛出 |
+| `transport` | `'auto'` | 运输方式：`'tools'` 原生 function calling；`'json'` 工具说明进 prompt、模型吐协议 JSON；`'auto'` 先 tools、被拒自动降级 json 续跑 |
+| `tools` | `[]` | 额外工具 schema（与 `define` 的合并，按名去重）；一般用不到 |
+| `toolChoice` | `'auto'` | `'auto'`/`'none'`/`'required'` 或 `{ type:'function', function:{ name } }`（仅 tools 运输生效） |
+
+**双运输机制（最大兼容性）**：同一份 `define` 的工具 schema 有两种走法——
+
+- **tools 运输**：schema 进请求的 `tools` 字段，原生 function calling。输出 token 实测省约一半，**首选**。
+- **json 运输**：schema 渲染进 system prompt，模型按协议吐 `{"tool_call":{"name","arguments"}}` 或 `{"final_answer":"..."}`（每轮单调用，可靠性优先）；工具结果以 `[TOOL_RESULT]` 文本回喂，不用 tool role。兼容**任何**能聊天的接口——包括禁用 tools 参数的中转站和 Claude/Gemini 原生接口。
+- **auto（默认）**：先走 tools；请求被拒/响应异常时**自动降级 json 续跑同一轮**，日志记录降级。返回值的 `transport` 字段告诉你最终用的哪种。
+
+插件作者无感知：工具只 define 一次、handler 只写一份，运输层自动切换。
+
+> **handler 抛错怎么处理？** 默认 `'feedback'` 模式下，错误信息会作为工具结果回喂给模型——模型通常能据此自纠（换参数重试或改用文字回答）。这让"参数填错/表不存在"之类的问题自愈，而非整批失败。
+>
+> **接口兼容性**：两种常见的 tools "用不了"情形——① Claude、Gemini 的**原生**接口用的是不同的工具协议；② **不少中转站偷懒直接禁用了工具调用**，收到带 `tools` 的请求就拒。这两种都没法靠 URL 预判，只能失败时识别。默认 `'auto'` 下这不再致命：降级 json 运输续跑，功能不中断（多花些输出 token）。只有强制 `transport:'tools'` 时才会直接报错，且报错自动附上"部分中转站禁用了 tools 参数……"的可操作提示——建议插件 catch 后把 message 透传给用户。
+>
+> **与 `ctx.model.call()` 的区别**：`call()` 只返字符串、丢弃 tool_calls，适合纯文本生成；`callWithTools()` 走非流式 raw 路径、保留 tool_calls 并跑完整 loop。两者互不影响，按需选用。
+
 ---
 
 ## 五、常见模式与最佳实践

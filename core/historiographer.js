@@ -643,24 +643,40 @@ export async function executeRefinement(worldbook, loreKey) {
                     if (shouldVectorize && chapterSealMatch) {
                         try {
                             toastr.info(`正在将前 ${oldChapterFloor} 楼的“宏史卷”内容送往翰林院...`, '翰林院');
-                            
+
                             const metadata = {
                                 bookName: worldbook,
                                 entryName: `宏史卷总结: 1-${oldChapterFloor}楼`
                             };
                             const ingestResult = await ingestTextToHanlinyuan(lockedContent, 'lorebook', metadata);
-                            if (!ingestResult.success) {
-                                throw new Error(ingestResult.error || "未知错误");
+                            // count=0 的"假成功"（如分块结果为空）同样视为失败——
+                            // 没有任何内容真正入库，此时移除原文等于数据凭空蒸发
+                            if (!ingestResult.success || !(ingestResult.count > 0)) {
+                                throw new Error(ingestResult.error || `向量化未产生任何入库条目（count=${ingestResult.count ?? 0}）`);
                             }
                             toastr.success(`翰林院已成功接收旧“宏史卷”记忆！新增 ${ingestResult.count} 条。`, '翰林院');
 
+                            // 向量库是设备本地的缓存级存储（清理向量库/迁移/换设备即失），
+                            // 原文不能只活在向量库里：转存为禁用的存档条目（不触发、零 token 占用），保住正本
+                            try {
+                                const archiveEntry = createWorldInfoEntry(worldbook, bookData);
+                                archiveEntry.comment = `宏史卷存档: 1-${oldChapterFloor}楼（已向量化，禁用态仅作备份）`;
+                                archiveEntry.content = lockedContent;
+                                archiveEntry.disable = true;
+                                archiveEntry.constant = false;
+                                archiveEntry.key = [];
+                            } catch (archiveErr) {
+                                console.warn('[大史官-宏史卷存档] 原文转存档条目失败:', archiveErr);
+                                toastr.warning('宏史卷原文转存档失败——正本目前仅存于向量库，建议手动备份该段内容。', '翰林院');
+                            }
+
                             const replacementText = `AI你好，以上内容为rag向量化后注入的相关剧情，以下内容是已发生的剧情回顾。\n\n（前${oldChapterFloor}楼聊天记录总结已由翰林院向量化注入。）\n\n【以下内容为${oldChapterFloor}楼以后的总结内容】`;
-                            
+
                             finalContent = `${replacementText}\n\n---\n\n${editedText}${newChapterSeal}\n\n${progressSeal}`;
 
                         } catch (error) {
                             console.error('[大史官-宏史卷向量化] 失败:', error);
-                            toastr.error(`宏史卷向量化失败: ${error.message}，将执行标准保存。`, '翰林院');
+                            toastr.error(`宏史卷向量化失败: ${error.message}，将执行标准保存（原文保留）。`, '翰林院');
                             const divider = `\n\n===【截止至第${oldChapterFloor}楼的宏史卷】===\n\n`;
                             finalContent = `${lockedContent}${divider}${editedText}${newChapterSeal}\n\n${progressSeal}`;
                         }

@@ -47,7 +47,24 @@
         <small style="color: #888; font-size: 0.8em; display: block; margin-top: -5px; margin-bottom: 10px; padding-left: 5px;">
             行序按时间从旧到新：最新 X 行全量；其余历史对半拆，较近一半等距取 Y 行、较远一半等距取 Z 行（中心对齐等距采样，不随机、不首尾加权，避免内容扎堆或事件结局被规律性忽略）。
         </small>
+        <div class="sm-control-block">
+            <label title="采样内容的 token 上限，0 = 不限制。超出时从最旧的行开始丢弃，优先保住最新行">Token 上限:</label>
+            <input type="number" id="pm-max-tokens" min="0" step="100" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 100px;" value="0">
+        </div>
+        <small style="color: #888; font-size: 0.8em; display: block; margin-top: -5px; margin-bottom: 10px; padding-left: 5px;">
+            Token 为粗略估算（CJK 约 1/字，其余按 ~4 字符/token）。0 = 不限制。
+        </small>
+        <div class="sm-control-block">
+            <label title="采样前排除最新 N 行——它们对应还在视野里（未被自动隐藏）的楼层，原文就在上下文中，注入其摘要属于重复。0 = 关闭">可见窗口行数 (排除最新):</label>
+            <input type="number" id="pm-reserve-recent" min="0" step="1" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 80px;" value="0">
+        </div>
+        <small style="color: #888; font-size: 0.8em; display: block; margin-top: -5px; margin-bottom: 10px; padding-left: 5px;">
+            与自动隐藏配合：X/Y/Z 梯度只作用于"已隐藏区间"的摘要行。注意单位是<b>表格行</b>而非楼层——一行总结通常覆盖多层楼，请按自己的总结密度设置（如自动隐藏保留 30 层、每行总结约 10 层，则填 3）。
+        </small>
     </fieldset>
+    <div class="sm-intro-box" style="border-left: 3px solid #ffc107;">
+        <small style="color: #bbb; font-size: 0.85em;"><i class="fas fa-info-circle"></i> 触发门槛：源表有效行数低于<b>总结模块的"自动隐藏阈值"</b>时不注入——源内容太少时近期上下文本就齐全，注入只是冗余。阈值随总结模块自动隐藏设置走，无需单独配置。</small>
+    </div>
 
     <fieldset class="sm-settings-group">
         <legend><i class="fas fa-syringe"></i> 注入设置</legend>

@@ -22,6 +22,10 @@ export class Options {
         this.temperature = config.temperature || 0.7;
         /** @type {Object} 额外透传参数 */
         this.params = config.params || {};
+        /** @type {Object[]|null} function-call 工具集（OpenAI tool schema 数组），空则不带 tools */
+        this.tools = config.tools || null;
+        /** @type {Object|string|null} tool_choice：'auto'|'none'|'required' 或 { type:'function', function:{ name } } */
+        this.toolChoice = config.toolChoice || null;
     }
 
     /**
@@ -83,6 +87,16 @@ class OptionsBuilder {
 
     setParams(params) {
         this.config.params = { ...(this.config.params || {}), ...params };
+        return this;
+    }
+
+    setTools(tools) {
+        this.config.tools = tools;
+        return this;
+    }
+
+    setToolChoice(choice) {
+        this.config.toolChoice = choice;
         return this;
     }
 

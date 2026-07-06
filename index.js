@@ -753,7 +753,7 @@ async function executeAmily2Injection(...args) {
         console.error('[Amily2-内存储司] 表格注入失败:', error);
     }
     try {
-        // 渐进记忆（内测，type2 门槛由引擎内部判定）；args[3] = type（'quiet' 时跳过）
+        // 渐进记忆（内测，type≥3 门槛由引擎内部判定）；args[3] = type（'quiet' 时跳过）
         injectProgressiveMemory(args[3]);
     } catch (error) {
         console.error('[Amily2-渐进记忆] 注入失败:', error);

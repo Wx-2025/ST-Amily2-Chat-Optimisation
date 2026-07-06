@@ -141,6 +141,11 @@ async function showPromptInspector(input) {
                         icon: 'fa-table-cells',
                         title: '表格系统注入',
                         color: '#99cc33'
+                    },
+                    '%%AMILY2_PROGRESSIVE_MEMORY%%': {
+                        icon: 'fa-hourglass-half',
+                        title: '渐进记忆注入',
+                        color: '#cc99ff'
                     }
                 };
 

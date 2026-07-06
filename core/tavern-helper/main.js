@@ -467,7 +467,7 @@ class AmilyHelper {
             }
             await saveWorldInfo(bookName, bookData, true);
             reloadEditor(bookName);
-            eventSource.emit(event_types.WORLD_INFO_UPDATED, bookName);
+            // 注：saveWorldInfo 内部已 emit WORLDINFO_UPDATED，无需手动补发
             return true;
         } catch (error) {
             console.error(`[Amily助手] 更新世界书《${bookName}》条目时出错:`, error);
