@@ -67,6 +67,25 @@
     </div>
 
     <fieldset class="sm-settings-group">
+        <legend><i class="fas fa-archive"></i> 真压缩远带（读取史官宏史卷）</legend>
+        <div class="sm-control-block">
+            <label title="off=不注入；auto=翰林院RAG开启时让位（向量库里有宏史卷，检索召回更准），RAG关闭时注入；always=始终注入">远带模式:</label>
+            <select id="pm-far-mode" class="text_pole" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 130px;">
+                <option value="off">关闭</option>
+                <option value="auto">自动（随RAG让位）</option>
+                <option value="always">始终注入</option>
+            </select>
+        </div>
+        <div class="sm-control-block">
+            <label title="远带 token 上限，0 = 不限制。超预算保尾弃头（宏史卷内部越靠后越接近现在）">远带 Token 上限:</label>
+            <input type="number" id="pm-far-max-tokens" min="0" step="500" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 100px;" value="4000">
+        </div>
+        <small style="color: #888; font-size: 0.8em; display: block; margin-top: -5px; margin-bottom: 10px; padding-left: 5px;">
+            不自建压缩：直接读取史官金账中已重铸的<b>宏史卷</b>文本作为远期高密度摘要，置于注入块最前（XML 标注为早期存档，防止被当作当前剧情续写）。未使用史官/尚未重铸过宏史卷时自动为空，无任何额外 AI 调用。
+        </small>
+    </fieldset>
+
+    <fieldset class="sm-settings-group">
         <legend><i class="fas fa-syringe"></i> 注入设置</legend>
         <div class="sm-control-block">
             <label title="注入位置：0=系统提示前，1=系统提示后（@D 注入用深度控制）">注入位置 (position):</label>

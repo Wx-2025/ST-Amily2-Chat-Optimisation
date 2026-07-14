@@ -754,7 +754,8 @@ async function executeAmily2Injection(...args) {
     }
     try {
         // 渐进记忆（内测，type≥3 门槛由引擎内部判定）；args[3] = type（'quiet' 时跳过）
-        injectProgressiveMemory(args[3]);
+        // await：远带（真压缩）需异步读金账，不等完可能在提示词组装之后才注入
+        await injectProgressiveMemory(args[3]);
     } catch (error) {
         console.error('[Amily2-渐进记忆] 注入失败:', error);
     }

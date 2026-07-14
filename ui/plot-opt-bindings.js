@@ -587,9 +587,8 @@ function opt_loadSettings(panel) {
     panel.find(`input[name="amily2_opt_worldbook_source"][value="${settings.plotOpt_worldbookSource || 'character'}"]`).prop('checked', true);
     panel.find('#amily2_opt_worldbook_enabled').prop('checked', settings.plotOpt_worldbookEnabled);
     panel.find('#amily2_opt_new_memory_logic_enabled').prop('checked', settings.plotOpt_newMemoryLogicEnabled);
-    panel.find('#amily2_opt_top_p').val(settings.plotOpt_top_p);
-    panel.find('#amily2_opt_presence_penalty').val(settings.plotOpt_presence_penalty);
-    panel.find('#amily2_opt_frequency_penalty').val(settings.plotOpt_frequency_penalty);
+    // T-013：top_p / presence / frequency 死配置移除（UI 控件早已不存在、请求路径从未消费；
+    // 要调这些参数请用 API 连接配置的自定义参数）。存量旧值由 clearLegacyConfig 清理。
     const contextLimit = settings.plotOpt_contextLimit ?? settings.plotOpt_contextTurnCount ?? defaultSettings.plotOpt_contextLimit;
     panel.find('#amily2_opt_worldbook_char_limit').val(settings.plotOpt_worldbookCharLimit);
     panel.find('#amily2_opt_context_limit').val(contextLimit);
@@ -1308,7 +1307,7 @@ export function initializePlotOptimizationBindings() {
             value = el.val() || [];
         }
 
-        const floatKeys = ['plotOpt_temperature', 'plotOpt_top_p', 'plotOpt_presence_penalty', 'plotOpt_frequency_penalty', 'plotOpt_rateMain', 'plotOpt_ratePersonal', 'plotOpt_rateErotic', 'plotOpt_rateCuckold'];
+        const floatKeys = ['plotOpt_temperature', 'plotOpt_rateMain', 'plotOpt_ratePersonal', 'plotOpt_rateErotic', 'plotOpt_rateCuckold'];
         if (floatKeys.includes(key) && value !== '') {
             value = parseFloat(value);
         } else if (element.type === 'range' || element.type === 'number') {

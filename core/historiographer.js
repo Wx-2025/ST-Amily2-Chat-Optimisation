@@ -38,7 +38,8 @@ let reloadEditor = () => {
 let isExpeditionRunning = false; 
 let manualStopRequested = false; 
 
-const RUNNING_LOG_COMMENT = "【敕史局】对话流水总帐";
+// 渐进记忆远带（真压缩·产物编排）需要定位金账条目，故导出
+export const RUNNING_LOG_COMMENT = "【敕史局】对话流水总帐";
 const PROGRESS_SEAL_REGEX =
   /本条勿动【前(\d+)楼总结已完成】否则后续总结无法进行。$/;
 
@@ -899,7 +900,8 @@ export async function executeCompilation(worldbook, loreKeys) {
 
 // ========== 史册归档与回溯系统 ==========
 
-async function getTargetLorebookName() {
+// 渐进记忆远带复用同一套金账定位（settings.lorebookTarget 语义唯一信源），故导出
+export async function getTargetLorebookName() {
     const settings = extension_settings[extensionName];
     const context = getContext();
     let targetLorebookName = null;

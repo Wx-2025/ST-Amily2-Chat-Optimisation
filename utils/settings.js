@@ -908,9 +908,7 @@ export const plotOptDefaults = {
 
   plotOpt_max_tokens: 8100,
   plotOpt_temperature: 1,
-  plotOpt_top_p: 0.95,
-  plotOpt_presence_penalty: 1,
-  plotOpt_frequency_penalty: 1,
+  // T-013：plotOpt_top_p / presence / frequency 死配置已移除（请求路径从未消费）
   plotOpt_contextTurnCount: 2,
   plotOpt_worldbookEnabled: true,
   plotOpt_tableEnabled: false,
