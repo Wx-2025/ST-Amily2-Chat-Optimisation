@@ -1,4 +1,4 @@
-import { callAi, getApiConfig } from "./api.js";
+import { callAi, getResolvedApiConfig } from "./api.js";
 import { tools, getToolDefinitions } from "./tools.js";
 import { ContextManager } from "./context-manager.js";
 import { TaskState } from "./task-state.js";
@@ -399,7 +399,7 @@ Example:
         while (this.status === 'running' && currentTurn < maxTurns) {
             currentTurn++;
 
-            const config = getApiConfig('executor'); 
+            const config = await getResolvedApiConfig('executor');
             const currentTokens = this.contextManager.estimateTokens(JSON.stringify(this.history));
             
             if (this.memorySystem.shouldSummarize(this.history, currentTokens, config.maxTokens)) {

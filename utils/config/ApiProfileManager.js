@@ -431,7 +431,7 @@ const LEGACY_PROFILE_MIGRATION_MAP = [
  * v2 新增 cwb + autoCharCard。版本号小于当前值时重跑迁移循环——循环本身按
  * "已分配 profile 的 slot 跳过"幂等，老用户只会补迁新增槽位，不会产生重复 profile。
  */
-const LEGACY_MIGRATION_VERSION = 2;
+const LEGACY_MIGRATION_VERSION = 3;
 
 ;(async () => {
     try {
@@ -482,9 +482,11 @@ const LEGACY_MIGRATION_VERSION = 2;
         if (!apiProfileManager.getAssignment('autoCharCard')) {
             const exec = s.acc_executor_config || {};
             const plan = s.acc_planner_config || {};
+            const execKey = await apiKeyStore.retrieveById('legacy_acc_executor') || exec.apiKey || '';
+            const planKey = await apiKeyStore.retrieveById('legacy_acc_planner') || plan.apiKey || '';
             const execComplete = String(exec.apiUrl ?? '').trim() && String(exec.model ?? '').trim();
             const planEmpty = !String(plan.apiUrl ?? '').trim();
-            const planSame = plan.apiUrl === exec.apiUrl && plan.model === exec.model && plan.apiKey === exec.apiKey;
+            const planSame = plan.apiUrl === exec.apiUrl && plan.model === exec.model && planKey === execKey;
             if (execComplete && (planEmpty || planSame)) {
                 const provider = _detectVendorFromUrlSync(exec.apiUrl) || 'custom_oai';
                 const profileId = apiProfileManager.createProfile({
@@ -499,7 +501,7 @@ const LEGACY_MIGRATION_VERSION = 2;
                 // acc 的 Key 明文存在嵌套对象里（不在 configManager），直接写入 ApiKeyStore。
                 // 排除 profile-sync 历史污染写回的掩码占位符，避免把 '••••••••' 当真 Key 迁移
                 try {
-                    if (exec.apiKey && exec.apiKey !== '••••••••') await apiProfileManager.setKey(profileId, exec.apiKey);
+                    if (execKey && execKey !== '••••••••') await apiProfileManager.setKey(profileId, execKey);
                 } catch (keyErr) {
                     console.warn('[ApiProfiles] autoCharCard Key 迁移失败:', keyErr);
                 }
@@ -643,6 +645,12 @@ export function clearLegacyConfig() {
             }
         }
     }
+
+    // The new legacy-mode path stores one-click character-card credentials in
+    // ApiKeyStore. Once its legacy configuration is explicitly cleared, those
+    // credentials are no longer needed either.
+    apiKeyStore.deleteById('legacy_acc_executor');
+    apiKeyStore.deleteById('legacy_acc_planner');
 
     saveSettingsDebounced();
     console.info(`[ApiProfiles] 清除旧配置残留：${clearedFields} 个字段 + ${clearedKeys} 个 Key。`);

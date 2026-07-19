@@ -32,6 +32,7 @@ import {
     saveStateToMessage,
     commitToLastMessage,
 } from '../infra/persistence.js';
+import { createRecordMetadata, normalizeTableDatabaseState, normalizeTableIdentity } from '../infra/database-state.js';
 
 export function deleteColumn(tableIndex, colIndex) {
     const tables = getState();
@@ -40,13 +41,15 @@ export function deleteColumn(tableIndex, colIndex) {
         return;
     }
 
-    tables[tableIndex].headers.splice(colIndex, 1);
-    tables[tableIndex].rows.forEach(row => {
+    const table = normalizeTableIdentity(tables[tableIndex], tableIndex);
+    table.headers.splice(colIndex, 1);
+    table.rows.forEach(row => {
         if (row.length > colIndex) row.splice(colIndex, 1);
     });
-    if (tables[tableIndex].columnWidths && tables[tableIndex].columnWidths.length > colIndex) {
-        tables[tableIndex].columnWidths.splice(colIndex, 1);
+    if (table.columnWidths && table.columnWidths.length > colIndex) {
+        table.columnWidths.splice(colIndex, 1);
     }
+    table.columns.splice(colIndex, 1);
 
     log(`成功删除了表格 ${tableIndex} 的第 ${colIndex + 1} 列。`, 'success');
     saveTables(tables);
@@ -55,7 +58,7 @@ export function deleteColumn(tableIndex, colIndex) {
 
 export function moveRow(tableIndex, rowIndex, direction) {
     const tables = getState();
-    const table = tables?.[tableIndex];
+    const table = tables?.[tableIndex] && normalizeTableIdentity(tables[tableIndex], tableIndex);
     if (!table || rowIndex < 0 || rowIndex >= table.rows.length) return;
 
     const newIndex = direction === 'up' ? rowIndex - 1 : rowIndex + 1;
@@ -64,10 +67,12 @@ export function moveRow(tableIndex, rowIndex, direction) {
     const [movedRow] = table.rows.splice(rowIndex, 1);
     table.rows.splice(newIndex, 0, movedRow);
 
-    if (table.rowStatuses && table.rowStatuses.length === table.rows.length + 1) {
+    if (table.rowStatuses && table.rowStatuses.length === table.rows.length) {
         const [movedStatus] = table.rowStatuses.splice(rowIndex, 1);
         table.rowStatuses.splice(newIndex, 0, movedStatus);
     }
+    const [movedMeta] = table.rowMeta.splice(rowIndex, 1);
+    table.rowMeta.splice(newIndex, 0, movedMeta);
 
     log(`成功将表格 ${tableIndex} 的第 ${rowIndex + 1} 行移动到第 ${newIndex + 1} 行。`, 'success');
     saveTables(tables);
@@ -76,7 +81,7 @@ export function moveRow(tableIndex, rowIndex, direction) {
 
 export function insertRow(tableIndex, data, position = 'below') {
     const tables = getState();
-    const table = tables?.[tableIndex];
+    const table = tables?.[tableIndex] && normalizeTableIdentity(tables[tableIndex], tableIndex);
     if (!table) {
         log(`插入行失败：找不到索引为 ${tableIndex} 的表格。`, 'error');
         return;
@@ -106,6 +111,7 @@ export function insertRow(tableIndex, data, position = 'below') {
     table.rows.splice(insertIndex, 0, newRow);
     if (!table.rowStatuses) table.rowStatuses = Array(table.rows.length).fill('normal');
     table.rowStatuses.splice(insertIndex, 0, 'normal');
+    table.rowMeta.splice(insertIndex, 0, createRecordMetadata(table, newRow, insertIndex));
 
     markTableUpdated(tableIndex);
     dispatchTableUpdate(tableIndex);
@@ -117,12 +123,13 @@ export function insertRow(tableIndex, data, position = 'below') {
 export function addRow(tableIndex) {
     const tables = getState();
     if (!tables || !tables[tableIndex]) return;
-    const table = tables[tableIndex];
+    const table = normalizeTableIdentity(tables[tableIndex], tableIndex);
     const colCount = table.headers.length;
     const newRow = Array(colCount).fill('');
     table.rows.push(newRow);
     if (!table.rowStatuses) table.rowStatuses = Array(table.rows.length).fill('normal');
     table.rowStatuses.push('normal');
+    table.rowMeta.push(createRecordMetadata(table, newRow, table.rows.length - 1));
     markTableUpdated(tableIndex);
     dispatchTableUpdate(tableIndex);
     log(`表格 [${table.name}] 新增了一行。`, 'info');
@@ -133,12 +140,13 @@ export function addRow(tableIndex) {
 export function addColumn(tableIndex) {
     const tables = getState();
     if (!tables || !tables[tableIndex]) return;
-    const table = tables[tableIndex];
+    const table = normalizeTableIdentity(tables[tableIndex], tableIndex);
     const newHeader = `新列 ${table.headers.length + 1}`;
     table.headers.push(newHeader);
     table.rows.forEach(row => row.push(''));
     if (!table.columnWidths) table.columnWidths = [];
     table.columnWidths.push(null);
+    table.columns.push({ id: `column-${globalThis.crypto?.randomUUID?.() || Date.now()}`, label: newHeader, type: 'string' });
     log(`表格 [${table.name}] 新增了一列。`, 'info');
 
     commitToLastMessage(tables);
@@ -147,9 +155,11 @@ export function addColumn(tableIndex) {
 export function updateHeader(tableIndex, colIndex, value) {
     const tables = getState();
     if (!tables || !tables[tableIndex] || tables[tableIndex].headers[colIndex] === undefined) return;
-    const tableName = tables[tableIndex].name;
-    const originalHeader = tables[tableIndex].headers[colIndex];
-    tables[tableIndex].headers[colIndex] = value;
+    const table = normalizeTableIdentity(tables[tableIndex], tableIndex);
+    const tableName = table.name;
+    const originalHeader = table.headers[colIndex];
+    table.headers[colIndex] = value;
+    table.columns[colIndex].label = value;
     log(`表格 [${tableName}] 的表头“${originalHeader}”已更新为“${value}”。`, 'info');
 
     commitToLastMessage(tables);
@@ -213,12 +223,14 @@ export function commitPendingDeletions() {
     let deletionCount = 0;
 
     tables.forEach((table, tableIndex) => {
+        normalizeTableIdentity(table, tableIndex);
         if (!table.rowStatuses || table.rowStatuses.length === 0) return;
         let tableHadDeletions = false;
         for (let i = table.rows.length - 1; i >= 0; i--) {
             if (table.rowStatuses[i] === 'pending-deletion') {
                 table.rows.splice(i, 1);
                 table.rowStatuses.splice(i, 1);
+                table.rowMeta.splice(i, 1);
                 deletionCount++;
                 tableHadDeletions = true;
             }
@@ -240,13 +252,14 @@ export function commitPendingDeletions() {
 export function insertColumn(tableIndex, colIndex, position) {
     const tables = getState();
     if (!tables || !tables[tableIndex]) return;
-    const table = tables[tableIndex];
+    const table = normalizeTableIdentity(tables[tableIndex], tableIndex);
 
     const insertAt = position === 'left' ? colIndex : colIndex + 1;
     table.headers.splice(insertAt, 0, '新列');
     table.rows.forEach(row => row.splice(insertAt, 0, ''));
     if (!table.columnWidths) table.columnWidths = [];
     table.columnWidths.splice(insertAt, 0, null);
+    table.columns.splice(insertAt, 0, { id: `column-${globalThis.crypto?.randomUUID?.() || Date.now()}`, label: '新列', type: 'string' });
 
     log(`表格 [${table.name}] 在第 ${colIndex + 1} 列的${position === 'left' ? '左侧' : '右侧'}插入了新列。`, 'info');
     commitToLastMessage(tables);
@@ -255,7 +268,7 @@ export function insertColumn(tableIndex, colIndex, position) {
 export function moveColumn(tableIndex, colIndex, direction) {
     const tables = getState();
     if (!tables || !tables[tableIndex]) return;
-    const table = tables[tableIndex];
+    const table = normalizeTableIdentity(tables[tableIndex], tableIndex);
     const headers = table.headers;
     const rows = table.rows;
 
@@ -277,6 +290,8 @@ export function moveColumn(tableIndex, colIndex, direction) {
         const [widthToMove] = table.columnWidths.splice(colIndex, 1);
         table.columnWidths.splice(targetIndex, 0, widthToMove);
     }
+    const [columnToMove] = table.columns.splice(colIndex, 1);
+    table.columns.splice(targetIndex, 0, columnToMove);
 
     log(`表格 [${table.name}] 的列“${headerToMove}”已向${direction === 'left' ? '左' : '右'}移动。`, 'info');
     commitToLastMessage(tables);
@@ -330,6 +345,7 @@ export function addTable(tableName) {
     };
 
     tables.push(newTable);
+    normalizeTableDatabaseState(tables);
     log(`已成功创建新表格：[${tableName.trim()}]。`, 'success');
 
     const success = commitToLastMessage(tables);

@@ -53,6 +53,28 @@ _ctx.expose({
 
 其他模块现在可以通过 `window.Amily2Bus.query('MyService')` 找到你暴露的方法了。
 
+### 受限服务调用
+
+`query()` 适合只读或不需要调用者身份的公共能力。涉及表格写入、权限或所有权时，服务应使用受限接口：
+
+```javascript
+// 提供方：只有已注册服务能通过 callService 调到这些方法。
+ctx.exposeService({
+    changeOwnedData({ caller }, payload) {
+        // caller 由 Bus 注入，不能由调用参数伪造。
+    },
+});
+
+// 调用方：使用自己注册时拿到的 capability context。
+await ctx.callService('TableSystem', 'mutateOwnedRecord', {
+    tableId: 'example.records',
+    action: 'insert',
+    values: { name: '示例' },
+});
+```
+
+受限接口不会出现在 `query()` 返回的公共对象中。不要把 `caller` 作为普通参数传递，否则所有权检查可以被伪造。
+
 ---
 
 ## 三、调用其他服务

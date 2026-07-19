@@ -52,6 +52,8 @@ class Amily2Bus {
         this.registry = new Map();
         // 存储公开的联动接口（联动模块）
         this.publicRegistry = new Map();
+        // 存储仅可由已注册服务经 capability context 调用的接口。
+        this.serviceRegistry = new Map();
 
         this.safeConsole.log('[Amily2Bus] Core Initialized (Decoupled Architecture).');
 
@@ -176,7 +178,34 @@ class Amily2Bus {
                 if (typeof apiMethods !== 'object') throw new Error('Exposed API must be an object');
                 this.publicRegistry.set(pluginName, Object.freeze(apiMethods));
                 this.log('info', `Module exposed to public registry.`, 'Bus', pluginName);
-            }
+            },
+
+            /**
+             * 暴露仅限已注册服务调用的接口。调用方身份由 Bus 注入，不能由参数伪造。
+             * @param {Object<string, Function>} apiMethods
+             */
+            exposeService: (apiMethods) => {
+                if (!apiMethods || typeof apiMethods !== 'object') {
+                    throw new Error('Service API must be an object');
+                }
+                for (const [method, handler] of Object.entries(apiMethods)) {
+                    if (typeof handler !== 'function') {
+                        throw new Error(`Service method "${method}" must be a function`);
+                    }
+                }
+                this.serviceRegistry.set(pluginName, Object.freeze({ ...apiMethods }));
+                this.log('info', 'Service API registered.', 'Bus', pluginName);
+            },
+
+            /**
+             * 调用另一服务的受限接口。target 会收到不可伪造的 caller 身份。
+             */
+            callService: (targetPluginName, method, ...args) => this._callService(
+                pluginName,
+                targetPluginName,
+                method,
+                args,
+            ),
         };
 
         this.registry.set(pluginName, context);
@@ -191,6 +220,18 @@ class Amily2Bus {
      */
     query(pluginName) {
         return this.publicRegistry.get(pluginName) || null;
+    }
+
+    _callService(callerPluginName, targetPluginName, method, args) {
+        const service = this.serviceRegistry.get(targetPluginName);
+        if (!service) {
+            throw new Error(`[Amily2Bus] Service '${targetPluginName}' is not available.`);
+        }
+        const handler = service[method];
+        if (typeof handler !== 'function') {
+            throw new Error(`[Amily2Bus] Service '${targetPluginName}' does not provide '${method}'.`);
+        }
+        return handler(Object.freeze({ caller: callerPluginName }), ...args);
     }
 }
 // 挂载全局单例

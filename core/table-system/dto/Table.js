@@ -1,6 +1,6 @@
 /**
  * @file 表格相关数据形状（DTO）
- * 对应运行时存于 message.extra.amily2_tables_data 的结构。
+ * 对应运行时存于 chatMetadata 的 v2 封包及 message.extra 历史快照的结构。
  */
 
 /**
@@ -17,8 +17,13 @@
  * 单张表格。
  * @typedef {Object} Table
  * @property {string} name                      表格名（唯一标识 + UI 显示名）
+ * @property {string} [id]                       稳定表 ID，模块/API 引用使用它而非 name
+ * @property {string} [owner]                    表拥有者；旧表默认 user
+ * @property {number} [schemaVersion]            表结构版本
  * @property {string[]} headers                 列头数组，长度 = 列数
+ * @property {{id:string,label:string,type:string}[]} [columns] 稳定列元数据
  * @property {Cell[][]} rows                    行数据，二维数组，rows[i].length = headers.length
+ * @property {{id:string}[]} [rowMeta]           与 rows 平行的稳定记录 ID
  * @property {RowStatus[]} [rowStatuses]        行状态数组，与 rows 等长
  * @property {(number|null)[]} [columnWidths]   列宽数组（UI 用），与 headers 等长，null 表示自适应
  * @property {string} [note]                    表格说明

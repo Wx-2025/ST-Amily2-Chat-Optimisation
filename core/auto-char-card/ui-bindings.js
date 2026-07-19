@@ -2,7 +2,7 @@ import { extensionName } from "../../utils/settings.js";
 import { AgentManager } from "./agent-manager.js";
 import { characters, this_chid, saveSettingsDebounced, getCharacters } from "/script.js";
 import { world_names } from "/scripts/world-info.js";
-import { getApiConfig, setApiConfig, testConnection, fetchModels } from "./api.js";
+import { getResolvedApiConfig, setApiConfig, testConnection, fetchModels } from "./api.js";
 import { tools } from "./tools.js";
 import { syncSlot } from "../../ui/profile-sync.js";
 
@@ -42,7 +42,7 @@ export async function openAutoCharCardWindow() {
         
         try {
             populateDropdowns();
-            loadApiSettings();
+            await loadApiSettings();
             await syncSlot('autoCharCard');
             renderRulesList();
             renderSessionsList();
@@ -286,8 +286,8 @@ function renderRulesList() {
     });
 }
 
-function loadApiSettings() {
-    const executorConfig = getApiConfig('executor');
+async function loadApiSettings() {
+    const executorConfig = await getResolvedApiConfig('executor');
     $('#acc-executor-url').val(executorConfig.apiUrl);
     $('#acc-executor-key').val(executorConfig.apiKey);
     $('#acc-executor-max-tokens').val(executorConfig.maxTokens || 4000);
@@ -560,7 +560,7 @@ function bindEvents() {
         }
     });
 
-    $('#acc-save-api').on('click', () => {
+    $('#acc-save-api').on('click', async () => {
         const execMaxTokens = parseInt($('#acc-executor-max-tokens').val());
 
         const executorConfig = {
@@ -570,7 +570,7 @@ function bindEvents() {
             maxTokens: isNaN(execMaxTokens) ? 0 : execMaxTokens 
         };
 
-        setApiConfig('executor', executorConfig);
+        await setApiConfig('executor', executorConfig);
         saveSettingsDebounced();
         toastr.success('API 配置已保存');
     });

@@ -77,6 +77,9 @@ import {
     commitToLastMessage,
     TABLE_DATA_KEY,
 } from './infra/persistence.js';
+import { normalizeTableDatabaseState, persistChatTableState, readChatTableState } from './infra/database-state.js';
+import { readCurrentCharacterTableProfile } from './character-profile.js';
+import { createTableProfile, createTableStateFromProfile, normalizeTableProfile } from './profile.js';
 
 import {
     tablesToCsv,
@@ -297,11 +300,23 @@ function _normalizeTableState(state) {
             table.rowStatuses = Array(table.rows.length).fill('normal');
         }
     });
-    return state;
+    return normalizeTableDatabaseState(state);
 }
 
 export function loadTables(stopIndex = -1) {
     const context = getContext();
+
+    // v2 is chat-scoped and survives before the first message exists. Rollback
+    // reads historical message snapshots instead, so it intentionally bypasses v2.
+    if (stopIndex === -1) {
+        const v2State = readChatTableState(context);
+        if (v2State) {
+            const loadedState = _normalizeTableState(v2State.tables);
+            setState(loadedState);
+            dispatchAllTablesUpdate();
+            return getState();
+        }
+    }
 
     // 1. 优先从聊天记录中找已存的状态
     if (context && context.chat && context.chat.length > 0) {
@@ -319,12 +334,26 @@ export function loadTables(stopIndex = -1) {
         }
     }
 
+    // A card profile is only an initializer. It never overwrites an existing
+    // chat snapshot and is skipped during historical rollback.
+    if (stopIndex === -1) {
+        const characterProfile = readCurrentCharacterTableProfile(context);
+        if (characterProfile) {
+            const tables = createTableStateFromProfile(characterProfile);
+            setState(tables);
+            persistChatTableState(context, tables, characterProfile);
+            dispatchAllTablesUpdate();
+            return getState();
+        }
+    }
+
     // 2. 全局预设
     if (extension_settings[extensionName]?.global_table_preset) {
         log('未在聊天记录中找到表格，正在加载全局预设...', 'info');
         try {
             const globalPreset = extension_settings[extensionName].global_table_preset;
-            setState(JSON.parse(JSON.stringify(globalPreset.tables)));
+            const tables = _normalizeTableState(JSON.parse(JSON.stringify(globalPreset.tables)));
+            setState(tables);
 
             if (globalPreset.batchFillerRuleTemplate !== undefined) {
                 _tplSaveBatchFillerRuleTemplate(globalPreset.batchFillerRuleTemplate);
@@ -333,6 +362,18 @@ export function loadTables(stopIndex = -1) {
                 _tplSaveBatchFillerFlowTemplate(globalPreset.batchFillerFlowTemplate);
             }
 
+            if (stopIndex === -1) {
+                const profile = normalizeTableProfile(globalPreset.tableProfile)
+                    || createTableProfile(tables, {
+                        id: 'legacy-global-table-profile',
+                        name: '全局表格档案',
+                        templates: {
+                            batchFillerRuleTemplate: globalPreset.batchFillerRuleTemplate,
+                            batchFillerFlowTemplate: globalPreset.batchFillerFlowTemplate,
+                        },
+                    });
+                persistChatTableState(context, tables, profile);
+            }
             dispatchAllTablesUpdate();
             return getState();
         } catch (error) {
@@ -342,7 +383,14 @@ export function loadTables(stopIndex = -1) {
 
     // 3. 默认模板
     log('未找到任何表格数据或全局预设，使用默认模板。', 'info');
-    setState(getDefaultTables());
+    const tables = _normalizeTableState(getDefaultTables());
+    setState(tables);
+    if (stopIndex === -1) {
+        persistChatTableState(context, tables, createTableProfile(tables, {
+            id: 'builtin-default-table-profile',
+            name: '内置默认表格档案',
+        }));
+    }
     dispatchAllTablesUpdate();
     return getState();
 }

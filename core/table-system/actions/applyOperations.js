@@ -25,6 +25,7 @@
  */
 
 import { log } from '../logger.js';
+import { createRecordMetadata, normalizeTableDatabaseState, normalizeTableIdentity } from '../infra/database-state.js';
 
 /**
  * 在表格末尾插入一行。in-place mutation（调用方已 clone）。
@@ -44,7 +45,7 @@ function _insertRow(state, tableIndex, data) {
         return { state, changes: [] };
     }
 
-    const table = state[tableIndex];
+    const table = normalizeTableIdentity(state[tableIndex], tableIndex);
     const colCount = table.headers.length;
     const newRow = Array(colCount).fill('');
     /** @type {Change[]} */
@@ -65,6 +66,7 @@ function _insertRow(state, tableIndex, data) {
         table.rowStatuses = Array(table.rows.length - 1).fill('normal');
     }
     table.rowStatuses.push('normal');
+    table.rowMeta.push(createRecordMetadata(table, newRow, newRowIndex));
 
     return { state, changes };
 }
@@ -157,7 +159,7 @@ export function applyOperations(initialState, operations) {
         return { state: initialState, changes: [] };
     }
 
-    let state = JSON.parse(JSON.stringify(initialState));
+    let state = normalizeTableDatabaseState(JSON.parse(JSON.stringify(initialState)));
     /** @type {Change[]} */
     let allChanges = [];
 

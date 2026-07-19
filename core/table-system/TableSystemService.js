@@ -15,6 +15,7 @@
  *   injectTableData(...)             — 向提示词注入表格数据
  *   generateTableContent()           — 生成表格注入内容字符串
  *   getMemoryState()                 — 读取当前表格内存状态
+ *   queryRecords(tableId, query)     — 受限只读单表查询
  *   renderTables()                   — 强制重渲染表格 UI
  */
 
@@ -34,6 +35,14 @@ import { fillWithSecondaryApi } from './secondary-filler.js';
 
 // UI 层
 import { renderTables } from '../../ui/table-bindings.js';
+import { getTableSnapshot, listTableSnapshots } from './public-api.js';
+import {
+    ensureRegisteredTable,
+    mutateOwnedRecord,
+    queryTableRecords,
+    registerTableDefinition,
+} from './module-tables.js';
+import { persistChatTableStateAsync } from './infra/database-state.js';
 
 // ── 核心逻辑 ─────────────────────────────────────────────────────────────
 
@@ -95,6 +104,45 @@ async function processMessageUpdate(messageId) {
     }
 }
 
+async function registerModuleTable({ caller }, definition) {
+    return registerTableDefinition(caller, definition);
+}
+
+async function ensureModuleTable({ caller }, tableId) {
+    const currentState = TableManager.getMemoryState() || TableManager.loadTables();
+    const result = ensureRegisteredTable(caller, tableId, currentState);
+    if (result.created) {
+        await commitModuleState(result.state);
+    }
+    return result.table;
+}
+
+async function mutateModuleRecord({ caller }, request) {
+    const currentState = TableManager.getMemoryState() || TableManager.loadTables();
+    const result = mutateOwnedRecord(caller, request, currentState);
+    await commitModuleState(result.state);
+    return result.result;
+}
+
+function queryModuleRecords(tableId, request) {
+    const currentState = TableManager.getMemoryState() || TableManager.loadTables();
+    return queryTableRecords(tableId, request, currentState);
+}
+
+async function commitModuleState(state) {
+    TableManager.setMemoryState(state);
+    const context = getContext();
+    const latestMessage = context.chat?.at(-1);
+    if (latestMessage) {
+        TableManager.saveStateToMessage(state, latestMessage);
+        await saveChatConditional();
+    } else {
+        await persistChatTableStateAsync(context, state);
+    }
+    triggerSync();
+    renderTables();
+}
+
 // ── Bus 注册 ──────────────────────────────────────────────────────────────
 // 使用 setTimeout 延迟到同步模块初始化完成后再注册，
 // 确保 window.Amily2Bus 已由 SL/bus/Amily2Bus.js 完成挂载。
@@ -105,12 +153,21 @@ setTimeout(() => {
             console.warn('[TableSystem] Amily2Bus 尚未就绪，服务注册跳过。');
             return;
         }
+        _ctx.exposeService({
+            registerTableDefinition: registerModuleTable,
+            ensureRegisteredTable: ensureModuleTable,
+            mutateOwnedRecord: mutateModuleRecord,
+        });
         _ctx.expose({
             processMessageUpdate,
             fillWithSecondaryApi,
             injectTableData,
             generateTableContent,
-            getMemoryState: () => TableManager.getMemoryState(),
+            // Public consumers receive copies; direct mutable state remains internal.
+            getMemoryState: () => listTableSnapshots(),
+            listTables: listTableSnapshots,
+            getTableSnapshot,
+            queryRecords: queryModuleRecords,
             renderTables,
         });
         _ctx.log('TableSystemService', 'info', 'TableSystem 服务已注册到 Bus。');

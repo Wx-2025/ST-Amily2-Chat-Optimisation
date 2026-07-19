@@ -17,6 +17,7 @@ import { saveChat } from '/script.js';
 import { getContext } from '/scripts/extensions.js';
 import { saveChatDebounced } from '../../../utils/utils.js';
 import { log } from '../logger.js';
+import { normalizeTableDatabaseState, persistChatTableState } from './database-state.js';
 
 /**
  * message.extra 中存储表格状态的 key。
@@ -42,7 +43,9 @@ export function saveStateToMessage(stateToSave, targetMessage) {
         targetMessage.extra = {};
     }
 
-    targetMessage.extra[TABLE_DATA_KEY] = JSON.parse(JSON.stringify(stateToSave));
+    const normalizedState = normalizeTableDatabaseState(stateToSave);
+    targetMessage.extra[TABLE_DATA_KEY] = JSON.parse(JSON.stringify(normalizedState));
+    persistChatTableState(getContext(), normalizedState);
     log(`表格状态已准备写入消息 [${targetMessage.mes.substring(0, 20)}...]`, 'info');
     return true;
 }

@@ -1,7 +1,8 @@
 import { extension_settings } from "/scripts/extensions.js";
-import { getRequestHeaders } from "/script.js";
+import { getRequestHeaders, saveSettingsDebounced } from "/script.js";
 import { extensionName } from "../../utils/settings.js";
 import { getSlotProfile } from '../api/api-resolver.js';
+import { apiKeyStore } from '../../utils/config/api-key-store/ApiKeyStore.js';
 
 const DEFAULT_CONFIG = {
     apiUrl: "",
@@ -19,7 +20,7 @@ export function getApiConfig(role) {
 }
 
 /** 异步读取配置：Profile 优先，fallback 到旧版 */
-async function _resolveConfig(role) {
+export async function getResolvedApiConfig(role) {
     const profile = await getSlotProfile('autoCharCard');
     if (profile) {
         return {
@@ -30,19 +31,38 @@ async function _resolveConfig(role) {
             temperature: profile.temperature ?? DEFAULT_CONFIG.temperature,
         };
     }
-    return getApiConfig(role);
+    const legacy = getApiConfig(role);
+    const keyId = `legacy_acc_${role}`;
+    const storedKey = await apiKeyStore.retrieveById(keyId);
+    if (storedKey) return { ...legacy, apiKey: storedKey };
+
+    // One-time lazy migration for existing plaintext nested settings. New
+    // writes use ApiKeyStore directly, so this path disappears after first
+    // read and never requires the user to re-enter a credential.
+    if (legacy.apiKey) {
+        await apiKeyStore.storeById(keyId, legacy.apiKey);
+        const configKey = `acc_${role}_config`;
+        delete extension_settings[extensionName]?.[configKey]?.apiKey;
+        saveSettingsDebounced();
+    }
+    return legacy;
 }
 
-export function setApiConfig(role, config) {
+export async function setApiConfig(role, config) {
     if (!extension_settings[extensionName]) {
         extension_settings[extensionName] = {};
     }
     const configKey = `acc_${role}_config`;
-    extension_settings[extensionName][configKey] = { ...getApiConfig(role), ...config };
+    const { apiKey, ...nonSensitiveConfig } = config;
+    const { apiKey: legacyApiKey, ...currentConfig } = getApiConfig(role);
+    extension_settings[extensionName][configKey] = { ...currentConfig, ...nonSensitiveConfig };
+    if (apiKey !== undefined) {
+        await apiKeyStore.storeById(`legacy_acc_${role}`, apiKey);
+    }
 }
 
 export async function callAi(role, messages, options = {}, onChunk = null) {
-    const config = { ...(await _resolveConfig(role)), ...options };
+    const config = { ...(await getResolvedApiConfig(role)), ...options };
     const roleName = role === 'executor' ? '执行者(模型A)' : '规划者(模型B)';
 
     if (!config.apiUrl || !config.apiKey || !config.model) {

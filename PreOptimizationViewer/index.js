@@ -5,6 +5,17 @@ import { applyExclusionRules } from '../core/utils/rag-tag-extractor.js';
 
 const preOptimizationViewerPath = `third-party/${extensionName}/PreOptimizationViewer`;
 let viewerOrb = null;
+
+// The viewer displays chat/model text inside HTML templates. Keep the text as
+// text: this panel is not a rich-text renderer.
+function escapeHtmlText(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
 function addViewerButton() {
     const button = document.createElement('div');
     button.id = 'pre-optimization-viewer-btn';
@@ -106,7 +117,7 @@ async function renderDiffContent($contentContainer) {
                 <h4>正在等待优化结果...</h4>
                 <p>这通常需要几秒钟的时间。以下是优化前的原始文本（已应用排除和规范化规则）：</p>
                 <hr>
-                <pre style="white-space: pre-wrap; word-wrap: break-word;">${originalText.replace(/</g, '<').replace(/>/g, '>')}</pre>
+                <pre style="white-space: pre-wrap; word-wrap: break-word;">${escapeHtmlText(originalText)}</pre>
             </div>`;
         $contentContainer.html(fallbackHtml);
         return;
@@ -125,7 +136,7 @@ async function renderDiffContent($contentContainer) {
         let diffHtml = '<pre style="white-space: pre-wrap; word-wrap: break-word;">';
         diff.forEach(part => {
             const color = part.added ? 'green' : part.removed ? 'red' : 'grey';
-            const text = part.value.replace(/</g, '<').replace(/>/g, '>');
+            const text = escapeHtmlText(part.value);
             if (part.removed) {
                 diffHtml += `<del style="color: ${color}; background-color: rgba(255, 0, 0, 0.1); text-decoration: none;">${text}</del>`;
             } else if (part.added) {
@@ -144,10 +155,10 @@ async function renderDiffContent($contentContainer) {
                                 <p>这通常是由于网络问题无法访问 cdnjs.cloudflare.com 导致的。以下是优化前后的文本：</p>
                                 <hr>
                                 <h5>优化前（已应用排除和规范化规则）</h5>
-                                <pre style="white-space: pre-wrap; word-wrap: break-word;">${originalText.replace(/</g, '<').replace(/>/g, '>')}</pre>
+                                <pre style="white-space: pre-wrap; word-wrap: break-word;">${escapeHtmlText(originalText)}</pre>
                                 <hr>
                                 <h5>优化后</h5>
-                                <pre style="white-space: pre-wrap; word-wrap: break-word;">${normalizeWhitespace(snapshot.optimized.replace(/<!--[\s\S]*?-->/g, '')).replace(/</g, '<').replace(/>/g, '>')}</pre>
+                                <pre style="white-space: pre-wrap; word-wrap: break-word;">${escapeHtmlText(normalizeWhitespace(snapshot.optimized.replace(/<!--[\s\S]*?-->/g, '')))}</pre>
                               </div>`;
         $contentContainer.html(fallbackHtml);
     }

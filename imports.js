@@ -9,6 +9,7 @@ import './utils/config/api-key-store/ApiKeyStore.js'
 import './utils/config/ApiProfileManager.js'
 import './utils/config/RuleProfileManager.js'
 import './core/table-system/TableSystemService.js'
+import './core/combat/CombatService.js'
 
 // Re-exports (重新导出供 index.js 使用)
 export { createDrawer } from "./ui/drawer.js";

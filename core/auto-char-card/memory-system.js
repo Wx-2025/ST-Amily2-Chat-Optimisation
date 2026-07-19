@@ -1,4 +1,4 @@
-import { callAi, getApiConfig } from "./api.js";
+import { callAi, getResolvedApiConfig } from "./api.js";
 
 export class MemorySystem {
     constructor() {
@@ -51,7 +51,7 @@ Output ONLY valid JSON.
     }
 
     async summarize(history, taskState) {
-        const config = getApiConfig('executor');
+        const config = await getResolvedApiConfig('executor');
 
         const newFacts = await this.extractKeyFacts(history);
         if (newFacts.length > 0) {
