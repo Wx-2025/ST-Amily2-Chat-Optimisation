@@ -38,15 +38,15 @@ export const PROFILE_TYPES = {
         params: ['maxTokens', 'temperature'],
     },
     embedding: {
-        label: '向量嵌入',
+        label: '向量',
         icon: 'fa-project-diagram',
-        description: '将文本转换为向量的模型，用于 RAG 语义检索',
+        description: '将文本转换为向量的模型，用于智能检索',
         params: ['dimensions', 'encodingFormat'],
     },
     rerank: {
-        label: '重排序',
+        label: '重排',
         icon: 'fa-sort-amount-down',
-        description: '对检索结果重新打分排序的模型，用于 RAG 精排',
+        description: '对检索结果重新打分排序的模型',
         params: ['topN', 'returnDocuments'],
     },
 };
@@ -54,19 +54,19 @@ export const PROFILE_TYPES = {
 /** 功能槽：每个系统功能需要的 Profile 类型 */
 export const SLOTS = {
     // Chat 槽
-    main:          { label: '主 API（正文优化）',   type: 'chat' },
-    plotOpt:       { label: '剧情优化 / JQYH',      type: 'chat' },
-    plotOptConc:   { label: '剧情优化（并发）',      type: 'chat' },
-    ngms:          { label: 'NGMS（总结）',            type: 'chat' },
-    nccs:          { label: 'NCCS（填表）',            type: 'chat' },
-    cwb:           { label: '角色世界书',              type: 'chat' },
-    autoCharCard:  { label: '一键生卡',              type: 'chat' },
-    sybd:          { label: '术语表填写',             type: 'chat' },
+    main:          { label: '正文优化',               type: 'chat' },
+    plotOpt:       { label: '剧情优化',               type: 'chat' },
+    plotOptConc:   { label: '剧情优化（并发加速）',   type: 'chat' },
+    ngms:          { label: '聊天总结',               type: 'chat' },
+    nccs:          { label: '独立API填表',             type: 'chat' },
+    cwb:           { label: '角色世界书生成',         type: 'chat' },
+    autoCharCard:  { label: '一键生成角色卡',         type: 'chat' },
+    sybd:          { label: '术语表自动填写',         type: 'chat' },
     tableFilling:  { label: '表格填表 / 重整',        type: 'chat' },
     // Embedding 槽
-    ragEmbed:      { label: 'RAG 向量化',            type: 'embedding' },
+    ragEmbed:      { label: '智能检索 · 向量化',      type: 'embedding' },
     // Rerank 槽
-    ragRerank:     { label: 'RAG 重排序',            type: 'rerank' },
+    ragRerank:     { label: '智能检索 · 结果重排',    type: 'rerank' },
 };
 
 // extension_settings 存储 key

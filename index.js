@@ -8,6 +8,12 @@ import {
     characters, this_chid, eventSource, event_types, saveSettingsDebounced,
     injectTableData, generateTableContent,
     injectProgressiveMemory,
+    suspendProgressiveMemoryContext,
+    resumeProgressiveMemoryContext,
+    refreshProgressiveMemorySourceOptions,
+    injectTimeRiver,
+    suspendTimeRiverContext,
+    resumeTimeRiverContext,
     initializeRagProcessor,
     loadHanlinyuanSettingsToUI,
     loadTables, clearHighlights, rollbackAndRefill, rollbackState, commitPendingDeletions, saveStateToMessage, getMemoryState, clearUpdatedTables,
@@ -285,19 +291,16 @@ function loadPluginStyles() {
         console.log(`[Amily2号-皇家制衣局] 已为帝国披上华服: ${fileName}`);
     };
 
-    // 颁布三道制衣圣谕
-    loadStyleFile("style.css"); // 【第一道圣谕】为帝国主体宫殿披上通用华服
-    loadStyleFile("historiography.css"); // 【第二道圣谕】为敕史局披上其专属华服
-    loadStyleFile("amily-hanlinyuan-system/hanlinyuan.css"); // 【第三道圣谕】为翰林院披上其专属华服
-    loadStyleFile("amily-glossary-system/amily2-glossary.css"); // 【新圣谕】为术语表披上其专属华服
-    loadStyleFile("amily-data-table/table.css"); // 【第四道圣谕】为内存储司披上其专属华服
-    loadStyleFile("optimization.css"); // 【第五道圣谕】为剧情优化披上其专属华服
-    loadStyleFile("renderer.css"); // 【新圣谕】为渲染器披上其专属华服
-    // loadStyleFile("iframe-renderer.css"); // 【新圣谕】为iframe渲染内容披上其专属华服
-    loadStyleFile("renderer.css"); // 【新圣谕】为iframe渲染内容披上其专属华服
-    loadStyleFile("super-memory.css"); // 【新圣谕】为超级记忆披上其专属华服
+    // 先加载各模块样式，再加载 ui-kit 统一覆盖组件形态
+    loadStyleFile("style.css");
+    loadStyleFile("historiography.css");
+    loadStyleFile("amily-hanlinyuan-system/hanlinyuan.css");
+    loadStyleFile("amily-glossary-system/amily2-glossary.css");
+    loadStyleFile("amily-data-table/table.css");
+    loadStyleFile("optimization.css");
+    loadStyleFile("renderer.css");
+    loadStyleFile("super-memory.css");
 
-    // 【第六道圣谕】为角色世界书披上其专属华服
     const cwbStyleId = 'cwb-feature-style';
     if (!document.getElementById(cwbStyleId)) {
         const cwbLink = document.createElement("link");
@@ -306,10 +309,8 @@ function loadPluginStyles() {
         cwbLink.type = "text/css";
         cwbLink.href = `scripts/extensions/third-party/${extensionName}/CharacterWorldBook/cwb_style.css?v=${Date.now()}`;
         document.head.appendChild(cwbLink);
-        console.log(`[Amily2号-皇家制衣局] 已为角色世界书披上华服: cwb_style.css`);
     }
 
-    // 【第七道圣谕】为世界编辑器披上其专属华服
     const worldEditorStyleId = 'world-editor-style';
     if (!document.getElementById(worldEditorStyleId)) {
         const worldEditorLink = document.createElement("link");
@@ -318,9 +319,10 @@ function loadPluginStyles() {
         worldEditorLink.type = "text/css";
         worldEditorLink.href = `scripts/extensions/third-party/${extensionName}/WorldEditor/WorldEditor.css?v=${Date.now()}`;
         document.head.appendChild(worldEditorLink);
-        console.log(`[Amily2号-皇家制衣局] 已为世界编辑器披上华服: WorldEditor.css`);
     }
 
+    // 统一组件层最后加载，覆盖旧 menu_button / fieldset / 表单形态
+    loadStyleFile("ui-kit.css");
 }
 
 
@@ -636,19 +638,37 @@ function registerEventListeners() {
             updateOrInsertTableInChat();
         });
         eventSource.on(event_types.CHAT_CHANGED, () => {
+            // 同步关闭渐进记忆读取门；新聊天表成功加载前任何生成都必须为空。
+            const progressiveMemoryTransitionToken = suspendProgressiveMemoryContext();
+            const timeRiverTransitionToken = suspendTimeRiverContext();
+
             window.lastPreOptimizationResult = null;
             document.dispatchEvent(new CustomEvent('preOptimizationTextUpdated'));
             manageLorebookEntriesForChat();
-            setTimeout(() => {
-                log("【监察系统】检测到“朝代更迭”(CHAT_CHANGED)，开始重修史书并刷新宫殿...", 'info');
-                clearHighlights();
-                clearUpdatedTables();
-                loadTables();
-                renderTables();
-                if (extension_settings[extensionName].render_on_every_message) {
-                    startContinuousRendering();
-                } else {
-                    stopContinuousRendering();
+            setTimeout(async () => {
+                try {
+                    log("【监察系统】检测到“朝代更迭”(CHAT_CHANGED)，开始重修史书并刷新宫殿...", 'info');
+                    clearHighlights();
+                    clearUpdatedTables();
+                    await loadTables();
+
+                    // 两条注入链各自校验 transition token；一条恢复失败不得阻塞另一条。
+                    if (resumeProgressiveMemoryContext(progressiveMemoryTransitionToken)) {
+                        refreshProgressiveMemorySourceOptions();
+                    }
+                    resumeTimeRiverContext(timeRiverTransitionToken);
+
+                    renderTables();
+                    if (extension_settings[extensionName].render_on_every_message) {
+                        startContinuousRendering();
+                    } else {
+                        stopContinuousRendering();
+                    }
+                } catch (error) {
+                    log(
+                        `【监察系统】聊天表重载失败，渐进记忆保持暂停: ${error instanceof Error ? error.message : String(error)}`,
+                        'error',
+                    );
                 }
             }, 100);
         });
@@ -687,6 +707,16 @@ async function executeAmily2Injection(...args) {
     } catch (error) {
         console.error('[Amily2-渐进记忆] 注入失败:', error);
     }
+    try {
+        // 时间河仅查询当前手动游标及其历史窗口；未来章节在策略层硬锁为 0。
+        await injectTimeRiver(args[0], args[3]);
+    } catch (error) {
+        if (error?.code === 'TIME_RIVER_PROMPT_CLEAR_FAILED') {
+            throw error;
+        }
+        console.error('[Amily2-时间河] 注入失败:', error);
+    }
+
     if (window.hanlinyuanRagProcessor && typeof window.hanlinyuanRagProcessor.rearrangeChat === 'function') {
         try {
             console.log('[Amily2-核心引擎] 执行内置RAG注入。');
@@ -806,6 +836,22 @@ async function runAmily2Deployment() {
         registerTableMacros();
 
         registerEventListeners();
+
+        // Keep progressive memory closed until listeners exist and this chat is reloaded.
+        const progressiveMemoryBootstrapToken = suspendProgressiveMemoryContext();
+        const timeRiverBootstrapToken = suspendTimeRiverContext();
+        try {
+            await loadTables();
+            if (resumeProgressiveMemoryContext(progressiveMemoryBootstrapToken)) {
+                refreshProgressiveMemorySourceOptions();
+            }
+            resumeTimeRiverContext(timeRiverBootstrapToken);
+        } catch (error) {
+            console.error(
+                "[Amily2] Initial table reload failed; progressive memory and Time River stay suspended:",
+                error instanceof Error ? error.message : String(error),
+            );
+        }
         initializeRagAndInjection();
         performPostDeploymentTasks();
 

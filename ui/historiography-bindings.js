@@ -159,7 +159,7 @@ export function bindHistoriographyEvents() {
         const start = parseInt(smallStartFloor.value, 10);
         const end = parseInt(smallEndFloor.value, 10);
         if (isNaN(start) || isNaN(end) || start <= 0 || end <= 0 || start > end) {
-            toastr.error("请输入有效的起始和结束楼层！", "圣谕有误");
+            toastr.error("请输入有效的起始和结束楼层。", "总结");
             return;
         }
         executeManualSummary(start, end);
@@ -175,7 +175,7 @@ export function bindHistoriographyEvents() {
         if (isNaN(value) || value < 1) {
 
             event.target.value = defaultSettings.historiographySmallTriggerThreshold;
-            toastr.warning("远征阈值必须是大于0的数字。已重置。", "圣谕有误");
+            toastr.warning("每次总结层数必须是大于 0 的数字，已重置。", "总结");
             return; 
         }
         extension_settings[extensionName].historiographySmallTriggerThreshold = value;
@@ -188,7 +188,7 @@ export function bindHistoriographyEvents() {
         const value = parseInt(event.target.value, 10);
         if (isNaN(value) || value < 0) {
             event.target.value = defaultSettings.historiographyRetentionCount;
-            toastr.warning("保留层数必须是大于或等于0的数字。已重置。", "圣谕有误");
+            toastr.warning("保留层数必须是大于或等于 0 的数字，已重置。", "总结");
             return;
         }
         extension_settings[extensionName].historiographyRetentionCount = value;
@@ -237,20 +237,20 @@ export function bindHistoriographyEvents() {
     const expeditionExecuteBtn = document.getElementById("amily2_mhb_small_expedition_execute");
 
     const updateExpeditionButtonUI = (state) => {
-        expeditionExecuteBtn.dataset.state = state; 
+        expeditionExecuteBtn.dataset.state = state;
         switch (state) {
             case 'running':
-                expeditionExecuteBtn.innerHTML = '<i class="fas fa-stop-circle"></i> 停止远征';
+                expeditionExecuteBtn.innerHTML = '<i class="fas fa-stop-circle"></i> 停止补全';
                 expeditionExecuteBtn.className = 'menu_button small_button interactable danger';
                 break;
             case 'paused':
-                expeditionExecuteBtn.innerHTML = '<i class="fas fa-play-circle"></i> 继续远征';
+                expeditionExecuteBtn.innerHTML = '<i class="fas fa-play-circle"></i> 继续补全';
                 expeditionExecuteBtn.className = 'menu_button small_button interactable success';
                 break;
             case 'idle':
             default:
-                expeditionExecuteBtn.innerHTML = '<i class="fas fa-flag-checkered"></i> 开始远征';
-                expeditionExecuteBtn.className = 'menu_button small_button interactable'; 
+                expeditionExecuteBtn.innerHTML = '<i class="fas fa-flag-checkered"></i> 开始总结';
+                expeditionExecuteBtn.className = 'menu_button small_button interactable';
                 break;
         }
     };
@@ -313,7 +313,7 @@ export function bindHistoriographyEvents() {
     restoreArchiveBtn.addEventListener("click", async () => {
         const selectedKey = archiveSelector.value;
         if (!selectedKey) {
-            toastr.warning("请先选择一个要回溯的史册！", "圣谕不明");
+            toastr.warning("请先选择一个要回溯的条目。", "总结");
             return;
         }
         if (confirm("确定要回溯选中的史册吗？\n当前的活跃史册（如果有）将被自动归档。")) {
@@ -386,7 +386,7 @@ export function bindHistoriographyEvents() {
     const worldbook = largeWbSelector.value;
     const loreKey = largeLoreSelector.value;
     if (!worldbook || !loreKey) {
-      toastr.error("请先选择一个国史馆及其中的史册条目！", "圣谕不全");
+      toastr.error("请先选择世界书和其中的条目。", "总结");
       return;
     }
 

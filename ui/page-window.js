@@ -1,31 +1,61 @@
 import { messageFormatting } from '/script.js';
 
-
-export async function showContentModal(title, contentUrl) {
+/**
+ * 打开 Markdown 教程弹窗。
+ * @param {string} title
+ * @param {string} contentUrl
+ * @param {{ advancedTitle?: string, advancedUrl?: string }} [options]
+ *   传入 advancedUrl 时，在正文下方显示「补充进阶教程」按钮。
+ */
+export async function showContentModal(title, contentUrl, options = {}) {
     try {
+        const { advancedTitle, advancedUrl } = options || {};
 
         const markdownContent = await $.get(contentUrl);
         const htmlContent = messageFormatting(String(markdownContent), '', false, false);
 
+        // 仅入门教程显示「补充进阶」按钮；进阶正文已自带「仍解决不了」，不再二次追加
+        const advancedBlock = advancedUrl
+            ? `<div class="am2-tut-advanced">
+                    <p class="am2-tut-advanced-note">上面是入门。需要全部操作说明时，打开下方进阶教程。</p>
+                    <button type="button" class="menu_button secondary interactable am2-tut-advanced-btn">
+                        <i class="fas fa-layer-group"></i> 补充进阶教程
+                    </button>
+                    <p class="am2-tut-help-note">仍解决不了：回首页公告板，点 <b>【01】群</b> 或 <b>【02】群</b> 加群求助。</p>
+               </div>`
+            : '';
+
         const dialogHtml = `
-            <dialog class="popup wide_dialogue_popup amily2-modal">
+            <dialog class="popup wide_dialogue_popup amily2-modal amily2-tutorial-modal">
               <div class="popup-body">
                 <h3 style="margin-top:0; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">
                     <i class="fas fa-book-open" style="color: #58a6ff;"></i> ${escapeHtml(title)}
                 </h3>
-                <div class="popup-content" style="height: 60vh; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 5px;">
-                    <div class="mes_text">${htmlContent}</div>
+                <div class="popup-content amily2-tutorial-body" style="height: 60vh; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 5px;">
+                    <div class="mes_text amily2-tutorial-md">${htmlContent}</div>
+                    ${advancedBlock}
                 </div>
                 <div class="popup-controls"><div class="popup-button-ok menu_button menu_button_primary interactable">朕已阅</div></div>
               </div>
             </dialog>`;
 
         const dialogElement = $(dialogHtml).appendTo('body');
+        // 表格外包一层，手机可横滑，避免整表被压成一长条竖排
+        dialogElement.find('.amily2-tutorial-md table').each(function () {
+            if ($(this).parent().hasClass('am2-tut-table-wrap')) return;
+            $(this).wrap('<div class="am2-tut-table-wrap"></div>');
+        });
         const closeDialog = () => {
             dialogElement[0].close();
             dialogElement.remove();
         };
         dialogElement.find('.popup-button-ok').on('click', closeDialog);
+        if (advancedUrl) {
+            dialogElement.find('.am2-tut-advanced-btn').on('click', () => {
+                closeDialog();
+                showContentModal(advancedTitle || `${title} · 进阶`, advancedUrl);
+            });
+        }
         dialogElement[0].showModal();
 
     } catch (error) {

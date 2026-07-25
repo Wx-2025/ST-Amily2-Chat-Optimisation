@@ -175,6 +175,14 @@ export function applyOperations(initialState, operations) {
             log(`未知操作类型: ${op.op}`, 'error');
             continue;
         }
+        const targetTable = state[op.tableIndex];
+        if (targetTable?.owner && targetTable.owner !== 'user') {
+            log(
+                `跳过普通填表操作：表格索引 ${op.tableIndex} 归属于模块 ${targetTable.owner}。`,
+                'warn',
+            );
+            continue;
+        }
         try {
             const result = handler(state, op);
             state = result.state;

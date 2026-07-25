@@ -16,6 +16,8 @@ import { openAutoCharCardWindow } from '../core/auto-char-card/ui-bindings.js';
 import { showPresetSettings } from '../PresetSettings/prese_ui.js';
 import { watchProfileSliderGuard } from './profile-slider-guard.js';
 import { refreshSuperMemoryPanel } from '../core/super-memory/bindings.js';
+import { refreshProgressiveMemorySourceOptions } from '../core/progressive-memory/bindings.js';
+import { refreshTimeRiverPanel } from '../core/time-river/bindings.js';
 
 function displayDailyAuthCode() {
     const displayEl = document.getElementById('amily2_daily_code_display');
@@ -441,7 +443,17 @@ export function bindModalEvents() {
     const container = $("#amily2_drawer_content").length ? $("#amily2_drawer_content") : $("#amily2_chat_optimiser");
     const apiConfigButton = container.find('#amily2_open_api_config');
     if (apiConfigButton.length && !container.find('#amily2_open_rule_config').length) {
-        apiConfigButton.after(' <button id="amily2_open_rule_config" class="menu_button wide_button"><i class="fas fa-list-check"></i> 规则配置</button>');
+        // 经典首页：系统配置区与 API 同排插入「规则配置」
+        const ruleConfigBtn =
+            '<button id="amily2_open_rule_config" class="menu_button wide_button" type="button">' +
+            '<i class="fas fa-list-check"></i> 规则配置' +
+            '</button>';
+        const group = apiConfigButton.closest('.button-group');
+        if (group.length) {
+            group.append(ruleConfigBtn);
+        } else {
+            apiConfigButton.after(ruleConfigBtn);
+        }
     }
 
     // Collapsible sections logic
@@ -694,23 +706,54 @@ export function bindModalEvents() {
 
     container
         .off("click.amily2.tutorial")
-        .on("click.amily2.tutorial", "#amily2_open_tutorial, #amily2_open_neige_tutorial", function() {
+        .on("click.amily2.tutorial", "#amily2_open_tutorial, #amily2_open_neige_tutorial, #amily2_open_table_tutorial, #amily2_open_plot_opt_tutorial, #amily2_open_super_memory_tutorial, #amily2_open_rule_config_tutorial", function() {
             if (!pluginAuthStatus.authorized) return;
 
             const tutorials = {
                 "amily2_open_tutorial": {
                     title: "主殿使用教程",
-                    url: `${extensionBasePath}/ZhuDian.md`
+                    url: `${extensionBasePath}/ZhuDian.md`,
+                    advancedTitle: "主殿 · 进阶操作",
+                    advancedUrl: `${extensionBasePath}/ZhuDian-Advanced.md`,
                 },
                 "amily2_open_neige_tutorial": {
-                    title: "内阁使用教程",
-                    url: `${extensionBasePath}/NeiGe.md`
+                    title: "总结模块 · 小白教程",
+                    url: `${extensionBasePath}/NeiGe.md`,
+                    advancedTitle: "总结模块 · 进阶操作",
+                    advancedUrl: `${extensionBasePath}/NeiGe-Advanced.md`,
+                },
+                "amily2_open_table_tutorial": {
+                    title: "表格模块 · 小白教程",
+                    url: `${extensionBasePath}/TableModule.md`,
+                    advancedTitle: "表格模块 · 进阶操作",
+                    advancedUrl: `${extensionBasePath}/TableModule-Advanced.md`,
+                },
+                "amily2_open_plot_opt_tutorial": {
+                    title: "记忆管理 · 小白教程",
+                    url: `${extensionBasePath}/PlotOpt.md`,
+                    advancedTitle: "记忆管理 · 进阶操作",
+                    advancedUrl: `${extensionBasePath}/PlotOpt-Advanced.md`,
+                },
+                "amily2_open_super_memory_tutorial": {
+                    title: "长期记忆 · 小白教程",
+                    url: `${extensionBasePath}/SuperMemory.md`,
+                    advancedTitle: "长期记忆 · 进阶操作",
+                    advancedUrl: `${extensionBasePath}/SuperMemory-Advanced.md`,
+                },
+                "amily2_open_rule_config_tutorial": {
+                    title: "规则配置 · 小白教程",
+                    url: `${extensionBasePath}/RuleConfig.md`,
+                    advancedTitle: "规则配置 · 进阶操作",
+                    advancedUrl: `${extensionBasePath}/RuleConfig-Advanced.md`,
                 }
             };
             
             const tutorial = tutorials[this.id];
             if (tutorial) {
-                showContentModal(tutorial.title, tutorial.url);
+                showContentModal(tutorial.title, tutorial.url, {
+                    advancedTitle: tutorial.advancedTitle,
+                    advancedUrl: tutorial.advancedUrl,
+                });
             }
         });
 
@@ -761,9 +804,14 @@ export function bindModalEvents() {
             }
         });
 
+    // 升级箭头由 amily2-updater 绑定（确认更新弹窗）；此处不再劫持为打开扩展页
+    // 若 updater 未初始化，保留兜底：打开扩展管理
     container
         .off("click.amily2.update_new")
-        .on("click.amily2.update_new", "#amily2_update_button_new", function() {
+        .on("click.amily2.update_new", "#amily2_update_button_new", function(e) {
+            // updater 已绑 click.amily2Upgrade 时不抢
+            if ($(this).data('amily2-upgrade-bound')) return;
+            e.preventDefault();
             $('span[data-i18n="Manage extensions"]').first().click();
         });
 
@@ -810,7 +858,7 @@ export function bindModalEvents() {
     container
         .off("click.amily2.chamber_nav")
         .on("click.amily2.chamber_nav",
-             "#amily2_open_text_optimization, #amily2_open_plot_optimization, #amily2_open_additional_features, #amily2_open_rag_palace, #amily2_open_memorisation_forms, #amily2_open_character_world_book, #amily2_open_world_editor, #amily2_open_glossary, #amily2_open_renderer, #amily2_open_super_memory, #amily2_open_progressive_memory, #amily2_open_auto_char_card, #amily2_open_api_config, #amily2_open_rule_config, #amily2_open_sfigen, #amily2_open_preset_editor, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan, #amily2_back_to_main_from_forms, #amily2_back_to_main_from_optimization, #amily2_back_to_main_from_text_optimization, #amily2_back_to_main_from_cwb, #amily2_back_to_main_from_world_editor, #amily2_back_to_main_from_glossary, #amily2_renderer_back_button, #amily2_back_to_main_from_super_memory, #amily2_back_to_main_from_progressive_memory, #amily2_back_to_main_from_api_config, #amily2_back_to_main_from_rule_config, #amily2_sfigen_back_to_main", function () {
+             "#amily2_open_text_optimization, #amily2_open_plot_optimization, #amily2_open_additional_features, #amily2_open_rag_palace, #amily2_open_memorisation_forms, #amily2_open_character_world_book, #amily2_open_world_editor, #amily2_open_glossary, #amily2_open_renderer, #amily2_open_super_memory, #amily2_open_progressive_memory, #amily2_open_time_river, #amily2_open_auto_char_card, #amily2_open_api_config, #amily2_open_rule_config, #amily2_open_sfigen, #amily2_open_preset_editor, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan, #amily2_back_to_main_from_forms, #amily2_back_to_main_from_optimization, #amily2_back_to_main_from_text_optimization, #amily2_back_to_main_from_cwb, #amily2_back_to_main_from_world_editor, #amily2_back_to_main_from_glossary, #amily2_renderer_back_button, #amily2_back_to_main_from_super_memory, #amily2_back_to_main_from_progressive_memory, #amily2_back_to_main_from_time_river, #amily2_back_to_main_from_api_config, #amily2_back_to_main_from_rule_config, #amily2_sfigen_back_to_main", function () {
         if (!pluginAuthStatus.authorized) return;
 
         const mainPanel = container.find('.plugin-features');
@@ -825,6 +873,7 @@ export function bindModalEvents() {
         const rendererPanel = container.find('#amily2_renderer_panel');
         const superMemoryPanel = container.find('#amily2_super_memory_panel');
         const progressiveMemoryPanel = container.find('#amily2_progressive_memory_panel');
+        const timeRiverPanel = container.find('#amily2_time_river_panel');
         const apiConfigPanel = container.find('#amily2_api_config_panel');
         const ruleConfigPanel = container.find('#amily2_rule_config_panel');
         const sfigenPanel = container.find('#amily2_sfigen_panel');
@@ -841,6 +890,7 @@ export function bindModalEvents() {
         rendererPanel.hide();
         superMemoryPanel.hide();
         progressiveMemoryPanel.hide();
+        timeRiverPanel.hide();
         apiConfigPanel.hide();
         ruleConfigPanel.hide();
         sfigenPanel.hide();
@@ -868,6 +918,18 @@ export function bindModalEvents() {
                     return;
                 }
                 progressiveMemoryPanel.show();
+                refreshProgressiveMemorySourceOptions();
+                break;
+            }
+            case 'amily2_open_time_river': {
+                const timeRiverUserType = parseInt(localStorage.getItem("plugin_user_type") || "0", 10);
+                if (timeRiverUserType < 3) {
+                    toastr.info("时间河当前仅向 Type3 用户开放。", "权限不足");
+                    mainPanel.show();
+                    return;
+                }
+                timeRiverPanel.show();
+                void refreshTimeRiverPanel();
                 break;
             }
             case 'amily2_open_auto_char_card':
@@ -927,6 +989,7 @@ export function bindModalEvents() {
             case 'amily2_renderer_back_button':
             case 'amily2_back_to_main_from_super_memory':
             case 'amily2_back_to_main_from_progressive_memory':
+            case 'amily2_back_to_main_from_time_river':
             case 'amily2_back_to_main_from_api_config':
             case 'amily2_back_to_main_from_rule_config':
             case 'amily2_sfigen_back_to_main':

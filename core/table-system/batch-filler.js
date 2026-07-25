@@ -134,10 +134,10 @@ async function callTableModel(messages) {
         const settings = extension_settings[extensionName] || {};
 
         if (settings.nccsEnabled) {
-            log('使用 Nccs API 进行表格填充...', 'info');
+            log('使用独立API填表进行表格填充...', 'info');
             const result = await callNccsAI(messages);
             if (!result) {
-                throw new Error('Nccs API返回内容为空。');
+                throw new Error('独立API填表返回内容为空。');
             }
             return result;
         } else {

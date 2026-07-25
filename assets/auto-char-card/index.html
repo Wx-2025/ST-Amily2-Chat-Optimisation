@@ -21,6 +21,13 @@
                 <i class="fas fa-cog"></i> 工作区设置
             </div>
             <div class="acc-panel-content">
+                <div class="acc-form-group" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                    <label for="acc_master_enabled" style="margin:0;"><strong>一键生卡总开关</strong></label>
+                    <label class="switch" title="关闭后一键生卡不再调用模型" style="flex-shrink:0;">
+                        <input type="checkbox" id="acc_master_enabled" checked />
+                        <span class="slider round"></span>
+                    </label>
+                </div>
                 <div class="acc-form-group">
                     <label>目标角色卡</label>
                     <select id="acc-target-char" class="acc-select">

@@ -1,112 +1,123 @@
 <div class="amily2-header">
-    <div class="additional-features-title interactable" title="Amily2 渐进记忆（内测）">
-        <i class="fas fa-layer-group"></i> 渐进记忆 <span style="font-size: 0.6em; color: #ffc107; vertical-align: super;">BETA</span>
+    <div class="additional-features-title interactable" title="渐进记忆（内测）">
+        <i class="fas fa-layer-group"></i> 渐进记忆 <span style="font-size: 0.6em; color: #ffc107; vertical-align: super;">内测</span>
     </div>
-    <button id="amily2_back_to_main_from_progressive_memory" class="menu_button secondary small_button interactable">
-        返回主殿 <i class="fas fa-arrow-right"></i>
+    <button id="amily2_back_to_main_from_progressive_memory" class="menu_button secondary small_button interactable"><i class="fas fa-arrow-left"></i> 返回
     </button>
 </div>
 <hr class="header-divider">
 
 <div id="pm-modal-container">
     <div class="sm-intro-box">
-        <h3><i class="fas fa-layer-group"></i> 渐进记忆 (Progressive Memory)</h3>
-        <p>按"近期完整、远期摘要"的时间梯度，从指定表格采样历史并注入上下文——模拟人类记忆衰减，在有限 Token 内兼顾最近连贯与长期回顾。</p>
-        <p style="color: #ffc107; font-size: 0.9em;"><i class="fas fa-flask"></i> 内测功能：注入内容直达上下文、不写世界书、不随聊天导出，仅当回合生效。</p>
+        <h3><i class="fas fa-layer-group"></i> 渐进记忆</h3>
+        <p>按「最近的完整保留、更早的只抽部分」的方式，从指定表格取历史摘要，临时塞进当前对话上下文，让 AI 既记得近事，也能扫一眼更久以前。</p>
+        <p style="color: #ffc107; font-size: 0.9em;"><i class="fas fa-flask"></i> 内测功能：内容只在本轮对话里临时使用，不写进世界书，也不随聊天导出。</p>
     </div>
 
     <fieldset class="sm-settings-group">
         <legend><i class="fas fa-cogs"></i> 基础设置</legend>
         <div class="sm-control-block">
-            <label>启用渐进记忆 (总开关):</label>
+            <label>启用渐进记忆:</label>
             <label class="sm-toggle-switch">
                 <input type="checkbox" id="pm-enabled">
                 <span class="sm-slider"></span>
             </label>
         </div>
-        <div class="sm-control-block">
-            <label title="作为采样数据源的表格名称，需为追加式表格（行序从旧到新），推荐总结表">数据源表格:</label>
-            <input type="text" id="pm-target-table" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px;" value="总结表">
+        <div class="sm-control-block" style="display: block;">
+            <label for="pm-target-table" title="仅允许选择当前聊天中由用户拥有、且具有稳定表格 ID 的表格">数据来源表格:</label>
+            <select id="pm-target-table" class="text_pole" style="width: 100%; margin-top: 5px;"></select>
+            <small id="pm-source-status" style="color: #888; font-size: 0.8em; display: block; margin-top: 3px;"></small>
+        </div>
+        <div class="sm-control-block" style="display: block;">
+            <label for="pm-allowed-columns" title="只会把选中的列送入模型上下文；凭证、密钥、令牌等敏感列默认不选">允许注入的列:</label>
+            <select id="pm-allowed-columns" class="text_pole" multiple size="6" style="width: 100%; margin-top: 5px;"></select>
+            <small style="color: #888; font-size: 0.8em; display: block; margin-top: 3px;">按住 Ctrl 可多选；选项值为稳定列 ID。凭证类列默认排除，请仅选择确实需要进入模型上下文的列。</small>
+        </div>
+        <div class="sm-control-block" style="display: block;">
+            <label style="display: flex; align-items: flex-start; gap: 8px;">
+                <input type="checkbox" id="pm-data-egress-ack" style="margin-top: 3px;">
+                <span>我确认：所选表格与列的数据会进入模型上下文；启用远带时，史官宏史卷也会进入模型上下文。这些内容可能发送给当前配置的外部模型服务商。</span>
+            </label>
         </div>
     </fieldset>
 
     <fieldset class="sm-settings-group">
-        <legend><i class="fas fa-sliders-h"></i> 采样参数</legend>
+        <legend><i class="fas fa-sliders-h"></i> 取样设置</legend>
         <div class="sm-control-block">
-            <label title="最新 N 行全量保留（最近发生的事，完整保真）">近期全量行数 (X):</label>
+            <label title="最近 N 行全部保留（最近发生的事，完整保留）">最近完整保留行数:</label>
             <input type="number" id="pm-recent" min="0" step="1" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 80px;" value="5">
         </div>
         <div class="sm-control-block">
-            <label title="除近期外的历史对半拆分，较近的一半（中区）等距取 N 行">中区采样行数 (Y):</label>
+            <label title="除最近部分外，较近一半历史里均匀抽取的行数">中期抽取行数:</label>
             <input type="number" id="pm-mid" min="0" step="1" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 80px;" value="5">
         </div>
         <div class="sm-control-block">
-            <label title="历史较远的一半（远区）等距取 N 行">远区采样行数 (Z):</label>
+            <label title="更早一半历史里均匀抽取的行数">远期抽取行数:</label>
             <input type="number" id="pm-far" min="0" step="1" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 80px;" value="3">
         </div>
         <small style="color: #888; font-size: 0.8em; display: block; margin-top: -5px; margin-bottom: 10px; padding-left: 5px;">
-            行序按时间从旧到新：最新 X 行全量；其余历史对半拆，较近一半等距取 Y 行、较远一半等距取 Z 行（中心对齐等距采样，不随机、不首尾加权，避免内容扎堆或事件结局被规律性忽略）。
+            表格按时间从旧到新：最新几行完整保留；其余历史对半拆开，较近一半均匀抽若干行、更远一半再均匀抽若干行（固定间距取样，不随机）。
         </small>
         <div class="sm-control-block">
-            <label title="采样内容的 token 上限，0 = 不限制。超出时从最旧的行开始丢弃，优先保住最新行">Token 上限:</label>
+            <label title="取样内容的用户 Token 上限；0 = 不设置更低的用户上限，仍受系统硬上限。超出时从最旧的行开始丢弃，优先保住最新行">内容 Token 上限:</label>
             <input type="number" id="pm-max-tokens" min="0" step="100" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 100px;" value="0">
         </div>
         <small style="color: #888; font-size: 0.8em; display: block; margin-top: -5px; margin-bottom: 10px; padding-left: 5px;">
-            Token 为粗略估算（CJK 约 1/字，其余按 ~4 字符/token）。0 = 不限制。
+            Token 为粗略估算（CJK 约 1/字，其余按 ~4 字符/token）。0 = 不设置更低的用户上限，仍受系统硬上限。
         </small>
         <div class="sm-control-block">
-            <label title="采样前排除最新 N 行——它们对应还在视野里（未被自动隐藏）的楼层，原文就在上下文中，注入其摘要属于重复。0 = 关闭">可见窗口行数 (排除最新):</label>
+            <label title="取样前先跳过最新 N 行——它们对应还在聊天窗口里的消息，原文已经在上下文里，再塞摘要等于重复。0 = 不跳过。">跳过最新可见行数:</label>
             <input type="number" id="pm-reserve-recent" min="0" step="1" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 80px;" value="0">
         </div>
         <small style="color: #888; font-size: 0.8em; display: block; margin-top: -5px; margin-bottom: 10px; padding-left: 5px;">
-            与自动隐藏配合：X/Y/Z 梯度只作用于"已隐藏区间"的摘要行。注意单位是<b>表格行</b>而非楼层——一行总结通常覆盖多层楼，请按自己的总结密度设置（如自动隐藏保留 30 层、每行总结约 10 层，则填 3）。
+            可与「自动隐藏」配合：取样只针对已经滚出视野的旧摘要。注意这里按<strong>表格行</strong>算，不是聊天消息层——一行总结往往覆盖很多层消息。
         </small>
     </fieldset>
     <div class="sm-intro-box" style="border-left: 3px solid #ffc107;">
-        <small style="color: #bbb; font-size: 0.85em;"><i class="fas fa-info-circle"></i> 触发门槛：源表有效行数低于<b>总结模块的"自动隐藏阈值"</b>时不注入——源内容太少时近期上下文本就齐全，注入只是冗余。阈值随总结模块自动隐藏设置走，无需单独配置。</small>
+        <small style="color: #bbb; font-size: 0.85em;"><i class="fas fa-info-circle"></i> 什么时候会生效：来源表有效行数低于总结模块的「自动隐藏保留数」时不会塞进上下文——内容太少时近期对话本身就够用。该门槛跟总结模块的自动隐藏设置走，不用单独再配。</small>
     </div>
 
     <fieldset class="sm-settings-group">
-        <legend><i class="fas fa-archive"></i> 真压缩远带（读取史官宏史卷）</legend>
+        <legend><i class="fas fa-archive"></i> 远期浓缩摘要（读取宏史卷）</legend>
         <div class="sm-control-block">
-            <label title="off=不注入；auto=翰林院RAG开启时让位（向量库里有宏史卷，检索召回更准），RAG关闭时注入；always=始终注入">远带模式:</label>
-            <select id="pm-far-mode" class="text_pole" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 130px;">
+            <label title="关闭=不用；自动=智能检索开着时让位给检索库，关掉检索时才用；始终=每次都用">远期摘要模式:</label>
+            <select id="pm-far-mode" class="text_pole" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 160px;">
                 <option value="off">关闭</option>
-                <option value="auto">自动（随RAG让位）</option>
-                <option value="always">始终注入</option>
+                <option value="auto">自动（检索开着时让位）</option>
+                <option value="always">始终使用</option>
             </select>
         </div>
         <div class="sm-control-block">
-            <label title="远带 token 上限，0 = 不限制。超预算保尾弃头（宏史卷内部越靠后越接近现在）">远带 Token 上限:</label>
+            <label title="远期摘要的用户 Token 上限；0 = 不设置更低的用户上限，仍受系统硬上限。超限时保留更接近现在的部分">远期摘要 Token 上限:</label>
             <input type="number" id="pm-far-max-tokens" min="0" step="500" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 100px;" value="4000">
         </div>
         <small style="color: #888; font-size: 0.8em; display: block; margin-top: -5px; margin-bottom: 10px; padding-left: 5px;">
-            不自建压缩：直接读取史官金账中已重铸的<b>宏史卷</b>文本作为远期高密度摘要，置于注入块最前（XML 标注为早期存档，防止被当作当前剧情续写）。未使用史官/尚未重铸过宏史卷时自动为空，无任何额外 AI 调用。
+            0 = 不设置更低的用户上限，仍受系统硬上限。
+            不另做压缩：直接读取总结模块史官金账中已经重铸的<strong>宏史卷</strong>文本，放在记忆块最前面（并标明是早期存档，避免被当成当前剧情）。没用过总结模块或还没生成宏史卷时自动为空，不会额外调用 AI。
         </small>
     </fieldset>
 
     <fieldset class="sm-settings-group">
-        <legend><i class="fas fa-syringe"></i> 注入设置</legend>
+        <legend><i class="fas fa-syringe"></i> 如何塞进对话</legend>
         <div class="sm-control-block">
-            <label title="注入位置：0=系统提示前，1=系统提示后（@D 注入用深度控制）">注入位置 (position):</label>
+            <label title="0=系统提示词前面，1=系统提示词后面（再配合下方深度）">插入位置:</label>
             <input type="number" id="pm-inj-position" min="0" max="1" step="1" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 80px;" value="1">
         </div>
         <div class="sm-control-block">
-            <label title="注入深度（楼层），0 = 最底部">注入深度 (depth):</label>
+            <label title="插入深度（按消息层），0 = 最靠近当前对话底部">插入深度:</label>
             <input type="number" id="pm-inj-depth" min="0" step="1" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 80px;" value="0">
         </div>
         <div class="sm-control-block">
-            <label title="注入角色：0=系统，1=用户，2=AI">注入角色 (role):</label>
+            <label title="以谁的身份插入：只允许用户或 AI；安全边界不允许系统身份注入">插入身份:</label>
             <select id="pm-inj-role" class="text_pole" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 100px;">
-                <option value="0">系统</option>
                 <option value="1">用户</option>
                 <option value="2">AI</option>
             </select>
         </div>
         <div class="sm-control-block" style="display: block;">
-            <label title="占位符 {{progressive_memory}} 会被替换为采样后的行文本">注入模板:</label>
+            <label title="模板里的 {{progressive_memory}} 会被替换成取样后的文字">插入模板:</label>
             <textarea id="pm-template" rows="4" style="width: 100%; margin-top: 5px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; box-sizing: border-box;"></textarea>
-            <small style="color: #888; font-size: 0.8em; display: block; margin-top: 3px;">必须包含占位符 <code>{{progressive_memory}}</code>；缺失时采样内容会追加到模板末尾。</small>
+            <small style="color: #888; font-size: 0.8em; display: block; margin-top: 3px;">模板里请包含 <code>{{progressive_memory}}</code>；如果没有，取样内容会直接接在模板后面。</small>
         </div>
     </fieldset>
 </div>

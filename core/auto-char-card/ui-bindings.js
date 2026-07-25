@@ -1,6 +1,7 @@
 import { extensionName } from "../../utils/settings.js";
 import { AgentManager } from "./agent-manager.js";
 import { characters, this_chid, saveSettingsDebounced, getCharacters } from "/script.js";
+import { extension_settings } from "/scripts/extensions.js";
 import { world_names } from "/scripts/world-info.js";
 import { getResolvedApiConfig, setApiConfig, testConnection, fetchModels } from "./api.js";
 import { tools } from "./tools.js";
@@ -306,6 +307,18 @@ async function loadApiSettings() {
 function bindEvents() {
     const windowEl = $('#acc-window');
     const minIcon = $('#acc-minimized-icon');
+
+    // 一键生卡总开关（与 API 分配页 SLOT_TOGGLES.autoCharCard 双向同步）
+    const masterToggle = document.getElementById('acc_master_enabled');
+    if (masterToggle) {
+        const s = extension_settings[extensionName] || {};
+        masterToggle.checked = s.autoCharCardEnabled !== false;
+        masterToggle.addEventListener('change', () => {
+            if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
+            extension_settings[extensionName].autoCharCardEnabled = masterToggle.checked;
+            saveSettingsDebounced();
+        });
+    }
 
     $('#acc-file-selector').on('change', async function() {
         const val = $(this).val();

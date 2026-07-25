@@ -11,12 +11,13 @@ import { apiKeyStore } from '../utils/config/api-key-store/ApiKeyStore.js';
 import { configManager } from '../utils/config/ConfigManager.js';
 import { getRequestHeaders, saveSettingsDebounced } from '/script.js';
 import { extension_settings } from '/scripts/extensions.js';
-import { extensionName } from '../utils/settings.js';
+import { extensionName, extensionBasePath } from '../utils/settings.js';
 import { testApiConnection } from '../core/api.js';
 import { testJqyhApiConnection } from '../core/api/JqyhApi.js';
 import { testConcurrentApiConnection } from '../core/api/ConcurrentApi.js';
 import { testNgmsApiConnection } from '../core/api/Ngms_api.js';
 import { testNccsApiConnection } from '../core/api/NccsApi.js';
+import { showContentModal } from './page-window.js';
 import {
     getRegistry,
     detectVendorSync,
@@ -38,14 +39,51 @@ const SLOT_TEST_FNS = {
 };
 
 // 槽位 → 功能总开关映射
-// key      : extension_settings[extensionName] 中的设置键
-// checkbox : 原面板中对应 checkbox 的 DOM 选择器（用于双向同步）
+// key        : extension_settings[extensionName] 中的设置键（支持 a.b.c 嵌套）
+// checkbox   : 原面板中对应 checkbox 的 DOM 选择器（用于双向同步）
+// defaultTrue: 未写过设置时视为开启（与各模块「默认开」语义一致）
 const SLOT_TOGGLES = {
-    plotOptConc: { key: 'plotOpt_concurrentEnabled', checkbox: '#amily2_plotOpt_concurrentEnabled' },
-    ngms:        { key: 'ngmsEnabled',                checkbox: '#amily2_ngms_enabled' },
-    nccs:        { key: 'nccsEnabled',                checkbox: '#nccs-api-enabled' },
-    cwb:         { key: 'cwb_master_enabled',         checkbox: '#cwb_master_enabled-checkbox' },
+    main:         { key: 'optimizationEnabled',                          checkbox: '#amily2_optimization_enabled' },
+    plotOpt:      { key: 'plotOpt_enabled',                              checkbox: '#amily2_opt_enabled' },
+    plotOptConc:  { key: 'plotOpt_concurrentEnabled',                    checkbox: '#amily2_plotOpt_concurrentEnabled' },
+    ngms:         { key: 'ngmsEnabled',                                  checkbox: '#amily2_ngms_enabled' },
+    nccs:         { key: 'nccsEnabled',                                  checkbox: '#nccs-api-enabled' },
+    cwb:          { key: 'cwb_master_enabled',                           checkbox: '#cwb_master_enabled-checkbox' },
+    autoCharCard: { key: 'autoCharCardEnabled',                          checkbox: '#acc_master_enabled', defaultTrue: true },
+    sybd:         { key: 'sybdEnabled',                                  checkbox: '#amily2_sybd_enabled', defaultTrue: true },
+    tableFilling: { key: 'table_system_enabled',                         checkbox: '#table-system-master-switch', defaultTrue: true },
+    // 向量化 / 重排共用翰林院「启用智能检索」总开关
+    ragEmbed:     { key: 'hanlinyuan-rag-core.retrieval.enabled',         checkbox: '#hly-retrieval-enabled' },
+    ragRerank:    { key: 'hanlinyuan-rag-core.retrieval.enabled',         checkbox: '#hly-retrieval-enabled' },
 };
+
+function _getByPath(obj, path) {
+    if (!obj || !path) return undefined;
+    if (!path.includes('.')) return obj[path];
+    return path.split('.').reduce((cur, k) => (cur == null ? undefined : cur[k]), obj);
+}
+
+function _setByPath(obj, path, value) {
+    if (!obj || !path) return;
+    if (!path.includes('.')) {
+        obj[path] = value;
+        return;
+    }
+    const keys = path.split('.');
+    let cur = obj;
+    for (let i = 0; i < keys.length - 1; i++) {
+        const k = keys[i];
+        if (!cur[k] || typeof cur[k] !== 'object') cur[k] = {};
+        cur = cur[k];
+    }
+    cur[keys[keys.length - 1]] = value;
+}
+
+function _readSlotToggle(settings, toggle) {
+    const val = _getByPath(settings, toggle.key);
+    if (toggle.defaultTrue) return val !== false;
+    return !!val;
+}
 
 // ── 状态 ─────────────────────────────────────────────────────────────────────
 
@@ -67,6 +105,20 @@ export function bindApiConfigPanel(container) {
         });
     }
 
+    // 教程：连接类型 + 分配开关说明
+    $c.off('click.amily2.apiTutorial', '#amily2_open_api_config_tutorial')
+      .on('click.amily2.apiTutorial', '#amily2_open_api_config_tutorial', () => {
+          showContentModal('API 连接使用教程', `${extensionBasePath}/ApiConfig.md`, {
+              advancedTitle: 'API 连接 · 进阶操作',
+              advancedUrl: `${extensionBasePath}/ApiConfig-Advanced.md`,
+          });
+      });
+
+    // 顶部分段：连接 / 分配 / 更多
+    $c.on('click', '.am2-ac-tab', function () {
+        _switchAcTab($c, $(this).data('ac-tab'));
+    });
+
     // 存储模式
     _bindStorageMode($c);
 
@@ -81,28 +133,28 @@ export function bindApiConfigPanel(container) {
     // 新建 Profile
     $c.find('#amily2_add_profile').on('click', () => openModal($c, null));
 
-    // 弹窗：类型切换时显示/隐藏专有参数
+    // 类型切换时显示/隐藏专有参数
     $c.find('#amily2_pf_type').on('change', function () {
         _switchParamSections($c, $(this).val());
     });
 
-    // 弹窗：接口类型切换 —— vendor preset 自动填 defaultUrl + 切换提示框
+    // 接口类型切换 —— vendor preset 自动填 defaultUrl + 切换提示框
     $c.find('#amily2_pf_provider').on('change', async function () {
         const provider = $(this).val();
         _handleProviderChange($c, provider);
         await _autofillVendorUrl($c, provider);
     });
 
-    // 弹窗：获取模型列表
+    // 获取模型列表
     $c.find('#amily2_pf_fetch_models').on('click', () => _fetchModels($c));
 
-    // 弹窗：测试连接
+    // 测试连接
     $c.find('#amily2_pf_test_conn').on('click', () => _testConnection($c));
 
-    // 弹窗：URL 变更 → 更新 customParams hint
+    // URL 变更 → 更新 customParams hint
     $c.find('#amily2_pf_url').on('input change blur', () => _updateCustomParamsHint($c));
 
-    // 弹窗：customParams 文本框实时校验 JSON
+    // customParams 文本框实时校验 JSON
     $c.find('#amily2_pf_custom_params').on('blur input', () => {
         _validateCustomParamsLive($c);
         _updateCustomParamsHint($c);
@@ -123,13 +175,14 @@ export function bindApiConfigPanel(container) {
     // 旧配置清理按钮
     $c.find('#amily2_clear_legacy_config').on('click', () => _handleClearLegacyConfig($c));
 
-    // 表单：取消
+    // 表单：取消 / 返回列表
     $c.find('#amily2_profile_modal_cancel').on('click', () => closeModal($c));
 
-    // 弹窗：保存
+    // 保存
     $c.find('#amily2_profile_modal_save').on('click', () => saveProfile($c));
 
     // 初始渲染
+    closeModal($c);
     renderProfileList($c);
     renderSlotAssignments($c);
 }
@@ -143,8 +196,8 @@ function _bindStorageMode($c) {
     const $importInput = $c.find('#amily2_import_key_bundle_input');
 
     const MODE_NOTES = {
-        local: '本地存储：API Key 仅存于本设备浏览器，绝不上传服务端。换设备需重新填写。',
-        cloud: '加密云同步：API Key 经 RSA+AES 混合加密后随设置同步。私钥仅留在本设备，服务商只能看到密文。',
+        local: '本机存储：密钥只在当前浏览器，不会上传。换设备要重新填。',
+        cloud: '加密云同步：密钥加密后随设置同步。私钥只在本机，服务端只能看到密文。',
     };
 
     // 初始状态
@@ -260,60 +313,67 @@ export function renderProfileList($c) {
     );
 
     if (profiles.length === 0) {
-        $list.html('<div class="amily2_profile_empty" style="color:var(--SmartThemeQuoteColor);text-align:center;padding:20px;">暂无连接配置，点击「新建配置」添加。</div>');
+        $list.html(
+            '<div class="amily2_profile_empty am2-ac-empty">' +
+            '<p>还没有连接</p>' +
+            '<small>点右上角「添加」开始</small>' +
+            '</div>'
+        );
         return;
     }
 
-    const TYPE_BADGE_COLOR = {
-        chat:      'var(--SmartThemeBodyColor)',
-        embedding: '#7eb8f7',
-        rerank:    '#f7b07e',
+    const TYPE_CLASS = {
+        chat: 'is-chat',
+        embedding: 'is-embed',
+        rerank: 'is-rerank',
     };
 
     const html = profiles.map(p => {
-        const typeInfo = PROFILE_TYPES[p.type];
-        const badgeStyle = `background:${TYPE_BADGE_COLOR[p.type]}22; color:${TYPE_BADGE_COLOR[p.type]}; border:1px solid ${TYPE_BADGE_COLOR[p.type]}55; border-radius:4px; padding:1px 6px; font-size:0.78em;`;
+        const typeInfo = PROFILE_TYPES[p.type] || { icon: 'fa-server', label: p.type || '未知' };
+        const typeClass = TYPE_CLASS[p.type] || '';
+        const selected = p.id === _editingId ? ' is-selected' : '';
+        const sub = [
+            typeInfo.label,
+            p.model || '未设模型',
+            p.apiUrl ? _truncateUrl(p.apiUrl) : '',
+        ].filter(Boolean).join(' · ');
         return `
-        <div class="amily2_profile_card" data-id="${p.id}" style="
-            display:flex; align-items:center; gap:10px;
-            padding:8px 12px;
-            background:var(--black10a);
-            border:1px solid var(--SmartThemeBorderColor);
-            border-radius:6px;">
-            <i class="fas ${typeInfo.icon}" style="width:16px; color:var(--SmartThemeQuoteColor);"></i>
-            <div style="flex:1; min-width:0;">
-                <div style="font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${_escapeHtml(p.name)}</div>
-                <div style="font-size:0.82em; color:var(--SmartThemeQuoteColor); margin-top:2px;">
-                    <span style="${badgeStyle}"><i class="fas ${typeInfo.icon}"></i> ${typeInfo.label}</span>
-                    <span style="margin-left:6px;">${_escapeHtml(p.model || '（未设置模型）')}</span>
-                    ${p.apiUrl ? `<span style="margin-left:6px; opacity:0.7;">${_escapeHtml(_truncateUrl(p.apiUrl))}</span>` : ''}
-                </div>
+        <div class="amily2_profile_card am2-ac-row${selected}" data-id="${p.id}" role="button" tabindex="0">
+            <span class="am2-ac-dot ${typeClass}" aria-hidden="true"></span>
+            <div class="am2-ac-row-body">
+                <div class="am2-ac-row-title">${_escapeHtml(p.name)}</div>
+                <div class="am2-ac-row-sub">${_escapeHtml(sub)}</div>
             </div>
-            <div style="display:flex; gap:4px; flex-shrink:0;">
-                <button class="menu_button small_button interactable amily2_edit_profile" data-id="${p.id}" title="编辑">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="menu_button small_button secondary interactable amily2_delete_profile" data-id="${p.id}" title="删除">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
+            <button class="am2-ac-iconbtn amily2_delete_profile" data-id="${p.id}" title="删除" type="button">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+            <i class="fas fa-chevron-right am2-ac-chevron" aria-hidden="true"></i>
         </div>`;
     }).join('');
 
     $list.html(html);
 
-    // 编辑 / 删除事件
-    $list.find('.amily2_edit_profile').on('click', function () {
+    // 整行点击进入编辑（删除按钮除外）
+    $list.find('.am2-ac-row').on('click', function (e) {
+        if ($(e.target).closest('.amily2_delete_profile').length) return;
         openModal($c, $(this).data('id'));
     });
-    $list.find('.amily2_delete_profile').on('click', function () {
+    $list.find('.am2-ac-row').on('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openModal($c, $(this).data('id'));
+        }
+    });
+    $list.find('.amily2_delete_profile').on('click', function (e) {
+        e.stopPropagation();
         const id   = $(this).data('id');
         const name = apiProfileManager.getProfile(id)?.name || id;
-        if (!confirm(`确认删除连接配置「${name}」？\n此操作不可撤销，存储的 API Key 将同时清除。`)) return;
+        if (!confirm(`删除「${name}」？密钥会一并清除。`)) return;
         apiProfileManager.deleteProfile(id);
+        if (_editingId === id) closeModal($c);
         renderProfileList($c);
         renderSlotAssignments($c);
-        toastr.success(`已删除配置「${name}」。`);
+        toastr.success(`已删除「${name}」。`);
     });
 }
 
@@ -324,45 +384,56 @@ export function renderSlotAssignments($c) {
 
     const settings = extension_settings[extensionName] || {};
 
-    const rows = Object.entries(SLOTS).map(([slot, slotInfo]) => {
-        const profiles   = apiProfileManager.getProfiles(slotInfo.type);
-        const assigned   = apiProfileManager.getAssignment(slot) || '';
-        const typeInfo   = PROFILE_TYPES[slotInfo.type];
-        const toggle     = SLOT_TOGGLES[slot];
+    // 按类型分组，减少一长串压迫感
+    const groups = [
+        { key: 'chat', title: '对话能力' },
+        { key: 'embedding', title: '智能检索' },
+        { key: 'rerank', title: '结果重排' },
+    ];
 
-        const options = [
-            `<option value="">— 未分配 —</option>`,
-            ...profiles.map(p =>
-                `<option value="${p.id}" ${p.id === assigned ? 'selected' : ''}>${_escapeHtml(p.name)}</option>`
-            ),
-        ].join('');
+    const entries = Object.entries(SLOTS);
+    const html = groups.map(g => {
+        const items = entries.filter(([, info]) => info.type === g.key);
+        if (!items.length) return '';
+        const rows = items.map(([slot, slotInfo]) => {
+            const profiles = apiProfileManager.getProfiles(slotInfo.type);
+            const assigned = apiProfileManager.getAssignment(slot) || '';
+            const toggle   = SLOT_TOGGLES[slot];
+            const options = [
+                `<option value="">未分配</option>`,
+                ...profiles.map(p =>
+                    `<option value="${p.id}" ${p.id === assigned ? 'selected' : ''}>${_escapeHtml(p.name)}</option>`
+                ),
+            ].join('');
 
-        // 功能开关（仅有映射的槽位显示）
-        const toggleHtml = toggle
-            ? `<label class="toggle-switch" style="flex-shrink:0;" title="启用/禁用此功能">
-                   <input type="checkbox" class="amily2_slot_toggle" data-slot="${slot}" ${settings[toggle.key] ? 'checked' : ''} />
-                   <span class="slider"></span>
-               </label>`
-            : '';
+            const toggleHtml = toggle
+                ? `<label class="toggle-switch am2-ac-switch" title="一键启用 / 关闭该功能">
+                       <input type="checkbox" class="amily2_slot_toggle" data-slot="${slot}" ${_readSlotToggle(settings, toggle) ? 'checked' : ''} />
+                       <span class="slider"></span>
+                   </label>`
+                : '';
 
-        return `
-        <div style="display:flex; align-items:center; gap:8px; padding:4px 0;">
-            ${toggleHtml}
-            <span style="width:140px; flex-shrink:0; font-size:0.9em;">${slotInfo.label}</span>
-            <span style="color:var(--SmartThemeQuoteColor); font-size:0.78em; width:70px; flex-shrink:0;">
-                <i class="fas ${typeInfo.icon}"></i> ${typeInfo.label}
-            </span>
-            <select class="text_pole amily2_slot_select" data-slot="${slot}" style="flex:1;">
-                ${options}
-            </select>
-            <button class="menu_button small_button interactable amily2_slot_test" data-slot="${slot}"
-                    title="测试此槽位的连接" style="flex-shrink:0; ${assigned ? '' : 'opacity:0.4; pointer-events:none;'}">
-                <i class="fas fa-plug"></i>
-            </button>
-        </div>`;
+            return `
+            <div class="am2-ac-setting ${assigned ? 'is-on' : ''}">
+                <div class="am2-ac-setting-label">
+                    <strong>${_escapeHtml(slotInfo.label)}</strong>
+                </div>
+                <div class="am2-ac-setting-controls">
+                    ${toggleHtml}
+                    <select class="text_pole amily2_slot_select am2-ac-input am2-ac-input-sm" data-slot="${slot}">
+                        ${options}
+                    </select>
+                    <button class="am2-ac-iconbtn amily2_slot_test" data-slot="${slot}"
+                            title="测试" type="button" ${assigned ? '' : 'disabled'}>
+                        <i class="fas fa-bolt"></i>
+                    </button>
+                </div>
+            </div>`;
+        }).join('');
+        return `<div class="am2-ac-group"><h3 class="am2-ac-group-title">${g.title}</h3><div class="am2-ac-settings">${rows}</div></div>`;
     }).join('');
 
-    $slots.html(rows);
+    $slots.html(html);
 
     $slots.find('.amily2_slot_select').on('change', function () {
         const slot = $(this).data('slot');
@@ -399,7 +470,7 @@ export function renderSlotAssignments($c) {
         } catch (e) {
             toastr.error(`测试失败：${e.message}`, slot);
         } finally {
-            $btn.prop('disabled', false).html('<i class="fas fa-plug"></i>');
+            $btn.prop('disabled', false).html('<i class="fas fa-bolt"></i>');
         }
     });
 
@@ -410,10 +481,19 @@ export function renderSlotAssignments($c) {
         if (!toggle) return;
 
         const checked = this.checked;
+        const currentEl = this;
         const s = extension_settings[extensionName];
-        if (s) s[toggle.key] = checked;
+        if (s) _setByPath(s, toggle.key, checked);
 
-        // 同步原面板的 checkbox（保持一致）
+        // 同一设置键可能对应多个槽（如 ragEmbed / ragRerank），同步其它开关 UI
+        $slots.find('.amily2_slot_toggle').each(function () {
+            const other = SLOT_TOGGLES[$(this).data('slot')];
+            if (other && other.key === toggle.key && this !== currentEl && this.checked !== checked) {
+                this.checked = checked;
+            }
+        });
+
+        // 同步原面板的 checkbox（保持一致；触发其 change 以便模块侧逻辑跟进）
         const origCb = document.querySelector(toggle.checkbox);
         if (origCb && origCb.checked !== checked) {
             origCb.checked = checked;
@@ -426,27 +506,62 @@ export function renderSlotAssignments($c) {
 
 // ── 弹窗操作 ──────────────────────────────────────────────────────────────────
 
+function _switchAcTab($c, tab, { keepForm = false } = {}) {
+    if (!tab) return;
+    $c.find('.am2-ac-tab').removeClass('is-active').attr('aria-selected', 'false');
+    $c.find(`.am2-ac-tab[data-ac-tab="${tab}"]`).addClass('is-active').attr('aria-selected', 'true');
+    $c.find('.am2-ac-view').each(function () {
+        const on = $(this).data('ac-view') === tab;
+        $(this).toggleClass('is-active', on);
+        if (on) this.removeAttribute('hidden');
+        else this.setAttribute('hidden', '');
+    });
+    if (!keepForm && tab !== 'connections') {
+        _hideFormOnly($c);
+        _editingId = null;
+        $c.find('.am2-ac-row').removeClass('is-selected');
+    }
+}
+
+function _showFormPane($c, show) {
+    const form = $c.find('#amily2_profile_form_details')[0];
+    const list = $c.find('#amily2_profile_list_pane')[0];
+    if (!form || !list) return;
+    if (show) {
+        form.removeAttribute('hidden');
+        list.setAttribute('hidden', '');
+        form.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    } else {
+        form.setAttribute('hidden', '');
+        list.removeAttribute('hidden');
+    }
+}
+
+function _hideFormOnly($c) {
+    _showFormPane($c, false);
+    $c.find('#amily2_pf_type').prop('disabled', false);
+}
+
 async function openModal($c, id) {
+    _switchAcTab($c, 'connections', { keepForm: true });
     _editingId = id;
 
     if (id) {
-        // 编辑模式
         const p = apiProfileManager.getProfile(id);
         if (!p) return;
-        $c.find('#amily2_profile_modal_title').text('编辑连接配置');
+        $c.find('#amily2_profile_modal_title').text(p.name || '编辑连接');
         $c.find('#amily2_profile_form_icon').attr('class', 'fas fa-edit');
-        $c.find('#amily2_pf_type').val(p.type).prop('disabled', true);   // 不允许修改类型
+        $c.find('#amily2_pf_type').val(p.type).prop('disabled', true);
         $c.find('#amily2_pf_name').val(p.name);
         $c.find('#amily2_pf_provider').val(p.provider);
         $c.find('#amily2_pf_url').val(p.apiUrl);
-        $c.find('#amily2_pf_key').val('');   // Key 不回显
+        $c.find('#amily2_pf_key').val('');
         $c.find('#amily2_pf_model').val(p.model);
 
         if (p.type === 'chat') {
             $c.find('#amily2_pf_max_tokens').val(p.maxTokens);
             $c.find('#amily2_pf_temperature').val(p.temperature);
             $c.find('#amily2_pf_fake_stream').prop('checked', p.fakeStream ?? false);
-            // customParams 写回成格式化 JSON 字符串
             const cp = p.customParams ?? {};
             $c.find('#amily2_pf_custom_params').val(
                 Object.keys(cp).length ? JSON.stringify(cp, null, 2) : ''
@@ -461,14 +576,12 @@ async function openModal($c, id) {
         _switchParamSections($c, p.type);
         _handleProviderChange($c, p.provider);
     } else {
-        // 新建模式
-        $c.find('#amily2_profile_modal_title').text('新建连接配置');
+        $c.find('#amily2_profile_modal_title').text('添加连接');
         $c.find('#amily2_profile_form_icon').attr('class', 'fas fa-plus');
         $c.find('#amily2_pf_type').val('chat').prop('disabled', false);
         $c.find('#amily2_pf_name, #amily2_pf_url, #amily2_pf_key, #amily2_pf_model').val('');
         $c.find('#amily2_pf_provider').val('openai');
         _handleProviderChange($c, 'openai');
-        // 新建模式下自动填充默认 URL（编辑模式不调，避免覆盖用户已配置的代理 URL）
         _autofillVendorUrl($c, 'openai');
         $c.find('#amily2_pf_max_tokens').val(65500);
         $c.find('#amily2_pf_temperature').val(1.0);
@@ -481,24 +594,21 @@ async function openModal($c, id) {
         _switchParamSections($c, 'chat');
     }
 
-    // 清空上次测试结果，重置模型选择器为手动输入状态
     $c.find('#amily2_pf_test_result').text('');
     $c.find('#amily2_pf_model_select').hide().empty();
     $c.find('#amily2_pf_model').show();
-
-    // 刷新 customParams 旁的 vendor 提示 + 清空错误
     _updateCustomParamsHint($c);
     _validateCustomParamsLive($c);
 
-    const $details = $c.find('#amily2_profile_form_details');
-    $details.prop('open', true);
-    $details[0].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    _showFormPane($c, true);
+    $c.find('.am2-ac-row').removeClass('is-selected');
+    if (id) $c.find(`.am2-ac-row[data-id="${id}"]`).addClass('is-selected');
 }
 
 function closeModal($c) {
-    $c.find('#amily2_profile_form_details').prop('open', false);
-    $c.find('#amily2_pf_type').prop('disabled', false);
+    _hideFormOnly($c);
     _editingId = null;
+    $c.find('.am2-ac-row').removeClass('is-selected');
 }
 
 async function saveProfile($c) {

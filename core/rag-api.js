@@ -362,8 +362,8 @@ export function getApiHeaders(overrideRetrieval = null) {
     return headers;
 }
 
-export async function getEmbeddings(texts, signal = null) {
-    const settings = await getEmbedRetrievalSettings();
+export async function getEmbeddings(texts, signal = null, overrideSettings = null) {
+    const settings = overrideSettings || await getEmbedRetrievalSettings();
     const { apiEndpoint, customApiUrl, apiKey, embeddingModel, batchSize = 5 } = settings;
 
     const allEmbeddings = [];
@@ -382,9 +382,6 @@ export async function getEmbeddings(texts, signal = null) {
                 const googleUrl = buildGoogleEmbeddingApiUrl(GOOGLE_API_BASE_URL, embeddingModel);
                 const googleBody = buildGoogleEmbeddingRequest(batch, embeddingModel);
 
-                console.log(`[翰林院-API] 发送到 Google API 的请求 URL: ${googleUrl}`);
-                console.log(`[翰林院-API] 发送到 Google API 的请求体:`, JSON.stringify(googleBody, null, 2));
-
                 const googleResponse = await fetch(googleUrl, {
                     method: 'POST',
                     headers: {
@@ -396,13 +393,12 @@ export async function getEmbeddings(texts, signal = null) {
                 });
 
                 if (!googleResponse.ok) {
-                    const errorText = await googleResponse.text();
-                    console.error(`[翰林院-API] Google API 错误响应: ${errorText}`);
-                    throw new Error(`Google API Error: ${googleResponse.status} ${errorText}`);
+                    throw new Error(`Google embedding request failed (${googleResponse.status}).`);
                 }
                 const googleData = await googleResponse.json();
-                console.log(`[翰林院-API] 从 Google API 收到的响应:`, JSON.stringify(googleData, null, 2));
-                
+                if (!googleData || !Array.isArray(googleData.embeddings)) {
+                    throw new Error('Google embedding response has an invalid shape.');
+                }
                 // 使用适配器解析响应
                 batchEmbeddings = parseGoogleEmbeddingResponse(googleData, batch);
                 break;
@@ -429,8 +425,7 @@ export async function getEmbeddings(texts, signal = null) {
                 });
 
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`神力获取失败 ${response.status}: ${errorText}`);
+                    throw new Error(`Embedding request failed (${response.status}).`);
                 }
                 const result = await response.json();
                 if (result.data && Array.isArray(result.data)) {

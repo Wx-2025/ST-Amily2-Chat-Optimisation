@@ -67,7 +67,7 @@ export async function reorganizeTableContent(selectedTableIndices) {
 
         let rawContent;
         if (settings.nccsEnabled) {
-            console.log('[Amily2-重新整理] 使用 Nccs API 进行表格重整...');
+            console.log('[Amily2-重新整理] 使用独立API填表进行表格重整...');
             rawContent = await callNccsAI(messages);
         } else {
             console.log('[Amily2-重新整理] 使用 tableFilling slot 进行表格重整...');

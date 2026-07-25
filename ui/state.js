@@ -18,12 +18,18 @@ export function setUpdateInfo(isNew, updateInfo) {
 
 
 export function applyUpdateIndicator() {
+    const $btn = $('#amily2_update_button_new');
+    const $dot = $('#amily2_update_indicator');
     if (newVersionAvailable) {
-        $('#amily2_update_indicator').show();
-        $('#amily2_update_button_new').show();
+        // updater 尚未接管时先显示紧凑箭头；红点复用 modal 中唯一的 indicator。
+        if (!$btn.data('amily2-upgrade-bound') && !$btn.find('i.fa-arrow-up').length) {
+            $btn.empty().append($('<i>').addClass('fas fa-arrow-up'));
+        }
+        $btn.css({ display: '', visibility: 'visible', pointerEvents: 'auto' });
+        $dot.show();
     } else {
-        $('#amily2_update_indicator').hide();
-        $('#amily2_update_button_new').hide();
+        $dot.hide();
+        $btn.css({ display: 'none' });
     }
 }
 

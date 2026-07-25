@@ -721,7 +721,7 @@ export async function executeRefinement(worldbook, loreKey) {
 
 export async function executeExpedition() {
     if (isExpeditionRunning) {
-        toastr.info("远征军已在途中，无需重复下令。", "圣谕悉知");
+        toastr.info("补全总结正在进行中，请稍候。", "总结");
         return;
     }
 
@@ -738,7 +738,7 @@ export async function executeExpedition() {
             case "character_main":
                 targetLorebookName = characters[context.characterId]?.data?.extensions?.world;
                 if (!targetLorebookName) {
-                    toastr.error("当前角色未绑定主世界书，远征军无法开拔！", "圣谕不明");
+                    toastr.error("当前角色未绑定主世界书，无法写入总结。", "总结");
                     isExpeditionRunning = false;
                     document.dispatchEvent(new CustomEvent('amily2-expedition-state-change', { detail: { isRunning: false, manualStop: false } }));
                     return;
@@ -749,7 +749,7 @@ export async function executeExpedition() {
                 targetLorebookName = `Amily2-Lore-${chatIdentifier}`;
                 break;
             default:
-                toastr.error("未知的史册写入目标，远征军无法开拔！", "圣谕不明");
+                toastr.error("写入目标无效，请检查世界书设置。", "总结");
                 isExpeditionRunning = false;
                 document.dispatchEvent(new CustomEvent('amily2-expedition-state-change', { detail: { isRunning: false, manualStop: false } }));
                 return;
@@ -762,7 +762,7 @@ export async function executeExpedition() {
         const remainingHistory = summarizableLength - summarizedCount;
 
         if (remainingHistory <= 0) {
-            toastr.info("国史已是最新，远征军无需出动。", "凯旋");
+            toastr.info("没有需要补全的历史，已经是最新。", "总结");
             isExpeditionRunning = false;
             document.dispatchEvent(new CustomEvent('amily2-expedition-state-change', { detail: { isRunning: false, manualStop: false } }));
             return;
@@ -770,27 +770,27 @@ export async function executeExpedition() {
 
         const batchSize = settings.historiographySmallTriggerThreshold;
         const totalBatches = Math.ceil(remainingHistory / batchSize);
-        toastr.info(`远征军已开拔！目标：${remainingHistory} 层历史，分 ${totalBatches} 批次征服！`, "远征开始");
+        toastr.info(`开始补全：还有 ${remainingHistory} 层，分 ${totalBatches} 批处理。`, "开始总结");
         let currentProgress = summarizedCount;
 
         for (let i = 0; i < totalBatches; i++) {
             if (manualStopRequested) {
-                toastr.warning("远征已遵从您的敕令暂停！随时可以【继续远征】。", "鸣金收兵");
+                toastr.warning("已暂停。点「继续补全」可接着做。", "总结");
                 break;
             }
 
             const startFloor = currentProgress + 1;
             const endFloor = Math.min(currentProgress + batchSize, summarizableLength);
-            const toastTitle = `远征战役 (${i + 1}/${totalBatches})`;
+            const toastTitle = `补全进度 (${i + 1}/${totalBatches})`;
 
             const delay = 2000;
             if (i > 0) {
-                toastr.info(`第 ${i + 1} 批次战役准备中... (${delay / 1000}秒后接敌)`, toastTitle);
+                toastr.info(`准备第 ${i + 1} 批…（${delay / 1000} 秒后开始）`, toastTitle);
                 await new Promise(resolve => setTimeout(resolve, delay));
             }
 
             if (manualStopRequested) {
-                toastr.warning("远征已在准备阶段遵令暂停！", "鸣金收兵");
+                toastr.warning("已在准备阶段暂停。", "总结");
                 break;
             }
 
@@ -798,19 +798,19 @@ export async function executeExpedition() {
             if (success) {
                 currentProgress = endFloor;
             } else {
-                toastr.warning(`远征因第 ${i + 1} 批次任务失败而中止。`, "远征中止");
+                toastr.warning(`第 ${i + 1} 批失败，补全已中止。`, "总结");
                 manualStopRequested = true;
                 break;
             }
         }
 
         if(!manualStopRequested) {
-             toastr.success("凯旋！远征大捷！所有未载之史均已化为帝国永恒的记忆！", "远征完毕");
+             toastr.success("补全完成，未总结的历史已全部处理。", "开始总结");
         }
 
     } catch (error) {
-        console.error("[大史官-远征失败]", error);
-        toastr.error("远征途中遭遇重大挫折，任务中止！您可以随时【继续远征】。", "远征失败");
+        console.error("[大史官-补全失败]", error);
+        toastr.error("补全过程出错已中止，可点「继续补全」重试。", "总结");
     } finally {
         isExpeditionRunning = false;
         document.dispatchEvent(new CustomEvent('amily2-expedition-state-change', { detail: { isRunning: false, manualStop: manualStopRequested } }));
@@ -820,9 +820,9 @@ export async function executeExpedition() {
 export function stopExpedition() {
     if (isExpeditionRunning) {
         manualStopRequested = true;
-        toastr.info("停战敕令已下达！远征军将在完成当前批次的任务后休整。", "圣谕传达");
+        toastr.info("已请求停止，当前这一批结束后会停下。", "总结");
     } else {
-        toastr.warning("远征军已在营中，无需下达停战敕令。", "圣谕悉知");
+        toastr.warning("当前没有正在进行的补全。", "总结");
     }
 }
 

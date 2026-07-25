@@ -365,7 +365,10 @@ function bindTutorialEvents() {
     if (tutorialButton) {
         tutorialButton.addEventListener('click', () => {
 
-            showContentModal("翰林院使用教程", `${extensionBasePath}/HanLin.md`);
+            showContentModal("智能检索 · 小白教程", `${extensionBasePath}/HanLin.md`, {
+                advancedTitle: "智能检索 · 进阶操作",
+                advancedUrl: `${extensionBasePath}/HanLin-Advanced.md`,
+            });
         });
     }
 }

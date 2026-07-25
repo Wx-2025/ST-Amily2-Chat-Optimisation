@@ -10,6 +10,15 @@ import './utils/config/ApiProfileManager.js'
 import './utils/config/RuleProfileManager.js'
 import './core/table-system/TableSystemService.js'
 import './core/combat/CombatService.js'
+import './core/time-river/chat-binding.js'
+import { getContext as getTimeRiverHostContext } from '/scripts/extensions.js';
+import { getRequestHeaders as getTimeRiverHostRequestHeaders } from '/script.js';
+import { configureTimeRiverHost } from './core/time-river/host-context.js';
+
+configureTimeRiverHost({
+    getContext: getTimeRiverHostContext,
+    getRequestHeaders: getTimeRiverHostRequestHeaders,
+});
 
 // Re-exports (重新导出供 index.js 使用)
 export { createDrawer } from "./ui/drawer.js";
@@ -24,7 +33,21 @@ export { characters, this_chid, eventSource, event_types, saveSettingsDebounced 
 
 // Core Systems
 export { injectTableData, generateTableContent } from "./core/table-system/injector.js";
-export { injectProgressiveMemory, clearProgressiveMemoryInjection } from "./core/progressive-memory/engine.js";
+export {
+    injectProgressiveMemory,
+    clearProgressiveMemoryInjection,
+    invalidateProgressiveMemoryContext,
+    suspendProgressiveMemoryContext,
+    resumeProgressiveMemoryContext,
+} from "./core/progressive-memory/engine.js";
+export { refreshProgressiveMemorySourceOptions } from "./core/progressive-memory/bindings.js";
+export {
+    injectTimeRiver,
+    clearTimeRiverInjection,
+    invalidateTimeRiverContext,
+    suspendTimeRiverContext,
+    resumeTimeRiverContext,
+} from "./core/time-river/injection.js";
 export { initialize as initializeRagProcessor } from "./core/rag-processor.js";
 export { loadSettingsToUI as loadHanlinyuanSettingsToUI } from "./ui/hanlinyuan-bindings.js";
 export { loadTables, clearHighlights, rollbackAndRefill, rollbackState, commitPendingDeletions, saveStateToMessage, getMemoryState, clearUpdatedTables } from './core/table-system/manager.js';

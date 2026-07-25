@@ -64,14 +64,18 @@
 <body>
 
     <div class="amily2-header">
-        <div class="additional-features-title">
-            <i class="fas fa-table"></i> 内存储司 · 表格核心
+        <div class="am2-panel-title-row">
+            <div class="additional-features-title">
+                <i class="fas fa-table"></i> 表格模块
+            </div>
+            <button id="amily2_open_table_tutorial" class="menu_button small_button secondary interactable am2-panel-tutorial-btn" type="button" title="小白教程：表格模块要配什么模型">
+                <i class="fas fa-book-open"></i> 教程
+            </button>
         </div>
-        <button id="amily2_back_to_main_from_forms" class="menu_button secondary small_button interactable">
-            返回主殿 <i class="fas fa-arrow-right"></i>
+        <button id="amily2_back_to_main_from_forms" class="menu_button secondary small_button interactable" type="button">
+            <i class="fas fa-arrow-left"></i> 返回
         </button>
     </div>
-    <hr class="header-divider" style="margin-top: 5px; margin-bottom: 10px;">
 
     <div id="upper-controls-wrapper">
         <fieldset class="settings-group" style="padding: 10px; margin-bottom: 10px;">
@@ -350,12 +354,12 @@
 
                     <hr class="section-divider" style="margin: 10px 0;">
 
-                    <!-- Nccs API 控制区域 -->
+                    <!-- 独立 API 填表（内部 nccs 槽） -->
                     <fieldset class="settings-group" style="border-style: dashed; padding: 8px; margin-bottom: 10px;">
-                        <legend><i class="fas fa-brain"></i> Nccs API 系统</legend>
+                        <legend><i class="fas fa-brain"></i> 独立API填表</legend>
                         
                         <div class="control-block-with-switch" style="margin-bottom: 10px;">
-                            <label for="nccs-api-enabled">启用 Nccs API</label>
+                            <label for="nccs-api-enabled">启用独立API填表</label>
                             <label class="toggle-switch">
                                 <input type="checkbox" id="nccs-api-enabled" data-setting-key="nccsEnabled" data-type="boolean">
                                 <span class="slider"></span>

@@ -41,6 +41,11 @@ function loadSettingsToUI() {
 
         if (value === undefined || value === null || value === '') {
             if (!SENSITIVE_KEYS.has(key)) {
+                // 总开关类：未写过时用 HTML 默认（sybdEnabled 默认 true），不强制写回 false
+                if (target.type === 'checkbox' && key === 'sybdEnabled') {
+                    target.checked = true;
+                    return;
+                }
                 let defaultValue;
                 if (target.type === 'checkbox') {
                     defaultValue = target.checked;
@@ -55,7 +60,8 @@ function loadSettingsToUI() {
         };
 
         if (target.type === 'checkbox') {
-            target.checked = value;
+            // sybdEnabled 与 table 类似：仅明确 false 才关
+            target.checked = (key === 'sybdEnabled') ? (value !== false) : !!value;
         } else if (target.type === 'range') {
             target.value = value;
             const valueDisplay = document.getElementById(`${target.id}_value`);

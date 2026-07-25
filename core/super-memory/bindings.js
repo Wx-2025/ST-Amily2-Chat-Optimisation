@@ -194,7 +194,7 @@ function renderTableSettingsList() {
                             <input type="checkbox" class="sm-table-setting-check" data-table="${safeTableName}" data-type="constant" ${isConstant ? 'checked' : ''}>
                             <span class="sm-slider"></span>
                         </label>
-                        <span style="font-size: 0.9em; color: #ccc;">索引绿灯(常驻)</span>
+                        <span style="font-size: 0.9em; color: #ccc;">索引蓝灯（常驻）</span>
                     </div>
                 </div>
                 <div style="display: flex; justify-content: flex-start; margin-top: 5px;">

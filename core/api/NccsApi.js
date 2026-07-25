@@ -94,14 +94,14 @@ export async function callNccsAI(messages, options = {}) {
     if (finalOptions.apiMode !== 'sillytavern_preset') {
         if (!finalOptions.apiUrl || !finalOptions.model || !finalOptions.apiKey) {
             console.warn("[Amily2-Nccs外交部] API配置不完整，无法调用AI");
-            toastr.error("并发模块（NCCS）未配置 API 连接配置，请前往 API 连接配置面板分配 profile 或填写 NCCS 独立设置。", "Amily2-NCCS 未配置");
+            toastr.error("独立API填表未配置连接，请前往 API 连接 → 分配，给「独立API填表」挂上对话模型。", "独立API填表未配置");
             return null;
         }
     } else {
         // [限制] 预设模式暂不支持流式
         if (finalOptions.stream) {
             console.warn("[Amily2-Nccs] 预设模式目前尚不支持流式处理方案，已自动切换为标准模式。");
-            toastr.warning("SillyTavern预设模式目前暂不支持流式处理（假流式），已为您切换为标准请求模式。该功能将在后续版本中支持。", "Nccs-外交部");
+            toastr.warning("SillyTavern预设模式暂不支持流式处理，已切换为标准请求。", "独立API填表");
             finalOptions.stream = false;
         }
     }
@@ -126,7 +126,7 @@ export async function callNccsAI(messages, options = {}) {
             throw error;
         }
         console.error(`[Amily2-Nccs] API 调用失败:`, error);
-        toastr.error(`调用失败: ${error.message}`, "Nccs API Error");
+        toastr.error(`调用失败: ${error.message}`, "独立API填表");
         return null;
     }
 }
@@ -363,7 +363,7 @@ export async function fetchNccsModels() {
         }
     } catch (error) {
         console.error('[Amily2号-Nccs外交部] 获取模型列表失败:', error);
-        toastr.error(`获取模型列表失败: ${error.message}`, 'Nccs API');
+        toastr.error(`获取模型列表失败: ${error.message}`, '独立API填表');
         throw error;
     }
 }
@@ -375,18 +375,18 @@ export async function testNccsApiConnection() {
 
     if (apiSettings.apiMode === 'sillytavern_preset') {
         if (!apiSettings.tavernProfile) {
-            toastr.error('未配置SillyTavern预设ID', 'Nccs API连接测试失败');
+            toastr.error('未配置SillyTavern预设ID', '独立API填表·测试失败');
             return false;
         }
     } else {
         if (!apiSettings.apiUrl || !apiSettings.apiKey || !apiSettings.model) {
-            toastr.error('API配置不完整，请检查URL、Key和模型', 'Nccs API连接测试失败');
+            toastr.error('API配置不完整，请检查URL、Key和模型', '独立API填表·测试失败');
             return false;
         }
     }
 
     try {
-        toastr.info('正在发送测试消息"你好！"...', 'Nccs API连接测试');
+        toastr.info('正在发送测试消息"你好！"...', '独立API填表·测试');
 
         const userName = window.SillyTavern.getContext?.()?.name1 || '用户';
         const systemPrompt = `接下来用户会使用测试按钮测试api连接是否正常，请回复ta连接是正常的，称呼用户为：“${userName}大人”，并复述群号1060183271，告知ta，本扩展开发者：“诗与酒.”正静待ta的入驻。`;
@@ -401,7 +401,7 @@ export async function testNccsApiConnection() {
         if (response && response.trim()) {
             console.log('[Amily2号-Nccs外交部] 测试消息响应:', response);
             const formattedResponse = response.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-            toastr.success(`连接测试成功！AI回复: "${formattedResponse}"`, 'Nccs API连接测试成功', { "escapeHtml": false });
+            toastr.success(`连接测试成功！AI回复: "${formattedResponse}"`, '独立API填表·测试成功', { "escapeHtml": false });
             return true;
         } else {
             throw new Error('API未返回有效响应');
@@ -409,7 +409,7 @@ export async function testNccsApiConnection() {
 
     } catch (error) {
         console.error('[Amily2号-Nccs外交部] 连接测试失败:', error);
-        toastr.error(`连接测试失败: ${error.message}`, 'Nccs API连接测试失败');
+        toastr.error(`连接测试失败: ${error.message}`, '独立API填表·测试失败');
         return false;
     }
 }

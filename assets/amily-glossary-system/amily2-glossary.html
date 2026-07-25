@@ -2,8 +2,7 @@
     <div class="additional-features-title">
         <i class="fas fa-book"></i> 术语表 (Sybd 系统)
     </div>
-    <button id="amily2_back_to_main_from_glossary" class="menu_button secondary small_button interactable">
-        返回主殿 <i class="fas fa-arrow-right"></i>
+    <button id="amily2_back_to_main_from_glossary" class="menu_button secondary small_button interactable"><i class="fas fa-arrow-left"></i> 返回
     </button>
 </div>
 <hr class="header-divider">
@@ -31,6 +30,16 @@
             <small class="notes" style="text-align: center; display: block; margin-bottom: 15px;">
                 独立的API调用系统，可与主系统并行使用，支持全兼容和SillyTavern预设两种模式。
             </small>
+
+            <div class="amily2_settings_block" style="margin-bottom: 12px;">
+                <div class="control-block-with-switch">
+                    <label for="amily2_sybd_enabled"><strong>术语表自动填写总开关</strong></label>
+                    <label class="switch" title="关闭后术语表不再调用模型自动填写">
+                        <input type="checkbox" id="amily2_sybd_enabled" data-setting-key="sybdEnabled" data-type="boolean" checked />
+                        <span class="slider round"></span>
+                    </label>
+                </div>
+            </div>
 
             <div class="amily2_settings_block" id="amily2_sybd_content">
                 <div class="control-group">

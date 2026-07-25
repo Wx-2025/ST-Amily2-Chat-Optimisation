@@ -871,6 +871,9 @@ export const coreDefaults = {
   lastUsedPresetName: '',
   tavernProfile: '',
   forceProxyForCustomApi: false,
+  // API 分配页一键开关：术语表 / 一键生卡（默认开启，关闭后对应功能不再调模型）
+  sybdEnabled: true,
+  autoCharCardEnabled: true,
 };
 
 export const superMemoryDefaults = {

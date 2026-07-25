@@ -63,6 +63,11 @@ export async function setApiConfig(role, config) {
 }
 
 export async function callAi(role, messages, options = {}, onChunk = null) {
+    const master = extension_settings[extensionName] || {};
+    if (master.autoCharCardEnabled === false) {
+        throw new Error('[自动构建器] 一键生卡总开关已关闭，请先在 API 连接「分配」页或生卡面板开启。');
+    }
+
     const config = mergeSafeModelCallOptions(await getResolvedApiConfig(role), options);
     const roleName = role === 'executor' ? '执行者(模型A)' : '规划者(模型B)';
 

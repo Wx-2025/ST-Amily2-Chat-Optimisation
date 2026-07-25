@@ -20,6 +20,7 @@ import GlossaryModule from './GlossaryModule.js';
 import RendererModule from './RendererModule.js';
 import SuperMemoryModule from './SuperMemoryModule.js';
 import ProgressiveMemoryModule from './ProgressiveMemoryModule.js';
+import TimeRiverModule from './TimeRiverModule.js';
 import ApiConfigModule from './ApiConfigModule.js';
 import RuleConfigModule from './RuleConfigModule.js';
 import SfiGenModule from './SfiGenModule.js';
@@ -36,6 +37,7 @@ export function registerAllModules() {
     registry.register('Renderer',            () => new RendererModule());
     registry.register('SuperMemory',         () => new SuperMemoryModule());
     registry.register('ProgressiveMemory',   () => new ProgressiveMemoryModule());
+    registry.register('TimeRiver',           () => new TimeRiverModule());
     registry.register('ApiConfig',           () => new ApiConfigModule());
     registry.register('RuleConfig',          () => new RuleConfigModule());
     registry.register('SfiGen',              () => new SfiGenModule());

@@ -171,20 +171,33 @@ class Amily2Updater {
         const $updateIndicator = $('#amily2_update_indicator');
 
         if (this.compareVersions(this.latestVersion, this.currentVersion) > 0) {
-            $updateIndicator.show();
-            $updateButton.attr('title', `发现新版本 ${this.latestVersion}！点击查看详情`);
             const safeVersion = /^[\w.+\-]{1,40}$/.test(String(this.latestVersion ?? '')) ? this.latestVersion : '未知';
+            $updateIndicator.show();
+            $updateButton.attr('title', `发现新版本 ${safeVersion}！点击查看详情`);
+            // 经典首页：中间「更新」按钮显示礼物 + 新版号
             $updateButtonNew
-                .show()
+                .attr('title', `升级到 ${safeVersion}`)
+                .attr('data-amily2-upgrade-bound', '1')
+                .data('amily2-upgrade-bound', 1)
                 .empty()
                 .append($('<i>').addClass('fas fa-gift'))
                 .append(document.createTextNode(` 新版 ${safeVersion}`))
-                .off('click')
-                .on('click', () => this.showUpdateConfirmDialog());
+                .show()
+                .off('click.amily2Upgrade')
+                .on('click.amily2Upgrade', (e) => {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    this.showUpdateConfirmDialog();
+                });
         } else {
             $updateIndicator.hide();
             $updateButton.attr('title', `当前版本 ${this.currentVersion}（已是最新）`);
-            $updateButtonNew.hide();
+            $updateButtonNew
+                .attr('title', '已是最新版本')
+                .removeAttr('data-amily2-upgrade-bound')
+                .removeData('amily2-upgrade-bound')
+                .hide()
+                .off('click.amily2Upgrade');
         }
     }
     

@@ -1,0 +1,2959 @@
+/**
+ * Amily2 UI Kit — 统一组件层
+ * 在不破坏既有 id / class 钩子的前提下，升级全部面板控件形态。
+ * 作用域：#amily2_chat_optimiser 及其子模块面板。
+ */
+
+/* =========================================================
+   1. Design Tokens（结构/间距/形态，不强制换肤色）
+   ========================================================= */
+#amily2_chat_optimiser,
+#amily2_drawer_content,
+.amily2-modal,
+#amily2_memorisation_forms_panel,
+#amily2_hanlinyuan_panel,
+#amily2_additional_features_panel,
+#amily2_plot_optimization_panel,
+#amily2_text_optimization_panel,
+#amily2_character_world_book_panel,
+#amily2_world_editor_panel,
+#amily2_glossary_panel,
+#amily2_renderer_panel,
+#amily2_super_memory_panel,
+#amily2_progressive_memory_panel,
+#amily2_api_config_panel,
+#amily2_rule_config_panel,
+#amily2_sfigen_panel,
+#amily2_auto_char_card_panel {
+    --am2-radius-sm: 6px;
+    --am2-radius-md: 10px;
+    --am2-radius-lg: 14px;
+    --am2-radius-xl: 18px;
+    --am2-space-1: 4px;
+    --am2-space-2: 8px;
+    --am2-space-3: 12px;
+    --am2-space-4: 16px;
+    --am2-space-5: 20px;
+    --am2-space-6: 24px;
+    --am2-control-h: 30px;
+    --am2-control-h-sm: 26px;
+    --am2-control-h-lg: 34px;
+    --am2-font: inherit;
+    --am2-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.18);
+    --am2-shadow-md: 0 4px 14px rgba(0, 0, 0, 0.22);
+    --am2-shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.28);
+    --am2-border: 1px solid rgba(255, 255, 255, 0.12);
+    --am2-border-strong: 1px solid rgba(255, 255, 255, 0.2);
+    --am2-surface: rgba(255, 255, 255, 0.04);
+    --am2-surface-2: rgba(255, 255, 255, 0.07);
+    --am2-surface-hover: rgba(255, 255, 255, 0.1);
+    --am2-surface-active: rgba(126, 87, 194, 0.22);
+    --am2-focus: 0 0 0 2px rgba(126, 87, 194, 0.45);
+    --am2-accent: #8b6cf0;
+    --am2-accent-2: #6c8cff;
+    --am2-success: #3dd68c;
+    --am2-warning: #f5b942;
+    --am2-danger: #ff6b6b;
+    --am2-muted: rgba(224, 224, 224, 0.62);
+    --am2-text: var(--amily2-text-color, #e8e8ee);
+}
+
+/* =========================================================
+   2. App Shell / 主容器
+   ========================================================= */
+#amily2_chat_optimiser {
+    display: flex;
+    flex-direction: column;
+    gap: var(--am2-space-4);
+    padding: var(--am2-space-4) var(--am2-space-4) var(--am2-space-6) !important;
+    box-sizing: border-box;
+    line-height: 1.5;
+}
+
+#amily2_chat_optimiser .plugin-features {
+    display: flex;
+    flex-direction: column;
+    gap: var(--am2-space-4);
+}
+
+#amily2_chat_optimiser .plugin-features > hr.header-divider {
+    display: none;
+}
+
+/* =========================================================
+   3. Button System
+   ========================================================= */
+#amily2_chat_optimiser .menu_button,
+#amily2_drawer_content .menu_button,
+.amily2-modal .menu_button,
+#amily2_memorisation_forms_panel .menu_button,
+#amily2_hanlinyuan_panel .menu_button,
+#amily2_additional_features_panel .menu_button,
+#amily2_plot_optimization_panel .menu_button,
+#amily2_text_optimization_panel .menu_button,
+#amily2_character_world_book_panel .menu_button,
+#amily2_world_editor_panel .menu_button,
+#amily2_glossary_panel .menu_button,
+#amily2_renderer_panel .menu_button,
+#amily2_super_memory_panel .menu_button,
+#amily2_progressive_memory_panel .menu_button,
+#amily2_api_config_panel .menu_button,
+#amily2_rule_config_panel .menu_button,
+#amily2_sfigen_panel .menu_button,
+#amily2_auto_char_card_panel .menu_button {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    min-height: var(--am2-control-h) !important;
+    height: auto !important;
+    padding: 0 12px !important;
+    border-radius: var(--am2-radius-md) !important;
+    border: var(--am2-border-strong) !important;
+    background: var(--am2-surface-2) !important;
+    background-image: none !important;
+    color: var(--am2-text) !important;
+    font-weight: 500 !important;
+    font-size: 12.5px !important;
+    line-height: 1.2 !important;
+    letter-spacing: 0.01em;
+    white-space: nowrap !important;
+    writing-mode: horizontal-tb !important;
+    text-orientation: mixed !important;
+    box-shadow: var(--am2-shadow-sm) !important;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease, box-shadow 0.15s ease !important;
+    cursor: pointer;
+    user-select: none;
+    box-sizing: border-box;
+}
+
+#amily2_chat_optimiser .menu_button:hover,
+#amily2_drawer_content .menu_button:hover,
+.amily2-modal .menu_button:hover,
+#amily2_memorisation_forms_panel .menu_button:hover,
+#amily2_hanlinyuan_panel .menu_button:hover,
+#amily2_additional_features_panel .menu_button:hover,
+#amily2_plot_optimization_panel .menu_button:hover,
+#amily2_text_optimization_panel .menu_button:hover,
+#amily2_character_world_book_panel .menu_button:hover,
+#amily2_world_editor_panel .menu_button:hover,
+#amily2_glossary_panel .menu_button:hover,
+#amily2_renderer_panel .menu_button:hover,
+#amily2_super_memory_panel .menu_button:hover,
+#amily2_progressive_memory_panel .menu_button:hover,
+#amily2_api_config_panel .menu_button:hover,
+#amily2_rule_config_panel .menu_button:hover,
+#amily2_sfigen_panel .menu_button:hover,
+#amily2_auto_char_card_panel .menu_button:hover {
+    background: var(--am2-surface-hover) !important;
+    border-color: rgba(255, 255, 255, 0.28) !important;
+    transform: translateY(-1px) !important;
+    box-shadow: var(--am2-shadow-md) !important;
+}
+
+#amily2_chat_optimiser .menu_button:active,
+#amily2_drawer_content .menu_button:active,
+.amily2-modal .menu_button:active,
+#amily2_memorisation_forms_panel .menu_button:active,
+#amily2_api_config_panel .menu_button:active {
+    transform: translateY(0) !important;
+    box-shadow: var(--am2-shadow-sm) !important;
+}
+
+#amily2_chat_optimiser .menu_button:focus-visible,
+#amily2_drawer_content .menu_button:focus-visible,
+.amily2-modal .menu_button:focus-visible {
+    outline: none !important;
+    box-shadow: var(--am2-focus) !important;
+}
+
+/* size variants */
+#amily2_chat_optimiser .menu_button.small_button,
+#amily2_drawer_content .menu_button.small_button,
+.amily2-modal .menu_button.small_button,
+#amily2_memorisation_forms_panel .menu_button.small_button,
+#amily2_api_config_panel .menu_button.small_button,
+#amily2_rule_config_panel .menu_button.small_button,
+#amily2_hanlinyuan_panel .menu_button.small_button,
+#amily2_additional_features_panel .menu_button.small_button,
+#amily2_plot_optimization_panel .menu_button.small_button,
+#amily2_glossary_panel .menu_button.small_button,
+#amily2_super_memory_panel .menu_button.small_button {
+    min-height: var(--am2-control-h-sm) !important;
+    padding: 0 10px !important;
+    font-size: 12px !important;
+    border-radius: var(--am2-radius-sm) !important;
+}
+
+/* semantic variants */
+#amily2_chat_optimiser .menu_button.primary,
+#amily2_chat_optimiser .menu_button.menu_button_primary,
+#amily2_drawer_content .menu_button.primary,
+#amily2_drawer_content .menu_button.menu_button_primary,
+.amily2-modal .menu_button.primary,
+#amily2_memorisation_forms_panel .menu_button.primary,
+#amily2_api_config_panel .menu_button.primary,
+#amily2_rule_config_panel .menu_button.menu_button_primary,
+#amily2_additional_features_panel .menu_button.primary,
+#amily2_hanlinyuan_panel .menu_button.primary {
+    background: linear-gradient(135deg, rgba(139, 108, 240, 0.85), rgba(108, 140, 255, 0.8)) !important;
+    border-color: rgba(139, 108, 240, 0.55) !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+}
+
+#amily2_chat_optimiser .menu_button.primary:hover,
+#amily2_drawer_content .menu_button.primary:hover,
+#amily2_memorisation_forms_panel .menu_button.primary:hover {
+    background: linear-gradient(135deg, rgba(139, 108, 240, 1), rgba(108, 140, 255, 0.95)) !important;
+}
+
+#amily2_chat_optimiser .menu_button.secondary,
+#amily2_drawer_content .menu_button.secondary,
+.amily2-modal .menu_button.secondary,
+#amily2_memorisation_forms_panel .menu_button.secondary,
+#amily2_api_config_panel .menu_button.secondary,
+#amily2_additional_features_panel .menu_button.secondary {
+    background: transparent !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+#amily2_chat_optimiser .menu_button.accent,
+#amily2_drawer_content .menu_button.accent,
+#amily2_additional_features_panel .menu_button.accent {
+    background: linear-gradient(135deg, rgba(255, 152, 0, 0.75), rgba(255, 87, 34, 0.7)) !important;
+    border-color: rgba(255, 152, 0, 0.5) !important;
+    color: #fff !important;
+}
+
+#amily2_chat_optimiser .menu_button.danger,
+#amily2_chat_optimiser .menu_button.caution,
+#amily2_drawer_content .menu_button.danger,
+#amily2_drawer_content .menu_button.caution,
+#amily2_memorisation_forms_panel .menu_button.danger,
+#amily2_api_config_panel .menu_button.caution,
+#amily2_rule_config_panel .menu_button.danger {
+    background: rgba(255, 107, 107, 0.14) !important;
+    border-color: rgba(255, 107, 107, 0.4) !important;
+    color: #ffb4b4 !important;
+}
+
+#amily2_chat_optimiser .menu_button.danger:hover,
+#amily2_memorisation_forms_panel .menu_button.danger:hover,
+#amily2_api_config_panel .menu_button.caution:hover {
+    background: rgba(255, 107, 107, 0.28) !important;
+    border-color: rgba(255, 107, 107, 0.65) !important;
+}
+
+#amily2_chat_optimiser .menu_button.success,
+#amily2_memorisation_forms_panel .menu_button.success {
+    background: rgba(61, 214, 140, 0.14) !important;
+    border-color: rgba(61, 214, 140, 0.4) !important;
+    color: #a8f0c8 !important;
+}
+
+/* 竖排图标按钮 → 横向紧凑按钮 */
+#amily2_chat_optimiser .amily2-vbtn,
+#amily2_drawer_content .amily2-vbtn,
+#amily2_api_config_panel .amily2-vbtn,
+#amily2_rule_config_panel .amily2-vbtn,
+#amily2_rule_config_panel_root .amily2-vbtn {
+    flex-direction: row !important;
+    gap: 6px !important;
+    min-width: 0 !important;
+    padding: 0 12px !important;
+    line-height: 1.2 !important;
+}
+
+#amily2_chat_optimiser .amily2-vbtn .vbtn-icon,
+#amily2_api_config_panel .amily2-vbtn .vbtn-icon,
+#amily2_rule_config_panel .amily2-vbtn .vbtn-icon {
+    font-size: 0.95em !important;
+    line-height: 1;
+}
+
+#amily2_chat_optimiser .amily2-vbtn .vbtn-label,
+#amily2_api_config_panel .amily2-vbtn .vbtn-label,
+#amily2_rule_config_panel .amily2-vbtn .vbtn-label {
+    font-size: 12px !important;
+    white-space: nowrap;
+}
+
+/* 废弃竖排 side-button */
+#amily2_chat_optimiser .side-button {
+    writing-mode: horizontal-tb !important;
+    height: auto !important;
+    width: auto !important;
+    min-height: var(--am2-control-h) !important;
+    padding: 0 12px !important;
+    line-height: 1.2 !important;
+}
+
+#amily2_chat_optimiser .side-button > i {
+    display: inline-block !important;
+    margin: 0 6px 0 0 !important;
+    font-size: 1em !important;
+}
+
+/* =========================================================
+   4. Hub feature buttons — classic flex rows (zip layout)
+   不再强制卡片网格；.am2-feature-card 仅作可选兼容
+   ========================================================= */
+#amily2_chat_optimiser .plugin-features > .settings-group > .button-group {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    justify-content: space-between !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    margin: 0 !important;
+    width: 100% !important;
+}
+
+#amily2_chat_optimiser .plugin-features > .settings-group > .button-group .menu_button.wide_button {
+    display: flex !important;
+    flex: 1 1 0 !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 4px !important;
+    min-width: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    height: auto !important;
+    min-height: 52px !important;
+    padding: 8px 6px !important;
+    white-space: normal !important;
+    text-align: center !important;
+    line-height: 1.2 !important;
+    writing-mode: horizontal-tb !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+}
+
+#amily2_chat_optimiser .plugin-features > .settings-group > .button-group .menu_button.wide_button > i {
+    display: block !important;
+    margin: 0 auto 2px auto !important;
+    font-size: 1.05em !important;
+    width: auto !important;
+    height: auto !important;
+    background: none !important;
+    border-radius: 0 !important;
+    color: inherit !important;
+}
+
+/* 可选卡片类：若别处仍注入 am2-feature-card，保持可读 */
+#amily2_chat_optimiser .am2-feature-card .am2-feature-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+    min-width: 0;
+    width: 100%;
+    text-align: center;
+}
+#amily2_chat_optimiser .am2-feature-card .am2-feature-title {
+    font-size: 12px;
+    font-weight: 600;
+}
+#amily2_chat_optimiser .am2-feature-card .am2-feature-desc {
+    display: none;
+}
+
+#amily2_chat_optimiser .am2-section-label {
+    display: none;
+}
+
+/* =========================================================
+   5. Section / Card（fieldset 升级）
+   ========================================================= */
+#amily2_chat_optimiser .settings-group,
+#amily2_memorisation_forms_panel .settings-group,
+#amily2_hanlinyuan_panel .settings-group,
+#amily2_additional_features_panel .settings-group,
+#amily2_plot_optimization_panel .settings-group,
+#amily2_text_optimization_panel .settings-group,
+#amily2_api_config_panel .settings-group,
+#amily2_rule_config_panel .settings-group,
+#amily2_rule_config_panel_root .settings-group,
+#amily2_glossary_panel .settings-group,
+#amily2_super_memory_panel .settings-group,
+#amily2_progressive_memory_panel .settings-group,
+#amily2_character_world_book_panel .settings-group,
+#amily2_world_editor_panel .settings-group,
+#amily2_sfigen_panel .settings-group {
+    position: relative;
+    margin: 0 0 var(--am2-space-3) 0 !important;
+    padding: var(--am2-space-4) !important;
+    border: var(--am2-border) !important;
+    border-radius: var(--am2-radius-lg) !important;
+    background: var(--am2-surface) !important;
+    backdrop-filter: blur(8px);
+    box-shadow: var(--am2-shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--am2-space-3);
+    min-width: 0;
+}
+
+#amily2_chat_optimiser .settings-group::before,
+#amily2_api_config_panel .settings-group::before,
+#amily2_memorisation_forms_panel .settings-group::before {
+    display: none !important;
+}
+
+#amily2_chat_optimiser .settings-group > legend,
+#amily2_memorisation_forms_panel .settings-group > legend,
+#amily2_hanlinyuan_panel .settings-group > legend,
+#amily2_additional_features_panel .settings-group > legend,
+#amily2_plot_optimization_panel .settings-group > legend,
+#amily2_api_config_panel .settings-group > legend,
+#amily2_rule_config_panel .settings-group > legend,
+#amily2_rule_config_panel_root .settings-group > legend,
+#amily2_glossary_panel .settings-group > legend {
+    float: none;
+    width: 100%;
+    margin: 0 0 var(--am2-space-1) 0 !important;
+    padding: 0 !important;
+    font-size: 13px !important;
+    font-weight: 650 !important;
+    letter-spacing: 0.02em;
+    color: var(--am2-text) !important;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: none;
+}
+
+#amily2_chat_optimiser .settings-group > legend > i,
+#amily2_api_config_panel .settings-group > legend > i,
+#amily2_memorisation_forms_panel .settings-group > legend > i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    background: rgba(139, 108, 240, 0.18);
+    color: #c4b5fd !important;
+    font-size: 11px;
+    margin-right: 0 !important;
+}
+
+#amily2_chat_optimiser .settings-group.collapsible > legend.collapsible-legend {
+    cursor: pointer;
+    padding: 4px 0 !important;
+    border-radius: var(--am2-radius-sm);
+}
+
+#amily2_chat_optimiser .settings-group.collapsible > legend.collapsible-legend:hover {
+    background: transparent;
+    color: #fff !important;
+}
+
+/* =========================================================
+   6. Panel Header
+   ========================================================= */
+/* 面板标题旁「教程」按钮：与返回键同高，不挤乱 header */
+#amily2_chat_optimiser .am2-panel-title-row,
+#amily2_memorisation_forms_panel .am2-panel-title-row,
+#amily2_hanlinyuan_panel .am2-panel-title-row,
+#amily2_additional_features_panel .am2-panel-title-row,
+#amily2_plot_optimization_panel .am2-panel-title-row,
+#amily2_super_memory_panel .am2-panel-title-row,
+#amily2_rule_config_panel .am2-panel-title-row,
+#amily2_api_config_panel .am2-panel-title-row,
+#amily2_api_config_panel .am2-ac-title-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    min-width: 0 !important;
+    flex: 1 1 auto !important;
+}
+
+#amily2_chat_optimiser .am2-panel-title-row .additional-features-title,
+#amily2_memorisation_forms_panel .am2-panel-title-row .additional-features-title,
+#amily2_hanlinyuan_panel .am2-panel-title-row .additional-features-title,
+#amily2_additional_features_panel .am2-panel-title-row .additional-features-title,
+#amily2_plot_optimization_panel .am2-panel-title-row .additional-features-title,
+#amily2_super_memory_panel .am2-panel-title-row .additional-features-title,
+#amily2_rule_config_panel .am2-panel-title-row .additional-features-title {
+    margin: 0 !important;
+    min-width: 0 !important;
+}
+
+#amily2_chat_optimiser .am2-panel-tutorial-btn,
+#amily2_memorisation_forms_panel .am2-panel-tutorial-btn,
+#amily2_hanlinyuan_panel .am2-panel-tutorial-btn,
+#amily2_additional_features_panel .am2-panel-tutorial-btn,
+#amily2_plot_optimization_panel .am2-panel-tutorial-btn,
+#amily2_super_memory_panel .am2-panel-tutorial-btn,
+#amily2_rule_config_panel .am2-panel-tutorial-btn,
+#amily2_api_config_panel .am2-panel-tutorial-btn {
+    flex: 0 0 auto !important;
+    min-height: 28px !important;
+    height: 28px !important;
+    padding: 0 10px !important;
+    font-size: 12px !important;
+    gap: 4px !important;
+    white-space: nowrap !important;
+    width: auto !important;
+    min-width: 0 !important;
+}
+
+#amily2_chat_optimiser .amily2-header,
+#amily2_memorisation_forms_panel .amily2-header,
+#amily2_hanlinyuan_panel .amily2-header,
+#amily2_additional_features_panel .amily2-header,
+#amily2_plot_optimization_panel .amily2-header,
+#amily2_text_optimization_panel .amily2-header,
+#amily2_api_config_panel .amily2-header,
+#amily2_glossary_panel .amily2-header,
+#amily2_super_memory_panel .amily2-header,
+#amily2_progressive_memory_panel .amily2-header,
+#amily2_character_world_book_panel .amily2-header,
+#amily2_world_editor_panel .amily2-header,
+#amily2_renderer_panel .amily2-header,
+#amily2_sfigen_panel .amily2-header,
+#amily2_auto_char_card_panel .amily2-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: var(--am2-space-3);
+    padding: 4px 2px 14px !important;
+    margin: 0 0 var(--am2-space-2) 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#amily2_chat_optimiser .additional-features-title,
+#amily2_memorisation_forms_panel .additional-features-title,
+#amily2_hanlinyuan_panel .additional-features-title,
+#amily2_additional_features_panel .additional-features-title,
+#amily2_plot_optimization_panel .additional-features-title,
+#amily2_text_optimization_panel .additional-features-title,
+#amily2_api_config_panel .additional-features-title,
+#amily2_glossary_panel .additional-features-title,
+#amily2_super_memory_panel .additional-features-title,
+#amily2_progressive_memory_panel .additional-features-title,
+#amily2_character_world_book_panel .additional-features-title,
+#amily2_world_editor_panel .additional-features-title,
+#amily2_renderer_panel .additional-features-title,
+#amily2_sfigen_panel .additional-features-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 16px !important;
+    font-weight: 650 !important;
+    color: var(--am2-text) !important;
+    letter-spacing: 0.01em;
+}
+
+#amily2_chat_optimiser .additional-features-title > i,
+#amily2_api_config_panel .additional-features-title > i,
+#amily2_memorisation_forms_panel .additional-features-title > i {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 9px;
+    background: linear-gradient(135deg, rgba(139, 108, 240, 0.35), rgba(108, 140, 255, 0.25));
+    color: #ddd6fe;
+    font-size: 13px;
+}
+
+#amily2_chat_optimiser .header-divider,
+#amily2_api_config_panel .header-divider,
+#amily2_memorisation_forms_panel .header-divider {
+    display: none !important;
+}
+
+/* =========================================================
+   7. Form Controls
+   ========================================================= */
+#amily2_chat_optimiser .amily2_settings_block,
+#amily2_api_config_panel .amily2_settings_block,
+#amily2_rule_config_panel .amily2_settings_block,
+#amily2_rule_config_panel_root .amily2_settings_block,
+#amily2_memorisation_forms_panel .amily2_settings_block,
+#amily2_hanlinyuan_panel .amily2_settings_block,
+#amily2_additional_features_panel .amily2_settings_block,
+#amily2_plot_optimization_panel .amily2_settings_block,
+#amily2_text_optimization_panel .amily2_settings_block {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+}
+
+#amily2_chat_optimiser .amily2_settings_block::before {
+    display: none !important;
+}
+
+#amily2_chat_optimiser .amily2_settings_block > label,
+#amily2_api_config_panel .amily2_settings_block > label,
+#amily2_rule_config_panel .amily2_settings_block > label,
+#amily2_memorisation_forms_panel .amily2_settings_block > label,
+#amily2_hanlinyuan_panel .amily2_settings_block > label {
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: var(--am2-muted) !important;
+    letter-spacing: 0.02em;
+    margin: 0 !important;
+}
+
+#amily2_chat_optimiser input[type="text"],
+#amily2_chat_optimiser input[type="password"],
+#amily2_chat_optimiser input[type="number"],
+#amily2_chat_optimiser input[type="url"],
+#amily2_chat_optimiser input[type="search"],
+#amily2_chat_optimiser input.text_pole,
+#amily2_chat_optimiser textarea,
+#amily2_chat_optimiser textarea.text_pole,
+#amily2_chat_optimiser select,
+#amily2_chat_optimiser select.text_pole,
+#amily2_drawer_content input[type="text"],
+#amily2_drawer_content input[type="password"],
+#amily2_drawer_content input[type="number"],
+#amily2_drawer_content input.text_pole,
+#amily2_drawer_content textarea,
+#amily2_drawer_content select,
+#amily2_api_config_panel input,
+#amily2_api_config_panel textarea,
+#amily2_api_config_panel select,
+#amily2_rule_config_panel input,
+#amily2_rule_config_panel textarea,
+#amily2_rule_config_panel select,
+#amily2_memorisation_forms_panel input.text_pole,
+#amily2_memorisation_forms_panel textarea,
+#amily2_memorisation_forms_panel select,
+#amily2_hanlinyuan_panel input.text_pole,
+#amily2_hanlinyuan_panel textarea,
+#amily2_hanlinyuan_panel select,
+#amily2_additional_features_panel input.text_pole,
+#amily2_additional_features_panel textarea,
+#amily2_additional_features_panel select,
+#amily2_plot_optimization_panel input.text_pole,
+#amily2_plot_optimization_panel textarea,
+#amily2_plot_optimization_panel select,
+#amily2_text_optimization_panel input.text_pole,
+#amily2_text_optimization_panel textarea,
+#amily2_text_optimization_panel select,
+#amily2_glossary_panel input.text_pole,
+#amily2_glossary_panel textarea,
+#amily2_glossary_panel select,
+#amily2_super_memory_panel input,
+#amily2_super_memory_panel select,
+#amily2_progressive_memory_panel input,
+#amily2_progressive_memory_panel select,
+#amily2_progressive_memory_panel textarea {
+    width: 100%;
+    min-height: var(--am2-control-h);
+    padding: 8px 12px !important;
+    border-radius: var(--am2-radius-md) !important;
+    border: var(--am2-border) !important;
+    background: rgba(0, 0, 0, 0.28) !important;
+    color: var(--am2-text) !important;
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18);
+    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+    box-sizing: border-box;
+}
+
+#amily2_chat_optimiser textarea,
+#amily2_drawer_content textarea,
+#amily2_api_config_panel textarea,
+#amily2_rule_config_panel textarea,
+#amily2_memorisation_forms_panel textarea,
+#amily2_hanlinyuan_panel textarea,
+#amily2_additional_features_panel textarea,
+#amily2_plot_optimization_panel textarea {
+    min-height: 84px;
+    resize: vertical;
+    line-height: 1.5 !important;
+}
+
+#amily2_chat_optimiser input:focus,
+#amily2_chat_optimiser textarea:focus,
+#amily2_chat_optimiser select:focus,
+#amily2_drawer_content input:focus,
+#amily2_drawer_content textarea:focus,
+#amily2_drawer_content select:focus,
+#amily2_api_config_panel input:focus,
+#amily2_api_config_panel textarea:focus,
+#amily2_api_config_panel select:focus,
+#amily2_rule_config_panel input:focus,
+#amily2_rule_config_panel textarea:focus,
+#amily2_rule_config_panel select:focus,
+#amily2_memorisation_forms_panel input:focus,
+#amily2_memorisation_forms_panel textarea:focus,
+#amily2_memorisation_forms_panel select:focus {
+    outline: none !important;
+    border-color: rgba(139, 108, 240, 0.55) !important;
+    box-shadow: var(--am2-focus) !important;
+    background: rgba(0, 0, 0, 0.36) !important;
+}
+
+#amily2_chat_optimiser .notes,
+#amily2_api_config_panel .notes,
+#amily2_rule_config_panel .notes,
+#amily2_memorisation_forms_panel .notes,
+#amily2_hanlinyuan_panel .notes,
+#amily2_additional_features_panel .notes,
+#amily2_plot_optimization_panel .notes {
+    font-size: 11.5px !important;
+    line-height: 1.45 !important;
+    color: var(--am2-muted) !important;
+    font-style: normal !important;
+    opacity: 1 !important;
+    padding-left: 0 !important;
+}
+
+/* =========================================================
+   8. Toggle / Segmented Control
+   ========================================================= */
+/* 统一开关尺寸；圆点只用 bottom/left 居中，避免 table.css 的 top:50%+translateY 与勾选 translateX 冲突导致「圆点歪掉」 */
+#amily2_chat_optimiser .toggle-switch,
+#amily2_memorisation_forms_panel .toggle-switch,
+#amily2_hanlinyuan_panel .toggle-switch,
+#amily2_additional_features_panel .toggle-switch,
+#amily2_plot_optimization_panel .toggle-switch,
+#amily2_super_memory_panel .toggle-switch,
+#amily2_progressive_memory_panel .toggle-switch {
+    position: relative !important;
+    display: inline-block !important;
+    width: 42px !important;
+    height: 24px !important;
+    flex-shrink: 0 !important;
+    vertical-align: middle !important;
+}
+
+#amily2_chat_optimiser .toggle-switch input,
+#amily2_memorisation_forms_panel .toggle-switch input,
+#amily2_hanlinyuan_panel .toggle-switch input,
+#amily2_additional_features_panel .toggle-switch input,
+#amily2_plot_optimization_panel .toggle-switch input,
+#amily2_super_memory_panel .toggle-switch input,
+#amily2_progressive_memory_panel .toggle-switch input {
+    opacity: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    position: absolute !important;
+}
+
+#amily2_chat_optimiser .toggle-switch .slider,
+#amily2_memorisation_forms_panel .toggle-switch .slider,
+#amily2_hanlinyuan_panel .toggle-switch .slider,
+#amily2_additional_features_panel .toggle-switch .slider,
+#amily2_plot_optimization_panel .toggle-switch .slider,
+#amily2_super_memory_panel .toggle-switch .slider,
+#amily2_progressive_memory_panel .toggle-switch .slider,
+#amily2_memorisation_forms_panel .slider {
+    position: absolute !important;
+    cursor: pointer !important;
+    inset: 0 !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    border-radius: 999px !important;
+    background: rgba(255, 255, 255, 0.12) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    box-shadow: none !important;
+    transition: background .2s ease, border-color .2s ease !important;
+}
+
+#amily2_chat_optimiser .toggle-switch .slider:before,
+#amily2_memorisation_forms_panel .toggle-switch .slider:before,
+#amily2_hanlinyuan_panel .toggle-switch .slider:before,
+#amily2_additional_features_panel .toggle-switch .slider:before,
+#amily2_plot_optimization_panel .toggle-switch .slider:before,
+#amily2_super_memory_panel .toggle-switch .slider:before,
+#amily2_progressive_memory_panel .toggle-switch .slider:before,
+#amily2_memorisation_forms_panel .slider:before {
+    position: absolute !important;
+    content: "" !important;
+    height: 18px !important;
+    width: 18px !important;
+    left: 2px !important;
+    bottom: 2px !important;
+    top: auto !important;
+    margin: 0 !important;
+    background: #f3f3f7 !important;
+    border-radius: 50% !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35) !important;
+    transform: none !important;
+    transition: transform .2s ease !important;
+}
+
+#amily2_chat_optimiser .toggle-switch input:checked + .slider,
+#amily2_memorisation_forms_panel .toggle-switch input:checked + .slider,
+#amily2_hanlinyuan_panel .toggle-switch input:checked + .slider,
+#amily2_additional_features_panel .toggle-switch input:checked + .slider,
+#amily2_plot_optimization_panel .toggle-switch input:checked + .slider,
+#amily2_super_memory_panel .toggle-switch input:checked + .slider,
+#amily2_progressive_memory_panel .toggle-switch input:checked + .slider,
+#amily2_memorisation_forms_panel input:checked + .slider {
+    background: linear-gradient(135deg, #8b6cf0, #6c8cff) !important;
+    border-color: transparent !important;
+    box-shadow: 0 0 0 1px rgba(139, 108, 240, 0.25) !important;
+}
+
+#amily2_chat_optimiser .toggle-switch input:checked + .slider:before,
+#amily2_memorisation_forms_panel .toggle-switch input:checked + .slider:before,
+#amily2_hanlinyuan_panel .toggle-switch input:checked + .slider:before,
+#amily2_additional_features_panel .toggle-switch input:checked + .slider:before,
+#amily2_plot_optimization_panel .toggle-switch input:checked + .slider:before,
+#amily2_super_memory_panel .toggle-switch input:checked + .slider:before,
+#amily2_progressive_memory_panel .toggle-switch input:checked + .slider:before,
+#amily2_memorisation_forms_panel input:checked + .slider:before {
+    /* 仅水平滑动，禁止再叠 translateY，否则圆点会偏上/偏下 */
+    transform: translateX(18px) !important;
+}
+
+#amily2_chat_optimiser .radio-toggle-group,
+#amily2_memorisation_forms_panel .radio-toggle-group,
+#amily2_hanlinyuan_panel .radio-toggle-group,
+#amily2_plot_optimization_panel .radio-toggle-group,
+#amily2_additional_features_panel .radio-toggle-group {
+    display: inline-flex !important;
+    width: 100%;
+    border: var(--am2-border) !important;
+    border-radius: var(--am2-radius-md) !important;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.18);
+    gap: 0 !important;
+}
+
+#amily2_chat_optimiser .radio-toggle-group label,
+#amily2_memorisation_forms_panel .radio-toggle-group label {
+    flex: 1;
+    min-height: var(--am2-control-h);
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    padding: 0 10px !important;
+    margin: 0 !important;
+    border: none !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
+    background: transparent !important;
+    color: var(--am2-muted) !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    box-shadow: none !important;
+    transform: none !important;
+    text-shadow: none !important;
+}
+
+#amily2_chat_optimiser .radio-toggle-group label:first-of-type {
+    border-left: none !important;
+}
+
+#amily2_chat_optimiser .radio-toggle-group input[type="radio"]:checked + label,
+#amily2_memorisation_forms_panel .radio-toggle-group input[type="radio"]:checked + label,
+#amily2_chat_optimiser #amily2_icon_location_topbar:checked + label,
+#amily2_chat_optimiser #amily2_icon_location_extensions:checked + label,
+#amily2_chat_optimiser #amily2_mode_intercept:checked + label,
+#amily2_chat_optimiser #amily2_mode_refresh:checked + label {
+    background: rgba(139, 108, 240, 0.28) !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+    box-shadow: none !important;
+    transform: none !important;
+    text-shadow: none !important;
+    border-color: transparent !important;
+}
+
+/* =========================================================
+   9. Toolbar / Tabs
+   ========================================================= */
+#amily2_memorisation_forms_panel .sinan-navigation-deck,
+#amily2_super_memory_panel .sm-nav,
+#amily2_hanlinyuan_panel .hly-tabs,
+#amily2_glossary_panel .glossary-tabs,
+#amily2_chat_optimiser .am2-tabs {
+    display: flex !important;
+    flex-wrap: wrap;
+    gap: 6px !important;
+    padding: 4px;
+    border-radius: var(--am2-radius-md);
+    background: rgba(0, 0, 0, 0.18);
+    border: var(--am2-border);
+    margin-bottom: var(--am2-space-3);
+}
+
+#amily2_memorisation_forms_panel .sinan-nav-item,
+#amily2_super_memory_panel .sm-nav-item {
+    flex: 1 1 auto;
+    min-height: 34px;
+    padding: 6px 12px !important;
+    border-radius: 8px !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    color: var(--am2-muted) !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    cursor: pointer;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+}
+
+#amily2_memorisation_forms_panel .sinan-nav-item:hover,
+#amily2_super_memory_panel .sm-nav-item:hover {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: var(--am2-text) !important;
+}
+
+#amily2_memorisation_forms_panel .sinan-nav-item.active,
+#amily2_super_memory_panel .sm-nav-item.active {
+    background: rgba(139, 108, 240, 0.28) !important;
+    border-color: rgba(139, 108, 240, 0.35) !important;
+    color: #fff !important;
+    font-weight: 600 !important;
+}
+
+/* =========================================================
+   10. Data Table
+   ========================================================= */
+#amily2_memorisation_forms_panel #all-tables-container {
+    border: var(--am2-border) !important;
+    border-radius: var(--am2-radius-lg) !important;
+    background: rgba(0, 0, 0, 0.16) !important;
+    box-shadow: none !important;
+    padding: var(--am2-space-3) !important;
+}
+
+#amily2_memorisation_forms_panel .amily2-table-header-container {
+    background: rgba(255, 255, 255, 0.05) !important;
+    border: var(--am2-border) !important;
+    border-radius: var(--am2-radius-md) var(--am2-radius-md) 0 0 !important;
+    padding: 10px 12px !important;
+}
+
+#amily2_memorisation_forms_panel table {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    width: 100%;
+    overflow: hidden;
+    border-radius: 0 0 var(--am2-radius-md) var(--am2-radius-md);
+}
+
+#amily2_memorisation_forms_panel th,
+#amily2_memorisation_forms_panel td {
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    padding: 8px 10px !important;
+    font-size: 12.5px !important;
+    vertical-align: middle;
+}
+
+#amily2_memorisation_forms_panel th {
+    background: rgba(255, 255, 255, 0.06) !important;
+    font-weight: 600 !important;
+    color: #ececf3 !important;
+}
+
+#amily2_memorisation_forms_panel tr:nth-child(even) td {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+#amily2_memorisation_forms_panel tr:hover td {
+    background: rgba(139, 108, 240, 0.08) !important;
+}
+
+#amily2_memorisation_forms_panel td[contenteditable="true"],
+#amily2_memorisation_forms_panel th[contenteditable="true"] {
+    background: transparent !important;
+    outline: none !important;
+}
+
+#amily2_memorisation_forms_panel td[contenteditable="true"]:focus,
+#amily2_memorisation_forms_panel th[contenteditable="true"]:focus {
+    background: rgba(139, 108, 240, 0.12) !important;
+    box-shadow: inset 0 0 0 1px rgba(139, 108, 240, 0.55) !important;
+    outline: none !important;
+}
+
+/* =========================================================
+   11. Auth / Status / Misc
+   ========================================================= */
+#amily2_chat_optimiser #auth_panel {
+    border: var(--am2-border);
+    border-radius: var(--am2-radius-xl);
+    padding: var(--am2-space-5) !important;
+    background: var(--am2-surface) !important;
+    box-shadow: var(--am2-shadow-md);
+}
+
+#amily2_chat_optimiser #auth_panel::before {
+    display: none !important;
+}
+
+#auth_panel .auth-title {
+    font-size: 1.35rem !important;
+    font-weight: 700;
+    background: linear-gradient(90deg, #c4b5fd, #93c5fd) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    color: transparent !important;
+}
+
+#auth_panel .auth-code-input {
+    display: flex;
+    gap: 0;
+    border-radius: var(--am2-radius-md);
+    overflow: hidden;
+    border: var(--am2-border);
+}
+
+#auth_panel #amily2_auth_code {
+    border: none !important;
+    border-radius: 0 !important;
+    min-height: var(--am2-control-h-lg);
+}
+
+#auth_panel #auth_submit {
+    min-width: 88px;
+    min-height: var(--am2-control-h-lg);
+    border: none !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.12) !important;
+    border-radius: 0 !important;
+    background: linear-gradient(135deg, rgba(139, 108, 240, 0.9), rgba(108, 140, 255, 0.85)) !important;
+    color: #fff !important;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+/* 免责声明：弱化、居中，放在作者留言下方 */
+#amily2_chat_optimiser .disclaimer-box {
+    margin: 0 0 4px 0 !important;
+    padding: 10px 14px !important;
+    border: none !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    text-align: center !important;
+}
+
+#amily2_chat_optimiser .disclaimer-emo {
+    color: var(--am2-muted) !important;
+    font-size: 12px !important;
+    font-style: italic !important;
+    text-align: center !important;
+    margin: 0 0 6px 0 !important;
+    line-height: 1.5 !important;
+}
+
+#amily2_chat_optimiser .disclaimer-text {
+    color: rgba(224, 224, 224, 0.55) !important;
+    font-size: 11px !important;
+    text-align: center !important;
+    line-height: 1.55 !important;
+    margin: 0 !important;
+}
+
+#amily2_chat_optimiser .disclaimer-text strong {
+    color: rgba(255, 193, 7, 0.75) !important;
+    display: inline !important;
+    margin: 0 !important;
+    font-weight: 600;
+}
+
+/* 版本信息：经典三栏（当前 | 铃铛/更新 | 最新） */
+#amily2_chat_optimiser .version-info-container,
+#amily2_drawer_content .version-info-container {
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    height: auto !important;
+    padding: 8px 12px !important;
+    margin: 0 !important;
+    border-radius: 5px !important;
+    background-color: rgba(255, 255, 255, 0.03) !important;
+    border: none !important;
+    box-shadow: none !important;
+    box-sizing: border-box !important;
+    position: relative;
+    overflow: visible;
+    text-align: center !important;
+}
+
+#amily2_chat_optimiser .version-info-item,
+#amily2_drawer_content .version-info-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 2px !important;
+    color: #adb6e6 !important;
+    line-height: 1.3 !important;
+    width: auto !important;
+    margin: 0 !important;
+}
+
+#amily2_chat_optimiser .version-label,
+#amily2_drawer_content .version-label {
+    font-size: 10px !important;
+    opacity: 0.7;
+    margin-bottom: 2px !important;
+    white-space: nowrap !important;
+    font-weight: 500;
+    text-align: center !important;
+}
+
+#amily2_chat_optimiser .version-number,
+#amily2_drawer_content .version-number {
+    font-size: 12px !important;
+    font-weight: bold !important;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    white-space: nowrap !important;
+    text-align: center !important;
+    min-width: 0;
+}
+
+#amily2_chat_optimiser .version-current .version-number {
+    color: #68b7ff !important;
+}
+
+#amily2_chat_optimiser .version-latest .version-number {
+    color: #4CAF50 !important;
+}
+
+#amily2_chat_optimiser .version-latest.has-update .version-number {
+    color: #ff6b6b !important;
+    animation: glow 2s ease-in-out infinite alternate;
+}
+
+/* 经典升级按钮：礼物 + 新版文字，有更新时显示 */
+#amily2_chat_optimiser #amily2_update_button_new {
+    writing-mode: horizontal-tb !important;
+    height: auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    max-width: none !important;
+    max-height: none !important;
+    padding: 5px 10px !important;
+    line-height: normal !important;
+    border-radius: var(--am2-radius-sm) !important;
+    background-color: #4CAF50 !important;
+    color: #fff !important;
+    font-size: 12px !important;
+    white-space: nowrap !important;
+}
+
+#amily2_chat_optimiser #amily2_update_indicator.update-indicator {
+    position: absolute !important;
+    top: -2px !important;
+    right: -2px !important;
+    width: 8px !important;
+    height: 8px !important;
+    border-radius: 50% !important;
+    background: #ff4d4d !important;
+    border: 1px solid rgba(20, 20, 24, 0.9) !important;
+    pointer-events: none !important;
+}
+
+#amily2_chat_optimiser .control-pair-container,
+#amily2_api_config_panel .control-pair-container,
+#amily2_additional_features_panel .control-pair-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--am2-space-3);
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+}
+
+#amily2_chat_optimiser .control-pair-container .amily2_settings_block,
+#amily2_api_config_panel .control-pair-container .amily2_settings_block {
+    align-items: stretch !important;
+}
+
+/* 总结模块「消息显示管理」：单行、等高，不参与全局 wrap */
+#amily2_additional_features_panel .control-pair-container.am2-msg-display-row {
+    flex-wrap: nowrap !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+}
+
+#amily2_additional_features_panel .control-pair-container.am2-msg-display-row .amily2_settings_block {
+    align-items: center !important;
+}
+
+#amily2_additional_features_panel .control-pair-container.am2-msg-display-row .am2-hide-toggle > label:first-of-type {
+    white-space: nowrap !important;
+}
+
+#amily2_chat_optimiser .button-pair {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    align-content: flex-start !important;
+    gap: var(--am2-space-2) !important;
+    width: 100%;
+    min-height: 0 !important;
+    flex: 0 0 auto !important;
+}
+
+#amily2_chat_optimiser .button-pair .menu_button {
+    flex: 1 1 140px !important;
+    max-width: 240px;
+    min-height: var(--am2-control-h) !important;
+    height: var(--am2-control-h) !important;
+    max-height: var(--am2-control-h) !important;
+    padding: 0 14px !important;
+    width: auto !important;
+}
+
+/* Profile filter chips */
+#amily2_api_config_panel .amily2_profile_type_filter.active {
+    background: rgba(139, 108, 240, 0.3) !important;
+    border-color: rgba(139, 108, 240, 0.5) !important;
+    color: #fff !important;
+}
+
+#amily2_api_config_panel .amily2_profile_empty {
+    border: 1px dashed rgba(255, 255, 255, 0.14);
+    border-radius: var(--am2-radius-md);
+    background: rgba(0, 0, 0, 0.12);
+}
+
+/* Empty / code chips */
+#amily2_chat_optimiser code,
+#amily2_api_config_panel code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    font-size: 12px;
+    border-radius: 6px;
+}
+
+/* Log entries */
+#amily2_memorisation_forms_panel .hly-log-display,
+#amily2_hanlinyuan_panel .hly-log-display {
+    border-radius: var(--am2-radius-md) !important;
+    border: var(--am2-border) !important;
+    background: rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Scrollable lists */
+#amily2_memorisation_forms_panel .scrollable-container,
+#amily2_chat_optimiser .scrollable-container {
+    border: var(--am2-border) !important;
+    border-radius: var(--am2-radius-md) !important;
+    background: rgba(0, 0, 0, 0.22) !important;
+}
+
+/* =========================================================
+   12. Hub header (主中枢顶栏)
+   ========================================================= */
+#amily2_chat_optimiser .am2-hub-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 2px 0 8px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    margin-bottom: 2px;
+}
+
+#amily2_chat_optimiser .am2-hub-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+#amily2_chat_optimiser .am2-hub-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--am2-text);
+    white-space: nowrap;
+}
+
+#amily2_chat_optimiser .am2-hub-title > i {
+    display: inline-flex;
+    width: 28px;
+    height: 28px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(139, 108, 240, 0.4), rgba(108, 140, 255, 0.28));
+    color: #ddd6fe;
+    font-size: 12px;
+}
+
+#amily2_chat_optimiser .am2-hub-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    flex: 0 0 auto;
+}
+
+#amily2_chat_optimiser .am2-message-board {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 44px;
+    padding: 10px 12px;
+    border-radius: var(--am2-radius-md);
+    background: rgba(0, 0, 0, 0.16);
+    border: var(--am2-border);
+}
+
+#amily2_chat_optimiser #amily2_message_content {
+    color: #c7d2fe !important;
+    font-size: 13px !important;
+    line-height: 1.55 !important;
+    text-align: center;
+}
+
+/* 诊断操作行 */
+#amily2_chat_optimiser .am2-inline-tools {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    align-content: flex-start !important;
+    gap: var(--am2-space-2) !important;
+    width: 100%;
+    min-height: 0 !important;
+    flex: 0 0 auto !important;
+}
+
+#amily2_chat_optimiser .am2-inline-tools .text_pole {
+    width: 110px !important;
+    min-height: var(--am2-control-h) !important;
+    height: var(--am2-control-h) !important;
+    flex: 0 0 auto !important;
+}
+
+#amily2_chat_optimiser .am2-inline-tools .menu_button {
+    flex: 0 1 auto !important;
+    min-height: var(--am2-control-h) !important;
+    height: var(--am2-control-h) !important;
+    max-height: var(--am2-control-h) !important;
+    width: auto !important;
+}
+
+/* 诊断区：禁止 settings-group 把子项纵向拉高 */
+#amily2_chat_optimiser .settings-group {
+    flex: 0 0 auto !important;
+    align-self: stretch;
+    height: auto !important;
+    min-height: 0 !important;
+}
+
+#amily2_chat_optimiser .settings-group > .amily2_settings_block,
+#amily2_chat_optimiser .settings-group > .button-pair,
+#amily2_chat_optimiser .settings-group > .am2-inline-tools {
+    flex: 0 0 auto !important;
+    width: 100%;
+}
+
+/* 通用：工具行里的按钮不要长成 feature card */
+#amily2_chat_optimiser .settings-group > .button-pair .menu_button.wide_button,
+#amily2_chat_optimiser .settings-group > .am2-inline-tools .menu_button.wide_button {
+    min-height: var(--am2-control-h) !important;
+    height: var(--am2-control-h) !important;
+    flex-direction: row !important;
+    align-items: center !important;
+}
+
+/* =========================================================
+   13. Responsive — classic hub flex (zip-style)
+   ========================================================= */
+@media (max-width: 768px) {
+    #amily2_chat_optimiser {
+        padding: 8px !important;
+        gap: 8px;
+    }
+
+    #amily2_chat_optimiser .plugin-features > .settings-group > .button-group {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        justify-content: space-between !important;
+        align-items: stretch !important;
+        gap: 3px !important;
+    }
+
+    #amily2_chat_optimiser .plugin-features > .settings-group > .button-group .menu_button.wide_button {
+        flex: 1 1 0 !important;
+        height: 50px !important;
+        min-height: 50px !important;
+        padding: 2px !important;
+        font-size: clamp(8px, 2.5vw, 14px) !important;
+        gap: 2px !important;
+    }
+
+    #amily2_chat_optimiser .plugin-features > .settings-group > .button-group .menu_button.wide_button > i {
+        display: block !important;
+        margin: 0 auto 2px auto !important;
+        font-size: 1em !important;
+        width: auto !important;
+        height: auto !important;
+        background: none !important;
+    }
+
+    #amily2_chat_optimiser .settings-group {
+        margin-bottom: 8px !important;
+    }
+
+    #amily2_chat_optimiser .version-info-container {
+        width: 100% !important;
+        padding: 8px 10px !important;
+    }
+
+    #amily2_rule_config_panel_root .amily2-rule-layout {
+        flex-direction: column;
+    }
+
+    #amily2_rule_config_panel_root .amily2-rule-sidebar {
+        width: 100% !important;
+    }
+}
+
+@media (max-width: 480px) {
+    #amily2_chat_optimiser .plugin-features > .settings-group > .button-group .menu_button.wide_button {
+        font-size: clamp(7px, 2.2vw, 12px) !important;
+        padding: 2px 1px !important;
+    }
+
+    #amily2_chat_optimiser .version-label,
+    #amily2_chat_optimiser .version-number {
+        font-size: 10px !important;
+    }
+}
+
+/* =========================================================
+   14. Cascade harden — win against module CSS !important
+   ========================================================= */
+#amily2_memorisation_forms_panel .menu_button,
+#amily2_hanlinyuan_panel .menu_button,
+#amily2_glossary_panel .menu_button,
+#amily2_plot_optimization_panel .menu_button,
+#amily2_text_optimization_panel .menu_button,
+#amily2_additional_features_panel .menu_button {
+    writing-mode: horizontal-tb !important;
+    white-space: nowrap !important;
+    transform: none;
+}
+
+#amily2_memorisation_forms_panel .menu_button:hover,
+#amily2_hanlinyuan_panel .menu_button:hover,
+#amily2_glossary_panel .menu_button:hover,
+#amily2_plot_optimization_panel .menu_button:hover {
+    transform: translateY(-1px) !important;
+}
+
+#amily2_memorisation_forms_panel .nccs-button-row .menu_button,
+#amily2_plot_optimization_panel .jqyh-button-row .menu_button {
+    background-image: none !important;
+    border-radius: 10px !important;
+    min-width: 0 !important;
+}
+
+/* 经典首页入口按钮字号 */
+#amily2_chat_optimiser .plugin-features > .settings-group > .button-group .menu_button.wide_button {
+    font-size: 12px !important;
+}
+
+/* =========================================================
+   15. Diagnostic toolbar — independent of ST .menu_button
+   ========================================================= */
+#amily2_chat_optimiser .am2-diag-section {
+    flex: 0 0 auto !important;
+    height: auto !important;
+}
+
+/* 诊断：两行 — 上：测试/修复；下：楼层输入 + 跳转（始终并排） */
+#amily2_chat_optimiser .am2-diag-toolbar {
+    display: flex !important;
+    flex-direction: column !important;
+    flex-wrap: nowrap !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+}
+
+#amily2_chat_optimiser .am2-diag-row {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+    width: 100% !important;
+    min-width: 0 !important;
+}
+
+#amily2_chat_optimiser .am2-diag-row--jump {
+    flex-wrap: nowrap !important;
+}
+
+#amily2_chat_optimiser .am2-diag-divider {
+    display: none !important;
+}
+
+/* 独立按钮组件，彻底绕开 ST .menu_button 的宽度/竖排规则 */
+#amily2_chat_optimiser .am2-btn,
+#amily2_chat_optimiser button.am2-btn,
+#amily2_chat_optimiser #amily2_test.am2-btn,
+#amily2_chat_optimiser #amily2_fix_now.am2-btn,
+#amily2_chat_optimiser #amily2_jump_to_message_btn.am2-btn {
+    all: unset;
+    box-sizing: border-box !important;
+    display: inline-flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    max-height: 30px !important;
+    width: auto !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    padding: 0 10px !important;
+    margin: 0 !important;
+    border-radius: 7px !important;
+    border: 1px solid rgba(255, 255, 255, 0.16) !important;
+    background: rgba(255, 255, 255, 0.07) !important;
+    color: var(--am2-text, #e8e8ee) !important;
+    font: inherit !important;
+    font-size: 12px !important;
+    font-weight: 550 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    writing-mode: horizontal-tb !important;
+    text-orientation: mixed !important;
+    word-break: keep-all !important;
+    cursor: pointer !important;
+    user-select: none !important;
+    flex: 0 0 auto !important;
+    align-self: center !important;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease !important;
+}
+
+#amily2_chat_optimiser .am2-btn > i,
+#amily2_chat_optimiser .am2-btn > span {
+    display: inline !important;
+    width: auto !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+    writing-mode: horizontal-tb !important;
+}
+
+#amily2_chat_optimiser .am2-btn:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-color: rgba(255, 255, 255, 0.28) !important;
+    transform: translateY(-1px);
+}
+
+#amily2_chat_optimiser .am2-btn:active {
+    transform: translateY(0);
+}
+
+#amily2_chat_optimiser .am2-btn--primary {
+    background: linear-gradient(135deg, rgba(139, 108, 240, 0.9), rgba(108, 140, 255, 0.85)) !important;
+    border-color: rgba(139, 108, 240, 0.5) !important;
+    color: #fff !important;
+}
+
+#amily2_chat_optimiser .am2-btn--primary:hover {
+    background: linear-gradient(135deg, rgba(139, 108, 240, 1), rgba(108, 140, 255, 0.95)) !important;
+}
+
+#amily2_chat_optimiser .am2-btn--accent {
+    background: linear-gradient(135deg, rgba(255, 152, 0, 0.82), rgba(255, 87, 34, 0.78)) !important;
+    border-color: rgba(255, 152, 0, 0.45) !important;
+    color: #fff !important;
+}
+
+#amily2_chat_optimiser .am2-btn--ghost {
+    background: transparent !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
+}
+
+#amily2_chat_optimiser .am2-jump-field {
+    position: relative !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    flex: 0 0 auto !important;
+    height: 30px !important;
+}
+
+#amily2_chat_optimiser .am2-jump-field > i {
+    position: absolute !important;
+    left: 10px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    color: rgba(255, 255, 255, 0.4) !important;
+    font-size: 12px !important;
+    pointer-events: none !important;
+    z-index: 1;
+}
+
+#amily2_chat_optimiser .am2-jump-input,
+#amily2_chat_optimiser #amily2_jump_to_message_id {
+    width: 88px !important;
+    min-width: 88px !important;
+    max-width: 88px !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    max-height: 30px !important;
+    margin: 0 !important;
+    padding: 0 10px 0 26px !important;
+    border-radius: 7px !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    background: rgba(0, 0, 0, 0.28) !important;
+    color: var(--am2-text, #e8e8ee) !important;
+    font-size: 12px !important;
+    line-height: 30px !important;
+    box-sizing: border-box !important;
+    flex: 0 0 auto !important;
+}
+
+#amily2_chat_optimiser .am2-jump-input:focus,
+#amily2_chat_optimiser #amily2_jump_to_message_id:focus {
+    outline: none !important;
+    border-color: rgba(139, 108, 240, 0.55) !important;
+    box-shadow: 0 0 0 2px rgba(139, 108, 240, 0.35) !important;
+}
+
+@media (max-width: 560px) {
+    #amily2_chat_optimiser .am2-diag-toolbar {
+        gap: 6px !important;
+    }
+    #amily2_chat_optimiser .am2-diag-row {
+        gap: 6px !important;
+    }
+    /* 手机：楼层框 + 跳转按钮锁在同一行，不要拆到第三行 */
+    #amily2_chat_optimiser .am2-diag-row--jump {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        width: 100% !important;
+    }
+    #amily2_chat_optimiser .am2-diag-row--jump .am2-jump-field {
+        flex: 0 0 auto !important;
+    }
+    #amily2_chat_optimiser .am2-diag-row--jump .am2-jump-input,
+    #amily2_chat_optimiser .am2-diag-row--jump #amily2_jump_to_message_id {
+        width: 72px !important;
+        min-width: 72px !important;
+        max-width: 72px !important;
+    }
+    #amily2_chat_optimiser .am2-diag-row--jump .am2-btn {
+        flex: 1 1 auto !important;
+        min-width: 0 !important;
+    }
+}
+
+/* =========================================================
+   API 连接配置 / 规则配置 — 可读重构
+   ========================================================= */
+
+/* --- 总结专用接口：关闭时只占一行 --- */
+#amily2_additional_features_panel .am2-compact-block {
+    padding: 10px 12px !important;
+    gap: 0 !important;
+}
+
+#amily2_additional_features_panel .am2-inline-toggle-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+    width: 100%;
+    min-height: 0 !important;
+    flex: 0 0 auto !important;
+}
+
+#amily2_additional_features_panel .am2-inline-toggle-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+#amily2_additional_features_panel .am2-inline-toggle-text > label {
+    margin: 0 !important;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+#amily2_additional_features_panel .am2-inline-toggle-text > .notes {
+    margin: 0 !important;
+    line-height: 1.35;
+    text-align: left !important;
+}
+
+#amily2_additional_features_panel .am2-ngms-body {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#amily2_additional_features_panel .am2-action-row,
+#amily2_api_config_panel .am2-action-row {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-top: 8px;
+}
+
+#amily2_additional_features_panel .ngms-button-row {
+    justify-content: flex-start !important;
+    margin-top: 8px !important;
+}
+
+/* --- API 连接：分段导航 + 列表/表单分屏（大厂简洁） --- */
+#amily2_api_config_panel {
+    display: flex;
+    flex-direction: column;
+    padding: 0 !important;
+    box-sizing: border-box;
+    min-height: 0;
+}
+
+#amily2_api_config_panel .am2-ac {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    min-height: 0;
+}
+
+/* Top bar */
+#amily2_api_config_panel .am2-ac-top {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px 8px;
+}
+
+#amily2_api_config_panel .am2-ac-top-text {
+    min-width: 0;
+    flex: 1;
+}
+
+#amily2_api_config_panel .am2-ac-title-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+}
+
+#amily2_api_config_panel .am2-ac-title {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 650;
+    letter-spacing: -0.01em;
+    color: var(--am2-text);
+    line-height: 1.25;
+}
+
+/* API 连接教程按钮已改用通用 am2-panel-tutorial-btn，与其它面板一致 */
+
+#amily2_api_config_panel .am2-ac-sub {
+    margin: 2px 0 0;
+    font-size: 12px;
+    color: var(--am2-muted);
+    line-height: 1.35;
+}
+
+/* Segmented tabs */
+#amily2_api_config_panel .am2-ac-tabs {
+    display: flex;
+    gap: 2px;
+    margin: 0 14px 10px;
+    padding: 3px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+#amily2_api_config_panel .am2-ac-tab {
+    flex: 1 1 0;
+    min-height: 30px !important;
+    height: 30px !important;
+    padding: 0 8px !important;
+    border: none !important;
+    border-radius: 8px !important;
+    background: transparent !important;
+    background-image: none !important;
+    color: var(--am2-muted) !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    cursor: pointer;
+    box-shadow: none !important;
+}
+
+#amily2_api_config_panel .am2-ac-tab:hover {
+    color: var(--am2-text) !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+}
+
+#amily2_api_config_panel .am2-ac-tab.is-active {
+    background: rgba(255, 255, 255, 0.1) !important;
+    color: var(--am2-text) !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18) !important;
+}
+
+/* Views */
+#amily2_api_config_panel .am2-ac-view {
+    display: none;
+    flex-direction: column;
+    gap: 12px;
+    padding: 0 14px 18px;
+    min-height: 0;
+}
+
+#amily2_api_config_panel .am2-ac-view.is-active {
+    display: flex;
+}
+
+#amily2_api_config_panel .am2-ac-view-hint {
+    margin: 0;
+    font-size: 12px;
+    color: var(--am2-muted);
+    line-height: 1.4;
+}
+
+/* Toolbar + pills */
+#amily2_api_config_panel .am2-ac-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+#amily2_api_config_panel .am2-ac-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+#amily2_api_config_panel .am2-ac-pill {
+    min-height: 26px !important;
+    height: 26px !important;
+    padding: 0 10px !important;
+    border-radius: 999px !important;
+    border: 1px solid transparent !important;
+    background: transparent !important;
+    background-image: none !important;
+    color: var(--am2-muted) !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    cursor: pointer;
+    box-shadow: none !important;
+}
+
+#amily2_api_config_panel .am2-ac-pill:hover {
+    background: rgba(255, 255, 255, 0.06) !important;
+    color: var(--am2-text) !important;
+}
+
+#amily2_api_config_panel .am2-ac-pill.active {
+    background: rgba(139, 108, 240, 0.18) !important;
+    border-color: rgba(139, 108, 240, 0.28) !important;
+    color: #e9e4ff !important;
+}
+
+/* Primary / ghost / danger buttons (scoped, not ST menu_button bulk) */
+#amily2_api_config_panel .am2-ac-primary {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    min-height: 30px !important;
+    height: 30px !important;
+    padding: 0 14px !important;
+    border-radius: 8px !important;
+    border: none !important;
+    background: linear-gradient(135deg, #8b6cf0, #6c8cff) !important;
+    background-image: linear-gradient(135deg, #8b6cf0, #6c8cff) !important;
+    color: #fff !important;
+    font-size: 12.5px !important;
+    font-weight: 600 !important;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(108, 100, 220, 0.35) !important;
+    white-space: nowrap !important;
+}
+
+#amily2_api_config_panel .am2-ac-primary:hover {
+    filter: brightness(1.06);
+}
+
+#amily2_api_config_panel .am2-ac-ghost {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    min-height: 30px !important;
+    height: 30px !important;
+    padding: 0 12px !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    background: rgba(255, 255, 255, 0.04) !important;
+    background-image: none !important;
+    color: var(--am2-text) !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    cursor: pointer;
+    box-shadow: none !important;
+    white-space: nowrap !important;
+}
+
+#amily2_api_config_panel .am2-ac-ghost:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+}
+
+#amily2_api_config_panel .am2-ac-danger {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: 30px !important;
+    height: 30px !important;
+    padding: 0 12px !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(255, 107, 107, 0.35) !important;
+    background: rgba(255, 107, 107, 0.1) !important;
+    background-image: none !important;
+    color: #ffb4b4 !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    cursor: pointer;
+    box-shadow: none !important;
+    align-self: flex-start;
+}
+
+#amily2_api_config_panel .am2-ac-iconbtn {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 30px !important;
+    min-width: 30px !important;
+    height: 30px !important;
+    min-height: 30px !important;
+    padding: 0 !important;
+    border-radius: 8px !important;
+    border: none !important;
+    background: transparent !important;
+    background-image: none !important;
+    color: var(--am2-muted) !important;
+    cursor: pointer;
+    box-shadow: none !important;
+    flex-shrink: 0;
+}
+
+#amily2_api_config_panel .am2-ac-iconbtn:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: var(--am2-text) !important;
+}
+
+#amily2_api_config_panel .am2-ac-iconbtn:disabled {
+    opacity: 0.3 !important;
+    pointer-events: none !important;
+}
+
+#amily2_api_config_panel .amily2_delete_profile:hover {
+    color: var(--am2-danger) !important;
+    background: rgba(255, 107, 107, 0.12) !important;
+}
+
+/* Connection list rows */
+#amily2_api_config_panel .am2-ac-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.14);
+    overflow: hidden;
+}
+
+#amily2_api_config_panel .am2-ac-row {
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    padding: 11px 12px !important;
+    border: none !important;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    cursor: pointer;
+    transition: background 0.12s ease;
+}
+
+#amily2_api_config_panel .am2-ac-row:last-child {
+    border-bottom: none !important;
+}
+
+#amily2_api_config_panel .am2-ac-row:hover {
+    background: rgba(255, 255, 255, 0.04) !important;
+}
+
+#amily2_api_config_panel .am2-ac-row.is-selected {
+    background: rgba(139, 108, 240, 0.1) !important;
+}
+
+#amily2_api_config_panel .am2-ac-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.25);
+}
+
+#amily2_api_config_panel .am2-ac-dot.is-chat { background: #a78bfa; }
+#amily2_api_config_panel .am2-ac-dot.is-embed { background: #60a5fa; }
+#amily2_api_config_panel .am2-ac-dot.is-rerank { background: #fbbf24; }
+
+#amily2_api_config_panel .am2-ac-row-body {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+#amily2_api_config_panel .am2-ac-row-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--am2-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#amily2_api_config_panel .am2-ac-row-sub {
+    margin-top: 2px;
+    font-size: 11.5px;
+    color: var(--am2-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#amily2_api_config_panel .am2-ac-chevron {
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.28);
+    flex-shrink: 0;
+}
+
+#amily2_api_config_panel .am2-ac-empty {
+    padding: 36px 16px;
+    text-align: center;
+    color: var(--am2-muted);
+}
+
+#amily2_api_config_panel .am2-ac-empty p {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--am2-text);
+}
+
+#amily2_api_config_panel .am2-ac-empty small {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+}
+
+/* Form pane */
+#amily2_api_config_panel .am2-ac-form-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+#amily2_api_config_panel .am2-ac-form-pane[hidden],
+#amily2_api_config_panel .am2-ac-list-pane[hidden],
+#amily2_api_config_panel .am2-ac-view[hidden] {
+    display: none !important;
+}
+
+#amily2_api_config_panel .am2-ac-form-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+#amily2_api_config_panel .am2-ac-form-bar-text {
+    flex: 1;
+    min-width: 0;
+}
+
+#amily2_api_config_panel .am2-ac-form-bar-text strong {
+    font-size: 14px;
+    font-weight: 650;
+    color: var(--am2-text);
+}
+
+#amily2_api_config_panel .am2-ac-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+#amily2_api_config_panel .am2-ac-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+}
+
+#amily2_api_config_panel .am2-ac-field > label {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--am2-muted);
+    letter-spacing: 0.01em;
+    margin: 0 !important;
+}
+
+#amily2_api_config_panel .am2-ac-field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+#amily2_api_config_panel .am2-ac-input,
+#amily2_api_config_panel .am2-ac-input.text_pole {
+    width: 100% !important;
+    min-height: 34px !important;
+    height: 34px !important;
+    padding: 0 10px !important;
+    border-radius: 8px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background: rgba(0, 0, 0, 0.22) !important;
+    color: var(--am2-text) !important;
+    font-size: 13px !important;
+    box-sizing: border-box !important;
+}
+
+#amily2_api_config_panel textarea.am2-ac-input {
+    height: auto !important;
+    min-height: 88px !important;
+    padding: 8px 10px !important;
+    resize: vertical;
+    line-height: 1.4;
+}
+
+#amily2_api_config_panel .am2-ac-input:focus {
+    outline: none !important;
+    border-color: rgba(139, 108, 240, 0.55) !important;
+    box-shadow: 0 0 0 2px rgba(139, 108, 240, 0.18) !important;
+}
+
+#amily2_api_config_panel .am2-ac-input-sm {
+    width: auto !important;
+    min-width: 140px;
+    max-width: 200px;
+    min-height: 30px !important;
+    height: 30px !important;
+    font-size: 12px !important;
+}
+
+#amily2_api_config_panel .am2-ac-code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace !important;
+    font-size: 12px !important;
+}
+
+#amily2_api_config_panel .am2-ac-combo {
+    display: flex;
+    gap: 6px;
+    align-items: stretch;
+}
+
+#amily2_api_config_panel .am2-ac-combo > .am2-ac-input {
+    flex: 1 1 auto;
+}
+
+#amily2_api_config_panel .am2-ac-hint {
+    font-weight: 400;
+    opacity: 0.75;
+    margin-left: 4px;
+}
+
+#amily2_api_config_panel .am2-ac-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: rgba(139, 108, 240, 0.08);
+    border: 1px solid rgba(139, 108, 240, 0.16);
+    font-size: 12px;
+    color: var(--am2-muted);
+    line-height: 1.4;
+}
+
+#amily2_api_config_panel .am2-ac-note i {
+    margin-top: 2px;
+    color: #a78bfa;
+}
+
+#amily2_api_config_panel .am2-ac-testline {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#amily2_api_config_panel .am2-ac-test-result {
+    font-size: 12px;
+    color: var(--am2-muted);
+}
+
+#amily2_api_config_panel .am2-ac-more {
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(0, 0, 0, 0.1);
+    padding: 0 10px;
+}
+
+#amily2_api_config_panel .am2-ac-more > summary {
+    cursor: pointer;
+    user-select: none;
+    padding: 9px 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--am2-muted);
+    list-style: none;
+}
+
+#amily2_api_config_panel .am2-ac-more > summary::-webkit-details-marker {
+    display: none;
+}
+
+#amily2_api_config_panel .am2-ac-more-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 0 12px;
+}
+
+#amily2_api_config_panel .am2-ac-check {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    margin: 0 !important;
+    cursor: pointer;
+}
+
+#amily2_api_config_panel .am2-ac-check > input {
+    margin-top: 3px;
+    width: auto !important;
+    flex-shrink: 0;
+}
+
+#amily2_api_config_panel .am2-ac-check strong {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 600;
+}
+
+#amily2_api_config_panel .am2-ac-check small {
+    display: block;
+    margin-top: 2px;
+    font-size: 11.5px;
+    color: var(--am2-muted);
+}
+
+#amily2_api_config_panel .am2-ac-hint-line {
+    display: block;
+    margin-top: 4px;
+    font-size: 11.5px;
+    color: var(--am2-muted);
+}
+
+#amily2_api_config_panel .am2-ac-error-line {
+    display: none;
+    margin-top: 4px;
+    font-size: 11.5px;
+    color: var(--am2-danger);
+}
+
+/* Settings groups (routing + more) */
+#amily2_api_config_panel .am2-ac-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#amily2_api_config_panel .am2-ac-group + .am2-ac-group {
+    margin-top: 6px;
+}
+
+#amily2_api_config_panel .am2-ac-group-title {
+    margin: 0;
+    padding: 0 2px;
+    font-size: 11px;
+    font-weight: 650;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--am2-muted);
+}
+
+#amily2_api_config_panel .am2-ac-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.14);
+    overflow: hidden;
+}
+
+/* routing view: groups of settings rows */
+#amily2_api_config_panel #amily2_slot_assignments,
+#amily2_api_config_panel .am2-ac-routing {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: transparent;
+    border: none;
+    overflow: visible;
+}
+
+#amily2_api_config_panel .am2-ac-setting {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 11px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    min-height: 44px;
+    box-sizing: border-box;
+}
+
+#amily2_api_config_panel .am2-ac-setting:last-child {
+    border-bottom: none;
+}
+
+#amily2_api_config_panel .am2-ac-setting-stack {
+    flex-direction: column;
+    align-items: stretch;
+}
+
+#amily2_api_config_panel .am2-ac-setting-label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1 1 auto;
+}
+
+#amily2_api_config_panel .am2-ac-setting-label strong {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--am2-text);
+}
+
+#amily2_api_config_panel .am2-ac-setting-label small {
+    font-size: 11.5px;
+    color: var(--am2-muted);
+    line-height: 1.35;
+}
+
+#amily2_api_config_panel .am2-ac-setting-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+#amily2_api_config_panel .am2-ac-switch {
+    flex-shrink: 0;
+}
+
+#amily2_api_config_panel .am2-ac-cloud {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+    padding: 10px 12px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(0, 0, 0, 0.12);
+}
+
+#amily2_api_config_panel .am2-ac-fp {
+    display: block;
+    margin-top: 4px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.25);
+    font-size: 11px;
+    word-break: break-all;
+}
+
+#amily2_api_config_panel .am2-ac-inline-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+#amily2_api_config_panel .am2-ac-warn {
+    margin: 0;
+    font-size: 11.5px;
+    color: var(--am2-warning);
+    line-height: 1.4;
+}
+
+@media (max-width: 560px) {
+    /* 表单双列字段：窄屏可单列（仅表单内部，不是整页竖堆） */
+    #amily2_api_config_panel .am2-ac-field-row {
+        grid-template-columns: 1fr;
+    }
+
+    /* 分配行：保持「左标签 | 右控件」横向，禁止整行折成上下两个容器 */
+    #amily2_api_config_panel .am2-ac-setting {
+        flex-wrap: nowrap !important;
+        align-items: center !important;
+        gap: 8px !important;
+        padding: 10px !important;
+    }
+
+    #amily2_api_config_panel .am2-ac-setting-label {
+        flex: 1 1 auto;
+        min-width: 0;
+    }
+
+    #amily2_api_config_panel .am2-ac-setting-label strong {
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #amily2_api_config_panel .am2-ac-setting-controls {
+        width: auto !important;
+        flex: 0 1 auto;
+        max-width: 58%;
+        justify-content: flex-end;
+        gap: 6px !important;
+    }
+
+    #amily2_api_config_panel .am2-ac-input-sm {
+        flex: 1 1 auto;
+        min-width: 0 !important;
+        max-width: 140px !important;
+        width: auto !important;
+    }
+
+    #amily2_api_config_panel .am2-ac-tabs {
+        margin-left: 10px;
+        margin-right: 10px;
+    }
+
+    #amily2_api_config_panel .am2-ac-view {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+}
+
+/* --- 规则配置 --- */
+#amily2_rule_config_panel {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 14px 18px;
+    box-sizing: border-box;
+}
+
+#amily2_rule_config_panel .am2-panel-lead {
+    margin: 0 !important;
+    padding: 8px 12px;
+    border-radius: var(--am2-radius-md);
+    background: rgba(139, 108, 240, 0.08);
+    border: 1px solid rgba(139, 108, 240, 0.18);
+    line-height: 1.45;
+    text-align: left !important;
+}
+
+#amily2_rule_config_panel .am2-rule-shell,
+#amily2_rule_config_panel_root.am2-rule-shell {
+    display: grid;
+    grid-template-columns: minmax(200px, 260px) minmax(0, 1fr);
+    gap: 14px;
+    align-items: start;
+}
+
+#amily2_rule_config_panel .am2-rule-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    border-radius: var(--am2-radius-lg);
+    border: var(--am2-border);
+    background: var(--am2-surface);
+    min-height: 220px;
+}
+
+#amily2_rule_config_panel .am2-rule-sidebar-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+#amily2_rule_config_panel .am2-rule-sidebar-head strong {
+    font-size: 13px;
+}
+
+#amily2_rule_config_panel .am2-rule-profile-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+#amily2_rule_config_panel .am2-rule-item {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 3px !important;
+    width: 100% !important;
+    text-align: left !important;
+    padding: 9px 11px !important;
+    border-radius: var(--am2-radius-md) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background: rgba(0, 0, 0, 0.14) !important;
+    color: var(--am2-text) !important;
+    cursor: pointer;
+    min-height: 0 !important;
+    height: auto !important;
+    white-space: normal !important;
+}
+
+#amily2_rule_config_panel .am2-rule-item:hover {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(139, 108, 240, 0.35) !important;
+}
+
+#amily2_rule_config_panel .am2-rule-item.is-active {
+    background: rgba(139, 108, 240, 0.18) !important;
+    border-color: rgba(139, 108, 240, 0.45) !important;
+    box-shadow: inset 3px 0 0 var(--am2-accent);
+}
+
+#amily2_rule_config_panel .am2-rule-item-name {
+    font-weight: 650;
+    font-size: 12.5px;
+    line-height: 1.3;
+}
+
+#amily2_rule_config_panel .am2-rule-item-meta {
+    font-size: 11px;
+    color: var(--am2-muted);
+    line-height: 1.3;
+}
+
+#amily2_rule_config_panel .am2-rule-main {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px;
+    border-radius: var(--am2-radius-lg);
+    border: var(--am2-border);
+    background: var(--am2-surface);
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
+#amily2_rule_config_panel .am2-rule-main-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+#amily2_rule_config_panel .am2-rule-main-head strong {
+    font-size: 14px;
+}
+
+#amily2_rule_config_panel .am2-rule-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 8px;
+}
+
+#amily2_rule_config_panel .am2-check-card {
+    display: flex !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    padding: 10px 12px;
+    border-radius: var(--am2-radius-md);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.12);
+    cursor: pointer;
+    margin: 0 !important;
+}
+
+#amily2_rule_config_panel .am2-check-card > input {
+    margin-top: 3px;
+    width: auto !important;
+    flex-shrink: 0;
+}
+
+#amily2_rule_config_panel .am2-check-card strong {
+    display: block;
+    font-size: 12.5px;
+    font-weight: 650;
+}
+
+#amily2_rule_config_panel .am2-check-card .notes {
+    display: block;
+    margin-top: 2px;
+    line-height: 1.35;
+}
+
+#amily2_rule_config_panel .am2-rule-exclude-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+#amily2_rule_config_panel .am2-rule-exclude-head .notes {
+    display: block;
+    margin-top: 2px;
+}
+
+#amily2_rule_config_panel .am2-rule-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+#amily2_rule_config_panel .am2-rule-row,
+#amily2_rule_config_panel .amily2-rule-row {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr auto !important;
+    gap: 8px !important;
+    align-items: center !important;
+}
+
+#amily2_rule_config_panel .am2-rule-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* 空状态：固定居中容器，避免长句在窄屏左溢出 */
+#amily2_rule_config_panel .am2-empty-mini {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 14px 12px;
+    text-align: center !important;
+    border: 1px dashed rgba(255, 255, 255, 0.12);
+    border-radius: var(--am2-radius-md);
+    background: rgba(0, 0, 0, 0.1);
+    line-height: 1.5;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    white-space: normal;
+    overflow: hidden;
+}
+
+#amily2_rule_config_panel .am2-rule-profile-list .am2-empty-mini,
+#amily2_rule_config_panel .am2-rule-rows .am2-empty-mini {
+    align-self: stretch;
+}
+
+@media (max-width: 768px) {
+    #amily2_rule_config_panel .am2-rule-shell,
+    #amily2_rule_config_panel_root.am2-rule-shell {
+        grid-template-columns: 1fr;
+    }
+    #amily2_rule_config_panel .am2-rule-row,
+    #amily2_rule_config_panel .amily2-rule-row {
+        grid-template-columns: 1fr 1fr !important;
+    }
+    #amily2_rule_config_panel .am2-rule-row > :last-child,
+    #amily2_rule_config_panel .amily2-rule-row > :last-child {
+        grid-column: 1 / -1;
+    }
+    #amily2_rule_config_panel .am2-rule-actions > .menu_button {
+        flex: 1 1 calc(50% - 8px);
+        min-width: 96px;
+    }
+}
+
+/* =========================================================
+   Tutorial modal — tables readable on phone (no tall strip)
+   ========================================================= */
+.amily2-tutorial-modal.popup.wide_dialogue_popup {
+    box-sizing: border-box !important;
+    max-width: min(92vw, 720px) !important;
+}
+
+.amily2-tutorial-modal .popup-body {
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: hidden;
+}
+
+.amily2-tutorial-modal .amily2-tutorial-body {
+    max-width: 100%;
+    box-sizing: border-box;
+    -webkit-overflow-scrolling: touch;
+    overflow-x: auto;
+}
+
+.amily2-tutorial-modal .amily2-tutorial-md {
+    font-size: 13.5px;
+    line-height: 1.5;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.amily2-tutorial-modal .amily2-tutorial-md h1,
+.amily2-tutorial-modal .amily2-tutorial-md h2,
+.amily2-tutorial-modal .amily2-tutorial-md h3 {
+    margin: 0.85em 0 0.4em;
+    line-height: 1.3;
+}
+
+.amily2-tutorial-modal .amily2-tutorial-md h1 { font-size: 1.15em; }
+.amily2-tutorial-modal .amily2-tutorial-md h2 { font-size: 1.05em; }
+
+.amily2-tutorial-modal .amily2-tutorial-md p,
+.amily2-tutorial-modal .amily2-tutorial-md blockquote {
+    margin: 0.4em 0;
+}
+
+.amily2-tutorial-modal .amily2-tutorial-md pre {
+    margin: 0.5em 0;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, 0.35);
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 12.5px;
+    line-height: 1.45;
+}
+
+.amily2-tutorial-modal .am2-tut-table-wrap {
+    width: 100%;
+    max-width: 100%;
+    margin: 0.55em 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.18);
+}
+
+.amily2-tutorial-modal .amily2-tutorial-md table {
+    display: table !important;
+    width: max-content !important;
+    min-width: 100% !important;
+    max-width: none !important;
+    border-collapse: collapse !important;
+    table-layout: auto !important;
+    margin: 0 !important;
+    font-size: 12.5px !important;
+    line-height: 1.4 !important;
+}
+
+.amily2-tutorial-modal .amily2-tutorial-md thead { display: table-header-group !important; }
+.amily2-tutorial-modal .amily2-tutorial-md tbody { display: table-row-group !important; }
+.amily2-tutorial-modal .amily2-tutorial-md tr { display: table-row !important; }
+
+.amily2-tutorial-modal .amily2-tutorial-md th,
+.amily2-tutorial-modal .amily2-tutorial-md td {
+    display: table-cell !important;
+    padding: 8px 10px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    vertical-align: top !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+    hyphens: auto;
+}
+
+.amily2-tutorial-modal .amily2-tutorial-md th {
+    background: rgba(255, 255, 255, 0.08) !important;
+    font-weight: 650 !important;
+    white-space: nowrap !important;
+}
+
+.amily2-tutorial-modal .amily2-tutorial-md tr:nth-child(even) td {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+/* 手机：弹窗水平垂直居中，正文不左溢出 */
+@media (max-width: 768px) {
+    .amily2-tutorial-modal.popup.wide_dialogue_popup {
+        position: fixed !important;
+        left: 50% !important;
+        top: 50% !important;
+        right: auto !important;
+        bottom: auto !important;
+        transform: translate(-50%, -50%) !important;
+        margin: 0 !important;
+        width: min(94vw, 560px) !important;
+        max-width: 94vw !important;
+        max-height: 88vh !important;
+        box-sizing: border-box !important;
+    }
+
+    .amily2-tutorial-modal .popup-body {
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+        padding-left: 12px;
+        padding-right: 12px;
+    }
+
+    .amily2-tutorial-modal .popup-body > h3 {
+        word-break: break-word;
+        overflow-wrap: anywhere;
+    }
+
+    .amily2-tutorial-modal .amily2-tutorial-body {
+        height: min(62vh, 520px) !important;
+        max-height: 62vh !important;
+        padding: 10px !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .amily2-tutorial-modal .amily2-tutorial-md {
+        font-size: 13px;
+        max-width: 100%;
+    }
+
+    .amily2-tutorial-modal .am2-tut-table-wrap {
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .amily2-tutorial-modal .amily2-tutorial-md table {
+        font-size: 12px !important;
+        width: 100% !important;
+        min-width: 0 !important;
+    }
+
+    .amily2-tutorial-modal .amily2-tutorial-md th,
+    .amily2-tutorial-modal .amily2-tutorial-md td {
+        padding: 7px 8px !important;
+        /* ����ʱ���Ҹ�Լһ�룬����һ��һ���� */
+        min-width: 0 !important;
+        max-width: none !important;
+    }
+
+    .amily2-tutorial-modal .amily2-tutorial-md th:first-child,
+    .amily2-tutorial-modal .amily2-tutorial-md td:first-child {
+        width: 34% !important;
+        min-width: 5.5em !important;
+        font-weight: 600;
+    }
+
+    .amily2-tutorial-modal .amily2-tutorial-md th:last-child,
+    .amily2-tutorial-modal .amily2-tutorial-md td:last-child {
+        width: auto !important;
+    }
+
+    /* �������ϣ������Ử�����ֺ����������Ƕѳ�һ���� */
+    .amily2-tutorial-modal .amily2-tutorial-md table:has(th:nth-child(3)) {
+        width: max-content !important;
+        min-width: 100% !important;
+    }
+
+    .amily2-tutorial-modal .amily2-tutorial-md table:has(th:nth-child(3)) th,
+    .amily2-tutorial-modal .amily2-tutorial-md table:has(th:nth-child(3)) td {
+        width: auto !important;
+        min-width: 6.5em !important;
+        max-width: 12em !important;
+    }
+}
+
+/* 教程弹窗底部：补充进阶 + 加群提示 */
+.amily2-tutorial-modal .am2-tut-advanced {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.14);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+}
+
+.amily2-tutorial-modal .am2-tut-advanced-note,
+.amily2-tutorial-modal .am2-tut-help-note {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.55;
+    color: rgba(232, 232, 238, 0.78);
+}
+
+.amily2-tutorial-modal .am2-tut-help-note b {
+    color: #9ecbff;
+    font-weight: 650;
+}
+
+.amily2-tutorial-modal .am2-tut-advanced-btn {
+    align-self: center !important;
+    width: auto !important;
+    min-width: 0 !important;
+    white-space: nowrap !important;
+}

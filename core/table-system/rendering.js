@@ -104,6 +104,12 @@ function _renderTableBody(table, tagName) {
     return out;
 }
 
+function _ordinaryTables(state) {
+    return state
+        .map((table, tableIndex) => ({ table, tableIndex }))
+        .filter(({ table }) => !table?.owner || table.owner === 'user');
+}
+
 /**
  * 完整渲染：所有表格内容 + 规则 + 警告，注入到主流程 prompt。
  * 对应 manager.js#convertTablesToCsvString。
@@ -115,7 +121,8 @@ export function tablesToCsv(state) {
     if (!state || state.length === 0) return '';
 
     let fullString = '';
-    state.forEach((table, tableIndex) => {
+    const ordinaryTables = _ordinaryTables(state);
+    ordinaryTables.forEach(({ table, tableIndex }, visibleIndex) => {
         // 标题
         fullString += `\n* ${tableIndex}:${table.name}\n`;
 
@@ -140,7 +147,7 @@ export function tablesToCsv(state) {
         fullString += `【删除】: ${table.rule_delete || '允许'}\n`;
         fullString += `【修改】: ${table.rule_update || '允许'}\n`;
 
-        if (tableIndex < state.length - 1) fullString += '\n---\n';
+        if (visibleIndex < ordinaryTables.length - 1) fullString += '\n---\n';
     });
 
     return fullString;
@@ -159,7 +166,8 @@ export function tablesToCsvWithSelection(state, selectedIndices) {
     const selected = Array.isArray(selectedIndices) ? selectedIndices : [];
 
     let fullString = '';
-    state.forEach((table, tableIndex) => {
+    const ordinaryTables = _ordinaryTables(state);
+    ordinaryTables.forEach(({ table, tableIndex }, visibleIndex) => {
         const isSelected = selected.includes(tableIndex);
 
         // 标题
@@ -194,7 +202,7 @@ export function tablesToCsvWithSelection(state, selectedIndices) {
             fullString += `【操作权限】: 禁止修改此表格\n`;
         }
 
-        if (tableIndex < state.length - 1) fullString += '\n---\n';
+        if (visibleIndex < ordinaryTables.length - 1) fullString += '\n---\n';
     });
 
     return fullString;
@@ -212,7 +220,7 @@ export function tablesToCsvContentOnly(state) {
     if (!state || state.length === 0) return '';
 
     let outputString = '';
-    state.forEach(table => {
+    _ordinaryTables(state).forEach(({ table }) => {
         outputString += `\n<${table.name}>\n`;
 
         // Markdown 表头

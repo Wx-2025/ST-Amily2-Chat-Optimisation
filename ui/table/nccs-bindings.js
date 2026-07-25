@@ -108,12 +108,12 @@ export function bindNccsApiEvents({
     enabledToggle.addEventListener('change', () => {
         saveSetting('nccsEnabled', enabledToggle.checked);
         updateConfigVisibility();
-        log(`NCCS API ${enabledToggle.checked ? 'enabled' : 'disabled'}.`, 'info');
+        log(`独立API填表已${enabledToggle.checked ? '启用' : '关闭'}。`, 'info');
     });
 
     enabledFakeStreamToggle.addEventListener('change', () => {
         saveSetting('nccsFakeStreamEnabled', enabledFakeStreamToggle.checked);
-        log(`NCCS fake stream ${enabledFakeStreamToggle.checked ? 'enabled' : 'disabled'}.`, 'info');
+        log(`独立API填表流式支持已${enabledFakeStreamToggle.checked ? '启用' : '关闭'}。`, 'info');
     });
 
     if (modeSelect) {
@@ -123,7 +123,7 @@ export function bindNccsApiEvents({
             if (modeSelect.value === 'sillytavern_preset') {
                 loadSillyTavernPresets();
             }
-            log(`NCCS API mode changed to ${modeSelect.value}.`, 'info');
+            log(`独立API填表模式已切换为 ${modeSelect.value}。`, 'info');
         });
     }
 
@@ -157,23 +157,23 @@ export function bindNccsApiEvents({
     if (testButton) {
         testButton.addEventListener('click', async () => {
             testButton.disabled = true;
-            testButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
+            testButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 测试中...';
 
             try {
                 const success = await testNccsApiConnection();
                 if (success) {
-                    toastr.success('NCCS API connection succeeded.');
-                    log('NCCS API connection succeeded.', 'success');
+                    toastr.success('独立API填表连接成功。');
+                    log('独立API填表连接成功。', 'success');
                 } else {
-                    toastr.error('NCCS API connection failed.');
-                    log('NCCS API connection failed.', 'error');
+                    toastr.error('独立API填表连接失败。');
+                    log('独立API填表连接失败。', 'error');
                 }
             } catch (error) {
-                toastr.error(`NCCS API test failed: ${error.message}`);
-                log(`NCCS API test failed: ${error.message}`, 'error');
+                toastr.error(`独立API填表测试失败: ${error.message}`);
+                log(`独立API填表测试失败: ${error.message}`, 'error');
             } finally {
                 testButton.disabled = false;
-                testButton.innerHTML = '<i class="fas fa-plug"></i> Test Connection';
+                testButton.innerHTML = '<i class="fas fa-plug"></i> 测试连接';
             }
         });
     }
@@ -181,7 +181,7 @@ export function bindNccsApiEvents({
     if (fetchModelsButton && modelInput) {
         fetchModelsButton.addEventListener('click', async () => {
             fetchModelsButton.disabled = true;
-            fetchModelsButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+            fetchModelsButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 加载中...';
 
             if (urlInput) {
                 saveSetting('nccsApiUrl', urlInput.value);
@@ -197,7 +197,7 @@ export function bindNccsApiEvents({
                 const models = await fetchNccsModels();
                 if (!models?.length) {
                     toastr.warning('No models returned.');
-                    log('No NCCS models returned.', 'warn');
+                    log('独立API填表未返回模型。', 'warn');
                     return;
                 }
 
@@ -229,14 +229,14 @@ export function bindNccsApiEvents({
                     saveSetting('nccsModel', selectedModel);
                 };
 
-                toastr.success(`Loaded ${models.length} models.`);
-                log(`Loaded ${models.length} NCCS models.`, 'success');
+                toastr.success(`已加载 ${models.length} 个模型。`);
+                log(`独立API填表已加载 ${models.length} 个模型。`, 'success');
             } catch (error) {
-                toastr.error(`Failed to load models: ${error.message}`);
-                log(`Failed to load NCCS models: ${error.message}`, 'error');
+                toastr.error(`加载模型失败: ${error.message}`);
+                log(`独立API填表加载模型失败: ${error.message}`, 'error');
             } finally {
                 fetchModelsButton.disabled = false;
-                fetchModelsButton.innerHTML = '<i class="fas fa-download"></i> Fetch Models';
+                fetchModelsButton.innerHTML = '<i class="fas fa-download"></i> 获取模型';
             }
         });
     }
@@ -245,5 +245,5 @@ export function bindNccsApiEvents({
         loadSillyTavernPresets();
     }
 
-    log('NCCS API settings bound.', 'success');
+    log('独立API填表设置已绑定。', 'success');
 }

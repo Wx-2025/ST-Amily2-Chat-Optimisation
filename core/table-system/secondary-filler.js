@@ -428,7 +428,7 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
             // Legacy 文本路径
             let rawContent;
             if (settings.nccsEnabled) {
-                console.log('[Amily2-副API] 使用 Nccs API 进行分步填表...');
+                console.log('[Amily2-副API] 使用独立API填表进行分步填表...');
                 rawContent = await callNccsAI(messages, { signal });
             } else {
                 console.log('[Amily2-副API] 使用 tableFilling slot 进行分步填表...');

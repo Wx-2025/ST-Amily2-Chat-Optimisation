@@ -83,6 +83,13 @@ export async function callSybdAI(messages, options = {}) {
         return null;
     }
 
+    // 总开关：默认开；明确设为 false 时拒绝调用
+    const master = extension_settings[extensionName] || {};
+    if (master.sybdEnabled === false) {
+        console.warn('[Amily2-Sybd] 术语表自动填写总开关已关闭，跳过调用。');
+        return null;
+    }
+
     const apiSettings = await getSybdApiSettings();
 
     const finalOptions = mergeSafeModelCallOptions({
