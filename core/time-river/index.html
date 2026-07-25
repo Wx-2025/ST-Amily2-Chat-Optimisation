@@ -87,8 +87,11 @@
         border-top: 1px solid rgba(255, 255, 255, 0.08);
     }
     #amily2_time_river_panel .tr-actions .menu_button {
-        min-width: 0;
-        white-space: normal !important;
+        min-width: max-content;
+        white-space: nowrap !important;
+        writing-mode: horizontal-tb !important;
+        text-orientation: mixed !important;
+        word-break: keep-all !important;
     }
     #amily2_time_river_panel .menu_button:disabled {
         opacity: 0.42 !important;
@@ -285,9 +288,9 @@
 <div class="tr-shell">
 <div class="amily2-header">
     <div class="am2-panel-title-row">
-        <div class="additional-features-title interactable" title="Amily2 时间河（Type3 内测）">
+        <div class="additional-features-title interactable" title="Amily2 时间河（Type2 内测）">
             <i class="fas fa-water"></i> 时间河
-            <span class="tr-beta">TYPE3 · 内测</span>
+            <span class="tr-beta">TYPE2 · 内测</span>
         </div>
     </div>
     <button id="amily2_back_to_main_from_time_river" class="menu_button secondary small_button interactable" type="button">

@@ -923,8 +923,8 @@ export function bindModalEvents() {
             }
             case 'amily2_open_time_river': {
                 const timeRiverUserType = parseInt(localStorage.getItem("plugin_user_type") || "0", 10);
-                if (timeRiverUserType < 3) {
-                    toastr.info("时间河当前仅向 Type3 用户开放。", "权限不足");
+                if (timeRiverUserType < 2) {
+                    toastr.info("时间河当前仅向 Type2 及以上用户开放。", "权限不足");
                     mainPanel.show();
                     return;
                 }
