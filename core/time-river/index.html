@@ -1,0 +1,479 @@
+<style>
+    #amily2_time_river_panel {
+        color: var(--am2-text, #e8e8ee);
+    }
+    #amily2_time_river_panel .tr-shell {
+        display: flex;
+        flex-direction: column;
+        gap: var(--am2-space-3, 12px);
+        min-width: 0;
+    }
+    #amily2_time_river_panel .tr-beta {
+        display: inline-flex;
+        align-items: center;
+        min-height: 20px;
+        padding: 0 7px;
+        border: 1px solid rgba(245, 185, 66, 0.35);
+        border-radius: 999px;
+        background: rgba(245, 185, 66, 0.12);
+        color: var(--am2-warning, #f5b942);
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        vertical-align: middle;
+    }
+    #amily2_time_river_panel .tr-stepper {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: var(--am2-space-2, 8px);
+        margin: 0;
+    }
+    #amily2_time_river_panel .tr-step {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        padding: 9px 10px;
+        border: var(--am2-border, 1px solid rgba(255, 255, 255, 0.12));
+        border-radius: var(--am2-radius-md, 10px);
+        background: var(--am2-surface, rgba(255, 255, 255, 0.04));
+        color: var(--am2-muted, rgba(224, 224, 224, 0.62));
+        font-size: 11.5px;
+        line-height: 1.25;
+    }
+    #amily2_time_river_panel .tr-step > strong {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        flex: 0 0 22px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, rgba(139, 108, 240, 0.9), rgba(108, 140, 255, 0.85));
+        color: #fff;
+        font-size: 11px;
+    }
+    #amily2_time_river_panel .tr-section {
+        overflow: visible;
+    }
+    #amily2_time_river_panel .tr-section > legend > .tr-legend-index {
+        color: var(--am2-muted, rgba(224, 224, 224, 0.62));
+        font-variant-numeric: tabular-nums;
+    }
+    #amily2_time_river_panel .tr-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: var(--am2-space-3, 12px);
+    }
+    #amily2_time_river_panel .tr-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 0;
+        margin: 0;
+    }
+    #amily2_time_river_panel .tr-stack > span {
+        color: var(--am2-muted, rgba(224, 224, 224, 0.62));
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+    }
+    #amily2_time_river_panel .tr-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--am2-space-2, 8px);
+        margin-top: var(--am2-space-2, 8px);
+        padding-top: var(--am2-space-3, 12px);
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    #amily2_time_river_panel .tr-actions .menu_button {
+        min-width: 0;
+        white-space: normal !important;
+    }
+    #amily2_time_river_panel .menu_button:disabled {
+        opacity: 0.42 !important;
+        cursor: not-allowed !important;
+        filter: grayscale(0.25);
+        transform: none !important;
+        box-shadow: none !important;
+    }
+    #amily2_time_river_panel .tr-status {
+        min-width: 0;
+        padding: 10px 12px;
+        border: var(--am2-border, 1px solid rgba(255, 255, 255, 0.12));
+        border-left: 3px solid var(--am2-accent, #8b6cf0);
+        border-radius: var(--am2-radius-md, 10px);
+        background: var(--am2-surface, rgba(255, 255, 255, 0.04));
+        color: var(--am2-muted, rgba(224, 224, 224, 0.62));
+        font-size: 12.5px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+    }
+    #amily2_time_river_panel .tr-warning {
+        padding: 10px 12px;
+        border: 1px solid rgba(255, 107, 107, 0.4);
+        border-left: 4px solid var(--am2-danger, #ff6b6b);
+        border-radius: var(--am2-radius-md, 10px);
+        color: #ffb4b4;
+        background: rgba(255, 107, 107, 0.12);
+        font-weight: 600;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+    }
+    #amily2_time_river_panel .tr-warning.is-safe {
+        border-color: rgba(61, 214, 140, 0.28);
+        border-left-color: var(--am2-success, #3dd68c);
+        color: var(--am2-muted, rgba(224, 224, 224, 0.62));
+        background: rgba(61, 214, 140, 0.08);
+        font-weight: 400;
+    }
+    #amily2_time_river_panel .tr-note {
+        margin: 0;
+        color: var(--am2-muted, rgba(224, 224, 224, 0.62));
+        font-size: 12px;
+        line-height: 1.55;
+    }
+    #amily2_time_river_panel .tr-spaced {
+        margin-top: var(--am2-space-2, 8px);
+    }
+    #amily2_time_river_panel .tr-check-card {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin: 0;
+        padding: 11px 12px;
+        border: var(--am2-border, 1px solid rgba(255, 255, 255, 0.12));
+        border-radius: var(--am2-radius-md, 10px);
+        background: rgba(0, 0, 0, 0.12);
+        color: var(--am2-text, #e8e8ee);
+        font-size: 12.5px;
+        line-height: 1.5;
+        cursor: pointer;
+    }
+    #amily2_time_river_panel .tr-check-card > input {
+        width: auto !important;
+        min-height: 0 !important;
+        flex: 0 0 auto;
+        margin: 3px 0 0;
+        accent-color: var(--am2-accent, #8b6cf0);
+    }
+    #amily2_time_river_panel .tr-outline-wrap {
+        max-height: 320px;
+        overflow: auto;
+        border: var(--am2-border, 1px solid rgba(255, 255, 255, 0.12));
+        border-radius: var(--am2-radius-md, 10px);
+        background: rgba(0, 0, 0, 0.12);
+        -webkit-overflow-scrolling: touch;
+    }
+    #amily2_time_river_panel .tr-outline-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+    }
+    #amily2_time_river_panel .tr-outline-table th,
+    #amily2_time_river_panel .tr-outline-table td {
+        padding: 8px 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        text-align: left;
+        vertical-align: middle;
+    }
+    #amily2_time_river_panel .tr-outline-table th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: rgba(24, 24, 30, 0.96);
+        color: var(--am2-muted, rgba(224, 224, 224, 0.62));
+        font-weight: 650;
+    }
+    #amily2_time_river_panel .tr-metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: var(--am2-space-2, 8px);
+    }
+    #amily2_time_river_panel .tr-metric {
+        min-width: 0;
+        padding: 10px 11px;
+        border: var(--am2-border, 1px solid rgba(255, 255, 255, 0.12));
+        border-radius: var(--am2-radius-md, 10px);
+        background: rgba(0, 0, 0, 0.14);
+        color: var(--am2-muted, rgba(224, 224, 224, 0.62));
+        font-size: 11.5px;
+        line-height: 1.3;
+    }
+    #amily2_time_river_panel .tr-metric > strong {
+        display: block;
+        margin-top: 4px;
+        color: var(--am2-text, #e8e8ee);
+        font-size: 15px;
+        font-variant-numeric: tabular-nums;
+        overflow-wrap: anywhere;
+    }
+    #amily2_time_river_panel .tr-preview {
+        max-height: 280px;
+        overflow: auto;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        margin: 0;
+        padding: 12px;
+        border: var(--am2-border, 1px solid rgba(255, 255, 255, 0.12));
+        border-radius: var(--am2-radius-md, 10px);
+        background: rgba(0, 0, 0, 0.28);
+        color: var(--am2-text, #e8e8ee);
+        font-size: 12px;
+        line-height: 1.5;
+    }
+    #amily2_time_river_panel input[type="file"] {
+        width: 100%;
+        min-height: var(--am2-control-h, 30px);
+        padding: 7px 9px;
+        border: var(--am2-border, 1px solid rgba(255, 255, 255, 0.12));
+        border-radius: var(--am2-radius-md, 10px);
+        background: rgba(0, 0, 0, 0.2);
+        color: var(--am2-muted, rgba(224, 224, 224, 0.62));
+        box-sizing: border-box;
+    }
+    #amily2_time_river_panel input[type="file"]::file-selector-button {
+        margin-right: 9px;
+        padding: 5px 9px;
+        border: var(--am2-border, 1px solid rgba(255, 255, 255, 0.12));
+        border-radius: var(--am2-radius-sm, 6px);
+        background: var(--am2-surface-2, rgba(255, 255, 255, 0.07));
+        color: var(--am2-text, #e8e8ee);
+        cursor: pointer;
+    }
+    #amily2_time_river_panel input[type="range"],
+    #amily2_time_river_panel input[type="checkbox"] {
+        accent-color: var(--am2-accent, #8b6cf0);
+    }
+    #amily2_time_river_panel fieldset:disabled {
+        opacity: 0.62;
+    }
+    #amily2_time_river_panel :focus-visible {
+        outline: none;
+        box-shadow: var(--am2-focus, 0 0 0 2px rgba(126, 87, 194, 0.45));
+    }
+    @media (max-width: 700px) {
+        #amily2_time_river_panel .tr-stepper {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        #amily2_time_river_panel .tr-grid {
+            grid-template-columns: 1fr;
+        }
+        #amily2_time_river_panel .tr-actions .menu_button {
+            flex: 1 1 calc(50% - 8px);
+        }
+        #amily2_time_river_panel .tr-outline-table {
+            width: 100%;
+            min-width: 520px;
+        }
+        #amily2_time_river_panel .tr-metrics {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+    @media (max-width: 430px) {
+        #amily2_time_river_panel .tr-actions .menu_button {
+            flex-basis: 100%;
+            width: 100% !important;
+        }
+        #amily2_time_river_panel .tr-metrics {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="tr-shell">
+<div class="amily2-header">
+    <div class="am2-panel-title-row">
+        <div class="additional-features-title interactable" title="Amily2 时间河（Type3 内测）">
+            <i class="fas fa-water"></i> 时间河
+            <span class="tr-beta">TYPE3 · 内测</span>
+        </div>
+    </div>
+    <button id="amily2_back_to_main_from_time_river" class="menu_button secondary small_button interactable" type="button">
+        <i class="fas fa-arrow-left"></i> 返回
+    </button>
+</div>
+<hr class="header-divider">
+
+<nav class="tr-stepper" aria-label="时间河工作流程">
+    <div class="tr-step"><strong>1</strong><span>导入与预览</span></div>
+    <div class="tr-step"><strong>2</strong><span>选择语料版本</span></div>
+    <div class="tr-step"><strong>3</strong><span>构建可靠索引</span></div>
+    <div class="tr-step"><strong>4</strong><span>绑定聊天游标</span></div>
+</nav>
+
+<div id="tr-access-state" class="tr-status" role="status" aria-live="polite">
+    正在检查时间河权限与服务状态……
+</div>
+
+<fieldset class="settings-group tr-section">
+    <legend><span class="tr-legend-index">01</span><i class="fas fa-file-import"></i> 导入与目录预览</legend>
+    <div class="tr-grid">
+        <label class="tr-stack">
+            <span>小说文件（TXT / Markdown）</span>
+            <input id="tr-import-file" type="file" accept=".txt,.md,text/plain,text/markdown">
+        </label>
+        <label class="tr-stack">
+            <span>文本编码</span>
+            <select id="tr-import-encoding" class="text_pole">
+                <option value="utf-8">UTF-8</option>
+                <option value="gb18030">GB18030</option>
+            </select>
+        </label>
+        <label class="tr-stack">
+            <span>作品标题</span>
+            <input id="tr-import-title" class="text_pole" type="text" maxlength="200" placeholder="默认取文件名，可修改">
+        </label>
+    </div>
+    <div class="tr-actions">
+        <button id="tr-prepare-import" class="menu_button secondary interactable" type="button" disabled>
+            <i class="fas fa-list-alt"></i> 解析并预览目录
+        </button>
+    </div>
+    <div id="tr-import-summary" class="tr-status" role="status" aria-live="polite">尚未解析文件。</div>
+    <div class="tr-metrics" aria-label="分块与空间估算">
+        <div class="tr-metric">卷：<strong id="tr-volume-count">—</strong></div>
+        <div class="tr-metric">章：<strong id="tr-chapter-count">—</strong></div>
+        <div class="tr-metric">一级块：<strong id="tr-primary-count">—</strong></div>
+        <div class="tr-metric">二级块：<strong id="tr-retrieval-count">—</strong></div>
+        <div class="tr-metric">空间粗估：<strong id="tr-space-estimate">—</strong></div>
+    </div>
+    <p class="tr-note">
+        解析阶段只生成本地预览。请检查识别出的卷章类型并编辑标题；Phase 1 不支持改变目录层级。只有明确确认后才会持久化语料，也只有再次确认后才允许启动可能产生模型费用的任务。
+    </p>
+    <div class="tr-outline-wrap">
+        <table class="tr-outline-table">
+            <thead>
+                <tr><th scope="col" style="width: 58px;">序号</th><th scope="col" style="width: 130px;">类型</th><th scope="col">标题（可编辑）</th></tr>
+            </thead>
+            <tbody id="tr-outline-body">
+                <tr><td colspan="3">解析后在此显示目录。</td></tr>
+            </tbody>
+        </table>
+    </div>
+    <label class="tr-check-card">
+        <input id="tr-paid-confirm" type="checkbox">
+        <span>
+            我已核对目录与空间估算，并确认：提交后会把小说语料持久化到本地时间河存储；随后启动摄取任务可能调用当前配置的模型/向量服务并产生费用。
+        </span>
+    </label>
+    <div id="tr-paid-confirm-context" class="tr-status" role="status" aria-live="polite">
+        尚未确认任何导入或任务目标。
+    </div>
+    <div class="tr-actions">
+        <button id="tr-commit-import" class="menu_button primary interactable" type="button" disabled>
+            <i class="fas fa-database"></i> 确认并持久化
+        </button>
+    </div>
+</fieldset>
+
+<fieldset class="settings-group tr-section">
+    <legend><span class="tr-legend-index">02</span><i class="fas fa-layer-group"></i> 语料与版本</legend>
+    <div class="tr-grid">
+        <label class="tr-stack">
+            <span>语料</span>
+            <select id="tr-corpus-select" class="text_pole"></select>
+        </label>
+        <label class="tr-stack">
+            <span>Revision</span>
+            <select id="tr-revision-select" class="text_pole"></select>
+        </label>
+    </div>
+    <div class="tr-actions">
+        <button id="tr-refresh-corpora" class="menu_button secondary interactable" type="button" disabled>
+            <i class="fas fa-sync-alt"></i> 刷新列表
+        </button>
+    </div>
+    <div id="tr-corpus-detail" class="tr-status" role="status" aria-live="polite">尚未选择语料。</div>
+</fieldset>
+
+<fieldset class="settings-group tr-section">
+    <legend><span class="tr-legend-index">03</span><i class="fas fa-tasks"></i> 可靠索引任务</legend>
+    <div class="tr-metrics">
+        <div class="tr-metric">待处理：<strong id="tr-job-pending">0</strong></div>
+        <div class="tr-metric">运行中：<strong id="tr-job-running">0</strong></div>
+        <div class="tr-metric">成功：<strong id="tr-job-succeeded">0</strong></div>
+        <div class="tr-metric">失败：<strong id="tr-job-failed">0</strong></div>
+        <div class="tr-metric">暂停/取消：<strong id="tr-job-paused">0</strong></div>
+    </div>
+    <div id="tr-job-status" class="tr-status" role="status" aria-live="polite">尚未读取任务状态。</div>
+    <p class="tr-note">
+        页面会在任务运行时自动刷新，最长约 10 分钟。暂停会取消当前浏览器请求；远端服务若已完成计费，本地只能安全停止后等待重试或人工核对。
+    </p>
+    <div class="tr-actions">
+        <button id="tr-run-ingestion" class="menu_button primary interactable" type="button" disabled>
+            <i class="fas fa-play"></i> 开始 / 继续
+        </button>
+        <button id="tr-pause-ingestion" class="menu_button danger interactable" type="button" disabled>
+            <i class="fas fa-stop"></i> 请求暂停 / 取消当前调用
+        </button>
+        <button id="tr-retry-failed" class="menu_button secondary interactable" type="button" disabled>
+            <i class="fas fa-redo"></i> 重试失败项
+        </button>
+        <button id="tr-export-diagnostics" class="menu_button secondary interactable" type="button" disabled>
+            <i class="fas fa-file-export"></i> 导出脱敏诊断
+        </button>
+    </div>
+</fieldset>
+
+<fieldset class="settings-group tr-section">
+    <legend><span class="tr-legend-index">04</span><i class="fas fa-link"></i> 当前聊天绑定与游标</legend>
+    <div id="tr-binding-status" class="tr-status" role="status" aria-live="polite">当前聊天尚未读取绑定。</div>
+    <div class="tr-actions">
+        <button id="tr-bind-chat" class="menu_button primary interactable" type="button" disabled>
+            <i class="fas fa-link"></i> 将所选 Revision 绑定到当前聊天
+        </button>
+    </div>
+    <div class="tr-grid tr-spaced">
+        <label class="tr-stack">
+            <span>当前卷</span>
+            <select id="tr-volume-select" class="text_pole"></select>
+        </label>
+        <label class="tr-stack">
+            <span>当前章</span>
+            <select id="tr-chapter-select" class="text_pole"></select>
+        </label>
+    </div>
+    <label class="tr-stack tr-spaced">
+        <span>章节同步滑块：<strong id="tr-chapter-slider-label">—</strong></span>
+        <input id="tr-chapter-slider" type="range" min="0" max="0" step="1" value="0" disabled>
+    </label>
+    <div class="tr-grid tr-spaced">
+        <label class="tr-stack">
+            <span>回看窗口（windowBack）</span>
+            <input id="tr-window-back" class="text_pole" type="number" min="0" max="50" step="1" value="2">
+        </label>
+        <label class="tr-stack">
+            <span>未来窗口（windowForward）</span>
+            <input id="tr-window-forward" class="text_pole" type="number" min="0" max="0" step="1" value="0" readonly disabled>
+        </label>
+    </div>
+    <div id="tr-future-warning" class="tr-warning is-safe" role="note">
+        未来泄漏硬保护：Phase 1 的 windowForward 固定为 0，不会检索当前章节之后的原文。
+    </div>
+    <div class="tr-grid tr-spaced">
+        <label class="tr-check-card">
+            <input id="tr-injection-enabled" type="checkbox">
+            <span>启用生成前原文窗口注入</span>
+        </label>
+        <label class="tr-stack">
+            <span>检索 Top K</span>
+            <input id="tr-top-k" class="text_pole" type="number" min="1" max="30" step="1" value="6">
+        </label>
+        <label class="tr-stack">
+            <span>注入 Token 预算</span>
+            <input id="tr-token-budget" class="text_pole" type="number" min="256" max="12000" step="128" value="2400">
+        </label>
+    </div>
+    <div class="tr-actions">
+        <button id="tr-save-cursor" class="menu_button primary interactable" type="button" disabled>
+            <i class="fas fa-save"></i> 保存游标与注入设置
+        </button>
+        <button id="tr-preview-injection" class="menu_button secondary interactable" type="button" disabled>
+            <i class="fas fa-eye"></i> 本地预览检索范围
+        </button>
+    </div>
+    <pre id="tr-injection-preview" class="tr-preview" aria-live="polite">尚未生成预览；此预览不会调用 Embedding 或向量查询接口。</pre>
+</fieldset>
+</div>

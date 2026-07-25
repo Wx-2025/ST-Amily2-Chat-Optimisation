@@ -1,42 +1,47 @@
 
 <div class="amily2-header">
-    <div id="amily2_open_hanlin_tutorial" class="additional-features-title interactable" title="查看翰林院使用教程" style="cursor: pointer;">
-        <i class="fas fa-landmark-dome"></i> 翰林院 · 忆识核心
+    <div class="am2-panel-title-row">
+        <div class="additional-features-title">
+            <i class="fas fa-brain"></i> 智能检索
+        </div>
+        <button id="amily2_open_hanlin_tutorial" class="menu_button small_button secondary interactable am2-panel-tutorial-btn" type="button" title="小白教程：向量/重排要配什么模型">
+            <i class="fas fa-book-open"></i> 教程
+        </button>
     </div>
-    <button id="amily2_back_to_main_from_hanlinyuan" class="menu_button secondary small_button interactable">
-        返回主殿 <i class="fas fa-arrow-right"></i>
+    <button id="amily2_back_to_main_from_hanlinyuan" class="menu_button secondary small_button interactable" type="button">
+        <i class="fas fa-arrow-left"></i> 返回
     </button>
 </div>
 <hr class="header-divider">
 
 <div id="hly-modal-container">
-    <!-- 状态诏书 -->
+    <!-- 状态区 -->
     <div class="hly-imperial-edict">
         <fieldset class="hly-settings-group" style="margin-bottom: 10px;">
             <legend><i class="fas fa-power-off"></i> 总开关</legend>
             <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
-                <label for="hly-retrieval-enabled-toggle">开启忆识检索之权</label>
+                <label for="hly-retrieval-enabled-toggle">启用智能检索</label>
                 <label class="hly-toggle-switch">
                     <input type="checkbox" id="hly-retrieval-enabled" data-setting-key="retrieval.enabled" data-type="boolean">
                     <span class="slider"></span>
                 </label>
             </div>
             <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
-                <label for="hly-rerank-enabled-toggle">启用 Rerank</label>
+                <label for="hly-rerank-enabled-toggle">启用结果重排</label>
                 <label class="hly-toggle-switch">
                     <input type="checkbox" id="hly-rerank-enabled" data-setting-key="rerank.enabled" data-type="boolean">
                     <span class="slider"></span>
                 </label>
             </div>
             <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
-                <label for="hly-super-sort-enabled-toggle" title="启用后，排序不再依照分数，而是使用绝对正确的排序及分类。">超级排序</label>
+                <label for="hly-super-sort-enabled-toggle" title="启用后，按更稳妥的规则排序和分类，不只看相似度分数。">智能排序</label>
                 <label class="hly-toggle-switch">
                     <input type="checkbox" id="hly-super-sort-enabled" data-setting-key="rerank.superSortEnabled" data-type="boolean">
                     <span class="slider"></span>
                 </label>
             </div>
             <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
-                <label for="hly-independent-chat-memory-toggle" title="启用后，每个聊天文件都将拥有独立的知识库。关闭后，同一角色的所有聊天将共享同一个知识库。">独立聊天记忆</label>
+                <label for="hly-independent-chat-memory-toggle" title="启用后，每个聊天各自一份知识库。关闭后，同一角色的所有聊天共用一份。">每个聊天独立知识库</label>
                 <label class="hly-toggle-switch">
                     <input type="checkbox" id="hly-independent-chat-memory-enabled" data-setting-key="retrieval.independentChatMemoryEnabled" data-type="boolean">
                     <span class="slider"></span>
@@ -49,20 +54,20 @@
                 <span id="hly-current-chat-id" class="hly-edict-value">未开启</span>
             </div>
             <div class="hly-edict-item">
-                <span class="hly-edict-label">当前辅佐:</span>
-                <span id="hly-current-character-name" class="hly-edict-value">待命中...</span>
+                <span class="hly-edict-label">当前角色:</span>
+                <span id="hly-current-character-name" class="hly-edict-value">未选择</span>
             </div>
         </div>
         <div class="hly-edict-row">
             <div class="hly-edict-item hly-memory-display">
-                <span class="hly-edict-label">忆识总数:</span>
+                <span class="hly-edict-label">知识条数:</span>
                 <span id="hly-current-vector-count" class="hly-memory-count">0</span>
-                <button class="hly-action-button" onclick="updateHLYMemoryCount()" title="刷新忆识总数" style="padding: 4px 8px; font-size: 12px;">
+                <button class="hly-action-button" onclick="updateHLYMemoryCount()" title="刷新知识条数" style="padding: 4px 8px; font-size: 12px;">
                     🔄
                 </button>
             </div>
             <div class="hly-button-group" style="margin-left: auto;">
-                <button class="hly-action-button" onclick="purgeHLYStorage()" style="padding: 4px 8px; font-size: 12px;">清空宝库</button>
+                <button class="hly-action-button" onclick="purgeHLYStorage()" style="padding: 4px 8px; font-size: 12px;">清空知识库</button>
                 <button id="hly-session-lock-btn" class="hly-action-button" style="padding: 4px 8px; font-size: 12px;">
                     <i class="fas fa-lock"></i> <span>锁定会话</span>
                 </button>
@@ -70,45 +75,45 @@
         </div>
     </div>
 
-    <!-- 司南 -->
+    <!-- 导航 -->
     <div class="hly-navigation-deck">
-        <button class="hly-nav-item active" data-tab="retrieval">忆识检索</button>
-        <button class="hly-nav-item" data-tab="historiography">书库编纂</button>
+        <button class="hly-nav-item active" data-tab="retrieval">检索设置</button>
+        <button class="hly-nav-item" data-tab="historiography">录入知识</button>
         <button class="hly-nav-item" data-tab="knowledge-bases">知识管理</button>
-        <button class="hly-nav-item" data-tab="rerank">忆识精炼</button>
-        <button class="hly-nav-item" data-tab="advanced">高级设定</button>
+        <button class="hly-nav-item" data-tab="rerank">结果重排</button>
+        <button class="hly-nav-item" data-tab="advanced">高级设置</button>
     </div>
 
     <div class="hly-scroll">
         <div id="hly-retrieval-tab" class="hly-tab-pane active">
             <fieldset class="hly-settings-group">
-                <legend><i class="fas fa-broadcast-tower"></i> 神力之源 (API)</legend>
+                <legend><i class="fas fa-broadcast-tower"></i> 检索用 API</legend>
                 <div class="hly-control-block">
-                    <label for="hly-api-endpoint">API模式:</label>
+                    <label for="hly-api-endpoint">接口模式:</label>
                                 <select id="hly-api-endpoint" class="hly-imperial-brush" data-setting-key="retrieval.apiEndpoint" data-type="string">
-                                    <option value="custom">自定义 (OpenAI/Azure 兼容)</option>
+                                    <option value="custom">自定义（兼容 OpenAI/Azure）</option>
                                     <option value="google_direct">Google 直连</option>
-                                    <option value="local_proxy">本地代理 (LM Studio/Ollama)</option>
+                                    <option value="local_proxy">本地代理（LM Studio/Ollama）</option>
                                     <option value="openai">OpenAI 官方</option>
-                                    <option value="azure">Azure (api-key 头)</option>
+                                    <option value="azure">Azure</option>
                                 </select>
                 </div>
                 <div class="hly-control-block" id="hly-custom-endpoint-docket">
-                    <label for="hly-custom-api-url">API URL:</label>
+                    <label for="hly-custom-api-url">接口地址:</label>
                     <input type="text" id="hly-custom-api-url" class="hly-imperial-brush" placeholder="根据所选模式填写" data-setting-key="retrieval.customApiUrl" data-type="string">
                 </div>
                 <div class="hly-control-block" id="hly-api-key-group">
-                    <label for="hly-api-key">通行令牌 (API Key):</label>
-                    <input type="password" id="hly-api-key" class="hly-imperial-brush" placeholder="请在此输入您的通行令牌" data-setting-key="retrieval.apiKey" data-type="string">
+                    <label for="hly-api-key">API 密钥:</label>
+                    <input type="password" id="hly-api-key" class="hly-imperial-brush" placeholder="请输入 API 密钥" data-setting-key="retrieval.apiKey" data-type="string">
                 </div>
                 <div class="hly-control-block">
-                    <label for="hly-embedding-model">嵌入模型:</label>
+                    <label for="hly-embedding-model">向量模型:</label>
                     <select id="hly-embedding-model" class="hly-imperial-brush" data-setting-key="retrieval.embeddingModel" data-type="string"></select>
                 </div>
                  <div class="hly-button-group">
-                    <button class="hly-action-button" onclick="testHLYApi()">测试神力</button>
+                    <button class="hly-action-button" onclick="testHLYApi()">测试连接</button>
                     <button class="hly-action-button" onclick="fetchHLYEmbeddingModels()">获取模型</button>
-                    <button class="hly-action-button danger" onclick="resetHLYSettings()">重置为初</button>
+                    <button class="hly-action-button danger" onclick="resetHLYSettings()">恢复默认</button>
                 </div>
             </fieldset>
         </div>
@@ -116,40 +121,40 @@
 
         <div id="hly-rerank-tab" class="hly-tab-pane">
             <fieldset class="hly-settings-group">
-                <legend><i class="fas fa-wand-magic-sparkles"></i> Rerank 精炼</legend>
+                <legend><i class="fas fa-wand-magic-sparkles"></i> 结果重排</legend>
                 <div class="hly-control-block">
-                    <label for="hly-rerank-api-mode">Rerank API 模式:</label>
+                    <label for="hly-rerank-api-mode">重排接口模式:</label>
                     <select id="hly-rerank-api-mode" class="hly-imperial-brush" data-setting-key="rerank.apiMode" data-type="string">
-                        <option value="custom">自定义 (兼容API)</option>
+                        <option value="custom">自定义（兼容接口）</option>
                         <option value="local_proxy">本地代理</option>
                     </select>
                 </div>
                 <div class="hly-control-block">
-                    <label for="hly-rerank-url">Rerank API 地址:</label>
+                    <label for="hly-rerank-url">重排接口地址:</label>
                     <input type="text" id="hly-rerank-url" class="hly-imperial-brush" placeholder="根据所选模式填写" data-setting-key="rerank.url" data-type="string">
                 </div>
                 <div class="hly-control-block" id="hly-rerank-api-key-group">
-                    <label for="hly-rerank-api-key">Rerank API Key:</label>
-                    <input type="password" id="hly-rerank-api-key" class="hly-imperial-brush" placeholder="请输入您的 Rerank API Key" data-setting-key="rerank.apiKey" data-type="string">
+                    <label for="hly-rerank-api-key">重排 API 密钥:</label>
+                    <input type="password" id="hly-rerank-api-key" class="hly-imperial-brush" placeholder="请输入重排用的 API 密钥" data-setting-key="rerank.apiKey" data-type="string">
                 </div>
                 <div class="hly-control-block">
-                    <label for="hly-rerank-model">Rerank 模型:</label>
+                    <label for="hly-rerank-model">重排模型:</label>
                     <div style="display: flex; width: 100%;">
                         <select id="hly-rerank-model" class="hly-imperial-brush" data-setting-key="rerank.model" data-type="string" style="flex-grow: 1;"></select>
                         <button class="hly-action-button" onclick="fetchHLYRerankModels()" style="margin-left: 10px; flex-shrink: 0;">获取模型</button>
                     </div>
                 </div>
                 <div class="hly-control-block">
-                    <label for="hly-rerank-top-n">返回结果数 (top_n):</label>
+                    <label for="hly-rerank-top-n">最终返回条数:</label>
                     <input type="number" id="hly-rerank-top-n" class="hly-imperial-brush" value="5" data-setting-key="rerank.top_n" data-type="integer">
                 </div>
                 <div class="hly-control-block">
-                    <label for="hly-rerank-hybrid-alpha">混合分数权重 (Alpha):</label>
+                    <label for="hly-rerank-hybrid-alpha">重排分数权重:</label>
                     <input type="number" id="hly-rerank-hybrid-alpha" class="hly-imperial-brush" value="0.7" step="0.1" min="0" max="1" data-setting-key="rerank.hybrid_alpha" data-type="float">
-                    <small class="hly-notes">Rerank分数权重。1.0表示只用Rerank分数，0.0表示只用原始相似度分数。</small>
+                    <small class="hly-notes">1.0 = 只看重排分数；0.0 = 只看最初的相似度分数。</small>
                 </div>
                 <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
-                    <label for="hly-rerank-notify-toggle">Rerank 时上奏</label>
+                    <label for="hly-rerank-notify-toggle">重排时弹出通知</label>
                     <label class="hly-toggle-switch">
                         <input type="checkbox" id="hly-rerank-notify" data-setting-key="rerank.notify" data-type="boolean">
                         <span class="slider"></span>
@@ -160,13 +165,13 @@
             <fieldset class="hly-settings-group" style="position: relative; padding-bottom: 30px;">
                 <legend><i class="fas fa-star-of-life"></i> 优先检索</legend>
                 <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
-                    <label for="hly-priority-retrieval-enabled" title="启用后，您可以为特定来源设置固定的检索数量，这些结果将必定被注入。">启用优先检索</label>
+                    <label for="hly-priority-retrieval-enabled" title="启用后，可以为特定来源固定检索条数，这些结果一定会带进对话。">启用优先检索</label>
                     <label class="hly-toggle-switch">
                         <input type="checkbox" id="hly-priority-retrieval-enabled" data-setting-key="rerank.priorityRetrieval.enabled" data-type="boolean">
                         <span class="slider"></span>
                     </label>
                 </div>
-                <small class="hly-notes">启用后，可以为特定来源设置固定的检索数量，这些结果将必定被注入，不受后续Rerank和排序影响。未勾选的来源将共享剩余的检索名额。</small>
+                <small class="hly-notes">启用后，可为指定来源固定检索条数，这些结果一定会出现在对话里，不受后面重排影响。未勾选的来源共用剩下的名额。</small>
 
                 <!-- 来源配置 -->
                 <div class="hly-priority-source-config" style="margin-top: 15px;">
@@ -218,27 +223,27 @@
         <div id="hly-historiography-tab" class="hly-tab-pane">
 
             <fieldset class="hly-settings-group">
-                <legend><i class="fas fa-book-medical"></i> 凝识法则</legend>
+                <legend><i class="fas fa-book-medical"></i> 浓缩聊天</legend>
                  <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
-                    <label for="hly-condensation-enabled-toggle">准许凝识</label>
+                    <label for="hly-condensation-enabled-toggle">启用浓缩</label>
                     <label class="hly-toggle-switch">
                         <input type="checkbox" id="hly-condensation-enabled" data-setting-key="condensation.enabled" data-type="boolean">
                         <span class="slider"></span>
                     </label>
                 </div>
                 <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
-                    <label for="hly-auto-condense-toggle" title="启用后，AI回复后将自动对历史消息进行凝识。">自动凝识</label>
+                    <label for="hly-auto-condense-toggle" title="启用后，AI 回复后会自动把较早的聊天浓缩进知识库。">自动浓缩</label>
                     <label class="hly-toggle-switch">
                         <input type="checkbox" id="hly-auto-condense-toggle" data-setting-key="condensation.autoCondense" data-type="boolean">
                         <span class="slider"></span>
                     </label>
                 </div>
                 <div class="hly-control-block">
-                    <label for="hly-preserve-floors" title="自动凝识时，保留最近的X层楼不进行凝识。">保留楼层 (自动凝识):</label>
+                    <label for="hly-preserve-floors" title="自动浓缩时，最近这几层消息先不动。">自动浓缩时保留最近层数:</label>
                     <input type="number" id="hly-preserve-floors" class="hly-imperial-brush" value="10" data-setting-key="condensation.preserveFloors" data-type="integer">
                 </div>
                 <div class="hly-control-block">
-                    <label>凝识范围 (聊天楼层):</label>
+                    <label>手动浓缩范围（消息层）:</label>
                     <div style="display: flex; gap: 10px; align-items: center;">
                         <input type="number" id="hly-layer-start" class="hly-imperial-brush" value="1" data-setting-key="condensation.layerStart" data-type="integer">
                         <span>-</span>
@@ -246,7 +251,7 @@
                     </div>
                 </div>
                 <div class="hly-control-block">
-                    <label class="hly-label">消息来源:</label>
+                    <label class="hly-label">包含哪些消息:</label>
                     <div class="hly-checkbox-group">
                         <label><input type="checkbox" id="hly-include-user" data-setting-key="condensation.messageTypes.user" data-type="boolean"> 用户</label>
                         <label><input type="checkbox" id="hly-include-ai" data-setting-key="condensation.messageTypes.ai" data-type="boolean"> AI</label>
@@ -254,16 +259,16 @@
                 </div>
 
                 <div class="hly-control-block" style="margin-top: 8px;">
-                    <label style="font-weight: bold;">提取规则配置</label>
+                    <label style="font-weight: bold;">提取规则</label>
                     <select id="hly-condensation-rule-profile-select" class="hly-imperial-brush" style="width: 100%;"></select>
-                    <small class="hly-notes">选择在「规则配置中心」里创建的提取规则，应用于浓缩处理。</small>
+                    <small class="hly-notes">选择在「规则配置」里建好的规则，用于浓缩时提取内容。</small>
                 </div>
                 <div class="hly-button-group">
-                    <button class="hly-action-button success" onclick="startHLYCondensation()"> 开始凝识</button>
+                    <button class="hly-action-button success" onclick="startHLYCondensation()"> 开始浓缩</button>
                     <button class="hly-action-button" onclick="previewHLYCondensation()"> 预览内容</button>
                 </div>
                 <div class="hly-control-block">
-                    <label>凝识结果预览:</label>
+                    <label>浓缩结果预览:</label>
                     <div id="hly-condensation-results" class="hly-results-display"></div>
                 </div>
             </fieldset>
@@ -271,9 +276,9 @@
             <fieldset class="hly-settings-group">
                 <legend><i class="fas fa-book"></i> 手动录入</legend>
                 <div class="hly-control-block">
-                    <label for="hly-manual-text">在此处粘贴您要录入的知识文书：</label>
-                    <textarea id="hly-manual-text" class="hly-imperial-brush" rows="8" placeholder="例如，您可以粘贴角色设定、世界观、背景故事等..."></textarea>
-                    <small class="hly-notes">录入的文本将被分块、向量化并存入当前角色的忆识宝库中。</small>
+                    <label for="hly-manual-text">把要记下来的文字贴在这里：</label>
+                    <textarea id="hly-manual-text" class="hly-imperial-brush" rows="8" placeholder="例如：角色设定、世界观、背景故事等..."></textarea>
+                    <small class="hly-notes">文字会被切成小段并写入当前角色的知识库，之后可被检索出来。</small>
                 </div>
                 <div class="hly-button-group">
                     <button class="hly-action-button success" onclick="ingestHLYManualText()">
@@ -284,19 +289,19 @@
 
             <!-- ================== 小说/文档导入模块 ================== -->
             <fieldset class="hly-settings-group">
-                <legend><i class="fas fa-book-open"></i> 整本录入 (小说/文档)</legend>
+                <legend><i class="fas fa-book-open"></i> 整本录入（小说/文档）</legend>
                 <div class="hly-control-block">
-                    <label for="hanlin_novel_uploader">选择一个 .txt 格式的文本文档：</label>
+                    <label for="hanlin_novel_uploader">选择一个 .txt 文本文件：</label>
                     <div id="hanlinyuan-ingest-novel-controls" class="hly-button-group" style="align-items: center;">
                         <!-- 文件选择按钮 -->
                         <div class="file-input-container">
-                            <label for="hanlinyuan-ingest-novel-file-input" class="hly-action-button">选择.txt文件</label>
+                            <label for="hanlinyuan-ingest-novel-file-input" class="hly-action-button">选择 .txt 文件</label>
                             <input type="file" id="hanlinyuan-ingest-novel-file-input" accept=".txt" style="display: none;">
                         </div>
                         <!-- 编码选择 -->
                         <div class="file-encoding-container">
-                            <select id="hanlinyuan-ingest-novel-encoding" class="hly-imperial-brush" style="padding: 8px; height: auto;" title="选择您原始文件的编码格式，系统将为您转换为标准的UTF-8格式进行处理。">
-                                <option value="UTF-8" selected>UTF-8 (默认)</option>
+                            <select id="hanlinyuan-ingest-novel-encoding" class="hly-imperial-brush" style="padding: 8px; height: auto;" title="选择原文件编码，系统会转成 UTF-8 再处理。">
+                                <option value="UTF-8" selected>UTF-8（默认）</option>
                                 <option value="GBK">GBK/GB2312 → UTF-8</option>
                                 <option value="Big5">Big5 → UTF-8</option>
                             </select>
@@ -313,21 +318,21 @@
                             <button id="hanlinyuan-ingest-abort" class="hly-action-button danger" style="margin-left: 10px;">中止</button>
                         </div>
                     </div>
-                    <small class="hly-notes" style="margin-top: 10px;">上传 .txt 文件，系统会自动分块并存入忆识核心。处理大文件时请耐心等待。</small>
+                    <small class="hly-notes" style="margin-top: 10px;">上传 .txt 后会自动切段并写入知识库。文件很大时请耐心等待。</small>
                 </div>
             </fieldset>
 
 
             <fieldset class="hly-settings-group">
-                <legend><i class="fas fa-list-alt"></i> 按条目编纂</legend>
+                <legend><i class="fas fa-list-alt"></i> 从世界书条目录入</legend>
                 <div class="hly-control-block">
-                    <label for="hly-hist-select-library">选择书库:</label>
+                    <label for="hly-hist-select-library">选择世界书:</label>
                     <div class="hly-search-wrapper">
                         <input type="text" id="hly-worldbook-search" class="hly-search-input" placeholder="搜索世界书名称...">
                         <i class="fas fa-search hly-search-icon"></i>
                     </div>
                     <select id="hly-hist-select-library" class="hly-imperial-brush">
-                        <option value="">请选择书库...</option>
+                        <option value="">请选择世界书...</option>
                     </select>
                 </div>
                 <div class="hly-control-block">
@@ -338,7 +343,7 @@
                             <i class="fas fa-search hly-search-icon"></i>
                         </div>
                         <button id="hly-hist-entry-multiselect-btn" class="hly-imperial-brush" disabled>
-                            <span>请先选择书库...</span>
+                            <span>请先选择世界书...</span>
                             <i class="fas fa-chevron-down"></i>
                         </button>
                         <div id="hly-hist-entry-multiselect-options" class="hly-multiselect-options-container" style="display: none;">
@@ -348,12 +353,12 @@
                 </div>
                 <div class="hly-button-group">
                     <button class="hly-action-button success" onclick="startHLYHistoriography()">
-                        <i class="fas fa-file-import"></i> 开始编纂
+                        <i class="fas fa-file-import"></i> 开始录入
                     </button>
                 </div>
 
                 <div class="hly-control-block">
-                    <label>编纂结果预览:</label>
+                    <label>录入结果预览:</label>
                     <div id="hly-historiography-results" class="hly-results-display"></div>
                 </div>
             </fieldset>
@@ -398,7 +403,7 @@
                     </div>
                 </div>
                 <div id="hly-kb-list-local" class="hly-kb-list">
-                    <p id="hly-kb-list-local-placeholder" style="color: #888;">当前角色没有知识库。通过“书库编纂"中的功能可自动创建。</p>
+                    <p id="hly-kb-list-local-placeholder" style="color: #888;">当前角色没有知识库。可在「录入知识」里添加。</p>
                     <!-- Local KBs will be populated here -->
                 </div>
                 <div class="hly-button-group" style="margin-top: 15px;">
@@ -414,36 +419,36 @@
             <fieldset class="hly-settings-group">
                 <legend><i class="fas fa-cogs"></i> 检索微调</legend>
                 <div class="hly-control-block">
-                    <label for="hly-chunk-size">书卷尺寸 (Chunk Size):</label>
+                    <label for="hly-chunk-size">每段文字长度:</label>
                     <input type="number" id="hly-chunk-size" class="hly-imperial-brush" value="768" data-setting-key="advanced.chunkSize" data-type="integer">
                 </div>
                 <div class="hly-control-block">
-                    <label for="hly-overlap-size">上下文关联度 (Overlap):</label>
+                    <label for="hly-overlap-size">段落重叠长度:</label>
                     <input type="number" id="hly-overlap-size" class="hly-imperial-brush" value="50" data-setting-key="advanced.overlap" data-type="integer">
                 </div>
                 <div class="hly-control-block">
-                    <label for="hly-match-threshold">忆识匹配度 (Threshold):</label>
+                    <label for="hly-match-threshold">匹配相似度门槛:</label>
                     <input type="number" id="hly-match-threshold" class="hly-imperial-brush" value="0.5" step="0.1" data-setting-key="advanced.matchThreshold" data-type="float">
                 </div>
                 <div class="hly-control-block">
-                    <label for="hly-query-message-count">检索参考的消息数量:</label>
+                    <label for="hly-query-message-count">检索时参考最近几条消息:</label>
                     <input type="number" id="hly-query-message-count" class="hly-imperial-brush" value="2" data-setting-key="advanced.queryMessageCount" data-type="integer">
                 </div>
                 <div class="hly-control-block">
-                    <label for="hly-max-results">单次检索最大结果数:</label>
+                    <label for="hly-max-results">单次最多返回条数:</label>
                     <input type="number" id="hly-max-results" class="hly-imperial-brush" value="10" data-setting-key="advanced.maxResults" data-type="integer">
                 </div>
                 <div class="hly-control-block">
-                    <label for="hly-batch-size">批处理大小 (Batch Size):</label>
+                    <label for="hly-batch-size">每次处理条数:</label>
                     <input type="number" id="hly-batch-size" class="hly-imperial-brush" value="50" data-setting-key="retrieval.batchSize" data-type="integer">
-                    <small class="hly-notes">每次调用API时处理的文本数量。</small>
+                    <small class="hly-notes">调用接口时，一次处理多少段文字。</small>
                 </div>
             </fieldset>
             
             <fieldset class="hly-settings-group">
-                <legend><i class="fas fa-wand-magic-sparkles"></i> 检索预处理</legend>
+                <legend><i class="fas fa-wand-magic-sparkles"></i> 检索前清理提问</legend>
                 <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
-                    <label for="hly-query-preprocessing-enabled" title="启用后，将在向量检索前对您的提问进行净化处理，以提高准确性。">启用检索预处理</label>
+                    <label for="hly-query-preprocessing-enabled" title="启用后，检索前会先清理你的提问文字，提高命中准确度。">启用提问清理</label>
                     <label class="hly-toggle-switch">
                         <input type="checkbox" id="hly-query-preprocessing-enabled" data-setting-key="queryPreprocessing.enabled" data-type="boolean">
                         <span class="slider"></span>
@@ -503,9 +508,9 @@
                 </fieldset>
             </fieldset>
             <fieldset class="hly-settings-group">
-                <legend><i class="fas fa-bell"></i> 上奏设定</legend>
+                <legend><i class="fas fa-bell"></i> 通知设置</legend>
                 <div class="hly-control-block" style="flex-direction: row; justify-content: space-between; align-items: center;">
-                    <label for="hly-retrieval-notify-toggle">检索成功时上奏</label>
+                    <label for="hly-retrieval-notify-toggle">检索成功时弹出通知</label>
                     <label class="hly-toggle-switch">
                         <input type="checkbox" id="hly-retrieval-notify" data-setting-key="retrieval.notify" data-type="boolean">
                         <span class="slider"></span>
@@ -520,7 +525,7 @@
         <fieldset class="hly-settings-group">
             <legend><i class="fas fa-scroll"></i> 起居注</legend>
             <div id="hly-log-output" class="hly-log-display">
-                <p>翰林院运行日志将在此记录...</p>
+                <p>智能检索运行日志会显示在这里...</p>
             </div>
         </fieldset>
     </div>

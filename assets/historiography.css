@@ -211,43 +211,99 @@
     align-items: center;
 }
 
+/* 消息显示管理：两开关 + 全部可见 同一行等高 */
+#amily2_additional_features_panel .am2-msg-display-row {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    align-items: stretch !important;
+    justify-content: flex-start !important;
+    gap: 10px !important;
+    width: 100%;
+}
+
+#amily2_additional_features_panel .am2-msg-display-row .am2-hide-toggle {
+    flex: 1 1 0 !important;
+    min-width: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    min-height: 56px !important;
+    height: auto !important;
+    box-sizing: border-box !important;
+}
+
+/* 「隐藏已总结的消息」等标签强制单行 */
+#amily2_additional_features_panel .am2-msg-display-row .am2-hide-toggle > label:first-of-type {
+    white-space: nowrap !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    text-align: center !important;
+    width: auto !important;
+    max-width: none !important;
+    line-height: 1.25 !important;
+    margin: 0 !important;
+}
+
+/* 全部可见：略靠右，高度对齐左侧开关块 */
+#amily2_additional_features_panel .am2-msg-display-row .am2-unhide-wrap {
+    flex: 0 0 auto !important;
+    display: flex !important;
+    align-items: stretch !important;
+    justify-content: flex-end !important;
+    margin-left: 12px !important;
+    padding: 0 !important;
+    min-height: 56px !important;
+}
+
+#amily2_additional_features_panel #amily2_unhide_all_button,
 #amily2_unhide_all_button {
-    width: 42px;
-    height: 42px;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 2px;
-    background: linear-gradient(135deg, #28a745, #20c997);
-    border: 1px solid #198754;
-    color: white;
-    font-weight: bold;
+    width: 52px !important;
+    min-width: 52px !important;
+    height: 100% !important;
+    min-height: 56px !important;
+    max-height: none !important;
+    padding: 4px 2px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 3px !important;
+    background: linear-gradient(135deg, #28a745, #20c997) !important;
+    border: 1px solid #198754 !important;
+    color: white !important;
+    font-weight: bold !important;
     text-shadow: 0 0 2px rgba(0,0,0,0.3);
     transition: all 0.3s ease;
-    border-radius: 8px;
+    border-radius: 8px !important;
+    font-size: 13px !important;
+    line-height: 1.15 !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+    /* 压过 ui-kit .small_button 的矮高度 */
+    align-self: stretch !important;
 }
 
 #amily2_unhide_all_button:hover {
-    background: linear-gradient(135deg, #20c997, #28a745);
+    background: linear-gradient(135deg, #20c997, #28a745) !important;
     box-shadow: 0 0 10px rgba(40, 167, 69, 0.7);
-    transform: translateY(-2px);
-    border-color: #1a9c5c;
-}
-
-#amily2_unhide_all_button {
-    font-size: 13px;
-    line-height: 1.2;
+    transform: translateY(-1px);
+    border-color: #1a9c5c !important;
 }
 
 #amily2_unhide_all_button i {
-    font-size: 16px;
-    margin: 0;
+    font-size: 15px !important;
+    margin: 0 !important;
+    line-height: 1 !important;
 }
+
 #amily2_unhide_all_button span {
-    font-size: 9px;
-    font-weight: normal;
+    font-size: 10px !important;
+    font-weight: normal !important;
+    white-space: nowrap !important;
+    line-height: 1.1 !important;
 }
 
 .amily2-panel-visible {

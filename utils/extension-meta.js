@@ -1,0 +1,1 @@
+const settingsUrl=new URL(import.meta.url);const pathParts=settingsUrl.pathname.split("/");const thirdPartyIndex=pathParts.indexOf("third-party");export const extensionName=thirdPartyIndex>=0?pathParts[thirdPartyIndex+1]:"ST-Amily2-Chat-Optimisation";export const extensionBasePath=new URL("..",import.meta.url).href.replace(/\/$/,"");

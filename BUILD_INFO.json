@@ -1,0 +1,11 @@
+{
+  "filesHash": "a02478bfe3f678d59521ce3302694a3f91126dc095814bafddb590504ed11342",
+  "minifyConfigHash": "4a7bd6c8af36bdc95e4b091bdee33ae82c4e4c8ecf47c46f9571f5244e77e3d0",
+  "obfuscatorVersion": "5.4.3",
+  "protectionConfigHash": "3dd779fe458280be996577d539b9ed9f0f5482594d4c598b2bbbd716d28ba460",
+  "sourceBranch": "main",
+  "sourceCommit": "55d54c7cadc9e3cee0c0b3812e731d4cdfde547b",
+  "terserVersion": "5.49.0",
+  "variant": "compact-protected",
+  "version": "2.3.0"
+}

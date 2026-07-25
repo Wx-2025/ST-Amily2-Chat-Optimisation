@@ -645,21 +645,21 @@ hr.header-divider {
     color: var(--primary_color) !important;
 }
 
-/* === 响应式按钮组 === */
+/* === 响应式按钮组（经典首页横向 flex，与 zip 一致） === */
 #amily2_chat_optimiser .button-group {
     display: flex;
     gap: 8px;
 }
 
 @media (max-width: 768px) {
-    .button-group {
+    #amily2_chat_optimiser .button-group {
         flex-direction: row;
         justify-content: space-between;
         gap: 3px;
         align-items: stretch;
     }
-    
-    .button-group .menu_button.wide_button {
+
+    #amily2_chat_optimiser .button-group .menu_button.wide_button {
         flex: 1;
         height: 50px;
         padding: 2px;
@@ -673,21 +673,21 @@ hr.header-divider {
         overflow: hidden;
         font-size: clamp(8px, 2.5vw, 14px);
     }
-    
-    .button-group .menu_button.wide_button i {
+
+    #amily2_chat_optimiser .button-group .menu_button.wide_button i {
         display: block;
         margin-bottom: 2px;
     }
 }
 
 @media (min-width: 769px) {
-    .button-group {
+    #amily2_chat_optimiser .button-group {
         flex-direction: row;
         justify-content: space-between;
         flex-wrap: wrap;
     }
-    
-    .button-group .menu_button.wide_button {
+
+    #amily2_chat_optimiser .button-group .menu_button.wide_button {
         flex: 1;
         min-width: 0;
     }

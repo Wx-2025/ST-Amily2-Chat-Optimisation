@@ -1,84 +1,85 @@
-<div class="settings-group" id="amily2_rule_config_panel_root">
-    <fieldset class="settings-group">
-        <legend><i class="fas fa-list-check"></i> 规则配置中心</legend>
-        <div class="amily2-rule-layout">
-            <div class="amily2-rule-sidebar">
-                <div style="display:flex; gap:8px; margin-bottom:10px;">
-                    <button id="amily2_rule_profile_new" class="menu_button small_button amily2-vbtn"><span class="vbtn-icon"><i class="fas fa-plus"></i></span><span class="vbtn-label">新建</span></button>
-                </div>
-                <div id="amily2_rule_profile_list" style="display:flex; flex-direction:column; gap:8px;"></div>
-            </div>
-            <div class="amily2-rule-main">
-                <div class="amily2_settings_block">
-                    <label for="amily2_rule_profile_name">配置名称</label>
-                    <input id="amily2_rule_profile_name" class="text_pole" type="text" placeholder="例如：通用提取规则">
-                </div>
-                <div class="amily2_settings_block" style="margin-top:10px;">
-                    <label><input id="amily2_rule_profile_tag_toggle" type="checkbox"> 启用标签提取</label>
-                </div>
-                <div class="amily2_settings_block" style="margin-top:10px;">
-                    <label><input id="amily2_rule_profile_exclude_user" type="checkbox"> 自动排除用户楼层</label>
-                    <small class="notes" style="display:block; margin-top:4px;">勾选后，使用此规则时将自动跳过用户发送的消息楼层，不纳入总结/提取内容。</small>
-                </div>
-                <div id="amily2_rule_profile_tags_wrap" class="amily2_settings_block" style="display:none; margin-top:10px;">
-                    <label for="amily2_rule_profile_tags">标签列表</label>
-                    <textarea id="amily2_rule_profile_tags" class="text_pole" rows="3" placeholder="例如：content,details,summary"></textarea>
-                </div>
-                <div class="amily2_settings_block" style="margin-top:10px;">
-                    <label>排除规则</label>
-                    <div id="amily2_rule_profile_rules" style="display:flex; flex-direction:column; gap:8px; margin:8px 0;"></div>
-                    <button id="amily2_rule_profile_add_rule" class="menu_button small_button amily2-vbtn"><span class="vbtn-icon"><i class="fas fa-plus"></i></span><span class="vbtn-label">添加规则</span></button>
-                </div>
-                <div class="amily2-rule-actions">
-                    <button id="amily2_rule_profile_save" class="menu_button menu_button_primary amily2-vbtn"><span class="vbtn-icon"><i class="fas fa-save"></i></span><span class="vbtn-label">保存</span></button>
-                    <button id="amily2_rule_profile_delete" class="menu_button danger amily2-vbtn"><span class="vbtn-icon"><i class="fas fa-trash-alt"></i></span><span class="vbtn-label">删除</span></button>
-                    <button id="amily2_back_to_main_from_rule_config" class="menu_button amily2-vbtn"><span class="vbtn-icon"><i class="fas fa-arrow-left"></i></span><span class="vbtn-label">返回</span></button>
-                </div>
-            </div>
+<div class="amily2-header am2-panel-header">
+    <div class="am2-panel-title-row">
+        <div class="additional-features-title">
+            <i class="fas fa-list-check"></i> 规则配置
         </div>
-    </fieldset>
+        <button id="amily2_open_rule_config_tutorial" class="menu_button small_button secondary interactable am2-panel-tutorial-btn" type="button" title="小白教程：标签提取与排除段落">
+            <i class="fas fa-book-open"></i> 教程
+        </button>
+    </div>
+    <button id="amily2_back_to_main_from_rule_config" class="menu_button secondary small_button interactable" type="button">
+        <i class="fas fa-arrow-left"></i> 返回
+    </button>
 </div>
-<style>
-    #amily2_rule_config_panel .amily2-rule-row,
-    #amily2_rule_config_panel_root .amily2-rule-row {
-        display: grid;
-        grid-template-columns: 1fr 1fr auto;
-        gap: 8px;
-        align-items: center;
-    }
-    #amily2_rule_config_panel_root .amily2-rule-layout {
-        display: flex;
-        gap: 16px;
-        align-items: flex-start;
-        flex-wrap: wrap;
-    }
-    #amily2_rule_config_panel_root .amily2-rule-sidebar {
-        width: 260px;
-        flex-shrink: 0;
-    }
-    #amily2_rule_config_panel_root .amily2-rule-main {
-        flex: 1;
-        min-width: 0;
-    }
-    #amily2_rule_config_panel_root .amily2-rule-actions {
-        display: flex;
-        gap: 8px;
-        margin-top: 16px;
-        flex-wrap: wrap;
-    }
-    @media (max-width: 768px) {
-        #amily2_rule_config_panel_root .amily2-rule-sidebar {
-            width: 100%;
-        }
-        #amily2_rule_config_panel_root .amily2-rule-actions > .amily2-vbtn {
-            flex: 1 1 calc(33.333% - 8px);
-            min-width: 72px;
-        }
-        #amily2_rule_config_panel_root .amily2-rule-row {
-            grid-template-columns: 1fr 1fr !important;
-        }
-        #amily2_rule_config_panel_root .amily2-rule-row > :last-child {
-            grid-column: 1 / -1;
-        }
-    }
-</style>
+
+<p class="am2-panel-lead notes">
+    规则告诉总结 / 提取：从消息里<strong>取哪些标签</strong>、以及<strong>丢掉哪些段落</strong>。建好几套后，在「手动总结」等功能里选用。
+</p>
+
+<div id="amily2_rule_config_panel_root" class="am2-rule-shell">
+    <aside class="am2-rule-sidebar">
+        <div class="am2-rule-sidebar-head">
+            <strong>规则列表</strong>
+            <button id="amily2_rule_profile_new" class="menu_button small_button primary" type="button">
+                <i class="fas fa-plus"></i> 新建
+            </button>
+        </div>
+        <div id="amily2_rule_profile_list" class="am2-rule-profile-list"></div>
+    </aside>
+
+    <main class="am2-rule-main">
+        <div class="am2-rule-main-head">
+            <strong id="amily2_rule_editor_title">编辑规则</strong>
+            <span class="notes" id="amily2_rule_editor_hint">左侧选一条，或点「新建」</span>
+        </div>
+
+        <div class="amily2_settings_block">
+            <label for="amily2_rule_profile_name">规则名称</label>
+            <input id="amily2_rule_profile_name" class="text_pole" type="text" placeholder="例如：通用提取、去掉思考过程">
+        </div>
+
+        <div class="am2-rule-options">
+            <label class="am2-check-card">
+                <input id="amily2_rule_profile_tag_toggle" type="checkbox">
+                <span>
+                    <strong>只提取指定标签</strong>
+                    <small class="notes">打开后，只保留标签列表里的内容（如 content、summary）</small>
+                </span>
+            </label>
+            <label class="am2-check-card">
+                <input id="amily2_rule_profile_exclude_user" type="checkbox">
+                <span>
+                    <strong>跳过用户消息</strong>
+                    <small class="notes">总结 / 提取时不把你发的话算进去</small>
+                </span>
+            </label>
+        </div>
+
+        <div id="amily2_rule_profile_tags_wrap" class="amily2_settings_block" style="display:none;">
+            <label for="amily2_rule_profile_tags">要提取的标签</label>
+            <textarea id="amily2_rule_profile_tags" class="text_pole" rows="2" placeholder="用英文逗号分隔，例如：content, details, summary"></textarea>
+        </div>
+
+        <div class="amily2_settings_block am2-rule-exclude-block">
+            <div class="am2-rule-exclude-head">
+                <div>
+                    <label>排除段落</label>
+                    <small class="notes">从「起始标记」到「结束标记」之间的内容会被丢掉（例如思考块、系统旁白）</small>
+                </div>
+                <button id="amily2_rule_profile_add_rule" class="menu_button small_button secondary" type="button">
+                    <i class="fas fa-plus"></i> 添加
+                </button>
+            </div>
+            <div id="amily2_rule_profile_rules" class="am2-rule-rows"></div>
+        </div>
+
+        <div class="am2-rule-actions">
+            <button id="amily2_rule_profile_save" class="menu_button menu_button_primary primary" type="button">
+                <i class="fas fa-save"></i> 保存
+            </button>
+            <button id="amily2_rule_profile_delete" class="menu_button danger" type="button">
+                <i class="fas fa-trash-alt"></i> 删除
+            </button>
+        </div>
+    </main>
+</div>

@@ -1,45 +1,50 @@
 <div class="amily2-header">
-    <div class="additional-features-title interactable" title="Amily2 究极长期记忆系统">
-        <i class="fas fa-brain"></i> 灵台 · 记忆中枢
+    <div class="am2-panel-title-row">
+        <div class="additional-features-title interactable" title="长期记忆">
+            <i class="fas fa-brain"></i> 长期记忆
+        </div>
+        <button id="amily2_open_super_memory_tutorial" class="menu_button small_button secondary interactable am2-panel-tutorial-btn" type="button" title="小白教程：长期记忆首次启用">
+            <i class="fas fa-book-open"></i> 教程
+        </button>
     </div>
-    <button id="amily2_back_to_main_from_super_memory" class="menu_button secondary small_button interactable">
-        返回主殿 <i class="fas fa-arrow-right"></i>
+    <button id="amily2_back_to_main_from_super_memory" class="menu_button secondary small_button interactable" type="button">
+        <i class="fas fa-arrow-left"></i> 返回
     </button>
 </div>
 <hr class="header-divider">
 
 <div id="sm-modal-container">
     <div class="sm-intro-box">
-        <h3><i class="fas fa-microchip"></i> 究极长期记忆 (Super Memory)</h3>
-        <p>欢迎来到 Amily2 的核心记忆中枢。这里掌管着世界的记忆，连接着每一个角色、每一个物品与每一段传说。</p>
-        <p>通过“三级金字塔”注入策略，我们将实现极致的 Token 节省与无限的记忆深度。</p>
+        <h3><i class="fas fa-microchip"></i> 长期记忆</h3>
+        <p>把表格和世界书里的重要信息整理成可长期调用的记忆，聊天变长时也能想起更早的内容。</p>
+        <p>会按「目录 → 详情 → 归档」分层调用，尽量少占上下文，同时保留更久的记忆。</p>
     </div>
 
     <div class="sm-navigation-deck">
         <button class="sm-nav-item active" data-tab="dashboard">概览</button>
         <button class="sm-nav-item" data-tab="config">配置</button>
-        <button class="sm-nav-item" data-tab="relation">关联网络</button>
+        <button class="sm-nav-item" data-tab="relation">人物关系</button>
     </div>
 
     <div class="sm-scroll">
         <!-- Dashboard Tab -->
         <div id="sm-dashboard-tab" class="sm-tab-pane active">
             <fieldset class="sm-settings-group">
-                <legend><i class="fas fa-tachometer-alt"></i> 状态监控</legend>
+                <legend><i class="fas fa-tachometer-alt"></i> 运行状态</legend>
                 <div class="sm-control-block">
-                    <label>记忆系统状态:</label>
+                    <label>系统状态:</label>
                     <span id="sm-system-status" class="sm-status-indicator">未初始化</span>
                 </div>
                 <div class="sm-control-block">
-                    <label>当前索引 (Tier 1):</label>
+                    <label>目录条目数:</label>
                     <span id="sm-index-count">0 条目</span>
                 </div>
                 <div class="sm-control-block">
-                    <label>已触发详情 (Tier 2):</label>
+                    <label>已展开详情数:</label>
                     <span id="sm-detail-count">0 条目</span>
                 </div>
                 <div class="sm-button-group">
-                    <button class="sm-action-button success" onclick="sm_initializeSystem()">初始化系统</button>
+                    <button class="sm-action-button success" onclick="sm_initializeSystem()">初始化</button>
                     <button class="sm-action-button danger" onclick="sm_purgeMemory()">清空记忆</button>
                 </div>
             </fieldset>
@@ -48,34 +53,34 @@
         <!-- Config Tab -->
         <div id="sm-config-tab" class="sm-tab-pane">
             <fieldset class="sm-settings-group">
-                <legend><i class="fas fa-cogs"></i> 记忆策略配置</legend>
+                <legend><i class="fas fa-cogs"></i> 记忆设置</legend>
                 <div class="sm-control-block">
-                    <label>启用 Super Memory (总开关):</label>
+                    <label>启用长期记忆:</label>
                     <label class="sm-toggle-switch">
                         <input type="checkbox" id="sm-system-enabled">
                         <span class="sm-slider"></span>
                     </label>
                 </div>
                 <div class="sm-control-block">
-                    <label>启用世界书桥接:</label>
+                    <label>同步到世界书:</label>
                     <label class="sm-toggle-switch">
                         <input type="checkbox" id="sm-bridge-enabled">
                         <span class="sm-slider"></span>
                     </label>
                 </div>
                 <div class="sm-control-block">
-                    <label title="聊天消息数低于此值时，跳过记忆同步。表格未填写时同步是无意义的，设置合理的楼层数可以节省 Token。0 = 不限制。">最低触发楼层:</label>
+                    <label title="聊天消息数低于此值时，暂不同步记忆。表格还没内容时同步意义不大。填 0 表示不限制。">最低触发消息数:</label>
                     <input type="number" id="sm-min-trigger-floor" min="0" step="1" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 80px;" value="0">
                 </div>
                 <small style="color: #888; font-size: 0.8em; display: block; margin-top: -5px; margin-bottom: 10px; padding-left: 5px;">
-                    聊天楼层低于此数值时不触发记忆同步，避免表格空白期浪费 Token。设为 0 则不限制。
+                    聊天消息数低于此值时不同步记忆，避免表格还没内容时白跑。填 0 表示不限制。
                 </small>
             </fieldset>
 
             <fieldset class="sm-settings-group">
-                <legend><i class="fas fa-list-alt"></i> 表格专属配置</legend>
+                <legend><i class="fas fa-list-alt"></i> 表格同步</legend>
                 <div class="sm-control-block" style="display: block;">
-                    <p style="font-size: 0.9em; color: #aaa; margin-bottom: 10px;">在此处配置特定表格的同步策略。</p>
+                    <p style="font-size: 0.9em; color: #aaa; margin-bottom: 10px;">为各个表格单独设置是否同步到长期记忆。</p>
                     <div id="sm-table-settings-list" style="max-height: 300px; overflow-y: auto; padding-right: 5px;">
                         <!-- Table items will be injected here -->
                         <div style="text-align: center; color: #888; padding: 20px;">正在加载表格列表...</div>
@@ -85,7 +90,7 @@
             </fieldset>
 
             <fieldset class="sm-settings-group">
-                <legend><i class="fas fa-archive"></i> 历史归档配置</legend>
+                <legend><i class="fas fa-archive"></i> 历史归档</legend>
                 <div class="sm-control-block">
                     <label>启用自动归档:</label>
                     <label class="sm-toggle-switch">
@@ -94,18 +99,18 @@
                     </label>
                 </div>
                 <div class="sm-control-block">
-                    <label>触发阈值 (行数):</label>
+                    <label>开始归档的行数:</label>
                     <input type="number" id="sm-archive-threshold" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px;" value="20">
                 </div>
                 <div class="sm-control-block">
-                    <label title="每次触发归档时，一次性迁移的行数。">归档批次 (行数):</label>
+                    <label title="每次归档时，一次性挪走的旧行数。">每次归档行数:</label>
                     <input type="number" id="sm-archive-batch-size" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px;" value="10">
                 </div>
                 <small style="color: #888; font-size: 0.8em; display: block; margin-top: -5px; margin-bottom: 10px; padding-left: 5px;">
-                    阈值是 20，批次是 10。当表格达到 21 行时，会把最早的 10 行向量化，表格与世界书剩下 11 条。
+                    例如阈值 20、每次 10：表格到 21 行时，会把最早的 10 行存进长期记忆，表格和世界书里还留 11 条。
                 </small>
                 <div class="sm-control-block">
-                    <label>目标表格名称:</label>
+                    <label>要归档的表格名:</label>
                     <input type="text" id="sm-archive-target-table" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px;" value="总结表">
                 </div>
             </fieldset>
@@ -114,15 +119,15 @@
         <!-- Relation Tab -->
         <div id="sm-relation-tab" class="sm-tab-pane">
             <fieldset class="sm-settings-group">
-                <legend><i class="fas fa-project-diagram"></i> 关联网络 (The Mesh)</legend>
+                <legend><i class="fas fa-project-diagram"></i> 人物关系</legend>
                 <div class="sm-control-block">
-                    <label>启用角色关联图谱:</label>
+                    <label>启用人物关系图:</label>
                     <label class="sm-toggle-switch">
                         <input type="checkbox" id="sm-relationship-graph-enabled">
                         <span class="sm-slider"></span>
                     </label>
                 </div>
-                <p>关联触发逻辑正在开发中...</p>
+                <p>关系自动联动还在开发中...</p>
             </fieldset>
         </div>
     </div>

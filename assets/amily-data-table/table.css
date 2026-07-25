@@ -542,6 +542,8 @@
     height: 0;
 }
 
+/* 开关圆点样式由 ui-kit.css 统一接管（bottom/left + translateX），
+   此处不再用 top:50% + translateY，避免与 ui-kit 勾选态冲突导致圆点歪斜 */
 #amily2_memorisation_forms_panel .slider {
     position: absolute;
     cursor: pointer;
@@ -550,7 +552,7 @@
     right: 0;
     bottom: 0;
     background-color: #555;
-    transition: .4s;
+    transition: .2s;
     border-radius: 28px;
 }
 #amily2_memorisation_forms_panel .slider:before {
@@ -558,12 +560,13 @@
     content: "";
     height: 20px;
     width: 20px;
-    left: 4px;
-    top: 50%;
+    left: 3px;
+    bottom: 3px;
+    top: auto;
     background-color: var(--amily2-text-color);
     border-radius: 50%;
-    transition: .4s;
-    transform: translateY(-50%);
+    transition: .2s;
+    transform: none;
 }
 
 #amily2_memorisation_forms_panel input:checked + .slider {
@@ -575,7 +578,7 @@
 }
 
 #amily2_memorisation_forms_panel input:checked + .slider:before {
-    transform: translateX(22px) translateY(-50%);
+    transform: translateX(22px);
 }
 
 .amily2-context-menu {
