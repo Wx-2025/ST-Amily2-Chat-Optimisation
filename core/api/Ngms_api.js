@@ -5,6 +5,7 @@ import { amilyHelper } from '../../core/tavern-helper/main.js';
 import { getSlotProfile, providerToApiMode } from './api-resolver.js';
 import { configManager } from '../../utils/config/ConfigManager.js';
 import { detectVendor } from '../../utils/api-vendor.js';
+import { mergeSafeModelCallOptions } from './safe-call-options.js';
 
 let ChatCompletionService = undefined;
 try {
@@ -45,7 +46,7 @@ function normalizeApiResponse(responseData) {
     return data;
 }
 
-export async function getNgmsApiSettings() {
+async function getNgmsApiSettings() {
     const s = extension_settings[extensionName] || {};
 
     // 优先读取 'ngms' 槽位分配的 Profile（profile 一旦分配即权威，旧 slider 残值不再覆盖）
@@ -86,7 +87,7 @@ export async function callNgmsAI(messages, options = {}) {
 
     const apiSettings = await getNgmsApiSettings();
 
-    const finalOptions = {
+    const finalOptions = mergeSafeModelCallOptions({
         maxTokens: apiSettings.maxTokens,
         temperature: apiSettings.temperature,
         model: apiSettings.model,
@@ -94,8 +95,9 @@ export async function callNgmsAI(messages, options = {}) {
         apiKey: apiSettings.apiKey,
         apiMode: apiSettings.apiMode,
         tavernProfile: apiSettings.tavernProfile,
-        ...options
-    };
+        customParams: apiSettings.customParams ?? {},
+        useFakeStream: apiSettings.useFakeStream ?? false,
+    }, options);
 
     // 确保 stream 标志位存在
     finalOptions.stream = finalOptions.useFakeStream ?? apiSettings.useFakeStream ?? false;

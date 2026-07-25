@@ -18,9 +18,12 @@ class Logger {
         all: 0xF // 15
     };
 
-    constructor(safeConsole = null) {
+    constructor(safeConsole = null, systemFile = null) {
         // 使用传入的 safeConsole，如果没有则回退到全局 console
         this.safeConsole = safeConsole || (typeof window !== 'undefined' ? window.console : console);
+        // Bus 在构造时注入的模块私有 FilePipe capability。Logger 不从 window
+        // 查找或注册 Bus，避免全局挂载失败时反向拖垮内部日志链路。
+        this.systemFile = systemFile;
         // 全局默认级别 (默认开启 info, warn, error)
         this.globalLevel = Logger.LOG_LEVEL_CODE.info | Logger.LOG_LEVEL_CODE.warn | Logger.LOG_LEVEL_CODE.error;
         
@@ -191,16 +194,8 @@ class Logger {
 
         // 6. File Output (via FilePipe)
         if (inFile) {
-            // Logger 自身也需要作为系统组件注册，获取写入权限
-            if (!this.sysBus) {
-                if (window.Amily2Bus && window.Amily2Bus.register) {
-                    this.sysBus = window.Amily2Bus.register('SystemLogger');
-                }
-            }
-
-            if (this.sysBus && this.sysBus.file) {
-                // 使用注册后的安全接口写入，无需再手动传 'SystemLogger'
-                this.sysBus.file.write('runtime.log', fullMessage + '\n');
+            if (this.systemFile) {
+                this.systemFile.write('runtime.log', fullMessage + '\n');
             } else {
                 // Fallback: 如果总线未就绪，仅在控制台警告一次，避免死循环
                 if (!this._warned) {

@@ -19,6 +19,14 @@ import { ruleProfileManager } from '../utils/config/RuleProfileManager.js';
 import { bindTableTemplateEditors } from './table/template-bindings.js';
 import { bindNccsApiEvents as bindNccsApiSettingsEvents } from './table/nccs-bindings.js';
 import { bindChatTableDisplaySetting as bindChatTableDisplaySettings } from './table/chat-display-bindings.js';
+import { readChatTableState } from '../core/table-system/infra/database-state.js';
+import { createCharacterPortableTableProfile } from '../core/table-system/profile.js';
+import {
+    getCurrentCharacterTableProfileStatus,
+    removeCharacterTableProfile,
+    writeCharacterTableProfile,
+} from '../core/table-system/character-profile.js';
+import { getCurrentTableTemplateSnapshot } from '../core/table-system/templates.js';
 
 const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches;
 const getAllTablesContainer = () => document.getElementById('all-tables-container');
@@ -50,6 +58,87 @@ function getLiveExtensionSettings() {
 
 function isTableSystemEnabled() {
     return getLiveExtensionSettings().table_system_enabled !== false;
+}
+
+function buildCurrentCharacterPortableProfile() {
+    const context = getContext();
+    const envelope = readChatTableState(context);
+    const existing = envelope?.profile;
+    const characterName = Number.isInteger(context?.characterId)
+        ? context.characters?.[context.characterId]?.name
+        : '';
+    return createCharacterPortableTableProfile(TableManager.getMemoryState() || [], {
+        id: existing?.id || `character-table-profile-${context?.characterId ?? 'unknown'}`,
+        name: existing?.name || `${characterName || '角色'}的表格档案`,
+        description: existing?.description || '由 Amily2 表格面板手动保存。',
+        views: existing?.views || [],
+        templates: getCurrentTableTemplateSnapshot(),
+        meta: {
+            ...(existing?.meta || {}),
+            source: 'character',
+            updatedAt: new Date().toISOString(),
+        },
+    });
+}
+
+function describeCurrentTableProfileSource() {
+    const context = getContext();
+    const envelope = readChatTableState(context);
+    if (envelope) {
+        const labels = {
+            character: '角色卡',
+            global: '全局档案',
+            builtin: '内置默认',
+            import: '手动导入',
+        };
+        const initial = labels[envelope.profile?.meta?.source];
+        return initial ? `聊天快照（初始来源：${initial}）` : '聊天快照';
+    }
+    if (getCurrentCharacterTableProfileStatus(context).available) return '角色卡档案（尚未生成聊天快照）';
+    if (extension_settings[extensionName]?.global_table_preset) return '全局档案';
+    return '内置默认档案';
+}
+
+function refreshTableProfileStatus(panel = document) {
+    const status = panel.querySelector?.('#amily2-table-profile-source');
+    if (status) status.textContent = describeCurrentTableProfileSource();
+    const hasCharacter = Number.isInteger(getContext()?.characterId);
+    for (const selector of ['#amily2-save-profile-to-character-btn', '#amily2-remove-character-profile-btn']) {
+        const button = panel.querySelector?.(selector);
+        if (button) button.disabled = !hasCharacter;
+    }
+}
+
+async function saveCurrentProfileToCharacter(panel, { askConfirmation = true } = {}) {
+    const context = getContext();
+    const characterId = context?.characterId;
+    if (!Number.isInteger(characterId)) {
+        toastr.warning('当前不是单角色聊天，不能写入角色卡表格档案。');
+        return false;
+    }
+    if (askConfirmation && !window.confirm(
+        '【危险操作】这会覆盖当前角色卡内已有的 Amily2 表格档案。\n\n只写入表结构、视图和模板，不写入当前聊天行数据。确定继续？',
+    )) return false;
+
+    const profile = buildCurrentCharacterPortableProfile();
+    await writeCharacterTableProfile(context, characterId, profile);
+    toastr.success('表格档案已写入当前角色卡；导出角色卡时会随卡携带。');
+    refreshTableProfileStatus(panel);
+    return true;
+}
+
+function exportCurrentTableProfile() {
+    const profile = buildCurrentCharacterPortableProfile();
+    const blob = new Blob([JSON.stringify(profile, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `Amily2-TableProfile-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    toastr.success('表格档案已导出（不含聊天行数据）。');
 }
 
 let isResizing = false;
@@ -807,13 +896,24 @@ function openRuleEditor(tableIndex) {
     if (!tables || !tables[tableIndex]) return;
     const table = tables[tableIndex];
 
+    const toNonNegativeInteger = (value) => {
+        const parsed = Number.parseInt(value, 10);
+        return Number.isSafeInteger(parsed) && parsed >= 0 ? parsed : 0;
+    };
+    const normalizeCharLimitRules = (rules) => Object.fromEntries(
+        Object.entries(rules && typeof rules === 'object' ? rules : {})
+            .map(([columnIndex, limit]) => [Number.parseInt(columnIndex, 10), toNonNegativeInteger(limit)])
+            .filter(([columnIndex]) => Number.isInteger(columnIndex) && columnIndex >= 0 && columnIndex < table.headers.length),
+    );
+
     if (table.charLimitRule && !table.charLimitRules) {
         table.charLimitRules = {};
-        if (table.charLimitRule.columnIndex !== -1) {
-            table.charLimitRules[table.charLimitRule.columnIndex] = table.charLimitRule.limit;
+        const legacyColumnIndex = Number.parseInt(table.charLimitRule.columnIndex, 10);
+        if (Number.isInteger(legacyColumnIndex) && legacyColumnIndex >= 0 && legacyColumnIndex < table.headers.length) {
+            table.charLimitRules[legacyColumnIndex] = toNonNegativeInteger(table.charLimitRule.limit);
         }
     }
-    const charLimitRules = table.charLimitRules || {};
+    const charLimitRules = normalizeCharLimitRules(table.charLimitRules);
 
     const renderCharLimitRules = (rules) => {
         return Object.entries(rules).map(([colIndex, limit]) => {
@@ -869,13 +969,13 @@ function openRuleEditor(tableIndex) {
 
                     <div class="rule-editor-field" style="border: 1px solid #444; padding: 10px; border-radius: 5px;">
                         <label for="rule-row-limit-value" style="font-weight: bold; color: #9e8aff;">表格行数限制 (0为禁用)</label>
-                        <input type="number" id="rule-row-limit-value" class="text_pole" min="0" value="${table.rowLimitRule || 0}" style="width: 100px; margin-top: 10px;">
+                        <input type="number" id="rule-row-limit-value" class="text_pole" min="0" value="0" style="width: 100px; margin-top: 10px;">
                         <small class="notes">当表格总行数超过设定值时，将在表格底部显示警告。</small>
                     </div>
 
                     <div class="rule-editor-field" style="border: 1px solid #444; padding: 10px; border-radius: 5px; margin-top: 10px;">
                         <label for="rule-simplify-threshold" style="font-weight: bold; color: #ffcc00;">【实验性】历史内容简化阈值 (0为禁用)</label>
-                        <input type="number" id="rule-simplify-threshold" class="text_pole" min="0" value="${table.simplifyRowThreshold || 0}" style="width: 100px; margin-top: 10px;">
+                        <input type="number" id="rule-simplify-threshold" class="text_pole" min="0" value="0" style="width: 100px; margin-top: 10px;">
                         <small class="notes">设置一个行号 X。在填表时，第 0 行到第 X-1 行的内容将被省略并替换为“已锁定”提示。这可以节省 Token 并防止 AI 修改旧数据。</small>
                     </div>
 
@@ -883,19 +983,19 @@ function openRuleEditor(tableIndex) {
 
                     <div class="rule-editor-field">
                         <label for="rule-note">【说明】:</label>
-                        <textarea id="rule-note" class="text_pole" rows="5" style="width: 100%;">${table.note || ''}</textarea>
+                        <textarea id="rule-note" class="text_pole" rows="5" style="width: 100%;"></textarea>
                     </div>
                     <div class="rule-editor-field">
                         <label for="rule-add">【增加】:</label>
-                        <textarea id="rule-add" class="text_pole" rows="3" style="width: 100%;">${table.rule_add || ''}</textarea>
+                        <textarea id="rule-add" class="text_pole" rows="3" style="width: 100%;"></textarea>
                     </div>
                     <div class="rule-editor-field">
                         <label for="rule-delete">【删除】:</label>
-                        <textarea id="rule-delete" class="text_pole" rows="3" style="width: 100%;">${table.rule_delete || ''}</textarea>
+                        <textarea id="rule-delete" class="text_pole" rows="3" style="width: 100%;"></textarea>
                     </div>
                     <div class="rule-editor-field">
                         <label for="rule-update">【修改】:</label>
-                        <textarea id="rule-update" class="text_pole" rows="3" style="width: 100%;">${table.rule_update || ''}</textarea>
+                        <textarea id="rule-update" class="text_pole" rows="3" style="width: 100%;"></textarea>
                     </div>
                 </div>
             </div>
@@ -907,6 +1007,12 @@ function openRuleEditor(tableIndex) {
         </dialog>`;
 
     const dialogElement = $(dialogHtml).appendTo('body');
+    dialogElement.find('#rule-row-limit-value').val(toNonNegativeInteger(table.rowLimitRule));
+    dialogElement.find('#rule-simplify-threshold').val(toNonNegativeInteger(table.simplifyRowThreshold));
+    dialogElement.find('#rule-note').val(String(table.note ?? ''));
+    dialogElement.find('#rule-add').val(String(table.rule_add ?? ''));
+    dialogElement.find('#rule-delete').val(String(table.rule_delete ?? ''));
+    dialogElement.find('#rule-update').val(String(table.rule_update ?? ''));
 
     const closeDialog = () => {
         dialogElement[0].close();
@@ -914,7 +1020,7 @@ function openRuleEditor(tableIndex) {
     };
 
     const refreshRuleUI = () => {
-        const currentRules = JSON.parse(dialogElement.find('#current-char-limit-rules').attr('data-rules') || '{}');
+        const currentRules = normalizeCharLimitRules(JSON.parse(dialogElement.find('#current-char-limit-rules').attr('data-rules') || '{}'));
         dialogElement.find('#current-char-limit-rules').html(renderCharLimitRules(currentRules));
         dialogElement.find('#new-rule-column-select').html(`<option value="-1">-- 选择要添加规则的列 --</option>${getColumnOptions(currentRules)}`);
     };
@@ -1544,6 +1650,7 @@ export function bindTableEvents(panelElement = null) {
             defaultRuleTemplate: DEFAULT_AI_RULE_TEMPLATE,
             defaultFlowTemplate: DEFAULT_AI_FLOW_TEMPLATE,
         });
+        refreshTableProfileStatus(panel);
     };
 
     renderAll();
@@ -1595,6 +1702,10 @@ export function bindTableEvents(panelElement = null) {
     const importBtn = document.getElementById('amily2-import-preset-btn');
     const importGlobalBtn = document.getElementById('amily2-import-global-preset-btn');
     const clearGlobalBtn = document.getElementById('amily2-clear-global-preset-btn');
+    const exportProfileBtn = panel.querySelector('#amily2-export-table-profile-btn');
+    const saveProfileToCharacterBtn = panel.querySelector('#amily2-save-profile-to-character-btn');
+    const removeCharacterProfileBtn = panel.querySelector('#amily2-remove-character-profile-btn');
+    const syncImportedProfileCheckbox = panel.querySelector('#amily2-import-sync-character-profile');
 
     if (openGraphBtn) {
         openGraphBtn.addEventListener('click', () => {
@@ -1609,7 +1720,19 @@ export function bindTableEvents(panelElement = null) {
         exportFullBtn.addEventListener('click', () => TableManager.exportPresetFull());
     }
     if (importBtn) {
-        importBtn.addEventListener('click', () => TableManager.importPreset(renderAll));
+        importBtn.addEventListener('click', () => TableManager.importPreset({
+            onImported: async () => {
+                renderAll();
+                if (syncImportedProfileCheckbox?.checked) {
+                    try {
+                        await saveCurrentProfileToCharacter(panel, { askConfirmation: true });
+                    } catch (error) {
+                        console.error('[TableProfile] 导入后同步角色卡失败:', error);
+                        toastr.error(`同步角色卡失败：${error.message}`);
+                    }
+                }
+            },
+        }));
     }
     if (importGlobalBtn) {
         importGlobalBtn.addEventListener('click', () => {
@@ -1633,6 +1756,26 @@ export function bindTableEvents(panelElement = null) {
             }
         });
     }
+    exportProfileBtn?.addEventListener('click', exportCurrentTableProfile);
+    saveProfileToCharacterBtn?.addEventListener('click', () => {
+        void saveCurrentProfileToCharacter(panel).catch(error => {
+            console.error('[TableProfile] 写入角色卡失败:', error);
+            toastr.error(`写入角色卡失败：${error.message}`);
+        });
+    });
+    removeCharacterProfileBtn?.addEventListener('click', () => {
+        const context = getContext();
+        const characterId = context?.characterId;
+        if (!Number.isInteger(characterId)) return;
+        if (!window.confirm('【危险操作】确定解除当前角色卡携带的 Amily2 表格档案？已有聊天快照不会被删除。')) return;
+        void removeCharacterTableProfile(context, characterId).then(() => {
+            toastr.success('已解除当前角色卡的表格档案；已有聊天保持不变。');
+            refreshTableProfileStatus(panel);
+        }).catch(error => {
+            console.error('[TableProfile] 解除角色卡档案失败:', error);
+            toastr.error(`解除失败：${error.message}`);
+        });
+    });
 
     const clearAllBtn = document.getElementById('amily2-clear-all-tables-btn');
     if (clearAllBtn) {

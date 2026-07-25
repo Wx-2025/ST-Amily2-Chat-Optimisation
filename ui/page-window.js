@@ -1,39 +1,17 @@
 import { messageFormatting } from '/script.js';
 
-function loadShowdown() {
-    return new Promise((resolve, reject) => {
-        if (window.showdown) {
-            resolve();
-            return;
-        }
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/showdown/2.1.0/showdown.min.js';
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
-    });
-}
-
 
 export async function showContentModal(title, contentUrl) {
     try {
 
-        await loadShowdown();
-
         const markdownContent = await $.get(contentUrl);
-
-        const converter = new showdown.Converter({
-            tables: true,
-            strikethrough: true,
-            ghCodeBlocks: true
-        });
-        const htmlContent = converter.makeHtml(markdownContent);
+        const htmlContent = messageFormatting(String(markdownContent), '', false, false);
 
         const dialogHtml = `
             <dialog class="popup wide_dialogue_popup amily2-modal">
               <div class="popup-body">
                 <h3 style="margin-top:0; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">
-                    <i class="fas fa-book-open" style="color: #58a6ff;"></i> ${title}
+                    <i class="fas fa-book-open" style="color: #58a6ff;"></i> ${escapeHtml(title)}
                 </h3>
                 <div class="popup-content" style="height: 60vh; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 5px;">
                     <div class="mes_text">${htmlContent}</div>

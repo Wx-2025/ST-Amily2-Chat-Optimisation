@@ -1,3 +1,4 @@
+import { clearSecretInput, markSecretInputStored, readSecretInputUpdate } from '../secret-input.js';
 export function bindNccsApiEvents({
     getLiveExtensionSettings,
     saveSettingsDebounced,
@@ -35,7 +36,7 @@ export function bindNccsApiEvents({
     enabledFakeStreamToggle.checked = settings.nccsFakeStreamEnabled;
     if (modeSelect) modeSelect.value = settings.nccsApiMode;
     if (urlInput) urlInput.value = settings.nccsApiUrl;
-    if (keyInput) keyInput.value = configManager.get('nccsApiKey') || '';
+    clearSecretInput(keyInput, configManager.has('nccsApiKey'));
     if (modelInput) modelInput.value = settings.nccsModel;
     if (presetSelect) presetSelect.value = settings.nccsTavernProfile || '';
 
@@ -134,7 +135,10 @@ export function bindNccsApiEvents({
 
     if (keyInput) {
         keyInput.addEventListener('blur', () => {
-            configManager.set('nccsApiKey', keyInput.value);
+            const update = readSecretInputUpdate(keyInput);
+            if (update.changed) configManager.set('nccsApiKey', update.value);
+            markSecretInputStored(keyInput, configManager.has('nccsApiKey'));
+
         });
     }
 
@@ -183,7 +187,10 @@ export function bindNccsApiEvents({
                 saveSetting('nccsApiUrl', urlInput.value);
             }
             if (keyInput) {
-                configManager.set('nccsApiKey', keyInput.value);
+                const update = readSecretInputUpdate(keyInput);
+                if (update.changed) configManager.set('nccsApiKey', update.value);
+                markSecretInputStored(keyInput, configManager.has('nccsApiKey'));
+
             }
 
             try {

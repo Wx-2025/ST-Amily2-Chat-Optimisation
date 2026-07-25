@@ -11,13 +11,11 @@ import {
     initializeRagProcessor,
     loadHanlinyuanSettingsToUI,
     loadTables, clearHighlights, rollbackAndRefill, rollbackState, commitPendingDeletions, saveStateToMessage, getMemoryState, clearUpdatedTables,
-    fillWithSecondaryApi,
     renderTables,
     log,
     checkForUpdates, fetchMessageBoardContent,
     setUpdateInfo, applyUpdateIndicator,
     pluginVersion, extensionName, defaultSettings,
-    configManager, apiProfileManager,
     checkAuthorization, refreshUserInfo,
     tableSystemDefaultSettings,
     manageLorebookEntriesForChat,
@@ -28,36 +26,14 @@ import {
     registerContextOptimizerMacros, resetContextBuffer,
     initializeSuperMemory
 } from './imports.js';
-import { initializeAmilyBus } from './SL/bus/Amily2Bus.js';
+import { closeInternalBusBootstrap, initializeAmilyBus } from './SL/bus/Amily2Bus.js';
+import { IFRAME_CAPABILITIES } from './core/tavern-helper/iframe-security.js';
+import { fillWithSecondaryApi } from './core/table-system/secondary-filler.js';
+import { configManager } from './utils/config/ConfigManager.js';
+import { apiProfileManager } from './utils/config/ApiProfileManager.js';
 
-const DOMPURIFY_CDN = "https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.7/purify.min.js";
-
-function loadExternalScript(url, globalName) {
-    return new Promise((resolve, reject) => {
-        if (window[globalName]) {
-            resolve(window[globalName]);
-            return;
-        }
-        const existingScript = document.querySelector(`script[src="${url}"]`);
-        if (existingScript) {
-            existingScript.addEventListener('load', () => resolve(window[globalName]));
-            existingScript.addEventListener('error', reject);
-            return;
-        }
-        const script = document.createElement('script');
-        script.src = url;
-        script.async = true;
-        script.onload = () => {
-            console.log(`[Amily2-核心] 外部库加载成功: ${globalName}`);
-            resolve(window[globalName]);
-        };
-        script.onerror = (err) => {
-            console.error(`[Amily2-核心] 外部库加载失败: ${globalName}`, err);
-            reject(err);
-        };
-        document.head.appendChild(script);
-    });
-}
+// 所有静态依赖已完成核心服务认领；从此拒绝再签发保留命名空间 capability。
+closeInternalBusBootstrap();
 
 const STYLE_SETTINGS_KEY = 'amily2_custom_styles';
 const STYLE_ROOT_SELECTOR = '#amily2_memorisation_forms_panel';
@@ -235,8 +211,8 @@ function sanitizeHTML(html) {
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
 
-    const allowedTags = ['b', 'i', 'u', 'em', 'strong', 'a', 'p', 'br', 'span', 'div', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'font'];
-    const allowedAttrs = ['href', 'target', 'style', 'class', 'color', 'size'];
+    const allowedTags = ['b', 'i', 'u', 'em', 'strong', 'a', 'p', 'br', 'span', 'div', 'ul', 'ol', 'li', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'font', 'blockquote', 'code', 'pre', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td'];
+    const allowedAttrs = ['href', 'target', 'class', 'color', 'size', 'title', 'align'];
 
     const elements = tempDiv.querySelectorAll('*');
     const allElements = tempDiv.getElementsByTagName('*');
@@ -256,8 +232,10 @@ function sanitizeHTML(html) {
             if (!allowedAttrs.includes(attrName)) {
                 el.removeAttribute(attr.name);
             } else if (attrName === 'href') {
-                // 检查 href 是否包含 javascript:
-                if (attr.value.toLowerCase().trim().startsWith('javascript:')) {
+                try {
+                    const url = new URL(attr.value, window.location.origin);
+                    if (!['http:', 'https:', 'mailto:'].includes(url.protocol)) el.removeAttribute('href');
+                } catch {
                     el.removeAttribute('href');
                 }
             } else if (attrName.startsWith('on')) { // 双重保险，移除所有事件处理器
@@ -346,59 +324,6 @@ function loadPluginStyles() {
 }
 
 
-window.addEventListener('message', function (event) {
-    // 处理头像获取请求
-    if (event.data && event.data.type === 'getAvatars') {
-        // 【兼容性修复】如果 LittleWhiteBox 激活，则不处理此消息，避免冲突
-        if (window.isXiaobaixEnabled) {
-            return;
-        }
-        const userAvatar = `/characters/${getContext().userCharacter?.avatar ?? ''}`;
-        const charAvatar = `/characters/${getContext().characters[this_chid]?.avatar ?? ''}`;
-        event.source.postMessage({
-            source: 'amily2-host',
-            type: 'avatars',
-            urls: { user: userAvatar, char: charAvatar }
-        }, '*');
-        return;
-    }
-
-    // 处理来自 iframe 的交互事件
-    if (event.data && event.data.source === 'amily2-iframe') {
-        const { action, detail } = event.data;
-        console.log(`[Amily2-主窗口] 收到来自iframe的动作: ${action}`, detail);
-
-        switch (action) {
-            case 'sendMessage':
-                if (detail && detail.message) {
-                    $('#send_textarea').val(detail.message).trigger('input');
-                    $('#send_but').trigger('click');
-                    console.log(`[Amily2-主窗口] 已发送消息: ${detail.message}`);
-                }
-                break;
-
-            case 'showToast':
-                if (detail && detail.message && window.toastr) {
-                    const toastType = detail.type || 'info';
-                    if (typeof window.toastr[toastType] === 'function') {
-                        window.toastr[toastType](detail.message, detail.title || '通知');
-                    }
-                }
-                break;
-
-            case 'buttonClick':
-                console.log(`[Amily2-主窗口] 按钮被点击:`, detail);
-                if (window.toastr) {
-                    window.toastr.info(`按钮 "${detail.buttonId || '未知'}" 被点击`, 'iframe交互');
-                }
-                break;
-
-            default:
-                console.warn(`[Amily2-主窗口] 未知的动作类型: ${action}`);
-        }
-    }
-});
-
 window.addEventListener("error", (event) => {
   const stackTrace = event.error?.stack || "";
   if (stackTrace.includes("ST-Amily2-Chat-Optimisation")) {
@@ -409,14 +334,6 @@ window.addEventListener("error", (event) => {
 
 
 let isProcessingPlotOptimization = false;
-
-/**
- * 加载必要的外部库（如 DOMPurify）。
- * 如果加载失败，会回退到内置的简单净化器。
- */
-function loadExternalLibraries() {
-    loadExternalScript(DOMPURIFY_CDN, 'DOMPurify').catch(e => console.warn("[Amily2] DOMPurify 加载失败，将使用内置净化器:", e));
-}
 
 /**
  * 初始化上下文优化器模块。
@@ -451,31 +368,39 @@ async function initializeMiZheSi() {
 function registerAllApiHandlers() {
     initializeApiListener();
 
-    registerApiHandler('getChatMessages', async (data) => amilyHelper.getChatMessages(data.range, data.options));
-    registerApiHandler('setChatMessages', async (data) => amilyHelper.setChatMessages(data.messages, data.options));
+    registerApiHandler('getAvatars', async () => ({
+        user: `/characters/${getContext().userCharacter?.avatar ?? ''}`,
+        char: `/characters/${getContext().characters[this_chid]?.avatar ?? ''}`,
+    }), { capability: IFRAME_CAPABILITIES.UI });
+
+    registerApiHandler('getChatMessages', async (data) => amilyHelper.getChatMessages(data.range, data.options), { capability: IFRAME_CAPABILITIES.CHAT_READ });
+    registerApiHandler('setChatMessages', async (data) => amilyHelper.setChatMessages(data.messages, data.options), { capability: IFRAME_CAPABILITIES.CHAT_WRITE });
     registerApiHandler('setChatMessage', async (data) => {
         const field_values = data.field_values || data.content;
         const message_id = data.message_id !== undefined ? data.message_id : data.index;
         const options = data.options || {};
         console.log('[Amily2-API] setChatMessage 收到参数:', { field_values, message_id, options, raw_data: data });
         return await amilyHelper.setChatMessage(field_values, message_id, options);
-    });
-    registerApiHandler('createChatMessages', async (data) => amilyHelper.createChatMessages(data.messages, data.options));
-    registerApiHandler('deleteChatMessages', async (data) => amilyHelper.deleteChatMessages(data.ids, data.options));
-    registerApiHandler('getLorebooks', async (data) => amilyHelper.getLorebooks());
-    registerApiHandler('getCharLorebooks', async (data) => amilyHelper.getCharLorebooks(data.options));
-    registerApiHandler('getLorebookEntries', async (data) => amilyHelper.getLorebookEntries(data.bookName));
-    registerApiHandler('setLorebookEntries', async (data) => amilyHelper.setLorebookEntries(data.bookName, data.entries));
-    registerApiHandler('createLorebookEntries', async (data) => amilyHelper.createLorebookEntries(data.bookName, data.entries));
-    registerApiHandler('createLorebook', async (data) => amilyHelper.createLorebook(data.bookName));
-    registerApiHandler('triggerSlash', async (data) => amilyHelper.triggerSlash(data.command));
-    registerApiHandler('getLastMessageId', async (data) => amilyHelper.getLastMessageId());
+    }, { capability: IFRAME_CAPABILITIES.CHAT_WRITE });
+    registerApiHandler('createChatMessages', async (data) => amilyHelper.createChatMessages(data.messages, data.options), { capability: IFRAME_CAPABILITIES.CHAT_WRITE });
+    registerApiHandler('deleteChatMessages', async (data) => amilyHelper.deleteChatMessages(data.ids, data.options), { capability: IFRAME_CAPABILITIES.CHAT_WRITE });
+    registerApiHandler('getLorebooks', async () => amilyHelper.getLorebooks(), { capability: IFRAME_CAPABILITIES.LOREBOOK_READ });
+    registerApiHandler('getCharLorebooks', async (data) => amilyHelper.getCharLorebooks(data.options), { capability: IFRAME_CAPABILITIES.LOREBOOK_READ });
+    registerApiHandler('getLorebookEntries', async (data) => amilyHelper.getLorebookEntries(data.bookName), { capability: IFRAME_CAPABILITIES.LOREBOOK_READ });
+    registerApiHandler('setLorebookEntries', async (data) => amilyHelper.setLorebookEntries(data.bookName, data.entries), { capability: IFRAME_CAPABILITIES.LOREBOOK_WRITE });
+    registerApiHandler('createLorebookEntries', async (data) => amilyHelper.createLorebookEntries(data.bookName, data.entries), { capability: IFRAME_CAPABILITIES.LOREBOOK_WRITE });
+    registerApiHandler('createLorebook', async (data) => amilyHelper.createLorebook(data.bookName), { capability: IFRAME_CAPABILITIES.LOREBOOK_WRITE });
+    registerApiHandler('triggerSlash', async (data) => amilyHelper.triggerSlash(data.command), { capability: IFRAME_CAPABILITIES.SLASH });
+    registerApiHandler('getLastMessageId', async () => amilyHelper.getLastMessageId(), { capability: IFRAME_CAPABILITIES.UI });
     registerApiHandler('toastr', async (data) => {
-        if (window.toastr && typeof window.toastr[data.type] === 'function') {
-            window.toastr[data.type](data.message, data.title);
+        const type = ['success', 'info', 'warning', 'error'].includes(data?.type) ? data.type : 'info';
+        if (window.toastr && typeof window.toastr[type] === 'function') {
+            const message = $('<div>').text(String(data?.message ?? '').slice(0, 2_000)).html();
+            const title = $('<div>').text(String(data?.title ?? '').slice(0, 200)).html();
+            window.toastr[type](message, title, { escapeHtml: false });
         }
         return true;
-    });
+    }, { capability: IFRAME_CAPABILITIES.UI });
     registerApiHandler('switchSwipe', async (data) => {
         const { messageIndex, swipeIndex } = data;
         const messages = await amilyHelper.getChatMessages(messageIndex, { include_swipes: true });
@@ -494,7 +419,7 @@ function registerAllApiHandlers() {
             }
         }
         throw new Error(`无法切换到开场白 ${swipeIndex}`);
-    });
+    }, { capability: IFRAME_CAPABILITIES.CHAT_WRITE });
 }
 
 /**
@@ -730,7 +655,10 @@ function registerEventListeners() {
         eventSource.on(event_types.MESSAGE_DELETED, (message, index) => {
             log(`【监察系统】检测到消息 ${index} 被删除，开始精确回滚UI状态。`, 'warn');
             clearHighlights();
-            loadTables(index);
+            // MESSAGE_DELETED rewinds from a historical message snapshot.  v2
+            // metadata is the normal load source, so keep it in sync with the
+            // recovered state or a reload would resurrect the deleted future.
+            loadTables(index, { persistHistorical: true });
             renderTables();
         });
         eventSource.on(event_types.MESSAGE_RECEIVED, updateOrInsertTableInChat);
@@ -890,7 +818,6 @@ jQuery(async () => {
     console.log("[Amily2号-帝国枢密院] 开始执行开国大典...");
 
     initializeAmilyBus();
-    loadExternalLibraries();
     initializeContextOptimizer();
     await initializeMiZheSi();
 

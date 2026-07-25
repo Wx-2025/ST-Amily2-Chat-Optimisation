@@ -1,0 +1,101 @@
+/**
+ * Keeps runtime call controls separate from stored connection coordinates.
+ * Callers may tune a bounded request, but cannot redirect a configured key to
+ * another endpoint or replace the selected provider/model through `options`.
+ */
+
+const BLOCKED_CUSTOM_PARAMETER_KEYS = new Set([
+    '__proto__',
+    'prototype',
+    'constructor',
+    'api_key',
+    'api_mode',
+    'api_provider',
+    'api_url',
+    'apimode',
+    'apiprovider',
+    'apikey',
+    'apiurl',
+    'access_token',
+    'accesstoken',
+    'authorization',
+    'base_url',
+    'baseurl',
+    'chat_completion_source',
+    'chatcompletionsource',
+    'custom_url',
+    'customurl',
+    'endpoint',
+    'headers',
+    'host',
+    'hostname',
+    'messages',
+    'mode',
+    'model',
+    'origin',
+    'password',
+    'provider',
+    'proxy',
+    'proxy_password',
+    'proxypassword',
+    'reverse_proxy',
+    'reverseproxy',
+    'route',
+    'stream',
+    'tavern_profile',
+    'tavernprofile',
+    'token',
+    'tool_choice',
+    'tools',
+    'url',
+]);
+
+const MAX_CALL_TOKENS = 131_072;
+
+export function mergeSafeModelCallOptions(connection, overrides = {}) {
+    if (!connection || typeof connection !== 'object' || Array.isArray(connection)) {
+        throw new TypeError('[ModelCall] connection settings must be an object.');
+    }
+    const source = overrides && typeof overrides === 'object' && !Array.isArray(overrides)
+        ? overrides
+        : {};
+    const result = {
+        ...connection,
+        customParams: sanitizeCustomModelParams(connection.customParams),
+    };
+
+    if (Object.prototype.hasOwnProperty.call(source, 'maxTokens')) {
+        result.maxTokens = boundedNumber(source.maxTokens, 1, MAX_CALL_TOKENS, result.maxTokens);
+    }
+    if (Object.prototype.hasOwnProperty.call(source, 'temperature')) {
+        result.temperature = boundedNumber(source.temperature, 0, 2, result.temperature);
+    }
+    if (Object.prototype.hasOwnProperty.call(source, 'top_p')) {
+        result.top_p = boundedNumber(source.top_p, 0, 1, result.top_p);
+    }
+    if (Object.prototype.hasOwnProperty.call(source, 'signal')) {
+        result.signal = source.signal;
+    }
+    result.customParams = {
+        ...result.customParams,
+        ...sanitizeCustomModelParams(source.customParams),
+    };
+    return result;
+}
+
+export function sanitizeCustomModelParams(params) {
+    if (!params || typeof params !== 'object' || Array.isArray(params)) return {};
+    const sanitized = {};
+    for (const [key, value] of Object.entries(params)) {
+        const normalizedKey = key.replace(/[\s-]/g, '_').toLowerCase();
+        if (BLOCKED_CUSTOM_PARAMETER_KEYS.has(normalizedKey)) continue;
+        sanitized[key] = value;
+    }
+    return sanitized;
+}
+
+function boundedNumber(value, minimum, maximum, fallback) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return fallback;
+    return Math.min(maximum, Math.max(minimum, parsed));
+}

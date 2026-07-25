@@ -3,6 +3,18 @@ const GIT_REPO_NAME = 'ST-Amily2-Chat-Optimisation';
 import { extensionName } from '../utils/settings.js';
 const EXTENSION_NAME = extensionName;
 const EXTENSION_FOLDER_PATH = `scripts/extensions/third-party/${EXTENSION_NAME}`;
+const UPDATE_REVIEW_URL = `https://github.com/${GIT_REPO_OWNER}/${GIT_REPO_NAME}/commits/main`;
+
+function asPlainTextPopupContent(content) {
+    const escaped = String(content ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+    })[character]);
+    return `<pre style="white-space: pre-wrap; word-break: break-word;">${escaped}</pre>`;
+}
 
 class Amily2Updater {
     constructor() {
@@ -23,7 +35,8 @@ class Amily2Updater {
 
     parseVersion(content) {
         try {
-            return JSON.parse(content).version || '0.0.0';
+            const version = String(JSON.parse(content).version ?? '');
+            return /^\d+\.\d+\.\d+$/.test(version) ? version : '0.0.0';
         } catch (error) {
             console.error(`[Amily2Updater] 版本解析失败:`, error);
             return '0.0.0';
@@ -51,32 +64,13 @@ class Amily2Updater {
         }
     }
 
-    async performUpdate() {
-        const { getRequestHeaders } = SillyTavern.getContext().common;
-        const { extension_types } = SillyTavern.getContext().extensions;
-        
-        this.showToast('info', '正在更新 Amily2号优化助手...');
-        
-        try {
-            const response = await fetch('/api/extensions/update', {
-                method: 'POST',
-                headers: getRequestHeaders(),
-                body: JSON.stringify({
-                    extensionName: EXTENSION_NAME,
-                    global: extension_types[EXTENSION_NAME] === 'global',
-                }),
-            });
-            
-            if (!response.ok) {
-                throw new Error(await response.text());
-            }
-
-            this.showToast('success', '更新成功！将在3秒后刷新页面应用更改。');
-            setTimeout(() => location.reload(), 3000);
-        } catch (error) {
-            this.showToast('error', `更新失败: ${error.message}`);
-            throw error;
-        }
+    openUpdateReviewPage() {
+        const link = document.createElement('a');
+        link.href = UPDATE_REVIEW_URL;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.click();
+        this.showToast('info', '已打开提交记录；请核对发布内容后通过 SillyTavern 扩展管理器手动更新。');
     }
 
     async showUpdateLogDialog() {
@@ -100,10 +94,10 @@ class Amily2Updater {
             
             if (hasUpdate) {
                 const confirmed = await callGenericPopup(
-                    logContent,
+                    asPlainTextPopupContent(logContent),
                     POPUP_TYPE.CONFIRM,
                     {
-                        okButton: '立即更新',
+                        okButton: '查看提交记录',
                         cancelButton: '稍后',
                         wide: true,
                         large: true,
@@ -111,7 +105,7 @@ class Amily2Updater {
                 );
 
                 if (confirmed) {
-                    await this.performUpdate();
+                    this.openUpdateReviewPage();
                 }
             } else {
                 await callGenericPopup(
@@ -133,7 +127,7 @@ class Amily2Updater {
             basicContent += `无法获取详细更新日志: ${error.message}`;
             
             await callGenericPopup(
-                basicContent,
+                asPlainTextPopupContent(basicContent),
                 POPUP_TYPE.TEXT,
                 {
                     okButton: '知道了',
@@ -150,14 +144,14 @@ class Amily2Updater {
         try {
             this.changelogContent = await this.fetchRawFileFromGitHub('CHANGELOG.md');
         } catch (error) {
-            this.changelogContent = `发现新版本 ${this.latestVersion}！\n\n您想现在更新吗？`;
+            this.changelogContent = `发现新版本 ${this.latestVersion}！\n\n请先核对提交记录，再通过 SillyTavern 扩展管理器手动更新。`;
         }
 
         const confirmed = await callGenericPopup(
-            this.changelogContent,
+            asPlainTextPopupContent(this.changelogContent),
             POPUP_TYPE.CONFIRM,
             {
-                okButton: '立即更新',
+                okButton: '查看提交记录',
                 cancelButton: '稍后',
                 wide: true,
                 large: true,
@@ -165,7 +159,7 @@ class Amily2Updater {
         );
 
         if (confirmed) {
-            await this.performUpdate();
+            this.openUpdateReviewPage();
         }
     }
 
@@ -250,7 +244,7 @@ class Amily2Updater {
 
             if (isManual) {
                 if (this.compareVersions(this.latestVersion, this.currentVersion) > 0) {
-                    this.showToast('success', `发现新版本 ${this.latestVersion}！点击"更新"按钮进行升级。`);
+                    this.showToast('success', `发现新版本 ${this.latestVersion}！请先查看提交记录，再手动更新。`);
                 } else {
                     this.showToast('info', '您当前已是最新版本。');
                 }

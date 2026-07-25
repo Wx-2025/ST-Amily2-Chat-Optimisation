@@ -5,8 +5,8 @@ Amily2Bus 是 Amily2-Chat-Optimisation 插件系统的核心基础设施。它�
 ## 核心特性
 
 - **安全控制台 (SafeConsole)**: 通过 Iframe 逃生通道获取纯净 Console 引用，绕过 SillyTavern 等环境的日志劫持。
-- **能力令牌 (Capability Token)**: 插件注册后获取专属上下文，自动绑定身份，实现日志追踪与文件隔离。
-- **防超时网络层 (FakeStream)**: `ModelCaller` 支持伪流式聚合，通过持续保持 TCP 连接活跃，彻底解决 CloudFlare 524 超时问题。
+- **绑定上下文**: 插件注册后获取绑定命名空间的上下文，实现日志追踪与文件隔离；它不被描述为同页面敌对代码间的认证令牌。
+- **最小公共能力**: 全局 Bus 不提供凭证读取或通用模型执行，公共接口必须适合任意同页调用者。
 - **位运算日志系统**: 基于位掩码的日志级别控制，支持针对特定插件或模块动态调整输出粒度。
 - **异步责任链**: 预置 `Chain` 模块，支持插件化的异步中间件处理流程。
 
@@ -44,23 +44,16 @@ const amily = window.Amily2Bus.register('MyAwesomePlugin');
 amily.log('Main', 'info', '插件已就绪');
 ```
 
-### 2. 网络请求 (ModelCaller & Options)
+### 2. 公共能力边界
 
-统一处理 API 调用，支持自动切换 ST 配置文件 (Profile) 及防超时处理。
+`window.Amily2Bus` 可被同页脚本发现，因此注册上下文只提供日志、隔离文件和领域服务联动，不提供 `model.call()` 或工具注册/执行能力。
 
 ```javascript
-const { Options } = amily.model;
-
-const opt = Options.builder()
-    .setMode('direct')           // 'direct' (直连) 或 'preset' (ST预设)
-    .setFakeStream(true)        // 开启伪流式聚合，防止 524 超时
-    .setApiUrl('...')
-    .setApiKey('...')
-    .setModel('gpt-4o')
-    .build();
-
-const result = await amily.model.call(messages, opt);
+const status = window.Amily2Bus.query('NccsApi')?.getStatus();
+// 仅返回启用/配置状态，不返回 API Key、端点或模型调用函数。
 ```
+
+需要模型能力的 Amily 内部模块必须使用受控模块导入；外部插件不得借 Bus 使用用户连接。
 
 ### 3. 文件操作 (FilePipe)
 
@@ -106,6 +99,7 @@ await pipeline.execute(context);
 
 ## 开发规范
 
-1. **强制类型**: `model.call` 必须接收 `Options` 类的实例，建议始终使用 `Options.builder()` 构建参数。
-2. **路径安全**: 使用 `file` 接口时，禁止在路径中使用 `..` 等跳转符，系统会自动进行安全校验。
-3. **日志分级**: 生产环境默认屏蔽 `debug` 级别，调试时可通过 `window.Amily2Bus.Logger.setLevel('PluginName', 'all')` 动态开启。
+1. **秘密不公开**: 禁止通过 `expose()` 返回 API Key、认证头、完整连接配置或私钥材料。
+2. **模型不代理**: 禁止通过公共 Bus 暴露通用 AI 调用函数；内部任务需走受控模型层。
+3. **路径安全**: 使用 `file` 接口时，禁止在路径中使用 `..` 等跳转符，系统会自动进行安全校验。
+4. **日志分级**: 生产环境默认屏蔽 `debug` 级别，调试时可通过 `window.Amily2Bus.Logger.setLevel('PluginName', 'all')` 动态开启。

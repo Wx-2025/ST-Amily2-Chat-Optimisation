@@ -13,19 +13,41 @@
  *   - 所有持久化走 infra/persistence.js，不再复制 saveStateToMessage 样板
  */
 
-import { extension_settings, getContext } from '/scripts/extensions.js';
+import { extension_settings } from '/scripts/extensions.js';
 import { saveSettingsDebounced } from '/script.js';
 import { extensionName } from '../../utils/settings.js';
 import { log } from './logger.js';
 import { getState, setState } from './infra/store.js';
-import { saveStateToMessage, commitToLastMessage } from './infra/persistence.js';
+import { commitToLastMessageAsync } from './infra/persistence.js';
+import { isSafeCharacterProfileEnvelope } from './character-profile.js';
+import { isTableDefinitionRegistered, validateTableState } from './module-tables.js';
+import {
+    createCharacterPortableTableProfile,
+    createTableProfile,
+    createTableStateFromProfile,
+    materializeTableProfile,
+    normalizeTableProfile,
+} from './profile.js';
 import {
     getBatchFillerRuleTemplate,
     getBatchFillerFlowTemplate,
+    getAiFlowTemplateForInjection,
+    getCurrentTableTemplateSnapshot,
+    getGlobalTableTemplateSnapshot,
     saveBatchFillerRuleTemplate,
     saveBatchFillerFlowTemplate,
     saveAiTemplate,
+    saveGlobalBatchFillerRuleTemplate,
+    saveGlobalBatchFillerFlowTemplate,
+    saveGlobalAiTemplate,
 } from './templates.js';
+
+const SUPPORTED_LEGACY_PRESET_VERSIONS = new Set([
+    'Amily2-Table-Preset-v2.0-clean',
+    'Amily2-Table-Preset-v2.0-full',
+    'Amily2-Table-Preset-v2.1',
+    'Amily2-Table-Preset-v3.0-separated_templates',
+]);
 
 /**
  * @typedef {{
@@ -47,29 +69,22 @@ function exportPresetBase(includeData = false) {
         return;
     }
 
+    const userTables = state.filter(table => table?.owner === undefined
+        || (table.owner === 'user' && !isTableDefinitionRegistered(table.id)));
+    if (userTables.length !== state.length) {
+        toastr.info('模块归属表由各模块独立维护，本次预设导出未包含这些表。');
+    }
+
     let tablesToExport;
     let fileNameSuffix;
 
     if (includeData) {
         // 完整备份
-        tablesToExport = JSON.parse(JSON.stringify(state));
+        tablesToExport = JSON.parse(JSON.stringify(userTables));
         fileNameSuffix = '完整备份';
     } else {
         // 纯净预设：仅结构 + 规则，不带数据
-        tablesToExport = state.map(table => ({
-            name: table.name,
-            headers: table.headers,
-            columnWidths: table.columnWidths || [],
-            note: table.note,
-            rule_add: table.rule_add,
-            rule_delete: table.rule_delete,
-            rule_update: table.rule_update,
-            charLimitRules: table.charLimitRules || {},
-            rowLimitRule: table.rowLimitRule || 0,
-            // simplifyRowThreshold 不导出：与当前聊天进度强绑定的临时设置
-            rows: [],
-            rowStatuses: [],
-        }));
+        tablesToExport = createCharacterPortableTableProfile(userTables).tables;
         fileNameSuffix = '纯净预设';
     }
 
@@ -77,6 +92,7 @@ function exportPresetBase(includeData = false) {
         version: 'Amily2-Table-Preset-v3.0-separated_templates',
         batchFillerRuleTemplate: getBatchFillerRuleTemplate(),
         batchFillerFlowTemplate: getBatchFillerFlowTemplate(),
+        injectionFlowTemplate: getAiFlowTemplateForInjection(),
         tables: tablesToExport,
     };
 
@@ -159,10 +175,88 @@ function _applyImportedTemplates(preset) {
     }
 }
 
+function _extractPresetTemplates(preset) {
+    if (preset?.format === 'amily2.table-profile') {
+        return { ...(preset.templates || {}) };
+    }
+    if (preset?.version === 'Amily2-Table-Preset-v3.0-separated_templates') {
+        return Object.fromEntries([
+            ['batchFillerRuleTemplate', preset.batchFillerRuleTemplate],
+            ['batchFillerFlowTemplate', preset.batchFillerFlowTemplate],
+            ['injectionFlowTemplate', preset.injectionFlowTemplate],
+        ].filter(([, value]) => typeof value === 'string'));
+    }
+    if (preset?.aiRuleTemplate !== undefined && preset?.aiFlowTemplate !== undefined) {
+        return {
+            batchFillerRuleTemplate: preset.aiRuleTemplate || '',
+            batchFillerFlowTemplate: preset.aiFlowTemplate || '',
+            injectionFlowTemplate: preset.aiFlowTemplate || '',
+        };
+    }
+    if (preset?.aiTemplate) {
+        return {
+            batchFillerRuleTemplate: '',
+            batchFillerFlowTemplate: preset.aiTemplate || '',
+            injectionFlowTemplate: preset.aiTemplate || '',
+        };
+    }
+    return {};
+}
+
+function _assertUserOwnedPortableProfile(profile) {
+    if (!isSafeCharacterProfileEnvelope(profile)) {
+        throw new Error('表格档案损坏、超限，或携带了不允许的运行时行数据。');
+    }
+    if (profile.tables.some(table => table.owner !== 'user' || isTableDefinitionRegistered(table.id))) {
+        throw new Error('普通预设不得声明或覆盖模块所有的表格。');
+    }
+}
+
+function _resolveImportedProfile(preset, options = {}) {
+    const fallbackTemplates = options.fallbackTemplates || getCurrentTableTemplateSnapshot();
+    const source = options.source || 'import';
+    const portable = normalizeTableProfile(preset);
+    if (portable) {
+        const profile = materializeTableProfile(
+            portable,
+            fallbackTemplates,
+            { source, importedAt: new Date().toISOString() },
+        );
+        _assertUserOwnedPortableProfile(profile);
+        const tables = validateTableState(createTableStateFromProfile(profile));
+        return {
+            profile,
+            tables,
+        };
+    }
+    if (!preset?.version || !Array.isArray(preset.tables)) {
+        throw new Error('文件格式无效：需要 Amily2 TableProfile 或带版本号的传统表格预设。');
+    }
+    if (!SUPPORTED_LEGACY_PRESET_VERSIONS.has(preset.version)) {
+        throw new Error(`不支持的表格预设版本：${String(preset.version)}`);
+    }
+    const tables = JSON.parse(JSON.stringify(preset.tables));
+    _normalizeImportedTables(tables);
+    const validatedTables = validateTableState(tables);
+    const profile = materializeTableProfile(createTableProfile(validatedTables, {
+            id: `imported-table-profile-${Date.now()}`,
+            name: '导入的表格档案',
+            templates: _extractPresetTemplates(preset),
+        }), fallbackTemplates, {
+        source,
+        importedAt: new Date().toISOString(),
+    });
+    _assertUserOwnedPortableProfile(profile);
+    return {
+        profile,
+        tables: validatedTables,
+    };
+}
+
 /**
  * 弹出文件选择 → 解析 JSON → 归一化 → 写入 store + 持久化。
  *
- * hooks.onAfterApply 在 setState 之后、saveChat 之前触发（用于注入 SuperMemory 同步等副作用）。
+ * hooks.onAfterApply 在状态成功持久化并写入 store 后触发（用于注入 SuperMemory 同步等副作用）。
  * hooks.onImported 在全部完成后触发（UI 刷新）。
  *
  * @param {ImportPresetHooks | (() => void)} [hooksOrCallback] 兼容旧签名 importPreset(callback)
@@ -182,16 +276,17 @@ export function importPreset(hooksOrCallback) {
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = event => {
+        reader.onload = async event => {
             try {
                 const preset = JSON.parse(event.target.result);
 
-                if (!preset.version || !Array.isArray(preset.tables)) {
-                    throw new Error('文件格式无效或缺少版本号/表格数据。');
-                }
+                const imported = _resolveImportedProfile(preset, {
+                    fallbackTemplates: getCurrentTableTemplateSnapshot(),
+                    source: 'import',
+                });
 
                 const confirmation = window.confirm(
-                    '【警告】\n\n导入操作将完全覆盖您当前的AI指令模板和所有表格（包括结构和内容）。\n\n此操作不可逆，是否确定要继续？'
+                    '【警告】\n\n导入操作将覆盖当前 AI 指令模板和所有用户表（包括结构和内容），模块独立维护的表不会被覆盖。\n\n此操作不可逆，是否确定要继续？'
                 );
                 if (!confirmation) {
                     log('用户取消了导入操作。', 'info');
@@ -199,27 +294,34 @@ export function importPreset(hooksOrCallback) {
                     return;
                 }
 
-                _applyImportedTemplates(preset);
+                const moduleTables = (getState() || [])
+                    .filter(table => (table?.owner && table.owner !== 'user')
+                        || isTableDefinitionRegistered(table?.id))
+                    .map(table => JSON.parse(JSON.stringify(table)));
+                const nextState = validateTableState([...imported.tables, ...moduleTables]);
 
-                const importedTables = preset.tables;
-                _normalizeImportedTables(importedTables);
-
-                setState(importedTables);
+                if (!await commitToLastMessageAsync(nextState, imported.profile)) {
+                    throw new Error('当前聊天无法原子持久化导入的表格档案。');
+                }
+                setState(nextState);
+                _applyImportedTemplates({
+                    version: 'Amily2-Table-Preset-v3.0-separated_templates',
+                    ...imported.profile.templates,
+                });
 
                 // 钩子：让调用方注入 SuperMemory 全量同步等副作用
                 if (typeof hooks.onAfterApply === 'function') {
-                    try { hooks.onAfterApply(); } catch (e) {
+                    try { await hooks.onAfterApply(); } catch (e) {
                         log(`importPreset onAfterApply 抛错: ${e.message}`, 'error');
                     }
                 }
 
-                commitToLastMessage(getState());
                 log('导入的预设已强制写入最新消息并立即保存。', 'success');
                 log('预设已成功导入并应用。', 'success');
                 toastr.success('预设已成功导入！', '导入成功');
 
                 if (typeof hooks.onImported === 'function') {
-                    try { hooks.onImported(); } catch (e) {
+                    try { await hooks.onImported(); } catch (e) {
                         log(`importPreset onImported 抛错: ${e.message}`, 'error');
                     }
                 }
@@ -274,9 +376,11 @@ export function importGlobalPreset(onImported) {
             try {
                 const preset = JSON.parse(event.target.result);
 
-                if (!preset.version || !Array.isArray(preset.tables)) {
-                    throw new Error('文件格式无效或缺少版本号/表格数据。');
-                }
+                const imported = _resolveImportedProfile(preset, {
+                    fallbackTemplates: getGlobalTableTemplateSnapshot(),
+                    source: 'global',
+                });
+                const globalProfile = imported.profile;
 
                 const confirmation = window.confirm(
                     '【全局预设导入】\n\n这将把选定的预设设置为所有新聊天的默认表格。\n\n此操作将覆盖任何已存在的全局预设，是否确定？'
@@ -287,27 +391,19 @@ export function importGlobalPreset(onImported) {
                     return;
                 }
 
-                // 纯净副本：仅结构，不含 rows
-                const cleanTables = preset.tables.map(table => ({
-                    name: table.name,
-                    headers: table.headers,
-                    note: table.note,
-                    rule_add: table.rule_add,
-                    rule_delete: table.rule_delete,
-                    rule_update: table.rule_update,
-                    rows: [],
-                }));
-
                 if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
                 extension_settings[extensionName].global_table_preset = {
-                    version: preset.version,
-                    tables: cleanTables,
-                    batchFillerRuleTemplate: preset.batchFillerRuleTemplate,
-                    batchFillerFlowTemplate: preset.batchFillerFlowTemplate,
+                    version: 'Amily2-Table-Profile-v1',
+                    tables: globalProfile.tables,
+                    tableProfile: globalProfile,
+                    batchFillerRuleTemplate: globalProfile.templates.batchFillerRuleTemplate,
+                    batchFillerFlowTemplate: globalProfile.templates.batchFillerFlowTemplate,
+                    injectionFlowTemplate: globalProfile.templates.injectionFlowTemplate,
                 };
+                saveGlobalBatchFillerRuleTemplate(globalProfile.templates.batchFillerRuleTemplate || '');
+                saveGlobalBatchFillerFlowTemplate(globalProfile.templates.batchFillerFlowTemplate || '');
+                saveGlobalAiTemplate(globalProfile.templates.injectionFlowTemplate || '');
                 saveSettingsDebounced();
-
-                _applyImportedTemplates(preset);
 
                 log('全局预设已成功导入并保存到扩展设置中。', 'success');
                 toastr.success('全局预设已设置！新聊天将默认使用此预设。', '设置成功');

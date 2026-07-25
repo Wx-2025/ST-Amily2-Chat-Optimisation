@@ -33,6 +33,7 @@ import {
 } from './utils/googleAdapter.js';
 
 import { getRequestHeaders } from '/script.js';
+import { mergeSafeModelCallOptions } from './api/safe-call-options.js';
 
 
 let ChatCompletionService = undefined;
@@ -438,7 +439,7 @@ async function fetchSillyTavernPresetModels() {
 }
  
 
-export async function getApiSettings(slot = 'main') {
+async function getApiSettings(slot = 'main') {
     const s = extension_settings[extensionName] || {};
 
     // 优先读取槽位分配的 Profile（profile 一旦分配即为权威，不再被主面板/模块独立设置压制）
@@ -492,7 +493,8 @@ export async function getApiSettings(slot = 'main') {
         };
     }
 
-    // main 槽（及其余未明确处理的槽）：读主面板 DOM 配置
+    // main 槽（及其余未明确处理的槽）：普通字段读主面板，
+    // 凭证只从 ConfigManager 取得，不要为了请求再把真实 Key 回填到 DOM。
     const apiProvider = document.getElementById('amily2_api_provider')?.value || 'openai';
 
     let model;
@@ -508,7 +510,7 @@ export async function getApiSettings(slot = 'main') {
     return {
         apiProvider,
         apiUrl:       document.getElementById('amily2_api_url')?.value.trim() || '',
-        apiKey:       document.getElementById('amily2_api_key')?.value.trim() || '',
+        apiKey:       configManager.get('apiKey') || '',
         model,
         maxTokens:    settings.maxTokens    || 4000,
         temperature:  settings.temperature  || 0.7,
@@ -580,7 +582,7 @@ export async function callAI(messages, options = {}) {
 
     const apiSettings = await getApiSettings(options.slot || 'main');
 
-    const finalOptions = {
+    const finalOptions = mergeSafeModelCallOptions({
         maxTokens: apiSettings.maxTokens,
         temperature: apiSettings.temperature,
         model: apiSettings.model,
@@ -588,11 +590,8 @@ export async function callAI(messages, options = {}) {
         apiKey: apiSettings.apiKey,
         apiProvider: apiSettings.apiProvider,
         customParams: apiSettings.customParams ?? {},
-        signal: options.signal,
-        ...options,
-        // options 可显式覆盖 customParams，体现"代码内显式 > profile 配置"
-        customParams: { ...(apiSettings.customParams ?? {}), ...(options.customParams ?? {}) },
-    };
+        fakeStream: apiSettings.fakeStream ?? false,
+    }, options);
 
     if (finalOptions.apiProvider !== 'sillytavern_preset') {
         if (!finalOptions.apiUrl || !finalOptions.model) {
@@ -997,17 +996,15 @@ export async function checkAndFixWithAPI(latestMessage, previousMessages) {
 export async function callAIForTools(messages, tool, options = {}) {
     const apiSettings = await getApiSettings(options.slot || 'main');
 
-    const finalOptions = {
+    const finalOptions = mergeSafeModelCallOptions({
         maxTokens: apiSettings.maxTokens,
         temperature: apiSettings.temperature,
         model: apiSettings.model,
         apiUrl: apiSettings.apiUrl,
         apiKey: apiSettings.apiKey,
         apiProvider: apiSettings.apiProvider,
-        customParams: { ...(apiSettings.customParams ?? {}), ...(options.customParams ?? {}) },
-        signal: options.signal,
-        ...options,
-    };
+        customParams: apiSettings.customParams ?? {},
+    }, options);
 
     const FC_SUPPORTED_PROVIDERS = new Set(['openai', 'openai_test', 'custom_oai', 'openrouter', 'deepseek', 'xai']);
     if (!FC_SUPPORTED_PROVIDERS.has(finalOptions.apiProvider)) {

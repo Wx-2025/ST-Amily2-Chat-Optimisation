@@ -7,6 +7,7 @@ import {
 import { showHtmlModal } from './page-window.js';
 import { configManager } from '../utils/config/ConfigManager.js';
 import { ruleProfileManager, resolveHistoriographyRuleConfig } from '../utils/config/RuleProfileManager.js';
+import { clearSecretInput, markSecretInputStored, readSecretInputUpdate } from './secret-input.js';
 
 import {
   getAvailableWorldbooks, getLoresForWorldbook,
@@ -15,7 +16,7 @@ import {
   archiveCurrentLedger, getArchivedLedgers, restoreArchivedLedger
 } from "../core/historiographer.js";
 
-import { getNgmsApiSettings, testNgmsApiConnection, fetchNgmsModels } from "../core/api/Ngms_api.js";
+import { testNgmsApiConnection, fetchNgmsModels } from "../core/api/Ngms_api.js";
 
 function getHistoriographyRuleConfig() {
   return resolveHistoriographyRuleConfig(extension_settings[extensionName] || {});
@@ -476,13 +477,17 @@ function bindNgmsApiEvents() {
     apiFields.forEach(field => {
         const element = document.getElementById(field.id);
         if (element) {
-            // 敏感字段（API Key）从 configManager（localStorage）读取
-            element.value = field.sensitive
-                ? (configManager.get(field.key) || '')
-                : (extension_settings[extensionName][field.key] || '');
+            if (field.sensitive) {
+                clearSecretInput(element, configManager.has(field.key));
+            } else {
+                element.value = extension_settings[extensionName][field.key] || '';
+            }
             element.addEventListener('change', function() {
                 if (field.sensitive) {
-                    configManager.set(field.key, this.value);
+                    const update = readSecretInputUpdate(this);
+                    if (!update.changed) return;
+                    configManager.set(field.key, update.value);
+                    markSecretInputStored(this, Boolean(update.value));
                 } else {
                     updateAndSaveSetting(field.key, this.value);
                 }

@@ -3,6 +3,7 @@ import { getRequestHeaders, saveSettingsDebounced } from "/script.js";
 import { extensionName } from "../../utils/settings.js";
 import { getSlotProfile } from '../api/api-resolver.js';
 import { apiKeyStore } from '../../utils/config/api-key-store/ApiKeyStore.js';
+import { mergeSafeModelCallOptions } from '../api/safe-call-options.js';
 
 const DEFAULT_CONFIG = {
     apiUrl: "",
@@ -62,7 +63,7 @@ export async function setApiConfig(role, config) {
 }
 
 export async function callAi(role, messages, options = {}, onChunk = null) {
-    const config = { ...(await getResolvedApiConfig(role)), ...options };
+    const config = mergeSafeModelCallOptions(await getResolvedApiConfig(role), options);
     const roleName = role === 'executor' ? '执行者(模型A)' : '规划者(模型B)';
 
     if (!config.apiUrl || !config.apiKey || !config.model) {

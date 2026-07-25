@@ -288,6 +288,31 @@
                         <button id="amily2-clear-all-tables-btn" class="menu_button danger small_button interactable"><i class="fas fa-trash-alt"></i> 清空内容</button>
                     </div>
                     <p class="notes" style="margin-top: 8px; margin-bottom: 10px;">说明：可以导出不含剧情的"纯净预设"用于分享，或导出包含剧情的"完整备份"用于存档。</p>
+
+                    <fieldset class="settings-group" style="border-style: dashed; padding: 8px; margin-bottom: 10px;">
+                        <legend><i class="fas fa-id-card"></i> 角色卡表格档案（2.3.0）</legend>
+                        <div class="notes" style="margin-bottom: 8px;">
+                            当前来源：<strong id="amily2-table-profile-source">检测中…</strong>
+                        </div>
+                        <div class="action-center-buttons" style="gap: 8px;">
+                            <button id="amily2-export-table-profile-btn" class="menu_button primary small_button interactable" type="button">
+                                <i class="fas fa-file-export"></i> 导出表格档案
+                            </button>
+                            <button id="amily2-save-profile-to-character-btn" class="menu_button danger small_button interactable" type="button">
+                                <i class="fas fa-exclamation-triangle"></i> 保存／覆盖到当前角色卡
+                            </button>
+                            <button id="amily2-remove-character-profile-btn" class="menu_button danger small_button interactable" type="button">
+                                <i class="fas fa-unlink"></i> 解除角色卡档案
+                            </button>
+                        </div>
+                        <label class="checkbox_label" style="margin-top: 8px; display: inline-flex; gap: 6px; align-items: center;">
+                            <input id="amily2-import-sync-character-profile" type="checkbox">
+                            导入预设后，同时写入当前角色卡
+                        </label>
+                        <p class="notes" style="margin: 6px 0 0; color: var(--SmartThemeQuoteColor);">
+                            角色卡仅保存表结构、视图定义和模板，不保存聊天中的行数据。写入与解除都必须手动确认；已有聊天不会被角色卡后续更新覆盖。
+                        </p>
+                    </fieldset>
                     
                     <hr class="section-divider" style="margin: 10px 0;">
 

@@ -5,6 +5,20 @@ import { amilyHelper } from '../../core/tavern-helper/main.js';
 import { getSlotProfile, providerToApiMode } from './api-resolver.js';
 import { configManager } from '../../utils/config/ConfigManager.js';
 import { detectVendor } from '../../utils/api-vendor.js';
+import { mergeSafeModelCallOptions } from './safe-call-options.js';
+import { registerInternalBusPlugin } from '../../SL/bus/Amily2Bus.js';
+
+let nccsCtx = null;
+// 在任何 top-level await 之前同步认领核心身份，避免 bootstrap 窗口关闭后注册。
+try {
+    nccsCtx = registerInternalBusPlugin('NccsApi');
+    nccsCtx.expose({
+        getStatus: getPublicNccsStatus,
+    });
+    nccsCtx.log('Init', 'info', 'NccsApi 已连接至 Amily2Bus，网络通道准备就绪。');
+} catch (e) {
+    console.warn('[Amily2-Nccs] Bus 注册警告 (可能是热重载):', e);
+}
 
 let ChatCompletionService = undefined;
 try {
@@ -15,31 +29,7 @@ try {
     console.warn("[Amily2号-Nccs外交部] 未能召唤“皇家信使”，部分高级功能（如Claw代理）将受限。请考虑更新SillyTavern版本。", e);
 }
 
-let nccsCtx = null;
-// 尝试连接总线
-if (window.Amily2Bus) {
-    try {
-        // 注册 'NccsApi' 身份，获取专属上下文
-        nccsCtx = window.Amily2Bus.register('NccsApi');
-
-        // 【联动】暴露 Nccs 的核心调用能力，允许其他插件通过 query('NccsApi') 借用此通道
-        nccsCtx.expose({
-            call: callNccsAI,
-            getSettings: getNccsApiSettings
-        });
-
-        nccsCtx.log('Init', 'info', 'NccsApi 已连接至 Amily2Bus，网络通道准备就绪。');
-    } catch (e) {
-        // 如果是热重载导致重复注册，尝试降级获取（注意：严格锁模式下无法获取旧Context，这里仅做日志提示）
-        // 在生产环境中，页面刷新会重置 Bus，不会有问题。
-        console.warn('[Amily2-Nccs] Bus 注册警告 (可能是热重载):', e);
-    }
-} else {
-    console.error('[Amily2-Nccs] 严重警告: Amily2Bus 未找到，NccsApi 网络层将无法工作！');
-    toastr.error("核心组件 Amily2Bus 丢失，请检查安装。", "Nccs-System");
-}
-
-export async function getNccsApiSettings() {
+async function getNccsApiSettings() {
     const s = extension_settings[extensionName] || {};
 
     // 优先读取 'nccs' 槽位分配的 Profile（profile 一旦分配即权威，旧 slider 残值不再覆盖）
@@ -74,6 +64,17 @@ export async function getNccsApiSettings() {
     };
 }
 
+async function getPublicNccsStatus() {
+    const settings = await getNccsApiSettings();
+    const usesTavernPreset = settings.apiMode === 'sillytavern_preset';
+    return Object.freeze({
+        enabled: Boolean(settings.nccsEnabled),
+        mode: settings.apiMode,
+        modelConfigured: Boolean(settings.model || usesTavernPreset),
+        credentialConfigured: Boolean(settings.apiKey || usesTavernPreset),
+    });
+}
+
 // =================================================================================================
 // 核心调用入口 (Legacy First Mode)
 // =================================================================================================
@@ -85,11 +86,7 @@ export async function callNccsAI(messages, options = {}) {
     }
 
     const settings = await getNccsApiSettings();
-    const finalOptions = {
-        ...settings,
-        signal: options.signal,
-        ...options
-    };
+    const finalOptions = mergeSafeModelCallOptions(settings, options);
 
     // 确保 stream 标志位存在
     finalOptions.stream = finalOptions.useFakeStream ?? false;

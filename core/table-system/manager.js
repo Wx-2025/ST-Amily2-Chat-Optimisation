@@ -24,8 +24,6 @@
  */
 
 import { getContext, extension_settings } from '/scripts/extensions.js';
-import { saveChat } from '/script.js';
-import { saveChatDebounced } from '../../utils/utils.js';
 import { extensionName } from '../../utils/settings.js';
 
 import { log } from './logger.js';
@@ -37,7 +35,6 @@ import { updateOrInsertTableInChat } from '../../ui/message-table-renderer.js';
 import { dispatchTableUpdate, dispatchAllTablesUpdate } from './events-dispatch.js';
 
 // ── UI 突变（Phase 0.4 迁至 actions/ui-mutations.js，此处 re-export 保持兼容） ──
-import { commitPendingDeletions } from './actions/ui-mutations.js';
 export {
     deleteColumn,
     moveRow,
@@ -74,12 +71,24 @@ import {
 
 import {
     saveStateToMessage as _persistSaveStateToMessage,
-    commitToLastMessage,
+    commitToLastMessageAsync,
+    commitToMessageAsync,
     TABLE_DATA_KEY,
 } from './infra/persistence.js';
-import { normalizeTableDatabaseState, persistChatTableState, readChatTableState } from './infra/database-state.js';
+import {
+    deepClone,
+    normalizeTableDatabaseState,
+    persistChatTableState,
+    readChatTableState,
+} from './infra/database-state.js';
 import { readCurrentCharacterTableProfile } from './character-profile.js';
-import { createTableProfile, createTableStateFromProfile, normalizeTableProfile } from './profile.js';
+import { applyPendingRecordDeletions, validateTableState } from './module-tables.js';
+import {
+    createTableProfile,
+    createTableStateFromProfile,
+    materializeTableProfile,
+    normalizeTableProfile,
+} from './profile.js';
 
 import {
     tablesToCsv,
@@ -95,6 +104,7 @@ import {
     getAiFlowTemplateForInjection as _tplGetAiFlowTemplateForInjection,
     saveAiTemplate as _tplSaveAiTemplate,
     getAiTemplate as _tplGetAiTemplate,
+    getGlobalTableTemplateSnapshot,
 } from './templates.js';
 
 import {
@@ -278,7 +288,16 @@ function getDefaultTables() {
  * @param {Array} state TableState（会被原地修改并返回）
  */
 function _normalizeTableState(state) {
+    if (!Array.isArray(state)) {
+        throw new Error('表格状态必须是数组。');
+    }
     state.forEach(table => {
+        if (!table || typeof table !== 'object' || Array.isArray(table)) {
+            throw new Error('表格状态包含无效表对象。');
+        }
+        if (!Array.isArray(table.headers) || !Array.isArray(table.rows) || table.rows.some(row => !Array.isArray(row))) {
+            throw new Error(`表格“${table.name || '未命名'}”的 headers/rows 结构无效。`);
+        }
         if (table.note === undefined) table.note = '无';
         if (table.rule_add === undefined) table.rule_add = '允许';
         if (table.rule_delete === undefined) table.rule_delete = '允许';
@@ -303,7 +322,23 @@ function _normalizeTableState(state) {
     return normalizeTableDatabaseState(state);
 }
 
-export function loadTables(stopIndex = -1) {
+function _materializeBoundProfile(profile, tables, fallback = {}) {
+    const globalTemplates = getGlobalTableTemplateSnapshot();
+    const normalized = normalizeTableProfile(profile);
+    const baseProfile = normalized || createTableProfile(tables, {
+        id: fallback.id || 'recovered-chat-table-profile',
+        name: fallback.name || '聊天表格档案',
+        templates: globalTemplates,
+        meta: { source: fallback.source || 'chat' },
+    });
+    return materializeTableProfile(baseProfile, globalTemplates, {
+        source: fallback.forceSource
+            ? (fallback.source || 'chat')
+            : (baseProfile.meta?.source || fallback.source || 'chat'),
+    });
+}
+
+export function loadTables(stopIndex = -1, options = {}) {
     const context = getContext();
 
     // v2 is chat-scoped and survives before the first message exists. Rollback
@@ -311,10 +346,22 @@ export function loadTables(stopIndex = -1) {
     if (stopIndex === -1) {
         const v2State = readChatTableState(context);
         if (v2State) {
-            const loadedState = _normalizeTableState(v2State.tables);
-            setState(loadedState);
-            dispatchAllTablesUpdate();
-            return getState();
+            try {
+                const loadedState = validateTableState(_normalizeTableState(v2State.tables), {
+                    requireRegisteredModuleSchemas: false,
+                });
+                const boundProfile = _materializeBoundProfile(v2State.profile, loadedState, {
+                    source: 'chat',
+                });
+                setState(loadedState);
+                if (JSON.stringify(boundProfile) !== JSON.stringify(v2State.profile)) {
+                    persistChatTableState(context, loadedState, boundProfile);
+                }
+                dispatchAllTablesUpdate();
+                return getState();
+            } catch (error) {
+                log(`v2 聊天表状态损坏，尝试回退历史快照: ${error.message}`, 'error');
+            }
         }
     }
 
@@ -324,12 +371,22 @@ export function loadTables(stopIndex = -1) {
         for (let i = startIndex; i >= 0; i--) {
             const message = context.chat[i];
             if (message.extra && message.extra[TABLE_DATA_KEY]) {
-                log(`在第 ${i} 条消息中找到基准表格数据。`, 'info');
-                const loadedState = _normalizeTableState(JSON.parse(JSON.stringify(message.extra[TABLE_DATA_KEY])));
+                try {
+                    log(`在第 ${i} 条消息中找到基准表格数据。`, 'info');
+                    const loadedState = validateTableState(
+                        _normalizeTableState(JSON.parse(JSON.stringify(message.extra[TABLE_DATA_KEY]))),
+                        { requireRegisteredModuleSchemas: false },
+                    );
 
-                setState(loadedState);
-                dispatchAllTablesUpdate();
-                return getState();
+                    setState(loadedState);
+                    if (options.persistHistorical === true) {
+                        persistChatTableState(context, loadedState);
+                    }
+                    dispatchAllTablesUpdate();
+                    return getState();
+                } catch (error) {
+                    log(`第 ${i} 条消息中的表格快照损坏，继续查找更早快照: ${error.message}`, 'error');
+                }
             }
         }
     }
@@ -339,9 +396,13 @@ export function loadTables(stopIndex = -1) {
     if (stopIndex === -1) {
         const characterProfile = readCurrentCharacterTableProfile(context);
         if (characterProfile) {
-            const tables = createTableStateFromProfile(characterProfile);
+            const boundProfile = _materializeBoundProfile(characterProfile, characterProfile.tables, {
+                source: 'character',
+                forceSource: true,
+            });
+            const tables = createTableStateFromProfile(boundProfile);
             setState(tables);
-            persistChatTableState(context, tables, characterProfile);
+            persistChatTableState(context, tables, boundProfile);
             dispatchAllTablesUpdate();
             return getState();
         }
@@ -352,27 +413,34 @@ export function loadTables(stopIndex = -1) {
         log('未在聊天记录中找到表格，正在加载全局预设...', 'info');
         try {
             const globalPreset = extension_settings[extensionName].global_table_preset;
-            const tables = _normalizeTableState(JSON.parse(JSON.stringify(globalPreset.tables)));
+            const tables = validateTableState(
+                _normalizeTableState(JSON.parse(JSON.stringify(globalPreset.tables))),
+            );
+            if (tables.some(table => table.owner !== 'user')) {
+                throw new Error('全局表格档案不得包含模块归属表。');
+            }
             setState(tables);
 
-            if (globalPreset.batchFillerRuleTemplate !== undefined) {
-                _tplSaveBatchFillerRuleTemplate(globalPreset.batchFillerRuleTemplate);
-            }
-            if (globalPreset.batchFillerFlowTemplate !== undefined) {
-                _tplSaveBatchFillerFlowTemplate(globalPreset.batchFillerFlowTemplate);
-            }
-
-            if (stopIndex === -1) {
-                const profile = normalizeTableProfile(globalPreset.tableProfile)
+            if (stopIndex === -1 || options.persistHistorical === true) {
+                const profile = _materializeBoundProfile(
+                    normalizeTableProfile(globalPreset.tableProfile)
                     || createTableProfile(tables, {
                         id: 'legacy-global-table-profile',
                         name: '全局表格档案',
                         templates: {
                             batchFillerRuleTemplate: globalPreset.batchFillerRuleTemplate,
                             batchFillerFlowTemplate: globalPreset.batchFillerFlowTemplate,
+                            injectionFlowTemplate: globalPreset.injectionFlowTemplate,
                         },
-                    });
-                persistChatTableState(context, tables, profile);
+                    }),
+                    tables,
+                    { source: 'global', forceSource: true },
+                );
+                persistChatTableState(
+                    context,
+                    tables,
+                    options.persistHistorical === true ? undefined : profile,
+                );
             }
             dispatchAllTablesUpdate();
             return getState();
@@ -385,11 +453,18 @@ export function loadTables(stopIndex = -1) {
     log('未找到任何表格数据或全局预设，使用默认模板。', 'info');
     const tables = _normalizeTableState(getDefaultTables());
     setState(tables);
-    if (stopIndex === -1) {
-        persistChatTableState(context, tables, createTableProfile(tables, {
+    if (stopIndex === -1 || options.persistHistorical === true) {
+        const defaultProfile = createTableProfile(tables, {
             id: 'builtin-default-table-profile',
             name: '内置默认表格档案',
-        }));
+            templates: getGlobalTableTemplateSnapshot(),
+            meta: { source: 'builtin' },
+        });
+        persistChatTableState(
+            context,
+            tables,
+            options.persistHistorical === true ? undefined : defaultProfile,
+        );
     }
     dispatchAllTablesUpdate();
     return getState();
@@ -436,66 +511,85 @@ export const getAiTemplate = _tplGetAiTemplate;
 
 // ── 文本指令应用（updateTableFromText） ───────────────────────────────────
 
+function prepareAppliedTableState(candidate, immediateDelete) {
+    if (!immediateDelete) {
+        return { state: validateTableState(candidate), affectedTableIndices: [] };
+    }
+    return applyPendingRecordDeletions(candidate);
+}
+
+function publishAppliedTableState(state, changes, extraAffectedTableIndices = []) {
+    setState(state);
+    changes.forEach(change => {
+        markTableUpdated(change.tableIndex);
+        if ((change.type === 'update' || change.type === 'insert')
+            && change.rowIndex !== undefined
+            && change.colIndex !== undefined) {
+            addHighlight(change.tableIndex, change.rowIndex, change.colIndex);
+        }
+    });
+
+    const affectedTables = new Set([
+        ...changes.map(change => change.tableIndex),
+        ...extraAffectedTableIndices,
+    ]);
+    affectedTables.forEach(tableIndex => dispatchTableUpdate(tableIndex));
+}
+
+async function persistAppliedTableState(state, options = {}) {
+    let persisted = false;
+    try {
+        persisted = typeof options.persistCandidate === 'function'
+            ? await options.persistCandidate(state)
+            : await commitToLastMessageAsync(state);
+    } catch (error) {
+        log(`表格候选状态持久化失败: ${error.message}`, 'error');
+    }
+    if (persisted) return true;
+    log('表格候选状态未能持久化，运行时状态保持不变。', 'error');
+    toastr.error('表格保存失败，本次变更未应用。', '填表失败');
+    return false;
+}
+
 export async function updateTableFromText(textContent, options = {}) {
     const settings = extension_settings[extensionName] || {};
     if (settings.table_system_enabled === false) {
         log('表格系统总开关已关闭，跳过 <Amily2Edit> 标签处理。', 'info');
-        return;
+        return false;
     }
 
     if (!textContent) {
         log('AI返回内容为空，无法更新表格。', 'warn');
-        return;
+        return false;
     }
 
     const { finalState, hasChanges, changes } = executeCommands(textContent, getState());
 
     if (!hasChanges) {
         log('AI指令未产生任何实质性变更。', 'info');
-        return;
+        return false;
     }
 
-    setState(finalState);
-
-    if (options.immediateDelete) {
-        commitPendingDeletions();
+    let prepared;
+    try {
+        prepared = prepareAppliedTableState(finalState, options.immediateDelete === true);
+    } catch (error) {
+        log(`AI 填表候选状态校验失败，整批回退: ${error.code || 'TABLE_VALIDATION_FAILED'} ${error.message}`, 'error');
+        toastr.error(`表格状态校验失败：${error.message}`, '填表失败');
+        return false;
     }
-
-    changes.forEach(change => {
-        markTableUpdated(change.tableIndex);
-        if (change.type === 'update' || change.type === 'insert') {
-            if (change.rowIndex !== undefined && change.colIndex !== undefined) {
-                addHighlight(change.tableIndex, change.rowIndex, change.colIndex);
-            }
-        }
-    });
-
-    log(`成功执行了 ${changes.length} 处变更。`, 'success');
-
-    const affectedTables = [...new Set(changes.map(c => c.tableIndex))];
-    affectedTables.forEach(tableIndex => dispatchTableUpdate(tableIndex));
 
     // 【skipPersist】分步填表（保留楼层场景）下，状态应由调用方保存到“被填楼层的最后一条”(E)，
     // 不能在此处统一写到最新楼 L——否则 L 上的快照会盖住 E 的，swipe 最新楼时回退掉本轮已填内容。
-    if (options.skipPersist) {
-        document.dispatchEvent(new CustomEvent('amily2-force-ui-reload'));
-        return;
+    if (!options.skipPersist && !await persistAppliedTableState(prepared.state, options)) {
+        return false;
     }
 
-    const context = getContext();
-    if (context.chat && context.chat.length > 0) {
-        const lastMessage = context.chat[context.chat.length - 1];
-        if (_persistSaveStateToMessage(getState(), lastMessage)) {
-            await saveChat();
-            toastr.success('已根据AI的指示成功更新表格！', '填表完成');
-            document.dispatchEvent(new CustomEvent('amily2-force-ui-reload'));
-            return;
-        }
-    }
-
-    saveChatDebounced();
-    toastr.success('已根据AI的指示成功更新表格！', '填表完成');
+    publishAppliedTableState(prepared.state, changes, prepared.affectedTableIndices);
+    log(`成功执行了 ${changes.length} 处变更。`, 'success');
+    if (!options.skipPersist) toastr.success('已根据AI的指示成功更新表格！', '填表完成');
     document.dispatchEvent(new CustomEvent('amily2-force-ui-reload'));
+    return true;
 }
 
 /**
@@ -507,60 +601,39 @@ export async function updateTableFromText(textContent, options = {}) {
  */
 export async function updateTableFromOps(ops, options = {}) {
     const settings = extension_settings[extensionName] || {};
-    if (settings.table_system_enabled === false) return;
+    if (settings.table_system_enabled === false) return false;
 
     if (!Array.isArray(ops) || ops.length === 0) {
         log('Function Call 返回操作列表为空，无需更新表格。', 'info');
-        return;
+        return false;
     }
 
     const { state, changes } = applyOperations(getState(), ops);
 
     if (changes.length === 0) {
         log('Function Call 操作未产生任何实质性变更。', 'info');
-        return;
+        return false;
     }
 
-    setState(state);
-
-    if (options.immediateDelete) {
-        commitPendingDeletions();
+    let prepared;
+    try {
+        prepared = prepareAppliedTableState(state, options.immediateDelete === true);
+    } catch (error) {
+        log(`Function Call 候选状态校验失败，整批回退: ${error.code || 'TABLE_VALIDATION_FAILED'} ${error.message}`, 'error');
+        toastr.error(`表格状态校验失败：${error.message}`, '填表失败');
+        return false;
     }
-
-    changes.forEach(change => {
-        markTableUpdated(change.tableIndex);
-        if (change.type === 'update' || change.type === 'insert') {
-            if (change.rowIndex !== undefined && change.colIndex !== undefined) {
-                addHighlight(change.tableIndex, change.rowIndex, change.colIndex);
-            }
-        }
-    });
-
-    log(`Function Call 成功执行了 ${changes.length} 处变更。`, 'success');
-
-    const affectedTables = [...new Set(changes.map(c => c.tableIndex))];
-    affectedTables.forEach(tableIndex => dispatchTableUpdate(tableIndex));
 
     // 【skipPersist】见 updateTableFromText 同名说明：分步填表由调用方存到 E，不在此写最新楼。
-    if (options.skipPersist) {
-        document.dispatchEvent(new CustomEvent('amily2-force-ui-reload'));
-        return;
+    if (!options.skipPersist && !await persistAppliedTableState(prepared.state, options)) {
+        return false;
     }
 
-    const context = getContext();
-    if (context.chat && context.chat.length > 0) {
-        const lastMessage = context.chat[context.chat.length - 1];
-        if (_persistSaveStateToMessage(getState(), lastMessage)) {
-            await saveChat();
-            toastr.success('已根据AI的指示成功更新表格！', '填表完成');
-            document.dispatchEvent(new CustomEvent('amily2-force-ui-reload'));
-            return;
-        }
-    }
-
-    saveChatDebounced();
-    toastr.success('已根据AI的指示成功更新表格！', '填表完成');
+    publishAppliedTableState(prepared.state, changes, prepared.affectedTableIndices);
+    log(`Function Call 成功执行了 ${changes.length} 处变更。`, 'success');
+    if (!options.skipPersist) toastr.success('已根据AI的指示成功更新表格！', '填表完成');
     document.dispatchEvent(new CustomEvent('amily2-force-ui-reload'));
+    return true;
 }
 
 // ── 预设（re-export 或 wrapper） ─────────────────────────────────────────
@@ -581,9 +654,9 @@ export function importPreset(onImportedOrHooks) {
         : (onImportedOrHooks || {});
 
     return _presetImportPreset({
-        onAfterApply: () => {
+        onAfterApply: async () => {
             dispatchAllTablesUpdate();
-            if (hooks.onAfterApply) hooks.onAfterApply();
+            if (hooks.onAfterApply) await hooks.onAfterApply();
         },
         onImported: hooks.onImported,
     });
@@ -601,7 +674,7 @@ export async function rollbackState() {
 
     const chat = context.chat;
     const lastMessageIndex = chat.length - 1;
-    const lastMessage = chat[lastMessageIndex];
+    const previousRuntimeState = Array.isArray(getState()) ? deepClone(getState()) : null;
 
     log(`正在尝试从第 ${lastMessageIndex - 1} 条消息加载表格状态...`, 'info');
     const previousState = loadTables(lastMessageIndex);
@@ -612,11 +685,11 @@ export async function rollbackState() {
         return false;
     }
 
-    setState(previousState);
-    if (_persistSaveStateToMessage(previousState, lastMessage)) {
-        await saveChat();
+    if (await commitToLastMessageAsync(previousState)) {
         log('已成功将回退后的状态保存至最新消息。', 'success');
     } else {
+        setState(previousRuntimeState);
+        dispatchAllTablesUpdate();
         log('回退状态保存失败，操作中止。', 'error');
         toastr.error('未能保存回退状态，操作中止。');
         return false;
@@ -711,19 +784,59 @@ export async function restoreToSnapshot(floorIndex) {
         return false;
     }
 
-    const restored = _normalizeTableState(JSON.parse(JSON.stringify(snap)));
-    setState(restored);
+    let restored;
+    try {
+        restored = validateTableState(
+            _normalizeTableState(JSON.parse(JSON.stringify(snap))),
+        );
+    } catch (error) {
+        log(`快照恢复失败：${error.message}`, 'error');
+        toastr.error(`快照已损坏，无法恢复：${error.message}`);
+        return false;
+    }
+    const futureBackups = context.chat.slice(floorIndex + 1).map(message => ({
+        message,
+        hadExtra: Boolean(message.extra),
+        hadSnapshot: Boolean(message.extra
+            && Object.prototype.hasOwnProperty.call(message.extra, TABLE_DATA_KEY)),
+        snapshot: message.extra?.[TABLE_DATA_KEY] === undefined
+            ? undefined
+            : deepClone(message.extra[TABLE_DATA_KEY]),
+        hadHash: Boolean(message.extra
+            && Object.prototype.hasOwnProperty.call(message.extra, PROCESS_HASH_KEY)),
+        hash: message.extra?.[PROCESS_HASH_KEY],
+    }));
+    const clearedSnap = futureBackups.filter(backup => backup.hadSnapshot).length;
+    const clearFutureSnapshots = () => {
+        futureBackups.forEach(({ message }) => {
+            if (!message.extra) return;
+            delete message.extra[TABLE_DATA_KEY];
+            delete message.extra[PROCESS_HASH_KEY];
+        });
+    };
+    const restoreFutureSnapshots = () => {
+        futureBackups.forEach(backup => {
+            if (!backup.message.extra && (backup.hadSnapshot || backup.hadHash)) backup.message.extra = {};
+            if (!backup.message.extra) return;
+            if (backup.hadSnapshot) backup.message.extra[TABLE_DATA_KEY] = backup.snapshot;
+            else delete backup.message.extra[TABLE_DATA_KEY];
+            if (backup.hadHash) backup.message.extra[PROCESS_HASH_KEY] = backup.hash;
+            else delete backup.message.extra[PROCESS_HASH_KEY];
+            if (!backup.hadExtra && Object.keys(backup.message.extra).length === 0) delete backup.message.extra;
+        });
+    };
 
-    // 从 floorIndex+1 起，清掉所有更新楼层的快照与 hash
-    let clearedSnap = 0;
-    for (let i = floorIndex + 1; i < context.chat.length; i++) {
-        const e = context.chat[i].extra;
-        if (!e) continue;
-        if (e[TABLE_DATA_KEY] !== undefined) { delete e[TABLE_DATA_KEY]; clearedSnap++; }
-        if (e[PROCESS_HASH_KEY] !== undefined) delete e[PROCESS_HASH_KEY];
+    const committed = await commitToMessageAsync(restored, context.chat[floorIndex], undefined, {
+        beforeSave: clearFutureSnapshots,
+        rollback: restoreFutureSnapshots,
+    });
+    if (!committed) {
+        log('快照恢复失败：持久化事务已回退。', 'error');
+        toastr.error('无法保存恢复结果，聊天与表格状态均保持不变。');
+        return false;
     }
 
-    await saveChat();
+    setState(restored);
     dispatchAllTablesUpdate();
     renderTables();
     updateOrInsertTableInChat();

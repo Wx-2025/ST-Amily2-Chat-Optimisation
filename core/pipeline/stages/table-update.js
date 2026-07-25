@@ -2,7 +2,8 @@
  * Pipeline Stage 3 — TableUpdate
  * 主 API 填表 + 分步 API 填表（各自内部自带模式判断，互不干扰）。
  */
-import { processMessageUpdate, fillWithSecondaryApi } from '../../table-system/TableSystemService.js';
+import { processMessageUpdate } from '../../table-system/TableSystemService.js';
+import { fillWithSecondaryApi } from '../../table-system/secondary-filler.js';
 
 export async function tableUpdateStage(ctx, next) {
     const { messageId, latestMessage } = ctx;

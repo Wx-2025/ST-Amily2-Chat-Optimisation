@@ -3,6 +3,7 @@ import { extension_settings, getContext } from '../../../../../extensions.js';
 import { saveSettingsDebounced, saveChat, reloadCurrentChat, eventSource, event_types } from '../../../../../../script.js';
 import { registerSlashCommand } from '../../../../../slash-commands.js';
 import { extensionName } from '../../utils/settings.js';
+import { clearSecretInput, markSecretInputStored, readSecretInputUpdate } from '../../ui/secret-input.js';
 const sfigenSettingsKey = 'sfigen_settings';
 
 const defaultSettings = {
@@ -71,11 +72,20 @@ export default class SfiGenModule extends Module {
     _bindUI() {
         const $el = $(this.el);
 
-        // Bind inputs
-        $el.find('#sfigen_api_key').val(this.settings.api_key).on('input', (e) => {
-            this.settings.api_key = $(e.target).val();
-            this._saveSettings();
-        });
+        // Bind inputs. Saved credentials are never copied back into the DOM.
+        const $apiKeyInput = $el.find('#sfigen_api_key');
+        clearSecretInput($apiKeyInput, Boolean(this.settings.api_key));
+        $apiKeyInput
+            .on('change', (event) => {
+                const update = readSecretInputUpdate(event.currentTarget);
+                if (!update.changed) return;
+                this.settings.api_key = update.value;
+                this._saveSettings();
+                markSecretInputStored(event.currentTarget, Boolean(update.value));
+            })
+            .on('blur', (event) => {
+                markSecretInputStored(event.currentTarget, Boolean(this.settings.api_key));
+            });
         $el.find('#sfigen_model').val(this.settings.model).on('input', (e) => {
             this.settings.model = $(e.target).val();
             this._saveSettings();

@@ -7,6 +7,18 @@ import { extensionName } from '../../utils/settings.js';
 const GIT_REPO_NAME = 'ST-Amily2-Chat-Optimisation';
 const EXTENSION_NAME = extensionName;
 const EXTENSION_FOLDER_PATH = `scripts/extensions/third-party/${EXTENSION_NAME}`;
+const UPDATE_REVIEW_URL = `https://github.com/${GIT_REPO_OWNER}/${GIT_REPO_NAME}/commits/main`;
+
+function asPlainTextPopupContent(content) {
+    const escaped = String(content ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+    })[character]);
+    return `<pre style="white-space: pre-wrap; word-break: break-word;">${escaped}</pre>`;
+}
 
 let currentVersion = '0.0.0';
 let latestVersion = '0.0.0';
@@ -23,7 +35,8 @@ async function fetchRawFileFromGitHub(filePath) {
 
 function parseVersion(content) {
     try {
-        return JSON.parse(content).version || '0.0.0';
+        const version = String(JSON.parse(content).version ?? '');
+        return /^\d+\.\d+\.\d+$/.test(version) ? version : '0.0.0';
     } catch (error) {
         console.error(`[cwb_updater] Failed to parse version:`, error);
         return '0.0.0';
@@ -42,26 +55,13 @@ function compareVersions(v1, v2) {
     return 0;
 }
 
-async function performUpdate() {
-    const { getRequestHeaders } = SillyTavern.getContext().common;
-    const { extension_types } = SillyTavern.getContext().extensions;
-    showToastr('info', '正在开始更新主扩展...');
-    try {
-        const response = await fetch('/api/extensions/update', {
-            method: 'POST',
-            headers: getRequestHeaders(),
-            body: JSON.stringify({
-                extensionName: EXTENSION_NAME,
-                global: extension_types[EXTENSION_NAME] === 'global',
-            }),
-        });
-        if (!response.ok) throw new Error(await response.text());
-
-        showToastr('success', '更新成功！将在3秒后刷新页面应用更改。');
-        setTimeout(() => location.reload(), 3000);
-    } catch (error) {
-        showToastr('error', `更新失败: ${error.message}`);
-    }
+function openUpdateReviewPage() {
+    const link = document.createElement('a');
+    link.href = UPDATE_REVIEW_URL;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.click();
+    showToastr('info', '已打开提交记录；请核对发布内容后通过 SillyTavern 扩展管理器手动更新。');
 }
 
 async function showUpdateConfirmDialog() {
@@ -69,17 +69,17 @@ async function showUpdateConfirmDialog() {
     try {
         changelogContent = await fetchRawFileFromGitHub('CHANGELOG.md');
     } catch (error) {
-        changelogContent = `发现新版本 ${latestVersion}！您想现在更新吗？`;
+        changelogContent = `发现新版本 ${latestVersion}！请先核对提交记录，再通过 SillyTavern 扩展管理器手动更新。`;
     }
     if (
-        await callGenericPopup(changelogContent, POPUP_TYPE.CONFIRM, {
-            okButton: '立即更新',
+        await callGenericPopup(asPlainTextPopupContent(changelogContent), POPUP_TYPE.CONFIRM, {
+            okButton: '查看提交记录',
             cancelButton: '稍后',
             wide: true,
             large: true,
         })
     ) {
-        await performUpdate();
+        openUpdateReviewPage();
     }
 }
 
@@ -102,10 +102,12 @@ export async function checkForUpdates(isManual = false, $panel) {
         if (compareVersions(latestVersion, currentVersion) > 0) {
             $updateIndicator.show();
             $updateButton
-                .html(`<i class="fa-solid fa-gift"></i> 发现新版 ${latestVersion}!`)
+                .empty()
+                .append($('<i>').addClass('fa-solid fa-gift'))
+                .append(document.createTextNode(` 发现新版 ${latestVersion}!`))
                 .off('click')
                 .on('click', () => showUpdateConfirmDialog());
-            if (isManual) showToastr('success', `发现新版本 ${latestVersion}！点击按钮进行更新。`);
+            if (isManual) showToastr('success', `发现新版本 ${latestVersion}！请先查看提交记录，再手动更新。`);
         } else {
             $updateIndicator.hide();
             if (isManual) showToastr('info', '您当前已是最新版本。');

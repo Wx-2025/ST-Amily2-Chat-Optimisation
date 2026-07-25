@@ -1,6 +1,8 @@
 
 'use strict';
 
+import { isActiveChatContext, shouldReportMissingCharacterId } from './chat-context-state.js';
+
 const migrationNoticeShown = new Set();
 
 export function getCharacterId() {
@@ -12,7 +14,9 @@ export function getCharacterId() {
         const lastMessage = context.chat[context.chat.length - 1];
         if (lastMessage && lastMessage.character_id !== undefined) return lastMessage.character_id;
     }
-    console.error('[翰林院-典籍库] 无法稳定获取当前角色ID。');
+    if (shouldReportMissingCharacterId(context)) {
+        console.warn('[翰林院-典籍库] 已进入聊天，但无法稳定获取当前角色ID。');
+    }
     return null;
 }
 
@@ -20,13 +24,19 @@ export function getCharacterId() {
 export function getChatId() {
     const context = SillyTavern.getContext();
     if (!context) return null;
-    if (typeof context.getCurrentChatId === 'function') return context.getCurrentChatId();
+    if (typeof context.getCurrentChatId === 'function') {
+        const currentChatId = context.getCurrentChatId();
+        if (currentChatId) return currentChatId;
+    }
     if (context.chatId) return context.chatId;
     const charId = getCharacterId();
     if (charId !== null && context.characters && context.characters[charId]) {
-        return context.characters[charId].chat;
+        const characterChat = context.characters[charId].chat;
+        if (characterChat) return characterChat;
     }
-    console.error('[翰林院-典籍库] 无法稳定获取当前聊天ID。');
+    if (isActiveChatContext(context)) {
+        console.warn('[翰林院-典籍库] 已进入聊天，但无法稳定获取当前聊天ID。');
+    }
     return null;
 }
 

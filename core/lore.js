@@ -3,6 +3,7 @@ import { characters, eventSource, event_types } from "/script.js";
 import { loadWorldInfo, createNewWorldInfo, createWorldInfoEntry, saveWorldInfo, world_names, updateWorldInfoList } from "/scripts/world-info.js";
 import { compatibleWriteToLorebook, safeLorebooks, safeCharLorebooks, safeLorebookEntries } from "./tavernhelper-compatibility.js";
 import { extensionName } from "../utils/settings.js";
+import { isActiveChatContext } from "./utils/chat-context-state.js";
 
 
 document.addEventListener('amily-lorebook-created', (event) => {
@@ -23,10 +24,17 @@ export async function getChatIdentifier() {
   const maxAttempts = 50;
   const interval = 100;
 
+  if (!isActiveChatContext(getContext())) {
+    return "unknown_chat_inactive";
+  }
+
   while (attempts < maxAttempts) {
     try {
       const context = getContext();
-      if (context && context.characterId) {
+      if (!isActiveChatContext(context)) {
+        return "unknown_chat_inactive";
+      }
+      if (context && context.characterId !== undefined && context.characterId !== null) {
         const character = characters[context.characterId];
         if (character && character.avatar) {
           return `char-${character.avatar.replace(/\.(png|webp|jpg|jpeg|gif)$/, "")}`;
@@ -38,20 +46,24 @@ export async function getChatIdentifier() {
         return fileName.replace(/\.jsonl?$/, "");
       }
     } catch (error) {
-      console.warn(
-        `[Amily2-户籍管理处] 等待上下文时发生轻微错误 (尝试次数 ${attempts + 1}):`,
-        error.message,
-      );
+      if (isActiveChatContext(getContext())) {
+        console.warn(
+          `[Amily2-户籍管理处] 等待上下文时发生轻微错误 (尝试次数 ${attempts + 1}):`,
+          error.message,
+        );
+      }
     }
     await new Promise((resolve) => setTimeout(resolve, interval));
     attempts++;
   }
 
-  console.error("[Amily2-国史馆] 户籍管理处在长时间等待后，仍无法确定户籍。");
-  toastr.warning(
-    "Amily2号无法确定当前聊天身份，世界书功能将受影响。",
-    "上下文错误",
-  );
+  if (isActiveChatContext(getContext())) {
+    console.error("[Amily2-国史馆] 已进入聊天，但户籍管理处仍无法确定户籍。");
+    toastr.warning(
+      "Amily2号无法确定当前聊天身份，世界书功能将受影响。",
+      "上下文错误",
+    );
+  }
   return "unknown_chat_timeout";
 }
 

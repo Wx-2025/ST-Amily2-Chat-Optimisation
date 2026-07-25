@@ -19,34 +19,32 @@
  * （loadTables / msg.extra.amily2_tables_data）唯一负责。
  */
 
+import { registerInternalBusPlugin } from '../../SL/bus/Amily2Bus.js';
+
 import {
     initializeSuperMemory,
     forceSyncAll,
     awaitSync,
     purgeSuperMemory,
-    pushUpdate,
 } from './manager.js';
 
 // ── Bus 注册 ──────────────────────────────────────────────────────────────
-setTimeout(() => {
+(() => {
     try {
-        const _ctx = window.Amily2Bus?.register('SuperMemory');
+        const _ctx = registerInternalBusPlugin('SuperMemory');
         if (!_ctx) {
             console.warn('[SuperMemory] Amily2Bus 尚未就绪，服务注册跳过。');
             return;
         }
         _ctx.expose({
-            initialize:   ()        => initializeSuperMemory(),
-            forceSyncAll: ()        => forceSyncAll(),
-            awaitSync:    ()        => awaitSync(),
-            purge:        ()        => purgeSuperMemory(),
-            pushUpdate:   (payload) => pushUpdate(payload),
+            getStatus: () => Object.freeze({ ready: true }),
+            awaitSync: () => awaitSync(),
         });
         _ctx.log('SuperMemoryService', 'info', 'SuperMemory 服务已注册到 Bus。');
     } catch (e) {
         console.error('[SuperMemory] Bus 注册失败:', e);
     }
-}, 0);
+})();
 
 // ── 向后兼容具名导出 ──────────────────────────────────────────────────────
 export {
@@ -54,5 +52,4 @@ export {
     forceSyncAll,
     awaitSync,
     purgeSuperMemory,
-    pushUpdate,
 };

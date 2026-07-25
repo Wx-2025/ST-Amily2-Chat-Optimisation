@@ -17,6 +17,7 @@ import { SENSITIVE_KEYS } from '../utils/config/sensitive-keys.js';
 import { showHtmlModal } from './page-window.js';
 import { escapeHTML } from '../utils/utils.js';
 import { SLOTS } from '../utils/config/ApiProfileManager.js';
+import { clearSecretInput, markSecretInputStored, readSecretInputUpdate } from './secret-input.js';
 import {
     listCustomBlocks,
     getCustomBlock,
@@ -655,10 +656,11 @@ function bindConcurrentApiEvents() {
     fields.forEach(field => {
         const element = document.getElementById(field.id);
         if (element) {
-            // 敏感字段（API Key）从 configManager（localStorage）读取
-            element.value = field.sensitive
-                ? (configManager.get(field.key) || '')
-                : (settings[field.key] || '');
+            if (field.sensitive) {
+                clearSecretInput(element, configManager.has(field.key));
+            } else {
+                element.value = settings[field.key] || '';
+            }
         }
     });
 
@@ -738,7 +740,9 @@ function bindConcurrentApiEvents() {
         if (element) {
             const saveField = function() {
                 if (field.sensitive) {
-                    configManager.set(field.key, this.value);
+                    const update = readSecretInputUpdate(this);
+                    if (!update.changed) return;
+                    configManager.set(field.key, update.value);
                 } else {
                     if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
                     extension_settings[extensionName][field.key] = this.value;
@@ -752,6 +756,9 @@ function bindConcurrentApiEvents() {
                 }
             };
             bindInputLikeSave(element, saveField);
+            if (field.sensitive) {
+                element.addEventListener('blur', () => markSecretInputStored(element, configManager.has(field.key)));
+            }
         }
     });
 

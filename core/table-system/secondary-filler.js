@@ -1,10 +1,10 @@
 import { getContext, extension_settings } from "/scripts/extensions.js";
 import { loadWorldInfo } from "/scripts/world-info.js";
-import { saveChat } from "/script.js";
 import { renderTables } from '../../ui/table-bindings.js';
 import { updateOrInsertTableInChat } from '../../ui/message-table-renderer.js';
 import { extensionName } from "../../utils/settings.js";
-import { updateTableFromText, updateTableFromOps, getBatchFillerRuleTemplate, getBatchFillerFlowTemplate, convertTablesToCsvString, saveStateToMessage, getMemoryState, clearHighlights } from './manager.js';
+import { updateTableFromText, updateTableFromOps, getBatchFillerRuleTemplate, getBatchFillerFlowTemplate, convertTablesToCsvString, getMemoryState, clearHighlights } from './manager.js';
+import { commitToMessageAsync } from './infra/persistence.js';
 import { getPresetPrompts, getMixedOrder } from '../../PresetSettings/index.js';
 import { callAI, callAIForTools, generateRandomSeed } from '../api.js';
 import { TABLE_FILL_TOOL, parseToolCallArgs } from './formatters/tool-call.js';
@@ -40,32 +40,54 @@ async function requestSecondaryContinuation(baseMessages, partialResponse) {
     return `${partialResponse || ''}${continued}`;
 }
 
-async function markTargetsProcessed(targetMessages, { skipTableSave = false } = {}) {
-    if (!targetMessages || targetMessages.length === 0) return;
+async function markTargetsProcessed(targetMessages, { state = getMemoryState() } = {}) {
+    if (!targetMessages || targetMessages.length === 0) return false;
 
     const lastProcessedMsg = targetMessages[targetMessages.length - 1].msg;
+    const hashBackups = targetMessages.map(target => ({
+        message: target.msg,
+        hadExtra: Boolean(target.msg.extra),
+        hadHash: Boolean(target.msg.extra
+            && Object.prototype.hasOwnProperty.call(target.msg.extra, 'amily2_process_hash')),
+        hash: target.msg.extra?.amily2_process_hash,
+    }));
 
-    for (const target of targetMessages) {
-        if (!target.msg.extra) target.msg.extra = {};
-        target.msg.extra.amily2_process_hash = target.hash;
-    }
+    const restoreHashes = () => {
+        hashBackups.forEach(backup => {
+            if (!backup.message.extra) return;
+            if (backup.hadHash) backup.message.extra.amily2_process_hash = backup.hash;
+            else delete backup.message.extra.amily2_process_hash;
+            if (!backup.hadExtra && Object.keys(backup.message.extra).length === 0) {
+                delete backup.message.extra;
+            }
+        });
+    };
 
-    if (!skipTableSave) {
-        const memoryState = getMemoryState();
-        if (saveStateToMessage(memoryState, lastProcessedMsg)) {
-            renderTables();
-            updateOrInsertTableInChat();
+    const applyHashes = () => {
+        for (const target of targetMessages) {
+            if (!target.msg.extra) target.msg.extra = {};
+            target.msg.extra.amily2_process_hash = target.hash;
         }
-    }
+    };
 
-    await saveChat();
+    const committed = await commitToMessageAsync(state, lastProcessedMsg, undefined, {
+        beforeSave: applyHashes,
+        rollback: restoreHashes,
+    });
+    if (!committed) {
+        throw new Error('无法原子保存分步填表状态与目标楼层标记。');
+    }
+    return true;
 }
 
 async function commitSecondaryFillResult(rawContent, targetMessages) {
-    // skipPersist：不让 updateTableFromText 把状态写到最新楼 L，改由 markTargetsProcessed
-    // 存到 lastProcessedMsg(E)——否则保留楼层场景下 swipe 最新楼会回退掉本轮已填内容。
-    await updateTableFromText(rawContent, { skipPersist: true });
-    await markTargetsProcessed(targetMessages);
+    // 候选状态与处理 hash 在同一补偿事务里存到 lastProcessedMsg(E)，成功后才发布 store。
+    const applied = await updateTableFromText(rawContent, {
+        persistCandidate: state => markTargetsProcessed(targetMessages, { state }),
+    });
+    if (!applied) throw new Error('分步填表结果未通过校验，未标记目标楼层为已处理。');
+    renderTables();
+    updateOrInsertTableInChat();
 }
 
 
@@ -392,11 +414,14 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
                 }
                 console.warn(`[Amily2-副API] Function Call 返回操作列表为空${parseHint}，原始响应：\n${argsString}`);
                 toastr.info('AI 判断此范围无需修改。', 'Amily2-分步填表');
-                await markTargetsProcessed(targetMessages, { skipTableSave: true });
-            } else {
-                // skipPersist：状态由 markTargetsProcessed 存到 E，不写最新楼（同文本路径）
-                await updateTableFromOps(ops, { skipPersist: true });
                 await markTargetsProcessed(targetMessages);
+            } else {
+                const applied = await updateTableFromOps(ops, {
+                    persistCandidate: state => markTargetsProcessed(targetMessages, { state }),
+                });
+                if (!applied) throw new Error('Function Call 填表结果未通过校验，未标记目标楼层为已处理。');
+                renderTables();
+                updateOrInsertTableInChat();
                 toastr.success('分步填表（Function Call）执行完毕。', 'Amily2-分步填表');
             }
         } else {

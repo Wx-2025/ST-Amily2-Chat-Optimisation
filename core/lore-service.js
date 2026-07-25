@@ -12,6 +12,8 @@
  *  - core/lore.js                          → （Phase 2.3 后迁入）
  */
 
+import { registerInternalBusPlugin } from '../SL/bus/Amily2Bus.js';
+
 import {
     loadWorldInfo,
     createNewWorldInfo,
@@ -87,17 +89,17 @@ export async function saveBook(bookName, bookData, silent = true) {
 
 // ── Bus 注册 ──────────────────────────────────────────────────────────────────
 // Bus 注册名：'LoreService'
-// 公开接口：withLoreLock, loadBook, ensureBook, saveBook
-setTimeout(() => {
+// 公共 Bus 仅发布状态；世界书读写由 Amily 内部模块直接导入。
+(() => {
     try {
-        const _ctx = window.Amily2Bus?.register('LoreService');
+        const _ctx = registerInternalBusPlugin('LoreService');
         if (!_ctx) {
             console.warn('[LoreService] Amily2Bus 尚未就绪，服务注册跳过。');
             return;
         }
-        _ctx.expose({ withLoreLock, loadBook, ensureBook, saveBook });
+        _ctx.expose({ getStatus: () => Object.freeze({ ready: true }) });
         _ctx.log('LoreService', 'info', 'LoreService 已注册到 Bus。');
     } catch (e) {
         console.error('[LoreService] Bus 注册失败:', e);
     }
-}, 0);
+})();

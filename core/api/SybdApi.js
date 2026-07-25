@@ -5,6 +5,7 @@ import { amilyHelper } from '../../core/tavern-helper/main.js';
 import { getSlotProfile, providerToApiMode } from './api-resolver.js';
 import { configManager } from '../../utils/config/ConfigManager.js';
 import { detectVendor } from '../../utils/api-vendor.js';
+import { mergeSafeModelCallOptions } from './safe-call-options.js';
 
 let ChatCompletionService = undefined;
 try {
@@ -45,7 +46,7 @@ function normalizeApiResponse(responseData) {
     return data;
 }
 
-export async function getSybdApiSettings() {
+async function getSybdApiSettings() {
     const s = extension_settings[extensionName] || {};
 
     // 优先读取 'sybd' 槽位分配的 Profile（profile 一旦分配即权威，slider 残值不再覆盖）
@@ -84,7 +85,7 @@ export async function callSybdAI(messages, options = {}) {
 
     const apiSettings = await getSybdApiSettings();
 
-    const finalOptions = {
+    const finalOptions = mergeSafeModelCallOptions({
         maxTokens: apiSettings.maxTokens,
         temperature: apiSettings.temperature,
         model: apiSettings.model,
@@ -92,8 +93,8 @@ export async function callSybdAI(messages, options = {}) {
         apiKey: apiSettings.apiKey,
         apiMode: apiSettings.apiMode,
         tavernProfile: apiSettings.tavernProfile,
-        ...options
-    };
+        customParams: apiSettings.customParams ?? {},
+    }, options);
 
     if (finalOptions.apiMode !== 'sillytavern_preset') {
         if (!finalOptions.apiUrl || !finalOptions.model || !finalOptions.apiKey) {

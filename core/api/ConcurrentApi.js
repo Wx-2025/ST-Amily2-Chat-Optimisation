@@ -4,6 +4,7 @@ import { extensionName } from "../../utils/settings.js";
 import { getSlotProfile, providerToApiMode } from './api-resolver.js';
 import { configManager } from '../../utils/config/ConfigManager.js';
 import { detectVendor } from '../../utils/api-vendor.js';
+import { mergeSafeModelCallOptions } from './safe-call-options.js';
 
 async function getConcurrentApiSettings() {
     const s = extension_settings[extensionName] || {};
@@ -40,10 +41,7 @@ export async function callConcurrentAI(messages, options = {}) {
 
     const apiSettings = await getConcurrentApiSettings();
 
-    const finalOptions = {
-        ...apiSettings,
-        ...options
-    };
+    const finalOptions = mergeSafeModelCallOptions(apiSettings, options);
 
     if (!finalOptions.apiUrl || !finalOptions.model || !finalOptions.apiKey) {
         console.warn("[Amily2-Concurrent外交部] API配置不完整，无法调用AI");

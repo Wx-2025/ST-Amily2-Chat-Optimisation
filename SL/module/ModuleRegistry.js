@@ -4,7 +4,7 @@
  * 职责：
  *   1. 收集所有 Module 子类的注册信息（name → factory）
  *   2. 统一执行 init → mount 生命周期
- *   3. 向 Amily2Bus 暴露各模块的 expose() 结果，供跨模块调用
+ *   3. 通过 registry.query() 提供显式的模块内查询
  *   4. 提供 dispose 方法用于整体卸载
  *
  * 用法：
@@ -47,9 +47,6 @@ export async function mountAll(ctx = {}) {
             await mod.mount();
             _modules.set(name, mod);
 
-            // 向 Bus 暴露模块公开 API
-            _exposeToBus(name, mod);
-
             console.log(`[ModuleRegistry] ✔ ${name}`);
         } catch (e) {
             console.error(`[ModuleRegistry] ✘ ${name} 挂载失败:`, e);
@@ -72,7 +69,6 @@ export async function mountOne(name, ctx = {}) {
     await mod.init(ctx);
     await mod.mount();
     _modules.set(name, mod);
-    _exposeToBus(name, mod);
     return mod;
 }
 
@@ -110,25 +106,6 @@ export function disposeAll() {
  */
 export function names() {
     return [..._factories.keys()];
-}
-
-// ── 内部 ──────────────────────────────────────────────
-
-function _exposeToBus(name, mod) {
-    try {
-        const bus = window.Amily2Bus;
-        if (!bus) return;
-        const exposed = mod.expose();
-        if (exposed && Object.keys(exposed).length > 0) {
-            const _ctx = bus.register(`Module:${name}`);
-            if (_ctx) {
-                _ctx.expose(exposed);
-                _ctx.log(`Module:${name}`, 'info', `模块 ${name} 已注册到 Bus。`);
-            }
-        }
-    } catch (e) {
-        // Bus 未就绪或注册冲突，静默忽略
-    }
 }
 
 export const registry = {

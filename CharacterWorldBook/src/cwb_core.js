@@ -11,6 +11,7 @@ import { getChatIdentifier } from '../../core/lore.js';
 import { safeLorebookEntries } from '../../core/tavernhelper-compatibility.js';
 import { amilyHelper } from '../../core/tavern-helper/main.js';
 import { resolveHistoriographyRuleConfig } from '../../utils/config/RuleProfileManager.js';
+import { isActiveChatContext } from '../../core/utils/chat-context-state.js';
 
 const { SillyTavern, jQuery, characters } = window;
 
@@ -404,8 +405,15 @@ export async function getLatestChatName() {
     const maxAttempts = 50;
     const interval = 100;
 
+    if (!isActiveChatContext(getContext())) {
+        return 'unknown_chat_inactive';
+    }
+
     while (attempts < maxAttempts) {
         const context = getContext();
+        if (!isActiveChatContext(context)) {
+            return 'unknown_chat_inactive';
+        }
         if (context && context.chatId) {
             return context.chatId;
         }
@@ -413,7 +421,9 @@ export async function getLatestChatName() {
         attempts++;
     }
 
-    logError("[CWB] 长时间等待后，仍无法确定聊天ID。");
+    if (isActiveChatContext(getContext())) {
+        logError('[CWB] 已进入聊天，但长时间等待后仍无法确定聊天ID。');
+    }
     return "unknown_chat_timeout";
 }
 

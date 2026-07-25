@@ -1,8 +1,8 @@
 /**
  * SL/bus/tool/ToolRegistry.js — Bus 工具注册表（Phase A）
  *
- * 让任何通过 Amily2Bus.register(pluginName) 注册的插件定义自己的 function-call 工具集，
- * 供 context.model.callWithTools 在 agent loop 中自动拼装、dispatch。
+ * 历史 Phase A 的 function-call 工具集合实现。当前不再接入全局 Amily2Bus；
+ * 若后续复用，只能由内部受控模型任务代理持有并执行。
  *
  * 设计约束：
  *   - 完全 per-plugin 私有：Map<pluginName, Map<toolName, { def, handler }>>。

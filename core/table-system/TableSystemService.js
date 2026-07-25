@@ -9,19 +9,14 @@
  *
  * Bus 注册名：'TableSystem'
  *
- * 公开接口（query('TableSystem')）：
- *   processMessageUpdate(messageId)  — 处理 AI 消息的表格更新流程
- *   fillWithSecondaryApi(msg)        — 二次 API 填表
- *   injectTableData(...)             — 向提示词注入表格数据
- *   generateTableContent()           — 生成表格注入内容字符串
- *   getMemoryState()                 — 读取当前表格内存状态
- *   queryRecords(tableId, query)     — 受限只读单表查询
- *   renderTables()                   — 强制重渲染表格 UI
+ * 公共只读接口（query('TableSystem')）：表快照、列表与受限查询。
+ * 模块写接口（callService('TableSystem', ...)）：固定表注册、确保存在、
+ * owner 绑定的记录增删改。消息处理与注入只保留内部具名导出。
  */
 
 import { getContext, extension_settings } from "/scripts/extensions.js";
-import { saveChatConditional } from "/script.js";
 import { extensionName } from "../../utils/settings.js";
+import { registerInternalBusPlugin } from '../../SL/bus/Amily2Bus.js';
 
 // ── table-system 内部模块 ─────────────────────────────────────────────────
 import * as TableManager from './manager.js';
@@ -31,7 +26,6 @@ import { log } from './logger.js';
 
 // 可修改子模块
 import { generateTableContent, injectTableData } from './injector.js';
-import { fillWithSecondaryApi } from './secondary-filler.js';
 
 // UI 层
 import { renderTables } from '../../ui/table-bindings.js';
@@ -42,7 +36,13 @@ import {
     queryTableRecords,
     registerTableDefinition,
 } from './module-tables.js';
-import { persistChatTableStateAsync } from './infra/database-state.js';
+import { commitToLastMessageAsync, commitToMessageAsync } from './infra/persistence.js';
+import { createSerialTransactionQueue } from './infra/serial-transaction-queue.js';
+
+// Module CRUD is a read-modify-persist-publish transaction.  Combat and other
+// consumers legitimately issue Promise.all() calls, so commits must be
+// serialized across the whole critical section to avoid lost updates.
+const serializeModuleMutation = createSerialTransactionQueue();
 
 // ── 核心逻辑 ─────────────────────────────────────────────────────────────
 
@@ -89,12 +89,13 @@ async function processMessageUpdate(messageId) {
     log(`【表格服务-步骤2】推演完毕。是否有变化: ${hasChanges}`, 'info', finalState);
 
     if (hasChanges) {
+        if (!await commitToMessageAsync(finalState, message)) {
+            throw new Error('表格状态持久化失败，已取消本次填表提交。');
+        }
         changes.forEach(change => {
             TableManager.addHighlight(change.tableIndex, change.rowIndex, change.colIndex);
         });
-        TableManager.saveStateToMessage(finalState, message);
         TableManager.setMemoryState(finalState);
-        await saveChatConditional();
         log('【表格服务-步骤3】状态已写入并保存。', 'success');
         // 变更完成后主动触发同步，确保 SuperMemory 拿到最新状态（而非 loadTables 时的旧状态）
         triggerSync();
@@ -109,19 +110,23 @@ async function registerModuleTable({ caller }, definition) {
 }
 
 async function ensureModuleTable({ caller }, tableId) {
-    const currentState = TableManager.getMemoryState() || TableManager.loadTables();
-    const result = ensureRegisteredTable(caller, tableId, currentState);
-    if (result.created) {
-        await commitModuleState(result.state);
-    }
-    return result.table;
+    return serializeModuleMutation(async () => {
+        const currentState = TableManager.getMemoryState() || TableManager.loadTables();
+        const result = ensureRegisteredTable(caller, tableId, currentState);
+        if (result.created) {
+            await commitModuleState(result.state);
+        }
+        return result.table;
+    });
 }
 
 async function mutateModuleRecord({ caller }, request) {
-    const currentState = TableManager.getMemoryState() || TableManager.loadTables();
-    const result = mutateOwnedRecord(caller, request, currentState);
-    await commitModuleState(result.state);
-    return result.result;
+    return serializeModuleMutation(async () => {
+        const currentState = TableManager.getMemoryState() || TableManager.loadTables();
+        const result = mutateOwnedRecord(caller, request, currentState);
+        await commitModuleState(result.state);
+        return result.result;
+    });
 }
 
 function queryModuleRecords(tableId, request) {
@@ -130,25 +135,27 @@ function queryModuleRecords(tableId, request) {
 }
 
 async function commitModuleState(state) {
-    TableManager.setMemoryState(state);
-    const context = getContext();
-    const latestMessage = context.chat?.at(-1);
-    if (latestMessage) {
-        TableManager.saveStateToMessage(state, latestMessage);
-        await saveChatConditional();
-    } else {
-        await persistChatTableStateAsync(context, state);
+    if (!await commitToLastMessageAsync(state)) {
+        throw new Error('Module table state could not be persisted atomically.');
     }
-    triggerSync();
-    renderTables();
+    TableManager.setMemoryState(state);
+    try {
+        triggerSync();
+    } catch (error) {
+        log(`模块表已提交，但同步通知失败: ${error.message}`, 'error');
+    }
+    try {
+        renderTables();
+    } catch (error) {
+        log(`模块表已提交，但界面刷新失败: ${error.message}`, 'error');
+    }
 }
 
 // ── Bus 注册 ──────────────────────────────────────────────────────────────
-// 使用 setTimeout 延迟到同步模块初始化完成后再注册，
-// 确保 window.Amily2Bus 已由 SL/bus/Amily2Bus.js 完成挂载。
-setTimeout(() => {
+// 核心身份必须在 Bus bootstrap 窗口内同步认领；handler 运行时再读取表状态。
+(() => {
     try {
-        const _ctx = window.Amily2Bus?.register('TableSystem');
+        const _ctx = registerInternalBusPlugin('TableSystem');
         if (!_ctx) {
             console.warn('[TableSystem] Amily2Bus 尚未就绪，服务注册跳过。');
             return;
@@ -159,23 +166,18 @@ setTimeout(() => {
             mutateOwnedRecord: mutateModuleRecord,
         });
         _ctx.expose({
-            processMessageUpdate,
-            fillWithSecondaryApi,
-            injectTableData,
-            generateTableContent,
             // Public consumers receive copies; direct mutable state remains internal.
             getMemoryState: () => listTableSnapshots(),
             listTables: listTableSnapshots,
             getTableSnapshot,
             queryRecords: queryModuleRecords,
-            renderTables,
         });
         _ctx.log('TableSystemService', 'info', 'TableSystem 服务已注册到 Bus。');
     } catch (e) {
         console.error('[TableSystem] Bus 注册失败:', e);
     }
-}, 0);
+})();
 
 // ── 向后兼容具名导出 ──────────────────────────────────────────────────────
 // 过渡期保留，现有 import { ... } from '...TableSystemService.js' 无需修改。
-export { processMessageUpdate, fillWithSecondaryApi, generateTableContent, injectTableData };
+export { processMessageUpdate, generateTableContent, injectTableData };

@@ -2,21 +2,16 @@ import { ingestTextToHanlinyuan, getSettings } from './rag-processor.js';
 import { deleteRow, insertRow, updateRow } from './table-system/manager.js';
 import { extension_settings } from '/scripts/extensions.js';
 import { extensionName } from '../utils/settings.js';
+import { subscribeTableUpdates } from './internal/table-update-channel.js';
 
 let isArchiving = false;
+let unsubscribeTableUpdates = null;
 
 export function initializeArchiveManager() {
-    document.addEventListener('AMILY2_TABLE_UPDATED', handleTableUpdate);
+    if (!unsubscribeTableUpdates) {
+        unsubscribeTableUpdates = subscribeTableUpdates(handleArchivePayload);
+    }
     console.log('[归档管理器] 已启动，正在监控表格状态...');
-}
-
-/** Bus 直调路径：由 super-memory/manager.js 的 pushUpdate 调用，接受纯 payload 对象。 */
-export function handleArchiveUpdate(payload) {
-    return handleArchivePayload(payload);
-}
-
-async function handleTableUpdate(event) {
-    return handleArchivePayload(event.detail);
 }
 
 async function handleArchivePayload({ tableName, data, role }) {

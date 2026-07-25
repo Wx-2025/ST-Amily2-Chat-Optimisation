@@ -21,6 +21,39 @@ export function createTableProfile(tables, options = {}) {
     };
 }
 
+/**
+ * Builds the character-portable subset of a live state. Module-owned runtime
+ * tables are deliberately excluded and all record data is stripped.
+ */
+export function createCharacterPortableTableProfile(tables, options = {}) {
+    const userTables = Array.isArray(tables)
+        ? tables.filter(table => !table?.owner || table.owner === 'user')
+        : [];
+    return createTableProfile(userTables, options);
+}
+
+/** Fill missing template fields once when a profile becomes a chat snapshot. */
+export function materializeTableProfile(profile, fallbackTemplates = {}, meta = {}) {
+    const normalized = normalizeTableProfile(profile);
+    if (!normalized) return null;
+    const ownTemplates = normalized.templates && typeof normalized.templates === 'object'
+        ? normalized.templates
+        : {};
+    const templates = {};
+    for (const key of ['batchFillerRuleTemplate', 'batchFillerFlowTemplate', 'injectionFlowTemplate']) {
+        const value = ownTemplates[key] ?? fallbackTemplates[key];
+        if (typeof value === 'string') templates[key] = value;
+    }
+    return createTableProfile(normalized.tables, {
+        id: normalized.id,
+        name: normalized.name,
+        description: normalized.description,
+        views: normalized.views,
+        templates,
+        meta: { ...normalized.meta, ...deepClone(meta) },
+    });
+}
+
 export function normalizeTableProfile(profile) {
     if (!profile || typeof profile !== 'object' || profile.format !== TABLE_PROFILE_FORMAT) return null;
     if (profile.schemaVersion !== TABLE_PROFILE_SCHEMA_VERSION || !Array.isArray(profile.tables)) return null;
@@ -48,8 +81,9 @@ export function createTableStateFromProfile(profile) {
 }
 
 function stripRuntimeRows(table) {
+    const { simplifyRowThreshold: _runtimeSimplifyThreshold, ...portableTable } = table;
     return {
-        ...table,
+        ...portableTable,
         rows: [],
         rowMeta: [],
         rowStatuses: [],

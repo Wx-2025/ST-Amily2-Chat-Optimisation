@@ -10,6 +10,128 @@ const COLUMN_TYPES = new Set(['string', 'number', 'boolean', 'datetime', 'refere
 const DELETE_POLICIES = new Set(['restrict', 'setNull']);
 const QUERY_OPERATORS = new Set(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'contains', 'isEmpty']);
 
+/**
+ * Normalize and validate a complete state before it crosses a persistence
+ * boundary.  The legacy/UI writers still operate on the compatible array
+ * representation, so this is the common guard that prevents those paths from
+ * bypassing module schemas and relational constraints.
+ *
+ * @param {unknown} currentState
+ * @param {{ requireRegisteredModuleSchemas?: boolean }} [options]
+ * @returns {Array}
+ */
+export function validateTableState(currentState, options = {}) {
+    const requireRegisteredModuleSchemas = options.requireRegisteredModuleSchemas !== false;
+    if (!Array.isArray(currentState)) {
+        throw tableError('INVALID_TABLE_STATE', 'Table state must be an array.');
+    }
+
+    let state;
+    try {
+        state = deepClone(currentState);
+    } catch {
+        throw tableError('INVALID_TABLE_STATE', 'Table state must be JSON serializable.');
+    }
+
+    state.forEach((table, tableIndex) => {
+        if (!table || typeof table !== 'object' || Array.isArray(table)) {
+            throw tableError('INVALID_TABLE_STATE', `Table at index ${tableIndex} must be an object.`);
+        }
+        if (!Array.isArray(table.headers) || !Array.isArray(table.rows)) {
+            throw tableError('INVALID_TABLE_STATE', `Table at index ${tableIndex} requires headers and rows arrays.`);
+        }
+        if (table.rows.some(row => !Array.isArray(row))) {
+            throw tableError('INVALID_TABLE_STATE', `Table "${table.id || table.name || tableIndex}" contains a non-array row.`);
+        }
+    });
+
+    normalizeTableDatabaseState(state);
+    const tableIds = new Set();
+    state.forEach(table => {
+        if (tableIds.has(table.id)) {
+            throw tableError('DUPLICATE_TABLE_ID', `Table id "${table.id}" appears more than once.`);
+        }
+        tableIds.add(table.id);
+        normalizeParallelRowState(table);
+        validateRuntimeTableSchema(table);
+
+        const registeredDefinition = definitions.get(table.id);
+        if (registeredDefinition && table.owner !== registeredDefinition.owner) {
+            throw tableError(
+                'TABLE_ACCESS_DENIED',
+                `Table "${table.id}" is reserved for owner "${registeredDefinition.owner}".`,
+            );
+        }
+
+        if (table.owner !== 'user') {
+            const definition = registeredDefinition;
+            if (!definition && requireRegisteredModuleSchemas) {
+                throw tableError(
+                    'TABLE_DEFINITION_NOT_FOUND',
+                    `Module table "${table.id}" cannot be committed before owner "${table.owner}" registers its definition.`,
+                );
+            }
+            if (definition && !isCompatibleTableSchema(table, definition)) {
+                throw tableError('TABLE_SCHEMA_MISMATCH', `Table "${table.id}" does not match its registered schema.`);
+            }
+            if (definition && table.rows.some(row => row.length !== definition.columns.length)) {
+                throw tableError('TABLE_SCHEMA_MISMATCH', `Table "${table.id}" contains a row that does not match its registered columns.`);
+            }
+        }
+    });
+
+    validateStateConstraints(state, {
+        allowUnregisteredModuleSchemas: !requireRegisteredModuleSchemas,
+    });
+    return state;
+}
+
+function validateRuntimeTableSchema(table) {
+    if (!Array.isArray(table.columns) || table.columns.length !== table.headers.length) {
+        throw tableError('TABLE_SCHEMA_MISMATCH', `Table "${table.id}" columns do not match its headers.`);
+    }
+    if (table.rows.some(row => row.length !== table.columns.length)) {
+        throw tableError('TABLE_SCHEMA_MISMATCH', `Table "${table.id}" contains a row with the wrong column count.`);
+    }
+
+    const columnIds = new Set();
+    let primaryKeys = 0;
+    table.columns.forEach(column => {
+        if (!column || !validId(column.id) || !validId(column.label) || !COLUMN_TYPES.has(column.type)) {
+            throw tableError('INVALID_TABLE_DEFINITION', `Table "${table.id}" contains an invalid column definition.`);
+        }
+        if (columnIds.has(column.id)) {
+            throw tableError('INVALID_TABLE_DEFINITION', `Table "${table.id}" repeats column id "${column.id}".`);
+        }
+        columnIds.add(column.id);
+        if (column.primaryKey === true) {
+            primaryKeys += 1;
+            column.required = true;
+            column.unique = true;
+        }
+
+        if (column.references !== undefined && column.references !== null) {
+            if (column.type !== 'reference'
+                || typeof column.references !== 'object'
+                || !validId(column.references.tableId)
+                || !validId(column.references.columnId)
+                || !DELETE_POLICIES.has(column.references.onDelete || 'restrict')) {
+                throw tableError('INVALID_TABLE_DEFINITION', `Table "${table.id}" contains an invalid reference column "${column.id}".`);
+            }
+            column.references.onDelete = column.references.onDelete || 'restrict';
+            if ((column.references.onDelete || 'restrict') === 'setNull'
+                && (column.required === true || column.primaryKey === true)) {
+                throw tableError('INVALID_TABLE_DEFINITION', `Required reference "${table.id}.${column.id}" cannot use setNull.`);
+            }
+        } else if (column.type === 'reference') {
+            throw tableError('INVALID_TABLE_DEFINITION', `Reference column "${table.id}.${column.id}" requires a target.`);
+        }
+    });
+    if (primaryKeys > 1) {
+        throw tableError('INVALID_TABLE_DEFINITION', `Table "${table.id}" may declare only one primary key.`);
+    }
+}
+
 export function registerTableDefinition(caller, definition) {
     const normalized = normalizeDefinition(caller, definition);
     const existing = definitions.get(normalized.id);
@@ -18,6 +140,10 @@ export function registerTableDefinition(caller, definition) {
     }
     definitions.set(normalized.id, normalized);
     return deepClone(normalized);
+}
+
+export function isTableDefinitionRegistered(tableId) {
+    return definitions.has(tableId);
 }
 
 export function ensureRegisteredTable(caller, tableId, currentState) {
@@ -29,6 +155,9 @@ export function ensureRegisteredTable(caller, tableId, currentState) {
     if (existing) {
         if (existing.owner !== caller) {
             throw tableError('TABLE_ACCESS_DENIED', `Table "${tableId}" belongs to "${existing.owner}".`);
+        }
+        if (!isCompatibleTableSchema(existing, definition)) {
+            throw tableError('TABLE_SCHEMA_MISMATCH', `Table "${tableId}" does not match its registered schema.`);
         }
         return { state, table: deepClone(existing), created: false };
     }
@@ -88,6 +217,58 @@ export function mutateOwnedRecord(caller, request, currentState) {
         return { state, result: { action, tableId, recordId, rowIndex } };
     }
     throw tableError('INVALID_RECORD_ACTION', `Unsupported record action "${action}".`);
+}
+
+/**
+ * Applies every row marked as pending-deletion to an isolated candidate state.
+ *
+ * This is the shared transaction primitive for the legacy/UI delayed-delete
+ * path.  It deliberately has no store or persistence side effects, so callers
+ * can persist the returned candidate before publishing it to the live store.
+ * References from rows that are part of the same deletion batch are ignored;
+ * surviving references still follow the exact restrict/setNull rules used by
+ * mutateOwnedRecord().
+ *
+ * @param {unknown} currentState
+ * @returns {{ state: Array, deletedCount: number, affectedTableIndices: number[] }}
+ */
+export function applyPendingRecordDeletions(currentState) {
+    const state = validateTableState(currentState);
+    const pendingRecords = [];
+    const pendingRecordKeys = new Set();
+
+    state.forEach((table, tableIndex) => {
+        table.rows.forEach((_, rowIndex) => {
+            if (table.rowStatuses[rowIndex] !== 'pending-deletion') return;
+            const recordId = table.rowMeta[rowIndex].id;
+            pendingRecords.push({ tableId: table.id, tableIndex, recordId });
+            pendingRecordKeys.add(recordKey(table.id, recordId));
+        });
+    });
+
+    if (pendingRecords.length === 0) {
+        return { state, deletedCount: 0, affectedTableIndices: [] };
+    }
+
+    const affectedTableIndices = new Set();
+    for (const pending of pendingRecords) {
+        const tableIndex = state.findIndex(table => table.id === pending.tableId);
+        const table = state[tableIndex];
+        if (!table) continue;
+        const rowIndex = table.rowMeta.findIndex(meta => meta.id === pending.recordId);
+        if (rowIndex < 0) continue;
+        deleteRecordWithReferences(state, table, rowIndex, {
+            pendingRecordKeys,
+            affectedTableIndices,
+        });
+        affectedTableIndices.add(tableIndex);
+    }
+
+    return {
+        state: validateTableState(state),
+        deletedCount: pendingRecords.length,
+        affectedTableIndices: [...affectedTableIndices].sort((left, right) => left - right),
+    };
 }
 
 /**
@@ -156,6 +337,7 @@ function normalizeDefinition(caller, definition) {
         name: definition.name,
         columns,
         initialRows: Array.isArray(definition.initialRows) ? deepClone(definition.initialRows) : [],
+        referenceGrants: normalizeReferenceGrants(definition.referenceGrants),
         columnWidths: Array.isArray(definition.columnWidths) ? deepClone(definition.columnWidths) : [],
         note: String(definition.note || ''),
         rule_add: String(definition.rule_add || '允许'),
@@ -167,8 +349,14 @@ function normalizeDefinition(caller, definition) {
 }
 
 function normalizeColumnDefinition(column) {
-    const type = COLUMN_TYPES.has(column.type) ? column.type : 'string';
+    const type = column.type ?? 'string';
+    if (!COLUMN_TYPES.has(type)) {
+        throw tableError('INVALID_TABLE_DEFINITION', `Column "${column.id}" uses unsupported type "${type}".`);
+    }
     const references = normalizeReference(column.references, column.id, type);
+    if (type === 'reference' && !references) {
+        throw tableError('INVALID_TABLE_DEFINITION', `Reference column "${column.id}" requires target tableId and columnId.`);
+    }
     const primaryKey = column.primaryKey === true;
     const required = primaryKey || column.required === true;
     const unique = primaryKey || column.unique === true;
@@ -193,6 +381,11 @@ function normalizeReference(reference, columnId, type) {
         throw tableError('INVALID_REFERENCE_DELETE_POLICY', `Reference column "${columnId}" uses unsupported onDelete policy "${onDelete}".`);
     }
     return { tableId: reference.tableId, columnId: reference.columnId, onDelete };
+}
+
+function normalizeReferenceGrants(value) {
+    if (!Array.isArray(value)) return [];
+    return [...new Set(value.filter(validId).map(item => item.trim()))].sort();
 }
 
 function appendRecord(table, values) {
@@ -227,11 +420,18 @@ function writeValues(table, row, values, patch) {
     }
 }
 
-function validateStateConstraints(state) {
-    state.forEach(table => validateTableConstraints(state, table));
+function validateStateConstraints(state, options = {}) {
+    state.forEach(table => validateTableConstraints(state, table, options));
 }
 
-function validateTableConstraints(state, table) {
+function normalizeParallelRowState(table) {
+    const statuses = Array.isArray(table.rowStatuses) ? table.rowStatuses : [];
+    table.rowStatuses = table.rows.map((_, index) => (
+        statuses[index] === 'pending-deletion' ? 'pending-deletion' : 'normal'
+    ));
+}
+
+function validateTableConstraints(state, table, options = {}) {
     normalizeTableIdentity(table);
     const columnIndex = new Map(table.columns.map((column, index) => [column.id, index]));
     const uniqueValues = new Map();
@@ -266,6 +466,7 @@ function validateTableConstraints(state, table) {
             if (!targetTable) {
                 throw tableError('REFERENCE_TARGET_NOT_FOUND', `Reference "${table.id}.${column.id}" target table "${column.references.tableId}" is unavailable.`);
             }
+            assertCrossOwnerReferenceAllowed(table, targetTable, options);
             const targetIndex = targetTable.columns.findIndex(target => target.id === column.references.columnId);
             if (targetIndex < 0) {
                 throw tableError('REFERENCE_TARGET_COLUMN_NOT_FOUND', `Reference "${table.id}.${column.id}" target column "${column.references.columnId}" is unavailable.`);
@@ -294,7 +495,7 @@ function validateValueType(table, column, value) {
     }
 }
 
-function deleteRecordWithReferences(state, targetTable, rowIndex) {
+function deleteRecordWithReferences(state, targetTable, rowIndex, options = {}) {
     const pendingNulls = [];
     targetTable.columns.forEach((targetColumn, targetColumnIndex) => {
         const targetValue = String(targetTable.rows[rowIndex][targetColumnIndex] ?? '');
@@ -306,24 +507,38 @@ function deleteRecordWithReferences(state, targetTable, rowIndex) {
                 sourceTable.rows.forEach((sourceRow, sourceRowIndex) => {
                     if (sourceTable === targetTable && sourceRowIndex === rowIndex) return;
                     if (String(sourceRow[sourceColumnIndex] ?? '') !== targetValue) return;
+                    const sourceRecordId = sourceTable.rowMeta[sourceRowIndex]?.id;
+                    if (sourceRecordId
+                        && options.pendingRecordKeys?.has(recordKey(sourceTable.id, sourceRecordId))) {
+                        return;
+                    }
+                    // An empty cross-owner reference schema must not be able to
+                    // block the target owner from deleting unrelated data.
+                    assertCrossOwnerReferenceAllowed(sourceTable, targetTable);
                     if (sourceColumn.references.onDelete === 'restrict') {
                         throw tableError('REFERENCE_RESTRICTED', `Cannot delete "${targetTable.id}" record while "${sourceTable.id}.${sourceColumn.id}" references it.`);
                     }
                     if (sourceColumn.required) {
                         throw tableError('REFERENCE_SET_NULL_REQUIRED', `Cannot set required reference "${sourceTable.id}.${sourceColumn.id}" to null.`);
                     }
-                    pendingNulls.push({ sourceRow, sourceColumnIndex });
+                    pendingNulls.push({ sourceTable, sourceRow, sourceColumnIndex });
                 });
             });
         });
     });
 
-    pendingNulls.forEach(({ sourceRow, sourceColumnIndex }) => {
+    pendingNulls.forEach(({ sourceTable, sourceRow, sourceColumnIndex }) => {
         sourceRow[sourceColumnIndex] = '';
+        const sourceTableIndex = state.indexOf(sourceTable);
+        if (sourceTableIndex >= 0) options.affectedTableIndices?.add(sourceTableIndex);
     });
     targetTable.rows.splice(rowIndex, 1);
     targetTable.rowMeta.splice(rowIndex, 1);
     targetTable.rowStatuses.splice(rowIndex, 1);
+}
+
+function recordKey(tableId, recordId) {
+    return JSON.stringify([tableId, recordId]);
 }
 
 function normalizeQuery(table, request) {
@@ -426,7 +641,28 @@ function assertOwner(caller, table) {
 function isCompatibleDefinition(a, b) {
     return a.owner === b.owner
         && a.schemaVersion === b.schemaVersion
-        && JSON.stringify(a.columns) === JSON.stringify(b.columns);
+        && JSON.stringify(a.columns) === JSON.stringify(b.columns)
+        && JSON.stringify(a.referenceGrants) === JSON.stringify(b.referenceGrants);
+}
+
+function isCompatibleTableSchema(table, definition) {
+    normalizeTableIdentity(table);
+    return table.owner === definition.owner
+        && table.schemaVersion === definition.schemaVersion
+        && JSON.stringify(table.columns) === JSON.stringify(definition.columns);
+}
+
+function assertCrossOwnerReferenceAllowed(sourceTable, targetTable, options = {}) {
+    if (sourceTable.owner === targetTable.owner) return;
+    const targetDefinition = definitions.get(targetTable.id);
+    if (!targetDefinition && options.allowUnregisteredModuleSchemas === true) return;
+    const grants = targetDefinition?.owner === targetTable.owner ? targetDefinition.referenceGrants : [];
+    if (!grants.includes(sourceTable.owner) && !grants.includes('*')) {
+        throw tableError(
+            'CROSS_OWNER_REFERENCE_DENIED',
+            `Table "${sourceTable.id}" cannot reference "${targetTable.id}" without an explicit grant from owner "${targetTable.owner}".`,
+        );
+    }
 }
 
 function isBlank(value) {

@@ -8,6 +8,8 @@ import * as IngestionManager from '../core/ingestion-manager.js';
 import { showContentModal, showHtmlModal } from './page-window.js';
 import { extractBlocksByTags, applyExclusionRules } from '../core/utils/rag-tag-extractor.js';
 import { ruleProfileManager, resolveCondensationRuleConfig } from '../utils/config/RuleProfileManager.js';
+import { clearSecretInput, markSecretInputStored, readSecretInputUpdate } from './secret-input.js';
+import { readTextFile } from '../core/utils/text-file-decoder.js';
 import { syncSlot } from './profile-sync.js';
 import {
     filterWorldbooks,
@@ -104,6 +106,11 @@ function bindAutoSaveEvents() {
             }
         } else {
             value = target.value;
+            if (target.type === 'password') {
+                const update = readSecretInputUpdate(target);
+                if (!update.changed) return;
+                value = update.value;
+            }
         }
 
         // 类型转换
@@ -126,6 +133,9 @@ function bindAutoSaveEvents() {
         if (target.type === 'radio' && !target.checked) return;
 
         updateAndSaveSetting(key, value);
+        if (target.type === 'password') {
+            markSecretInputStored(target, Boolean(value));
+        }
 
         // 如果更改了影响面板状态的设置（如独立聊天记忆开关），则立即刷新
         if (key === 'retrieval.independentChatMemoryEnabled') {
@@ -183,6 +193,7 @@ export function bindHanlinyuanEvents() {
     const progressBar = document.getElementById('hanlinyuan-ingest-progress-bar');
     const statusText = document.getElementById('hanlinyuan-ingest-status');
     const controlsContainer = document.getElementById('hanlinyuan-ingest-novel-controls');
+    const encodingSelect = document.getElementById('hanlinyuan-ingest-novel-encoding');
 
     let selectedFile = null;
     let abortController = null;
@@ -231,7 +242,7 @@ export function bindHanlinyuanEvents() {
         progressBar.value = 0;
 
         try {
-            const text = await selectedFile.text();
+            const text = await readTextFile(selectedFile, encodingSelect?.value || 'UTF-8');
 
             const progressCallback = (progress) => {
                 statusText.textContent = `处理中: ${progress.message} (${progress.processed}/${progress.total})`;
@@ -608,7 +619,7 @@ export function loadSettingsToUI() {
     document.getElementById('hly-retrieval-enabled').checked = settings.retrieval.enabled;
     document.getElementById('hly-api-endpoint').value = settings.retrieval.apiEndpoint;
     document.getElementById('hly-custom-api-url').value = settings.retrieval.customApiUrl;
-    document.getElementById('hly-api-key').value = settings.retrieval.apiKey;
+    clearSecretInput(document.getElementById('hly-api-key'), Boolean(settings.retrieval.apiKey));
     // 对于下拉框，我们只设置初始值，但不清空列表
     const modelSelect = document.getElementById('hly-embedding-model');
     if (modelSelect.options.length === 0) {
@@ -653,7 +664,7 @@ export function loadSettingsToUI() {
     document.getElementById('hly-rerank-enabled').checked = settings.rerank.enabled;
     /** @type {HTMLSelectElement} */ (document.getElementById('hly-rerank-api-mode')).value = settings.rerank.apiMode ?? 'custom';
     document.getElementById('hly-rerank-url').value = settings.rerank.url;
-    document.getElementById('hly-rerank-api-key').value = settings.rerank.apiKey;
+    clearSecretInput(document.getElementById('hly-rerank-api-key'), Boolean(settings.rerank.apiKey));
     const rerankModelSelect = document.getElementById('hly-rerank-model');
     if (rerankModelSelect.options.length === 0) {
         const currentModel = settings.rerank.model;
@@ -721,6 +732,11 @@ function saveSettingsFromUI(isAutoSave = true) {
             value = target.value;
         } else {
             value = target.value;
+            if (target.type === 'password') {
+                const update = readSecretInputUpdate(target);
+                if (!update.changed) return;
+                value = update.value;
+            }
         }
 
         // 类型转换

@@ -8,8 +8,7 @@ import { applyExclusionRules, extractBlocksByTags } from './utils/rag-tag-extrac
 import {
   getCombinedWorldbookContent, getPlotOptimizedWorldbookContent, getOptimizationWorldbookContent,
 } from "./lore.js";
-import { getBatchFillerFlowTemplate, convertTablesToCsvString, updateTableFromText, saveStateToMessage, getMemoryState } from './table-system/manager.js';
-import { saveChat } from "/script.js";
+import { getBatchFillerFlowTemplate, convertTablesToCsvString, updateTableFromText } from './table-system/manager.js';
 import { renderTables } from '../ui/table-bindings.js';
 import { resolveHistoriographyRuleConfig } from "../utils/config/RuleProfileManager.js";
 
@@ -162,17 +161,12 @@ export async function processOptimization(latestMessage, previousMessages) {
         document.dispatchEvent(new CustomEvent('preOptimizationStateUpdated'));
 
         if (isOptimizationEnabled && fillingMode === 'optimized') {
-            await updateTableFromText(rawContent);
-
-            const finalContext = getContext();
-            if (finalContext.chat && finalContext.chat.length > 0) {
-                const lastMessage = finalContext.chat[finalContext.chat.length - 1];
-                if (saveStateToMessage(getMemoryState(), lastMessage)) {
-                    await saveChat();
-                    renderTables();
-                    console.log('[Amily2-优化中填表] 流程已全部完成，并已强制保存和刷新UI。');
-                }
+            const applied = await updateTableFromText(rawContent);
+            if (!applied) {
+                throw new Error('优化结果中的表格变更未能持久化。');
             }
+            renderTables();
+            console.log('[Amily2-优化中填表] 流程已全部完成，并已原子保存和刷新UI。');
         }
 
         const result = {

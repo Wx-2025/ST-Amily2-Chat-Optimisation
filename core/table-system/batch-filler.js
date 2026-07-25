@@ -304,7 +304,8 @@ async function runBatchAttempt(batchNum, attemptNum) {
                 log(`批次 ${batchNum} FC 操作列表为空${parseHint}，原始响应：\n${argsString}`, 'warn');
                 toastr.info('AI 判断此批次无需修改。', `批次 ${batchNum}`);
             } else {
-                await updateTableFromOps(ops, { immediateDelete: true });
+                const applied = await updateTableFromOps(ops, { immediateDelete: true });
+                if (!applied) throw new Error('Function Call 操作未产生可提交变更，或表格保存失败。');
                 renderTables();
                 log(`批次 ${batchNum} Function Call 处理成功（${ops.length} 条操作）。`, 'success');
             }
@@ -330,12 +331,13 @@ async function runBatchAttempt(batchNum, attemptNum) {
                         }
                         return merged;
                     },
-                    onApply: (editedText) => {
+                    onApply: async (editedText) => {
                         if (!editedText || !editedText.includes('<Amily2Edit>')) {
                             toastr.warning('应用的文本中未检测到 <Amily2Edit> 指令块，已按原文尝试写入。', '手动应用');
                         }
                         try {
-                            updateTableFromText(editedText, { immediateDelete: true });
+                            const applied = await updateTableFromText(editedText, { immediateDelete: true });
+                            if (!applied) throw new Error('文本未产生可提交变更，或表格保存失败。');
                             renderTables();
                             log(`批次 ${batchNum} 已由用户手动处理完成。`, 'success');
                         } catch (err) {
@@ -361,7 +363,8 @@ async function runBatchAttempt(batchNum, attemptNum) {
                 return;
             }
 
-            updateTableFromText(resultText, { immediateDelete: true });
+            const applied = await updateTableFromText(resultText, { immediateDelete: true });
+            if (!applied) throw new Error('文本未产生可提交变更，或表格保存失败。');
             renderTables();
             log(`批次 ${batchNum} 处理成功。`, 'success');
         }
@@ -587,7 +590,8 @@ export async function startFloorRangeFilling(startFloor, endFloor) {
                 log(`楼层 ${startFloor}-${endFloor} FC 操作列表为空${parseHint}，原始响应：\n${argsString}`, 'warn');
                 toastr.info('AI 判断此楼层范围无需修改。', `楼层 ${startFloor}-${endFloor}`);
             } else {
-                await updateTableFromOps(ops, { immediateDelete: true });
+                const applied = await updateTableFromOps(ops, { immediateDelete: true });
+                if (!applied) throw new Error('Function Call 操作未产生可提交变更，或表格保存失败。');
                 renderTables();
                 toastr.success(`楼层 ${startFloor}-${endFloor} 填表完成！`);
                 log(`楼层 ${startFloor}-${endFloor} Function Call 处理成功（${ops.length} 条操作）。`, 'success');
@@ -612,12 +616,13 @@ export async function startFloorRangeFilling(startFloor, endFloor) {
                         }
                         return merged;
                     },
-                    onApply: (editedText) => {
+                    onApply: async (editedText) => {
                         if (!editedText || !editedText.includes('<Amily2Edit>')) {
                             toastr.warning('应用的文本中未检测到 <Amily2Edit> 指令块，已按原文尝试写入。', '手动应用');
                         }
                         try {
-                            updateTableFromText(editedText, { immediateDelete: true });
+                            const applied = await updateTableFromText(editedText, { immediateDelete: true });
+                            if (!applied) throw new Error('文本未产生可提交变更，或表格保存失败。');
                             renderTables();
                             toastr.success(`楼层 ${startFloor}-${endFloor} 填表完成！`);
                             log(`楼层 ${startFloor}-${endFloor} 填表由用户手动处理完成。`, 'success');
@@ -638,7 +643,8 @@ export async function startFloorRangeFilling(startFloor, endFloor) {
                 return;
             }
 
-            updateTableFromText(resultText, { immediateDelete: true });
+            const applied = await updateTableFromText(resultText, { immediateDelete: true });
+            if (!applied) throw new Error('文本未产生可提交变更，或表格保存失败。');
             renderTables();
             toastr.success(`楼层 ${startFloor}-${endFloor} 填表完成！`);
             log(`楼层 ${startFloor}-${endFloor} 填表处理完成。`, 'success');

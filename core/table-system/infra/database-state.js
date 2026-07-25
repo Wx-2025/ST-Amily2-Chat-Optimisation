@@ -7,6 +7,13 @@ export const TABLE_STATE_METADATA_KEY = 'amily2_table_state';
 export const TABLE_STATE_FORMAT = 'amily2.table-state';
 export const TABLE_STATE_FORMAT_VERSION = 2;
 
+const MAX_STATE_TABLES = 512;
+const MAX_STATE_COLUMNS = 2048;
+const MAX_STATE_ROWS_PER_TABLE = 1_000_000;
+const MAX_STATE_CELL_CHARS = 131_072;
+const MAX_STATE_TOTAL_CHARS = 32 * 1024 * 1024;
+const MAX_PROFILE_CHARS = 1_000_000;
+
 export function normalizeTableDatabaseState(tables) {
     if (!Array.isArray(tables)) return [];
     tables.forEach((table, tableIndex) => normalizeTableIdentity(table, tableIndex));
@@ -39,10 +46,35 @@ export function createTableStateEnvelope(tables, profile = null) {
 
 export function readChatTableState(context) {
     const raw = context?.chatMetadata?.[TABLE_STATE_METADATA_KEY];
-    if (!raw || raw.format !== TABLE_STATE_FORMAT || raw.formatVersion < TABLE_STATE_FORMAT_VERSION || !Array.isArray(raw.tables)) {
+    if (!raw
+        || raw.format !== TABLE_STATE_FORMAT
+        || raw.formatVersion !== TABLE_STATE_FORMAT_VERSION
+        || !Array.isArray(raw.tables)) {
         return null;
     }
-    return createTableStateEnvelope(raw.tables, raw.profile || null);
+    try {
+        if (!isSafeStateTables(raw.tables)) {
+            console.warn('[TableDatabase] 已忽略损坏或超限的 v2 聊天表状态，将尝试兼容快照回退。');
+            return null;
+        }
+        const safeProfile = isSafeStateProfile(raw.profile) ? (raw.profile || null) : null;
+        if (raw.profile && !safeProfile) {
+            console.warn('[TableDatabase] 已忽略损坏或超限的聊天表档案；表格数据仍会正常恢复。');
+        }
+        const envelope = createTableStateEnvelope(raw.tables, safeProfile);
+        const ids = new Set();
+        for (const table of envelope.tables) {
+            if (ids.has(table.id)) {
+                console.warn('[TableDatabase] 已忽略包含重复 tableId 的 v2 聊天表状态，将尝试兼容快照回退。');
+                return null;
+            }
+            ids.add(table.id);
+        }
+        return envelope;
+    } catch (error) {
+        console.warn('[TableDatabase] v2 聊天表状态解析失败，将尝试兼容快照回退。', error);
+        return null;
+    }
 }
 
 /**
@@ -64,12 +96,64 @@ export async function persistChatTableStateAsync(context, tables, profile = unde
 }
 
 function writeChatTableState(context, tables, profile) {
-    if (!context?.chatMetadata || typeof context.saveMetadata !== 'function') return false;
+    if (!context || typeof context.saveMetadata !== 'function') return false;
+    if (!context.chatMetadata || typeof context.chatMetadata !== 'object') {
+        context.chatMetadata = {};
+    }
 
     const existing = context.chatMetadata[TABLE_STATE_METADATA_KEY];
     const resolvedProfile = profile === undefined ? existing?.profile || null : profile;
-    context.chatMetadata[TABLE_STATE_METADATA_KEY] = createTableStateEnvelope(tables, resolvedProfile);
+    const envelope = createTableStateEnvelope(tables, resolvedProfile);
+    if (!isSafeStateTables(envelope.tables) || !isSafeStateProfile(envelope.profile)) {
+        console.error('[TableDatabase] Refused to persist an invalid or oversized table state/profile.');
+        return false;
+    }
+    context.chatMetadata[TABLE_STATE_METADATA_KEY] = envelope;
     return true;
+}
+
+function isSafeStateTables(tables) {
+    if (!Array.isArray(tables) || tables.length > MAX_STATE_TABLES) return false;
+    try {
+        if (JSON.stringify(tables).length > MAX_STATE_TOTAL_CHARS) return false;
+    } catch {
+        return false;
+    }
+    let totalChars = 0;
+    const countString = value => {
+        totalChars += value.length;
+        return value.length <= MAX_STATE_CELL_CHARS && totalChars <= MAX_STATE_TOTAL_CHARS;
+    };
+    return tables.every(table => {
+        if (!table || typeof table !== 'object' || Array.isArray(table)) return false;
+        if (typeof table.name !== 'string'
+            || !countString(table.name)
+            || !validId(table.id)
+            || !countString(table.id)
+            || !validId(table.owner)
+            || !countString(table.owner)) return false;
+        if (!Array.isArray(table.headers) || table.headers.length > MAX_STATE_COLUMNS) return false;
+        if (table.headers.some(header => typeof header !== 'string' || !countString(header))) return false;
+        if (!Array.isArray(table.rows) || table.rows.length > MAX_STATE_ROWS_PER_TABLE) return false;
+        return table.rows.every(row => Array.isArray(row)
+            && row.length === table.headers.length
+            && row.every(cell => {
+                if (cell === null || cell === undefined) return true;
+                if (typeof cell === 'string') return countString(cell);
+                if (typeof cell === 'number') return Number.isFinite(cell);
+                return typeof cell === 'boolean';
+            }));
+    });
+}
+
+function isSafeStateProfile(profile) {
+    if (profile === undefined || profile === null) return true;
+    if (!profile || typeof profile !== 'object' || Array.isArray(profile)) return false;
+    try {
+        return JSON.stringify(profile).length <= MAX_PROFILE_CHARS;
+    } catch {
+        return false;
+    }
 }
 
 export function createRecordMetadata(table, row, rowIndex) {

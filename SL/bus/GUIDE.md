@@ -10,7 +10,7 @@
 Amily2Bus 是一个 **服务注册与发现** 系统。它解决的核心问题：
 
 - **解耦循环依赖** — 模块之间不再需要互相 import，只需通过总线 `query()` 按名字查找
-- **身份隔离** — 每个插件注册后拿到专属上下文（Capability Token），日志自动标注来源，文件存储自动隔离
+- **命名空间隔离** — 每个插件注册后拿到绑定名称的上下文，日志自动标注来源，文件存储自动隔离
 - **可选依赖** — 查询不到服务不会崩溃，只返回 `null`，适合渐进式集成
 
 **一句话理解**：`register()` = 我是谁，`expose()` = 我能做什么，`query()` = 我要找谁帮忙。
@@ -58,10 +58,10 @@ _ctx.expose({
 `query()` 适合只读或不需要调用者身份的公共能力。涉及表格写入、权限或所有权时，服务应使用受限接口：
 
 ```javascript
-// 提供方：只有已注册服务能通过 callService 调到这些方法。
+// 提供方：接口不会出现在 query() 结果中，只能通过注册上下文调用。
 ctx.exposeService({
     changeOwnedData({ caller }, payload) {
-        // caller 由 Bus 注入，不能由调用参数伪造。
+        // caller 由 Bus 按当前注册上下文注入。
     },
 });
 
@@ -73,7 +73,7 @@ await ctx.callService('TableSystem', 'mutateOwnedRecord', {
 });
 ```
 
-受限接口不会出现在 `query()` 返回的公共对象中。不要把 `caller` 作为普通参数传递，否则所有权检查可以被伪造。
+受限接口不会出现在 `query()` 返回的公共对象中。`caller` 适合合作式模块的命名空间和所有权判断，但不是同一页面敌对脚本之间的认证凭据；外部插件名称仍属于不可信输入。Amily 内建名称已从公共 `register()` 中保留，避免最直接的抢注覆盖。
 
 ---
 
@@ -92,24 +92,24 @@ if (superMemory) {
 
 | 服务名 | 用途 | 主要暴露方法 |
 |---|---|---|
-| `NccsApi` | NCCS 网络通道 | `call(messages, options)`, `getSettings()` |
-| `MessagePipeline` | 消息处理管线 | `execute(pipelineCtx)` |
-| `SuperMemory` | 超级记忆系统 | `initialize()`, `forceSyncAll()`, `awaitSync()`, `pushUpdate()`, `purge()` |
-| `TableSystem` | 表格系统 | `processMessageUpdate()`, `fillWithSecondaryApi()`, `generateTableContent()`, `renderTables()` |
-| `TavernHelper` | ST 操作封装 | 25+ 方法（聊天、世界书、角色卡等） |
-| `LoreService` | 世界书读写锁 | `withLoreLock()`, `loadBook()`, `ensureBook()`, `saveBook()` |
-| `Config` | 配置管理 | `get()`, `set()`, `getSettings()`, `migrate()` |
-| `ApiProfiles` | API 配置文件管理 | Profile CRUD + 密钥管理 |
-| `ApiKeyStore` | API 密钥安全存储 | `getKey()`, `setKey()` |
+| `NccsApi` | NCCS 脱敏状态 | `getStatus()` |
+| `MessagePipeline` | 消息处理管线状态 | `getStatus()` |
+| `SuperMemory` | 超级记忆同步状态 | `getStatus()`, `awaitSync()` |
+| `TableSystem` | 表格只读查询 | `listTables()`, `getTableSnapshot()`, `queryRecords()` |
+| `TavernHelper` | ST 助手状态 | `getStatus()` |
+| `LoreService` | 世界书服务状态 | `getStatus()` |
+| `Config` | 配置模块状态 | `getStatus()` |
+| `ApiProfiles` | API 配置只读摘要 | `getProfiles()`, `getProfile()`, `getAssignment()` |
+| `ApiKeyStore` | API 密钥存储状态 | `getStatus()` |
 | `PUBLIC` | 系统元信息 | `getAvailableModules()`, `getRegisteredPlugins()`, `ping()` |
 
 > 使用 `window.Amily2Bus.query('PUBLIC').getAvailableModules()` 可在控制台实时查看所有已暴露服务。
 
 ---
 
-## 四、使用上下文的三大能力
+## 四、使用上下文能力
 
-注册后拿到的 `ctx` 对象提供三种开箱即用的能力：
+注册后拿到的 `ctx` 对象提供日志、隔离文件、公开接口注册和非公开服务调用能力。全局 Bus 不提供模型或工具执行能力。
 
 ### 4.1 日志（ctx.log）
 
@@ -139,117 +139,20 @@ await ctx.file.clearAll();                  // 清空本服务所有文件
 
 > 路径禁止使用 `..`，系统会做安全校验。
 
-### 4.3 网络请求（ctx.model）
+### 4.3 模型调用不属于公共 Bus
 
-统一的 AI 模型调用接口，支持直连和 ST 预设两种模式。
+`window.Amily2Bus` 对所有同页脚本可见。若在注册上下文中提供 `model.call()`，任意脚本都能把用户配置的连接当作无预算推理代理。因此以下能力被明确禁止：
 
-```javascript
-const { Options } = ctx.model;
+- 读取或写入 API Key；
+- 返回完整连接配置或认证头；
+- 接受任意消息并代为调用模型；
+- 允许调用者覆盖端点、Key、请求头或预算。
 
-// 直连模式
-const opt = Options.builder()
-    .setMode('direct')
-    .setApiUrl('https://api.example.com/v1')
-    .setApiKey('sk-...')
-    .setModel('claude-sonnet-4-20250514')
-    .setMaxTokens(4096)
-    .setTemperature(0.7)
-    .setFakeStream(true)   // 防 CloudFlare 524 超时
-    .build();
+Amily 内部功能通过模块导入使用自身受控调用路径。未来若向外部模块开放模型任务，只能通过带用途、预算、并发、取消和审计约束的任务代理实现。
 
-const reply = await ctx.model.call(messages, opt);
+### 4.4 工具与模型任务
 
-// ST 预设模式
-const presetOpt = Options.builder()
-    .setMode('preset')
-    .setPresetName('MyProfile')
-    .build();
-
-const reply2 = await ctx.model.call(messages, presetOpt);
-```
-
-> **为什么用 ctx.model 而不是直接 fetch？**
-> - 自动处理 FakeStream 防超时
-> - 自动处理 ST 后端代理路由
-> - 日志自动关联到你的服务名
-> - 统一的错误处理与响应解析
-
-### 4.4 工具调用 / Function Calling（ctx.tool + callWithTools）
-
-让模型直接调用你定义的函数，而非吐自定义文本格式让你手写解析器。实测：用 tool_calls 输入仅增加约 200 token 的工具描述，但输出 token 常**直接减半**，串表/格式错乱也显著减少。
-
-**两步：定义工具 → 跑 agent loop。**
-
-```javascript
-const ctx = window.Amily2Bus.register('MyService');
-
-// Step 1：定义工具（本插件私有，其他插件看不到）
-ctx.tool.define(
-    'get_weather',
-    {
-        description: '查询某城市的当前天气',
-        parameters: {
-            type: 'object',
-            properties: { city: { type: 'string', description: '城市名' } },
-            required: ['city'],
-        },
-    },
-    async ({ city }) => {              // handler：返回值会被自动回喂给模型
-        return await fetchWeather(city);
-    },
-);
-
-// Step 2：带工具跑 agent loop
-const opt = ctx.model.Options.builder()
-    .setApiUrl('https://api.example.com/v1')
-    .setApiKey('sk-...')
-    .setModel('gpt-4o')
-    .build();
-
-const result = await ctx.model.callWithTools(
-    [{ role: 'user', content: '北京今天天气怎么样？' }],
-    opt,
-    { maxSteps: 8, onToolError: 'feedback' },
-);
-
-console.log(result.content);       // 模型的最终文字答复
-console.log(result.toolCalls);     // 本次所有工具调用记录 [{ name, args, result }]
-console.log(result.finishReason);  // 'stop'（正常结束）| 'maxSteps'（触顶）
-```
-
-**循环自动做的事**：拼装本插件 `define` 的全部工具 → 模型返回 `tool_calls` → 串行 dispatch 到对应 handler → 把返回值以 `role:'tool'` 回喂 → 进入下一轮，直到模型给出文字答复（不再调工具）或触顶 `maxSteps`。
-
-**工具管理 API**：
-
-```javascript
-ctx.tool.define(name, { description, parameters }, handler);  // 定义/覆盖
-ctx.tool.undefine(name);   // 移除单个工具
-ctx.tool.list();           // 列出本插件已定义的工具名
-```
-
-**`callWithTools` 选项**：
-
-| 选项 | 默认 | 说明 |
-|---|---|---|
-| `maxSteps` | `8` | 最多模型轮次，防 handler↔模型 死循环 |
-| `onToolError` | `'feedback'` | handler 抛错时：`'feedback'` 把错误当工具结果回喂让模型自纠；`'throw'` 直接抛出 |
-| `transport` | `'auto'` | 运输方式：`'tools'` 原生 function calling；`'json'` 工具说明进 prompt、模型吐协议 JSON；`'auto'` 先 tools、被拒自动降级 json 续跑 |
-| `tools` | `[]` | 额外工具 schema（与 `define` 的合并，按名去重）；一般用不到 |
-| `toolChoice` | `'auto'` | `'auto'`/`'none'`/`'required'` 或 `{ type:'function', function:{ name } }`（仅 tools 运输生效） |
-
-**双运输机制（最大兼容性）**：同一份 `define` 的工具 schema 有两种走法——
-
-- **tools 运输**：schema 进请求的 `tools` 字段，原生 function calling。输出 token 实测省约一半，**首选**。
-- **json 运输**：schema 渲染进 system prompt，模型按协议吐 `{"tool_call":{"name","arguments"}}` 或 `{"final_answer":"..."}`（每轮单调用，可靠性优先）；工具结果以 `[TOOL_RESULT]` 文本回喂，不用 tool role。兼容**任何**能聊天的接口——包括禁用 tools 参数的中转站和 Claude/Gemini 原生接口。
-- **auto（默认）**：先走 tools；请求被拒/响应异常时**自动降级 json 续跑同一轮**，日志记录降级。返回值的 `transport` 字段告诉你最终用的哪种。
-
-插件作者无感知：工具只 define 一次、handler 只写一份，运输层自动切换。
-
-> **handler 抛错怎么处理？** 默认 `'feedback'` 模式下，错误信息会作为工具结果回喂给模型——模型通常能据此自纠（换参数重试或改用文字回答）。这让"参数填错/表不存在"之类的问题自愈，而非整批失败。
->
-> **接口兼容性**：两种常见的 tools "用不了"情形——① Claude、Gemini 的**原生**接口用的是不同的工具协议；② **不少中转站偷懒直接禁用了工具调用**，收到带 `tools` 的请求就拒。这两种都没法靠 URL 预判，只能失败时识别。默认 `'auto'` 下这不再致命：降级 json 运输续跑，功能不中断（多花些输出 token）。只有强制 `transport:'tools'` 时才会直接报错，且报错自动附上"部分中转站禁用了 tools 参数……"的可操作提示——建议插件 catch 后把 message 透传给用户。
->
-> **与 `ctx.model.call()` 的区别**：`call()` 只返字符串、丢弃 tool_calls，适合纯文本生成；`callWithTools()` 走非流式 raw 路径、保留 tool_calls 并跑完整 loop。两者互不影响，按需选用。
+公共注册上下文没有 `ctx.tool`。工具定义、handler 和模型 agent loop 必须留在 Amily 内部模型任务代理中，并在任务级声明用途、最大模型轮次、Token 预算、并发上限、取消信号及审计字段。外部插件需要联动时，应调用目标模块显式公开、经过约束的领域方法。
 
 ---
 
@@ -275,7 +178,7 @@ await memory.pushUpdate(charId, data); // TypeError: Cannot read property 'pushU
 // 好 — 暴露的是明确的功能入口
 ctx.expose({
     processMessageUpdate,
-    fillWithSecondaryApi,
+    getStatus,
 });
 
 // 坏 — 不要暴露整个类实例或内部状态
@@ -341,7 +244,7 @@ window.Amily2Bus.query('PUBLIC').getRegisteredPlugins()
 window.Amily2Bus.query('PUBLIC').getAvailableModules()
 
 // 测试某个服务是否在线
-window.Amily2Bus.query('NccsApi')  // 返回对象则在线，null 则未注册
+window.Amily2Bus.query('NccsApi')?.getStatus()
 
 // 开启某服务的全部日志
 window.Amily2Bus.Logger.setLevel('TableSystem', 'all')
@@ -373,49 +276,25 @@ window.Amily2Bus.Logger.setLevel('MyService', 'warn');
 
 ## 七、添加新功能模块的完整流程
 
-假设你要新增一个「自动摘要」功能模块：
-
-```
-1. 创建文件 core/auto-summary/AutoSummaryService.js
-2. 在文件中注册总线身份
-3. 实现核心逻辑
-4. 暴露需要被其他模块调用的方法
-5. 在 index.js 中 import 该文件（确保它被加载）
-```
+新模块应只公开无需秘密、无需用户授权的最小领域能力：
 
 ```javascript
-// core/auto-summary/AutoSummaryService.js
-import { callNccsAI } from '../api/NccsApi.js';
-
-let _ctx = null;
-
-export async function summarize(text, maxLength = 200) {
-    const messages = [
-        { role: 'system', content: `请将以下内容压缩到${maxLength}字以内。` },
-        { role: 'user', content: text }
-    ];
-    return await callNccsAI(messages);
+function getStatus() {
+    return Object.freeze({ ready: true, version: 1 });
 }
 
-// --- 总线注册 ---
 if (window.Amily2Bus) {
     try {
-        _ctx = window.Amily2Bus.register('AutoSummary');
-        _ctx.expose({ summarize });
-        _ctx.log('Init', 'info', 'AutoSummary 服务已就绪。');
-    } catch (e) {
-        console.warn('[AutoSummary] Bus 注册警告:', e);
+        const ctx = window.Amily2Bus.register('MyFeature');
+        ctx.expose({ getStatus });
+        ctx.log('Init', 'info', 'MyFeature 服务已就绪。');
+    } catch (error) {
+        console.warn('[MyFeature] Bus 注册警告:', error);
     }
 }
 ```
 
-其他模块现在可以这样调用：
-```javascript
-const summary = window.Amily2Bus.query('AutoSummary');
-if (summary) {
-    const result = await summary.summarize(longText);
-}
-```
+需要模型、凭证、聊天写入或世界书写入的新功能，不得照此直接公开执行函数；应先建立对应的受控领域服务和授权边界。
 
 ---
 

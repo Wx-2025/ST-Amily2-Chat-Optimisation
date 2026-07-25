@@ -2,6 +2,7 @@ import { getContext, extension_settings } from "/scripts/extensions.js";
 import { saveSettingsDebounced } from "/script.js";
 import { getCharacterStableId } from "../utils/context-utils.js";
 import { getMemoryState } from "../table-system/manager.js";
+import { subscribeTableUpdates } from "../internal/table-update-channel.js";
 import { extensionName } from "../../utils/settings.js";
 
 const GRAPH_KEY = 'Amily2_Relationship_Graph';
@@ -227,8 +228,7 @@ const context = getContext();
 if (context) {
     migrateLegacyRelationshipGraphs();
     loadGraph();
-    document.addEventListener('AMILY2_TABLE_UPDATED', (e) => {
-        const { tableName } = e.detail;
+    subscribeTableUpdates(({ tableName }) => {
         if (tableName.includes('角色') || tableName === 'Character' || tableName.includes('关系') || tableName === 'Relationship') {
             console.log('[关系图谱] 检测到相关表格更新，正在同步图谱...');
             syncGraphFromTables();

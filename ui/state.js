@@ -3,6 +3,7 @@ import { characters, this_chid } from '/script.js';
 import { extensionName, defaultSettings } from "../utils/settings.js";
 import { pluginAuthStatus } from "../utils/auth.js";
 import { configManager } from '../utils/config/ConfigManager.js';
+import { clearSecretInput } from './secret-input.js';
 
 
 
@@ -62,7 +63,10 @@ export function populateModelDropdown() {
   });
 
   if (currentModel && modelSelect.val() === currentModel) {
-    modelNotes.html(`已选择: <strong>${currentModel}</strong>`);
+    modelNotes
+      .empty()
+      .append(document.createTextNode('已选择: '))
+      .append($('<strong>').text(currentModel));
   } else {
     modelNotes.html(`已加载 ${availableModels.length} 个可用模型`);
   }
@@ -83,11 +87,11 @@ export function updateUI() {
     $("#amily2_api_provider").val(settings.apiProvider || 'openai');
     $("#amily2_api_url").val(settings.apiUrl);
     $("#amily2_api_url").attr('type', 'text');
-    $("#amily2_api_key").val(configManager.get('apiKey') || '');
     $("#amily2_model").val(settings.model);
     $("#amily2_preset_selector").val(settings.tavernProfile);
 
     $("#amily2_api_provider").trigger('change');
+    clearSecretInput(document.getElementById('amily2_api_key'), configManager.has('apiKey'));
 
 
     $("#amily2_max_tokens").val(settings.maxTokens);

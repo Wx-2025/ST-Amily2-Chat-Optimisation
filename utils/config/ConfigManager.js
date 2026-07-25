@@ -12,11 +12,8 @@
  *
  * Bus 注册名：'Config'
  *
- * 公开接口（query('Config')）：
- *   get(key)              — 读取配置项（自动路由）
- *   set(key, value)       — 写入配置项（自动路由 + 触发保存）
- *   getSettings()         — 返回完整配置对象（敏感字段从 localStorage 注入）
- *   migrate()             — 将 extension_settings 中残留的敏感字段迁移到 localStorage
+ * Bus 只公开不含配置内容的就绪状态。配置读取、写入、迁移与敏感缓存同步
+ * 仅供 Amily 内部模块导入使用，不能进入全局查询面。
  */
 
 import { extension_settings } from "/scripts/extensions.js";
@@ -24,6 +21,7 @@ import { saveSettingsDebounced } from "/script.js";
 import { extensionName } from "../settings.js";
 import { SENSITIVE_KEYS } from "./sensitive-keys.js";
 import { apiKeyStore } from "./api-key-store/ApiKeyStore.js";
+import { registerInternalBusPlugin } from '../../SL/bus/Amily2Bus.js';
 
 // localStorage key 前缀，避免与其他插件冲突
 const LS_PREFIX = 'amily2_secure_';
@@ -47,6 +45,19 @@ class ConfigManager {
             return localStorage.getItem(LS_PREFIX + key) ?? '';
         }
         return extension_settings[extensionName]?.[key];
+    }
+
+    /**
+     * Check whether a setting exists without copying a credential into UI state.
+     * @param {string} key
+     * @returns {boolean}
+     */
+    has(key) {
+        if (SENSITIVE_KEYS.has(key)) {
+            return Boolean(localStorage.getItem(LS_PREFIX + key));
+        }
+        const value = extension_settings[extensionName]?.[key];
+        return value !== undefined && value !== null && value !== '';
     }
 
     /**
@@ -162,24 +173,12 @@ class ConfigManager {
 export const configManager = new ConfigManager();
 
 // ── Bus 注册 ──────────────────────────────────────────────────────────────────
-// setTimeout 确保 window.Amily2Bus 在 Amily2Bus.js 模块体执行后已挂载
-setTimeout(() => {
-    try {
-        const _ctx = window.Amily2Bus?.register('Config');
-        if (!_ctx) {
-            console.warn('[Config] Amily2Bus 尚未就绪，Config 服务注册跳过。');
-            return;
-        }
-        _ctx.expose({
-            get:         (key)        => configManager.get(key),
-            set:         (key, value) => configManager.set(key, value),
-            getSettings: ()           => configManager.getSettings(),
-            migrate:     ()           => configManager.migrate(),
-            init:        ()           => configManager.init(),
-            syncSensitiveCache: (options) => configManager.syncSensitiveCache(options),
-        });
-        _ctx.log('ConfigManager', 'info', 'Config 服务已注册到 Bus。');
-    } catch (e) {
-        console.error('[Config] Bus 注册失败:', e);
-    }
-}, 0);
+try {
+    const _ctx = registerInternalBusPlugin('Config');
+    _ctx.expose({
+        getStatus: () => Object.freeze({ ready: true }),
+    });
+    _ctx.log('ConfigManager', 'info', 'Config 服务已注册到 Bus。');
+} catch (e) {
+    console.error('[Config] Bus 注册失败:', e);
+}

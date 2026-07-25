@@ -20,6 +20,7 @@
  */
 
 import { Chain } from '../../SL/bus/chain/Chain.js';
+import { registerInternalBusPlugin } from '../../SL/bus/Amily2Bus.js';
 import { autoHideStage } from './stages/auto-hide.js';
 import { textOptimizeStage } from './stages/text-optimize.js';
 import { tableUpdateStage } from './stages/table-update.js';
@@ -38,18 +39,18 @@ pipeline
 export { pipeline as messagePipeline };
 
 // ── Bus 注册 ──────────────────────────────────────────────────────────────
-setTimeout(() => {
+(() => {
     try {
-        const _ctx = window.Amily2Bus?.register('MessagePipeline');
+        const _ctx = registerInternalBusPlugin('MessagePipeline');
         if (!_ctx) {
             console.warn('[MessagePipeline] Amily2Bus 尚未就绪，服务注册跳过。');
             return;
         }
         _ctx.expose({
-            execute: (pipelineCtx) => pipeline.execute(pipelineCtx),
+            getStatus: () => Object.freeze({ ready: true }),
         });
         _ctx.log('MessagePipeline', 'info', 'MessagePipeline 服务已注册到 Bus。');
     } catch (e) {
         console.error('[MessagePipeline] Bus 注册失败:', e);
     }
-}, 0);
+})();

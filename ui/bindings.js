@@ -5,6 +5,7 @@ import { pluginAuthStatus, activatePluginAuthorization, getPasswordForDate } fro
 import { fetchModels, testApiConnection } from "../core/api.js";
 import { safeLorebooks, safeCharLorebooks, safeLorebookEntries } from "../core/tavernhelper-compatibility.js";
 import { configManager } from '../utils/config/ConfigManager.js';
+import { markSecretInputStored } from './secret-input.js';
 
 import { setAvailableModels, populateModelDropdown, getLatestUpdateInfo } from "./state.js";
 import { fixCommand, testReplyChecker } from "../core/commands.js";
@@ -1081,6 +1082,11 @@ export function bindModalEvents() {
                 updateAndSaveSetting(key, this.value);
             }
             toastr.success(`配置 [${key}] 已自动保存!`, "Amily2号");
+        });
+    container
+        .off('blur.amily2.api_key')
+        .on('blur.amily2.api_key', '#amily2_api_key', function () {
+            markSecretInputStored(this, configManager.has('apiKey'));
         });
 
     container

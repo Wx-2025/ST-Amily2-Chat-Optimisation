@@ -5,6 +5,7 @@ import { world_names } from "/scripts/world-info.js";
 import { getResolvedApiConfig, setApiConfig, testConnection, fetchModels } from "./api.js";
 import { tools } from "./tools.js";
 import { syncSlot } from "../../ui/profile-sync.js";
+import { clearSecretInput, markSecretInputStored, readSecretInputUpdate } from "../../ui/secret-input.js";
 
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
@@ -288,8 +289,9 @@ function renderRulesList() {
 
 async function loadApiSettings() {
     const executorConfig = await getResolvedApiConfig('executor');
+    const executorKeyInput = $('#acc-executor-key');
     $('#acc-executor-url').val(executorConfig.apiUrl);
-    $('#acc-executor-key').val(executorConfig.apiKey);
+    clearSecretInput(executorKeyInput, Boolean(executorConfig.apiKey));
     $('#acc-executor-max-tokens').val(executorConfig.maxTokens || 4000);
     
     const executorModelSelect = $('#acc-executor-model');
@@ -561,16 +563,20 @@ function bindEvents() {
     });
 
     $('#acc-save-api').on('click', async () => {
+        const executorKeyInput = $('#acc-executor-key');
+        const keyUpdate = readSecretInputUpdate(executorKeyInput);
         const execMaxTokens = parseInt($('#acc-executor-max-tokens').val());
 
         const executorConfig = {
             apiUrl: $('#acc-executor-url').val().trim(),
-            apiKey: $('#acc-executor-key').val().trim(),
             model: $('#acc-executor-model').val() || '',
-            maxTokens: isNaN(execMaxTokens) ? 0 : execMaxTokens 
+            maxTokens: isNaN(execMaxTokens) ? 0 : execMaxTokens,
+            ...(keyUpdate.changed ? { apiKey: keyUpdate.value } : {}),
         };
 
         await setApiConfig('executor', executorConfig);
+        const savedConfig = await getResolvedApiConfig('executor');
+        markSecretInputStored(executorKeyInput, Boolean(savedConfig.apiKey));
         saveSettingsDebounced();
         toastr.success('API 配置已保存');
     });
@@ -582,7 +588,10 @@ function bindEvents() {
         const btn = $(`#acc-${role}-refresh-models`);
 
         const apiUrl = urlInput.val().trim();
-        const apiKey = keyInput.val().trim();
+        let apiKey = keyInput.val().trim();
+        if (!apiKey) {
+            apiKey = (await getResolvedApiConfig(role)).apiKey || '';
+        }
 
         if (!apiUrl) {
             toastr.warning('请先输入 API URL');
@@ -810,18 +819,19 @@ function showApprovalRequest(toolName, args) {
         <div class="acc-tool-request">
             <details>
                 <summary class="acc-tool-header" style="cursor: pointer;">
-                    <i class="fas fa-code"></i> 请求执行: ${toolName}
+                    <i class="fas fa-code"></i> 请求执行: ${escapeHtmlText(toolName)}
                     <span style="float: right; font-size: 10px; color: #888;">(点击展开)</span>
                 </summary>
-                <pre class="acc-tool-content">${JSON.stringify(args, null, 2)}</pre>
+                <pre class="acc-tool-content">${escapeHtmlText(JSON.stringify(args, null, 2))}</pre>
             </details>
         </div>
     `;
-    addMessage('system', toolDisplay);
+    addMessage('system', toolDisplay, { trustedHtml: true });
 }
 
-function addMessage(role, content) {
+function addMessage(role, content, options = {}) {
     const stream = $('#acc-chat-stream');
+    content = String(content ?? '');
     
     if (role === 'stream-assistant') {
         let lastMsg = stream.children().last();
@@ -869,7 +879,7 @@ function addMessage(role, content) {
         displayContent = displayContent.replace(regex, '').trim();
         
         if (!displayContent && role === 'executor') {
-            displayContent = "<i>(正在执行操作...)</i>";
+            displayContent = "*(正在执行操作...)*";
         }
 
         
@@ -881,7 +891,7 @@ function addMessage(role, content) {
     let formattedContent;
     
     
-    if (displayContent.trim().startsWith('<div class="acc-tool-request"')) {
+    if (options.trustedHtml === true) {
         formattedContent = displayContent;
     } else {
         formattedContent = parseMarkdown(displayContent);
@@ -924,11 +934,7 @@ function addMessage(role, content) {
 function parseMarkdown(text) {
     if (!text) return '';
 
-    
-    let html = text
-        .replace(/&/g, "&")
-        .replace(/</g, "<")
-        .replace(/>/g, ">");
+    let html = escapeHtmlText(text);
 
     
     html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
@@ -967,6 +973,15 @@ function parseMarkdown(text) {
     html = html.replace(/\n/g, '<br>');
 
     return html;
+}
+
+function escapeHtmlText(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
 }
 
 function renderEditor() {
@@ -1296,12 +1311,12 @@ async function loadContextToEditor() {
             const charGroup = $('<optgroup label="角色卡字段">');
             const fields = ['description', 'personality', 'first_mes', 'scenario', 'mes_example'];
             fields.forEach(field => {
-                charGroup.append(`<option value="char|${chid}|${field}">${field}</option>`);
+                charGroup.append($('<option>').val(`char|${chid}|${field}`).text(field));
             });
             
             if (char.alternate_greetings && char.alternate_greetings.length > 0) {
                 char.alternate_greetings.forEach((_, index) => {
-                    charGroup.append(`<option value="char|${chid}|greeting_${index}">开场白 #${index + 1}</option>`);
+                    charGroup.append($('<option>').val(`char|${chid}|greeting_${index}`).text(`开场白 #${index + 1}`));
                 });
             }
             selector.append(charGroup);
@@ -1339,7 +1354,7 @@ async function loadContextToEditor() {
             if (index.entries) {
                 index.entries.forEach(entry => {
                     const name = entry.comment || entry.keys || `Entry ${entry.uid}`;
-                    wiGroup.append(`<option value="wi|${bookName}|${entry.uid}">${name}</option>`);
+                    wiGroup.append($('<option>').val(`wi|${bookName}|${entry.uid}`).text(String(name)));
                 });
             }
             selector.append(wiGroup);

@@ -1,3 +1,5 @@
+import { queryInternalBusPlugin } from '../../../SL/bus/Amily2Bus.js';
+
 /**
  * Pipeline Stage 4 — SuperMemorySync
  * 等待本轮所有世界书写入完成，确保后续阶段（AutoSummary）读到最新状态。
@@ -5,7 +7,7 @@
  */
 export async function superMemorySyncStage(ctx, next) {
     try {
-        const sm = window.Amily2Bus?.query('SuperMemory');
+        const sm = queryInternalBusPlugin('SuperMemory');
         if (sm?.awaitSync) {
             await sm.awaitSync();
         }

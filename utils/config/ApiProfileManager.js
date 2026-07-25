@@ -16,19 +16,8 @@
  *
  * Bus 注册名：'ApiProfiles'
  *
- * 公开接口：
- *   getProfiles(type?)          — 获取全部或指定类型的 Profile 列表
- *   getProfile(id)              — 获取单个 Profile 元数据
- *   createProfile(data)         — 新建 Profile（返回新 ID）
- *   updateProfile(id, data)     — 更新 Profile 元数据
- *   deleteProfile(id)           — 删除 Profile（含清理 Key）
- *   getKey(id)                  — 读取 Profile 的 API Key（异步，自动解密）
- *   setKey(id, value)           — 写入 Profile 的 API Key（异步，自动加密）
- *   getAssignment(slot)         — 获取功能槽当前分配的 Profile ID
- *   setAssignment(slot, id)     — 设置功能槽的 Profile
- *   getAssignedProfile(slot)    — 获取功能槽完整 Profile（含解密 Key）
- *   SLOTS                       — 可用功能槽清单（静态）
- *   PROFILE_TYPES               — Profile 类型定义（静态）
+ * Bus 公开接口仅提供脱敏、只读的 Profile 摘要和槽位分配。
+ * Profile CRUD、槽位修改与密钥解析只供内部模块导入使用。
  */
 
 import { extension_settings } from "/scripts/extensions.js";
@@ -36,6 +25,7 @@ import { saveSettingsDebounced } from "/script.js";
 import { extensionName } from "../settings.js";
 import { apiKeyStore } from "./api-key-store/ApiKeyStore.js";
 import { configManager } from "./ConfigManager.js";
+import { registerInternalBusPlugin } from '../../SL/bus/Amily2Bus.js';
 
 // ── 类型与功能槽定义 ──────────────────────────────────────────────────────────
 
@@ -658,29 +648,27 @@ export function clearLegacyConfig() {
 }
 
 // ── Bus 注册 ──────────────────────────────────────────────────────────────────
-setTimeout(() => {
-    try {
-        const _ctx = window.Amily2Bus?.register('ApiProfiles');
-        if (!_ctx) {
-            console.warn('[ApiProfiles] Amily2Bus 尚未就绪，注册跳过。');
-            return;
-        }
-        _ctx.expose({
-            getProfiles:         (type)       => apiProfileManager.getProfiles(type),
-            getProfile:          (id)         => apiProfileManager.getProfile(id),
-            createProfile:       (data)       => apiProfileManager.createProfile(data),
-            updateProfile:       (id, data)   => apiProfileManager.updateProfile(id, data),
-            deleteProfile:       (id)         => apiProfileManager.deleteProfile(id),
-            getKey:              (id)         => apiProfileManager.getKey(id),
-            setKey:              (id, val)    => apiProfileManager.setKey(id, val),
-            getAssignment:       (slot)       => apiProfileManager.getAssignment(slot),
-            setAssignment:       (slot, id)   => apiProfileManager.setAssignment(slot, id),
-            getAssignedProfile:  (slot)       => apiProfileManager.getAssignedProfile(slot),
-            SLOTS:               SLOTS,
-            PROFILE_TYPES:       PROFILE_TYPES,
-        });
-        _ctx.log('ApiProfiles', 'info', 'ApiProfiles 服务已注册到 Bus。');
-    } catch (e) {
-        console.error('[ApiProfiles] Bus 注册失败:', e);
-    }
-}, 0);
+try {
+    const _ctx = registerInternalBusPlugin('ApiProfiles');
+    const toPublicSummary = profile => profile ? Object.freeze({
+            id: profile.id,
+            name: profile.name,
+            type: profile.type,
+            provider: profile.provider,
+            model: profile.model,
+        }) : null;
+    const cloneDefinitions = definitions => Object.freeze(Object.fromEntries(
+        Object.entries(definitions).map(([key, value]) => [key, Object.freeze({ ...value })]),
+    ));
+
+    _ctx.expose({
+        getProfiles:    (type) => Object.freeze(apiProfileManager.getProfiles(type).map(toPublicSummary)),
+        getProfile:     (id)   => toPublicSummary(apiProfileManager.getProfile(id)),
+        getAssignment:  (slot) => apiProfileManager.getAssignment(slot),
+        getSlots:       ()     => cloneDefinitions(SLOTS),
+        getProfileTypes: ()    => cloneDefinitions(PROFILE_TYPES),
+    });
+    _ctx.log('ApiProfiles', 'info', 'ApiProfiles 服务已注册到 Bus。');
+} catch (e) {
+    console.error('[ApiProfiles] Bus 注册失败:', e);
+}

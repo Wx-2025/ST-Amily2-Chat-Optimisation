@@ -1,8 +1,7 @@
 import { getContext, extension_settings } from "/scripts/extensions.js";
 import { extensionName } from "../utils/settings.js";
 import { processMessageUpdate } from './table-system/TableSystemService.js';
-// MessagePipeline 通过 Bus 查询；此 import 仅作启动时注册的触发
-import './pipeline/MessagePipeline.js';
+import { messagePipeline } from './pipeline/MessagePipeline.js';
 
 export async function onMessageReceived(data) {
     window.lastPreOptimizationResult = null;
@@ -18,12 +17,7 @@ export async function onMessageReceived(data) {
     const latestMessage = chat[chat.length - 1];
     if (latestMessage.is_user) { return; }
 
-    const pipeline = window.Amily2Bus?.query('MessagePipeline');
-    if (!pipeline) {
-        console.error('[Amily2-Events] MessagePipeline 服务未就绪，跳过消息处理。');
-        return;
-    }
-    await pipeline.execute({
+    await messagePipeline.execute({
         messageId: chat.length - 1,
         latestMessage,
         chat,

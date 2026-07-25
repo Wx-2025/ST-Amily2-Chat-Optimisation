@@ -11,6 +11,7 @@ import { checkForUpdates } from './cwb_updater.js';
 import { handleManualUpdateCard, startBatchUpdate, handleFloorRangeUpdate, handleLegacyFormatConversion } from './cwb_core.js';
 import { initializeCharCardViewer } from './cwb_uiManager.js';
 import { CHAR_CARD_VIEWER_BUTTON_ID } from './cwb_state.js';
+import { clearSecretInput, markSecretInputStored, readSecretInputUpdate } from '../../ui/secret-input.js';
 
 const { jQuery: $ } = window;
 
@@ -39,7 +40,11 @@ function saveApiConfig() {
     const settings = getSettings();
     settings.cwb_api_mode = $panel.find('#cwb-api-mode').val();
     settings.cwb_api_url = $panel.find('#cwb-api-url').val().trim();
-    configManager.set('cwb_api_key', $panel.find('#cwb-api-key').val());
+    const keyUpdate = readSecretInputUpdate($panel.find('#cwb-api-key'));
+    if (keyUpdate.changed) {
+        configManager.set('cwb_api_key', keyUpdate.value);
+        state.customApiConfig.apiKey = keyUpdate.value;
+    }
     settings.cwb_api_model = $panel.find('#cwb-api-model').val();
     settings.cwb_tavern_profile = $panel.find('#cwb-tavern-profile').val();
 
@@ -323,6 +328,9 @@ export function bindSettingsEvents($settingsPanel) {
         state.customApiConfig.apiKey = apiKey;
         updateApiStatusDisplay($panel);
     });
+    $panel.on('blur', '#cwb-api-key', function() {
+        markSecretInputStored(this, configManager.has('cwb_api_key'));
+    });
     
     $panel.on('input change', '#cwb-api-model', function(event) {
         const model = $(this).val();
@@ -550,7 +558,7 @@ function updateUiWithSettings() {
     }
 
     $panel.find('#cwb-api-url').val(settings.cwb_api_url);
-    $panel.find('#cwb-api-key').val(configManager.get('cwb_api_key') || '');
+    clearSecretInput($panel.find('#cwb-api-key'), configManager.has('cwb_api_key'));
     $panel.find('#cwb-tavern-profile').val(settings.cwb_tavern_profile);
     
     const $modelSelect = $panel.find('#cwb-api-model');

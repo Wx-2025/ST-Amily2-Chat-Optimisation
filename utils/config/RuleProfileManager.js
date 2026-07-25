@@ -1,6 +1,7 @@
 import { extension_settings } from "/scripts/extensions.js";
 import { saveSettingsDebounced } from "/script.js";
 import { extensionName } from "../settings.js";
+import { registerInternalBusPlugin } from '../../SL/bus/Amily2Bus.js';
 
 const RULE_PROFILE_KEY = 'ruleProfiles';
 const RULE_ASSIGNMENTS_KEY = 'ruleProfileAssignments';
@@ -281,26 +282,19 @@ export function resolveHistoriographyRuleConfig(settings = {}) {
     }
 })();
 
-setTimeout(() => {
-    try {
-        const ctx = window.Amily2Bus?.register('RuleProfiles');
-        if (!ctx) {
-            console.warn('[RuleProfiles] Amily2Bus 尚未就绪，注册跳过。');
-            return;
-        }
-        ctx.expose({
+try {
+    const ctx = registerInternalBusPlugin('RuleProfiles');
+    ctx.expose({
             listProfiles: () => ruleProfileManager.listProfiles(),
             getProfile: (id) => ruleProfileManager.getProfile(id),
-            saveProfile: (profile) => ruleProfileManager.saveProfile(profile),
-            deleteProfile: (id) => ruleProfileManager.deleteProfile(id),
             resolveProfile: (id, fallback) => ruleProfileManager.resolveProfile(id, fallback),
             getAssignment: (slot) => ruleProfileManager.getAssignment(slot),
-            setAssignment: (slot, id) => ruleProfileManager.setAssignment(slot, id),
             getAssignedProfile: (slot) => ruleProfileManager.getAssignedProfile(slot),
-            RULE_SLOTS,
-        });
-        ctx.log('RuleProfiles', 'info', 'RuleProfiles 服务已注册到 Bus。');
-    } catch (error) {
-        console.error('[RuleProfiles] Bus 注册失败:', error);
-    }
-}, 0);
+            getRuleSlots: () => Object.freeze(Object.fromEntries(
+                Object.entries(RULE_SLOTS).map(([key, value]) => [key, Object.freeze({ ...value })]),
+            )),
+    });
+    ctx.log('RuleProfiles', 'info', 'RuleProfiles 服务已注册到 Bus。');
+} catch (error) {
+    console.error('[RuleProfiles] Bus 注册失败:', error);
+}

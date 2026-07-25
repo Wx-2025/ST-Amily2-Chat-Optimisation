@@ -1,8 +1,7 @@
-import { getContext, extension_settings } from "/scripts/extensions.js";
-import { saveChat } from "/script.js";
+import { extension_settings } from "/scripts/extensions.js";
 import { renderTables } from '../../ui/table-bindings.js';
 import { extensionName } from "../../utils/settings.js";
-import { convertTablesToCsvString, convertSelectedTablesToCsvString, saveStateToMessage, getMemoryState, updateTableFromText, getBatchFillerRuleTemplate, getBatchFillerFlowTemplate } from './manager.js';
+import { convertTablesToCsvString, convertSelectedTablesToCsvString, updateTableFromText, getBatchFillerRuleTemplate, getBatchFillerFlowTemplate } from './manager.js';
 import { getPresetPrompts, getMixedOrder } from '../../PresetSettings/index.js';
 import { callAI, generateRandomSeed } from '../api.js';
 import { callNccsAI } from '../api/NccsApi.js';
@@ -81,15 +80,13 @@ export async function reorganizeTableContent(selectedTableIndices) {
         }
 
         console.log("[Amily2号-重新整理-原始回复]:", rawContent);
-        updateTableFromText(rawContent);
+        const applied = await updateTableFromText(rawContent);
+        if (!applied) {
+            throw new Error('AI 响应未产生可提交变更，或表格保存失败。');
+        }
         renderTables();
         
         toastr.success('表格内容重新整理完成！', 'Amily2-重新整理');
-        const currentContext = getContext();
-        if (currentContext.chat && currentContext.chat.length > 0) {
-            saveChat();
-        }
-
     } catch (error) {
         console.error('[Amily2-重新整理] 发生错误:', error);
         toastr.error(`重新整理失败: ${error.message}`, 'Amily2-重新整理');

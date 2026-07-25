@@ -37,6 +37,8 @@ import {
 } from "/script.js";
 import { getContext } from "/scripts/extensions.js";
 import { executeSlashCommandsWithOptions } from '/scripts/slash-commands.js';
+import { authorizeIframeRequest, isRegisteredIframeSource } from './iframe-security.js';
+import { registerInternalBusPlugin } from '../../SL/bus/Amily2Bus.js';
 
 
 class AmilyHelper {
@@ -704,18 +706,26 @@ export function makeRequest(request, data) {
 const apiHandlers = new Map();
 
 
-export function registerApiHandler(request, handler) {
+export function registerApiHandler(request, handler, options = {}) {
+    if (!options.capability) {
+        throw new Error(`[Amily2-IframeAPI] 注册 '${request}' 时必须声明 capability。`);
+    }
     if (apiHandlers.has(request)) {
         console.warn(`[Amily2-IframeAPI] 覆盖请求处理器: ${request}`);
     }
-    apiHandlers.set(request, handler);
+    apiHandlers.set(request, {
+        handler,
+        capability: options.capability,
+    });
 }
 
 
 export function initializeApiListener() {
     window.addEventListener('message', async (event) => {
-
-        if (window.location.origin !== 'null' && event.origin !== window.location.origin) {
+        if (!isRegisteredIframeSource(event.source)) {
+            return;
+        }
+        if (event.origin !== 'null' && event.origin !== window.location.origin) {
             console.warn(`[Amily2-IframeAPI] 拒绝来自未知来源的请求: ${event.origin}`);
             return;
         }
@@ -725,11 +735,11 @@ export function initializeApiListener() {
             return;
         }
 
-        const handler = apiHandlers.get(data.request);
+        const registration = apiHandlers.get(data.request);
         const callbackRequest = `${data.request}_callback`;
         const targetOrigin = event.origin === 'null' ? '*' : event.origin;
 
-        if (!handler) {
+        if (!registration) {
             console.error(`[Amily2-IframeAPI] 收到未知请求: ${data.request}`);
             event.source.postMessage({
                 request: callbackRequest,
@@ -739,8 +749,17 @@ export function initializeApiListener() {
             return;
         }
 
+        if (!authorizeIframeRequest(event.source, registration.capability, data.request)) {
+            event.source.postMessage({
+                request: callbackRequest,
+                uid: data.uid,
+                error: `用户未授权渲染内容调用 '${data.request}'`
+            }, targetOrigin);
+            return;
+        }
+
         try {
-            const result = await handler(data.data, event);
+            const result = await registration.handler(data.data, event);
             event.source.postMessage({
                 request: callbackRequest,
                 uid: data.uid,
@@ -760,39 +779,20 @@ export function initializeApiListener() {
 
 // ── Bus 注册 ──────────────────────────────────────────────────────────────
 // 注册名：'TavernHelper'
-// 暴露 amilyHelper 的全部公开方法，供其他模块通过 Bus query 访问，
-// 替代各处的直接 import { amilyHelper } from '...tavern-helper/main.js'。
-setTimeout(() => {
+// 全局 Bus 只提供状态；聊天、世界书和 slash 命令等有副作用的能力
+// 必须由 Amily 内部模块直接导入，不能成为任意同页脚本的操作代理。
+(() => {
     try {
-        const _ctx = window.Amily2Bus?.register('TavernHelper');
+        const _ctx = registerInternalBusPlugin('TavernHelper');
         if (!_ctx) {
             console.warn('[TavernHelper] Amily2Bus 尚未就绪，服务注册跳过。');
             return;
         }
         _ctx.expose({
-            // Chat 消息操作
-            getChatMessages:         (...a) => amilyHelper.getChatMessages(...a),
-            setChatMessages:         (...a) => amilyHelper.setChatMessages(...a),
-            setChatMessage:          (...a) => amilyHelper.setChatMessage(...a),
-            createChatMessages:      (...a) => amilyHelper.createChatMessages(...a),
-            deleteChatMessages:      (...a) => amilyHelper.deleteChatMessages(...a),
-            getLastMessageId:        (...a) => amilyHelper.getLastMessageId(...a),
-            // 世界书 / Lorebook 操作
-            getLorebooks:            (...a) => amilyHelper.getLorebooks(...a),
-            getCharLorebooks:        (...a) => amilyHelper.getCharLorebooks(...a),
-            getLorebookEntries:      (...a) => amilyHelper.getLorebookEntries(...a),
-            setLorebookEntries:      (...a) => amilyHelper.setLorebookEntries(...a),
-            createLorebookEntries:   (...a) => amilyHelper.createLorebookEntries(...a),
-            deleteLorebookEntries:   (...a) => amilyHelper.deleteLorebookEntries(...a),
-            createLorebook:          (...a) => amilyHelper.createLorebook(...a),
-            loadWorldInfo:           (...a) => amilyHelper.loadWorldInfo(...a),
-            saveWorldInfo:           (...a) => amilyHelper.saveWorldInfo(...a),
-            bindLorebookToCharacter: (...a) => amilyHelper.bindLorebookToCharacter(...a),
-            // 其他
-            triggerSlash:            (...a) => amilyHelper.triggerSlash(...a),
+            getStatus: () => Object.freeze({ ready: true }),
         });
         _ctx.log('TavernHelper', 'info', 'TavernHelper 服务已注册到 Bus。');
     } catch (e) {
         console.error('[TavernHelper] Bus 注册失败:', e);
     }
-}, 0);
+})();

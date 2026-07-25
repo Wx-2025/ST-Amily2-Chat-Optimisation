@@ -7,41 +7,98 @@
  * 依赖说明：
  *   - 状态读写走 infra/store.js，持久化走 infra/persistence.js
  *   - SuperMemory 分发走 events-dispatch.js（与 manager 共用，无环）
- *   - loadTables / saveTables 仍从 manager 引入（addTable 空状态兜底 / 日志桩），
+ *   - loadTables 仍从 manager 引入（addTable 空状态兜底），
  *     manager ↔ ui-mutations 构成 ESM 循环，但二者均为 hoisted 函数声明、
  *     仅在运行时调用，与既有 manager ↔ ui/table-bindings 环同模式，安全
  */
 
-import { getContext } from '/scripts/extensions.js';
-import { saveChat } from '/script.js';
-import { saveChatDebounced } from '../../../utils/utils.js';
-
 import { log } from '../logger.js';
 import { renderTables } from '../../../ui/table-bindings.js';
 import { dispatchTableUpdate, dispatchAllTablesUpdate } from '../events-dispatch.js';
-import { loadTables, saveTables } from '../manager.js';
+import { loadTables } from '../manager.js';
 
 import {
     getState,
+    setState,
     addHighlight,
     markTableUpdated,
     getUpdatedTables,
 } from '../infra/store.js';
 
 import {
-    saveStateToMessage,
     commitToLastMessage,
+    commitToLastMessageAsync,
 } from '../infra/persistence.js';
-import { createRecordMetadata, normalizeTableDatabaseState, normalizeTableIdentity } from '../infra/database-state.js';
+import {
+    createRecordMetadata,
+    deepClone,
+    normalizeTableDatabaseState,
+    normalizeTableIdentity,
+} from '../infra/database-state.js';
+import { applyPendingRecordDeletions, validateTableState } from '../module-tables.js';
+
+function createMutationDraft() {
+    const current = getState();
+    return Array.isArray(current) ? deepClone(current) : null;
+}
+
+function assertStructureEditable(table, action) {
+    if (table?.owner && table.owner !== 'user') {
+        const error = new Error(`模块表“${table.name || table.id}”的固定结构不能通过普通表格界面${action}。`);
+        error.code = 'TABLE_STRUCTURE_LOCKED';
+        throw error;
+    }
+}
+
+function acceptMutation(draft, action, { persist = true } = {}) {
+    const previous = Array.isArray(getState()) ? deepClone(getState()) : null;
+    let applied = false;
+    try {
+        const validated = validateTableState(draft);
+        setState(validated);
+        applied = true;
+        if (persist && !commitToLastMessage(validated)) {
+            throw Object.assign(new Error('当前聊天状态无法持久化。'), { code: 'TABLE_PERSIST_FAILED' });
+        }
+        return validated;
+    } catch (error) {
+        if (applied) setState(previous);
+        log(`${action}失败，变更已回退: ${error.code || 'TABLE_VALIDATION_FAILED'} ${error.message}`, 'error');
+        if (typeof toastr !== 'undefined') toastr.error(error.message, `${action}失败`);
+        return null;
+    }
+}
+
+async function acceptMutationAsync(draft, action) {
+    try {
+        const validated = validateTableState(draft);
+        if (!await commitToLastMessageAsync(validated)) {
+            throw Object.assign(new Error('当前聊天状态无法持久化。'), { code: 'TABLE_PERSIST_FAILED' });
+        }
+        setState(validated);
+        return validated;
+    } catch (error) {
+        log(`${action}失败，变更已回退: ${error.code || 'TABLE_VALIDATION_FAILED'} ${error.message}`, 'error');
+        if (typeof toastr !== 'undefined') toastr.error(error.message, `${action}失败`);
+        return null;
+    }
+}
 
 export function deleteColumn(tableIndex, colIndex) {
-    const tables = getState();
+    const tables = createMutationDraft();
     if (!tables || !tables[tableIndex] || colIndex < 0 || colIndex >= tables[tableIndex].headers.length) {
         log(`删除列失败：在表格 ${tableIndex} 中找不到索引为 ${colIndex} 的列。`, 'error');
         return;
     }
 
     const table = normalizeTableIdentity(tables[tableIndex], tableIndex);
+    try {
+        assertStructureEditable(table, '删除列');
+    } catch (error) {
+        log(error.message, 'error');
+        if (typeof toastr !== 'undefined') toastr.error(error.message, '删除列失败');
+        return;
+    }
     table.headers.splice(colIndex, 1);
     table.rows.forEach(row => {
         if (row.length > colIndex) row.splice(colIndex, 1);
@@ -51,13 +108,13 @@ export function deleteColumn(tableIndex, colIndex) {
     }
     table.columns.splice(colIndex, 1);
 
+    if (!acceptMutation(tables, '删除列')) return;
     log(`成功删除了表格 ${tableIndex} 的第 ${colIndex + 1} 列。`, 'success');
-    saveTables(tables);
     dispatchTableUpdate(tableIndex);
 }
 
 export function moveRow(tableIndex, rowIndex, direction) {
-    const tables = getState();
+    const tables = createMutationDraft();
     const table = tables?.[tableIndex] && normalizeTableIdentity(tables[tableIndex], tableIndex);
     if (!table || rowIndex < 0 || rowIndex >= table.rows.length) return;
 
@@ -74,13 +131,13 @@ export function moveRow(tableIndex, rowIndex, direction) {
     const [movedMeta] = table.rowMeta.splice(rowIndex, 1);
     table.rowMeta.splice(newIndex, 0, movedMeta);
 
+    if (!acceptMutation(tables, '移动行')) return;
     log(`成功将表格 ${tableIndex} 的第 ${rowIndex + 1} 行移动到第 ${newIndex + 1} 行。`, 'success');
-    saveTables(tables);
     dispatchTableUpdate(tableIndex);
 }
 
 export function insertRow(tableIndex, data, position = 'below') {
-    const tables = getState();
+    const tables = createMutationDraft();
     const table = tables?.[tableIndex] && normalizeTableIdentity(tables[tableIndex], tableIndex);
     if (!table) {
         log(`插入行失败：找不到索引为 ${tableIndex} 的表格。`, 'error');
@@ -103,7 +160,6 @@ export function insertRow(tableIndex, data, position = 'below') {
             const cIndex = parseInt(colIndex, 10);
             if (!isNaN(cIndex) && cIndex < newRow.length) {
                 newRow[cIndex] = data[colIndex];
-                addHighlight(tableIndex, insertIndex, cIndex);
             }
         }
     }
@@ -113,15 +169,22 @@ export function insertRow(tableIndex, data, position = 'below') {
     table.rowStatuses.splice(insertIndex, 0, 'normal');
     table.rowMeta.splice(insertIndex, 0, createRecordMetadata(table, newRow, insertIndex));
 
+    if (!acceptMutation(tables, '插入行')) return;
+    if (typeof data === 'object' && data !== null) {
+        Object.keys(data).forEach(colIndex => {
+            const parsed = Number.parseInt(colIndex, 10);
+            if (Number.isInteger(parsed) && parsed >= 0 && parsed < newRow.length) {
+                addHighlight(tableIndex, insertIndex, parsed);
+            }
+        });
+    }
     markTableUpdated(tableIndex);
     dispatchTableUpdate(tableIndex);
     log(`成功在表格 ${table.name} (索引 ${tableIndex}) 的第 ${insertIndex + 1} 行位置插入了新行。`, 'success');
-
-    commitToLastMessage(tables);
 }
 
 export function addRow(tableIndex) {
-    const tables = getState();
+    const tables = createMutationDraft();
     if (!tables || !tables[tableIndex]) return;
     const table = normalizeTableIdentity(tables[tableIndex], tableIndex);
     const colCount = table.headers.length;
@@ -130,43 +193,55 @@ export function addRow(tableIndex) {
     if (!table.rowStatuses) table.rowStatuses = Array(table.rows.length).fill('normal');
     table.rowStatuses.push('normal');
     table.rowMeta.push(createRecordMetadata(table, newRow, table.rows.length - 1));
+    if (!acceptMutation(tables, '新增行')) return;
     markTableUpdated(tableIndex);
     dispatchTableUpdate(tableIndex);
     log(`表格 [${table.name}] 新增了一行。`, 'info');
 
-    commitToLastMessage(tables);
 }
 
 export function addColumn(tableIndex) {
-    const tables = getState();
+    const tables = createMutationDraft();
     if (!tables || !tables[tableIndex]) return;
     const table = normalizeTableIdentity(tables[tableIndex], tableIndex);
+    try {
+        assertStructureEditable(table, '新增列');
+    } catch (error) {
+        log(error.message, 'error');
+        if (typeof toastr !== 'undefined') toastr.error(error.message, '新增列失败');
+        return;
+    }
     const newHeader = `新列 ${table.headers.length + 1}`;
     table.headers.push(newHeader);
     table.rows.forEach(row => row.push(''));
     if (!table.columnWidths) table.columnWidths = [];
     table.columnWidths.push(null);
     table.columns.push({ id: `column-${globalThis.crypto?.randomUUID?.() || Date.now()}`, label: newHeader, type: 'string' });
+    if (!acceptMutation(tables, '新增列')) return;
     log(`表格 [${table.name}] 新增了一列。`, 'info');
-
-    commitToLastMessage(tables);
 }
 
 export function updateHeader(tableIndex, colIndex, value) {
-    const tables = getState();
+    const tables = createMutationDraft();
     if (!tables || !tables[tableIndex] || tables[tableIndex].headers[colIndex] === undefined) return;
     const table = normalizeTableIdentity(tables[tableIndex], tableIndex);
+    try {
+        assertStructureEditable(table, '修改列名');
+    } catch (error) {
+        log(error.message, 'error');
+        if (typeof toastr !== 'undefined') toastr.error(error.message, '修改列名失败');
+        return;
+    }
     const tableName = table.name;
     const originalHeader = table.headers[colIndex];
     table.headers[colIndex] = value;
     table.columns[colIndex].label = value;
+    if (!acceptMutation(tables, '修改列名')) return;
     log(`表格 [${tableName}] 的表头“${originalHeader}”已更新为“${value}”。`, 'info');
-
-    commitToLastMessage(tables);
 }
 
 export async function deleteRow(tableIndex, rowIndex) {
-    const tables = getState();
+    const tables = createMutationDraft();
     const table = tables?.[tableIndex];
     if (!table || !table.rows[rowIndex]) return;
 
@@ -175,71 +250,42 @@ export async function deleteRow(tableIndex, rowIndex) {
     }
 
     table.rowStatuses[rowIndex] = 'pending-deletion';
+    if (!await acceptMutationAsync(tables, '标记删除行')) return;
     markTableUpdated(tableIndex);
     log(`表格 [${table.name}] 的第 ${rowIndex + 1} 行已标记为待删除。`, 'info');
-
-    const context = getContext();
-    if (context.chat?.length > 0) {
-        const lastMessage = context.chat[context.chat.length - 1];
-        if (saveStateToMessage(tables, lastMessage)) {
-            await saveChat();
-            renderTables();
-            dispatchTableUpdate(tableIndex);
-            return;
-        }
-    }
-    await saveChatDebounced();
     renderTables();
     dispatchTableUpdate(tableIndex);
 }
 
 export async function restoreRow(tableIndex, rowIndex) {
-    const tables = getState();
+    const tables = createMutationDraft();
     const table = tables?.[tableIndex];
     if (!table || !table.rows[rowIndex] || !table.rowStatuses) return;
 
     table.rowStatuses[rowIndex] = 'normal';
+    if (!await acceptMutationAsync(tables, '恢复行')) return;
     markTableUpdated(tableIndex);
     log(`表格 [${table.name}] 的第 ${rowIndex + 1} 行已恢复。`, 'info');
-
-    const context = getContext();
-    if (context.chat?.length > 0) {
-        const lastMessage = context.chat[context.chat.length - 1];
-        if (saveStateToMessage(tables, lastMessage)) {
-            await saveChat();
-            renderTables();
-            dispatchTableUpdate(tableIndex);
-            return;
-        }
-    }
-    await saveChatDebounced();
     renderTables();
     dispatchTableUpdate(tableIndex);
 }
 
 export function commitPendingDeletions() {
-    const tables = getState();
+    const tables = createMutationDraft();
     if (!tables) return false;
-    let deletionCount = 0;
+    let result;
+    try {
+        result = applyPendingRecordDeletions(tables);
+    } catch (error) {
+        log(`提交删除行失败，整批变更已回退: ${error.code || 'TABLE_VALIDATION_FAILED'} ${error.message}`, 'error');
+        if (typeof toastr !== 'undefined') toastr.error(error.message, '提交删除行失败');
+        return false;
+    }
 
-    tables.forEach((table, tableIndex) => {
-        normalizeTableIdentity(table, tableIndex);
-        if (!table.rowStatuses || table.rowStatuses.length === 0) return;
-        let tableHadDeletions = false;
-        for (let i = table.rows.length - 1; i >= 0; i--) {
-            if (table.rowStatuses[i] === 'pending-deletion') {
-                table.rows.splice(i, 1);
-                table.rowStatuses.splice(i, 1);
-                table.rowMeta.splice(i, 1);
-                deletionCount++;
-                tableHadDeletions = true;
-            }
-        }
-        if (tableHadDeletions) markTableUpdated(tableIndex);
-    });
-
-    if (deletionCount > 0) {
-        log(`已提交并永久删除了 ${deletionCount} 行。`, 'info');
+    if (result.deletedCount > 0) {
+        if (!acceptMutation(result.state, '提交删除行', { persist: false })) return false;
+        result.affectedTableIndices.forEach(tableIndex => markTableUpdated(tableIndex));
+        log(`已提交并永久删除了 ${result.deletedCount} 行。`, 'info');
         const updated = getUpdatedTables();
         if (updated.size > 0) {
             updated.forEach(tableIndex => dispatchTableUpdate(tableIndex));
@@ -250,9 +296,16 @@ export function commitPendingDeletions() {
 }
 
 export function insertColumn(tableIndex, colIndex, position) {
-    const tables = getState();
+    const tables = createMutationDraft();
     if (!tables || !tables[tableIndex]) return;
     const table = normalizeTableIdentity(tables[tableIndex], tableIndex);
+    try {
+        assertStructureEditable(table, '插入列');
+    } catch (error) {
+        log(error.message, 'error');
+        if (typeof toastr !== 'undefined') toastr.error(error.message, '插入列失败');
+        return;
+    }
 
     const insertAt = position === 'left' ? colIndex : colIndex + 1;
     table.headers.splice(insertAt, 0, '新列');
@@ -261,14 +314,21 @@ export function insertColumn(tableIndex, colIndex, position) {
     table.columnWidths.splice(insertAt, 0, null);
     table.columns.splice(insertAt, 0, { id: `column-${globalThis.crypto?.randomUUID?.() || Date.now()}`, label: '新列', type: 'string' });
 
+    if (!acceptMutation(tables, '插入列')) return;
     log(`表格 [${table.name}] 在第 ${colIndex + 1} 列的${position === 'left' ? '左侧' : '右侧'}插入了新列。`, 'info');
-    commitToLastMessage(tables);
 }
 
 export function moveColumn(tableIndex, colIndex, direction) {
-    const tables = getState();
+    const tables = createMutationDraft();
     if (!tables || !tables[tableIndex]) return;
     const table = normalizeTableIdentity(tables[tableIndex], tableIndex);
+    try {
+        assertStructureEditable(table, '移动列');
+    } catch (error) {
+        log(error.message, 'error');
+        if (typeof toastr !== 'undefined') toastr.error(error.message, '移动列失败');
+        return;
+    }
     const headers = table.headers;
     const rows = table.rows;
 
@@ -293,19 +353,25 @@ export function moveColumn(tableIndex, colIndex, direction) {
     const [columnToMove] = table.columns.splice(colIndex, 1);
     table.columns.splice(targetIndex, 0, columnToMove);
 
+    if (!acceptMutation(tables, '移动列')) return;
     log(`表格 [${table.name}] 的列“${headerToMove}”已向${direction === 'left' ? '左' : '右'}移动。`, 'info');
-    commitToLastMessage(tables);
 }
 
 export function deleteTable(tableIndex) {
-    const tables = getState();
+    const tables = createMutationDraft();
     if (!tables || !tables[tableIndex]) return;
+    try {
+        assertStructureEditable(tables[tableIndex], '删除表格');
+    } catch (error) {
+        log(error.message, 'error');
+        if (typeof toastr !== 'undefined') toastr.error(error.message, '删除表格失败');
+        return;
+    }
     const tableName = tables[tableIndex].name;
     tables.splice(tableIndex, 1);
-    log(`表格 [${tableName}] 已被成功废黜。`, 'success');
-
-    const success = commitToLastMessage(tables);
+    const success = !!acceptMutation(tables, '删除表格');
     if (success) {
+        log(`表格 [${tableName}] 已被成功废黜。`, 'success');
         log('废黜表格后的状态已强制写入最新消息并立即保存。', 'success');
     } else {
         log('无法找到可锚定的消息或保存失败，删除操作可能不会被持久化！', 'error');
@@ -318,10 +384,10 @@ export function addTable(tableName) {
         toastr.error('表格名称不能为空。', '创建失败');
         return;
     }
-    let tables = getState();
+    let tables = createMutationDraft();
     if (!tables) {
         loadTables();
-        tables = getState();
+        tables = createMutationDraft();
     }
 
     if (tables.some(table => table.name === tableName.trim())) {
@@ -346,10 +412,9 @@ export function addTable(tableName) {
 
     tables.push(newTable);
     normalizeTableDatabaseState(tables);
-    log(`已成功创建新表格：[${tableName.trim()}]。`, 'success');
-
-    const success = commitToLastMessage(tables);
+    const success = !!acceptMutation(tables, '创建表格');
     if (success) {
+        log(`已成功创建新表格：[${tableName.trim()}]。`, 'success');
         log('新表格状态已强制写入最新消息并立即保存。', 'success');
     } else {
         log('无法找到可锚定的消息或保存失败，新表格可能不会被持久化！', 'error');
@@ -357,10 +422,18 @@ export function addTable(tableName) {
 }
 
 export function renameTable(tableIndex, newName) {
-    const tables = getState();
+    const tables = createMutationDraft();
     if (!tables || !tables[tableIndex]) {
         log('重命名失败：表格不存在。', 'error');
         toastr.error('表格不存在。', '重命名失败');
+        return;
+    }
+    const table = normalizeTableIdentity(tables[tableIndex], tableIndex);
+    try {
+        assertStructureEditable(table, '重命名');
+    } catch (error) {
+        log(error.message, 'error');
+        if (typeof toastr !== 'undefined') toastr.error(error.message, '重命名失败');
         return;
     }
     const trimmedName = newName.trim();
@@ -377,13 +450,12 @@ export function renameTable(tableIndex, newName) {
 
     const oldName = tables[tableIndex].name;
     tables[tableIndex].name = trimmedName;
+    if (!acceptMutation(tables, '重命名表格')) return;
     log(`表格 "${oldName}" 已重命名为 "${trimmedName}"。`, 'success');
-
-    commitToLastMessage(tables);
 }
 
 export function moveTable(tableIndex, direction) {
-    const tables = getState();
+    const tables = createMutationDraft();
     if (!tables || !tables[tableIndex]) return;
 
     const newIndex = direction === 'up' ? tableIndex - 1 : tableIndex + 1;
@@ -396,10 +468,9 @@ export function moveTable(tableIndex, direction) {
     tables[tableIndex] = tables[newIndex];
     tables[newIndex] = temp;
 
-    log(`表格 [${temp.name}] 的顺序已调整。`, 'success');
-
-    const success = commitToLastMessage(tables);
+    const success = !!acceptMutation(tables, '移动表格');
     if (success) {
+        log(`表格 [${temp.name}] 的顺序已调整。`, 'success');
         log('表格顺序调整后的状态已强制写入最新消息并立即保存。', 'success');
     } else {
         log('无法找到可锚定的消息或保存失败，顺序调整可能不会被持久化！', 'error');
@@ -407,9 +478,16 @@ export function moveTable(tableIndex, direction) {
 }
 
 export function updateTableRules(tableIndex, newRules) {
-    const tables = getState();
+    const tables = createMutationDraft();
     if (!tables || !tables[tableIndex]) return;
-    const table = tables[tableIndex];
+    const table = normalizeTableIdentity(tables[tableIndex], tableIndex);
+    try {
+        assertStructureEditable(table, '修改规则');
+    } catch (error) {
+        log(error.message, 'error');
+        if (typeof toastr !== 'undefined') toastr.error(error.message, '更新规则失败');
+        return;
+    }
     table.note = newRules.note;
     table.rule_add = newRules.rule_add;
     table.rule_delete = newRules.rule_delete;
@@ -420,12 +498,12 @@ export function updateTableRules(tableIndex, newRules) {
 
     delete table.charLimitRule;
 
+    if (!acceptMutation(tables, '更新表格规则')) return;
     log(`表格 [${table.name}] 的规则已更新。`, 'info');
-    commitToLastMessage(tables);
 }
 
 export function updateRow(tableIndex, rowIndex, data) {
-    const tables = getState();
+    const tables = createMutationDraft();
     if (!tables || !tables[tableIndex]) {
         log(`AI指令错误：尝试在不存在的表格索引 ${tableIndex} 中操作。`, 'error');
         return;
@@ -439,23 +517,24 @@ export function updateRow(tableIndex, rowIndex, data) {
     }
 
     const row = table.rows[rowIndex];
+    const highlightedColumns = [];
     for (const colIndex in data) {
         const cIndex = parseInt(colIndex, 10);
         if (cIndex < row.length) {
             row[cIndex] = data[cIndex];
-            addHighlight(tableIndex, rowIndex, cIndex);
+            highlightedColumns.push(cIndex);
         }
     }
 
+    if (!acceptMutation(tables, '更新行')) return;
+    highlightedColumns.forEach(colIndex => addHighlight(tableIndex, rowIndex, colIndex));
     markTableUpdated(tableIndex);
     dispatchTableUpdate(tableIndex);
     log(`AI 指令更新了表格 [${table.name}] 的第 ${rowIndex + 1} 行。`, 'info');
-
-    commitToLastMessage(tables);
 }
 
 export function clearAllTables() {
-    const tables = getState();
+    const tables = createMutationDraft();
     if (!tables) {
         log('无法清空：当前表格状态为空。', 'error');
         return;
@@ -466,21 +545,17 @@ export function clearAllTables() {
         table.rows = [];
         table.rowStatuses = [];
     });
+    if (!acceptMutation(tables, '清空表格')) return;
     log('所有表格的行数据已在内存中清空。', 'warn');
 
     dispatchAllTablesUpdate();
 
-    const success = commitToLastMessage(tables);
-    if (success) {
-        log('清空行数据后的状态已强制写入最新消息并立即保存。', 'success');
-        toastr.success('所有表格的剧情内容已清空。', '操作完成');
-    } else {
-        log('无法找到可锚定的消息或保存失败，清空操作可能不会被持久化！', 'error');
-    }
+    log('清空行数据后的状态已强制写入最新消息并立即保存。', 'success');
+    toastr.success('所有表格的剧情内容已清空。', '操作完成');
 }
 
 export function updateColumnWidth(tableIndex, colIndex, width) {
-    const tables = getState();
+    const tables = createMutationDraft();
     if (!tables || !tables[tableIndex]) return;
     const table = tables[tableIndex];
     if (!table.columnWidths) table.columnWidths = [];
@@ -489,5 +564,5 @@ export function updateColumnWidth(tableIndex, colIndex, width) {
     }
     table.columnWidths[colIndex] = width;
 
-    commitToLastMessage(tables);
+    acceptMutation(tables, '更新列宽');
 }

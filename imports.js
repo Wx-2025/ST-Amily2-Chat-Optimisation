@@ -28,15 +28,11 @@ export { injectProgressiveMemory, clearProgressiveMemoryInjection } from "./core
 export { initialize as initializeRagProcessor } from "./core/rag-processor.js";
 export { loadSettingsToUI as loadHanlinyuanSettingsToUI } from "./ui/hanlinyuan-bindings.js";
 export { loadTables, clearHighlights, rollbackAndRefill, rollbackState, commitPendingDeletions, saveStateToMessage, getMemoryState, clearUpdatedTables } from './core/table-system/manager.js';
-export { fillWithSecondaryApi, resetSecondaryFillerLock, isSecondaryFillerRunning, abortCurrentSecondaryFiller } from './core/table-system/secondary-filler.js';
 export { renderTables } from './ui/table-bindings.js';
 export { log } from './core/table-system/logger.js';
 export { checkForUpdates, fetchMessageBoardContent } from './core/api.js';
 export { setUpdateInfo, applyUpdateIndicator } from './ui/state.js';
 export { pluginVersion, extensionName, defaultSettings } from './utils/settings.js';
-export { configManager } from './utils/config/ConfigManager.js';
-export { apiKeyStore } from './utils/config/api-key-store/ApiKeyStore.js';
-export { apiProfileManager, PROFILE_TYPES, SLOTS } from './utils/config/ApiProfileManager.js';
 export { ruleProfileManager, RULE_SLOTS, resolveSlotRuleConfig, resolveCondensationRuleConfig, resolveQueryPreprocessingRuleConfig, resolveTableRuleConfig, resolveHistoriographyRuleConfig, resolveRuleConfig } from './utils/config/RuleProfileManager.js';
 export { bindApiConfigPanel } from './ui/api-config-bindings.js';
 export { bindRuleConfigPanel } from './ui/rule-config-bindings.js';

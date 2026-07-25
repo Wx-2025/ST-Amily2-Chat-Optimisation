@@ -3,6 +3,16 @@ import { showHtmlModal } from '../../ui/page-window.js';
 
 let echartsLoaded = false;
 
+function escapeHtmlText(value) {
+    return String(value ?? '').replace(/[&<>"']/g, character => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+    })[character]);
+}
+
 async function loadECharts() {
     if (echartsLoaded) return;
     if (window.echarts) {
@@ -12,12 +22,19 @@ async function loadECharts() {
 
     return new Promise((resolve, reject) => {
         const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js';
+        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/echarts/5.4.3/echarts.min.js';
+        script.integrity = 'sha512-EmNxF3E6bM0Xg1zvmkeYD3HDBeGxtsG92IxFt1myNZhXdCav9MzvuH/zNMBU1DmIPN6njrhX1VTbqdJxQ2wHDg==';
+        script.crossOrigin = 'anonymous';
+        script.referrerPolicy = 'no-referrer';
         script.onload = () => {
+            if (!window.echarts) {
+                reject(new Error('ECharts 脚本已加载但未注册全局对象'));
+                return;
+            }
             echartsLoaded = true;
             resolve();
         };
-        script.onerror = reject;
+        script.onerror = () => reject(new Error('ECharts 完整性校验或资源加载失败'));
         document.head.appendChild(script);
     });
 }
@@ -58,7 +75,7 @@ export async function showGraphVisualization() {
                 container.innerHTML = ''; // Clear loading
                 
                 // Initialize Chart
-                const chart = echarts.init(container);
+                const chart = window.echarts.init(container);
                 renderChart(chart);
 
                 // Bind Buttons
@@ -85,7 +102,7 @@ export async function showGraphVisualization() {
 
              } catch (e) {
                  console.error('ECharts loading failed', e);
-                 dialogElement.find('#amily2-graph-container').html('<p style="color:red; text-align:center; padding-top:200px;">图谱引擎加载失败，请检查网络连接。</p>');
+                 dialogElement.find('#amily2-graph-container').html('<p style="color:red; text-align:center; padding-top:200px;">图谱引擎加载或完整性校验失败。</p>');
              }
         }
     });
@@ -154,17 +171,17 @@ function renderChart(chart) {
             formatter: function (params) {
                 if (params.dataType === 'node') {
                     const meta = params.data.data.metadata || {};
-                    let info = meta.info || '暂无信息';
-                    // Truncate long info
+                    let info = String(meta.info || '暂无信息');
+                    // Truncate long info before escaping it for the HTML tooltip.
                     if (info.length > 100) info = info.substring(0, 100) + '...';
-                    
+
                     return `
-                        <div style="font-weight:bold; border-bottom:1px solid #aaa; padding-bottom:5px; margin-bottom:5px;">${params.name}</div>
-                        <div style="font-size:0.9em;">类型: ${params.data.data.type}</div>
-                        <div style="font-size:0.9em; margin-top:5px; color:#ccc;">${info}</div>
+                        <div style="font-weight:bold; border-bottom:1px solid #aaa; padding-bottom:5px; margin-bottom:5px;">${escapeHtmlText(params.name)}</div>
+                        <div style="font-size:0.9em;">类型: ${escapeHtmlText(params.data.data.type)}</div>
+                        <div style="font-size:0.9em; margin-top:5px; color:#ccc;">${escapeHtmlText(info)}</div>
                     `;
                 } else {
-                    return `${params.data.source} -> ${params.data.target}<br/>关系: ${params.data.value}`;
+                    return `${escapeHtmlText(params.data.source)} -&gt; ${escapeHtmlText(params.data.target)}<br/>关系: ${escapeHtmlText(params.data.value)}`;
                 }
             }
         },

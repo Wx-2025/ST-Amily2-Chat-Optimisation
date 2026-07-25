@@ -136,7 +136,7 @@ export default class ModelCaller {
         }
         const toolDefs = Array.from(byName.values());
         if (toolDefs.length === 0) {
-            throw new Error('[ModelCaller] callWithTools: no tools defined; use context.tool.define() first.');
+            throw new Error('[ModelCaller] callWithTools: no tools supplied by the internal task scope.');
         }
 
         const convo = Array.isArray(messages) ? [...messages] : [];

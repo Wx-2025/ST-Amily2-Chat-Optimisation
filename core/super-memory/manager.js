@@ -4,9 +4,12 @@ import { amilyHelper } from "../tavern-helper/main.js";
 import { generateIndex } from "./smart-indexer.js";
 import { syncToLorebook, ensureMemoryBook, updateTransientHint, getMemoryBookName } from "./lorebook-bridge.js";
 import { getMemoryState } from "../table-system/manager.js";
-import { TABLE_UPDATED_EVENT, inferTableRole } from "../table-system/events-schema.js";
+import { inferTableRole } from "../table-system/events-schema.js";
+import {
+    normalizeTableUpdatePayload,
+    subscribeTableUpdates,
+} from "../internal/table-update-channel.js";
 import { eventSource, event_types } from "/script.js";
-import { handleArchiveUpdate } from "../archive-manager.js";
 
 /* ── [AMILY2-MODIFIED] ── pipeline integration: awaitSync() export ── */
 let isInitialized = false;
@@ -17,7 +20,7 @@ let _syncPromise = null; // tracks the running processQueue() promise for pipeli
 /**
  * [AMILY2-MODIFIED] Pipeline integration:
  * Allows MessagePipeline Stage 4 to await the super-memory sync triggered
- * by the AMILY2_TABLE_UPDATED CustomEvent during Stage 3.
+ * by the private table-update channel during Stage 3.
  */
 export async function awaitSync() {
     if (_syncPromise) await _syncPromise;
@@ -49,14 +52,14 @@ export async function initializeSuperMemory() {
         return;
     }
 
-    document.addEventListener(TABLE_UPDATED_EVENT, handleTableUpdate);
+    subscribeTableUpdates(handleTableUpdate);
 
     // 【修复】CHAT_CHANGED 时不再主动 forceSyncAll：
     // 表格系统在 index.js 的 CHAT_CHANGED 里延迟 100ms 才 loadTables()，
     // 此处立即同步会把【旧聊天】的表格内容写进【新角色】的记忆世界书（竞态污染；
     // 两边表名不同时旧表条目无 GC 兜底，会永久残留）。
     // 无需自行补同步：loadTables() 三个分支结尾都会 dispatchAllTablesUpdate()，
-    // 新状态会经 pushUpdate 自动入队。这里只负责确保新角色的记忆世界书存在。
+    // 新状态会经内部 channel 自动入队。这里只负责确保新角色的记忆世界书存在。
     eventSource.on(event_types.CHAT_CHANGED, async () => {
         const settings = extension_settings[extensionName] || {};
         if (settings.super_memory_enabled === false) return;
@@ -84,12 +87,13 @@ async function checkWorldBookStatus() {
 }
 
 /**
- * Bus 直调路径：由 TableSystem 通过 query('SuperMemory').pushUpdate(payload) 调用。
- * 接受纯对象 payload（events-schema.js 中 createTableUpdateEvent 的 detail 结构）。
+ * 内部更新入口，接受并重新校验 table-update channel 的 payload 结构。
  */
-export function pushUpdate(payload) {
+function enqueueTableUpdate(payload) {
     const settings = extension_settings[extensionName] || {};
     if (settings.super_memory_enabled === false) return;
+
+    const safePayload = normalizeTableUpdatePayload(payload);
 
     // 楼层数检查：聊天消息数不足时跳过同步
     const minFloor = settings.superMemory_minTriggerFloor ?? 0;
@@ -101,10 +105,10 @@ export function pushUpdate(payload) {
         }
     }
 
-    const { tableName, data, role, headers, rowStatuses } = payload;
-    console.log(`[Amily2-SuperMemory] 收到表格更新 (Bus): ${tableName} (Role: ${role})`);
+    const { tableName, data, role, headers, rowStatuses, hint } = safePayload;
+    console.log(`[Amily2-SuperMemory] 收到表格更新: ${tableName} (Role: ${role})`);
 
-    updateQueue.push({ tableName, data, role, headers, rowStatuses });
+    updateQueue.push({ tableName, data, role, headers, rowStatuses, hint });
     // 【修复】队列正忙时不可覆盖 _syncPromise：旧实现每次都赋值 processQueue()，
     // 而 processQueue 在 isProcessing 时立即返回（已 resolve 的空 Promise），
     // 导致 Pipeline Stage 4 的 awaitSync() 穿透、在同步未完成时放行后续阶段。
@@ -113,15 +117,11 @@ export function pushUpdate(payload) {
         _syncPromise = processQueue();
     }
 
-    // Bus 路径下 document event 不再分发，需直接通知归档管理器
-    handleArchiveUpdate(payload);
 }
 
-/** CustomEvent 降级路径（Bus 未就绪时的兜底监听器） */
-function handleTableUpdate(event) {
-    // Bus 已就绪时 pushUpdate 已由 dispatchTableUpdate 直调，跳过避免重复处理
-    if (window.Amily2Bus?.query('SuperMemory')?.pushUpdate) return;
-    pushUpdate(event.detail);
+/** 表格系统内部 channel 监听器。 */
+function handleTableUpdate(payload) {
+    enqueueTableUpdate(payload);
 }
 
 async function processQueue() {
@@ -292,13 +292,17 @@ export async function forceSyncAll() {
     }
 
     for (const table of tables) {
-        updateQueue.push({
-            tableName: table.name,
-            data: table.rows,
-            headers: table.headers,
-            rowStatuses: table.rowStatuses || [],
-            role: inferTableRole(table.name), // 复用 events-schema 的统一推断，避免两处逻辑漂移
-        });
+        try {
+            updateQueue.push(normalizeTableUpdatePayload({
+                tableName: table.name,
+                data: table.rows,
+                headers: table.headers,
+                rowStatuses: table.rowStatuses || [],
+                role: inferTableRole(table.name), // 复用 events-schema 的统一推断，避免两处逻辑漂移
+            }));
+        } catch (error) {
+            console.error(`[Amily2-SuperMemory] 已跳过无效或超限表格 ${table?.name || '<unknown>'}:`, error);
+        }
     }
 
     if (!isProcessing) {

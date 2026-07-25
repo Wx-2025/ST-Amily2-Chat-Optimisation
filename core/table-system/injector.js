@@ -1,7 +1,9 @@
 
-import { setExtensionPrompt, saveChat } from '/script.js';
-import { extension_settings, getContext } from '/scripts/extensions.js';
-import { getBatchFillerFlowTemplate, convertTablesToCsvString, convertTablesToCsvStringForContentOnly, commitPendingDeletions, getMemoryState, saveStateToMessage } from './manager.js';
+import { setExtensionPrompt } from '/script.js';
+import { extension_settings } from '/scripts/extensions.js';
+import { getBatchFillerFlowTemplate, convertTablesToCsvString, convertTablesToCsvStringForContentOnly, getMemoryState, setMemoryState, triggerSync } from './manager.js';
+import { commitToLastMessageAsync } from './infra/persistence.js';
+import { applyPendingRecordDeletions } from './module-tables.js';
 import { tableSystemDefaultSettings } from './settings.js';
 import { extensionName } from '../../utils/settings.js';
 import { log } from './logger.js';
@@ -65,19 +67,16 @@ export async function injectTableData(chat, contextSize, abort, type) {
 
     // 【V15.3 核心修正】将提交删除的逻辑移至此处，确保在用户发送消息时立即触发
     try {
-        const hasDeletions = commitPendingDeletions();
-        if (hasDeletions) {
-            const context = getContext();
-            if (context.chat && context.chat.length > 0) {
-                const currentState = getMemoryState();
-                const lastMessage = context.chat[context.chat.length - 1];
-                if (saveStateToMessage(currentState, lastMessage)) {
-                    await saveChat();
-                    log('【延迟删除】已在注入前提交待删除行并永久保存状态。', 'info');
-                    renderTables();
-                    updateOrInsertTableInChat();
-                }
+        const deletion = applyPendingRecordDeletions(getMemoryState() || []);
+        if (deletion.deletedCount > 0) {
+            if (!await commitToLastMessageAsync(deletion.state)) {
+                throw new Error('待删除行无法原子持久化，已保留原状态。');
             }
+            setMemoryState(deletion.state);
+            triggerSync();
+            log(`【延迟删除】已在注入前提交 ${deletion.deletedCount} 条待删除行并永久保存状态。`, 'info');
+            renderTables();
+            updateOrInsertTableInChat();
         }
     } catch (error) {
         console.error('[Amily2-延迟删除] 在注入前提交待删除行时发生错误:', error);

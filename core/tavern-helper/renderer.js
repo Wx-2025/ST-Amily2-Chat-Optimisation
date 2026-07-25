@@ -1,12 +1,10 @@
 import { eventSource, event_types } from '/script.js';
 import { extension_settings } from '/scripts/extensions.js';
 import { extensionName } from '../../utils/settings.js';
+import { registerIframeSource, unregisterIframeSource } from './iframe-security.js';
 
 const settings = {
-    sandboxMode: false,
-    useBlob: false,
-    wrapperIframe: true,
-    renderEnabled: true
+    useBlob: false
 };
 
 const winMap = new Map();
@@ -225,6 +223,7 @@ function buildWrappedHtml(html, needsVh) {
             var callbackRequest = request + '_callback';
 
             function handleMessage(event) {
+                if (event.source !== window.parent) return;
                 var msgData = event.data || {};
                 if (msgData.request === callbackRequest && msgData.uid === uid) {
                     window.removeEventListener('message', handleMessage);
@@ -426,7 +425,6 @@ function buildWrappedHtml(html, needsVh) {
     console.log('[Amily2-Iframe] 可用的全局对象: AmilyHelper, TavernHelper');
     console.log('[Amily2-Iframe] 可用的全局函数: triggerSlash, getChatMessages, setChatMessage, toastr, 等');
 </script>
-<script type="module" src="/scripts/extensions/third-party/${extensionName}/core/tavern-helper/iframe_client.js"></script>
 `;
 
     const injectionBlock = `
@@ -474,11 +472,12 @@ function getOrCreateWrapper(preEl) {
     return wrapper;
 }
 
-function registerIframeMapping(iframe, wrapper) {
+function registerIframeMapping(iframe, wrapper, metadata) {
     const tryMap = () => {
         try {
             if (iframe && iframe.contentWindow) {
                 winMap.set(iframe.contentWindow, { iframe, wrapper });
+                registerIframeSource(iframe.contentWindow, metadata);
                 return true;
             }
         } catch (e) { }
@@ -506,7 +505,7 @@ function handleIframeMessage(event) {
         }
     }
     if (rec && rec.iframe && typeof data.height === 'number') {
-        const next = Math.max(0, Number(data.height) || 0);
+        const next = Math.min(10_000, Math.max(0, Number(data.height) || 0));
         if (next < 1) return;
         const prev = lastHeights.get(rec.iframe) || 0;
         if (!data.force && Math.abs(next - prev) < 1) return;
@@ -565,11 +564,9 @@ function renderHtmlInIframe(htmlContent, container, preElement) {
         iframe.setAttribute('frameborder', '0');
         iframe.setAttribute('scrolling', 'no');
         iframe.loading = 'eager';
-        if (settings.sandboxMode) {
-            iframe.setAttribute('sandbox', 'allow-scripts allow-modals');
-        } else {
-            iframe.setAttribute('sandbox', 'allow-scripts allow-same-origin allow-forms allow-modals allow-popups');
-        }
+        // 仅在用户显式启用时渲染，并始终运行在 opaque-origin sandbox 中。
+        // 所有需要访问 SillyTavern 的操作只能经过已登记、分级授权的新消息桥。
+        iframe.setAttribute('sandbox', 'allow-scripts');
         
         if (needsVh) {
             iframe.dataset.needsVh = 'true';
@@ -577,6 +574,7 @@ function renderHtmlInIframe(htmlContent, container, preElement) {
 
         const wrapper = getOrCreateWrapper(preElement);
         wrapper.querySelectorAll('.amily2-iframe').forEach(old => {
+            unregisterIframeSource(old.contentWindow);
             try { old.src = 'about:blank'; } catch (e) { }
             releaseIframeBlob(old);
             old.remove();
@@ -591,7 +589,10 @@ function renderHtmlInIframe(htmlContent, container, preElement) {
         wrapper.appendChild(iframe);
         preElement.classList.remove('amily2-show');
         preElement.style.display = 'none';
-        registerIframeMapping(iframe, wrapper);
+        registerIframeMapping(iframe, wrapper, {
+            messageId: preElement.closest('.mes')?.getAttribute('mesid') ?? '未知',
+            contentHash: codeHash,
+        });
         try { iframe.contentWindow?.postMessage({ type: 'probe' }, '*'); } catch (e) { }
         preElement.dataset.amily2Final = 'true';
         preElement.dataset.amily2Hash = originalHash;
@@ -602,7 +603,7 @@ function renderHtmlInIframe(htmlContent, container, preElement) {
 }
 
 function processCodeBlocks(messageElement) {
-    if (extension_settings[extensionName].amily_render_enabled === false) return;
+    if (extension_settings[extensionName]?.amily_render_enabled !== true) return;
     try {
         const codeBlocks = messageElement.querySelectorAll('pre > code');
         codeBlocks.forEach(codeBlock => {
@@ -691,6 +692,7 @@ export function renderAllIframes() {
 export function clearAllIframes() {
     const iframes = document.querySelectorAll('.amily2-iframe');
     iframes.forEach(iframe => {
+        unregisterIframeSource(iframe.contentWindow);
         const wrapper = iframe.parentElement;
         if (wrapper && wrapper.classList.contains('amily2-iframe-wrapper')) {
             const preElement = wrapper.nextElementSibling;

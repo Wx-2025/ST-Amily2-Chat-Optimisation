@@ -74,21 +74,6 @@ function toggleViewerOrb() {
     }
 }
 
-function loadJsDiff() {
-    return new Promise((resolve, reject) => {
-        if (window.Diff) {
-            resolve();
-            return;
-        }
-        const script = document.createElement('script');
-        script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jsdiff/5.1.0/diff.min.js';
-        script.onload = resolve;
-        script.onerror = reject;
-        document.head.appendChild(script);
-    });
-}
-
-
 async function renderDiffContent($contentContainer) {
     const snapshot = window.Amily2PreOptimizationSnapshot;
 
@@ -124,22 +109,28 @@ async function renderDiffContent($contentContainer) {
     }
 
     try {
-        await loadJsDiff();
+        const DiffMatchPatch = SillyTavern?.libs?.DiffMatchPatch || window.diff_match_patch;
+        if (typeof DiffMatchPatch !== 'function') {
+            throw new Error('SillyTavern 未提供差异对比库');
+        }
+        const diffEngine = new DiffMatchPatch();
+
         const { optimized } = snapshot;
 
         let cleanedOptimized = optimized.replace(/<!--[\s\S]*?-->/g, '');
 
         cleanedOptimized = normalizeWhitespace(cleanedOptimized);
 
-        const diff = window.Diff.diffLines(originalText, cleanedOptimized, { newlineIsToken: true });
+        const diff = diffEngine.diff_main(originalText, cleanedOptimized);
+        diffEngine.diff_cleanupSemantic(diff);
         
         let diffHtml = '<pre style="white-space: pre-wrap; word-wrap: break-word;">';
-        diff.forEach(part => {
-            const color = part.added ? 'green' : part.removed ? 'red' : 'grey';
-            const text = escapeHtmlText(part.value);
-            if (part.removed) {
+        diff.forEach(([operation, value]) => {
+            const color = operation === 1 ? 'green' : operation === -1 ? 'red' : 'grey';
+            const text = escapeHtmlText(value);
+            if (operation === -1) {
                 diffHtml += `<del style="color: ${color}; background-color: rgba(255, 0, 0, 0.1); text-decoration: none;">${text}</del>`;
-            } else if (part.added) {
+            } else if (operation === 1) {
                 diffHtml += `<ins style="color: ${color}; background-color: rgba(0, 255, 0, 0.1); text-decoration: none;">${text}</ins>`;
             } else {
                 diffHtml += `<span style="color: ${color};">${text}</span>`;
@@ -149,10 +140,10 @@ async function renderDiffContent($contentContainer) {
         $contentContainer.html(diffHtml);
 
     } catch (error) {
-        toastr.warning('加载差异对比库失败，将分别显示原文。');
+        toastr.warning('差异对比组件不可用，将分别显示原文。');
         const fallbackHtml = `<div class="diff-fallback">
                                 <h4>未能加载差异对比视图</h4>
-                                <p>这通常是由于网络问题无法访问 cdnjs.cloudflare.com 导致的。以下是优化前后的文本：</p>
+                                <p>当前 SillyTavern 环境未提供差异对比组件。以下是优化前后的文本：</p>
                                 <hr>
                                 <h5>优化前（已应用排除和规范化规则）</h5>
                                 <pre style="white-space: pre-wrap; word-wrap: break-word;">${escapeHtmlText(originalText)}</pre>

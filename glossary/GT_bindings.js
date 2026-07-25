@@ -10,6 +10,7 @@ import { reorganizeEntriesByHeadings, loadDatabaseFiles } from './executor.js';
 import { SETTINGS_KEY as PRESET_SETTINGS_KEY } from '../PresetSettings/config.js';
 import { escapeHTML } from '../utils/utils.js';
 import { watchProfileSliderGuard } from '../ui/profile-slider-guard.js';
+import { clearSecretInput, markSecretInputStored, readSecretInputUpdate } from '../ui/secret-input.js';
 
 const moduleState = {
     selectedWorldBook: '',
@@ -32,8 +33,11 @@ function loadSettingsToUI() {
     const inputs = container.querySelectorAll('[data-setting-key]');
     inputs.forEach(target => {
         const key = target.dataset.settingKey;
-        // 敏感字段从 configManager（localStorage）读取，其余从 extension_settings 读取
-        const value = SENSITIVE_KEYS.has(key) ? configManager.get(key) : settings[key];
+        if (SENSITIVE_KEYS.has(key)) {
+            clearSecretInput(target, configManager.has(key));
+            return;
+        }
+        const value = settings[key];
 
         if (value === undefined || value === null || value === '') {
             if (!SENSITIVE_KEYS.has(key)) {
@@ -99,7 +103,10 @@ function bindAutoSaveEvents() {
 
         // 敏感字段（API Key）经 configManager 写入 localStorage
         if (SENSITIVE_KEYS.has(key)) {
-            configManager.set(key, value);
+            const update = readSecretInputUpdate(target);
+            if (!update.changed) return;
+            configManager.set(key, update.value);
+            markSecretInputStored(target, Boolean(update.value));
         } else {
             updateAndSaveSetting(key, value);
         }

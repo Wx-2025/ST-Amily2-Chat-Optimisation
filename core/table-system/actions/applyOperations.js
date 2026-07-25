@@ -26,6 +26,7 @@
 
 import { log } from '../logger.js';
 import { createRecordMetadata, normalizeTableDatabaseState, normalizeTableIdentity } from '../infra/database-state.js';
+import { validateTableState } from '../module-tables.js';
 
 /**
  * 在表格末尾插入一行。in-place mutation（调用方已 clone）。
@@ -159,7 +160,8 @@ export function applyOperations(initialState, operations) {
         return { state: initialState, changes: [] };
     }
 
-    let state = normalizeTableDatabaseState(JSON.parse(JSON.stringify(initialState)));
+    const originalState = normalizeTableDatabaseState(JSON.parse(JSON.stringify(initialState)));
+    let state = JSON.parse(JSON.stringify(originalState));
     /** @type {Change[]} */
     let allChanges = [];
 
@@ -186,6 +188,13 @@ export function applyOperations(initialState, operations) {
         } catch (e) {
             log(`推演操作 ${op.op} 时发生运行时错误: ${e.message}`, 'error');
         }
+    }
+
+    try {
+        state = validateTableState(state);
+    } catch (error) {
+        log(`整批填表操作未通过数据库约束校验，已原子回退: ${error.code || 'TABLE_VALIDATION_FAILED'} ${error.message}`, 'error');
+        return { state: originalState, changes: [] };
     }
 
     return { state, changes: allChanges };
