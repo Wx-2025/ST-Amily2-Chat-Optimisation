@@ -711,7 +711,7 @@ export function bindModalEvents() {
 
     container
         .off("click.amily2.tutorial")
-        .on("click.amily2.tutorial", "#amily2_open_tutorial, #amily2_open_neige_tutorial, #amily2_open_table_tutorial, #amily2_open_plot_opt_tutorial, #amily2_open_super_memory_tutorial, #amily2_open_rule_config_tutorial, #amily2_open_shujuku_tutorial, #amily2_open_shujuku_agent_tutorial", function() {
+        .on("click.amily2.tutorial", "#amily2_open_tutorial, #amily2_open_neige_tutorial, #amily2_open_table_tutorial, #amily2_open_plot_opt_tutorial, #amily2_open_super_memory_tutorial, #amily2_open_rule_config_tutorial, #amily2_open_time_river_tutorial, #amily2_open_shujuku_tutorial, #amily2_open_shujuku_agent_tutorial", function() {
             if (!pluginAuthStatus.authorized) return;
 
             const tutorials = {
@@ -750,6 +750,10 @@ export function bindModalEvents() {
                     url: `${extensionBasePath}/RuleConfig.md`,
                     advancedTitle: "规则配置 · 进阶操作",
                     advancedUrl: `${extensionBasePath}/RuleConfig-Advanced.md`,
+                },
+                "amily2_open_time_river_tutorial": {
+                    title: "时间河 · 使用教程",
+                    url: `${extensionBasePath}/TimeRiver.md`,
                 },
                 "amily2_open_shujuku_tutorial": {
                     title: "数据库兼容 · 小白教程",

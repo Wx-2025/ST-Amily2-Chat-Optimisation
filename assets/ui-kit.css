@@ -462,6 +462,7 @@
 #amily2_plot_optimization_panel .am2-panel-title-row,
 #amily2_super_memory_panel .am2-panel-title-row,
 #amily2_rule_config_panel .am2-panel-title-row,
+#amily2_time_river_panel .am2-panel-title-row,
 #amily2_api_config_panel .am2-panel-title-row,
 #amily2_api_config_panel .am2-ac-title-row {
     display: flex !important;
@@ -477,7 +478,8 @@
 #amily2_additional_features_panel .am2-panel-title-row .additional-features-title,
 #amily2_plot_optimization_panel .am2-panel-title-row .additional-features-title,
 #amily2_super_memory_panel .am2-panel-title-row .additional-features-title,
-#amily2_rule_config_panel .am2-panel-title-row .additional-features-title {
+#amily2_rule_config_panel .am2-panel-title-row .additional-features-title,
+#amily2_time_river_panel .am2-panel-title-row .additional-features-title {
     margin: 0 !important;
     min-width: 0 !important;
 }
@@ -489,6 +491,7 @@
 #amily2_plot_optimization_panel .am2-panel-tutorial-btn,
 #amily2_super_memory_panel .am2-panel-tutorial-btn,
 #amily2_rule_config_panel .am2-panel-tutorial-btn,
+#amily2_time_river_panel .am2-panel-tutorial-btn,
 #amily2_api_config_panel .am2-panel-tutorial-btn {
     flex: 0 0 auto !important;
     min-height: 28px !important;
@@ -497,6 +500,9 @@
     font-size: 12px !important;
     gap: 4px !important;
     white-space: nowrap !important;
+    writing-mode: horizontal-tb !important;
+    text-orientation: mixed !important;
+    word-break: keep-all !important;
     width: auto !important;
     min-width: 0 !important;
 }
@@ -515,6 +521,7 @@
 #amily2_world_editor_panel .amily2-header,
 #amily2_renderer_panel .amily2-header,
 #amily2_sfigen_panel .amily2-header,
+#amily2_time_river_panel .amily2-header,
 #amily2_auto_char_card_panel .amily2-header {
     display: flex !important;
     align-items: center !important;
@@ -540,7 +547,8 @@
 #amily2_character_world_book_panel .additional-features-title,
 #amily2_world_editor_panel .additional-features-title,
 #amily2_renderer_panel .additional-features-title,
-#amily2_sfigen_panel .additional-features-title {
+#amily2_sfigen_panel .additional-features-title,
+#amily2_time_river_panel .additional-features-title {
     display: inline-flex;
     align-items: center;
     gap: 10px;
@@ -552,7 +560,8 @@
 
 #amily2_chat_optimiser .additional-features-title > i,
 #amily2_api_config_panel .additional-features-title > i,
-#amily2_memorisation_forms_panel .additional-features-title > i {
+#amily2_memorisation_forms_panel .additional-features-title > i,
+#amily2_time_river_panel .additional-features-title > i {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -566,7 +575,8 @@
 
 #amily2_chat_optimiser .header-divider,
 #amily2_api_config_panel .header-divider,
-#amily2_memorisation_forms_panel .header-divider {
+#amily2_memorisation_forms_panel .header-divider,
+#amily2_time_river_panel .header-divider {
     display: none !important;
 }
 
@@ -647,9 +657,9 @@
 #amily2_glossary_panel input.text_pole,
 #amily2_glossary_panel textarea,
 #amily2_glossary_panel select,
-#amily2_super_memory_panel input,
+#amily2_super_memory_panel input:not([type="checkbox"]):not([type="radio"]),
 #amily2_super_memory_panel select,
-#amily2_progressive_memory_panel input,
+#amily2_progressive_memory_panel input:not([type="checkbox"]):not([type="radio"]),
 #amily2_progressive_memory_panel select,
 #amily2_progressive_memory_panel textarea {
     width: 100%;
@@ -664,6 +674,20 @@
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.18);
     transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
     box-sizing: border-box;
+}
+
+#amily2_progressive_memory_panel #pm-data-egress-ack {
+    width: auto !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    flex: 0 0 auto;
+}
+
+#amily2_progressive_memory_panel #pm-data-egress-ack + span {
+    flex: 1 1 auto;
+    min-width: 0;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
 }
 
 #amily2_chat_optimiser textarea,
@@ -2691,6 +2715,33 @@
     border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+#amily2_rule_config_panel .am2-combat-rule-toolbar {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    margin: 10px 0;
+}
+
+#amily2_rule_config_panel .am2-combat-rule-toolbar > select {
+    flex: 1 1 220px;
+    min-width: 0;
+}
+
+#amily2_rule_config_panel .am2-combat-rule-toolbar > .menu_button {
+    writing-mode: horizontal-tb !important;
+    text-orientation: mixed !important;
+    white-space: nowrap !important;
+    word-break: keep-all !important;
+    min-width: max-content;
+}
+
+#amily2_rule_config_panel #amily2_combat_rule_profile_json {
+    width: 100%;
+    box-sizing: border-box;
+    font-family: var(--monoFontFamily, monospace);
+}
+
 /* 空状态：固定居中容器，避免长句在窄屏左溢出 */
 #amily2_rule_config_panel .am2-empty-mini {
     display: block;
@@ -2729,6 +2780,10 @@
         grid-column: 1 / -1;
     }
     #amily2_rule_config_panel .am2-rule-actions > .menu_button {
+        flex: 1 1 calc(50% - 8px);
+        min-width: 96px;
+    }
+    #amily2_rule_config_panel .am2-combat-rule-toolbar > .menu_button {
         flex: 1 1 calc(50% - 8px);
         min-width: 96px;
     }
