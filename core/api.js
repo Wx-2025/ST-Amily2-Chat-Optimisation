@@ -1088,11 +1088,25 @@ export async function callAIForTools(messages, tool, options = {}) {
             return null;
         }
 
-        const argsString = toolCalls[0]?.function?.arguments;
+        const expectedToolName = tool?.function?.name;
+        const matchingToolCalls = toolCalls.filter(call => call?.function?.name === expectedToolName);
+        if (toolCalls.length !== 1 || matchingToolCalls.length !== 1) {
+            console.warn(
+                '[Amily2-外交部] Function Call 响应必须且只能包含一次目标工具调用:',
+                { expectedToolName, received: toolCalls.map(call => call?.function?.name || null) },
+            );
+            return null;
+        }
+
+        const argsString = matchingToolCalls[0]?.function?.arguments;
+        if (typeof argsString !== 'string' || !argsString.trim()) {
+            console.warn('[Amily2-外交部] Function Call arguments 为空或不是字符串。');
+            return null;
+        }
         console.groupCollapsed('[Amily2号-Function Call 响应]');
         console.log(argsString);
         console.groupEnd();
-        return argsString ?? null;
+        return argsString;
 
     } catch (error) {
         if (error?.name === 'AbortError') {

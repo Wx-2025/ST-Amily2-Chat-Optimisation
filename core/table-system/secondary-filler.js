@@ -7,26 +7,218 @@ import { updateTableFromText, updateTableFromOps, getBatchFillerRuleTemplate, ge
 import { commitToMessageAsync } from './infra/persistence.js';
 import { getPresetPrompts, getMixedOrder } from '../../PresetSettings/index.js';
 import { callAI, callAIForTools, generateRandomSeed } from '../api.js';
-import { TABLE_FILL_TOOL, parseToolCallArgs } from './formatters/tool-call.js';
+import {
+    TABLE_FILL_TOOL,
+    TABLE_FILL_TOOL_PROTOCOL_PROMPT,
+    parseToolCallArgs,
+} from './formatters/tool-call.js';
 import { callNccsAI } from '../api/NccsApi.js';
 import { extractBlocksByTags, applyExclusionRules } from '../utils/rag-tag-extractor.js';
 import { resolveTableRuleConfig } from '../../utils/config/RuleProfileManager.js';
 import { safeLorebookEntries } from '../tavernhelper-compatibility.js';
 import { log } from './logger.js';
 import { showTableFillReviewModal } from '../../ui/page-window.js';
+import {
+    SECONDARY_REQUIRED_FILLER_BLOCKS,
+    buildFillerFlowPrompt,
+    completeFillerPromptOrder,
+} from './filler-prompt-order.js';
+import { captureChatScope, chatScopesMatch } from './infra/chat-scope.js';
 
 const CONTINUE_PROMPT_SECONDARY = '上一条回复不完整或缺少 <Amily2Edit> 指令块。请直接从中断处继续生成剩余内容，不要重复已输出的文本，也不要添加任何解释或寒暄，确保最终输出中包含完整的 <Amily2Edit>...</Amily2Edit> 指令块。';
 
 let secondaryFillerDebounceTimer = null;
+let secondaryFillerRetryTimer = null;
+let secondaryFillerManualRetryTimer = null;
+let secondaryFillerRetryGeneration = 0;
 let secondaryFillerRunning = false;
 let currentAbortController = null;
+
+const SECONDARY_FAILURE_LATCH_KEY = 'amily2_secondary_retry_latch';
+const SECONDARY_RETRY_TARGET_KEY = 'amily2_secondary_retry_target_key';
+
+function getSecondaryFailureLatch(message) {
+    const latch = message?.extra?.[SECONDARY_FAILURE_LATCH_KEY];
+    if (!latch || typeof latch !== 'object' || Array.isArray(latch)) return null;
+    if (!Number.isSafeInteger(latch.contentHash)) return null;
+    if (!Number.isSafeInteger(latch.contentLength) || latch.contentLength < 0) return null;
+    return latch;
+}
+
+function isSecondaryFailureLatched(message, contentHash, forceRun) {
+    if (forceRun) return false;
+    const latch = getSecondaryFailureLatch(message);
+    return latch?.contentHash === contentHash
+        && latch.contentLength === String(message?.mes ?? '').length;
+}
+
+function createSecondaryFailureLatch(
+    contentHash,
+    contentLength,
+    attempts,
+    failedAt = Date.now(),
+) {
+    return {
+        version: 1,
+        contentHash,
+        contentLength,
+        attempts: Math.max(1, Number.parseInt(attempts, 10) || 1),
+        failedAt,
+    };
+}
+
+function getSecondaryRetryTargetKey(targetMessages) {
+    return targetMessages
+        .map(target => `${target.index}:${String(target.msg?.mes ?? '').length}:${target.hash}`)
+        .join('|');
+}
+
+function clearSecondaryRetryState(message) {
+    if (!message?.extra) return;
+    delete message.extra.amily2_retry_count;
+    delete message.extra[SECONDARY_RETRY_TARGET_KEY];
+}
+
+function captureSecondaryRetryState(message) {
+    if (!message) return null;
+    return {
+        message,
+        hadExtra: Boolean(message.extra),
+        hadRetryCount: Boolean(message.extra
+            && Object.prototype.hasOwnProperty.call(message.extra, 'amily2_retry_count')),
+        retryCount: message.extra?.amily2_retry_count,
+        hadTargetKey: Boolean(message.extra
+            && Object.prototype.hasOwnProperty.call(message.extra, SECONDARY_RETRY_TARGET_KEY)),
+        targetKey: message.extra?.[SECONDARY_RETRY_TARGET_KEY],
+    };
+}
+
+function restoreSecondaryRetryState(backup) {
+    if (!backup) return;
+    const { message } = backup;
+    if (backup.hadRetryCount || backup.hadTargetKey) {
+        if (!message.extra) message.extra = {};
+        if (backup.hadRetryCount) message.extra.amily2_retry_count = backup.retryCount;
+        else delete message.extra.amily2_retry_count;
+        if (backup.hadTargetKey) message.extra[SECONDARY_RETRY_TARGET_KEY] = backup.targetKey;
+        else delete message.extra[SECONDARY_RETRY_TARGET_KEY];
+    } else if (message.extra) {
+        clearSecondaryRetryState(message);
+        if (!backup.hadExtra && Object.keys(message.extra).length === 0) {
+            delete message.extra;
+        }
+    }
+}
+
+function applySecondaryFailureLatch(
+    targetMessages,
+    attempts,
+    retryMessage = null,
+    failedAt = Date.now(),
+) {
+    for (const target of targetMessages) {
+        if (!target.msg.extra) target.msg.extra = {};
+        target.msg.extra[SECONDARY_FAILURE_LATCH_KEY] = createSecondaryFailureLatch(
+            target.hash,
+            String(target.msg?.mes ?? '').length,
+            attempts,
+            failedAt,
+        );
+    }
+    clearSecondaryRetryState(retryMessage);
+}
+
+function createSecondaryFillerError(code, message) {
+    const error = new Error(message);
+    error.code = `SECONDARY_FILLER_${code}`;
+    return error;
+}
+
+function cancelScheduledRetry() {
+    if (secondaryFillerRetryTimer) {
+        clearTimeout(secondaryFillerRetryTimer);
+        secondaryFillerRetryTimer = null;
+    }
+    secondaryFillerRetryGeneration += 1;
+}
+
+function cancelManualRetry() {
+    if (secondaryFillerManualRetryTimer) {
+        clearTimeout(secondaryFillerManualRetryTimer);
+        secondaryFillerManualRetryTimer = null;
+    }
+}
+
+function nextSecondaryInvocationOptions(opts = {}, internal = {}) {
+    const {
+        __secondaryRetryGeneration,
+        __secondaryDebounced,
+        __secondaryExpectedScope,
+        ...publicOptions
+    } = opts;
+    return {
+        ...publicOptions,
+        ...internal,
+    };
+}
+
+function assertSecondaryFillerScope(expectedScope, targetMessages = []) {
+    const liveContext = getContext();
+    if (
+        !chatScopesMatch(expectedScope, captureChatScope(liveContext))
+        || targetMessages.some(target => !liveContext.chat?.includes(target.msg))
+    ) {
+        throw createSecondaryFillerError('STALE_CHAT_CONTEXT', '聊天已切换，本次分步填表结果已丢弃。');
+    }
+}
+
+function refreshSecondaryUiAfterCommit() {
+    try {
+        renderTables();
+    } catch (error) {
+        console.error('[Amily2-副API] 表格已经保存，但表格界面刷新失败:', error);
+    }
+    try {
+        updateOrInsertTableInChat();
+    } catch (error) {
+        console.error('[Amily2-副API] 表格已经保存，但消息内表格刷新失败:', error);
+    }
+}
+
+function notifySecondarySuccess(message) {
+    try {
+        toastr.success(message, 'Amily2-分步填表');
+    } catch (error) {
+        console.error('[Amily2-副API] 表格已经保存，但成功通知显示失败:', error);
+    }
+}
+
+function withFunctionCallProtocol(messages) {
+    return [
+        ...messages,
+        { role: 'system', content: TABLE_FILL_TOOL_PROTOCOL_PROMPT },
+    ];
+}
+
+function parseFunctionCallOperations(argsString, rangeLabel) {
+    try {
+        return parseToolCallArgs(argsString);
+    } catch (error) {
+        log(
+            `分步填表（楼层 ${rangeLabel}）FC 响应格式无效，已整批拒绝且不会标记楼层为已处理：`
+            + `${error.message}\n原始响应：\n${argsString || '[空响应]'}`,
+            'error',
+        );
+        throw error;
+    }
+}
 
 async function callSecondaryModel(messages, signal) {
     const settings = extension_settings[extensionName] || {};
     if (settings.nccsEnabled) {
         return await callNccsAI(messages, { signal });
     }
-    return await callAI(messages, { signal });
+    return await callAI(messages, { slot: 'tableFilling', signal });
 }
 
 async function requestSecondaryContinuation(baseMessages, partialResponse) {
@@ -36,11 +228,18 @@ async function requestSecondaryContinuation(baseMessages, partialResponse) {
         { role: 'user', content: CONTINUE_PROMPT_SECONDARY },
     ];
     const continued = await callSecondaryModel(continueMessages);
-    if (!continued) return null;
+    if (typeof continued !== 'string' || !continued.trim()) return null;
     return `${partialResponse || ''}${continued}`;
 }
 
-async function markTargetsProcessed(targetMessages, { state = getMemoryState() } = {}) {
+async function markTargetsProcessed(
+    targetMessages,
+    {
+        state = getMemoryState(),
+        expectedScope = null,
+        retryMessage = null,
+    } = {},
+) {
     if (!targetMessages || targetMessages.length === 0) return false;
 
     const lastProcessedMsg = targetMessages[targetMessages.length - 1].msg;
@@ -50,44 +249,129 @@ async function markTargetsProcessed(targetMessages, { state = getMemoryState() }
         hadHash: Boolean(target.msg.extra
             && Object.prototype.hasOwnProperty.call(target.msg.extra, 'amily2_process_hash')),
         hash: target.msg.extra?.amily2_process_hash,
+        hadFailureLatch: Boolean(target.msg.extra
+            && Object.prototype.hasOwnProperty.call(target.msg.extra, SECONDARY_FAILURE_LATCH_KEY)),
+        failureLatch: target.msg.extra?.[SECONDARY_FAILURE_LATCH_KEY],
     }));
+    const retryBackup = captureSecondaryRetryState(retryMessage);
 
     const restoreHashes = () => {
         hashBackups.forEach(backup => {
             if (!backup.message.extra) return;
             if (backup.hadHash) backup.message.extra.amily2_process_hash = backup.hash;
             else delete backup.message.extra.amily2_process_hash;
+            if (backup.hadFailureLatch) {
+                backup.message.extra[SECONDARY_FAILURE_LATCH_KEY] = backup.failureLatch;
+            } else {
+                delete backup.message.extra[SECONDARY_FAILURE_LATCH_KEY];
+            }
             if (!backup.hadExtra && Object.keys(backup.message.extra).length === 0) {
                 delete backup.message.extra;
             }
         });
+        restoreSecondaryRetryState(retryBackup);
     };
 
     const applyHashes = () => {
         for (const target of targetMessages) {
             if (!target.msg.extra) target.msg.extra = {};
             target.msg.extra.amily2_process_hash = target.hash;
+            delete target.msg.extra[SECONDARY_FAILURE_LATCH_KEY];
         }
+        clearSecondaryRetryState(retryMessage);
     };
 
-    const committed = await commitToMessageAsync(state, lastProcessedMsg, undefined, {
+    const transaction = {
         beforeSave: applyHashes,
         rollback: restoreHashes,
-    });
+    };
+    if (expectedScope?.chatId) {
+        transaction.expectedChatId = expectedScope.chatId;
+        transaction.expectedChatScope = expectedScope;
+    }
+
+    const committed = await commitToMessageAsync(state, lastProcessedMsg, undefined, transaction);
     if (!committed) {
         throw new Error('无法原子保存分步填表状态与目标楼层标记。');
     }
     return true;
 }
 
-async function commitSecondaryFillResult(rawContent, targetMessages) {
+async function markTargetsFailed(
+    targetMessages,
+    {
+        state = getMemoryState(),
+        expectedScope = null,
+        retryMessage = null,
+        attempts = 1,
+    } = {},
+) {
+    if (!targetMessages || targetMessages.length === 0) return false;
+
+    // 失败锁会写到实际目标楼层，但表格快照应由最新消息承载，避免给旧失败楼层
+    // 伪造一份“已经在该楼层完成填表”的历史快照。
+    const persistenceMessage = retryMessage || targetMessages[targetMessages.length - 1].msg;
+    const failedAt = Date.now();
+    const latchBackups = targetMessages.map(target => ({
+        message: target.msg,
+        hadExtra: Boolean(target.msg.extra),
+        hadLatch: Boolean(target.msg.extra
+            && Object.prototype.hasOwnProperty.call(target.msg.extra, SECONDARY_FAILURE_LATCH_KEY)),
+        latch: target.msg.extra?.[SECONDARY_FAILURE_LATCH_KEY],
+    }));
+    const retryBackup = captureSecondaryRetryState(retryMessage);
+
+    const rollback = () => {
+        for (const backup of latchBackups) {
+            if (backup.hadLatch) {
+                if (!backup.message.extra) backup.message.extra = {};
+                backup.message.extra[SECONDARY_FAILURE_LATCH_KEY] = backup.latch;
+            } else if (backup.message.extra) {
+                delete backup.message.extra[SECONDARY_FAILURE_LATCH_KEY];
+                if (!backup.hadExtra && Object.keys(backup.message.extra).length === 0) {
+                    delete backup.message.extra;
+                }
+            }
+        }
+        restoreSecondaryRetryState(retryBackup);
+    };
+
+    const transaction = {
+        beforeSave: () => applySecondaryFailureLatch(
+            targetMessages,
+            attempts,
+            retryMessage,
+            failedAt,
+        ),
+        rollback,
+    };
+    if (expectedScope?.chatId) {
+        transaction.expectedChatId = expectedScope.chatId;
+        transaction.expectedChatScope = expectedScope;
+    }
+
+    const committed = await commitToMessageAsync(state, persistenceMessage, undefined, transaction);
+    if (!committed) {
+        throw new Error('无法保存分步填表失败锁。');
+    }
+    return true;
+}
+
+async function commitSecondaryFillResult(
+    rawContent,
+    targetMessages,
+    { expectedScope = null, retryMessage = null } = {},
+) {
     // 候选状态与处理 hash 在同一补偿事务里存到 lastProcessedMsg(E)，成功后才发布 store。
     const applied = await updateTableFromText(rawContent, {
-        persistCandidate: state => markTargetsProcessed(targetMessages, { state }),
+        persistCandidate: state => markTargetsProcessed(targetMessages, {
+            state,
+            expectedScope,
+            retryMessage,
+        }),
     });
     if (!applied) throw new Error('分步填表结果未通过校验，未标记目标楼层为已处理。');
-    renderTables();
-    updateOrInsertTableInChat();
+    return true;
 }
 
 
@@ -144,6 +428,38 @@ async function getWorldBookContext() {
 }
 
 export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts = {}) {
+    const retryGeneration = opts.__secondaryRetryGeneration;
+    const isScheduledRetry = Number.isSafeInteger(retryGeneration);
+    const isDebouncedRun = opts.__secondaryDebounced === true;
+    const expectedInvocationScope = opts.__secondaryExpectedScope;
+    if (isScheduledRetry && retryGeneration !== secondaryFillerRetryGeneration) {
+        log('忽略已失效的分步填表重试任务。', 'info');
+        return;
+    }
+    if (expectedInvocationScope) {
+        const liveContext = getContext();
+        if (!chatScopesMatch(expectedInvocationScope, captureChatScope(liveContext))
+            || (latestMessage && !liveContext.chat?.includes(latestMessage))) {
+            log('分步填表延迟任务所属聊天已经切换，已取消旧任务。', 'info');
+            return;
+        }
+    }
+    if (secondaryFillerManualRetryTimer) {
+        if (forceRun) {
+            cancelManualRetry();
+        } else {
+            log('分步填表正在等待用户请求的重新填表，跳过新的自动触发。', 'info');
+            return;
+        }
+    }
+    if (secondaryFillerRetryTimer && !isScheduledRetry) {
+        if (forceRun) {
+            cancelScheduledRetry();
+        } else {
+            log('分步填表正在等待同一任务重试，跳过新的自动触发。', 'info');
+            return;
+        }
+    }
     if (secondaryFillerRunning) {
         log('分步填表正在进行中，跳过本次触发。', 'warn');
         return;
@@ -154,13 +470,17 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
     // 延迟期内再次到来的事件会重置计时器，避免消息连续到达时重复拉起填表。
     // 注意：防抖与早返路径都不持锁，避免 setTimeout 回调撞上自己的锁导致死锁。
     const delay = Math.max(0, parseInt(settings.secondary_filler_delay || 0, 10));
-    if (!forceRun && delay > 0) {
+    if (!forceRun && !isScheduledRetry && !isDebouncedRun && delay > 0) {
+        const debounceScope = captureChatScope(getContext());
         if (secondaryFillerDebounceTimer) {
             clearTimeout(secondaryFillerDebounceTimer);
         }
         secondaryFillerDebounceTimer = setTimeout(() => {
             secondaryFillerDebounceTimer = null;
-            fillWithSecondaryApi(latestMessage, forceRun, opts);
+            fillWithSecondaryApi(latestMessage, forceRun, nextSecondaryInvocationOptions(opts, {
+                __secondaryDebounced: true,
+                __secondaryExpectedScope: debounceScope,
+            }));
         }, delay);
         console.log(`[Amily2-副API] 分步填表已按防抖延迟 ${delay}ms 调度。`);
         return;
@@ -194,12 +514,21 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
         console.error("[Amily2-制裁] 系统完整性已受损，所有外交活动被无限期中止。");
         return;
     }
+    const requestScope = captureChatScope(context);
+    if (!requestScope.chatId) {
+        log('当前聊天缺少稳定标识，已取消分步填表以避免跨聊天写入。', 'error');
+        return;
+    }
 
     // 所有早返检查通过后再获取锁，确保 finally 一定能解锁
     secondaryFillerRunning = true;
-    currentAbortController = new AbortController();
-    const signal = currentAbortController.signal;
+    const runAbortController = new AbortController();
+    currentAbortController = runAbortController;
+    const signal = runAbortController.signal;
+    let fillResolved = false;
+    let targetMessages = [];
     try {
+        assertSecondaryFillerScope(requestScope);
         const bufferSize = parseInt(settings.secondary_filler_buffer || 0, 10);
         const batchSize = parseInt(settings.secondary_filler_batch || 0, 10);
         const contextLimit = parseInt(settings.secondary_filler_context || 2, 10);
@@ -215,6 +544,7 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
         const totalMessages = chat.length;
 
         const getContentHash = (content) => {
+            content = String(content ?? '');
             let hash = 0, i, chr;
             if (content.length === 0) return hash;
             for (i = 0; i < content.length; i++) {
@@ -224,8 +554,6 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
             }
             return hash;
         };
-
-        let targetMessages = [];
 
         // 【SWIPED 旁路】swipe 后强制处理刚切出来的最新消息：
         // 跳过扫描 / bufferSize / batchSize 累积逻辑，直接锁定目标
@@ -239,10 +567,15 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
                 console.log("[Amily2-副API] 旁路目标是用户消息，跳过。");
                 return;
             }
+            const targetHash = getContentHash(opts.targetMessage.mes);
+            if (isSecondaryFailureLatched(opts.targetMessage, targetHash, forceRun)) {
+                log('目标楼层的内容未变化，且自动重试已达到上限；跳过本次自动触发。', 'info');
+                return;
+            }
             targetMessages.push({
                 index: targetIndex,
                 msg: opts.targetMessage,
-                hash: getContentHash(opts.targetMessage.mes),
+                hash: targetHash,
             });
         } else {
             // 常规扫描路径
@@ -263,10 +596,18 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
                 const currentHash = getContentHash(msg.mes);
                 const savedHash = msg.extra?.amily2_process_hash;
 
-                const isUnprocessed = !savedHash;
-                const isChanged = savedHash && savedHash !== currentHash;
+                const hasSavedHash = Number.isSafeInteger(savedHash);
+                const isUnprocessed = !hasSavedHash;
+                const isChanged = hasSavedHash && savedHash !== currentHash;
 
                 if (isUnprocessed || isChanged) {
+                    if (isSecondaryFailureLatched(msg, currentHash, false)) {
+                        console.log(
+                            `[Amily2-副API] 楼层 ${i + 1} 已达到重试上限且内容未变化，`
+                            + '为保持顺序，暂停本次及后续楼层的自动填表。',
+                        );
+                        return;
+                    }
                     targetMessages.push({ index: i, msg: msg, hash: currentHash });
 
                     if (batchSize > 0 && targetMessages.length >= batchSize) {
@@ -295,10 +636,18 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
 
         let tagsToExtract = [];
         let exclusionRules = [];
+        let excludeUserMessages = false;
         const tableRuleConfig = resolveTableRuleConfig(settings);
-        if (tableRuleConfig.tags || (tableRuleConfig.exclusionRules && tableRuleConfig.exclusionRules.length)) {
-            tagsToExtract = (tableRuleConfig.tags || '').split(',').map(t => t.trim()).filter(Boolean);
+        if (
+            (tableRuleConfig.tagExtractionEnabled && tableRuleConfig.tags)
+            || (tableRuleConfig.exclusionRules && tableRuleConfig.exclusionRules.length)
+            || tableRuleConfig.excludeUserMessages
+        ) {
+            tagsToExtract = tableRuleConfig.tagExtractionEnabled
+                ? (tableRuleConfig.tags || '').split(',').map(t => t.trim()).filter(Boolean)
+                : [];
             exclusionRules = tableRuleConfig.exclusionRules || [];
+            excludeUserMessages = Boolean(tableRuleConfig.excludeUserMessages);
         }
 
         let coreContentText = "";
@@ -306,7 +655,7 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
         const characterName = context.name2 || '角色';
 
         for (const target of targetMessages) {
-            let textToProcess = target.msg.mes;
+            let textToProcess = String(target.msg.mes ?? '');
             
             if (tagsToExtract.length > 0) {
                 const blocks = extractBlocksByTags(textToProcess, tagsToExtract);
@@ -328,7 +677,13 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
         
         let historyContextStr = "";
         if (contextLimit > 0 && historyEndIndex >= 0) {
-            historyContextStr = await getHistoryContext(contextLimit, historyEndIndex, tagsToExtract, exclusionRules) || "";
+            historyContextStr = await getHistoryContext(
+                contextLimit,
+                historyEndIndex,
+                tagsToExtract,
+                exclusionRules,
+                excludeUserMessages,
+            ) || "";
         }
 
         const currentInteractionContent = (historyContextStr ? `${historyContextStr}\n\n` : '') + 
@@ -344,7 +699,17 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
             console.error("[副API填表] 加载混合顺序失败:", e);
         }
 
-        const order = getMixedOrder('secondary_filler') || [];
+        const completedOrder = completeFillerPromptOrder(
+            getMixedOrder('secondary_filler'),
+            SECONDARY_REQUIRED_FILLER_BLOCKS,
+        );
+        const order = completedOrder.order;
+        if (completedOrder.added.length > 0) {
+            log(
+                `分步填表提示链缺少必要块，已仅为本次请求补齐：${completedOrder.added.join(', ')}`,
+                'warn',
+            );
+        }
         const presetPrompts = await getPresetPrompts('secondary_filler');
         
         const messages = [
@@ -355,8 +720,14 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
 
         const ruleTemplate = getBatchFillerRuleTemplate();
         const flowTemplate = getBatchFillerFlowTemplate();
+        if (!ruleTemplate || !flowTemplate) {
+            throw createSecondaryFillerError(
+                'CONFIGURATION',
+                '分步填表的规则提示词或流程提示词为空，请先恢复/配置填表模板。',
+            );
+        }
         const currentTableDataString = convertTablesToCsvString();
-        const finalFlowPrompt = flowTemplate.replace('{{{Amily2TableData}}}', currentTableDataString);
+        const finalFlowPrompt = buildFillerFlowPrompt(flowTemplate, currentTableDataString);
 
         let promptCounter = 0; 
         for (const item of order) {
@@ -395,34 +766,38 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
         console.dir(messages);
         console.groupEnd();
 
+        assertSecondaryFillerScope(requestScope, targetMessages);
         if (settings.tableFillFunctionCall) {
             // Function Call 路径
-            const argsString = await callAIForTools(messages, TABLE_FILL_TOOL, { slot: 'tableFilling', signal });
-            if (!argsString) {
-                console.error('[Amily2-副API] Function Call 返回为空。');
-                return;
-            }
-            const ops = parseToolCallArgs(argsString);
+            const rangeLabel = `${targetMessages[0].index + 1}-${targetMessages[targetMessages.length - 1].index + 1}`;
+            const argsString = await callAIForTools(
+                withFunctionCallProtocol(messages),
+                TABLE_FILL_TOOL,
+                { slot: 'tableFilling', signal },
+            );
+            assertSecondaryFillerScope(requestScope, targetMessages);
+            const ops = parseFunctionCallOperations(argsString, rangeLabel);
             if (ops.length === 0) {
-                let parseHint = '';
+                console.log('[Amily2-副API] Function Call 返回合法空操作列表。');
+                await markTargetsProcessed(targetMessages, {
+                    expectedScope: requestScope,
+                    retryMessage: latestMessage,
+                });
+                fillResolved = true;
                 try {
-                    const rawParsed = JSON.parse(argsString);
-                    const rawOpsLen = rawParsed?.operations?.length ?? 0;
-                    if (rawOpsLen > 0) parseHint = `（响应含 ${rawOpsLen} 条操作，但全部未通过格式校验）`;
-                } catch {
-                    parseHint = '（响应 JSON 解析失败）';
-                }
-                console.warn(`[Amily2-副API] Function Call 返回操作列表为空${parseHint}，原始响应：\n${argsString}`);
-                toastr.info('AI 判断此范围无需修改。', 'Amily2-分步填表');
-                await markTargetsProcessed(targetMessages);
+                    toastr.info('AI 判断此范围无需修改。', 'Amily2-分步填表');
+                } catch {}
             } else {
                 const applied = await updateTableFromOps(ops, {
-                    persistCandidate: state => markTargetsProcessed(targetMessages, { state }),
+                    persistCandidate: state => markTargetsProcessed(targetMessages, {
+                        state,
+                        expectedScope: requestScope,
+                        retryMessage: latestMessage,
+                    }),
                 });
                 if (!applied) throw new Error('Function Call 填表结果未通过校验，未标记目标楼层为已处理。');
-                renderTables();
-                updateOrInsertTableInChat();
-                toastr.success('分步填表（Function Call）执行完毕。', 'Amily2-分步填表');
+                fillResolved = true;
+                refreshSecondaryUiAfterCommit();
             }
         } else {
             // Legacy 文本路径
@@ -435,9 +810,9 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
                 rawContent = await callAI(messages, { slot: 'tableFilling', signal });
             }
 
-            if (!rawContent) {
-                console.error('[Amily2-副API] 未能获取AI响应内容。');
-                return;
+            assertSecondaryFillerScope(requestScope, targetMessages);
+            if (typeof rawContent !== 'string' || !rawContent.trim()) {
+                throw new Error('自动分步填表 API 返回内容为空。');
             }
 
             console.log('[Amily2号-副API-原始回复]:', rawContent);
@@ -446,15 +821,25 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
                 const rangeLabel = `${targetMessages[0].index + 1} - ${targetMessages[targetMessages.length - 1].index + 1}`;
                 console.warn(`[Amily2-副API] 响应未包含 <Amily2Edit> 指令块（楼层 ${rangeLabel}），弹出检查窗口等待用户处理。`);
                 toastr.warning(`分步填表（楼层 ${rangeLabel}）的响应缺少 <Amily2Edit> 指令块，请在弹窗中处理。`, 'Amily2-分步填表');
-                if (latestMessage && latestMessage.extra) {
-                    delete latestMessage.extra.amily2_retry_count;
-                }
+                clearSecondaryRetryState(latestMessage);
                 showTableFillReviewModal(rawContent, {
                     title: `分步填表响应检查 - 楼层 ${rangeLabel}`,
                     subtitle: `分步填表（楼层 ${rangeLabel}）的 AI 响应未包含有效的 <Amily2Edit> 指令块。请检查原始响应并选择处理方式。`,
                     onContinue: async (currentText) => {
+                        try {
+                            assertSecondaryFillerScope(requestScope, targetMessages);
+                        } catch {
+                            toastr.warning('聊天已经切换，旧响应不能继续补全。', '已取消操作');
+                            return null;
+                        }
                         const merged = await requestSecondaryContinuation(messages, currentText);
                         if (!merged) { toastr.error('补全请求失败或返回为空。', '继续补全'); return null; }
+                        try {
+                            assertSecondaryFillerScope(requestScope, targetMessages);
+                        } catch {
+                            toastr.warning('补全期间聊天已切换，返回内容已丢弃。', '已取消操作');
+                            return null;
+                        }
                         if (!merged.includes('<Amily2Edit>')) {
                             toastr.warning('补全后仍未包含 <Amily2Edit> 指令块，可继续补全、手动应用或重新填表。', '继续补全');
                         } else {
@@ -467,19 +852,39 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
                             toastr.warning('应用的文本中未检测到 <Amily2Edit> 指令块，已按原文尝试写入。', '手动应用');
                         }
                         try {
-                            await commitSecondaryFillResult(editedText, targetMessages);
-                            toastr.success('分步填表已由用户手动处理完成。', 'Amily2-分步填表');
+                            assertSecondaryFillerScope(requestScope, targetMessages);
+                            await commitSecondaryFillResult(editedText, targetMessages, {
+                                expectedScope: requestScope,
+                                retryMessage: latestMessage,
+                            });
+                            refreshSecondaryUiAfterCommit();
+                            notifySecondarySuccess('分步填表已由用户手动处理完成。');
                         } catch (err) {
                             console.error('[Amily2-副API] 手动应用失败:', err);
                             toastr.error(`手动应用失败: ${err.message}`, '写入异常');
                         }
                     },
                     onRetry: () => {
-                        if (latestMessage && latestMessage.extra) {
-                            delete latestMessage.extra.amily2_retry_count;
+                        try {
+                            assertSecondaryFillerScope(requestScope, targetMessages);
+                        } catch (error) {
+                            toastr.warning(error.message, '分步填表');
+                            return;
                         }
+                        clearSecondaryRetryState(latestMessage);
+                        cancelScheduledRetry();
+                        cancelManualRetry();
                         toastr.info('将重新执行分步填表...', 'Amily2-分步填表');
-                        setTimeout(() => fillWithSecondaryApi(latestMessage, forceRun, opts), 300);
+                        secondaryFillerManualRetryTimer = setTimeout(() => {
+                            secondaryFillerManualRetryTimer = null;
+                            fillWithSecondaryApi(
+                                latestMessage,
+                                true,
+                                nextSecondaryInvocationOptions(opts, {
+                                    __secondaryExpectedScope: requestScope,
+                                }),
+                            );
+                        }, 300);
                     },
                     onCancel: () => {
                         toastr.info('已取消本次分步填表。', 'Amily2-分步填表');
@@ -488,60 +893,172 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
                 return;
             }
 
-            await commitSecondaryFillResult(rawContent, targetMessages);
+            await commitSecondaryFillResult(rawContent, targetMessages, {
+                expectedScope: requestScope,
+                retryMessage: latestMessage,
+            });
+            fillResolved = true;
+            refreshSecondaryUiAfterCommit();
         }
-        toastr.success("分步填表执行完毕。", "Amily2-分步填表");
+        cancelScheduledRetry();
+        notifySecondarySuccess("分步填表执行完毕。");
 
     } catch (error) {
+        if (fillResolved) {
+            cancelScheduledRetry();
+            console.error(
+                '[Amily2-副API] 表格已经提交，仅后置界面处理失败；为避免重复写入，不再重试。',
+                error,
+            );
+            return;
+        }
         if (error?.name === 'AbortError' || signal.aborted) {
+            cancelScheduledRetry();
             console.warn('[Amily2-副API] 分步填表已被用户中断，跳过结果处理与重试。');
             toastr.info('分步填表已中断。', 'Amily2-分步填表');
-            if (latestMessage && latestMessage.extra) {
-                delete latestMessage.extra.amily2_retry_count;
-            }
+            clearSecondaryRetryState(latestMessage);
+            return;
+        }
+        if (
+            error?.code === 'SECONDARY_FILLER_STALE_CHAT_CONTEXT'
+            || error?.code === 'TABLE_SYSTEM_STALE_CHAT_CONTEXT'
+            || error?.code === 'TABLE_SYSTEM_NO_ACTIVE_CHAT'
+        ) {
+            cancelScheduledRetry();
+            console.warn('[Amily2-副API] 聊天上下文已变化，旧填表结果已安全丢弃。', error);
+            try {
+                toastr.info('聊天已切换，旧聊天的填表结果未写入。', 'Amily2-分步填表');
+            } catch {}
+            return;
+        }
+        if (error?.code === 'TABLE_SYSTEM_SNAPSHOT_MISMATCH') {
+            cancelScheduledRetry();
+            console.error(
+                '[Amily2-副API] 持久化后检测到本地快照变化；为避免重复写入，已停止自动重试。',
+                error,
+            );
+            try {
+                toastr.warning('服务器可能已保存本次填表结果，请重新打开聊天确认。', '需要重新载入');
+            } catch {}
+            return;
+        }
+        if (error?.code === 'SECONDARY_FILLER_CONFIGURATION') {
+            cancelScheduledRetry();
+            console.error('[Amily2-副API] 分步填表配置无效，已停止且不会自动重试。', error);
+            try {
+                toastr.error(error.message, 'Amily2-分步填表');
+            } catch {}
             return;
         }
         console.error(`[Amily2-副API] 发生严重错误:`, error);
 
         // 【新增】自定义重试逻辑
-        const maxRetries = parseInt(settings.secondary_filler_max_retries || 0, 10);
-        const currentRetryCount = latestMessage?.extra?.amily2_retry_count || 0;
+        const maxRetries = Math.max(0, parseInt(settings.secondary_filler_max_retries ?? 2, 10) || 0);
+        const retryTargetKey = getSecondaryRetryTargetKey(targetMessages);
+        const savedRetryTargetKey = latestMessage?.extra?.[SECONDARY_RETRY_TARGET_KEY];
+        const currentRetryCount = savedRetryTargetKey === retryTargetKey
+            ? Math.max(0, parseInt(latestMessage?.extra?.amily2_retry_count || 0, 10) || 0)
+            : 0;
 
         if (currentRetryCount < maxRetries) {
             const nextRetryCount = currentRetryCount + 1;
             console.log(`[Amily2-副API] 准备进行第 ${nextRetryCount}/${maxRetries} 次重试...`);
-            toastr.warning(`副API填表失败: ${error.message}。将在3秒后进行第 ${nextRetryCount} 次重试...`, "自动重试");
+            try {
+                toastr.warning(
+                    `分步填表失败：${error.message}。3 秒后进行自动重试 ${nextRetryCount}/${maxRetries}；达到上限后将暂停对应楼层，避免循环请求。`,
+                    `分步填表自动重试 ${nextRetryCount}/${maxRetries}`,
+                );
+            } catch (notificationError) {
+                console.error('[Amily2-副API] 自动重试提示显示失败:', notificationError);
+            }
 
-            // 记录重试次数到最新消息的 extra 中，以便跨调用传递状态（跟 amily2_tables_data 一起持久化）
+            // 重试次数与目标指纹绑定，避免等待期间批次变化后让新楼层继承旧次数。
             if (latestMessage) {
                 if (!latestMessage.extra) latestMessage.extra = {};
                 latestMessage.extra.amily2_retry_count = nextRetryCount;
+                latestMessage.extra[SECONDARY_RETRY_TARGET_KEY] = retryTargetKey;
             }
 
-            setTimeout(() => {
-                fillWithSecondaryApi(latestMessage, forceRun, opts);
+            if (secondaryFillerRetryTimer) {
+                clearTimeout(secondaryFillerRetryTimer);
+            }
+            const scheduledGeneration = ++secondaryFillerRetryGeneration;
+            secondaryFillerRetryTimer = setTimeout(() => {
+                if (scheduledGeneration !== secondaryFillerRetryGeneration) return;
+                secondaryFillerRetryTimer = null;
+                fillWithSecondaryApi(latestMessage, forceRun, nextSecondaryInvocationOptions(opts, {
+                    __secondaryRetryGeneration: scheduledGeneration,
+                    __secondaryDebounced: false,
+                    __secondaryExpectedScope: requestScope,
+                }));
             }, 3000);
         } else {
-            console.log(`[Amily2-副API] 已达到最大重试次数 (${maxRetries})，放弃本次填表。`);
-            toastr.error(`副API填表失败: ${error.message}。已达到最大重试次数，任务终止。`, "严重错误");
+            cancelScheduledRetry();
+            const attempts = currentRetryCount + 1;
+            const rangeLabel = targetMessages.length > 0
+                ? `${targetMessages[0].index + 1}-${targetMessages[targetMessages.length - 1].index + 1}`
+                : '';
+            let failureLocked = false;
+            let failureLatchPersisted = false;
 
-            // 清除重试计数器
-            if (latestMessage && latestMessage.extra) {
-                delete latestMessage.extra.amily2_retry_count;
+            if (targetMessages.length > 0) {
+                try {
+                    assertSecondaryFillerScope(requestScope, targetMessages);
+                    await markTargetsFailed(targetMessages, {
+                        expectedScope: requestScope,
+                        retryMessage: latestMessage,
+                        attempts,
+                    });
+                    failureLocked = true;
+                    failureLatchPersisted = true;
+                } catch (latchError) {
+                    console.error('[Amily2-副API] 分步填表失败锁持久化失败:', latchError);
+                    // 即使服务器保存失败，也保留当前会话内的锁，避免网络故障造成请求风暴。
+                    try {
+                        assertSecondaryFillerScope(requestScope, targetMessages);
+                        applySecondaryFailureLatch(targetMessages, attempts, latestMessage);
+                        failureLocked = true;
+                    } catch {}
+                }
+            } else {
+                clearSecondaryRetryState(latestMessage);
+            }
+
+            console.log(`[Amily2-副API] 已达到最大重试次数 (${maxRetries})，本次填表已暂停。`);
+            const pauseMessage = failureLatchPersisted
+                ? `楼层 ${rangeLabel} 的自动重试已暂停；内容未变化时不会再次调用。编辑该消息或执行手动强制重填可解除。`
+                : failureLocked
+                    ? `楼层 ${rangeLabel} 已在本次会话中暂停，但暂停标记未能保存；重新载入后可能再次触发。`
+                    : '本次任务已终止；未能定位目标楼层，未写入失败锁。';
+            try {
+                toastr.error(
+                    `分步填表失败：${error.message}。已达到最大重试次数。${pauseMessage}`,
+                    '分步填表已暂停',
+                );
+            } catch (notificationError) {
+                console.error('[Amily2-副API] 最终失败提示显示失败:', notificationError);
             }
         }
     } finally {
-        secondaryFillerRunning = false;
-        currentAbortController = null;
+        // reset 后可能已有新任务持有全局 controller；旧任务结束时不能清掉新锁。
+        if (currentAbortController === runAbortController) {
+            secondaryFillerRunning = false;
+            currentAbortController = null;
+        }
     }
 }
 
 export function resetSecondaryFillerLock() {
-    const wasLocked = secondaryFillerRunning;
+    const wasLocked = secondaryFillerRunning
+        || Boolean(secondaryFillerDebounceTimer)
+        || Boolean(secondaryFillerRetryTimer)
+        || Boolean(secondaryFillerManualRetryTimer);
     if (secondaryFillerDebounceTimer) {
         clearTimeout(secondaryFillerDebounceTimer);
         secondaryFillerDebounceTimer = null;
     }
+    cancelScheduledRetry();
+    cancelManualRetry();
     if (currentAbortController) {
         try { currentAbortController.abort(); } catch {}
         currentAbortController = null;
@@ -551,13 +1068,26 @@ export function resetSecondaryFillerLock() {
 }
 
 export function isSecondaryFillerRunning() {
-    return secondaryFillerRunning;
+    return secondaryFillerRunning
+        || Boolean(secondaryFillerDebounceTimer)
+        || Boolean(secondaryFillerRetryTimer)
+        || Boolean(secondaryFillerManualRetryTimer);
 }
 
 export function abortCurrentSecondaryFiller() {
-    if (!secondaryFillerRunning && !currentAbortController) {
+    if (!secondaryFillerRunning
+        && !currentAbortController
+        && !secondaryFillerDebounceTimer
+        && !secondaryFillerRetryTimer
+        && !secondaryFillerManualRetryTimer) {
         return false;
     }
+    if (secondaryFillerDebounceTimer) {
+        clearTimeout(secondaryFillerDebounceTimer);
+        secondaryFillerDebounceTimer = null;
+    }
+    cancelScheduledRetry();
+    cancelManualRetry();
     if (currentAbortController) {
         try { currentAbortController.abort(); } catch {}
     }
@@ -565,7 +1095,13 @@ export function abortCurrentSecondaryFiller() {
     return true;
 }
 
-    async function getHistoryContext(messagesToFetch, historyEndIndex, tagsToExtract, exclusionRules) {
+    async function getHistoryContext(
+        messagesToFetch,
+        historyEndIndex,
+        tagsToExtract,
+        exclusionRules,
+        excludeUserMessages = false,
+    ) {
         const context = getContext();
         const chat = context.chat;
         
@@ -584,7 +1120,8 @@ export function abortCurrentSecondaryFiller() {
         const characterName = context.name2 || '角色';
 
         const messages = historySlice.map((msg, index) => {
-            let content = msg.mes;
+            if (excludeUserMessages && msg.is_user) return null;
+            let content = String(msg.mes ?? '');
 
             if (!msg.is_user && tagsToExtract && tagsToExtract.length > 0) {
                 const blocks = extractBlocksByTags(content, tagsToExtract);

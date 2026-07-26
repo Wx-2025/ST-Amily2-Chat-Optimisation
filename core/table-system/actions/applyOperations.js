@@ -153,9 +153,10 @@ const HANDLERS = {
  *
  * @param {TableState} initialState
  * @param {Operation[]} operations
+ * @param {{ strictRowBounds?: boolean }} [options]
  * @returns {{ state: TableState, changes: Change[] }}
  */
-export function applyOperations(initialState, operations) {
+export function applyOperations(initialState, operations, options = {}) {
     if (!Array.isArray(operations) || operations.length === 0) {
         return { state: initialState, changes: [] };
     }
@@ -167,21 +168,70 @@ export function applyOperations(initialState, operations) {
 
     for (const op of operations) {
         if (!op || typeof op !== 'object' || typeof op.op !== 'string') {
-            log(`跳过非法操作: ${JSON.stringify(op)}`, 'warn');
-            continue;
+            log(`发现非法操作，整批原子回退: ${JSON.stringify(op)}`, 'error');
+            return { state: originalState, changes: [] };
         }
         const handler = HANDLERS[op.op];
         if (!handler) {
-            log(`未知操作类型: ${op.op}`, 'error');
-            continue;
+            log(`发现未知操作类型 ${op.op}，整批原子回退。`, 'error');
+            return { state: originalState, changes: [] };
+        }
+        if (!Number.isSafeInteger(op.tableIndex) || op.tableIndex < 0) {
+            log(`操作 ${op.op} 包含非法 tableIndex，整批原子回退。`, 'error');
+            return { state: originalState, changes: [] };
         }
         const targetTable = state[op.tableIndex];
+        if (!targetTable) {
+            log(`操作 ${op.op} 指向不存在的表格索引 ${op.tableIndex}，整批原子回退。`, 'error');
+            return { state: originalState, changes: [] };
+        }
         if (targetTable?.owner && targetTable.owner !== 'user') {
             log(
-                `跳过普通填表操作：表格索引 ${op.tableIndex} 归属于模块 ${targetTable.owner}。`,
-                'warn',
+                `普通填表操作试图修改模块 ${targetTable.owner} 的表格索引 ${op.tableIndex}，整批原子回退。`,
+                'error',
             );
-            continue;
+            return { state: originalState, changes: [] };
+        }
+        if (op.op === 'insertRow' || op.op === 'updateRow') {
+            const data = /** @type {InsertRowOperation|UpdateRowOperation} */(op).data;
+            if (!data || typeof data !== 'object' || Array.isArray(data) || Object.keys(data).length === 0) {
+                log(`操作 ${op.op} 缺少有效 data，整批原子回退。`, 'error');
+                return { state: originalState, changes: [] };
+            }
+            const colCount = Array.isArray(targetTable.headers) ? targetTable.headers.length : 0;
+            const hasInvalidColumn = Object.keys(data).some(key => {
+                const columnIndex = Number(key);
+                return !Number.isSafeInteger(columnIndex) || columnIndex < 0 || columnIndex >= colCount;
+            });
+            if (hasInvalidColumn) {
+                log(`操作 ${op.op} 包含超出表结构范围的列索引，整批原子回退。`, 'error');
+                return { state: originalState, changes: [] };
+            }
+        }
+        if (
+            op.op === 'updateRow'
+            && (
+                !Number.isSafeInteger((/** @type {UpdateRowOperation} */(op)).rowIndex)
+                || (/** @type {UpdateRowOperation} */(op)).rowIndex < 0
+                || (
+                    options.strictRowBounds === true
+                    && (/** @type {UpdateRowOperation} */(op)).rowIndex >= targetTable.rows.length
+                )
+            )
+        ) {
+            log(`updateRow 包含非法或已过期的 rowIndex，整批原子回退。`, 'error');
+            return { state: originalState, changes: [] };
+        }
+        if (
+            op.op === 'deleteRow'
+            && (
+                !Number.isSafeInteger((/** @type {DeleteRowOperation} */(op)).rowIndex)
+                || (/** @type {DeleteRowOperation} */(op)).rowIndex < 0
+                || (/** @type {DeleteRowOperation} */(op)).rowIndex >= targetTable.rows.length
+            )
+        ) {
+            log(`deleteRow 指向不存在的行，整批原子回退。`, 'error');
+            return { state: originalState, changes: [] };
         }
         try {
             const result = handler(state, op);
@@ -194,7 +244,8 @@ export function applyOperations(initialState, operations) {
                 + ')';
             log(`成功推演操作: ${opLabel}`, 'success');
         } catch (e) {
-            log(`推演操作 ${op.op} 时发生运行时错误: ${e.message}`, 'error');
+            log(`推演操作 ${op.op} 时发生运行时错误，整批原子回退: ${e.message}`, 'error');
+            return { state: originalState, changes: [] };
         }
     }
 
