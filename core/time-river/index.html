@@ -113,6 +113,142 @@
         white-space: pre-wrap;
         overflow-wrap: anywhere;
     }
+    #amily2_time_river_panel .tr-guide {
+        min-width: 0;
+        border: 1px solid rgba(139, 108, 240, 0.34);
+        border-radius: var(--am2-radius-md, 10px);
+        background:
+            linear-gradient(135deg, rgba(139, 108, 240, 0.11), rgba(108, 140, 255, 0.05)),
+            var(--am2-surface, rgba(255, 255, 255, 0.04));
+        overflow: hidden;
+    }
+    #amily2_time_river_panel .tr-guide > summary {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+        padding: 11px 12px;
+        color: var(--am2-text, #e8e8ee);
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1.4;
+        cursor: pointer;
+        list-style: none;
+        user-select: none;
+    }
+    #amily2_time_river_panel .tr-guide > summary::-webkit-details-marker {
+        display: none;
+    }
+    #amily2_time_river_panel .tr-guide > summary > span {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        flex: 1 1 auto;
+    }
+    #amily2_time_river_panel .tr-guide > summary::after {
+        content: "展开";
+        flex: 0 0 auto;
+        color: var(--am2-muted, rgba(224, 224, 224, 0.62));
+        font-size: 11px;
+        font-weight: 500;
+        white-space: nowrap;
+        writing-mode: horizontal-tb;
+    }
+    #amily2_time_river_panel .tr-guide[open] > summary {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    #amily2_time_river_panel .tr-guide[open] > summary::after {
+        content: "收起";
+    }
+    #amily2_time_river_panel .tr-guide-body {
+        padding: 12px;
+    }
+    #amily2_time_river_panel .tr-guide-lead,
+    #amily2_time_river_panel .tr-guide-tip {
+        margin: 0;
+        color: var(--am2-muted, rgba(224, 224, 224, 0.68));
+        font-size: 12px;
+        line-height: 1.55;
+        overflow-wrap: anywhere;
+    }
+    #amily2_time_river_panel .tr-guide-list {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        margin: 10px 0;
+        padding: 0;
+        list-style: none;
+        counter-reset: tr-guide-step;
+    }
+    #amily2_time_river_panel .tr-guide-list > li {
+        position: relative;
+        min-width: 0;
+        padding: 10px 10px 10px 38px;
+        border: 1px solid rgba(255, 255, 255, 0.09);
+        border-radius: var(--am2-radius-sm, 6px);
+        background: rgba(0, 0, 0, 0.14);
+        color: var(--am2-muted, rgba(224, 224, 224, 0.68));
+        font-size: 11.5px;
+        line-height: 1.5;
+        overflow-wrap: anywhere;
+        counter-increment: tr-guide-step;
+    }
+    #amily2_time_river_panel .tr-guide-list > li::before {
+        content: counter(tr-guide-step);
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: rgba(139, 108, 240, 0.28);
+        color: #eee9ff;
+        font-size: 10px;
+        font-weight: 700;
+    }
+    #amily2_time_river_panel .tr-guide-list strong {
+        display: block;
+        margin-bottom: 2px;
+        color: var(--am2-text, #e8e8ee);
+        font-size: 12px;
+    }
+    #amily2_time_river_panel .tr-guide-badge {
+        display: inline-flex;
+        align-items: center;
+        margin-left: 4px;
+        padding: 1px 5px;
+        border: 1px solid rgba(61, 214, 140, 0.26);
+        border-radius: 999px;
+        color: var(--am2-success, #3dd68c);
+        font-size: 9.5px;
+        font-weight: 650;
+        line-height: 1.4;
+        vertical-align: 1px;
+    }
+    #amily2_time_river_panel .tr-guide-badge.is-cost {
+        border-color: rgba(245, 185, 66, 0.34);
+        color: var(--am2-warning, #f5b942);
+    }
+    #amily2_time_river_panel .tr-guide-flow {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 10px 0;
+        color: var(--am2-text, #e8e8ee);
+        font-size: 11.5px;
+        font-weight: 650;
+        text-align: center;
+    }
+    #amily2_time_river_panel .tr-guide-flow i {
+        color: var(--am2-accent, #8b6cf0);
+        font-size: 9px;
+    }
     #amily2_time_river_panel .tr-warning {
         padding: 10px 12px;
         border: 1px solid rgba(255, 107, 107, 0.4);
@@ -265,6 +401,9 @@
         #amily2_time_river_panel .tr-stepper {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
+        #amily2_time_river_panel .tr-guide-list {
+            grid-template-columns: 1fr;
+        }
         #amily2_time_river_panel .tr-grid {
             grid-template-columns: 1fr;
         }
@@ -297,6 +436,12 @@
             <i class="fas fa-water"></i> 时间河
             <span class="tr-beta">TYPE2 · 内测</span>
         </div>
+        <button id="amily2_open_time_river_tutorial"
+                class="menu_button small_button secondary interactable am2-panel-tutorial-btn"
+                type="button"
+                title="时间河使用教程">
+            <i class="fas fa-book-open"></i> 教程
+        </button>
     </div>
     <button id="amily2_back_to_main_from_time_river" class="menu_button secondary small_button interactable" type="button">
         <i class="fas fa-arrow-left"></i> 返回
@@ -314,6 +459,54 @@
 <div id="tr-access-state" class="tr-status" role="status" aria-live="polite">
     正在检查时间河权限与服务状态……
 </div>
+
+<details id="tr-usage-guide" class="tr-guide" open>
+    <summary>
+        <span><i class="fas fa-route"></i> 第一次使用？按这 6 步完成</span>
+    </summary>
+    <div class="tr-guide-body">
+        <p class="tr-guide-lead">
+            先把小说建立成可检索语料，再让当前聊天沿着指定卷章使用它。页面标题旁的“教程”包含完整说明与排错方法。
+        </p>
+        <ol class="tr-guide-list">
+            <li data-tr-guide-step="embedding">
+                <strong>配置 Embedding <span class="tr-guide-badge is-cost">必需 · 可能收费</span></strong>
+                在“API 连接”中为“智能检索 · 向量化”分配 Embedding 配置；普通对话模型不能替代。
+            </li>
+            <li data-tr-guide-step="preview">
+                <strong>导入并预览 <span class="tr-guide-badge">仅本地</span></strong>
+                选择 TXT / Markdown、确认编码并校对卷章目录。本地预览不会调用模型或产生向量费用。
+            </li>
+            <li data-tr-guide-step="persist">
+                <strong>确认持久化 <span class="tr-guide-badge">仅本地</span></strong>
+                确认来源可信后保存为 staging Revision；staging 版本还不能绑定聊天。
+            </li>
+            <li data-tr-guide-step="index">
+                <strong>构建索引 <span class="tr-guide-badge is-cost">可能收费</span></strong>
+                持久化后重新勾选费用确认，再“开始 / 继续”；失败块可重试，全部完成后状态变为 active。
+            </li>
+            <li data-tr-guide-step="bind">
+                <strong>绑定当前聊天 <span class="tr-guide-badge">仅本地</span></strong>
+                选择 active Revision 并绑定。绑定只确定语料来源，不等于已经开启上下文注入。
+            </li>
+            <li data-tr-guide-step="inject">
+                <strong>设置游标并开启注入</strong>
+                选择当前卷章与回看窗口，未来窗口固定为 0；开启注入并保存。本地预览不会调用 Embedding 或向量服务。
+            </li>
+        </ol>
+        <div class="tr-guide-flow" aria-label="时间河状态流程">
+            <span>本地导入</span><i class="fas fa-chevron-right"></i>
+            <span>staging</span><i class="fas fa-chevron-right"></i>
+            <span>构建索引</span><i class="fas fa-chevron-right"></i>
+            <span>active</span><i class="fas fa-chevron-right"></i>
+            <span>绑定聊天</span><i class="fas fa-chevron-right"></i>
+            <span>开启并保存注入</span>
+        </div>
+        <p class="tr-guide-tip">
+            提示：剧情推进到下一章后，手动移动章节游标并保存；每个聊天的绑定与游标互相独立。
+        </p>
+    </div>
+</details>
 
 <fieldset class="settings-group tr-section">
     <legend><span class="tr-legend-index">01</span><i class="fas fa-file-import"></i> 导入与目录预览</legend>
@@ -416,7 +609,7 @@
     </div>
     <div id="tr-job-status" class="tr-status" role="status" aria-live="polite">尚未读取任务状态。</div>
     <p class="tr-note">
-        页面会在任务运行时自动刷新，最长约 10 分钟。暂停会取消当前浏览器请求；远端服务若已完成计费，本地只能安全停止后等待重试或人工核对。
+        持久化或切换 Revision 后，需在上方重新核对并勾选费用确认，才可开始或重试。页面会在任务运行时自动刷新，最长约 10 分钟；暂停会取消当前浏览器请求，远端服务若已完成计费，本地只能安全停止后等待重试或人工核对。
     </p>
     <div class="tr-actions">
         <button id="tr-run-ingestion" class="menu_button primary interactable" type="button" disabled>

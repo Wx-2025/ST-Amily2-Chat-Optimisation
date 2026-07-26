@@ -1,1 +1,1 @@
-import*as state from"./prese_state.js";import*as ui from"./prese_ui.js";export{getPresetPrompts,getMixedOrder}from"./prese_state.js";$(document).ready(function(){state.loadPresets();ui.addPresetSettingsButton()});
+import*as state from"./prese_state.js";import*as ui from"./prese_ui.js";export{getPresetPrompts,getMixedOrder}from"./prese_state.js";$(document).ready(function(){state.loadPresets(),ui.addPresetSettingsButton()});

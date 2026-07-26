@@ -1,1 +1,1 @@
-import{checkAndTriggerAutoSummary}from"../../historiographer.js";export async function autoSummaryStage(ctx,next){await next();checkAndTriggerAutoSummary().catch(e=>{console.error("[Pipeline:AutoSummary] 后台总结任务异常:",e)})}
+import{checkAndTriggerAutoSummary}from"../../historiographer.js";export async function autoSummaryStage(ctx,next){await next(),checkAndTriggerAutoSummary().catch(e=>{console.error("[Pipeline:AutoSummary] 后台总结任务异常:",e)})}

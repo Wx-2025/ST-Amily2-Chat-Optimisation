@@ -1,1 +1,1 @@
-import{queryInternalBusPlugin}from"../../../SL/bus/Amily2Bus.js";export async function superMemorySyncStage(ctx,next){try{const sm=queryInternalBusPlugin("SuperMemory");if(sm?.awaitSync){await sm.awaitSync()}}catch(e){console.error("[Pipeline:SuperMemorySync] 阶段异常:",e)}await next()}
+import{queryInternalBusPlugin}from"../../../SL/bus/Amily2Bus.js";export async function superMemorySyncStage(ctx,next){try{const sm=queryInternalBusPlugin("SuperMemory");sm?.awaitSync&&await sm.awaitSync()}catch(e){console.error("[Pipeline:SuperMemorySync] 阶段异常:",e)}await next()}

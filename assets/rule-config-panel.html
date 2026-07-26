@@ -83,3 +83,25 @@
         </div>
     </main>
 </div>
+
+<fieldset class="settings-group" id="amily2_combat_rule_profile_panel" style="margin-top:16px;" hidden>
+    <legend><i class="fas fa-dice"></i> 战斗规则配置（Type3）</legend>
+    <small class="notes" style="display:block; margin-bottom:10px;">
+        战斗环境规则是可移植 JSON。内置默认配置不可覆盖；自定义配置会在战斗开始时冻结为本场快照。
+        schema v2 仅以 features.spSettlement 为权威；旧 schema v1 只在导入时按显式迁移规则转换。
+    </small>
+    <div class="am2-combat-rule-toolbar">
+        <select id="amily2_combat_rule_profile_select" class="text_pole"></select>
+        <button id="amily2_combat_rule_profile_new" type="button" class="menu_button small_button"><i class="fas fa-plus"></i> 新建</button>
+        <button id="amily2_combat_rule_profile_activate" type="button" class="menu_button small_button"><i class="fas fa-check"></i> 设为当前</button>
+        <button id="amily2_combat_rule_profile_import" type="button" class="menu_button small_button"><i class="fas fa-file-import"></i> 导入</button>
+        <button id="amily2_combat_rule_profile_export" type="button" class="menu_button small_button"><i class="fas fa-file-export"></i> 导出</button>
+        <input id="amily2_combat_rule_profile_file" type="file" accept="application/json,.json" hidden>
+    </div>
+    <textarea id="amily2_combat_rule_profile_json" class="text_pole" rows="18" spellcheck="false"></textarea>
+    <div class="am2-combat-rule-toolbar">
+        <button id="amily2_combat_rule_profile_save" type="button" class="menu_button menu_button_primary"><i class="fas fa-save"></i> 保存 JSON</button>
+        <button id="amily2_combat_rule_profile_delete" type="button" class="menu_button danger"><i class="fas fa-trash-alt"></i> 删除</button>
+        <span id="amily2_combat_rule_profile_status" class="notes"></span>
+    </div>
+</fieldset>
