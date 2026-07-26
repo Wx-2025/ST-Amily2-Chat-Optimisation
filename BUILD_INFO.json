@@ -1,10 +1,10 @@
 {
-  "filesHash": "118fa37a712ccaf864a16761c42cfc978a5769db9cdd52f0a8c0022a5f0a035b",
+  "filesHash": "c59bec7732d05a3e90f426b9ebc136a2a65685c3917ad5d94ec027d342150c69",
   "minifyConfigHash": "4a7bd6c8af36bdc95e4b091bdee33ae82c4e4c8ecf47c46f9571f5244e77e3d0",
   "obfuscatorVersion": "5.4.3",
-  "protectionConfigHash": "3dd779fe458280be996577d539b9ed9f0f5482594d4c598b2bbbd716d28ba460",
+  "protectionConfigHash": "bc91773fa66eb2ed87f98d96e8c28173c3b12a0d0bbf7156ae405dc4849eb391",
   "sourceBranch": "main",
-  "sourceCommit": "50e6720d3f03fc864ea6094d150df29f908ff2ad",
+  "sourceCommit": "3f280b58a1f3719f90be2e25cc4ee440dbf297a8",
   "terserVersion": "5.49.0",
   "variant": "compact-protected",
   "version": "2.3.1"

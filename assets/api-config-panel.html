@@ -121,6 +121,17 @@
                     <span id="amily2_pf_test_result" class="am2-ac-test-result"></span>
                 </div>
 
+                <details class="am2-ac-more amily2_advanced_section">
+                    <summary>通用限制</summary>
+                    <div class="am2-ac-more-body am2-advanced-body">
+                        <div class="am2-ac-field">
+                            <label for="amily2_pf_rpm">每分钟请求数（RPM）</label>
+                            <input id="amily2_pf_rpm" type="number" class="text_pole am2-ac-input" min="0" step="1" value="0" inputmode="numeric" />
+                            <small class="notes">限制该连接每分钟发出的模型请求；重试、向量分批与重排分别计数。设为 0 表示不限制。</small>
+                        </div>
+                    </div>
+                </details>
+
                 <div id="amily2_pf_chat_params">
                     <details class="am2-ac-more amily2_advanced_section">
                         <summary>高级</summary>

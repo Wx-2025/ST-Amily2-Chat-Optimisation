@@ -452,6 +452,16 @@
     margin-bottom: 15px;
 }
 
+#amily2_memorisation_forms_panel .sinan-navigation-deck {
+    overflow-x: auto;
+    scrollbar-width: thin;
+}
+
+#amily2_memorisation_forms_panel .sinan-nav-item {
+    flex: 0 0 auto;
+    white-space: nowrap;
+}
+
 .sinan-nav-item {
     padding: 10px 20px;
     cursor: pointer;
@@ -489,6 +499,468 @@
 
 .sinan-tab-pane.active {
     display: block;
+}
+
+/* The host theme renders fieldsets as flex rows. The compatibility page has
+ * several full-width controls, so leaving that inherited layout enabled can
+ * squeeze long Chinese button labels into a one-character-wide column. */
+#amily2-shujuku-compat-panel {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+#amily2-shujuku-compat-panel > .menu_button {
+    width: 100%;
+    min-width: 0;
+    min-height: 36px;
+    height: auto;
+    white-space: normal;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    line-height: 1.35;
+}
+
+.amily2-shujuku-compat-card {
+    display: block;
+    margin: 0 0 10px;
+    padding: 9px;
+    min-width: 0;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 6px;
+    box-sizing: border-box;
+}
+
+.amily2-shujuku-compat-card-title {
+    margin-bottom: 7px;
+    font-weight: 700;
+}
+
+.amily2-shujuku-resource-row {
+    display: grid;
+    grid-template-columns: minmax(6em, auto) minmax(10em, 1fr) minmax(9em, auto);
+    gap: 7px;
+    align-items: center;
+    margin-top: 7px;
+    min-width: 0;
+}
+
+.amily2-shujuku-resource-row > select {
+    width: 100%;
+    min-width: 0;
+}
+
+.amily2-shujuku-resource-actions {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+    min-width: 0;
+}
+
+.amily2-shujuku-resource-actions > .menu_button {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: 7.5em;
+    height: auto;
+    min-height: 34px;
+    writing-mode: horizontal-tb !important;
+    white-space: nowrap;
+    word-break: keep-all;
+}
+
+.amily2-shujuku-resource-row > .notes {
+    grid-column: 2 / -1;
+    margin: 0;
+    text-align: left;
+}
+
+.amily2-shujuku-b4-diagnostic-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+    margin-top: 8px;
+    min-width: 0;
+}
+
+.amily2-shujuku-b4-diagnostic-row > .menu_button {
+    width: auto;
+    min-width: 10em;
+    min-height: 34px;
+    height: auto;
+    writing-mode: horizontal-tb !important;
+    white-space: nowrap;
+    word-break: keep-all;
+}
+
+.amily2-shujuku-b4-diagnostic-row > .notes {
+    flex: 1 1 16em;
+    min-width: 0;
+}
+
+#amily2-shujuku-compat-panel .notes {
+    text-align: left;
+}
+
+.amily2-shujuku-scope-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.amily2-shujuku-scope-summary > .notes {
+    min-width: 0;
+    margin: 0;
+    padding: 7px 8px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+    overflow-wrap: anywhere;
+}
+
+#amily2-shujuku-compat-panel .action-center-buttons > .menu_button {
+    min-width: 0;
+    writing-mode: horizontal-tb !important;
+    white-space: normal;
+    word-break: keep-all;
+}
+
+#amily2-shujuku-compat-panel .toggle-switch input:focus-visible + .slider {
+    outline: 2px solid var(--SmartThemeQuoteColor, #9e8aff);
+    outline-offset: 2px;
+}
+
+#amily2-shujuku-compat-panel .toggle-switch input:disabled + .slider {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.amily2-shujuku-onboarding-dialog {
+    width: min(92vw, 720px);
+    max-width: 720px;
+    max-height: 88dvh;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.amily2-shujuku-onboarding-dialog .popup-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+    max-height: 82dvh;
+    overflow: auto;
+}
+
+.amily2-shujuku-onboarding-dialog h3,
+.amily2-shujuku-onboarding-dialog .notes {
+    margin: 0;
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+
+.amily2-shujuku-onboarding-capabilities {
+    display: grid;
+    gap: 8px;
+    max-height: min(40dvh, 360px);
+    min-width: 0;
+    margin: 0;
+    padding: 9px;
+    overflow: auto;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 6px;
+}
+
+.amily2-shujuku-onboarding-capabilities-title {
+    padding: 0 5px;
+    font-weight: 700;
+}
+
+.amily2-shujuku-onboarding-capability {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 8px;
+    align-items: center;
+    min-width: 0;
+    margin: 0;
+}
+
+.amily2-shujuku-onboarding-capability > span:not(.amily2-shujuku-risk) {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.amily2-shujuku-risk {
+    padding: 2px 7px;
+    border: 1px solid currentColor;
+    border-radius: 999px;
+    white-space: nowrap;
+    font-size: 0.82em;
+}
+
+.amily2-shujuku-risk-low {
+    color: #86d79b;
+}
+
+.amily2-shujuku-risk-medium {
+    color: #ffd27a;
+}
+
+.amily2-shujuku-risk-high,
+.amily2-shujuku-risk-critical,
+.amily2-shujuku-risk-unknown {
+    color: #ff9a9a;
+}
+
+.amily2-shujuku-onboarding-error {
+    padding: 8px 10px;
+    border: 1px solid rgba(255, 108, 108, 0.65);
+    border-left-width: 4px;
+    border-radius: 5px;
+    color: #ffd0d0;
+    background: rgba(180, 32, 32, 0.18);
+}
+
+.amily2-shujuku-onboarding-dialog .popup-controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.amily2-shujuku-onboarding-dialog .popup-controls > .menu_button {
+    flex: 1 1 15em;
+    min-width: 0;
+    min-height: 40px;
+    height: auto;
+    writing-mode: horizontal-tb !important;
+    white-space: normal;
+    word-break: keep-all;
+}
+
+.amily2-shujuku-onboarding-dialog button:focus-visible,
+.amily2-shujuku-onboarding-dialog input:focus-visible {
+    outline: 2px solid var(--SmartThemeQuoteColor, #9e8aff);
+    outline-offset: 2px;
+}
+
+.amily2-shujuku-resource-preview-dialog {
+    width: min(94vw, 1100px);
+    max-width: 1100px;
+}
+
+.amily2-shujuku-resource-preview-dialog .popup-body {
+    min-width: 0;
+}
+
+.amily2-shujuku-resource-preview-dialog .popup-content {
+    height: min(68vh, 760px) !important;
+    padding: 12px !important;
+}
+
+.amily2-shujuku-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+    height: 100%;
+}
+
+.amily2-shujuku-preview-heading {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+    align-items: center;
+}
+
+.amily2-shujuku-preview-kind {
+    margin-right: 8px;
+    color: var(--SmartThemeQuoteColor, #9e8aff);
+    font-size: 0.9em;
+}
+
+.amily2-shujuku-preview-name {
+    overflow-wrap: anywhere;
+}
+
+.amily2-shujuku-preview-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.amily2-shujuku-preview-badge {
+    padding: 2px 8px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 999px;
+    font-size: 0.82em;
+}
+
+.amily2-shujuku-preview-badge.is-active {
+    color: #b8f7c8;
+    border-color: rgba(86, 214, 121, 0.55);
+}
+
+.amily2-shujuku-preview-badge.is-inert {
+    color: #ffd69a;
+    border-color: rgba(255, 180, 78, 0.55);
+}
+
+.amily2-shujuku-preview-warning {
+    margin: 0;
+    padding: 8px 10px;
+    border-left: 3px solid #d3a149;
+    border-radius: 4px;
+    background: rgba(211, 161, 73, 0.1);
+    line-height: 1.45;
+}
+
+.amily2-shujuku-preview-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.amily2-shujuku-preview-tabs > .menu_button {
+    width: auto;
+    min-width: 8em;
+    writing-mode: horizontal-tb !important;
+    white-space: nowrap;
+}
+
+.amily2-shujuku-preview-tabs > .menu_button.active {
+    color: #fff;
+    border-color: #9e8aff;
+    background: rgba(158, 138, 255, 0.28);
+}
+
+.amily2-shujuku-preview-panel {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+}
+
+.amily2-shujuku-preview-panel[hidden] {
+    display: none !important;
+}
+
+.amily2-shujuku-preview-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(8em, 1fr));
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.amily2-shujuku-preview-metric {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 8px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.16);
+}
+
+.amily2-shujuku-preview-metric strong {
+    font-size: 1.25em;
+}
+
+.amily2-shujuku-preview-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    margin: 0 0 10px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.amily2-shujuku-preview-item {
+    margin-bottom: 8px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.12);
+}
+
+.amily2-shujuku-preview-item > summary {
+    padding: 9px 10px;
+    cursor: pointer;
+    overflow-wrap: anywhere;
+    font-weight: 600;
+}
+
+.amily2-shujuku-preview-item-body {
+    padding: 0 10px 10px;
+}
+
+.amily2-shujuku-preview-key {
+    margin-bottom: 7px;
+    opacity: 0.78;
+    overflow-wrap: anywhere;
+    font-family: var(--monoFontFamily, monospace);
+    font-size: 0.86em;
+}
+
+.amily2-shujuku-preview-table-scroll {
+    overflow: auto;
+    max-height: 34vh;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 5px;
+}
+
+.amily2-shujuku-preview-table {
+    width: max-content;
+    min-width: 100%;
+    border-collapse: collapse;
+}
+
+.amily2-shujuku-preview-table th,
+.amily2-shujuku-preview-table td {
+    max-width: 24em;
+    padding: 6px 8px;
+    border: 1px solid var(--SmartThemeBorderColor);
+    text-align: left;
+    vertical-align: top;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.amily2-shujuku-preview-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--SmartThemeBlurTintColor, #252530);
+}
+
+.amily2-shujuku-preview-text {
+    margin: 0;
+    padding: 10px;
+    max-height: 38vh;
+    overflow: auto;
+    border-top: 1px solid var(--SmartThemeBorderColor);
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-family: var(--monoFontFamily, monospace);
+    font-size: 0.86em;
+    user-select: text;
+}
+
+.amily2-shujuku-preview-json {
+    display: block;
+    width: 100%;
+    min-height: 48vh;
+    box-sizing: border-box;
+    resize: vertical;
+    white-space: pre;
+    overflow: auto;
+    font-family: var(--monoFontFamily, monospace);
+    font-size: 0.84em;
+}
+
+.amily2-shujuku-preview-json-note,
+.amily2-shujuku-preview-keys,
+.amily2-shujuku-preview-limit,
+.amily2-shujuku-preview-empty {
+    margin: 0 0 8px;
+    text-align: left;
 }
 
 .action-center-buttons {
@@ -675,6 +1147,69 @@ th.amily2-menu-open .amily2-context-menu {
 
     #upper-controls-wrapper {
         padding: var(--am2-padding-main);
+    }
+
+    #amily2_memorisation_forms_panel .sinan-navigation-deck {
+        flex-wrap: wrap;
+        overflow-x: visible;
+    }
+
+    #amily2_memorisation_forms_panel .sinan-nav-item {
+        flex: 1 1 auto;
+    }
+
+    .amily2-shujuku-resource-row {
+        grid-template-columns: 1fr;
+    }
+
+    .amily2-shujuku-resource-actions {
+        grid-column: 1;
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .amily2-shujuku-resource-actions > .menu_button {
+        flex: 1 1 10em;
+        width: 100%;
+    }
+
+    .amily2-shujuku-resource-row > .notes {
+        grid-column: 1;
+    }
+
+    .amily2-shujuku-b4-diagnostic-row > .menu_button {
+        width: 100%;
+    }
+
+    .amily2-shujuku-scope-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .amily2-shujuku-resource-preview-dialog {
+        width: 96vw;
+        max-width: 96vw;
+    }
+
+    .amily2-shujuku-resource-preview-dialog .popup-content {
+        height: 66vh !important;
+        padding: 8px !important;
+    }
+
+    .amily2-shujuku-preview-tabs > .menu_button {
+        flex: 1 1 9em;
+    }
+
+    .amily2-shujuku-onboarding-capability {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .amily2-shujuku-onboarding-capability .amily2-shujuku-risk {
+        grid-column: 2;
+        justify-self: start;
+    }
+
+    .amily2-shujuku-onboarding-dialog .popup-controls > .menu_button {
+        flex-basis: 100%;
     }
 
     #amily2_memorisation_forms_panel #all-tables-container {
