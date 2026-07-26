@@ -27,14 +27,21 @@ const ALLOWED_FN_NAMES = new Set(['insertRow', 'updateRow', 'deleteRow']);
  * @returns {{ name: string, args: any[] } | null}
  */
 function parseFunctionCall(callString) {
-    const match = callString.trim().match(/(\w+)\((.*)\)/);
+    const match = callString.trim().match(/^(\w+)\s*([(（])([\s\S]*)([)）])\s*[;；]?\s*$/u);
     if (!match) {
         log(`指令格式错误，无法解析: "${callString}"`, 'error');
         return null;
     }
 
     const functionName = match[1];
-    const argsString = match[2];
+    const openingParenthesis = match[2];
+    const argsString = match[3];
+    const closingParenthesis = match[4];
+    if ((openingParenthesis === '(' && closingParenthesis !== ')')
+        || (openingParenthesis === '（' && closingParenthesis !== '）')) {
+        log(`指令括号不匹配，无法解析: "${callString}"`, 'error');
+        return null;
+    }
 
     if (!ALLOWED_FN_NAMES.has(functionName)) {
         log(`检测到非法函数调用: "${functionName}"。已阻止执行。`, 'error');
@@ -47,38 +54,65 @@ function parseFunctionCall(callString) {
         let currentArg = '';
         let inQuote = false;
         let quoteChar = '';
-        let braceDepth = 0;
+        /** @type {string[]} */
+        const braceStack = [];
 
         for (let i = 0; i < argsString.length; i++) {
             const char = argsString[i];
+            const escaped = isEscaped(argsString, i);
 
-            if ((char === '"' || char === "'") && (i === 0 || argsString[i-1] !== '\\')) {
-                if (!inQuote) {
-                    inQuote = true;
-                    quoteChar = char;
-                } else if (char === quoteChar) {
+            if (inQuote) {
+                if (char === quoteChar && !escaped) {
                     inQuote = false;
-                }
-                currentArg += char;
-            } else if (!inQuote) {
-                if (char === '{' || char === '[') {
-                    braceDepth++;
-                    currentArg += char;
-                } else if (char === '}' || char === ']') {
-                    braceDepth--;
-                    currentArg += char;
-                } else if (char === ',' && braceDepth === 0) {
-                    args.push(parseValue(currentArg));
-                    currentArg = '';
+                    currentArg += normalizedClosingQuote(char);
                 } else {
                     currentArg += char;
                 }
-            } else {
-                currentArg += char;
+                continue;
             }
+
+            const openingQuote = getOpeningQuote(char);
+            if (openingQuote && !escaped) {
+                inQuote = true;
+                quoteChar = openingQuote.close;
+                currentArg += openingQuote.normalized;
+                continue;
+            }
+
+            if (isClosingCurlyQuote(char) && !escaped) {
+                throw new Error(`孤立的右引号 "${char}"`);
+            }
+
+            if (char === '{' || char === '[') {
+                braceStack.push(char);
+                currentArg += char;
+            } else if (char === '}' || char === ']') {
+                const expectedOpening = char === '}' ? '{' : '[';
+                if (braceStack.pop() !== expectedOpening) {
+                    throw new Error(`括号不匹配: "${char}"`);
+                }
+                currentArg += char;
+            } else if ((char === ',' || char === '，' || char === ';' || char === '；')
+                && braceStack.length === 0) {
+                if (!currentArg.trim()) {
+                    throw new Error('存在空参数');
+                }
+                args.push(parseValue(currentArg));
+                currentArg = '';
+            } else {
+                currentArg += normalizeStructuralPunctuation(char);
+            }
+        }
+        if (inQuote) {
+            throw new Error('字符串引号未闭合');
+        }
+        if (braceStack.length > 0) {
+            throw new Error('对象或数组括号未闭合');
         }
         if (currentArg.trim()) {
             args.push(parseValue(currentArg));
+        } else if (argsString.trim() && args.length > 0) {
+            throw new Error('参数列表不能以分隔符结尾');
         }
 
         return { name: functionName, args: args };
@@ -86,6 +120,37 @@ function parseFunctionCall(callString) {
         log(`解析函数 "${functionName}" 的参数时出错: ${e.message}`, 'error');
         return null;
     }
+}
+
+function getOpeningQuote(char) {
+    if (char === '"') return { close: '"', normalized: '"' };
+    if (char === "'") return { close: "'", normalized: "'" };
+    if (char === '“') return { close: '”', normalized: '"' };
+    if (char === '‘') return { close: '’', normalized: '"' };
+    return null;
+}
+
+function isClosingCurlyQuote(char) {
+    return char === '”' || char === '’';
+}
+
+function normalizedClosingQuote(char) {
+    return char === '”' || char === '’' ? '"' : char;
+}
+
+function isEscaped(text, index) {
+    let slashCount = 0;
+    for (let i = index - 1; i >= 0 && text[i] === '\\'; i--) {
+        slashCount++;
+    }
+    return slashCount % 2 === 1;
+}
+
+function normalizeStructuralPunctuation(char) {
+    if (char === '，') return ',';
+    if (char === '：') return ':';
+    if (char === '；') return ';';
+    return char;
 }
 
 function parseValue(val) {
@@ -208,15 +273,45 @@ function cleanValueStr(str) {
  */
 function _argsToOperation(name, args) {
     if (name === 'insertRow') {
+        if (args.length !== 2
+            || !isNonNegativeInteger(args[0])
+            || !isPlainDataObject(args[1])) {
+            log('insertRow 参数无效：需要 (非负整数 tableIndex, data 对象)。', 'error');
+            return null;
+        }
         return /** @type {Operation} */ ({ op: 'insertRow', tableIndex: args[0], data: args[1] });
     }
     if (name === 'updateRow') {
+        if (args.length !== 3
+            || !isNonNegativeInteger(args[0])
+            || !isNonNegativeInteger(args[1])
+            || !isPlainDataObject(args[2])) {
+            log('updateRow 参数无效：需要 (非负整数 tableIndex, 非负整数 rowIndex, data 对象)。', 'error');
+            return null;
+        }
         return /** @type {Operation} */ ({ op: 'updateRow', tableIndex: args[0], rowIndex: args[1], data: args[2] });
     }
     if (name === 'deleteRow') {
+        if (args.length !== 2
+            || !isNonNegativeInteger(args[0])
+            || !isNonNegativeInteger(args[1])) {
+            log('deleteRow 参数无效：需要 (非负整数 tableIndex, 非负整数 rowIndex)。', 'error');
+            return null;
+        }
         return /** @type {Operation} */ ({ op: 'deleteRow', tableIndex: args[0], rowIndex: args[1] });
     }
     return null;
+}
+
+function isNonNegativeInteger(value) {
+    return Number.isInteger(value) && value >= 0;
+}
+
+function isPlainDataObject(value) {
+    return Boolean(value)
+        && typeof value === 'object'
+        && !Array.isArray(value)
+        && Object.getPrototypeOf(value) === Object.prototype;
 }
 
 /**
@@ -241,15 +336,14 @@ export function parseToOperations(aiResponseText) {
     const ops = [];
     for (const commandString of commands) {
         const trimmed = commandString.trim();
-        if (!trimmed.startsWith('insertRow(') &&
-            !trimmed.startsWith('updateRow(') &&
-            !trimmed.startsWith('deleteRow(')) {
+        if (!/^(?:insertRow|updateRow|deleteRow)\b/u.test(trimmed)) {
             continue;
         }
         const parsed = parseFunctionCall(trimmed);
-        if (!parsed) continue;
+        if (!parsed) return [];
         const op = _argsToOperation(parsed.name, parsed.args);
-        if (op) ops.push(op);
+        if (!op) return [];
+        ops.push(op);
     }
     return ops;
 }

@@ -4,10 +4,16 @@ import { getRequestHeaders } from '/script.js';
 import { extensionName } from '../../utils/settings.js';
 import { extension_settings, getContext } from "/scripts/extensions.js";
 import { compatibleTriggerSlash } from '../../core/tavernhelper-compatibility.js';
-import { getSlotProfile, providerToApiMode } from '../../core/api/api-resolver.js';
+import {
+    acquireProfileRequestPermit,
+    bindSlotProfileRateLimit,
+    getSlotProfile,
+    providerToApiMode,
+} from '../../core/api/api-resolver.js';
 import { apiProfileManager } from '../../utils/config/ApiProfileManager.js';
 import { configManager } from '../../utils/config/ConfigManager.js';
 import { detectVendor } from '../../utils/api-vendor.js';
+import { mergeSafeModelCallOptions } from '../../core/api/safe-call-options.js';
 
 function normalizeApiResponse(responseData) {
     let data = responseData;
@@ -44,7 +50,7 @@ async function getCwbApiSettings() {
     // 优先读取槽位分配的 Profile
     const profile = await getSlotProfile('cwb');
     if (profile) {
-        return {
+        return bindSlotProfileRateLimit({
             apiMode:       providerToApiMode(profile.provider),
             apiUrl:        profile.apiUrl,
             apiKey:        profile.apiKey ?? '',
@@ -52,7 +58,7 @@ async function getCwbApiSettings() {
             tavernProfile: '',
             temperature:   profile.temperature ?? 0.7,
             maxTokens:     profile.maxTokens   ?? 65000,
-        };
+        }, profile);
     }
 
     // 降级：读旧 extension_settings
@@ -237,7 +243,8 @@ async function callCwbOpenAITest(messages, options) {
                 ...getRequestHeaders(), 
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(requestBody)
+            body: JSON.stringify(requestBody),
+            signal: options.signal,
         });
 
         if (!response.ok) {
@@ -301,17 +308,7 @@ async function callCwbOpenAITest(messages, options) {
 
 export async function callCwbAPI(systemPrompt, userPromptContent, options = {}) {
     const apiSettings = await getCwbApiSettings();
-    
-    const finalOptions = {
-        maxTokens: apiSettings.maxTokens,
-        temperature: apiSettings.temperature,
-        model: apiSettings.model,
-        apiUrl: apiSettings.apiUrl,
-        apiKey: apiSettings.apiKey,
-        apiMode: apiSettings.apiMode,
-        tavernProfile: apiSettings.tavernProfile,
-        ...options
-    };
+    const finalOptions = mergeSafeModelCallOptions(apiSettings, options);
 
     if (finalOptions.apiMode !== 'sillytavern_preset') {
         if (!finalOptions.apiUrl || !finalOptions.model || !finalOptions.apiKey) {
@@ -323,7 +320,9 @@ export async function callCwbAPI(systemPrompt, userPromptContent, options = {}) 
         }
     }
 
-    const systemPromptContent = options.isTestCall ? systemPrompt : `${state.currentBreakArmorPrompt}\n\n${systemPrompt}`;
+    const systemPromptContent = options?.isTestCall === true
+        ? systemPrompt
+        : `${state.currentBreakArmorPrompt}\n\n${systemPrompt}`;
 
     const messages = [
         { role: 'system', content: systemPromptContent },
@@ -346,6 +345,8 @@ export async function callCwbAPI(systemPrompt, userPromptContent, options = {}) 
 
     try {
         let responseContent;
+
+        await acquireProfileRequestPermit(apiSettings, finalOptions.signal);
 
         switch (finalOptions.apiMode) {
             case 'openai_test':
@@ -633,7 +634,7 @@ export async function updateApiStatusDisplay($panel) {
     if (!$panel) return;
     const $apiStatus = $panel.find('#cwb-api-status');
     const apiSettings = await getCwbApiSettings();
-    
+
     if (apiSettings.apiMode === 'sillytavern_preset') {
         if (apiSettings.tavernProfile) {
             $apiStatus.html(
@@ -667,6 +668,7 @@ export async function callCustomOpenAI(messages) {
     const apiSettings = await getCwbApiSettings();
 
     if (apiSettings.apiMode === 'sillytavern_preset') {
+        await acquireProfileRequestPermit(apiSettings);
         return await callCwbSillyTavernPreset(messages, { tavernProfile: apiSettings.tavernProfile, maxTokens: apiSettings.maxTokens || 65000 });
     } else {
         if (!apiSettings.apiUrl || !apiSettings.model) {
@@ -705,6 +707,7 @@ export async function callCustomOpenAI(messages) {
         const body = JSON.stringify(requestBody);
 
         try {
+            await acquireProfileRequestPermit(apiSettings);
             const response = await fetch(fullApiUrl, {
                 method: 'POST',
                 headers: headers,

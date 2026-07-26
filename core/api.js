@@ -1,6 +1,11 @@
 import { extension_settings, getContext } from "/scripts/extensions.js";
 import { characters } from "/script.js";
-import { getSlotProfile, providerToApiMode } from './api/api-resolver.js';
+import {
+  acquireProfileRequestPermit,
+  bindSlotProfileRateLimit,
+  getSlotProfile,
+  providerToApiMode,
+} from './api/api-resolver.js';
 import { configManager } from '../utils/config/ConfigManager.js';
 import { world_names } from "/scripts/world-info.js";
 import { extensionName } from "../utils/settings.js";
@@ -34,6 +39,12 @@ import {
 
 import { getRequestHeaders } from '/script.js';
 import { mergeSafeModelCallOptions } from './api/safe-call-options.js';
+import { resolveDeepSeekToolRoute } from './api/deepseek-tool-routing.js';
+import { apiProfileManager } from '../utils/config/ApiProfileManager.js';
+import {
+  assertShujukuAccessLease,
+  captureShujukuAccessLease,
+} from './table-system/compat/shujuku/access-policy.js';
 
 
 let ChatCompletionService = undefined;
@@ -449,7 +460,7 @@ async function getApiSettings(slot = 'main') {
             ? 'sillytavern_backend'
             : providerToApiMode(profile.provider);
 
-        return {
+        return bindSlotProfileRateLimit({
             apiProvider:  resolvedProvider,
             apiUrl:       profile.apiUrl,
             apiKey:       profile.apiKey ?? '',
@@ -459,7 +470,7 @@ async function getApiSettings(slot = 'main') {
             fakeStream:   profile.fakeStream ?? false,
             customParams: profile.customParams ?? {},
             tavernProfile: '',
-        };
+        }, profile);
     }
 
     // 降级：按槽位读取各自的独立配置
@@ -615,26 +626,11 @@ export async function callAI(messages, options = {}) {
     try {
         let responseContent;
 
-        switch (finalOptions.apiProvider) {
-            case 'openai':
-                responseContent = await callOpenAICompatible(messages, finalOptions);
-                break;
-            case 'openai_test':
-                responseContent = await callOpenAITest(messages, finalOptions);
-                break;
-            case 'google':
-                responseContent = await callGoogleDirect(messages, finalOptions);
-                break;
-            case 'sillytavern_backend':
-                responseContent = await callSillyTavernBackend(messages, finalOptions);
-                break;
-            case 'sillytavern_preset':
-                responseContent = await callSillyTavernPreset(messages, finalOptions);
-                break;
-            default:
-                console.error(`[Amily2-外交部] 未支持的API提供商: ${finalOptions.apiProvider}`);
-                return null;
-        }
+        assertInferenceRequestBudgetAvailable(options.requestBudget);
+        await acquireProfileRequestPermit(apiSettings, finalOptions.signal);
+        consumeInferenceRequestBudget(options.requestBudget, options.requestKind || 'text-fallback');
+
+        responseContent = await dispatchAIRequest(messages, finalOptions);
 
         if (!responseContent) {
             console.warn('[Amily2-外交部] 未能获取AI响应内容，但不视为错误');
@@ -651,6 +647,9 @@ export async function callAI(messages, options = {}) {
         if (error?.name === 'AbortError') {
             console.warn('[Amily2-外交部] API 调用被用户中断。');
             throw error; // 让上层（如 secondary-filler）识别并跳过结果处理
+        }
+        if (options.throwOnError === true || isInferenceRequestBudgetError(error)) {
+            throw error;
         }
         console.error(`[Amily2-外交部] API调用发生错误:`, error);
 
@@ -672,12 +671,456 @@ export async function callAI(messages, options = {}) {
     }
 }
 
+/**
+ * Strict internal entry point for the shujuku compatibility broker. It never
+ * falls back to main/DOM settings, never accepts routing overrides, never logs
+ * content or connection coordinates, and rejects SillyTavern preset mode
+ * because that path cannot cancel the upstream request reliably.
+ */
+export async function callLegacyCardTaskAI(messages, {
+    expectedProfileId,
+    maxTokens,
+    signal,
+} = {}) {
+    const accessLease = captureShujukuAccessLease();
+    if (window.AMILY2_SYSTEM_PARALYZED === true) {
+        throw strictLegacyCallError('STRICT_LEGACY_MODEL_DISABLED', 'Model execution is unavailable.');
+    }
+    if (typeof expectedProfileId !== 'string' || !expectedProfileId) {
+        throw strictLegacyCallError('STRICT_LEGACY_MODEL_PROFILE_INVALID', 'The captured compatibility profile is invalid.');
+    }
+
+    try {
+        const assignedId = apiProfileManager.getAssignment('legacyCardTask');
+        if (assignedId !== expectedProfileId) {
+            throw strictLegacyCallError('STRICT_LEGACY_MODEL_PROFILE_CHANGED', 'The dedicated compatibility profile changed before execution.');
+        }
+        const metadata = apiProfileManager.getProfile(expectedProfileId);
+        if (!metadata || metadata.type !== 'chat' || metadata.provider === 'sillytavern_preset') {
+            throw strictLegacyCallError('STRICT_LEGACY_MODEL_PROFILE_UNSUPPORTED', 'The dedicated compatibility profile is unavailable or unsupported.');
+        }
+        const apiKey = await apiProfileManager.getKey(expectedProfileId);
+        assertShujukuAccessLease(accessLease);
+        if (apiProfileManager.getAssignment('legacyCardTask') !== expectedProfileId) {
+            throw strictLegacyCallError('STRICT_LEGACY_MODEL_PROFILE_CHANGED', 'The dedicated compatibility profile changed before execution.');
+        }
+        const apiProvider = metadata.provider === 'sillytavern_backend'
+            ? 'sillytavern_backend'
+            : providerToApiMode(metadata.provider);
+        if (apiProvider === 'sillytavern_preset') {
+            throw strictLegacyCallError('STRICT_LEGACY_MODEL_PROFILE_UNSUPPORTED', 'The dedicated compatibility profile cannot be cancelled safely.');
+        }
+        const connection = bindSlotProfileRateLimit({
+            apiProvider,
+            apiUrl: metadata.apiUrl,
+            apiKey: apiKey ?? '',
+            model: metadata.model,
+            maxTokens: metadata.maxTokens ?? 4096,
+            temperature: metadata.temperature ?? 1,
+            customParams: metadata.customParams ?? {},
+            fakeStream: false,
+        }, metadata);
+        const finalOptions = {
+            ...mergeSafeModelCallOptions(connection, { maxTokens, signal }),
+            quiet: true,
+            agentWorkload: true,
+        };
+        if (!finalOptions.apiUrl || !finalOptions.model) {
+            throw strictLegacyCallError('STRICT_LEGACY_MODEL_PROFILE_INCOMPLETE', 'The dedicated compatibility profile is incomplete.');
+        }
+        assertShujukuAccessLease(accessLease);
+        await acquireProfileRequestPermit(connection, finalOptions.signal);
+        assertShujukuAccessLease(accessLease);
+        const responseContent = await dispatchAIRequest(messages, finalOptions);
+        assertShujukuAccessLease(accessLease);
+        if (apiProfileManager.getAssignment('legacyCardTask') !== expectedProfileId) {
+            throw strictLegacyCallError('STRICT_LEGACY_MODEL_PROFILE_CHANGED', 'The dedicated compatibility profile changed during execution.');
+        }
+        if (typeof responseContent !== 'string') {
+            throw strictLegacyCallError('STRICT_LEGACY_MODEL_EMPTY', 'The model provider returned no text.');
+        }
+        return responseContent;
+    } catch (error) {
+        if (error?.name === 'AbortError'
+            || /^STRICT_LEGACY_MODEL_/u.test(error?.code || '')
+            || /^SHUJUKU_/u.test(error?.code || '')) throw error;
+        throw strictLegacyCallError('STRICT_LEGACY_MODEL_UPSTREAM_FAILED', 'The model provider failed.');
+    }
+}
+
+/**
+ * Strict internal entry point for Amily's native shujuku Agent workload.
+ *
+ * This route is intentionally separate from both the main model slot and the
+ * card-visible B4 compatibility broker. It accepts only the profile captured
+ * by Core and revalidates the dedicated assignment before and after every
+ * request. Connection coordinates and response bodies never enter public
+ * compatibility state.
+ */
+export async function callShujukuAgentWorkloadAI(messages, {
+    expectedProfileId,
+    maxTokens,
+    signal,
+} = {}) {
+    const accessLease = captureShujukuAccessLease();
+    const slot = 'shujukuAgentWorkload';
+    if (window.AMILY2_SYSTEM_PARALYZED === true) {
+        throw strictAgentWorkloadCallError(
+            'STRICT_AGENT_WORKLOAD_DISABLED',
+            'Agent model execution is unavailable.',
+        );
+    }
+    if (typeof expectedProfileId !== 'string' || !expectedProfileId) {
+        throw strictAgentWorkloadCallError(
+            'STRICT_AGENT_WORKLOAD_PROFILE_INVALID',
+            'The captured Agent workload profile is invalid.',
+        );
+    }
+
+    try {
+        const assignedId = apiProfileManager.getAssignment(slot);
+        if (assignedId !== expectedProfileId) {
+            throw strictAgentWorkloadCallError(
+                'STRICT_AGENT_WORKLOAD_PROFILE_CHANGED',
+                'The dedicated Agent workload profile changed before execution.',
+            );
+        }
+        const metadata = apiProfileManager.getProfile(expectedProfileId);
+        if (!metadata || metadata.type !== 'chat' || metadata.provider === 'sillytavern_preset') {
+            throw strictAgentWorkloadCallError(
+                'STRICT_AGENT_WORKLOAD_PROFILE_UNSUPPORTED',
+                'The dedicated Agent workload profile is unavailable or unsupported.',
+            );
+        }
+        const apiKey = await apiProfileManager.getKey(expectedProfileId);
+        assertShujukuAccessLease(accessLease);
+        if (apiProfileManager.getAssignment(slot) !== expectedProfileId) {
+            throw strictAgentWorkloadCallError(
+                'STRICT_AGENT_WORKLOAD_PROFILE_CHANGED',
+                'The dedicated Agent workload profile changed before execution.',
+            );
+        }
+        const apiProvider = metadata.provider === 'sillytavern_backend'
+            ? 'sillytavern_backend'
+            : providerToApiMode(metadata.provider);
+        if (apiProvider === 'sillytavern_preset') {
+            throw strictAgentWorkloadCallError(
+                'STRICT_AGENT_WORKLOAD_PROFILE_UNSUPPORTED',
+                'The dedicated Agent workload profile cannot be cancelled safely.',
+            );
+        }
+        const isDeepSeekWorkload = /(?:deepseek|dsv)/iu.test([
+            metadata.provider,
+            metadata.apiUrl,
+            metadata.model,
+            metadata.name,
+        ].filter(Boolean).join(' '));
+        const connection = bindSlotProfileRateLimit({
+            apiProvider,
+            apiUrl: metadata.apiUrl,
+            apiKey: apiKey ?? '',
+            model: metadata.model,
+            maxTokens: metadata.maxTokens ?? 4096,
+            temperature: 0,
+            customParams: {
+                ...(metadata.customParams ?? {}),
+                ...(isDeepSeekWorkload
+                    ? { thinking: { type: 'disabled' } }
+                    : {}),
+            },
+            fakeStream: false,
+        }, metadata);
+        const finalOptions = {
+            ...mergeSafeModelCallOptions(connection, {
+                maxTokens,
+                temperature: 0,
+                signal,
+            }),
+            quiet: true,
+            agentWorkload: true,
+        };
+        if (!finalOptions.apiUrl || !finalOptions.model) {
+            throw strictAgentWorkloadCallError(
+                'STRICT_AGENT_WORKLOAD_PROFILE_INCOMPLETE',
+                'The dedicated Agent workload profile is incomplete.',
+            );
+        }
+        assertShujukuAccessLease(accessLease);
+        await acquireProfileRequestPermit(connection, finalOptions.signal);
+        assertShujukuAccessLease(accessLease);
+        const responseContent = await dispatchAIRequest(messages, finalOptions);
+        assertShujukuAccessLease(accessLease);
+        if (apiProfileManager.getAssignment(slot) !== expectedProfileId) {
+            throw strictAgentWorkloadCallError(
+                'STRICT_AGENT_WORKLOAD_PROFILE_CHANGED',
+                'The dedicated Agent workload profile changed during execution.',
+            );
+        }
+        if (typeof responseContent !== 'string') {
+            throw strictAgentWorkloadCallError(
+                'STRICT_AGENT_WORKLOAD_EMPTY',
+                'The Agent workload model returned no text.',
+            );
+        }
+        return responseContent;
+    } catch (error) {
+        if (error?.name === 'AbortError'
+            || /^STRICT_AGENT_WORKLOAD_/u.test(error?.code || '')
+            || /^SHUJUKU_/u.test(error?.code || '')) {
+            throw error;
+        }
+        throw classifyAgentWorkloadUpstreamError(error);
+    }
+}
+
+async function dispatchAIRequest(messages, options) {
+    switch (options.apiProvider) {
+        case 'openai':
+            return callOpenAICompatible(messages, options);
+        case 'openai_test':
+            return callOpenAITest(messages, options);
+        case 'google':
+            return callGoogleDirect(messages, options);
+        case 'sillytavern_backend':
+            return callSillyTavernBackend(messages, options);
+        case 'sillytavern_preset':
+            return callSillyTavernPreset(messages, options);
+        default:
+            throw new Error(`Unsupported API provider: ${options.apiProvider}`);
+    }
+}
+
+function strictLegacyCallError(code, message) {
+    const error = new Error(message);
+    error.code = code;
+    return error;
+}
+
+function strictAgentWorkloadCallError(code, message) {
+    const error = new Error(message);
+    error.code = code;
+    return error;
+}
+
+const SHUJUKU_AGENT_RESPONSE_MAX_BYTES = 256 * 1024;
+
+async function parseModelJsonResponse(response, options) {
+    if (options?.agentWorkload !== true) return response.json();
+    return parseBoundedAgentJsonResponse(response);
+}
+
+async function parseBoundedAgentJsonResponse(response) {
+    const contentLength = readBoundedAgentContentLength(response);
+    if (contentLength > SHUJUKU_AGENT_RESPONSE_MAX_BYTES) {
+        throw strictAgentWorkloadCallError(
+            'STRICT_AGENT_WORKLOAD_RESPONSE_TOO_LARGE',
+            'The Agent workload provider response exceeds the allowed byte limit.',
+        );
+    }
+
+    let bytes;
+    try {
+        bytes = await readBoundedAgentResponseBytes(response);
+    } catch (error) {
+        if (/^STRICT_AGENT_WORKLOAD_/u.test(error?.code || '')) throw error;
+        throw strictAgentWorkloadCallError(
+            'STRICT_AGENT_WORKLOAD_RESPONSE_INVALID',
+            'The Agent workload provider returned an unreadable response.',
+        );
+    }
+
+    try {
+        const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+        return JSON.parse(text);
+    } catch {
+        throw strictAgentWorkloadCallError(
+            'STRICT_AGENT_WORKLOAD_RESPONSE_INVALID',
+            'The Agent workload provider returned invalid JSON.',
+        );
+    }
+}
+
+function readBoundedAgentContentLength(response) {
+    try {
+        const raw = response?.headers?.get?.('content-length');
+        if (typeof raw !== 'string' || !/^(?:0|[1-9]\d*)$/u.test(raw.trim())) return 0;
+        const value = Number(raw.trim());
+        return Number.isSafeInteger(value) && value >= 0 ? value : 0;
+    } catch {
+        return 0;
+    }
+}
+
+async function readBoundedAgentResponseBytes(response) {
+    const reader = response?.body?.getReader?.();
+    if (reader) {
+        const chunks = [];
+        let total = 0;
+        try {
+            while (true) {
+                const part = await reader.read();
+                if (part?.done === true) break;
+                if (!(part?.value instanceof Uint8Array)) {
+                    throw strictAgentWorkloadCallError(
+                        'STRICT_AGENT_WORKLOAD_RESPONSE_INVALID',
+                        'The Agent workload provider returned an unreadable response.',
+                    );
+                }
+                total += part.value.byteLength;
+                if (total > SHUJUKU_AGENT_RESPONSE_MAX_BYTES) {
+                    try {
+                        await reader.cancel();
+                    } catch {
+                        // The response is already rejected; cancellation is best effort.
+                    }
+                    throw strictAgentWorkloadCallError(
+                        'STRICT_AGENT_WORKLOAD_RESPONSE_TOO_LARGE',
+                        'The Agent workload provider response exceeds the allowed byte limit.',
+                    );
+                }
+                chunks.push(part.value.slice());
+            }
+        } finally {
+            try {
+                reader.releaseLock?.();
+            } catch {
+                // A rejected/closed stream may already have released its lock.
+            }
+        }
+        const bytes = new Uint8Array(total);
+        let offset = 0;
+        for (const chunk of chunks) {
+            bytes.set(chunk, offset);
+            offset += chunk.byteLength;
+        }
+        return bytes;
+    }
+
+    if (typeof response?.arrayBuffer !== 'function') {
+        throw strictAgentWorkloadCallError(
+            'STRICT_AGENT_WORKLOAD_RESPONSE_INVALID',
+            'The Agent workload provider returned an unreadable response.',
+        );
+    }
+    const buffer = await response.arrayBuffer();
+    if (!(buffer instanceof ArrayBuffer)
+        || buffer.byteLength > SHUJUKU_AGENT_RESPONSE_MAX_BYTES) {
+        throw strictAgentWorkloadCallError(
+            buffer instanceof ArrayBuffer
+                ? 'STRICT_AGENT_WORKLOAD_RESPONSE_TOO_LARGE'
+                : 'STRICT_AGENT_WORKLOAD_RESPONSE_INVALID',
+            buffer instanceof ArrayBuffer
+                ? 'The Agent workload provider response exceeds the allowed byte limit.'
+                : 'The Agent workload provider returned an unreadable response.',
+        );
+    }
+    return new Uint8Array(buffer);
+}
+
+function classifyAgentWorkloadUpstreamError(error) {
+    let status = 0;
+    let name = '';
+    let code = '';
+    let message = '';
+    try {
+        const statusDescriptor = error && typeof error === 'object'
+            ? Object.getOwnPropertyDescriptor(error, 'status')
+                ?? Object.getOwnPropertyDescriptor(error, 'statusCode')
+            : null;
+        if (statusDescriptor && Object.hasOwn(statusDescriptor, 'value')) {
+            status = Number(statusDescriptor.value) || 0;
+        }
+        const nameDescriptor = error && typeof error === 'object'
+            ? Object.getOwnPropertyDescriptor(error, 'name')
+            : null;
+        if (nameDescriptor
+            && Object.hasOwn(nameDescriptor, 'value')
+            && typeof nameDescriptor.value === 'string') {
+            name = nameDescriptor.value;
+        }
+        const codeDescriptor = error && typeof error === 'object'
+            ? Object.getOwnPropertyDescriptor(error, 'code')
+            : null;
+        if (codeDescriptor
+            && Object.hasOwn(codeDescriptor, 'value')
+            && typeof codeDescriptor.value === 'string') {
+            code = codeDescriptor.value;
+        }
+        const messageDescriptor = error && typeof error === 'object'
+            ? Object.getOwnPropertyDescriptor(error, 'message')
+            : null;
+        if (messageDescriptor
+            && Object.hasOwn(messageDescriptor, 'value')
+            && typeof messageDescriptor.value === 'string') {
+            message = messageDescriptor.value.slice(0, 2_048);
+        }
+    } catch {
+        // Error inspection is advisory only; unknown values fail closed below.
+    }
+    if (status === 429) {
+        return strictAgentWorkloadCallError(
+            'AGENT_WORKLOAD_RETRY_429',
+            'The Agent workload provider is rate limited.',
+        );
+    }
+    if (status >= 500 && status <= 599) {
+        return strictAgentWorkloadCallError(
+            'AGENT_WORKLOAD_RETRY_5XX',
+            'The Agent workload provider is temporarily unavailable.',
+        );
+    }
+    if ([
+        'ECONNRESET',
+        'ECONNREFUSED',
+        'ENETDOWN',
+        'ENETUNREACH',
+        'ETIMEDOUT',
+        'UND_ERR_CONNECT_TIMEOUT',
+        'UND_ERR_SOCKET',
+    ].includes(code)
+        || (name === 'TypeError'
+            && /^(?:failed to fetch|fetch failed|networkerror when attempting to fetch resource\.?)$/iu
+                .test(message.trim()))) {
+        return strictAgentWorkloadCallError(
+            'AGENT_WORKLOAD_RETRY_NETWORK',
+            'The Agent workload provider could not be reached.',
+        );
+    }
+    return strictAgentWorkloadCallError(
+        'STRICT_AGENT_WORKLOAD_UPSTREAM_FAILED',
+        'The Agent workload model provider failed.',
+    );
+}
+
+async function throwModelHttpError(response, options, label) {
+    const status = Number(response?.status) || 0;
+    if (options?.agentWorkload === true) {
+        const error = new Error('The Agent workload provider returned an HTTP error.');
+        Object.defineProperty(error, 'status', {
+            value: status,
+            enumerable: false,
+            configurable: false,
+            writable: false,
+        });
+        throw error;
+    }
+    const errorText = await response.text();
+    const error = new Error(`${label}: ${status} - ${errorText}`);
+    Object.defineProperty(error, 'status', {
+        value: status,
+        enumerable: false,
+        configurable: false,
+        writable: false,
+    });
+    throw error;
+}
+
 
 async function callOpenAICompatible(messages, options) {
     const baseUrl = options.apiUrl.replace(/\/$/, '').replace(/\/v1$/, '');
     const apiUrl = `${baseUrl}/v1/chat/completions`;
 
-    console.log(`[Amily2号-OpenAI兼容] API地址: ${apiUrl}`);
+    if (!options.quiet) console.log(`[Amily2号-OpenAI兼容] API地址: ${apiUrl}`);
 
     const response = await fetch(apiUrl, {
         method: 'POST',
@@ -699,11 +1142,10 @@ async function callOpenAICompatible(messages, options) {
     });
 
     if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`OpenAI兼容API请求失败: ${response.status} - ${errorText}`);
+        await throwModelHttpError(response, options, 'OpenAI-compatible API request failed');
     }
 
-    const responseData = await response.json();
+    const responseData = await parseModelJsonResponse(response, options);
     return responseData?.choices?.[0]?.message?.content;
 }
 
@@ -731,7 +1173,7 @@ async function callOpenAITest(messages, options) {
         proxy_password: options.apiKey,
         stream: false,
         max_tokens: options.maxTokens || 30000,
-        temperature: options.temperature || 1,
+        temperature: options.temperature ?? 1,
     };
 
     const response = await fetch('/api/backends/chat-completions/generate', {
@@ -742,15 +1184,20 @@ async function callOpenAITest(messages, options) {
     });
 
     if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`OpenAI兼容(测试)API请求失败: ${response.status} - ${errorText}`);
+        await throwModelHttpError(response, options, 'OpenAI-compatible test API request failed');
     }
 
-    const responseData = await response.json();
+    const responseData = await parseModelJsonResponse(response, options);
     
     if (!responseData || !responseData.choices || responseData.choices.length === 0) {
-        console.error('[Amily2号-OpenAI兼容(测试)] API返回了空的choices数组或错误:', responseData);
+        if (!options.quiet) console.error('[Amily2号-OpenAI兼容(测试)] API返回了空的choices数组或错误:', responseData);
         if (responseData.error) {
+            if (options.agentWorkload === true) {
+                throw strictAgentWorkloadCallError(
+                    'STRICT_AGENT_WORKLOAD_UPSTREAM_FAILED',
+                    'The Agent workload model provider failed.',
+                );
+            }
             throw new Error(`API返回错误: ${responseData.error.message || JSON.stringify(responseData.error)}`);
         }
         return null; 
@@ -766,7 +1213,7 @@ async function callGoogleDirect(messages, options) {
     const apiVersion = options.model.includes('gemini-1.5') ? 'v1beta' : 'v1';
     const finalApiUrl = `${GOOGLE_API_BASE_URL}/${apiVersion}/models/${options.model}:generateContent`;
 
-    console.log(`[Amily2号-Google直连] API地址: ${finalApiUrl}`);
+    if (!options.quiet) console.log(`[Amily2号-Google直连] API地址: ${finalApiUrl}`);
 
     const headers = {
         "Content-Type": "application/json",
@@ -788,20 +1235,30 @@ async function callGoogleDirect(messages, options) {
     });
 
     if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Google API请求失败: ${response.status} - ${errorText}`);
+        await throwModelHttpError(response, options, 'Google API request failed');
     }
 
-    let responseData = await response.json();
+    let responseData = await parseModelJsonResponse(response, options);
 
     if (responseData.name && responseData.metadata) {
-        console.log("[Amily2号-Google] 收到异步操作ID，启用轮询机制...");
+        if (!options.quiet) console.log("[Amily2号-Google] 收到异步操作ID，启用轮询机制...");
         const operationId = responseData.name;
         const tracker = progressTracker(operationId, 6);
         tracker.start();
         
         try {
-            const pollingTask = createGooglePollingTask(operationId, GOOGLE_API_BASE_URL, { "Content-Type": "application/json" });
+            const pollingTask = options.agentWorkload === true
+                ? createBoundedGooglePollingTask(
+                    operationId,
+                    GOOGLE_API_BASE_URL,
+                    { "Content-Type": "application/json" },
+                    options,
+                )
+                : createGooglePollingTask(
+                    operationId,
+                    GOOGLE_API_BASE_URL,
+                    { "Content-Type": "application/json" },
+                );
             const pollingOptions = { 
                 maxAttempts: 6, 
                 baseDelay: 3000, 
@@ -817,7 +1274,7 @@ async function callGoogleDirect(messages, options) {
             }
             responseData = pollingResult.response;
         } catch (pollingError) {
-            console.error('[Google轮询错误]', pollingError);
+            if (!options.quiet) console.error('[Google轮询错误]', pollingError);
             tracker.error(`轮询失败: ${pollingError.message}`);
             throw new Error("Google轮询任务失败: " + pollingError.message);
         }
@@ -827,7 +1284,7 @@ async function callGoogleDirect(messages, options) {
 }
 
 async function callSillyTavernBackend(messages, options) {
-    console.log('[Amily2号-ST后端] 通过SillyTavern后端调用API');
+    if (!options.quiet) console.log('[Amily2号-ST后端] 通过SillyTavern后端调用API');
 
     const response = await fetch('/api/backends/chat-completions/generate', {
         method: 'POST',
@@ -849,17 +1306,36 @@ async function callSillyTavernBackend(messages, options) {
     });
 
     if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`SillyTavern后端API请求失败: ${response.status} - ${errorText}`);
+        await throwModelHttpError(response, options, 'SillyTavern backend API request failed');
     }
 
-    const rawResponse = await response.json();
+    const rawResponse = await parseModelJsonResponse(response, options);
     const result = normalizeApiResponse(rawResponse);
     if (result.error) {
+        if (options.agentWorkload === true) {
+            throw strictAgentWorkloadCallError(
+                'STRICT_AGENT_WORKLOAD_UPSTREAM_FAILED',
+                'The Agent workload model provider failed.',
+            );
+        }
         throw new Error(result.error.message || 'SillyTavern后端API调用失败');
     }
 
     return result.content;
+}
+
+function createBoundedGooglePollingTask(operationId, statusUrl, headers, options) {
+    return async () => {
+        const response = await fetch(`${statusUrl}/operations/${operationId}`, {
+            method: 'GET',
+            headers,
+            signal: options.signal,
+        });
+        if (!response.ok) {
+            await throwModelHttpError(response, options, 'Google polling API request failed');
+        }
+        return parseModelJsonResponse(response, options);
+    };
 }
 
 
@@ -984,16 +1460,50 @@ export async function checkAndFixWithAPI(latestMessage, previousMessages) {
     return await processOptimization(latestMessage, previousMessages);
 }
 
+export const TOOL_CALL_FAILURE_KIND = Object.freeze({
+    UNSUPPORTED: 'unsupported',
+    PROTOCOL_MISS: 'protocol-miss',
+    AUTH: 'auth',
+    RATE_LIMIT: 'rate-limit',
+    TRANSPORT: 'transport',
+    SERVER: 'server',
+    REQUEST: 'request',
+    CONFIG: 'config',
+});
+
+export class ToolCallRequestError extends Error {
+    constructor(message, {
+        code = 'TOOL_CALL_REQUEST_FAILED',
+        kind = TOOL_CALL_FAILURE_KIND.REQUEST,
+        status = 0,
+        retryable = false,
+        attempts = 0,
+        detail = '',
+        cause,
+    } = {}) {
+        super(message);
+        this.name = 'ToolCallRequestError';
+        this.code = code;
+        this.kind = kind;
+        this.category = kind;
+        this.status = Number(status) || 0;
+        this.retryable = retryable === true;
+        this.deterministic = retryable !== true;
+        this.attempts = Math.max(0, Number(attempts) || 0);
+        this.detail = String(detail || '');
+        if (cause !== undefined) this.cause = cause;
+    }
+}
+
 /**
- * 使用 OpenAI Function Call 调用 AI，返回 tool_calls[0].function.arguments 字符串。
- * 仅支持 openai / openai_test 接口（Google / ST preset / backend 不在标准 tool_calls 格式下工作）。
+ * Structured Tool Call entry point used by Tool V2.
  *
- * @param {Array} messages
- * @param {Object} tool     - OpenAI tools 定义对象（单个，含 type/function 字段）
- * @param {Object} options  - 同 callAI 的 options，支持 slot / customParams 等
- * @returns {Promise<string|null>} arguments JSON 字符串，失败返回 null
+ * Unlike the compatibility wrapper below, request failures stay typed.  A
+ * completed response that does not contain exactly one requested tool call is
+ * returned as a protocol miss so the caller may apply its explicit text
+ * fallback policy.
  */
-export async function callAIForTools(messages, tool, options = {}) {
+export async function callAIForToolsDetailed(messages, tool, options = {}) {
     const apiSettings = await getApiSettings(options.slot || 'main');
 
     const finalOptions = mergeSafeModelCallOptions({
@@ -1009,22 +1519,24 @@ export async function callAIForTools(messages, tool, options = {}) {
     const FC_SUPPORTED_PROVIDERS = new Set(['openai', 'openai_test', 'custom_oai', 'openrouter', 'deepseek', 'xai']);
     if (!FC_SUPPORTED_PROVIDERS.has(finalOptions.apiProvider)) {
         console.warn(`[Amily2-外交部] Function Call 不支持当前接口类型: ${finalOptions.apiProvider}`);
-        toastr.warning(`当前 API 接口类型（${finalOptions.apiProvider}）不支持 Function Call。`, 'Function Call');
-        return null;
+        return toolCallFailure(
+            TOOL_CALL_FAILURE_KIND.UNSUPPORTED,
+            'TOOL_CALL_PROVIDER_UNSUPPORTED',
+            0,
+        );
     }
 
     if (!finalOptions.apiUrl || !finalOptions.model) {
-        console.warn('[Amily2-外交部] API URL 或模型未配置，无法调用 Function Call AI');
-        toastr.error('API URL 或模型未配置。', 'Amily2-外交部');
-        return null;
+        throw new ToolCallRequestError('API URL 或模型未配置，无法调用 Tool Call。', {
+            code: 'TOOL_CALL_CONFIG_INVALID',
+            kind: TOOL_CALL_FAILURE_KIND.CONFIG,
+        });
     }
 
-    // deepseek.com 域名或模型名含 deepseek 时，第一次调用主动关闭思考模式，
-    // 让 tool_choice 强制走 Function Call（思考模式下 tool_choice 会报错/失败）
-    const isDeepSeek = /deepseek/i.test(finalOptions.apiUrl || '') || /deepseek/i.test(finalOptions.model || '');
+    const toolRoute = resolveDeepSeekToolRoute(finalOptions);
 
     const buildFCBody = (withToolChoice, overrideMessages, extraParams = {}) => ({
-        chat_completion_source: 'openai',
+        chat_completion_source: toolRoute.chatCompletionSource,
         reverse_proxy: finalOptions.apiUrl,
         proxy_password: finalOptions.apiKey,
         model: finalOptions.model,
@@ -1038,7 +1550,15 @@ export async function callAIForTools(messages, tool, options = {}) {
         ...(withToolChoice ? { tool_choice: { type: 'function', function: { name: tool.function.name } } } : {}),
     });
 
+    let attemptsStarted = 0;
     const doFCRequest = async (withToolChoice, overrideMessages, extraParams) => {
+        assertInferenceRequestBudgetAvailable(options.requestBudget);
+        await acquireProfileRequestPermit(apiSettings, finalOptions.signal);
+        consumeInferenceRequestBudget(
+            options.requestBudget,
+            withToolChoice ? 'tool-forced' : 'tool-compat',
+        );
+        attemptsStarted += 1;
         const response = await fetch('/api/backends/chat-completions/generate', {
             method: 'POST',
             headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
@@ -1046,75 +1566,299 @@ export async function callAIForTools(messages, tool, options = {}) {
             signal: finalOptions.signal,
         });
         if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Function Call 请求失败: ${response.status} - ${errorText}`);
+            const errorText = await readBoundedToolErrorBody(response);
+            throw createRawToolCallError(
+                `Function Call 请求失败: ${response.status}`,
+                response.status,
+                errorText,
+            );
         }
         const data = await response.json();
         // ST 代理在上游报错时仍返回 HTTP 200，错误信息在 body 里
         if (data?.error) {
-            throw new Error(`Function Call 请求失败: ${JSON.stringify(data.error)}`);
+            const upstreamText = boundedToolErrorText(data.error);
+            const upstreamStatus = Number(data.error?.status)
+                || Number(data.error?.status_code)
+                || Number(data.error?.code)
+                || 0;
+            throw createRawToolCallError(
+                'Function Call 上游请求失败。',
+                upstreamStatus,
+                upstreamText,
+            );
         }
         return data;
     };
 
+    console.groupCollapsed(`[Amily2号-Function Call] ${new Date().toLocaleTimeString()}`);
+    console.log('【工具】:', tool.function?.name, '【模型】:', finalOptions.model);
+    console.log('【消息】:', messages);
+    console.groupEnd();
+
+    let data;
+    const initialWithToolChoice = toolRoute.forceNamedToolChoice;
+    const initialMessages = initialWithToolChoice
+        ? messages
+        : appendRequiredToolCallInstruction(messages, tool.function.name);
     try {
-        console.groupCollapsed(`[Amily2号-Function Call] ${new Date().toLocaleTimeString()}`);
-        console.log('【工具】:', tool.function?.name, '【模型】:', finalOptions.model);
-        console.log('【消息】:', messages);
-        console.groupEnd();
+        // 走 ST 后端代理，避免浏览器 CSP 拦截直连外部 URL。
+        const firstAttemptExtra = toolRoute.includeReasoning === false
+            ? { include_reasoning: false }
+            : {};
+        if (toolRoute.official) {
+            console.log('[Amily2-外交部] 官方 DeepSeek 端点使用专用代理并关闭思考模式。');
+        } else if (toolRoute.deepSeekLike) {
+            console.log('[Amily2-外交部] DeepSeek 兼容端点使用无命名 tool_choice 的严格单工具模式。');
+        }
+        data = await doFCRequest(initialWithToolChoice, initialMessages, firstAttemptExtra);
+    } catch (firstError) {
+        if (firstError?.name === 'AbortError') {
+            throw firstError;
+        }
+        if (isInferenceRequestBudgetError(firstError)) throw firstError;
+        if (!initialWithToolChoice || !isExplicitToolCompatibilityError(firstError)) {
+            throw classifyToolCallRequestError(firstError, attemptsStarted);
+        }
 
-        let data;
+        // Only an explicit tool_choice/thinking incompatibility may consume the
+        // one unforced compatibility attempt.  Auth, rate, transport and server
+        // failures never enter this path.
+        console.warn('[Amily2-外交部] 当前端点明确拒绝强制 Tool 模式，去掉 tool_choice 兼容重试一次。');
+        const retryMessages = appendRequiredToolCallInstruction(messages, tool.function.name);
         try {
-            // 走 ST 后端代理，避免浏览器 CSP 拦截直连外部 URL
-            // DeepSeek 思考模式与 tool_choice 不兼容，第一次请求时主动关闭思考模式
-            const firstAttemptExtra = isDeepSeek ? { thinking: { type: 'disabled' } } : {};
-            if (isDeepSeek) console.log('[Amily2-外交部] 检测到 DeepSeek 端点，首次 FC 请求附加 thinking:disabled');
-            data = await doFCRequest(true, undefined, firstAttemptExtra);
-        } catch (firstError) {
-            if (firstError?.name === 'AbortError') throw firstError; // 用户中断，不要重试
-            // 首次失败（含 ST 代理吞掉错误码场景）无条件去掉 tool_choice 重试一次
-            // 思考模式模型支持 tools 但不支持强制 tool_choice，追加强制指令防止模型直接输出文本
-            console.warn('[Amily2-外交部] 首次 FC 请求失败，去掉 tool_choice 重试…', firstError.message);
-            const retryMessages = [
-                ...messages,
-                { role: 'user', content: `你必须通过调用 \`${tool.function.name}\` 函数来返回结果，禁止直接输出文本内容。` },
-            ];
             data = await doFCRequest(false, retryMessages);
+        } catch (retryError) {
+            if (retryError?.name === 'AbortError' || isInferenceRequestBudgetError(retryError)) {
+                throw retryError;
+            }
+            throw classifyToolCallRequestError(retryError, attemptsStarted);
         }
+    }
 
-        const toolCalls = data?.choices?.[0]?.message?.tool_calls;
-        if (!Array.isArray(toolCalls) || toolCalls.length === 0) {
-            console.warn('[Amily2-外交部] Function Call 响应中无 tool_calls，finish_reason:', data?.choices?.[0]?.finish_reason);
-            return null;
-        }
+    const toolCalls = data?.choices?.[0]?.message?.tool_calls;
+    if (!Array.isArray(toolCalls) || toolCalls.length !== 1) {
+        console.warn(
+            '[Amily2-外交部] Function Call 响应必须包含且只包含一个 tool_call，实际数量:',
+            Array.isArray(toolCalls) ? toolCalls.length : 0,
+            'finish_reason:',
+            data?.choices?.[0]?.finish_reason,
+        );
+        return toolCallFailure(
+            TOOL_CALL_FAILURE_KIND.PROTOCOL_MISS,
+            'TOOL_CALL_COUNT_INVALID',
+            attemptsStarted,
+        );
+    }
 
-        const expectedToolName = tool?.function?.name;
-        const matchingToolCalls = toolCalls.filter(call => call?.function?.name === expectedToolName);
-        if (toolCalls.length !== 1 || matchingToolCalls.length !== 1) {
-            console.warn(
-                '[Amily2-外交部] Function Call 响应必须且只能包含一次目标工具调用:',
-                { expectedToolName, received: toolCalls.map(call => call?.function?.name || null) },
-            );
-            return null;
-        }
+    const selectedToolCall = toolCalls[0];
+    if (selectedToolCall?.function?.name !== tool.function?.name) {
+        console.warn(
+            '[Amily2-外交部] Function Call 响应工具名与请求不一致:',
+            selectedToolCall?.function?.name,
+        );
+        return toolCallFailure(
+            TOOL_CALL_FAILURE_KIND.PROTOCOL_MISS,
+            'TOOL_CALL_NAME_MISMATCH',
+            attemptsStarted,
+        );
+    }
+    const argsString = selectedToolCall?.function?.arguments;
+    if (typeof argsString !== 'string' || !argsString.trim()) {
+        console.warn('[Amily2-外交部] Function Call arguments 为空或不是字符串。');
+        return toolCallFailure(
+            TOOL_CALL_FAILURE_KIND.PROTOCOL_MISS,
+            'TOOL_CALL_ARGUMENTS_INVALID',
+            attemptsStarted,
+        );
+    }
+    console.groupCollapsed('[Amily2号-Function Call 响应]');
+    console.log(argsString);
+    console.groupEnd();
+    return Object.freeze({
+        ok: true,
+        arguments: argsString,
+        toolName: selectedToolCall.function.name,
+        attempts: attemptsStarted,
+        finishReason: data?.choices?.[0]?.finish_reason || null,
+        providerUsage: data?.usage ?? null,
+    });
+}
 
-        const argsString = matchingToolCalls[0]?.function?.arguments;
-        if (typeof argsString !== 'string' || !argsString.trim()) {
-            console.warn('[Amily2-外交部] Function Call arguments 为空或不是字符串。');
-            return null;
-        }
-        console.groupCollapsed('[Amily2号-Function Call 响应]');
-        console.log(argsString);
-        console.groupEnd();
-        return argsString;
-
+/**
+ * Backward-compatible string/null wrapper.  Existing callers outside Tool V2
+ * keep the historical contract while new code can use the detailed entry point.
+ */
+export async function callAIForTools(messages, tool, options = {}) {
+    try {
+        const result = await callAIForToolsDetailed(messages, tool, options);
+        return result?.ok === true ? result.arguments : null;
     } catch (error) {
-        if (error?.name === 'AbortError') {
-            console.warn('[Amily2-外交部] Function Call 调用被用户中断。');
-            throw error;
-        }
+        if (error?.name === 'AbortError') throw error;
         console.error('[Amily2-外交部] Function Call 调用失败:', error);
         toastr.error(`Function Call 调用失败: ${error.message}`, 'Amily2-外交部');
         return null;
     }
+}
+
+function toolCallFailure(kind, code, attempts) {
+    return Object.freeze({
+        ok: false,
+        kind,
+        code,
+        attempts: Math.max(0, Number(attempts) || 0),
+    });
+}
+
+function createRawToolCallError(message, status, upstreamText) {
+    const error = new Error(message);
+    error.status = Number(status) || 0;
+    error.upstreamText = boundedToolErrorText(upstreamText);
+    return error;
+}
+
+function classifyToolCallRequestError(error, attempts) {
+    if (error instanceof ToolCallRequestError) return error;
+    const status = readToolCallHttpStatus(error);
+    const detail = safeToolCallErrorDetail(error?.upstreamText);
+    const baseMessage = String(error?.message || 'Tool Call 请求失败。');
+    const message = detail ? `${baseMessage}（上游：${detail}）` : baseMessage;
+    const common = { status, attempts, detail, cause: error };
+
+    if (status === 401 || status === 403) {
+        return new ToolCallRequestError(message, {
+            ...common,
+            code: 'TOOL_CALL_AUTH_FAILED',
+            kind: TOOL_CALL_FAILURE_KIND.AUTH,
+        });
+    }
+    if (status === 429 || String(error?.code || '').startsWith('API_RATE_LIMIT_')) {
+        return new ToolCallRequestError(message, {
+            ...common,
+            code: 'TOOL_CALL_RATE_LIMITED',
+            kind: TOOL_CALL_FAILURE_KIND.RATE_LIMIT,
+            retryable: true,
+        });
+    }
+    if (status >= 500) {
+        return new ToolCallRequestError(message, {
+            ...common,
+            code: 'TOOL_CALL_SERVER_FAILED',
+            kind: TOOL_CALL_FAILURE_KIND.SERVER,
+            retryable: true,
+        });
+    }
+    if (status === 408 || status === 425 || isNetworkLikeToolError(error)) {
+        return new ToolCallRequestError(message, {
+            ...common,
+            code: 'TOOL_CALL_TRANSPORT_FAILED',
+            kind: TOOL_CALL_FAILURE_KIND.TRANSPORT,
+            retryable: true,
+        });
+    }
+    return new ToolCallRequestError(message, {
+        ...common,
+        code: 'TOOL_CALL_REQUEST_REJECTED',
+        kind: TOOL_CALL_FAILURE_KIND.REQUEST,
+    });
+}
+
+function isExplicitToolCompatibilityError(error) {
+    const status = readToolCallHttpStatus(error);
+    if (status !== 0 && status !== 400 && status !== 422) return false;
+    const text = `${error?.message || ''} ${error?.upstreamText || ''}`.toLowerCase();
+    const namesToolMode = /\btool[_ -]?choice\b|\bthinking\b|\breasoning(?: mode)?\b/u.test(text);
+    const saysIncompatible = /not supported|unsupported|not allowed|invalid (?:field|parameter|value)|unknown (?:field|parameter)|cannot|can't|incompatible|不支持|不兼容|无效/u.test(text);
+    return namesToolMode && saysIncompatible;
+}
+
+function appendRequiredToolCallInstruction(messages, toolName) {
+    return [
+        ...messages,
+        {
+            role: 'user',
+            content: `你必须且只能调用一次 \`${toolName}\` 函数返回结果，禁止直接输出文本内容或调用其他工具。`,
+        },
+    ];
+}
+
+function isNetworkLikeToolError(error) {
+    const text = String(error?.message || '');
+    return error instanceof TypeError
+        || /\b(?:fetch|network|timeout|timed out|socket|connection|econn|enotfound)\b/iu.test(text);
+}
+
+function readToolCallHttpStatus(error) {
+    const direct = Number(error?.status);
+    if (Number.isInteger(direct) && direct >= 100 && direct <= 599) return direct;
+    const match = String(error?.message || '').match(/(?:^|\D)([45]\d{2})(?:\D|$)/u);
+    return match ? Number(match[1]) : 0;
+}
+
+async function readBoundedToolErrorBody(response) {
+    try {
+        return boundedToolErrorText(await response.text());
+    } catch {
+        return '';
+    }
+}
+
+function boundedToolErrorText(value) {
+    let text;
+    try {
+        text = typeof value === 'string' ? value : JSON.stringify(value);
+    } catch {
+        text = String(value || '');
+    }
+    return String(text || '').slice(0, 2_048);
+}
+
+/**
+ * Extract a short provider error for the local log/toast without echoing
+ * credentials or an arbitrarily large upstream response.
+ */
+function safeToolCallErrorDetail(value) {
+    const raw = boundedToolErrorText(value);
+    if (!raw) return '';
+
+    let candidate = raw;
+    try {
+        const parsed = JSON.parse(raw);
+        const nested = parsed?.error;
+        candidate = nested?.message
+            || parsed?.message
+            || parsed?.detail
+            || (typeof nested === 'string' ? nested : raw);
+        const code = nested?.code || parsed?.code;
+        if (code && !String(candidate).includes(String(code))) {
+            candidate = `${code}: ${candidate}`;
+        }
+    } catch {
+        // Plain-text provider errors are valid diagnostics too.
+    }
+
+    return String(candidate || '')
+        .replace(/(?:bearer\s+)[^\s,;]+/giu, 'Bearer [REDACTED]')
+        .replace(/\b(?:sk|rk|pk)-[A-Za-z0-9._-]{8,}\b/gu, '[REDACTED_KEY]')
+        .replace(/([?&](?:api[_-]?key|key|token|secret)=)[^&\s]+/giu, '$1[REDACTED]')
+        .replace(/[\u0000-\u001f\u007f]+/gu, ' ')
+        .replace(/\s+/gu, ' ')
+        .trim()
+        .slice(0, 360);
+}
+
+function assertInferenceRequestBudgetAvailable(requestBudget) {
+    if (requestBudget && typeof requestBudget.assertAvailable === 'function') {
+        requestBudget.assertAvailable();
+    }
+}
+
+function consumeInferenceRequestBudget(requestBudget, kind) {
+    if (requestBudget && typeof requestBudget.consume === 'function') {
+        requestBudget.consume(kind);
+    }
+}
+
+function isInferenceRequestBudgetError(error) {
+    return error?.code === 'TABLE_FILL_BUDGET_EXHAUSTED'
+        || error?.name === 'TableFillRequestBudgetError';
 }

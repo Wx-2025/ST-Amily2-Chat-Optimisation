@@ -24,8 +24,13 @@ import { extension_settings } from "/scripts/extensions.js";
 import { saveSettingsDebounced } from "/script.js";
 import { extensionName } from "../settings.js";
 import { apiKeyStore } from "./api-key-store/ApiKeyStore.js";
+import { normalizeApiProfileRpm } from './profile-rpm.js';
 import { configManager } from "./ConfigManager.js";
 import { registerInternalBusPlugin } from '../../SL/bus/Amily2Bus.js';
+import {
+    clearApiRequestRateLimit,
+    refreshApiRequestRateLimit,
+} from '../../core/api/api-request-rate-limiter.js';
 
 // ── 类型与功能槽定义 ──────────────────────────────────────────────────────────
 
@@ -63,6 +68,11 @@ export const SLOTS = {
     autoCharCard:  { label: '一键生成角色卡',         type: 'chat' },
     sybd:          { label: '术语表自动填写',         type: 'chat' },
     tableFilling:  { label: '表格填表 / 重整',        type: 'chat' },
+    legacyCardTask:{ label: '旧卡兼容模型任务',        type: 'chat' },
+    shujukuAgentWorkload: {
+        label: 'shujuku Agent 原生任务',
+        type: 'chat',
+    },
     // Embedding 槽
     ragEmbed:      { label: '智能检索 · 向量化',      type: 'embedding' },
     // Rerank 槽
@@ -73,9 +83,46 @@ export const SLOTS = {
 const EXT_PROFILES    = 'amily2_profiles';
 const EXT_ASSIGNMENTS = 'amily2_profile_assignments';
 
+/**
+ * Build a detached, recursively read-only snapshot of JSON-like profile data.
+ *
+ * Profile metadata ultimately lives in extension_settings, so returning any of
+ * its nested objects would let callers mutate configuration without going
+ * through updateProfile() and its lifecycle notification. Defining properties
+ * explicitly also keeps a persisted "__proto__" key as ordinary data instead
+ * of applying it to the snapshot object.
+ */
+function createReadonlyProfileSnapshot(value, seen = new WeakMap()) {
+    if (value === null || typeof value !== 'object') return value;
+
+    const existing = seen.get(value);
+    if (existing) return existing;
+
+    const snapshot = Array.isArray(value) ? [] : {};
+    seen.set(value, snapshot);
+
+    for (const key of Object.keys(value)) {
+        Object.defineProperty(snapshot, key, {
+            value: createReadonlyProfileSnapshot(value[key], seen),
+            enumerable: true,
+            configurable: false,
+            writable: false,
+        });
+    }
+
+    return Object.freeze(snapshot);
+}
+
 // ── ApiProfileManager ─────────────────────────────────────────────────────────
 
 class ApiProfileManager {
+
+    constructor() {
+        // Internal-only lifecycle channel. Unlike the DOM assignment event,
+        // this cannot be forged by card scripts to drive privileged state and
+        // never carries profile metadata or credentials.
+        this._lifecycleListeners = new Set();
+    }
 
     // ── 内部工具 ────────────────────────────────────────────────────────────
 
@@ -87,6 +134,13 @@ class ApiProfileManager {
     _profiles() {
         const s = this._settings();
         if (!Array.isArray(s[EXT_PROFILES])) s[EXT_PROFILES] = [];
+        // Older profiles do not have an RPM field. Normalize on read so callers
+        // always receive a safe non-negative integer without requiring migration.
+        for (const profile of s[EXT_PROFILES]) {
+            if (profile && typeof profile === 'object') {
+                profile.rpm = normalizeApiProfileRpm(profile.rpm);
+            }
+        }
         return s[EXT_PROFILES];
     }
 
@@ -115,14 +169,16 @@ class ApiProfileManager {
      */
     getProfiles(type) {
         const all = this._profiles();
-        return type ? all.filter(p => p.type === type) : [...all];
+        const selected = type ? all.filter(p => p.type === type) : all;
+        return createReadonlyProfileSnapshot(selected);
     }
 
     /**
      * 获取单个 Profile 元数据（不含 Key）。
      */
     getProfile(id) {
-        return this._profiles().find(p => p.id === id) ?? null;
+        const profile = this._profiles().find(p => p.id === id);
+        return profile ? createReadonlyProfileSnapshot(profile) : null;
     }
 
     /**
@@ -146,7 +202,13 @@ class ApiProfileManager {
         const idx  = list.findIndex(p => p.id === id);
         if (idx === -1) return false;
         list[idx] = this._buildProfile(id, { ...list[idx], ...data });
+        refreshApiRequestRateLimit(id);
         this._save();
+        this._emitLifecycle({
+            type: 'profile-updated',
+            profileId: id,
+            assignedSlots: this._assignedSlots(id),
+        });
         return true;
     }
 
@@ -154,6 +216,8 @@ class ApiProfileManager {
      * 删除 Profile（同时清理存储的 Key 和功能槽引用）。
      */
     deleteProfile(id) {
+        const assignedSlots = this._assignedSlots(id);
+        clearApiRequestRateLimit(id, 'API 连接配置已删除，取消等待中的请求。');
         const s   = this._settings();
         s[EXT_PROFILES] = this._profiles().filter(p => p.id !== id);
 
@@ -167,6 +231,11 @@ class ApiProfileManager {
         apiKeyStore.deleteById(id);
 
         this._save();
+        this._emitLifecycle({
+            type: 'profile-deleted',
+            profileId: id,
+            assignedSlots,
+        });
     }
 
     // ── Key 操作 ────────────────────────────────────────────────────────────
@@ -178,7 +247,13 @@ class ApiProfileManager {
 
     /** 写入 Profile 的 API Key（异步，自动加密） */
     async setKey(id, value) {
-        return apiKeyStore.storeById(id, value);
+        const result = await apiKeyStore.storeById(id, value);
+        this._emitLifecycle({
+            type: 'profile-key-updated',
+            profileId: id,
+            assignedSlots: this._assignedSlots(id),
+        });
+        return result;
     }
 
     // ── 功能槽分配 ──────────────────────────────────────────────────────────
@@ -208,11 +283,51 @@ class ApiProfileManager {
                 return false;
             }
         }
-        this._assignments()[slot] = profileId;
+        const assignments = this._assignments();
+        const previousProfileId = assignments[slot] ?? null;
+        if (previousProfileId === profileId) return true;
+        assignments[slot] = profileId;
         this._save();
+        this._emitLifecycle({
+            type: 'assignment-changed',
+            slot,
+            profileId,
+            previousProfileId,
+        });
         // 通知各模块面板刷新 profile 压制状态（见 ui/profile-slider-guard.js）
         document.dispatchEvent(new CustomEvent('amily2-profile-assignment-changed', { detail: { slot, profileId } }));
         return true;
+    }
+
+    /**
+     * Subscribe to internal profile/assignment lifecycle changes.
+     * Events are synchronous, frozen, and contain identifiers only.
+     * @returns {() => void} unsubscribe callback
+     */
+    subscribeLifecycle(listener) {
+        if (typeof listener !== 'function') {
+            throw new TypeError('ApiProfiles lifecycle listener must be a function.');
+        }
+        this._lifecycleListeners.add(listener);
+        return () => this._lifecycleListeners.delete(listener);
+    }
+
+    _assignedSlots(profileId) {
+        return Object.freeze(Object.entries(this._assignments())
+            .filter(([, assignedId]) => assignedId === profileId)
+            .map(([slot]) => slot)
+            .sort());
+    }
+
+    _emitLifecycle(change) {
+        const event = Object.freeze({ ...change });
+        for (const listener of [...this._lifecycleListeners]) {
+            try {
+                listener(event);
+            } catch (error) {
+                console.error('[ApiProfiles] 生命周期监听器执行失败。', error);
+            }
+        }
     }
 
     /**
@@ -239,6 +354,7 @@ class ApiProfileManager {
             provider: data.provider || 'openai',
             apiUrl:   data.apiUrl   || '',
             model:    data.model    || '',
+            rpm:      normalizeApiProfileRpm(data.rpm),
         };
 
         if (type === 'chat') {

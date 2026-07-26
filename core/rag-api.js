@@ -8,7 +8,7 @@ import {
     parseGoogleEmbeddingResponse,
     buildGoogleEmbeddingApiUrl
 } from './utils/googleAdapter.js';
-import { getSlotProfile } from './api/api-resolver.js';
+import { acquireProfileRequestPermit, bindSlotProfileRateLimit, getSlotProfile } from './api/api-resolver.js';
 import { extensionName } from '../utils/settings.js';
 
 const MODULE_NAME = 'hanlinyuan-rag-core';
@@ -41,7 +41,7 @@ export async function getEmbedRetrievalSettings() {
     const profile = await getSlotProfile('ragEmbed');
     if (profile) {
         const apiKey = sanitizeMaskedKey(profile.apiKey ?? '');
-        return {
+        return bindSlotProfileRateLimit({
             apiEndpoint:    profile.provider === 'google' ? 'google_direct' : 'custom',
             customApiUrl:   profile.apiUrl,
             apiKey,
@@ -51,7 +51,7 @@ export async function getEmbedRetrievalSettings() {
             // 换设备/浏览器后 profile 同步而 Key 缺失——标记出来供报错说明
             _keyMissingFromProfile: !apiKey,
             _profileName: profile.name || profile.id,
-        };
+        }, profile);
     }
     const fallback = getSettings().retrieval || {};
     return { ...fallback, apiKey: sanitizeMaskedKey(fallback.apiKey ?? '') };
@@ -75,7 +75,7 @@ export async function getRerankSettings() {
     if (profile) {
         const manualSettings = getSettings().rerank || {};
         const apiKey = sanitizeMaskedKey(profile.apiKey ?? '');
-        return {
+        return bindSlotProfileRateLimit({
             url:     profile.apiUrl,
             apiKey,
             model:   profile.model,
@@ -83,7 +83,7 @@ export async function getRerankSettings() {
             apiMode: manualSettings.apiMode ?? 'custom',
             _keyMissingFromProfile: !apiKey,
             _profileName: profile.name || profile.id,
-        };
+        }, profile);
     }
     const fallback = getSettings().rerank || {};
     return { ...fallback, apiKey: sanitizeMaskedKey(fallback.apiKey ?? '') };
@@ -301,6 +301,7 @@ export async function executeRerank(query, documents, rerankSettings = null) {
 
     console.log(`[翰林院-Rerank] 正在向 ${rerankUrl} 发送请求 (模式: ${apiMode})...`);
 
+    await acquireProfileRequestPermit(resolved);
     const response = await fetch(rerankUrl, {
         method: 'POST',
         headers: headers,
@@ -382,6 +383,7 @@ export async function getEmbeddings(texts, signal = null, overrideSettings = nul
                 const googleUrl = buildGoogleEmbeddingApiUrl(GOOGLE_API_BASE_URL, embeddingModel);
                 const googleBody = buildGoogleEmbeddingRequest(batch, embeddingModel);
 
+                await acquireProfileRequestPermit(settings, signal);
                 const googleResponse = await fetch(googleUrl, {
                     method: 'POST',
                     headers: {
@@ -414,6 +416,7 @@ export async function getEmbeddings(texts, signal = null, overrideSettings = nul
                 const url = getApiEndpointUrl(false, settings); // 使用已解析的 settings
                 const headers = getApiHeaders(settings); // 使用已解析的 settings
                 
+                await acquireProfileRequestPermit(settings, signal);
                 const response = await fetch(url, {
                     method: 'POST',
                     headers,

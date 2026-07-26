@@ -18,6 +18,11 @@
  */
 
 import { apiProfileManager } from '../../utils/config/ApiProfileManager.js';
+import {
+    apiRequestRateLimiter,
+    bindApiProfileRateLimit,
+    getApiProfileRateLimitDescriptor,
+} from './api-request-rate-limiter.js';
 
 /**
  * 将 Profile.provider 映射到子模块使用的 apiMode 字段。
@@ -42,4 +47,27 @@ export async function getSlotProfile(slot) {
         console.warn(`[ApiResolver] 读取槽位 "${slot}" 失败，降级到旧配置:`, e);
         return null;
     }
+}
+
+/** Keep a profile identity attached to a resolved connection without exposing
+ * it as a serializable request-body field. */
+export function bindSlotProfileRateLimit(settings, profile) {
+    return bindApiProfileRateLimit(settings, profile);
+}
+
+/**
+ * Wait for the configured profile's next inference permit.
+ * Legacy settings have no descriptor and remain unlimited.
+ */
+export function acquireProfileRequestPermit(settings, signal = null) {
+    const descriptor = getApiProfileRateLimitDescriptor(settings);
+    if (!descriptor) return Promise.resolve();
+
+    return apiRequestRateLimiter.acquire(descriptor.profileId, descriptor.rpm, {
+        signal,
+        getCurrentRpm: () => {
+            const current = apiProfileManager.getProfile(descriptor.profileId);
+            return current ? current.rpm : null;
+        },
+    });
 }

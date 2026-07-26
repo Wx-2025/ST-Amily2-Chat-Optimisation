@@ -1,7 +1,7 @@
 import { extension_settings } from "/scripts/extensions.js";
 import { characters, this_chid } from '/script.js';
 import { extensionName, defaultSettings } from "../utils/settings.js";
-import { pluginAuthStatus } from "../utils/auth.js";
+import { pluginAuthStatus } from "../utils/auth-state.js";
 import { configManager } from '../utils/config/ConfigManager.js';
 import { clearSecretInput } from './secret-input.js';
 

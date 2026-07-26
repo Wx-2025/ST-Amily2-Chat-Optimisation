@@ -1,7 +1,12 @@
 import { extension_settings, getContext } from "/scripts/extensions.js";
 import { characters, this_chid, saveSettingsDebounced, eventSource, event_types } from "/script.js";
 import { defaultSettings, extensionName, saveSettings, extensionBasePath } from "../utils/settings.js";
-import { pluginAuthStatus, activatePluginAuthorization, getPasswordForDate } from "../utils/auth.js";
+import {
+    pluginAuthStatus,
+    activatePluginAuthorization,
+    getPasswordForDate,
+    resetPluginAuthorizationState,
+} from "../utils/auth.js";
 import { fetchModels, testApiConnection } from "../core/api.js";
 import { safeLorebooks, safeCharLorebooks, safeLorebookEntries } from "../core/tavernhelper-compatibility.js";
 import { configManager } from '../utils/config/ConfigManager.js';
@@ -706,7 +711,7 @@ export function bindModalEvents() {
 
     container
         .off("click.amily2.tutorial")
-        .on("click.amily2.tutorial", "#amily2_open_tutorial, #amily2_open_neige_tutorial, #amily2_open_table_tutorial, #amily2_open_plot_opt_tutorial, #amily2_open_super_memory_tutorial, #amily2_open_rule_config_tutorial", function() {
+        .on("click.amily2.tutorial", "#amily2_open_tutorial, #amily2_open_neige_tutorial, #amily2_open_table_tutorial, #amily2_open_plot_opt_tutorial, #amily2_open_super_memory_tutorial, #amily2_open_rule_config_tutorial, #amily2_open_shujuku_tutorial, #amily2_open_shujuku_agent_tutorial", function() {
             if (!pluginAuthStatus.authorized) return;
 
             const tutorials = {
@@ -745,6 +750,18 @@ export function bindModalEvents() {
                     url: `${extensionBasePath}/RuleConfig.md`,
                     advancedTitle: "规则配置 · 进阶操作",
                     advancedUrl: `${extensionBasePath}/RuleConfig-Advanced.md`,
+                },
+                "amily2_open_shujuku_tutorial": {
+                    title: "数据库兼容 · 小白教程",
+                    url: `${extensionBasePath}/ShujukuCompatibility.md`,
+                    advancedTitle: "数据库与 Agent 兼容 · 进阶操作",
+                    advancedUrl: `${extensionBasePath}/ShujukuCompatibility-Advanced.md`,
+                },
+                "amily2_open_shujuku_agent_tutorial": {
+                    title: "数据库兼容 · 小白教程",
+                    url: `${extensionBasePath}/ShujukuCompatibility.md`,
+                    advancedTitle: "数据库与 Agent 兼容 · 进阶操作",
+                    advancedUrl: `${extensionBasePath}/ShujukuCompatibility-Advanced.md`,
                 }
             };
             
@@ -768,6 +785,8 @@ export function bindModalEvents() {
                 localStorage.removeItem("plugin_auto_login");
                 localStorage.removeItem("plugin_user_type");
                 localStorage.removeItem("plugin_valid_until");
+                sessionStorage.removeItem("plugin_auth_code");
+                resetPluginAuthorizationState('manual-reset');
                 
                 toastr.success("授权已清除，即将重新加载以生效...", "Amily2号");
                 

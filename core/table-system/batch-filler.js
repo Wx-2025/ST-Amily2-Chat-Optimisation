@@ -2,82 +2,60 @@ import { getContext, extension_settings } from '/scripts/extensions.js';
 import { characters } from '/script.js';
 import { loadWorldInfo } from '/scripts/world-info.js';
 import { log } from './logger.js';
-import { updateTableFromText } from './manager.js';
+import {
+    convertAiFillableTablesToCsvString,
+    getBatchFillerFlowTemplate,
+    getBatchFillerRuleTemplate,
+    updateTableFromOps,
+    updateTableFromText,
+} from './manager.js';
 import { extensionName } from '../../utils/settings.js';
 import { renderTables } from '../../ui/table-bindings.js';
 import { getPresetPrompts, getMixedOrder } from '../../PresetSettings/index.js';
-import { callAI, callAIForTools, generateRandomSeed } from '../api.js';
+import { callAI, generateRandomSeed } from '../api.js';
 import { callNccsAI } from '../api/NccsApi.js';
-import {
-    TABLE_FILL_TOOL,
-    TABLE_FILL_TOOL_PROTOCOL_PROMPT,
-    parseToolCallArgs,
-} from './formatters/tool-call.js';
-import { updateTableFromOps } from './manager.js';
 import { extractBlocksByTags, applyExclusionRules } from '../utils/rag-tag-extractor.js';
 import { resolveTableRuleConfig } from '../../utils/config/RuleProfileManager.js';
 import { showTableFillReviewModal } from '../../ui/page-window.js';
+import { TABLE_FILL_SAFETY_POLICY } from './settings.js';
 import {
     BATCH_REQUIRED_FILLER_BLOCKS,
     buildFillerFlowPrompt,
     completeFillerPromptOrder,
 } from './filler-prompt-order.js';
 import { captureChatScope, chatScopesMatch } from './infra/chat-scope.js';
-
-import { getBatchFillerRuleTemplate, getBatchFillerFlowTemplate, convertTablesToCsvString } from './manager.js';
+import {
+    requestTableFillOperationsV2,
+    TABLE_FILL_TOOL_RESULT,
+} from './tool-call-filler.js';
+import {
+    assertTableFillRequestLease,
+    captureTableFillRequestLease,
+    isTableFillRequestLeaseError,
+} from './infra/persistence-scope.js';
+import {
+    canAutomaticallyRetryTableFill,
+    createDeterministicTableFillError,
+    createTableFillRunControl,
+    normalizeTableFillInferenceError,
+    resolveTableFillRunControl,
+    runTableFillPostCommitEffects,
+} from './fill-run-control.js';
 
 const CONTINUE_PROMPT = '上一条回复不完整或缺少 <Amily2Edit> 指令块。请直接从中断处继续生成剩余内容，不要重复已输出的文本，也不要添加任何解释或寒暄，确保最终输出中包含完整的 <Amily2Edit>...</Amily2Edit> 指令块。';
-
-function withFunctionCallProtocol(messages) {
-    return [
-        ...messages,
-        { role: 'system', content: TABLE_FILL_TOOL_PROTOCOL_PROMPT },
-    ];
-}
-
-function parseFunctionCallOperations(argsString, scopeLabel) {
-    try {
-        return parseToolCallArgs(argsString);
-    } catch (error) {
-        log(
-            `${scopeLabel} FC 响应格式无效，已整批拒绝且不会推进处理进度：${error.message}`
-            + `\n原始响应：\n${argsString || '[空响应]'}`,
-            'error',
-        );
-        throw error;
-    }
-}
-
-function renderTablesAfterCommit(scopeLabel) {
-    try {
-        renderTables();
-    } catch (error) {
-        console.error(`[Amily2 ${scopeLabel}] 表格已经保存，但界面刷新失败:`, error);
-        try {
-            toastr.warning('表格已经保存，但当前界面刷新失败；重新打开聊天即可恢复显示。', scopeLabel);
-        } catch {}
-    }
-}
-
-function logAfterCommit(message) {
-    try {
-        log(message, 'success');
-    } catch (error) {
-        console.error('[Amily2 填表] 状态已经保存，但成功日志写入失败:', error);
-    }
-}
-
-function notifySuccessAfterCommit(message, title) {
-    try {
-        toastr.success(message, title);
-    } catch (error) {
-        console.error('[Amily2 填表] 状态已经保存，但成功通知显示失败:', error);
-    }
-}
 
 function createBatchFillerError(code, message) {
     const error = new Error(message);
     error.code = `BATCH_FILLER_${code}`;
+    return error;
+}
+
+function createRetryableResponseError(code, message) {
+    const error = new Error(message);
+    error.code = code;
+    error.category = 'response';
+    error.retryable = true;
+    error.deterministic = false;
     return error;
 }
 
@@ -94,13 +72,14 @@ function tableCommitTransaction(expectedScope) {
     };
 }
 
-async function requestContinuation(baseMessages, partialResponse) {
+async function requestContinuation(baseMessages, partialResponse, requestLease, requestBudget) {
+    assertTableFillRequestLease(requestLease, getContext());
     const continueMessages = [
         ...baseMessages,
         { role: 'assistant', content: partialResponse || '' },
         { role: 'user', content: CONTINUE_PROMPT },
     ];
-    const continued = await callTableModel(continueMessages);
+    const continued = await callTableModel(continueMessages, requestLease, requestBudget);
     if (typeof continued !== 'string' || !continued.trim()) return null;
     return `${partialResponse || ''}${continued}`;
 }
@@ -207,34 +186,49 @@ function updateButtonState(state, batchNum = 0, attemptNum = 0) {
     }
 }
 
-async function callTableModel(messages) {
+async function callTableModel(messages, requestLease, requestBudget) {
     try {
         const settings = extension_settings[extensionName] || {};
 
         if (settings.nccsEnabled) {
             log('使用独立API填表进行表格填充...', 'info');
+            requestBudget?.assertAvailable();
+            requestBudget?.consume('text-fallback');
             const result = await callNccsAI(messages);
+            if (requestLease) assertTableFillRequestLease(requestLease, getContext());
             if (typeof result !== 'string' || !result.trim()) {
-                throw new Error('独立API填表返回内容为空。');
+                throw createRetryableResponseError(
+                    'TABLE_FILL_EMPTY_RESPONSE',
+                    '独立API填表返回内容为空。',
+                );
             }
             return result;
         } else {
             log('使用 tableFilling slot 进行表格填充...', 'info');
-            const result = await callAI(messages, { slot: 'tableFilling' });
+            const result = await callAI(messages, {
+                slot: 'tableFilling',
+                requestBudget,
+                requestKind: 'text-fallback',
+                throwOnError: true,
+            });
+            if (requestLease) assertTableFillRequestLease(requestLease, getContext());
             if (typeof result !== 'string' || !result.trim()) {
-                throw new Error('API返回内容为空。');
+                throw createRetryableResponseError(
+                    'TABLE_FILL_EMPTY_RESPONSE',
+                    'API返回内容为空。',
+                );
             }
             return result;
         }
     } catch (error) {
-        log(`与模型通讯时发生异常: ${error.message}`, "error");
-        toastr.error(`与模型通讯时发生异常: ${error.message}`, "通讯异常");
-        return null;
+        if (isTableFillRequestLeaseError(error)) throw error;
+        const normalizedError = normalizeTableFillInferenceError(error);
+        log(`与模型通讯时发生异常: ${normalizedError.message}`, "error");
+        throw normalizedError;
     }
 }
 
-function getRawMessagesForSummary(startFloor, endFloor) {
-    const context = getContext();
+function getRawMessagesForSummary(startFloor, endFloor, context = getContext()) {
     const chat = context.chat;
     const settings = extension_settings[extensionName] || {};
 
@@ -288,8 +282,24 @@ function getRawMessagesForSummary(startFloor, endFloor) {
     return messages;
 }
 
-async function runBatchAttempt(batchNum, attemptNum) {
-    let batchResolved = false;
+function getFillEvidence(context, startFloor, endFloor) {
+    const sourceMessages = context.chat;
+    const targetMessages = [];
+    const startIndex = Math.max(0, startFloor - 1);
+    const endIndex = Math.min(sourceMessages.length - 1, endFloor - 1);
+    for (let index = startIndex; index <= endIndex; index++) {
+        const msg = sourceMessages[index];
+        if (msg && !msg.is_user) {
+            targetMessages.push({ index, msg });
+        }
+    }
+    return { sourceMessages, targetMessages };
+}
+
+async function runBatchAttempt(batchNum, attemptNum, runControl) {
+    runControl = resolveTableFillRunControl(runControl, {
+        scope: `batch-${batchNum}`,
+    });
     try {
         if (manualStopRequested) {
             log(`任务已在批次 ${batchNum} 开始前手动暂停。`, 'warn');
@@ -306,10 +316,13 @@ async function runBatchAttempt(batchNum, attemptNum) {
 
         const startFloor = (batchNum - 1) * threshold + 1;
         const endFloor = Math.min(startFloor + threshold - 1, chatHistoryLength);
+        const fillContext = getContext();
+        const fillLease = captureTableFillRequestLease(fillContext);
+        const fillEvidence = getFillEvidence(fillContext, startFloor, endFloor);
 
         log(`正在处理批次 ${batchNum}/${totalBatches} (楼层 ${startFloor}-${endFloor}, 尝试 ${attemptNum + 1}/${MAX_RETRIES + 1})`, 'info');
 
-        const purifiedMessages = getRawMessagesForSummary(startFloor, endFloor);
+        const purifiedMessages = getRawMessagesForSummary(startFloor, endFloor, fillContext);
         if (!purifiedMessages || purifiedMessages.length === 0) {
             throw new Error('净化后无有效内容可处理。');
         }
@@ -317,7 +330,7 @@ async function runBatchAttempt(batchNum, attemptNum) {
         const batchContent = purifiedMessages.map(m => `【第 ${m.floor} 楼】 ${m.author}: ${m.content}`).join('\n');
         const ruleTemplate = getBatchFillerRuleTemplate();
         const flowTemplate = getBatchFillerFlowTemplate();
-        const currentTableDataString = convertTablesToCsvString();
+        const currentTableDataString = convertAiFillableTablesToCsvString();
         const finalFlowPrompt = buildFillerFlowPrompt(flowTemplate, currentTableDataString);
 
         let mixedOrder;
@@ -382,40 +395,78 @@ async function runBatchAttempt(batchNum, attemptNum) {
             ];
             messages.splice(1, 0, ...defaultPrompts);
         }
+        messages.push({ role: 'system', content: TABLE_FILL_SAFETY_POLICY });
 
         console.groupCollapsed(`[Amily2 立即远征] 批次 ${batchNum}/${totalBatches} - 即将发送至 API 的内容`);
         console.dir(messages);
         console.groupEnd();
 
+        assertTableFillRequestLease(fillLease, getContext());
         const batchSettings = extension_settings[extensionName] || {};
-        if (batchSettings.tableFillFunctionCall) {
-            // Function Call 路径：结构化输出，无需检查 <Amily2Edit>
-            const argsString = await callAIForTools(
-                withFunctionCallProtocol(messages),
-                TABLE_FILL_TOOL,
-                { slot: 'tableFilling' },
-            );
-            assertBatchFillerScope(activeBatchChatScope);
-            const ops = parseFunctionCallOperations(argsString, `批次 ${batchNum}`);
+        assertBatchFillerScope(activeBatchChatScope);
+        const toolResult = batchSettings.tableFillFunctionCall
+            ? await requestTableFillOperationsV2(messages, {
+                tableState: fillLease.state,
+                settings: batchSettings,
+                slot: 'tableFilling',
+                requestBudget: runControl.requestBudget,
+                assertLease: () => assertTableFillRequestLease(fillLease, getContext()),
+            })
+            : null;
+        if (toolResult?.mode === TABLE_FILL_TOOL_RESULT.TOOL) {
+            const ops = toolResult.operations;
             if (ops.length === 0) {
-                batchResolved = true;
-                log(`批次 ${batchNum} FC 返回合法空操作列表。`, 'info');
-                toastr.info('AI 判断此批次无需修改。', `批次 ${batchNum}`);
+                assertTableFillRequestLease(fillLease, getContext());
+                runTableFillPostCommitEffects(`batch-${batchNum}-noop`, [
+                    {
+                        label: 'log-noop',
+                        run: () => log(`批次 ${batchNum} 的 Tool Call V2 判断没有可靠的新事实。`, 'info'),
+                    },
+                    {
+                        label: 'notify-noop',
+                        run: () => toastr.info('AI 判断此批次无需修改。', `批次 ${batchNum}`),
+                    },
+                ]);
             } else {
                 const applied = await updateTableFromOps(ops, {
                     immediateDelete: true,
+                    requestLease: fillLease,
+                    onCommitted: () => runControl.markCommitted(),
+                    ...fillEvidence,
                     transaction: tableCommitTransaction(activeBatchChatScope),
                 });
-                if (!applied) throw new Error('Function Call 操作未产生可提交变更，或表格保存失败。');
-                batchResolved = true;
-                renderTablesAfterCommit(`批次 ${batchNum}`);
-                log(`批次 ${batchNum} Function Call 处理成功（${ops.length} 条操作）。`, 'success');
+                if (!applied) {
+                    throw createDeterministicTableFillError(
+                        'TABLE_FILL_WRITE_REJECTED',
+                        'Tool Call V2 操作未产生可提交变更，或表格保存失败。',
+                    );
+                }
+                runControl.markCommitted();
+                runTableFillPostCommitEffects(`batch-${batchNum}-tool`, [
+                    { label: 'render-tables', run: () => renderTables() },
+                    {
+                        label: 'log-success',
+                        run: () => log(
+                            `批次 ${batchNum} Tool Call V2 处理成功（${ops.length} 条操作）。`,
+                            'success',
+                        ),
+                    },
+                ]);
             }
         } else {
-            // Legacy 文本路径
-            const resultText = await callTableModel(messages);
+            if (toolResult?.reason && toolResult.reason !== 'tool-disabled') {
+                log(`批次 ${batchNum} 的 Tool Call V2 不可用（${toolResult.reason}），改用严格文本指令。`, 'warn');
+                toastr.warning('Tool Call V2 当前不可用，已改用严格文本填表。', `批次 ${batchNum}`);
+            }
+            const resultText = await callTableModel(
+                messages,
+                fillLease,
+                runControl.requestBudget,
+            );
             console.log(`[Amily2 立即远征] 批次 ${batchNum}/${totalBatches} - 收到 API 原始回复:`, resultText);
-            if (typeof resultText !== 'string' || !resultText.trim()) throw new Error('API返回内容为空。');
+            if (typeof resultText !== 'string' || !resultText.trim()) {
+                throw createRetryableResponseError('TABLE_FILL_EMPTY_RESPONSE', 'API返回内容为空。');
+            }
             assertBatchFillerScope(activeBatchChatScope);
 
             if (!resultText.includes('<Amily2Edit>')) {
@@ -431,7 +482,12 @@ async function runBatchAttempt(batchNum, attemptNum) {
                             toastr.warning('聊天已经切换，旧响应不能继续补全。', '已取消操作');
                             return null;
                         }
-                        const merged = await requestContinuation(messages, currentText);
+                        const merged = await requestContinuation(
+                            messages,
+                            currentText,
+                            fillLease,
+                            runControl.requestBudget,
+                        );
                         if (!merged) { toastr.error('补全请求失败或返回为空。', '继续补全'); return null; }
                         try {
                             assertBatchFillerScope(activeBatchChatScope);
@@ -454,12 +510,32 @@ async function runBatchAttempt(batchNum, attemptNum) {
                             assertBatchFillerScope(activeBatchChatScope);
                             const applied = await updateTableFromText(editedText, {
                                 immediateDelete: true,
+                                requestLease: fillLease,
+                                onCommitted: () => runControl.markCommitted(),
+                                ...fillEvidence,
                                 transaction: tableCommitTransaction(activeBatchChatScope),
                             });
-                            if (!applied) throw new Error('文本未产生可提交变更，或表格保存失败。');
-                            renderTablesAfterCommit(`批次 ${batchNum}`);
-                            logAfterCommit(`批次 ${batchNum} 已由用户手动处理完成。`);
+                            if (!applied) {
+                                throw createDeterministicTableFillError(
+                                    'TABLE_FILL_WRITE_REJECTED',
+                                    '文本未产生可提交变更，或表格保存失败。',
+                                );
+                            }
+                            runControl.markCommitted();
+                            runTableFillPostCommitEffects(`batch-${batchNum}-manual`, [
+                                { label: 'render-tables', run: () => renderTables() },
+                                {
+                                    label: 'log-success',
+                                    run: () => log(`批次 ${batchNum} 已由用户手动处理完成。`, 'success'),
+                                },
+                            ]);
                         } catch (err) {
+                            if (runControl.committed) {
+                                log(`批次 ${batchNum} 已保存，后置界面处理失败: ${err.message}`, 'error');
+                                currentBatch = batchNum;
+                                setTimeout(processNextBatch, 500);
+                                return;
+                            }
                             log(`批次 ${batchNum} 手动应用失败: ${err.message}`, 'error');
                             toastr.error(`手动应用失败: ${err.message}`, '写入异常');
                             currentBatch = batchNum - 1;
@@ -478,7 +554,13 @@ async function runBatchAttempt(batchNum, attemptNum) {
                             return;
                         }
                         log(`用户选择重新填表，批次 ${batchNum} 将重新执行。`, 'warn');
-                        setTimeout(() => runBatchAttempt(batchNum, 0), 300);
+                        setTimeout(() => runBatchAttempt(
+                            batchNum,
+                            0,
+                            createTableFillRunControl({
+                                scope: `batch-${batchNum}-manual-retry`,
+                            }),
+                        ), 300);
                     },
                     onCancel: () => {
                         log(`用户取消了批次 ${batchNum} 的处理，任务已暂停。`, 'warn');
@@ -491,24 +573,33 @@ async function runBatchAttempt(batchNum, attemptNum) {
 
             const applied = await updateTableFromText(resultText, {
                 immediateDelete: true,
+                requestLease: fillLease,
+                onCommitted: () => runControl.markCommitted(),
+                ...fillEvidence,
                 transaction: tableCommitTransaction(activeBatchChatScope),
             });
-            if (!applied) throw new Error('文本未产生可提交变更，或表格保存失败。');
-            batchResolved = true;
-            renderTablesAfterCommit(`批次 ${batchNum}`);
-            log(`批次 ${batchNum} 处理成功。`, 'success');
+            if (!applied) {
+                throw createDeterministicTableFillError(
+                    'TABLE_FILL_WRITE_REJECTED',
+                    '文本未产生可提交变更，或表格保存失败。',
+                );
+            }
+            runControl.markCommitted();
+            runTableFillPostCommitEffects(`batch-${batchNum}-text`, [
+                { label: 'render-tables', run: () => renderTables() },
+                {
+                    label: 'log-success',
+                    run: () => log(`批次 ${batchNum} 处理成功。`, 'success'),
+                },
+            ]);
         }
 
         currentBatch = batchNum;
         setTimeout(processNextBatch, 1000);
 
     } catch (error) {
-        if (batchResolved) {
-            console.error(
-                `[Amily2 立即填表] 批次 ${batchNum} 已提交/确认完成，`
-                + '仅后置界面处理失败；为避免重复写入，将继续下一批。',
-                error,
-            );
+        if (runControl.committed) {
+            log(`批次 ${batchNum} 已提交，后置处理失败；已阻止模型重跑: ${error.message}`, 'error');
             currentBatch = batchNum;
             setTimeout(processNextBatch, 1000);
             return;
@@ -529,18 +620,47 @@ async function runBatchAttempt(batchNum, attemptNum) {
             return;
         }
         log(`批次 ${batchNum} 尝试 ${attemptNum + 1} 失败: ${error.message}`, 'error');
-        if (attemptNum >= MAX_RETRIES) {
-            log(`批次 ${batchNum} 已达到最大重试次数，任务暂停。`, 'error');
-            const isFormatError = String(error?.code || '').startsWith('TABLE_FILL_TOOL_ARGS_');
-            const detail = isFormatError
-                ? '模型连续返回了无法安全解析的 Function Call 数据'
-                : '请检查网络、API设置或填表响应';
-            toastr.error(`批次 ${batchNum} 多次失败：${detail}。修正后可手动继续，当前批次尚未跳过。`, '任务暂停');
+        if (isTableFillRequestLeaseError(error)) {
+            log(`批次 ${batchNum} 的聊天或表格请求租约已失效，已停止任务且不会自动重试。`, 'warn');
+            toastr.warning('聊天或表格已变化，过期填表结果已安全丢弃。', '任务停止');
+            currentBatch = batchNum - 1;
+            manualStopRequested = true;
+            updateButtonState('idle');
+            return;
+        }
+        const normalizedError = normalizeTableFillInferenceError(error);
+        if (attemptNum >= MAX_RETRIES
+            || !canAutomaticallyRetryTableFill(normalizedError, runControl)) {
+            const stopReason = normalizedError.retryable === true
+                ? `请求预算已用 ${runControl.requestBudget.used}/${runControl.requestBudget.limit}`
+                : '错误不可通过重复请求修复';
+            const isFormatError = String(normalizedError?.code || '').startsWith('TOOL_CALL_V2_')
+                || String(normalizedError?.code || '').startsWith('TABLE_FILL_TOOL_ARGS_');
+            const failureDetail = isFormatError
+                ? `模型返回的结构化数据未通过整批校验：${normalizedError.message}`
+                : normalizedError.message;
+            log(`批次 ${batchNum} 已停止自动重试：${stopReason}。`, 'error');
+            toastr.error(
+                `批次 ${batchNum} 失败：${failureDetail}；${stopReason}。当前批次尚未跳过，可手动继续。`,
+                '任务暂停',
+            );
             currentBatch = batchNum - 1;
             updateButtonState('error');
         } else {
             log(`将在3秒后自动重试批次 ${batchNum}...`, 'warn');
-            setTimeout(() => runBatchAttempt(batchNum, attemptNum + 1), 3000);
+            try {
+                toastr.warning(
+                    `批次 ${batchNum} 填表失败：${normalizedError.message}。`
+                    + `3 秒后自动重试 ${attemptNum + 1}/${MAX_RETRIES}；`
+                    + `本轮请求预算剩余 ${runControl.requestBudget.remaining} 次。`,
+                    `批次 ${batchNum} 自动重试`,
+                );
+            } catch {}
+            setTimeout(() => runBatchAttempt(
+                batchNum,
+                attemptNum + 1,
+                runControl,
+            ), 3000);
         }
     }
 }
@@ -558,7 +678,10 @@ async function processNextBatch() {
         return;
     }
 
-    runBatchAttempt(currentBatch + 1, 0);
+    const batchNum = currentBatch + 1;
+    runBatchAttempt(batchNum, 0, createTableFillRunControl({
+        scope: `batch-${batchNum}`,
+    }));
 }
 
 export function startBatchFilling() {
@@ -642,7 +765,10 @@ export function startBatchFilling() {
 }
 
 
-export async function startFloorRangeFilling(startFloor, endFloor) {
+export async function startFloorRangeFilling(startFloor, endFloor, options = {}) {
+    const runControl = resolveTableFillRunControl(options.runControl, {
+        scope: `floor-range-${startFloor}-${endFloor}`,
+    });
     const settings = extension_settings[extensionName] || {};
     const tableSystemEnabled = settings.table_system_enabled !== false;
     if (!tableSystemEnabled) {
@@ -675,18 +801,20 @@ export async function startFloorRangeFilling(startFloor, endFloor) {
         return;
     }
 
+    const fillLease = captureTableFillRequestLease(context);
+    const fillEvidence = getFillEvidence(context, startFloor, endFloor);
     try {
         assertBatchFillerScope(requestScope);
         log(`开始处理楼层 ${startFloor}-${endFloor} 的内容...`, 'info');
         
-        const purifiedMessages = getRawMessagesForSummary(startFloor, endFloor);
+        const purifiedMessages = getRawMessagesForSummary(startFloor, endFloor, context);
         if (!purifiedMessages || purifiedMessages.length === 0) {
             toastr.warning('指定楼层范围内没有有效内容可处理。');
             return;
         }
 
         const batchContent = purifiedMessages.map(m => `【第 ${m.floor} 楼】 ${m.author}: ${m.content}`).join('\n');
-        const currentTableDataString = convertTablesToCsvString();
+        const currentTableDataString = convertAiFillableTablesToCsvString();
         const finalFlowPrompt = buildFillerFlowPrompt(flowTemplate, currentTableDataString);
 
         let mixedOrder;
@@ -751,37 +879,88 @@ export async function startFloorRangeFilling(startFloor, endFloor) {
             ];
             messages.splice(1, 0, ...defaultPrompts);
         }
+        messages.push({ role: 'system', content: TABLE_FILL_SAFETY_POLICY });
 
         console.groupCollapsed(`[Amily2 楼层填表] 楼层 ${startFloor}-${endFloor} - 即将发送至 API 的内容`);
         console.dir(messages);
         console.groupEnd();
 
+        assertTableFillRequestLease(fillLease, getContext());
         const floorSettings = extension_settings[extensionName] || {};
-        if (floorSettings.tableFillFunctionCall) {
-            const argsString = await callAIForTools(
-                withFunctionCallProtocol(messages),
-                TABLE_FILL_TOOL,
-                { slot: 'tableFilling' },
-            );
-            assertBatchFillerScope(requestScope);
-            const ops = parseFunctionCallOperations(argsString, `楼层 ${startFloor}-${endFloor}`);
+        assertBatchFillerScope(requestScope);
+        const toolResult = floorSettings.tableFillFunctionCall
+            ? await requestTableFillOperationsV2(messages, {
+                tableState: fillLease.state,
+                settings: floorSettings,
+                slot: 'tableFilling',
+                requestBudget: runControl.requestBudget,
+                assertLease: () => assertTableFillRequestLease(fillLease, getContext()),
+            })
+            : null;
+        if (toolResult?.mode === TABLE_FILL_TOOL_RESULT.TOOL) {
+            const ops = toolResult.operations;
             if (ops.length === 0) {
-                log(`楼层 ${startFloor}-${endFloor} FC 返回合法空操作列表。`, 'info');
-                toastr.info('AI 判断此楼层范围无需修改。', `楼层 ${startFloor}-${endFloor}`);
+                assertTableFillRequestLease(fillLease, getContext());
+                runTableFillPostCommitEffects(`floor-${startFloor}-${endFloor}-noop`, [
+                    {
+                        label: 'log-noop',
+                        run: () => log(
+                            `楼层 ${startFloor}-${endFloor} 的 Tool Call V2 判断没有可靠的新事实。`,
+                            'info',
+                        ),
+                    },
+                    {
+                        label: 'notify-noop',
+                        run: () => toastr.info(
+                            'AI 判断此楼层范围无需修改。',
+                            `楼层 ${startFloor}-${endFloor}`,
+                        ),
+                    },
+                ]);
             } else {
                 const applied = await updateTableFromOps(ops, {
                     immediateDelete: true,
+                    requestLease: fillLease,
+                    onCommitted: () => runControl.markCommitted(),
+                    ...fillEvidence,
                     transaction: tableCommitTransaction(requestScope),
                 });
-                if (!applied) throw new Error('Function Call 操作未产生可提交变更，或表格保存失败。');
-                renderTablesAfterCommit(`楼层 ${startFloor}-${endFloor}`);
-                notifySuccessAfterCommit(`楼层 ${startFloor}-${endFloor} 填表完成！`);
-                log(`楼层 ${startFloor}-${endFloor} Function Call 处理成功（${ops.length} 条操作）。`, 'success');
+                if (!applied) {
+                    throw createDeterministicTableFillError(
+                        'TABLE_FILL_WRITE_REJECTED',
+                        'Tool Call V2 操作未产生可提交变更，或表格保存失败。',
+                    );
+                }
+                runControl.markCommitted();
+                runTableFillPostCommitEffects(`floor-${startFloor}-${endFloor}-tool`, [
+                    { label: 'render-tables', run: () => renderTables() },
+                    {
+                        label: 'notify-success',
+                        run: () => toastr.success(`楼层 ${startFloor}-${endFloor} 填表完成！`),
+                    },
+                    {
+                        label: 'log-success',
+                        run: () => log(
+                            `楼层 ${startFloor}-${endFloor} Tool Call V2 处理成功（${ops.length} 条操作）。`,
+                            'success',
+                        ),
+                    },
+                ]);
             }
         } else {
-            const resultText = await callTableModel(messages);
+            if (toolResult?.reason && toolResult.reason !== 'tool-disabled') {
+                log(`楼层 ${startFloor}-${endFloor} 的 Tool Call V2 不可用（${toolResult.reason}），改用严格文本指令。`, 'warn');
+                toastr.warning('Tool Call V2 当前不可用，已改用严格文本填表。', `楼层 ${startFloor}-${endFloor}`);
+            }
+            const resultText = await callTableModel(
+                messages,
+                fillLease,
+                runControl.requestBudget,
+            );
             console.log(`[Amily2 楼层填表] 楼层 ${startFloor}-${endFloor} - 收到 API 原始回复:`, resultText);
-            if (typeof resultText !== 'string' || !resultText.trim()) throw new Error('API返回内容为空。');
+            if (typeof resultText !== 'string' || !resultText.trim()) {
+                throw createRetryableResponseError('TABLE_FILL_EMPTY_RESPONSE', 'API返回内容为空。');
+            }
             assertBatchFillerScope(requestScope);
 
             if (!resultText.includes('<Amily2Edit>')) {
@@ -796,7 +975,12 @@ export async function startFloorRangeFilling(startFloor, endFloor) {
                             toastr.warning('聊天已经切换，旧响应不能继续补全。', '已取消操作');
                             return null;
                         }
-                        const merged = await requestContinuation(messages, currentText);
+                        const merged = await requestContinuation(
+                            messages,
+                            currentText,
+                            fillLease,
+                            runControl.requestBudget,
+                        );
                         if (!merged) { toastr.error('补全请求失败或返回为空。', '继续补全'); return null; }
                         try {
                             assertBatchFillerScope(requestScope);
@@ -819,13 +1003,45 @@ export async function startFloorRangeFilling(startFloor, endFloor) {
                             assertBatchFillerScope(requestScope);
                             const applied = await updateTableFromText(editedText, {
                                 immediateDelete: true,
+                                requestLease: fillLease,
+                                onCommitted: () => runControl.markCommitted(),
+                                ...fillEvidence,
                                 transaction: tableCommitTransaction(requestScope),
                             });
-                            if (!applied) throw new Error('文本未产生可提交变更，或表格保存失败。');
-                            renderTablesAfterCommit(`楼层 ${startFloor}-${endFloor}`);
-                            notifySuccessAfterCommit(`楼层 ${startFloor}-${endFloor} 填表完成！`);
-                            logAfterCommit(`楼层 ${startFloor}-${endFloor} 填表由用户手动处理完成。`);
+                            if (!applied) {
+                                throw createDeterministicTableFillError(
+                                    'TABLE_FILL_WRITE_REJECTED',
+                                    '文本未产生可提交变更，或表格保存失败。',
+                                );
+                            }
+                            runControl.markCommitted();
+                            runTableFillPostCommitEffects(
+                                `floor-${startFloor}-${endFloor}-manual`,
+                                [
+                                    { label: 'render-tables', run: () => renderTables() },
+                                    {
+                                        label: 'notify-success',
+                                        run: () => toastr.success(
+                                            `楼层 ${startFloor}-${endFloor} 填表完成！`,
+                                        ),
+                                    },
+                                    {
+                                        label: 'log-success',
+                                        run: () => log(
+                                            `楼层 ${startFloor}-${endFloor} 填表由用户手动处理完成。`,
+                                            'success',
+                                        ),
+                                    },
+                                ],
+                            );
                         } catch (err) {
+                            if (runControl.committed) {
+                                log(
+                                    `楼层 ${startFloor}-${endFloor} 已保存，后置界面处理失败: ${err.message}`,
+                                    'error',
+                                );
+                                return;
+                            }
                             log(`楼层 ${startFloor}-${endFloor} 手动应用失败: ${err.message}`, 'error');
                             toastr.error(`手动应用失败: ${err.message}`, '写入异常');
                         }
@@ -838,7 +1054,11 @@ export async function startFloorRangeFilling(startFloor, endFloor) {
                             return;
                         }
                         log(`用户请求重新填写楼层 ${startFloor}-${endFloor}。`, 'warn');
-                        setTimeout(() => startFloorRangeFilling(startFloor, endFloor), 300);
+                        setTimeout(() => startFloorRangeFilling(startFloor, endFloor, {
+                            runControl: createTableFillRunControl({
+                                scope: `floor-range-${startFloor}-${endFloor}-manual-retry`,
+                            }),
+                        }), 300);
                     },
                     onCancel: () => {
                         log(`用户取消了楼层 ${startFloor}-${endFloor} 的填表。`, 'warn');
@@ -850,15 +1070,46 @@ export async function startFloorRangeFilling(startFloor, endFloor) {
 
             const applied = await updateTableFromText(resultText, {
                 immediateDelete: true,
+                requestLease: fillLease,
+                onCommitted: () => runControl.markCommitted(),
+                ...fillEvidence,
                 transaction: tableCommitTransaction(requestScope),
             });
-            if (!applied) throw new Error('文本未产生可提交变更，或表格保存失败。');
-            renderTablesAfterCommit(`楼层 ${startFloor}-${endFloor}`);
-            notifySuccessAfterCommit(`楼层 ${startFloor}-${endFloor} 填表完成！`);
-            log(`楼层 ${startFloor}-${endFloor} 填表处理完成。`, 'success');
+            if (!applied) {
+                throw createDeterministicTableFillError(
+                    'TABLE_FILL_WRITE_REJECTED',
+                    '文本未产生可提交变更，或表格保存失败。',
+                );
+            }
+            runControl.markCommitted();
+            runTableFillPostCommitEffects(`floor-${startFloor}-${endFloor}-text`, [
+                { label: 'render-tables', run: () => renderTables() },
+                {
+                    label: 'notify-success',
+                    run: () => toastr.success(`楼层 ${startFloor}-${endFloor} 填表完成！`),
+                },
+                {
+                    label: 'log-success',
+                    run: () => log(`楼层 ${startFloor}-${endFloor} 填表处理完成。`, 'success'),
+                },
+            ]);
         }
 
     } catch (error) {
+        if (runControl.committed) {
+            log(
+                `楼层 ${startFloor}-${endFloor} 已提交，后置处理失败；已阻止模型重跑: ${error.message}`,
+                'error',
+            );
+            runTableFillPostCommitEffects(`floor-${startFloor}-${endFloor}-committed-error`, [{
+                label: 'notify-post-commit-error',
+                run: () => toastr.warning(
+                    '表格已经保存，但界面刷新失败；请重新打开表格面板查看。',
+                    '填表已保存',
+                ),
+            }]);
+            return;
+        }
         if (error?.code === 'BATCH_FILLER_STALE_CHAT_CONTEXT'
             || error?.code === 'BATCH_FILLER_MISSING_CHAT_CONTEXT'
             || error?.code === 'TABLE_SYSTEM_STALE_CHAT_CONTEXT'
@@ -872,8 +1123,14 @@ export async function startFloorRangeFilling(startFloor, endFloor) {
             toastr.warning('服务器可能已经保存本次结果。请重新打开聊天确认，系统不会自动重试。', '需要重新载入');
             return;
         }
-        log(`楼层 ${startFloor}-${endFloor} 填表失败: ${error.message}`, 'error');
-        toastr.error(`楼层填表失败: ${error.message}`, '处理失败');
+        if (isTableFillRequestLeaseError(error)) {
+            log(`楼层 ${startFloor}-${endFloor} 的聊天或表格请求租约已失效，过期结果已丢弃。`, 'warn');
+            toastr.warning('聊天或表格已变化，本次楼层填表结果已安全丢弃。', '处理停止');
+            return;
+        }
+        const normalizedError = normalizeTableFillInferenceError(error);
+        log(`楼层 ${startFloor}-${endFloor} 填表失败: ${normalizedError.message}`, 'error');
+        toastr.error(`楼层填表失败: ${normalizedError.message}`, '处理失败');
     }
 }
 

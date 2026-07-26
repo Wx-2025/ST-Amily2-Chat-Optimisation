@@ -1,5 +1,7 @@
 import { 
     world_names, 
+    world_info,
+    selected_world_info,
     loadWorldInfo, 
     saveWorldInfo, 
     createNewWorldInfo, 
@@ -9,12 +11,19 @@ import {
 let reloadEditor = () => {
     console.warn("[Amily助手] reloadEditor 函数不可用，可能是旧版本。已使用空函数代替。");
 };
+let deleteWorldInfoCore = null;
 (async () => {
     try {
-        const { reloadEditor: importedReloadEditor } = await import("/scripts/world-info.js");
+        const {
+            reloadEditor: importedReloadEditor,
+            deleteWorldInfo: importedDeleteWorldInfo,
+        } = await import("/scripts/world-info.js");
         if (importedReloadEditor) {
             reloadEditor = importedReloadEditor;
             console.log("[Amily助手] 已成功动态导入 reloadEditor。");
+        }
+        if (typeof importedDeleteWorldInfo === 'function') {
+            deleteWorldInfoCore = importedDeleteWorldInfo;
         }
     } catch (error) {
         console.warn("[Amily助手] 动态导入 reloadEditor 失败，将使用空函数。错误信息：", error.message);
@@ -33,12 +42,133 @@ import {
     messageFormatting,
     substituteParamsExtended,
     saveCharacterDebounced,
-    this_chid
+    this_chid,
+    chat_metadata,
+    getRequestHeaders
 } from "/script.js";
 import { getContext } from "/scripts/extensions.js";
+import { power_user } from "/scripts/power-user.js";
 import { executeSlashCommandsWithOptions } from '/scripts/slash-commands.js';
 import { authorizeIframeRequest, isRegisteredIframeSource } from './iframe-security.js';
 import { registerInternalBusPlugin } from '../../SL/bus/Amily2Bus.js';
+
+function cloneRawWorldInfo(value) {
+    if (value == null) return null;
+    if (typeof structuredClone === 'function') return structuredClone(value);
+    return JSON.parse(JSON.stringify(value));
+}
+
+async function loadWorldInfoFresh(bookName, signal = null) {
+    if (!bookName) return null;
+    // /api/worldinfo/get intentionally returns { entries: {} } even for a
+    // missing file. The in-memory list alone is insufficient here: if the
+    // server committed a create but its response was lost, updateWorldInfoList
+    // never ran and world_names is stale. Confirm an apparent miss against the
+    // server-side list before treating it as absence.
+    const normalizedName = String(bookName);
+    if (!world_names.includes(normalizedName)
+        && !await worldInfoExistsOnServer(normalizedName, signal)) {
+        return null;
+    }
+    const response = await fetch('/api/worldinfo/get', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({ name: normalizedName }),
+        cache: 'no-cache',
+        signal,
+    });
+    if (!response.ok) {
+        throw new Error(`Fresh world-info read failed (${response.status}).`);
+    }
+    return cloneRawWorldInfo(await response.json());
+}
+
+async function worldInfoExistsOnServer(bookName, signal = null) {
+    const response = await fetch('/api/worldinfo/list', {
+        method: 'POST',
+        headers: getRequestHeaders(),
+        body: JSON.stringify({}),
+        cache: 'no-cache',
+        signal,
+    });
+    if (!response.ok) {
+        throw new Error(`Fresh world-info list failed (${response.status}).`);
+    }
+    const list = await response.json();
+    if (!Array.isArray(list)) {
+        throw new Error('Fresh world-info list returned an invalid payload.');
+    }
+    return list.some(item => (
+        item
+        && typeof item === 'object'
+        && Object.getOwnPropertyDescriptor(item, 'file_id')?.value === bookName
+    ));
+}
+
+function getWorldInfoBindingState(bookName) {
+    const normalizedName = String(bookName || '');
+    const global = selected_world_info.includes(normalizedName) ? ['global'] : [];
+    const chatBinding = chat_metadata?.world_info === normalizedName ? ['current-chat'] : [];
+    const persona = power_user?.persona_description_lorebook === normalizedName ? ['current-persona'] : [];
+    const characterPrimary = [];
+    characters.forEach((character, index) => {
+        const primary = character?.data?.extensions?.world;
+        const primaryBooks = Array.isArray(primary) ? primary : [primary];
+        if (primaryBooks.includes(normalizedName)) characterPrimary.push(String(index));
+    });
+    const characterAdditional = [];
+    for (const binding of world_info?.charLore || []) {
+        if (Array.isArray(binding?.extraBooks) && binding.extraBooks.includes(normalizedName)) {
+            characterAdditional.push(String(binding.name || 'unknown'));
+        }
+    }
+    return Object.freeze({
+        bookName: normalizedName,
+        bound: Boolean(global.length || chatBinding.length || persona.length
+            || characterPrimary.length || characterAdditional.length),
+        global: Object.freeze(global),
+        chat: Object.freeze(chatBinding),
+        persona: Object.freeze(persona),
+        characterPrimary: Object.freeze(characterPrimary),
+        characterAdditional: Object.freeze(characterAdditional),
+    });
+}
+
+/**
+ * 仅供 Amily Core 内部直接 import 的 raw world-info 端口。
+ *
+ * 不得把它挂到 window、iframe bridge、通用 Bus 或卡侧 Provider。普通
+ * loadWorldInfo() 会命中宿主缓存；A2 staging/commit 校验必须使用 fresh。
+ */
+export const worldInfoCorePort = Object.freeze({
+    async readWorldInfoRaw(bookName, { fresh = false, signal = null } = {}) {
+        const value = fresh
+            ? await loadWorldInfoFresh(bookName, signal)
+            : await loadWorldInfo(String(bookName || ''));
+        return cloneRawWorldInfo(value);
+    },
+    async createWorldInfoRaw(bookName) {
+        return await createNewWorldInfo(String(bookName || ''), { interactive: false });
+    },
+    async writeWorldInfoRaw(bookName, data) {
+        const copy = cloneRawWorldInfo(data);
+        if (!copy) return false;
+        await saveWorldInfo(String(bookName || ''), copy, true);
+        return true;
+    },
+    async deleteWorldInfoRaw(bookName) {
+        if (typeof deleteWorldInfoCore !== 'function') return false;
+        return await deleteWorldInfoCore(String(bookName || ''));
+    },
+    async getWorldInfoBindingState(bookName) {
+        return getWorldInfoBindingState(bookName);
+    },
+    async getWorldInfoResourceIdentity() {
+        // 当前宿主 API 只提供名称定位，没有不可变 resource id。A2 删除路径
+        // 因此还必须同时匹配 journal owner、scope、generation 与 fresh digest。
+        return null;
+    },
+});
 
 
 class AmilyHelper {

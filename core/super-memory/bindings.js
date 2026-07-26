@@ -135,7 +135,7 @@ export function bindSuperMemoryEvents() {
 
     // 切聊天后面板内容刷新：面板的表格列表只在挂载时渲染一次、之后仅靠手动「刷新表格列表」按钮，
     // 无 CHAT_CHANGED 监听 → 切换同卡不同聊天后列表停在旧聊天。这里补上：
-    // 仅当面板可见时刷新；延后到表格系统的 loadTables（index.js 中 CHAT_CHANGED 后 100ms）之后，
+    // 仅当面板可见时刷新；延后到表格系统统一 CHAT 生命周期完成 loadTables 之后，
     // 否则会渲染出尚未更新的旧 state（同 super-memory 同步那处规避的竞态）。
     eventSource.on(event_types.CHAT_CHANGED, () => {
         if (!panel.is(':visible')) return;

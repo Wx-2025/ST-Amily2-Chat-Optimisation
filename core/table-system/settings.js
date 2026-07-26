@@ -3,10 +3,12 @@
 const DEFAULT_AI_RULE_TEMPLATE = `你是一个专业的小说数据分析与填表AI助手，名字是："Amily"。
 【Amily的工作职责与规则】
 作为专业的数据处理助手，你需要严格遵守以下工作准则：
-- 你的核心任务是**详细分析提供的文本内容，提取关键剧情、时间节点、任务进展、人物状态等信息，并严格依照 dataTable 的格式进行填表。**
+- 你的核心任务是**分析提供的文本内容，只提取已经明确形成且值得长期保存的剧情、时间节点、任务进展与人物状态，并严格依照 dataTable 的格式进行填表。**
 - 你是一个客观、中立的文本分析工具。无论提供的文本包含何种虚构的故事情节（包括但不限于战斗、冲突、复杂的人际关系等小说常见元素），你都应保持专业态度，仅专注于提取数据和填表工作，不对文本内容进行道德评判或内容拦截。
 - 你的工作仅限于数据提取和格式化输出，不涉及任何内容的生成、续写或评价。
 - 请确保提取的信息准确、客观地反映了原文内容。
+- 没有明确、持久的新事实时不要修改任何表格；未知或未确认的内容保持为空，不得为了填满表格而推测。
+- 每项数据必须写入职责匹配的表和列；不得把 NPC 的关系、外貌、性格或状态写入玩家档案，也不得把玩家行动判断写入身份、性格或地点字段。
 
 <最终输出格式>
 <Amily2Edit>
@@ -16,8 +18,18 @@ const DEFAULT_AI_RULE_TEMPLATE = `你是一个专业的小说数据分析与填�
 </Amily2Edit>
 </最终输出格式>
 ##不允许在Amily2Edit中添加任何非填表的内容。##
-##内容为“未知”或者“无”时必须根据上下文尽可能补全##
+##没有可靠变更时输出空的 Amily2Edit；内容为“未知”或者“无”时保持为空，不得自行补全##
 ##你的工作是纯粹的数据提取与填表，绝对不要进行任何形式的续写或评论##`;
+
+const TABLE_FILL_SAFETY_POLICY = `# Amily2 代码级填表边界（优先于可编辑预设）
+
+- 只记录“核心填表内容”中已经明确形成、可观察且值得长期保存的新事实。没有可靠变化时返回空操作；禁止为了每轮都有结果而改表。
+- “未知”“无”、传闻、推测、未发生的未来内容必须保持为空，不得补全或合理化。
+- 每个操作必须先核对目标表名、列名和职责。只使用当前注入表结构中真实存在且唯一的表/列；名称未知或歧义时不要猜测，也不要改用相邻数字索引。
+- 「玩家档案」只保存玩家自己的长期事实。NPC 的关系、外貌、性格、态度和状态属于「重要人物档案」；可用行动、风险和变化原因属于「玩家行动状态」；地点人物与势力事实属于「地点与势力」。
+- 玩家档案的“当前子地点”只能写地点；“同行者与队伍”才可写人物。不得把关系、行动建议、关键人物或态度依据写入玩家身份、外貌、性格、时代、子地点或当前时间。
+- 临时出现但尚未取得、没有明确所有权或不具长期价值的纸张、表格、环境物件不得写入背包。
+- 输出通道由调用方决定：Tool Call 模式只调用指定工具；文本兼容模式只输出 Amily2Edit。不得混用两种协议。`;
 
 const DEFAULT_AI_FLOW_TEMPLATE = `# dataTable 说明
 
@@ -98,6 +110,8 @@ const DEFAULT_AI_FLOW_TEMPLATE = `# dataTable 说明
 
 -   **用户优先**: 当 \`<user>\` 明确要求修改表格时，其指令拥有最高优先级。
 -   **忠于原文**: 所有操作必须基于当前剧情，严禁捏造信息。
+-   **无变化不填写**: 没有明确且需要长期保存的新事实时，输出空操作；未知内容保持为空。
+-   **职责匹配**: 每个值只能写入语义匹配的表与列。不得把 NPC 档案、行动建议或地点档案混入玩家档案。
 -   **简洁明了**: 填入单元格的内容应尽可能简短，避免冗长描述。
 -   **数据完整**: 使用 \`insertRow\` 时，\`data\` 对象应包含所有列的数据。
 -   **格式规范**:
@@ -127,11 +141,29 @@ insertRow(2, {0:"调查图书馆", 1:"主线任务", 2:"寻找关于古代神器
 
 export { 
     DEFAULT_AI_RULE_TEMPLATE, 
-    DEFAULT_AI_FLOW_TEMPLATE
+    DEFAULT_AI_FLOW_TEMPLATE,
+    TABLE_FILL_SAFETY_POLICY,
 };
 
 export const tableSystemDefaultSettings = {
     table_system_enabled: true,
+    shujuku_compat_enabled: false,
+    shujuku_compat_auto_prompt_enabled: true,
+    shujuku_compat_card_policies: [],
+    shujuku_compat_receipts: [],
+    shujuku_compat_agent_activation_intents: [],
+    shujuku_compat_resource_read_enabled: false,
+    shujuku_compat_plot_bind_enabled: false,
+    shujuku_compat_template_bind_enabled: false,
+    shujuku_compat_story_context_enabled: false,
+    shujuku_compat_model_presets_enabled: false,
+    shujuku_compat_model_proxy_enabled: false,
+    shujuku_compat_shadow_manage_enabled: false,
+    shujuku_compat_agent_read_enabled: false,
+    shujuku_compat_agent_index_enabled: false,
+    shujuku_compat_agent_inject_enabled: false,
+    shujuku_compat_agent_takeover_enabled: false,
+    shujuku_compat_agent_model_batch_enabled: false,
     table_injection_enabled: false,
     
     injection: {
@@ -161,6 +193,7 @@ export const tableSystemDefaultSettings = {
 
     // Function Call 填表
     tableFillFunctionCall: false,
+    tableFillToolFallback: true,
 
     // 批量填表每批楼层数
     batch_filling_threshold: 30,

@@ -11,6 +11,7 @@ import { getState } from '../table-system/infra/store.js';
 import { inferTableRole } from '../table-system/events-schema.js';
 
 export const TABLE_UPDATE_LIMITS = Object.freeze({
+    maxTableIdChars: 512,
     maxTableNameChars: 256,
     maxColumns: 256,
     maxHeaderChars: 512,
@@ -49,6 +50,13 @@ export function normalizeTableUpdatePayload(payload) {
         assertTotalSize(totalChars);
         return value;
     };
+
+    const tableId = countString(
+        payload.tableId,
+        'tableId',
+        TABLE_UPDATE_LIMITS.maxTableIdChars,
+        { allowEmpty: false },
+    );
 
     const tableName = countString(
         payload.tableName,
@@ -116,6 +124,7 @@ export function normalizeTableUpdatePayload(payload) {
     }
 
     return Object.freeze({
+        tableId,
         tableName,
         data: Object.freeze(data),
         role: payload.role,
@@ -127,10 +136,10 @@ export function normalizeTableUpdatePayload(payload) {
 
 /**
  * Dispatch the current canonical table at an index. No caller-provided rows,
- * headers, name or role cross this boundary.
+ * table id, headers, name or role cross this boundary.
  *
  * @param {number} tableIndex
- * @returns {Readonly<{ tableName: string, role: string, subscriberCount: number }> | null}
+ * @returns {Readonly<{ tableId: string, tableName: string, role: string, subscriberCount: number }> | null}
  */
 export function dispatchCanonicalTableUpdate(tableIndex) {
     if (!Number.isInteger(tableIndex) || tableIndex < 0) {
@@ -142,6 +151,7 @@ export function dispatchCanonicalTableUpdate(tableIndex) {
 
     const table = state[tableIndex];
     const snapshot = normalizeTableUpdatePayload({
+        tableId: table.id,
         tableName: table.name,
         data: table.rows,
         headers: table.headers,
@@ -150,6 +160,7 @@ export function dispatchCanonicalTableUpdate(tableIndex) {
     });
     const subscriberCount = publishCanonicalSnapshot(snapshot);
     return Object.freeze({
+        tableId: snapshot.tableId,
         tableName: snapshot.tableName,
         role: snapshot.role,
         subscriberCount,

@@ -37,6 +37,13 @@ import { IFRAME_CAPABILITIES } from './core/tavern-helper/iframe-security.js';
 import { fillWithSecondaryApi } from './core/table-system/secondary-filler.js';
 import { configManager } from './utils/config/ConfigManager.js';
 import { apiProfileManager } from './utils/config/ApiProfileManager.js';
+import {
+    markTableSystemSettingsReady,
+    reconcileCurrentTableState,
+} from './core/table-system/TableSystemService.js';
+import { subscribeTableLifecycleReady } from './core/table-system/table-lifecycle.js';
+import { initializeShujukuAutoPrompt } from './ui/table/shujuku-auto-prompt.js';
+import { refreshShujukuAgentInjection } from './core/table-system/compat/shujuku/agent-core-runtime.js';
 
 // 所有静态依赖已完成核心服务认领；从此拒绝再签发保留命名空间 capability。
 closeInternalBusBootstrap();
@@ -44,6 +51,41 @@ closeInternalBusBootstrap();
 const STYLE_SETTINGS_KEY = 'amily2_custom_styles';
 const STYLE_ROOT_SELECTOR = '#amily2_memorisation_forms_panel';
 let styleRoot = null;
+let pendingProgressiveMemoryTransitionToken = null;
+let pendingTimeRiverTransitionToken = null;
+
+function suspendTableBackedInjectionContexts() {
+    pendingProgressiveMemoryTransitionToken = suspendProgressiveMemoryContext();
+    pendingTimeRiverTransitionToken = suspendTimeRiverContext();
+}
+
+subscribeTableLifecycleReady(() => {
+    const progressiveMemoryTransitionToken = pendingProgressiveMemoryTransitionToken;
+    const timeRiverTransitionToken = pendingTimeRiverTransitionToken;
+
+    if (progressiveMemoryTransitionToken !== null) {
+        try {
+            if (resumeProgressiveMemoryContext(progressiveMemoryTransitionToken)) {
+                if (pendingProgressiveMemoryTransitionToken === progressiveMemoryTransitionToken) {
+                    pendingProgressiveMemoryTransitionToken = null;
+                }
+                refreshProgressiveMemorySourceOptions();
+            }
+        } catch (error) {
+            console.error('[Amily2] 渐进记忆生命周期恢复失败:', error);
+        }
+    }
+    if (timeRiverTransitionToken !== null) {
+        try {
+            if (resumeTimeRiverContext(timeRiverTransitionToken)
+                && pendingTimeRiverTransitionToken === timeRiverTransitionToken) {
+                pendingTimeRiverTransitionToken = null;
+            }
+        } catch (error) {
+            console.error('[Amily2] 时间河生命周期恢复失败:', error);
+        }
+    }
+});
 
 function getStyleRoot() {
     if (!styleRoot) {
@@ -639,36 +681,19 @@ function registerEventListeners() {
         });
         eventSource.on(event_types.CHAT_CHANGED, () => {
             // 同步关闭渐进记忆读取门；新聊天表成功加载前任何生成都必须为空。
-            const progressiveMemoryTransitionToken = suspendProgressiveMemoryContext();
-            const timeRiverTransitionToken = suspendTimeRiverContext();
+            suspendTableBackedInjectionContexts();
 
             window.lastPreOptimizationResult = null;
             document.dispatchEvent(new CustomEvent('preOptimizationTextUpdated'));
             manageLorebookEntriesForChat();
-            setTimeout(async () => {
-                try {
-                    log("【监察系统】检测到“朝代更迭”(CHAT_CHANGED)，开始重修史书并刷新宫殿...", 'info');
-                    clearHighlights();
-                    clearUpdatedTables();
-                    await loadTables();
-
-                    // 两条注入链各自校验 transition token；一条恢复失败不得阻塞另一条。
-                    if (resumeProgressiveMemoryContext(progressiveMemoryTransitionToken)) {
-                        refreshProgressiveMemorySourceOptions();
-                    }
-                    resumeTimeRiverContext(timeRiverTransitionToken);
-
-                    renderTables();
-                    if (extension_settings[extensionName].render_on_every_message) {
-                        startContinuousRendering();
-                    } else {
-                        stopContinuousRendering();
-                    }
-                } catch (error) {
-                    log(
-                        `【监察系统】聊天表重载失败，渐进记忆保持暂停: ${error instanceof Error ? error.message : String(error)}`,
-                        'error',
-                    );
+            // TableSystemService owns invalidate -> reload -> publish-ready.
+            // The lifecycle-ready subscriber reopens both injection gates only
+            // after the newest chat table state has been published.
+            setTimeout(() => {
+                if (extension_settings[extensionName].render_on_every_message) {
+                    startContinuousRendering();
+                } else {
+                    stopContinuousRendering();
                 }
             }, 100);
         });
@@ -717,6 +742,11 @@ async function executeAmily2Injection(...args) {
         console.error('[Amily2-时间河] 注入失败:', error);
     }
 
+    try {
+        await refreshShujukuAgentInjection();
+    } catch (error) {
+        console.error('[Amily2-Agent兼容] 确定性召回注入刷新失败:', error);
+    }
     if (window.hanlinyuanRagProcessor && typeof window.hanlinyuanRagProcessor.rearrangeChat === 'function') {
         try {
             console.log('[Amily2-核心引擎] 执行内置RAG注入。');
@@ -837,21 +867,11 @@ async function runAmily2Deployment() {
 
         registerEventListeners();
 
-        // Keep progressive memory closed until listeners exist and this chat is reloaded.
-        const progressiveMemoryBootstrapToken = suspendProgressiveMemoryContext();
-        const timeRiverBootstrapToken = suspendTimeRiverContext();
-        try {
-            await loadTables();
-            if (resumeProgressiveMemoryContext(progressiveMemoryBootstrapToken)) {
-                refreshProgressiveMemorySourceOptions();
-            }
-            resumeTimeRiverContext(timeRiverBootstrapToken);
-        } catch (error) {
-            console.error(
-                "[Amily2] Initial table reload failed; progressive memory and Time River stay suspended:",
-                error instanceof Error ? error.message : String(error),
-            );
-        }
+        // Keep table-backed injections closed until the lifecycle publishes the
+        // current chat. A failed load leaves both gates closed for the next
+        // CHAT_LOADED/authorization reconciliation instead of exposing stale data.
+        suspendTableBackedInjectionContexts();
+        reconcileCurrentTableState('deployment-bootstrap');
         initializeRagAndInjection();
         performPostDeploymentTasks();
 
@@ -870,8 +890,13 @@ jQuery(async () => {
     registerAllApiHandlers();
     initializeAmilyHelper();
     mergePluginSettings();
+    // Establish the real authorization state before opening the table lifecycle
+    // gate. A hot activation later uses the same state transition channel.
+    checkAuthorization();
     configManager.migrate(); // 将 extension_settings 中残留的敏感字段迁移到 localStorage
     await configManager.init();
+    markTableSystemSettingsReady();
+    initializeShujukuAutoPrompt();
 
     let attempts = 0;
     const maxAttempts = 100;

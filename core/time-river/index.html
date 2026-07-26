@@ -227,23 +227,28 @@
         line-height: 1.5;
     }
     #amily2_time_river_panel input[type="file"] {
-        width: 100%;
-        min-height: var(--am2-control-h, 30px);
-        padding: 7px 9px;
-        border: var(--am2-border, 1px solid rgba(255, 255, 255, 0.12));
-        border-radius: var(--am2-radius-md, 10px);
-        background: rgba(0, 0, 0, 0.2);
-        color: var(--am2-muted, rgba(224, 224, 224, 0.62));
-        box-sizing: border-box;
+        display: none !important;
     }
-    #amily2_time_river_panel input[type="file"]::file-selector-button {
-        margin-right: 9px;
-        padding: 5px 9px;
-        border: var(--am2-border, 1px solid rgba(255, 255, 255, 0.12));
-        border-radius: var(--am2-radius-sm, 6px);
-        background: var(--am2-surface-2, rgba(255, 255, 255, 0.07));
-        color: var(--am2-text, #e8e8ee);
-        cursor: pointer;
+    #amily2_time_river_panel .tr-file-picker {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: var(--am2-space-2, 8px);
+        min-width: 0;
+    }
+    #amily2_time_river_panel .tr-file-picker .menu_button {
+        min-width: max-content;
+        white-space: nowrap !important;
+        writing-mode: horizontal-tb !important;
+        word-break: keep-all !important;
+    }
+    #amily2_time_river_panel .tr-file-name {
+        min-width: 0;
+        flex: 1 1 160px;
+        color: var(--am2-muted, rgba(224, 224, 224, 0.62));
+        font-size: 12px;
+        line-height: 1.4;
+        overflow-wrap: anywhere;
     }
     #amily2_time_river_panel input[type="range"],
     #amily2_time_river_panel input[type="checkbox"] {
@@ -312,11 +317,20 @@
 
 <fieldset class="settings-group tr-section">
     <legend><span class="tr-legend-index">01</span><i class="fas fa-file-import"></i> 导入与目录预览</legend>
+    <p class="tr-note">
+        选择 TXT / Markdown 小说 → 导入并预览目录 → 确认持久化 → 构建索引。
+    </p>
     <div class="tr-grid">
-        <label class="tr-stack">
+        <div class="tr-stack">
             <span>小说文件（TXT / Markdown）</span>
-            <input id="tr-import-file" type="file" accept=".txt,.md,text/plain,text/markdown">
-        </label>
+            <div class="tr-file-picker">
+                <button id="tr-select-import-file" class="menu_button primary interactable" type="button" disabled>
+                    <i class="fas fa-book-open"></i> 选择小说文件
+                </button>
+                <span id="tr-import-file-name" class="tr-file-name" aria-live="polite">尚未选择文件</span>
+            </div>
+            <input id="tr-import-file" type="file" accept=".txt,.md,text/plain,text/markdown" tabindex="-1" aria-hidden="true">
+        </div>
         <label class="tr-stack">
             <span>文本编码</span>
             <select id="tr-import-encoding" class="text_pole">
@@ -331,7 +345,7 @@
     </div>
     <div class="tr-actions">
         <button id="tr-prepare-import" class="menu_button secondary interactable" type="button" disabled>
-            <i class="fas fa-list-alt"></i> 解析并预览目录
+            <i class="fas fa-list-alt"></i> 导入小说并预览目录
         </button>
     </div>
     <div id="tr-import-summary" class="tr-status" role="status" aria-live="polite">尚未解析文件。</div>

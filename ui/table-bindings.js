@@ -19,6 +19,7 @@ import { ruleProfileManager } from '../utils/config/RuleProfileManager.js';
 import { bindTableTemplateEditors } from './table/template-bindings.js';
 import { bindNccsApiEvents as bindNccsApiSettingsEvents } from './table/nccs-bindings.js';
 import { bindChatTableDisplaySetting as bindChatTableDisplaySettings } from './table/chat-display-bindings.js';
+import { bindShujukuCompatibilityControls } from './table/shujuku-compat-bindings.js';
 import { readChatTableState } from '../core/table-system/infra/database-state.js';
 import { createCharacterPortableTableProfile } from '../core/table-system/profile.js';
 import {
@@ -27,6 +28,11 @@ import {
     writeCharacterTableProfile,
 } from '../core/table-system/character-profile.js';
 import { getCurrentTableTemplateSnapshot } from '../core/table-system/templates.js';
+import { subscribeTableLifecycleReady } from '../core/table-system/table-lifecycle.js';
+import {
+    getShujukuAccessDecision,
+    subscribeShujukuAccess,
+} from '../core/table-system/compat/shujuku/access-policy.js';
 
 const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches;
 const getAllTablesContainer = () => document.getElementById('all-tables-container');
@@ -433,12 +439,15 @@ function positionContextMenu(menu, trigger) {
 
 export function renderTables() {
     let tables = TableManager.getMemoryState();
-    if (!tables) {
-        log('内存状态为空，从聊天记录加载作为后备。', 'warn');
-        tables = TableManager.loadTables();
-    }
-    
     const container = getAllTablesContainer();
+
+    if (!tables) {
+        // Loading is owned by the early table lifecycle. Rendering must not
+        // hydrate a possibly unstable chat or reopen a persistence scope.
+        if (container) container.replaceChildren();
+        log('表格状态尚未就绪，等待当前聊天加载完成。', 'info');
+        return;
+    }
 
     if (!tables || !container) {
         console.error('[内存储司-工部] 缺少表格数据或容器，无法渲染。');
@@ -889,6 +898,13 @@ export function renderTables() {
     updateOrInsertTableInChat();
 }
 
+// Keep the compatibility runtime independent from this large UI module. A
+// one-way render request avoids an ESM cycle through the compatibility panel
+// controller while exposing no data or mutation capability.
+document.addEventListener('amily2-table-render-requested', () => {
+    renderTables();
+});
+
 
 
 function openRuleEditor(tableIndex) {
@@ -1178,6 +1194,7 @@ function bindInjectionSettings() {
     masterSwitchCheckbox.addEventListener('change', () => {
         const currentSettings = getLiveSettings();
         currentSettings.table_system_enabled = masterSwitchCheckbox.checked;
+        document.dispatchEvent(new CustomEvent('amily2-shujuku-policy-changed'));
         saveSettingsDebounced();
         updateInjectionUI();
         
@@ -1623,7 +1640,16 @@ export function bindTableEvents(panelElement = null) {
         fcToggle.checked = extension_settings[extensionName]?.tableFillFunctionCall ?? false;
         fcToggle.addEventListener('change', function() {
             updateAndSaveTableSetting('tableFillFunctionCall', this.checked);
-            toastr.info(`Function Call 填表已${this.checked ? '启用' : '禁用'}。`);
+            toastr.info(`Tool Call V2 填表已${this.checked ? '启用' : '禁用'}。`);
+        });
+    }
+
+    const toolFallbackToggle = document.getElementById('table-fill-tool-fallback-enabled');
+    if (toolFallbackToggle) {
+        toolFallbackToggle.checked = extension_settings[extensionName]?.tableFillToolFallback ?? true;
+        toolFallbackToggle.addEventListener('change', function() {
+            updateAndSaveTableSetting('tableFillToolFallback', this.checked);
+            toastr.info(`Tool Call 文本降级已${this.checked ? '启用' : '禁用'}。`);
         });
     }
 
@@ -1641,6 +1667,38 @@ export function bindTableEvents(panelElement = null) {
         });
     }
 
+    const shujukuNav = panel.querySelector('.sinan-nav-item[data-tab="shujuku-compat"]');
+    const shujukuPane = panel.querySelector('#sinan-shujuku-compat-tab');
+    let shujukuCompatibilityControls = null;
+
+    const syncShujukuCompatibilityAccess = decision => {
+        const allowed = decision?.allowed === true;
+        if (shujukuNav) shujukuNav.hidden = !allowed;
+        if (shujukuPane) shujukuPane.hidden = !allowed;
+        if (!allowed) {
+            if (shujukuNav?.classList.contains('active')
+                || shujukuPane?.classList.contains('active')) {
+                shujukuNav?.classList.remove('active');
+                shujukuPane?.classList.remove('active');
+                panel.querySelector('.sinan-nav-item[data-tab="world-settings"]')
+                    ?.classList.add('active');
+                panel.querySelector('#sinan-world-settings-tab')?.classList.add('active');
+            }
+            return;
+        }
+        if (!shujukuCompatibilityControls) {
+            shujukuCompatibilityControls = bindShujukuCompatibilityControls(panel, {
+                onProfileInstalled: () => {
+                    refreshTableProfileStatus(panel);
+                },
+            });
+        }
+        void shujukuCompatibilityControls.refresh();
+    };
+
+    subscribeShujukuAccess(syncShujukuCompatibilityAccess);
+    syncShujukuCompatibilityAccess(getShujukuAccessDecision());
+
     const renderAll = () => {
         renderTables();
         bindInjectionSettings();
@@ -1651,8 +1709,12 @@ export function bindTableEvents(panelElement = null) {
             defaultFlowTemplate: DEFAULT_AI_FLOW_TEMPLATE,
         });
         refreshTableProfileStatus(panel);
+        if (getShujukuAccessDecision().allowed) {
+            void shujukuCompatibilityControls?.refresh();
+        }
     };
 
+    subscribeTableLifecycleReady(renderAll);
     renderAll();
     bindWorldBookSettings();
     bindBatchFillButton(); // 【新增】绑定批量填表按钮
@@ -1678,7 +1740,7 @@ export function bindTableEvents(panelElement = null) {
     if (navDeck) {
         navDeck.addEventListener('click', (event) => {
             const target = event.target.closest('.sinan-nav-item');
-            if (!target) return;
+            if (!target || target.hidden) return;
 
             const tabName = target.dataset.tab;
             if (!tabName) return;

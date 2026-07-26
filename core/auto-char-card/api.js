@@ -1,7 +1,7 @@
 import { extension_settings } from "/scripts/extensions.js";
 import { getRequestHeaders, saveSettingsDebounced } from "/script.js";
 import { extensionName } from "../../utils/settings.js";
-import { getSlotProfile } from '../api/api-resolver.js';
+import { acquireProfileRequestPermit, bindSlotProfileRateLimit, getSlotProfile } from '../api/api-resolver.js';
 import { apiKeyStore } from '../../utils/config/api-key-store/ApiKeyStore.js';
 import { mergeSafeModelCallOptions } from '../api/safe-call-options.js';
 
@@ -24,13 +24,13 @@ export function getApiConfig(role) {
 export async function getResolvedApiConfig(role) {
     const profile = await getSlotProfile('autoCharCard');
     if (profile) {
-        return {
+        return bindSlotProfileRateLimit({
             apiUrl:      profile.apiUrl,
             apiKey:      profile.apiKey ?? '',
             model:       profile.model,
             maxTokens:   profile.maxTokens ?? DEFAULT_CONFIG.maxTokens,
             temperature: profile.temperature ?? DEFAULT_CONFIG.temperature,
-        };
+        }, profile);
     }
     const legacy = getApiConfig(role);
     const keyId = `legacy_acc_${role}`;
@@ -94,10 +94,12 @@ export async function callAi(role, messages, options = {}, onChunk = null) {
     };
 
     try {
+        await acquireProfileRequestPermit(config, config.signal);
         const response = await fetch('/api/backends/chat-completions/generate', {
             method: 'POST',
             headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
-            body: JSON.stringify(body)
+            body: JSON.stringify(body),
+            signal: config.signal,
         });
 
         if (!response.ok) {

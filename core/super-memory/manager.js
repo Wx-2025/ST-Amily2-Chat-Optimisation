@@ -55,7 +55,7 @@ export async function initializeSuperMemory() {
     subscribeTableUpdates(handleTableUpdate);
 
     // 【修复】CHAT_CHANGED 时不再主动 forceSyncAll：
-    // 表格系统在 index.js 的 CHAT_CHANGED 里延迟 100ms 才 loadTables()，
+    // 表格系统在统一 CHAT 生命周期里等待上下文稳定后才 loadTables()，
     // 此处立即同步会把【旧聊天】的表格内容写进【新角色】的记忆世界书（竞态污染；
     // 两边表名不同时旧表条目无 GC 兜底，会永久残留）。
     // 无需自行补同步：loadTables() 三个分支结尾都会 dispatchAllTablesUpdate()，
@@ -294,6 +294,7 @@ export async function forceSyncAll() {
     for (const table of tables) {
         try {
             updateQueue.push(normalizeTableUpdatePayload({
+                tableId: table.id,
                 tableName: table.name,
                 data: table.rows,
                 headers: table.headers,

@@ -86,6 +86,7 @@
                 <button class="sinan-nav-item" data-tab="action-center"><i class="fas fa-toolbox"></i> 操作中心</button>
                 <button class="sinan-nav-item" data-tab="ai-template"><i class="fas fa-robot"></i> 指令模板</button>
                 <button class="sinan-nav-item" data-tab="world-settings"><i class="fas fa-globe"></i> 世界读取</button>
+                <button class="sinan-nav-item" data-tab="shujuku-compat" hidden><i class="fas fa-shield-alt"></i> 数据库兼容</button>
             </div>
 
             <div class="sinan-content-wrapper">
@@ -185,6 +186,174 @@
                         </div>
                         <small class="notes">勾选需要注入的条目。</small>
                     </div>
+                </div>
+
+                <div id="sinan-shujuku-compat-tab" class="sinan-tab-pane" hidden>
+                    <fieldset id="amily2-shujuku-compat-panel" class="settings-group" style="border-style: dashed; padding: 8px; margin-bottom: 10px;">
+                        <legend><i class="fas fa-shield-alt"></i> shujuku 角色卡兼容（实验性）</legend>
+                        <details class="amily2-shujuku-quick-guide" style="margin-bottom:10px;">
+                            <summary><i class="fas fa-graduation-cap"></i> 第一次使用：按什么顺序配置？</summary>
+                            <ol class="notes" style="margin:8px 0 8px 20px;padding:0;">
+                                <li>确认当前账号具有有效 Type2 及以上授权。</li>
+                                <li>开启全局兼容层，再扫描当前卡并核对迁移摘要。</li>
+                                <li>只开启这张卡确实需要的功能；优先使用只读授权。</li>
+                                <li>为“本聊天”确认精确授权；需要复用时再保存为本卡默认。</li>
+                                <li>若卡片需要 Agent，再前往右侧“Agent 兼容”按准备、构建、激活的顺序操作。</li>
+                            </ol>
+                            <button id="amily2_open_shujuku_tutorial" class="menu_button small_button secondary interactable am2-panel-tutorial-btn" type="button" style="white-space:nowrap;" title="打开数据库兼容完整教程">
+                                <i class="fas fa-book-open"></i> 打开完整教程
+                            </button>
+                        </details>
+                        <div class="control-block-with-switch" style="margin-bottom: 6px;">
+                            <label for="amily2-shujuku-compat-enabled">
+                                <strong>启用全局兼容层</strong>
+                            </label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="amily2-shujuku-compat-enabled" data-setting-key="shujuku_compat_enabled" data-type="boolean" disabled>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <p class="notes" style="margin: 0 0 8px;">全局层只决定兼容能力上限；本卡层可在本机记住默认能力，真正授权仍按聊天隔离。</p>
+                        <div class="control-block-with-switch" style="margin-bottom: 8px;">
+                            <label for="amily2-shujuku-auto-prompt-enabled">
+                                <strong>新聊天自动检测并询问</strong>
+                            </label>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="amily2-shujuku-auto-prompt-enabled" disabled>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        <div class="amily2-shujuku-scope-summary" style="display:grid;gap:5px;margin-bottom:8px;">
+                            <div class="notes">全局：<strong id="amily2-shujuku-global-scope-status">检测中…</strong></div>
+                            <div class="notes">本卡：<strong id="amily2-shujuku-card-scope-status">检测中…</strong></div>
+                            <div class="notes">本聊天：<strong id="amily2-shujuku-chat-scope-status">检测中…</strong></div>
+                        </div>
+                        <div class="action-center-buttons" style="gap:8px;margin-bottom:8px;">
+                            <button id="amily2-shujuku-save-card-policy-btn" class="menu_button secondary small_button interactable" type="button" disabled>
+                                <i class="fas fa-id-card"></i> 记住当前授权为本卡默认
+                            </button>
+                            <button id="amily2-shujuku-remove-card-policy-btn" class="menu_button small_button interactable" type="button" disabled>
+                                <i class="fas fa-eraser"></i> 清除本卡默认
+                            </button>
+                        </div>
+                        <p class="notes" style="margin:0 0 8px;">本卡默认只保存在本机并按卡内容指纹匹配，不会写回角色卡，也不会复制聊天授权或凭据。</p>
+                        <div class="notes" style="margin-bottom: 6px;">
+                            当前状态：<strong id="amily2-shujuku-compat-status" aria-live="polite">检测中…</strong>
+                        </div>
+                        <div class="notes" style="margin-bottom: 8px;">
+                            档案请求：<span id="amily2-shujuku-requested-capabilities">检测中…</span>
+                        </div>
+                        <button id="amily2-shujuku-migrate-current-card-btn" class="menu_button" type="button" disabled style="margin-bottom: 6px;">
+                            <i class="fas fa-search"></i> 扫描并建立当前聊天兼容档案
+                        </button>
+                        <p class="notes" style="margin: 0 0 10px;">
+                            只会静态读取当前角色卡并先显示确认摘要；不会执行卡内脚本、修改原角色卡或静默覆盖已有表格数据。
+                        </p>
+                        <section class="amily2-shujuku-compat-card" aria-labelledby="amily2-shujuku-resource-heading">
+                            <div id="amily2-shujuku-resource-heading" class="amily2-shujuku-compat-card-title">
+                                <i class="fas fa-box-open"></i> B3 已登记资源
+                            </div>
+                            <div id="amily2-shujuku-resource-catalog-status" class="notes" aria-live="polite">检测中…</div>
+                            <div class="amily2-shujuku-resource-row">
+                                <label for="amily2-shujuku-template-select">表格模板</label>
+                                <select id="amily2-shujuku-template-select" class="text_pole" disabled>
+                                    <option value="">检测中…</option>
+                                </select>
+                                <div class="amily2-shujuku-resource-actions">
+                                    <button id="amily2-shujuku-view-template-btn" class="menu_button small_button interactable" type="button" disabled>
+                                        <i class="fas fa-eye"></i> 查看内容
+                                    </button>
+                                    <button id="amily2-shujuku-bind-template-btn" class="menu_button small_button interactable" type="button" disabled>
+                                        <i class="fas fa-link"></i> 绑定到本聊天
+                                    </button>
+                                </div>
+                                <span class="notes">当前：<strong id="amily2-shujuku-active-template">检测中…</strong></span>
+                            </div>
+                            <div class="amily2-shujuku-resource-row">
+                                <label for="amily2-shujuku-plot-select">剧情预设</label>
+                                <select id="amily2-shujuku-plot-select" class="text_pole" disabled>
+                                    <option value="">检测中…</option>
+                                </select>
+                                <div class="amily2-shujuku-resource-actions">
+                                    <button id="amily2-shujuku-view-plot-btn" class="menu_button small_button interactable" type="button" disabled>
+                                        <i class="fas fa-eye"></i> 查看内容
+                                    </button>
+                                    <button id="amily2-shujuku-bind-plot-btn" class="menu_button small_button interactable" type="button" disabled>
+                                        <i class="fas fa-link"></i> 绑定到本聊天
+                                    </button>
+                                </div>
+                                <span class="notes">当前：<strong id="amily2-shujuku-active-plot">检测中…</strong></span>
+                            </div>
+                            <p class="notes">这里只读取静态迁移时登记的资源；查看窗口不会执行其中内容，页面也不会创建全局预设。</p>
+                        </section>
+                        <section class="amily2-shujuku-compat-card" aria-labelledby="amily2-shujuku-b4-heading">
+                            <div id="amily2-shujuku-b4-heading" class="amily2-shujuku-compat-card-title">
+                                <i class="fas fa-robot"></i> B4 专用模型槽
+                            </div>
+                            <div class="notes">
+                                旧卡兼容模型任务：<strong id="amily2-shujuku-legacy-card-task-status" aria-live="polite">检测中…</strong>
+                            </div>
+                            <div class="amily2-shujuku-b4-diagnostic-row">
+                                <button id="amily2-shujuku-b4-diagnostic-btn" class="menu_button small_button interactable" type="button" disabled>
+                                    <i class="fas fa-vial"></i> 运行 B4 极短诊断
+                                </button>
+                                <span id="amily2-shujuku-b4-diagnostic-status" class="notes" aria-live="polite">检测中…</span>
+                            </div>
+                            <p class="notes">仅显示脱敏后的 provider、model 与 token 上限；不会显示配置 ID、URL、Key、headers 或其他功能槽。</p>
+                        </section>
+                        <div class="notes" style="margin-bottom: 6px;">
+                            <strong>扩展能力独立开关与当前聊天授权</strong>
+                        </div>
+                        <div id="amily2-shujuku-capability-policy-list" style="display: grid; gap: 6px; margin-bottom: 8px;">
+                            <span class="notes">检测中…</span>
+                        </div>
+                        <button id="amily2-shujuku-grant-selected-btn" class="menu_button" type="button" disabled style="margin-bottom: 8px;">
+                            <i class="fas fa-user-shield"></i> 按勾选项更新当前聊天扩展授权
+                        </button>
+                        <p class="notes" style="margin: 0 0 8px;">
+                            功能开关与聊天授权缺一不可。Agent 项在附属 Provider 未安装时保持禁用；开启新功能不会自动补入旧授权。
+                        </p>
+                        <div class="action-center-buttons" style="gap: 8px; margin-bottom: 8px;">
+                            <button id="amily2-shujuku-grant-read-btn" class="menu_button secondary small_button interactable" type="button" disabled>
+                                <i class="fas fa-eye"></i> 授权当前聊天：只读
+                            </button>
+                            <button id="amily2-shujuku-grant-write-btn" class="menu_button danger small_button interactable" type="button" disabled>
+                                <i class="fas fa-edit"></i> 授权当前聊天：读写
+                            </button>
+                            <button id="amily2-shujuku-revoke-btn" class="menu_button small_button interactable" type="button" disabled>
+                                <i class="fas fa-ban"></i> 撤销当前聊天授权
+                            </button>
+                        </div>
+                        <div class="notes" style="padding: 7px; margin-bottom: 8px; border: 1px dashed var(--SmartThemeQuoteColor); border-radius: 4px;">
+                            <div><strong>B3 已提供受控兼容：</strong>仅可读取、导入并绑定迁移清单内摘要匹配的表格模板和剧情预设；第三方剧情任务及 Agent 世界书不会自动执行。</div>
+                            <div style="margin-top: 4px;"><strong>B4 已提供受限兼容：</strong>有界 AI 剧情尾部、专用槽脱敏摘要与严格限额的 callAI 可分别授权；Agent 方法仅在可选 Provider 已安装且逐项授权后出现，核心不会直接开放世界书。</div>
+                            <div style="margin-top: 4px;">当前档案检测到的未实现请求：<span id="amily2-shujuku-unsupported-groups">检测中…</span></div>
+                        </div>
+                        <div id="amily2-shujuku-action-confirm-dialog"
+                             role="dialog"
+                             aria-modal="true"
+                             aria-labelledby="amily2-shujuku-action-confirm-title"
+                             aria-describedby="amily2-shujuku-action-confirm-message"
+                             hidden
+                             style="position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.65);">
+                            <div style="width:min(560px,100%);max-height:min(80vh,720px);overflow:auto;padding:16px;border:1px solid var(--SmartThemeBorderColor);border-radius:8px;background:var(--SmartThemeBlurTintColor, #222);box-shadow:0 12px 36px rgba(0,0,0,.45);">
+                                <div id="amily2-shujuku-action-confirm-title" style="font-weight:700;margin-bottom:10px;">确认兼容操作</div>
+                                <div id="amily2-shujuku-action-confirm-message" class="notes" style="white-space:pre-wrap;margin-bottom:14px;"></div>
+                                <div class="action-center-buttons" style="gap:8px;justify-content:flex-end;">
+                                    <button id="amily2-shujuku-action-cancel-btn" class="menu_button small_button interactable" type="button">
+                                        <i class="fas fa-times"></i> 取消
+                                    </button>
+                                    <button id="amily2-shujuku-action-confirm-btn" class="menu_button danger small_button interactable" type="button">
+                                        <i class="fas fa-check"></i> 确认
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="notes" style="margin: 0; color: var(--warning-color, #e57373);">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <strong>危险：</strong>授权后，当前角色卡脚本可读取迁移表或已登记资源；“读写”和资源绑定能力还可修改并保存当前聊天的数据。只对可信角色卡授权。关闭全局开关会停止兼容桥，但已保存的聊天授权仍应使用“撤销”明确删除。
+                        </p>
+                    </fieldset>
                 </div>
 
                 <div id="sinan-action-center-tab" class="sinan-tab-pane">
@@ -317,7 +486,7 @@
                             角色卡仅保存表结构、视图定义和模板，不保存聊天中的行数据。写入与解除都必须手动确认；已有聊天不会被角色卡后续更新覆盖。
                         </p>
                     </fieldset>
-                    
+
                     <hr class="section-divider" style="margin: 10px 0;">
 
                     <!-- 历史记录清理区域 -->
@@ -339,17 +508,24 @@
                     
                     <hr class="section-divider" style="margin: 10px 0;">
 
-                    <!-- Function Call 填表 -->
+                    <!-- Tool Call V2 填表 -->
                     <div class="control-block-with-switch" style="margin-bottom: 6px;">
-                        <label for="table-fill-function-call-enabled" title="使用 OpenAI Function Call（工具调用）进行填表，模型直接返回结构化操作列表，无需解析 &lt;Amily2Edit&gt; 指令块。仅支持 openai 直连模式。">使用 Function Call 填表</label>
+                        <label for="table-fill-function-call-enabled" title="使用 Tool Call V2 进行填表。模型按表名、列名返回结构化操作，插件解析为稳定 ID 后再原子校验和提交。">使用 Tool Call V2 填表</label>
                         <label class="toggle-switch">
                             <input type="checkbox" id="table-fill-function-call-enabled">
                             <span class="slider"></span>
                         </label>
                     </div>
-                    <p class="notes" style="margin-bottom: 6px;">仅支持 openai 直连接口（tableFilling 槽位）。启用后跳过 &lt;Amily2Edit&gt; 文本解析，由模型直接返回操作列表。</p>
+                    <p class="notes" style="margin-bottom: 6px;">支持 OpenAI、Custom OAI、OpenRouter、DeepSeek 与 xAI 兼容接口（tableFilling 槽位）。启用后优先使用表名/列名结构化操作，避免数字索引抄错和全角标点解析问题。</p>
+                    <div class="control-block-with-switch" style="margin-bottom: 6px;">
+                        <label for="table-fill-tool-fallback-enabled" title="当当前接口或模型不返回 tools 时，退回严格的 Amily2Edit 文本兼容路径。Tool 协议兼容重试、文本降级和任务自身重试都可能产生额外请求，并共同受连接 RPM 限制。">Tools 不可用时降级为文本填表</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="table-fill-tool-fallback-enabled">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
                     <div style="background: rgba(255, 160, 0, 0.12); border-left: 3px solid #ffa000; border-radius: 3px; padding: 6px 10px; margin-bottom: 10px; font-size: 0.85em; color: #ffcc80;">
-                        ⚠️ 部分公益站因禁止用于跑代码会屏蔽 tools 参数，请确认公益站是否支持 tools 调用，避免被意外封禁。
+                        ⚠️ Tool Call 只返回受限的结构化表格操作，插件不会执行模型生成的代码。部分公益站仍可能屏蔽 tools 参数；协议兼容、文本降级与任务重试可能形成多次请求，请结合连接 RPM 和所用接口规则配置。
                     </div>
 
                     <hr class="section-divider" style="margin: 10px 0;">

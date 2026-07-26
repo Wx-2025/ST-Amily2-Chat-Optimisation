@@ -2,7 +2,7 @@ import { extension_settings, getContext } from "/scripts/extensions.js";
 import { characters, this_chid, getRequestHeaders, saveSettingsDebounced, eventSource, event_types } from "/script.js";
 import { extensionName } from "../../utils/settings.js";
 import { amilyHelper } from '../../core/tavern-helper/main.js';
-import { getSlotProfile, providerToApiMode } from './api-resolver.js';
+import { acquireProfileRequestPermit, bindSlotProfileRateLimit, getSlotProfile, providerToApiMode } from './api-resolver.js';
 import { configManager } from '../../utils/config/ConfigManager.js';
 import { detectVendor } from '../../utils/api-vendor.js';
 import { mergeSafeModelCallOptions } from './safe-call-options.js';
@@ -35,7 +35,7 @@ async function getNccsApiSettings() {
     // 优先读取 'nccs' 槽位分配的 Profile（profile 一旦分配即权威，旧 slider 残值不再覆盖）
     const profile = await getSlotProfile('nccs');
     if (profile) {
-        return {
+        return bindSlotProfileRateLimit({
             nccsEnabled:  true,
             apiMode:      providerToApiMode(profile.provider),
             apiUrl:       profile.apiUrl,
@@ -46,7 +46,7 @@ async function getNccsApiSettings() {
             customParams: profile.customParams ?? {},
             tavernProfile: '',
             useFakeStream: s.nccsFakeStreamEnabled ?? false,
-        };
+        }, profile);
     }
 
     // 降级：读旧 extension_settings 字段
@@ -108,6 +108,7 @@ export async function callNccsAI(messages, options = {}) {
 
     try {
         let responseContent;
+        await acquireProfileRequestPermit(settings, finalOptions.signal);
         switch (finalOptions.apiMode) {
             case 'openai_test':
                 responseContent = await callNccsOpenAITest(messages, finalOptions);

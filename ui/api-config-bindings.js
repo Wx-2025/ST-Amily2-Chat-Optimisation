@@ -18,6 +18,8 @@ import { testConcurrentApiConnection } from '../core/api/ConcurrentApi.js';
 import { testNgmsApiConnection } from '../core/api/Ngms_api.js';
 import { testNccsApiConnection } from '../core/api/NccsApi.js';
 import { showContentModal } from './page-window.js';
+import { acquireProfileRequestPermit, bindSlotProfileRateLimit } from '../core/api/api-resolver.js';
+import { isOfficialDeepSeekEndpoint } from '../core/api/deepseek-tool-routing.js';
 import {
     getRegistry,
     detectVendorSync,
@@ -557,6 +559,7 @@ async function openModal($c, id) {
         $c.find('#amily2_pf_url').val(p.apiUrl);
         $c.find('#amily2_pf_key').val('');
         $c.find('#amily2_pf_model').val(p.model);
+        $c.find('#amily2_pf_rpm').val(p.rpm ?? 0);
 
         if (p.type === 'chat') {
             $c.find('#amily2_pf_max_tokens').val(p.maxTokens);
@@ -585,6 +588,7 @@ async function openModal($c, id) {
         _autofillVendorUrl($c, 'openai');
         $c.find('#amily2_pf_max_tokens').val(65500);
         $c.find('#amily2_pf_temperature').val(1.0);
+        $c.find('#amily2_pf_rpm').val(0);
         $c.find('#amily2_pf_fake_stream').prop('checked', false);
         $c.find('#amily2_pf_custom_params').val('');
         $c.find('#amily2_pf_dimensions').val('');
@@ -622,7 +626,14 @@ async function saveProfile($c) {
 
     if (!name) { toastr.warning('请填写配置名称。'); return; }
 
-    const data = { type, name, provider, apiUrl, model };
+    const data = {
+        type,
+        name,
+        provider,
+        apiUrl,
+        model,
+        rpm: $c.find('#amily2_pf_rpm').val(),
+    };
 
     if (type === 'chat') {
         data.maxTokens   = parseInt($c.find('#amily2_pf_max_tokens').val(), 10) || 65500;
@@ -775,6 +786,15 @@ async function _testConnection($c) {
         apiKey = await apiProfileManager.getKey(_editingId) ?? '';
     }
 
+    // An existing profile must share the exact same limiter bucket as every
+    // feature slot using it. Use only its persisted ID/RPM; unsaved form values
+    // must not be able to loosen the limit. A new profile has no stable ID yet,
+    // so its one-off connection test remains unlimited until the profile is saved.
+    const savedProfile = _editingId ? apiProfileManager.getProfile(_editingId) : null;
+    const rateLimitSettings = savedProfile
+        ? bindSlotProfileRateLimit({}, savedProfile)
+        : null;
+
     if (!apiUrl) { toastr.warning('请先填写 API 地址。'); return; }
 
     const $btn    = $c.find('#amily2_pf_test_conn').prop('disabled', true);
@@ -832,21 +852,25 @@ async function _testConnection($c) {
 
             if (type === 'chat' && model) {
                 $result.text('模型列表 ✓，正在验证补全端点…').css('color', 'var(--SmartThemeQuoteColor)');
+                await acquireProfileRequestPermit(rateLimitSettings);
+                const officialDeepSeek = isOfficialDeepSeekEndpoint(apiUrl);
                 const genResp = await fetch('/api/backends/chat-completions/generate', {
                     method: 'POST',
                     headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         reverse_proxy:          apiUrl,
                         proxy_password:         apiKey,
-                        chat_completion_source: 'openai',
+                        chat_completion_source: officialDeepSeek ? 'deepseek' : 'openai',
                         model,
                         messages:   [{ role: 'user', content: 'Hi' }],
                         max_tokens: 1,
                         stream:     false,
+                        ...(officialDeepSeek ? { include_reasoning: false } : {}),
                     }),
                 });
-                if (!genResp.ok) {
-                    const genErr = await genResp.json().catch(() => ({}));
+                const genData = await genResp.json().catch(() => ({}));
+                if (!genResp.ok || genData?.error) {
+                    const genErr = genData;
                     const genMsg = genErr?.error?.message || `补全端点返回 HTTP ${genResp.status}`;
                     $result.text(`模型列表 ✓，补全失败：${genMsg}`).css('color', 'var(--warning-color)');
                     toastr.warning(`补全端点测试失败：${genMsg}`);

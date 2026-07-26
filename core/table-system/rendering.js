@@ -15,6 +15,8 @@
  * @typedef {import('./dto/Table.js').TableState} TableState
  */
 
+import { isAiFillableTable } from './module-tables.js';
+
 /**
  * 检查表格规则违规，返回聚合警告字符串（多行）。
  * 行数超限 + 多列字符限制超限。
@@ -118,11 +120,27 @@ function _ordinaryTables(state) {
  * @returns {string}
  */
 export function tablesToCsv(state) {
+    return renderTablesToCsv(state, () => true);
+}
+
+/**
+ * 填表模型专用完整渲染：只公开 owner=user 的表，同时保留其在真实
+ * TableState 中的原始 tableIndex，避免过滤后数字索引发生重排。
+ *
+ * @param {TableState | null} state
+ * @returns {string}
+ */
+export function tablesToCsvForAiFill(state) {
+    return renderTablesToCsv(state, isAiFillableTable);
+}
+
+function renderTablesToCsv(state, includeTable) {
     if (!state || state.length === 0) return '';
 
     let fullString = '';
-    const ordinaryTables = _ordinaryTables(state);
-    ordinaryTables.forEach(({ table, tableIndex }, visibleIndex) => {
+    const visibleTables = _ordinaryTables(state)
+        .filter(({ table }) => includeTable(table));
+    visibleTables.forEach(({ table, tableIndex }, visibleIndex) => {
         // 标题
         fullString += `\n* ${tableIndex}:${table.name}\n`;
 
@@ -147,7 +165,7 @@ export function tablesToCsv(state) {
         fullString += `【删除】: ${table.rule_delete || '允许'}\n`;
         fullString += `【修改】: ${table.rule_update || '允许'}\n`;
 
-        if (visibleIndex < ordinaryTables.length - 1) fullString += '\n---\n';
+        if (visibleIndex < visibleTables.length - 1) fullString += '\n---\n';
     });
 
     return fullString;
@@ -162,12 +180,29 @@ export function tablesToCsv(state) {
  * @returns {string}
  */
 export function tablesToCsvWithSelection(state, selectedIndices) {
+    return renderTablesToCsvWithSelection(state, selectedIndices, () => true);
+}
+
+/**
+ * 填表模型专用选中态渲染。模块表既不展示内容也不展示表头；用户表仍
+ * 使用真实运行时 tableIndex，使 legacy 指令与 Tool V2 指向同一目标。
+ *
+ * @param {TableState | null} state
+ * @param {number[]} selectedIndices
+ * @returns {string}
+ */
+export function tablesToCsvWithSelectionForAiFill(state, selectedIndices) {
+    return renderTablesToCsvWithSelection(state, selectedIndices, isAiFillableTable);
+}
+
+function renderTablesToCsvWithSelection(state, selectedIndices, includeTable) {
     if (!state || state.length === 0) return '';
     const selected = Array.isArray(selectedIndices) ? selectedIndices : [];
 
     let fullString = '';
-    const ordinaryTables = _ordinaryTables(state);
-    ordinaryTables.forEach(({ table, tableIndex }, visibleIndex) => {
+    const visibleTables = _ordinaryTables(state)
+        .filter(({ table }) => includeTable(table));
+    visibleTables.forEach(({ table, tableIndex }, visibleIndex) => {
         const isSelected = selected.includes(tableIndex);
 
         // 标题
@@ -202,7 +237,7 @@ export function tablesToCsvWithSelection(state, selectedIndices) {
             fullString += `【操作权限】: 禁止修改此表格\n`;
         }
 
-        if (visibleIndex < ordinaryTables.length - 1) fullString += '\n---\n';
+        if (visibleIndex < visibleTables.length - 1) fullString += '\n---\n';
     });
 
     return fullString;

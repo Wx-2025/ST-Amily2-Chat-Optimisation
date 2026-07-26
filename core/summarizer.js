@@ -8,7 +8,7 @@ import { applyExclusionRules, extractBlocksByTags } from './utils/rag-tag-extrac
 import {
   getCombinedWorldbookContent, getPlotOptimizedWorldbookContent, getOptimizationWorldbookContent,
 } from "./lore.js";
-import { getBatchFillerFlowTemplate, convertTablesToCsvString, updateTableFromText } from './table-system/manager.js';
+import { getBatchFillerFlowTemplate, convertAiFillableTablesToCsvString, updateTableFromText } from './table-system/manager.js';
 import { renderTables } from '../ui/table-bindings.js';
 import { resolveHistoriographyRuleConfig } from "../utils/config/RuleProfileManager.js";
 
@@ -16,6 +16,11 @@ import { getPresetPrompts, getMixedOrder } from '../PresetSettings/index.js';
 import { callAI, generateRandomSeed } from './api.js';
 import { callConcurrentAI } from './api/ConcurrentApi.js';
 import { applyToTemplates } from './memory-blocks/index.js';
+import {
+    assertTableFillRequestLease,
+    captureTableFillRequestLease,
+    isTableFillRequestLeaseError,
+} from './table-system/infra/persistence-scope.js';
 
 export async function processOptimization(latestMessage, previousMessages) {
     if (window.AMILY2_SYSTEM_PARALYZED === true) {
@@ -70,6 +75,14 @@ export async function processOptimization(latestMessage, previousMessages) {
         textToProcess = extractedBlock;
 
         const context = getContext();
+        const fillingMode = settings.filling_mode || 'main-api';
+        // Only the combined optimization + table-writing mode needs a table
+        // lease. Plain正文优化 must not become dependent on table lifecycle
+        // readiness or be discarded because an unrelated table refresh ran.
+        const requestLease = fillingMode === 'optimized'
+            ? captureTableFillRequestLease(context)
+            : null;
+        const sourceMessages = context.chat;
         const userName = context.name1 || '用户';
         const characterName = context.name2 || '角色';
  
@@ -84,9 +97,6 @@ export async function processOptimization(latestMessage, previousMessages) {
         ];
 
         let currentInteractionContent = lastUserMessage ? `${userName}（用户）最新消息：${lastUserMessage.mes}\n${characterName}（AI）最新消息，[核心处理内容]：${textToProcess}` : `${characterName}（AI）最新消息，[核心处理内容]：${textToProcess}`;
-        const fillingMode = settings.filling_mode || 'main-api';
-
-
         const order = getMixedOrder('optimization') || [];
         let promptCounter = 0;
         
@@ -121,7 +131,7 @@ export async function processOptimization(latestMessage, previousMessages) {
                     case 'fillingMode':
                         if (isOptimizationEnabled && fillingMode === 'optimized') {
                             const flowTemplate = getBatchFillerFlowTemplate();
-                            const tableData = convertTablesToCsvString();
+                            const tableData = convertAiFillableTablesToCsvString();
                             const filledFlowTemplate = flowTemplate.replace('{{{Amily2TableData}}}', tableData);
                             
                             messages.push({ role: "user", content: currentInteractionContent });
@@ -137,7 +147,9 @@ export async function processOptimization(latestMessage, previousMessages) {
         console.groupCollapsed("[Amily2号-最终国书内容 (发往AI)]");
         console.dir(messages);
         console.groupEnd();
+        if (requestLease) assertTableFillRequestLease(requestLease, getContext());
         const rawContent = await callAI(messages);
+        if (requestLease) assertTableFillRequestLease(requestLease, getContext());
         
         if (!rawContent) {
             console.error('[Amily2-外交部] 未能获取AI响应内容');
@@ -161,7 +173,10 @@ export async function processOptimization(latestMessage, previousMessages) {
         document.dispatchEvent(new CustomEvent('preOptimizationStateUpdated'));
 
         if (isOptimizationEnabled && fillingMode === 'optimized') {
-            const applied = await updateTableFromText(rawContent);
+            const applied = await updateTableFromText(rawContent, {
+                requestLease,
+                sourceMessages,
+            });
             if (!applied) {
                 throw new Error('优化结果中的表格变更未能持久化。');
             }
@@ -183,6 +198,11 @@ export async function processOptimization(latestMessage, previousMessages) {
         return result;
  
     } catch (error) {
+        if (isTableFillRequestLeaseError(error)) {
+            console.warn('[Amily2-正文优化] 聊天或表格状态已变化，过期结果已丢弃。', error);
+            toastr.warning('聊天或表格已变化，本次正文优化结果已安全丢弃。', '优化已停止');
+            return null;
+        }
         console.error(`[Amily2-外交部] 发生严重错误:`, error);
         toastr.error(`Amily2号任务失败: ${error.message}`, "严重错误");
         console.timeEnd("优化任务总耗时");
@@ -268,6 +288,11 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
         }
 
         const context = getContext();
+        // Plot optimization may include snapshot-relative table text and its
+        // result is injected back into the active chat. Bind the whole async
+        // task before any prompt preparation so an A -> B chat switch or table
+        // replacement can only discard A's response.
+        const requestLease = captureTableFillRequestLease(context);
         const userName = context.name1 || '用户';
         const charName = context.name2 || '角色';
 
@@ -470,7 +495,9 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
             onProgress(getRandomText(['正在检索辅助记忆 (LLM-B)...', '正在扫描平行世界线 (LLM-B)...']), false);
 
             onProgress(getRandomText(['正在与核心意识同步 (LLM-A)...', '正在等待灵魂共鸣 (LLM-A)...']), false);
+            assertTableFillRequestLease(requestLease, getContext());
             const promise1 = callAI(mainMessages, { slot: 'plotOpt' }).then(res => {
+                assertTableFillRequestLease(requestLease, getContext());
                 onProgress(getRandomText(['正在与核心意识同步 (LLM-A)...', '正在等待灵魂共鸣 (LLM-A)...']), true);
                 return res;
             });
@@ -499,12 +526,23 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
             console.groupEnd();
 
             onProgress(getRandomText(['正在进行深度逻辑推演 (LLM-B)...', '正在计算情感最优解 (LLM-B)...']), false);
+            try {
+                assertTableFillRequestLease(requestLease, getContext());
+            } catch (error) {
+                // LLM-A was already started for concurrency. Consume its
+                // settlement before failing closed so a stale lease rejection
+                // cannot surface as an unhandled promise.
+                await Promise.allSettled([promise1]);
+                throw error;
+            }
             const promise2 = callConcurrentAI(concurrentMessages).then(res => {
+                assertTableFillRequestLease(requestLease, getContext());
                 onProgress(getRandomText(['正在进行深度逻辑推演 (LLM-B)...', '正在计算情感最优解 (LLM-B)...']), true);
                 return res;
             });
 
             const [mainResult, concurrentResult] = await Promise.allSettled([promise1, promise2]);
+            assertTableFillRequestLease(requestLease, getContext());
 
             const mainResponse = mainResult.status === 'fulfilled' ? (mainResult.value || '').trim() : '';
             const concurrentResponse = concurrentResult.status === 'fulfilled' ? (concurrentResult.value || '').trim() : '';
@@ -544,7 +582,9 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
                 attempt++;
                 console.log(`[${extensionName}] 剧情优化第 ${attempt} 次尝试...`);
                 
+                assertTableFillRequestLease(requestLease, getContext());
                 const rawResponse = await callAI(mainMessages, { slot: 'plotOpt' });
+                assertTableFillRequestLease(requestLease, getContext());
 
                 if (cancellationState.isCancelled) {
                     console.log(`[${extensionName}] 优化任务在API调用后被中止。`);
@@ -616,6 +656,11 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
         }
 
     } catch (error) {
+        if (isTableFillRequestLeaseError(error)) {
+            console.warn(`[${extensionName}] 剧情优化期间聊天或表格状态发生变化，已丢弃过期结果。`, error);
+            toastr.warning('聊天或表格已变化，本次剧情优化结果已安全丢弃。', '优化已停止');
+            return null;
+        }
         console.error(`[${extensionName}] 剧情优化任务发生严重错误:`, error);
         toastr.error(`剧情优化任务失败: ${error.message}`, '严重错误');
         return null;

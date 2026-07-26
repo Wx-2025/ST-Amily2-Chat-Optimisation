@@ -1,6 +1,6 @@
 import { extension_settings } from "/scripts/extensions.js";
 import { saveSettingsDebounced } from "/script.js";
-import { pluginAuthStatus } from "./auth.js";
+import { pluginAuthStatus } from "./auth-state.js";
 
 export const pluginVersion = "2.3.1";
 

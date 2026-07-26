@@ -2,7 +2,7 @@ import { extension_settings, getContext } from "/scripts/extensions.js";
 import { characters, this_chid, getRequestHeaders, saveSettingsDebounced, eventSource, event_types } from "/script.js";
 import { extensionName } from "../../utils/settings.js";
 import { amilyHelper } from '../../core/tavern-helper/main.js';
-import { getSlotProfile, providerToApiMode } from './api-resolver.js';
+import { acquireProfileRequestPermit, bindSlotProfileRateLimit, getSlotProfile, providerToApiMode } from './api-resolver.js';
 import { configManager } from '../../utils/config/ConfigManager.js';
 import { detectVendor } from '../../utils/api-vendor.js';
 import { mergeSafeModelCallOptions } from './safe-call-options.js';
@@ -52,7 +52,7 @@ async function getSybdApiSettings() {
     // 优先读取 'sybd' 槽位分配的 Profile（profile 一旦分配即权威，slider 残值不再覆盖）
     const profile = await getSlotProfile('sybd');
     if (profile) {
-        return {
+        return bindSlotProfileRateLimit({
             apiMode:      providerToApiMode(profile.provider),
             apiUrl:       profile.apiUrl,
             apiKey:       profile.apiKey ?? '',
@@ -61,7 +61,7 @@ async function getSybdApiSettings() {
             temperature:  profile.temperature ?? 0.7,
             customParams: profile.customParams ?? {},
             tavernProfile: '',
-        };
+        }, profile);
     }
 
     // 降级：读旧 extension_settings 字段
@@ -124,6 +124,8 @@ export async function callSybdAI(messages, options = {}) {
 
     try {
         let responseContent;
+
+        await acquireProfileRequestPermit(apiSettings, finalOptions.signal);
 
         switch (finalOptions.apiMode) {
             case 'openai_test':
@@ -201,7 +203,8 @@ async function callSybdOpenAITest(messages, options) {
     const response = await fetch('/api/backends/chat-completions/generate', {
         method: 'POST',
         headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        signal: options.signal,
     });
 
     if (!response.ok) {

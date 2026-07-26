@@ -3,15 +3,10 @@ import { loadWorldInfo } from "/scripts/world-info.js";
 import { renderTables } from '../../ui/table-bindings.js';
 import { updateOrInsertTableInChat } from '../../ui/message-table-renderer.js';
 import { extensionName } from "../../utils/settings.js";
-import { updateTableFromText, updateTableFromOps, getBatchFillerRuleTemplate, getBatchFillerFlowTemplate, convertTablesToCsvString, getMemoryState, clearHighlights } from './manager.js';
+import { updateTableFromText, updateTableFromOps, getBatchFillerRuleTemplate, getBatchFillerFlowTemplate, convertAiFillableTablesToCsvString, getMemoryState, clearHighlights } from './manager.js';
 import { commitToMessageAsync } from './infra/persistence.js';
 import { getPresetPrompts, getMixedOrder } from '../../PresetSettings/index.js';
-import { callAI, callAIForTools, generateRandomSeed } from '../api.js';
-import {
-    TABLE_FILL_TOOL,
-    TABLE_FILL_TOOL_PROTOCOL_PROMPT,
-    parseToolCallArgs,
-} from './formatters/tool-call.js';
+import { callAI, generateRandomSeed } from '../api.js';
 import { callNccsAI } from '../api/NccsApi.js';
 import { extractBlocksByTags, applyExclusionRules } from '../utils/rag-tag-extractor.js';
 import { resolveTableRuleConfig } from '../../utils/config/RuleProfileManager.js';
@@ -24,6 +19,25 @@ import {
     completeFillerPromptOrder,
 } from './filler-prompt-order.js';
 import { captureChatScope, chatScopesMatch } from './infra/chat-scope.js';
+import { TABLE_FILL_SAFETY_POLICY } from './settings.js';
+import {
+    requestTableFillOperationsV2,
+    TABLE_FILL_TOOL_RESULT,
+} from './tool-call-filler.js';
+import {
+    assertTableFillRequestEvidence,
+    assertTableFillRequestLease,
+    captureTableFillRequestLease,
+    isTableFillRequestLeaseError,
+} from './infra/persistence-scope.js';
+import {
+    canAutomaticallyRetryTableFill,
+    createDeterministicTableFillError,
+    createTableFillRunControl,
+    normalizeTableFillInferenceError,
+    resolveTableFillRunControl,
+    runTableFillPostCommitEffects,
+} from './fill-run-control.js';
 
 const CONTINUE_PROMPT_SECONDARY = '上一条回复不完整或缺少 <Amily2Edit> 指令块。请直接从中断处继续生成剩余内容，不要重复已输出的文本，也不要添加任何解释或寒暄，确保最终输出中包含完整的 <Amily2Edit>...</Amily2Edit> 指令块。';
 
@@ -134,6 +148,15 @@ function createSecondaryFillerError(code, message) {
     return error;
 }
 
+function createRetryableResponseError(code, message) {
+    const error = new Error(message);
+    error.code = code;
+    error.category = 'response';
+    error.retryable = true;
+    error.deterministic = false;
+    return error;
+}
+
 function cancelScheduledRetry() {
     if (secondaryFillerRetryTimer) {
         clearTimeout(secondaryFillerRetryTimer);
@@ -185,49 +208,37 @@ function refreshSecondaryUiAfterCommit() {
     }
 }
 
-function notifySecondarySuccess(message) {
-    try {
-        toastr.success(message, 'Amily2-分步填表');
-    } catch (error) {
-        console.error('[Amily2-副API] 表格已经保存，但成功通知显示失败:', error);
-    }
-}
-
-function withFunctionCallProtocol(messages) {
-    return [
-        ...messages,
-        { role: 'system', content: TABLE_FILL_TOOL_PROTOCOL_PROMPT },
-    ];
-}
-
-function parseFunctionCallOperations(argsString, rangeLabel) {
-    try {
-        return parseToolCallArgs(argsString);
-    } catch (error) {
-        log(
-            `分步填表（楼层 ${rangeLabel}）FC 响应格式无效，已整批拒绝且不会标记楼层为已处理：`
-            + `${error.message}\n原始响应：\n${argsString || '[空响应]'}`,
-            'error',
-        );
-        throw error;
-    }
-}
-
-async function callSecondaryModel(messages, signal) {
+async function callSecondaryModel(messages, signal, requestBudget) {
     const settings = extension_settings[extensionName] || {};
     if (settings.nccsEnabled) {
+        requestBudget?.assertAvailable();
+        requestBudget?.consume('text-fallback');
         return await callNccsAI(messages, { signal });
     }
-    return await callAI(messages, { slot: 'tableFilling', signal });
+    return await callAI(messages, {
+        slot: 'tableFilling',
+        signal,
+        requestBudget,
+        requestKind: 'text-fallback',
+        throwOnError: true,
+    });
 }
 
-async function requestSecondaryContinuation(baseMessages, partialResponse) {
+async function requestSecondaryContinuation(
+    baseMessages,
+    partialResponse,
+    requestLease,
+    signal,
+    requestBudget,
+) {
+    assertTableFillRequestLease(requestLease, getContext());
     const continueMessages = [
         ...baseMessages,
         { role: 'assistant', content: partialResponse || '' },
         { role: 'user', content: CONTINUE_PROMPT_SECONDARY },
     ];
-    const continued = await callSecondaryModel(continueMessages);
+    const continued = await callSecondaryModel(continueMessages, signal, requestBudget);
+    assertTableFillRequestLease(requestLease, getContext());
     if (typeof continued !== 'string' || !continued.trim()) return null;
     return `${partialResponse || ''}${continued}`;
 }
@@ -238,9 +249,19 @@ async function markTargetsProcessed(
         state = getMemoryState(),
         expectedScope = null,
         retryMessage = null,
+        requestLease = null,
     } = {},
 ) {
+    if (requestLease) {
+        assertTableFillRequestEvidence(
+            requestLease,
+            getContext(),
+            undefined,
+            targetMessages,
+        );
+    }
     if (!targetMessages || targetMessages.length === 0) return false;
+    const persistedState = state ?? getMemoryState();
 
     const lastProcessedMsg = targetMessages[targetMessages.length - 1].msg;
     const hashBackups = targetMessages.map(target => ({
@@ -290,7 +311,12 @@ async function markTargetsProcessed(
         transaction.expectedChatScope = expectedScope;
     }
 
-    const committed = await commitToMessageAsync(state, lastProcessedMsg, undefined, transaction);
+    const committed = await commitToMessageAsync(
+        persistedState,
+        lastProcessedMsg,
+        undefined,
+        transaction,
+    );
     if (!committed) {
         throw new Error('无法原子保存分步填表状态与目标楼层标记。');
     }
@@ -360,6 +386,9 @@ async function markTargetsFailed(
 async function commitSecondaryFillResult(
     rawContent,
     targetMessages,
+    sourceMessages,
+    requestLease,
+    runControl,
     { expectedScope = null, retryMessage = null } = {},
 ) {
     // 候选状态与处理 hash 在同一补偿事务里存到 lastProcessedMsg(E)，成功后才发布 store。
@@ -368,10 +397,24 @@ async function commitSecondaryFillResult(
             state,
             expectedScope,
             retryMessage,
+            requestLease,
         }),
+        sourceMessages,
+        targetMessages,
+        requestLease,
+        onCommitted: () => runControl.markCommitted(),
     });
-    if (!applied) throw new Error('分步填表结果未通过校验，未标记目标楼层为已处理。');
-    return true;
+    if (!applied) {
+        throw createDeterministicTableFillError(
+            'TABLE_FILL_WRITE_REJECTED',
+            '分步填表结果未通过校验，未标记目标楼层为已处理。',
+        );
+    }
+    runControl.markCommitted();
+    runTableFillPostCommitEffects('secondary-filler', [
+        { label: 'render-tables', run: () => renderTables() },
+        { label: 'update-chat-table-view', run: () => updateOrInsertTableInChat() },
+    ]);
 }
 
 
@@ -465,6 +508,10 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
         return;
     }
     const settings = extension_settings[extensionName] || {};
+    const runControl = resolveTableFillRunControl(opts.runControl, {
+        scope: 'secondary-filler-target',
+    });
+    opts = { ...opts, runControl };
 
     // 【V2.1.1】分步填表触发延迟 / 防抖：自动触发时若配置了延迟，则延后执行，
     // 延迟期内再次到来的事件会重置计时器，避免消息连续到达时重复拉起填表。
@@ -529,6 +576,9 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
     let targetMessages = [];
     try {
         assertSecondaryFillerScope(requestScope);
+        // Bind the entire prompt (target message objects + table snapshot) to
+        // one chat/store lease before any asynchronous prompt preparation.
+        const fillLease = captureTableFillRequestLease(context);
         const bufferSize = parseInt(settings.secondary_filler_buffer || 0, 10);
         const batchSize = parseInt(settings.secondary_filler_batch || 0, 10);
         const contextLimit = parseInt(settings.secondary_filler_context || 2, 10);
@@ -726,7 +776,7 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
                 '分步填表的规则提示词或流程提示词为空，请先恢复/配置填表模板。',
             );
         }
-        const currentTableDataString = convertTablesToCsvString();
+        const currentTableDataString = convertAiFillableTablesToCsvString();
         const finalFlowPrompt = buildFillerFlowPrompt(flowTemplate, currentTableDataString);
 
         let promptCounter = 0; 
@@ -761,58 +811,106 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
             }
         }
 
+        // 代码级安全边界必须独立于用户可编辑预设存在，并放在混合预设之后，
+        // 防止旧预设中的“每轮必填/未知必补全”覆盖当前数据库事实边界。
+        messages.push({ role: 'system', content: TABLE_FILL_SAFETY_POLICY });
+
         console.groupCollapsed(`[Amily2 分步填表] 即将发送至 API 的内容`);
         console.log("发送给AI的提示词: ", JSON.stringify(messages, null, 2));
         console.dir(messages);
         console.groupEnd();
 
         assertSecondaryFillerScope(requestScope, targetMessages);
-        if (settings.tableFillFunctionCall) {
-            // Function Call 路径
-            const rangeLabel = `${targetMessages[0].index + 1}-${targetMessages[targetMessages.length - 1].index + 1}`;
-            const argsString = await callAIForTools(
-                withFunctionCallProtocol(messages),
-                TABLE_FILL_TOOL,
-                { slot: 'tableFilling', signal },
-            );
-            assertSecondaryFillerScope(requestScope, targetMessages);
-            const ops = parseFunctionCallOperations(argsString, rangeLabel);
+        assertTableFillRequestLease(fillLease, getContext());
+        const toolLease = settings.tableFillFunctionCall ? fillLease : null;
+        const toolResult = settings.tableFillFunctionCall
+            ? await requestTableFillOperationsV2(messages, {
+                tableState: toolLease.state,
+                settings,
+                slot: 'tableFilling',
+                signal,
+                requestBudget: runControl.requestBudget,
+                assertLease: () => assertTableFillRequestLease(toolLease, getContext()),
+            })
+            : null;
+
+        if (toolResult?.mode === TABLE_FILL_TOOL_RESULT.TOOL) {
+            const ops = toolResult.operations;
             if (ops.length === 0) {
-                console.log('[Amily2-副API] Function Call 返回合法空操作列表。');
+                assertSecondaryFillerScope(requestScope, targetMessages);
+                assertTableFillRequestLease(toolLease, getContext());
+                console.info('[Amily2-副API] Tool Call V2 判断本范围没有可靠的新事实。');
                 await markTargetsProcessed(targetMessages, {
                     expectedScope: requestScope,
                     retryMessage: latestMessage,
+                    requestLease: toolLease,
                 });
                 fillResolved = true;
-                try {
-                    toastr.info('AI 判断此范围无需修改。', 'Amily2-分步填表');
-                } catch {}
+                runControl.markCommitted();
+                runTableFillPostCommitEffects('secondary-filler-noop', [
+                    {
+                        label: 'notify-noop',
+                        run: () => toastr.info('AI 判断此范围无需修改。', 'Amily2-分步填表'),
+                    },
+                ]);
             } else {
                 const applied = await updateTableFromOps(ops, {
                     persistCandidate: state => markTargetsProcessed(targetMessages, {
                         state,
                         expectedScope: requestScope,
                         retryMessage: latestMessage,
+                        requestLease: toolLease,
                     }),
+                    sourceMessages: context.chat,
+                    targetMessages,
+                    requestLease: toolLease,
+                    onCommitted: () => runControl.markCommitted(),
                 });
-                if (!applied) throw new Error('Function Call 填表结果未通过校验，未标记目标楼层为已处理。');
+                if (!applied) {
+                    throw createDeterministicTableFillError(
+                        'TABLE_FILL_WRITE_REJECTED',
+                        'Tool Call V2 填表结果未通过校验，未标记目标楼层为已处理。',
+                    );
+                }
+                runControl.markCommitted();
+                runTableFillPostCommitEffects('secondary-filler-tool', [
+                    { label: 'render-tables', run: () => renderTables() },
+                    { label: 'update-chat-table-view', run: () => updateOrInsertTableInChat() },
+                    {
+                        label: 'notify-success',
+                        run: () => toastr.success(
+                            '分步填表（Tool Call V2）执行完毕。',
+                            'Amily2-分步填表',
+                        ),
+                    },
+                ]);
                 fillResolved = true;
-                refreshSecondaryUiAfterCommit();
             }
         } else {
-            // Legacy 文本路径
-            let rawContent;
-            if (settings.nccsEnabled) {
-                console.log('[Amily2-副API] 使用独立API填表进行分步填表...');
-                rawContent = await callNccsAI(messages, { signal });
-            } else {
-                console.log('[Amily2-副API] 使用 tableFilling slot 进行分步填表...');
-                rawContent = await callAI(messages, { slot: 'tableFilling', signal });
+            // Tool 不可用时只在用户允许的情况下进入严格文本回退；
+            // Tool 返回了畸形/歧义批次则会在上方直接抛错，不会二次猜测。
+            if (toolResult?.reason && toolResult.reason !== 'tool-disabled') {
+                log(`Tool Call V2 不可用（${toolResult.reason}），改用严格文本指令。`, 'warn');
+                toastr.warning('Tool Call V2 当前不可用，已改用严格文本填表。', 'Amily2-分步填表');
             }
+            const textLease = fillLease;
+            assertTableFillRequestLease(textLease, getContext());
+            console.log(settings.nccsEnabled
+                ? '[Amily2-副API] 使用 Nccs API 进行分步填表...'
+                : '[Amily2-副API] 使用 tableFilling slot 进行分步填表...');
+            const rawContent = await callSecondaryModel(
+                messages,
+                signal,
+                runControl.requestBudget,
+            );
+            assertTableFillRequestLease(textLease, getContext());
 
             assertSecondaryFillerScope(requestScope, targetMessages);
             if (typeof rawContent !== 'string' || !rawContent.trim()) {
-                throw new Error('自动分步填表 API 返回内容为空。');
+                throw createRetryableResponseError(
+                    'TABLE_FILL_EMPTY_RESPONSE',
+                    '自动分步填表 API 返回内容为空。',
+                );
             }
 
             console.log('[Amily2号-副API-原始回复]:', rawContent);
@@ -832,7 +930,13 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
                             toastr.warning('聊天已经切换，旧响应不能继续补全。', '已取消操作');
                             return null;
                         }
-                        const merged = await requestSecondaryContinuation(messages, currentText);
+                        const merged = await requestSecondaryContinuation(
+                            messages,
+                            currentText,
+                            textLease,
+                            signal,
+                            runControl.requestBudget,
+                        );
                         if (!merged) { toastr.error('补全请求失败或返回为空。', '继续补全'); return null; }
                         try {
                             assertSecondaryFillerScope(requestScope, targetMessages);
@@ -853,12 +957,24 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
                         }
                         try {
                             assertSecondaryFillerScope(requestScope, targetMessages);
-                            await commitSecondaryFillResult(editedText, targetMessages, {
-                                expectedScope: requestScope,
-                                retryMessage: latestMessage,
-                            });
-                            refreshSecondaryUiAfterCommit();
-                            notifySecondarySuccess('分步填表已由用户手动处理完成。');
+                            await commitSecondaryFillResult(
+                                editedText,
+                                targetMessages,
+                                context.chat,
+                                textLease,
+                                runControl,
+                                {
+                                    expectedScope: requestScope,
+                                    retryMessage: latestMessage,
+                                },
+                            );
+                            runTableFillPostCommitEffects('secondary-filler-manual', [{
+                                label: 'notify-success',
+                                run: () => toastr.success(
+                                    '分步填表已由用户手动处理完成。',
+                                    'Amily2-分步填表',
+                                ),
+                            }]);
                         } catch (err) {
                             console.error('[Amily2-副API] 手动应用失败:', err);
                             toastr.error(`手动应用失败: ${err.message}`, '写入异常');
@@ -882,6 +998,9 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
                                 true,
                                 nextSecondaryInvocationOptions(opts, {
                                     __secondaryExpectedScope: requestScope,
+                                    runControl: createTableFillRunControl({
+                                        scope: 'secondary-filler-manual-retry',
+                                    }),
                                 }),
                             );
                         }, 300);
@@ -893,23 +1012,40 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
                 return;
             }
 
-            await commitSecondaryFillResult(rawContent, targetMessages, {
-                expectedScope: requestScope,
-                retryMessage: latestMessage,
-            });
+            await commitSecondaryFillResult(
+                rawContent,
+                targetMessages,
+                context.chat,
+                textLease,
+                runControl,
+                {
+                    expectedScope: requestScope,
+                    retryMessage: latestMessage,
+                },
+            );
             fillResolved = true;
-            refreshSecondaryUiAfterCommit();
         }
         cancelScheduledRetry();
-        notifySecondarySuccess("分步填表执行完毕。");
+        runTableFillPostCommitEffects('secondary-filler-complete', [{
+            label: 'notify-complete',
+            run: () => toastr.success("分步填表执行完毕。", "Amily2-分步填表"),
+        }]);
 
     } catch (error) {
-        if (fillResolved) {
+        if (fillResolved || runControl.committed) {
             cancelScheduledRetry();
             console.error(
-                '[Amily2-副API] 表格已经提交，仅后置界面处理失败；为避免重复写入，不再重试。',
+                '[Amily2-副API] 表格已提交，但后置处理失败；已阻止模型重跑。',
                 error,
             );
+            clearSecondaryRetryState(latestMessage);
+            runTableFillPostCommitEffects('secondary-filler-committed-error', [{
+                label: 'notify-post-commit-error',
+                run: () => toastr.warning(
+                    '表格已经保存，但界面刷新失败；请重新打开表格面板查看。',
+                    '填表已保存',
+                ),
+            }]);
             return;
         }
         if (error?.name === 'AbortError' || signal.aborted) {
@@ -950,7 +1086,14 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
             } catch {}
             return;
         }
-        console.error(`[Amily2-副API] 发生严重错误:`, error);
+        if (isTableFillRequestLeaseError(error)) {
+            console.warn('[Amily2-副API] 聊天或表格状态在模型请求期间发生变化，已丢弃过期结果。', error);
+            toastr.warning('聊天或表格已变化，本次填表结果已安全丢弃。', 'Amily2-分步填表');
+            clearSecondaryRetryState(latestMessage);
+            return;
+        }
+        const normalizedError = normalizeTableFillInferenceError(error);
+        console.error(`[Amily2-副API] 发生严重错误:`, normalizedError);
 
         // 【新增】自定义重试逻辑
         const maxRetries = Math.max(0, parseInt(settings.secondary_filler_max_retries ?? 2, 10) || 0);
@@ -960,12 +1103,16 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
             ? Math.max(0, parseInt(latestMessage?.extra?.amily2_retry_count || 0, 10) || 0)
             : 0;
 
-        if (currentRetryCount < maxRetries) {
+        if (currentRetryCount < maxRetries
+            && canAutomaticallyRetryTableFill(normalizedError, runControl)) {
             const nextRetryCount = currentRetryCount + 1;
             console.log(`[Amily2-副API] 准备进行第 ${nextRetryCount}/${maxRetries} 次重试...`);
             try {
                 toastr.warning(
-                    `分步填表失败：${error.message}。3 秒后进行自动重试 ${nextRetryCount}/${maxRetries}；达到上限后将暂停对应楼层，避免循环请求。`,
+                    `分步填表失败：${normalizedError.message}。`
+                    + `3 秒后进行自动重试 ${nextRetryCount}/${maxRetries}；`
+                    + `本轮请求预算剩余 ${runControl.requestBudget.remaining} 次，`
+                    + '达到上限后将暂停对应楼层，避免循环请求。',
                     `分步填表自动重试 ${nextRetryCount}/${maxRetries}`,
                 );
             } catch (notificationError) {
@@ -1000,6 +1147,10 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
                 : '';
             let failureLocked = false;
             let failureLatchPersisted = false;
+            const stopReason = normalizedError.retryable === true
+                ? `已达到重试/请求预算上限（剩余 ${runControl.requestBudget.remaining}）`
+                : '该错误不可通过重复请求修复';
+            console.log(`[Amily2-副API] ${stopReason}，放弃本次填表。`);
 
             if (targetMessages.length > 0) {
                 try {
@@ -1032,7 +1183,7 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
                     : '本次任务已终止；未能定位目标楼层，未写入失败锁。';
             try {
                 toastr.error(
-                    `分步填表失败：${error.message}。已达到最大重试次数。${pauseMessage}`,
+                    `分步填表失败：${normalizedError.message}。${stopReason}。${pauseMessage}`,
                     '分步填表已暂停',
                 );
             } catch (notificationError) {

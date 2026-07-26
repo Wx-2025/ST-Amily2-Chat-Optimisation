@@ -26,7 +26,10 @@
 
 import { log } from '../logger.js';
 import { createRecordMetadata, normalizeTableDatabaseState, normalizeTableIdentity } from '../infra/database-state.js';
-import { validateTableState } from '../module-tables.js';
+import {
+    assertAiFillOperationTargets,
+    validateTableState,
+} from '../module-tables.js';
 
 /**
  * 在表格末尾插入一行。in-place mutation（调用方已 clone）。
@@ -162,6 +165,15 @@ export function applyOperations(initialState, operations, options = {}) {
     }
 
     const originalState = normalizeTableDatabaseState(JSON.parse(JSON.stringify(initialState)));
+    try {
+        assertAiFillOperationTargets(originalState, operations);
+    } catch (error) {
+        log(
+            `整批填表操作目标未通过 AI owner 边界，已原子回退: ${error.code || 'TABLE_ACCESS_DENIED'} ${error.message}`,
+            'error',
+        );
+        return { state: originalState, changes: [] };
+    }
     let state = JSON.parse(JSON.stringify(originalState));
     /** @type {Change[]} */
     let allChanges = [];

@@ -1,7 +1,7 @@
 import { extension_settings, getContext } from "/scripts/extensions.js";
 import { getRequestHeaders } from "/script.js";
 import { extensionName } from "../../utils/settings.js";
-import { getSlotProfile, providerToApiMode } from './api-resolver.js';
+import { acquireProfileRequestPermit, bindSlotProfileRateLimit, getSlotProfile, providerToApiMode } from './api-resolver.js';
 import { configManager } from '../../utils/config/ConfigManager.js';
 import { detectVendor } from '../../utils/api-vendor.js';
 import { mergeSafeModelCallOptions } from './safe-call-options.js';
@@ -12,14 +12,14 @@ async function getConcurrentApiSettings() {
     // 优先读取槽位分配的 Profile（profile 一旦分配即权威，slider 残值不再覆盖）
     const profile = await getSlotProfile('plotOptConc');
     if (profile) {
-        return {
+        return bindSlotProfileRateLimit({
             apiProvider: providerToApiMode(profile.provider),
             apiUrl:      profile.apiUrl,
             apiKey:      profile.apiKey ?? '',
             model:       profile.model,
             maxTokens:   profile.maxTokens   ?? 8100,
             temperature: profile.temperature ?? 1,
-        };
+        }, profile);
     }
 
     // 降级：读旧 extension_settings
@@ -62,6 +62,8 @@ export async function callConcurrentAI(messages, options = {}) {
 
     try {
         let responseContent;
+
+        await acquireProfileRequestPermit(apiSettings, finalOptions.signal);
 
         // For now, we only support openai_test like provider.
         // More can be added here following the structure of JqyhApi.js
@@ -125,7 +127,8 @@ async function callConcurrentOpenAITest(messages, options) {
     const response = await fetch('/api/backends/chat-completions/generate', {
         method: 'POST',
         headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        signal: options.signal,
     });
 
     if (!response.ok) {
