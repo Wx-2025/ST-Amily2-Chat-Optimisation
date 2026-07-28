@@ -36,6 +36,7 @@ import {
     normalizeTableIdentity,
 } from '../infra/database-state.js';
 import { applyPendingRecordDeletions, validateTableState } from '../module-tables.js';
+import { CURRENT_TABLE_FILL_PROTOCOL_VERSION } from '../table-fill-protocol.js';
 
 function createMutationDraft() {
     const current = getState();
@@ -397,6 +398,7 @@ export function addTable(tableName) {
     }
 
     const newTable = {
+        fillProtocolVersion: CURRENT_TABLE_FILL_PROTOCOL_VERSION,
         name: tableName.trim(),
         headers: ['新列 1'],
         rows: [],

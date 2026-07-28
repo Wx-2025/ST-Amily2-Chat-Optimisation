@@ -20,6 +20,7 @@
  * @property {string} [id]                       稳定表 ID，模块/API 引用使用它而非 name
  * @property {string} [owner]                    表拥有者；旧表默认 user
  * @property {number} [schemaVersion]            表结构版本
+ * @property {1|2} [fillProtocolVersion]          AI 填表协议世代；缺失视为旧索引 Tool
  * @property {string[]} headers                 列头数组，长度 = 列数
  * @property {{id:string,label:string,type:string}[]} [columns] 稳定列元数据
  * @property {Cell[][]} rows                    行数据，二维数组，rows[i].length = headers.length
