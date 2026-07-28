@@ -114,6 +114,23 @@
                         <label for="table-fill-tables-per-request" title="将同一段正文拆成多个仅表格子集不同的请求，并在全部成功后一次提交。">每批处理表数</label>
                         <input type="number" id="table-fill-tables-per-request" class="text_pole" min="0" max="128" step="1" value="0">
                         <small class="notes" style="grid-column: 1 / -1;">0 = 不按表拆批；大于 0 时每次只向模型公开指定数量的表，最多 16 个子批。已声明外键的用户表会自动放在同一批且不会拆开；未声明关系的跨组依赖请调大“每批处理表数”。同一轮正文保持不变，所有子批校验成功后才会一次写入。</small>
+                        <label for="table-fill-parallel-max-concurrency" title="第一批真实填表完成后，其余子批同时在途的最大数量。">并行请求上限</label>
+                        <input type="number" id="table-fill-parallel-max-concurrency" class="text_pole" min="1" max="16" step="1" value="4">
+                        <small class="notes" style="grid-column: 1 / -1;">并行模式先完成第 1 个真实子批作为缓存预热，再按此上限并行执行其余子批；不会额外发送空回请求。服务商是否命中缓存及如何计费仍以其规则为准。</small>
+                    </div>
+                    <div class="control-block-with-switch" style="margin-top: 10px;">
+                        <label for="table-fill-parallel-enabled" title="仅在实际拆出多个表格子批时生效。">缓存预热并行填表</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="table-fill-parallel-enabled">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="control-block-with-switch" style="margin-top: 10px;">
+                        <label for="table-fill-omit-random-seed" title="移除的是填表提示词首条随机 system 消息，不是 HTTP 请求头。">移除填表随机头</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="table-fill-omit-random-seed">
+                            <span class="slider"></span>
+                        </label>
                     </div>
                     <div class="control-block-with-switch" style="margin-top: 10px;">
                         <label for="show-table-in-chat-toggle">聊天内显示表格</label>
@@ -519,7 +536,7 @@
                             <span class="slider"></span>
                         </label>
                     </div>
-                    <p class="notes" style="margin-bottom: 6px;">支持 OpenAI、Custom OAI、OpenRouter、DeepSeek 与 xAI 兼容接口（tableFilling 槽位）。启用后优先使用表名/列名结构化操作，避免数字索引抄错和全角标点解析问题。</p>
+                    <p class="notes" style="margin-bottom: 6px;">支持 OpenAI、Custom OAI、OpenRouter、DeepSeek 与 xAI 兼容接口（固定使用 tableFilling 槽位）。启用后优先使用表名/列名结构化操作；“独立 API 填表”只影响严格文本路径及 Tool 不可用后的文本降级。</p>
                     <div class="control-block-with-switch" style="margin-bottom: 6px;">
                         <label for="table-fill-tool-fallback-enabled" title="当当前接口或模型不返回 tools 时，退回严格的 Amily2Edit 文本兼容路径。Tool 协议兼容重试、文本降级和任务自身重试都可能产生额外请求，并共同受连接 RPM 限制。">Tools 不可用时降级为文本填表</label>
                         <label class="toggle-switch">
