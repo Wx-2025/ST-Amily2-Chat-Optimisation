@@ -2,7 +2,14 @@ import { extension_settings, getContext } from "/scripts/extensions.js";
 import { characters, this_chid, getRequestHeaders, saveSettingsDebounced, eventSource, event_types } from "/script.js";
 import { extensionName } from "../../utils/settings.js";
 import { amilyHelper } from '../../core/tavern-helper/main.js';
-import { acquireProfileRequestPermit, bindSlotProfileRateLimit, getSlotProfile, providerToApiMode } from './api-resolver.js';
+import {
+    acquireProfileRequestPermit,
+    assertSillyTavernProfileRequestActive,
+    bindSlotProfileRateLimit,
+    getSlotProfile,
+    providerToApiMode,
+    runWithSillyTavernProfileLock,
+} from './api-resolver.js';
 import { configManager } from '../../utils/config/ConfigManager.js';
 import { detectVendor } from '../../utils/api-vendor.js';
 import { mergeSafeModelCallOptions } from './safe-call-options.js';
@@ -139,7 +146,10 @@ export async function callNgmsAI(messages, options = {}) {
                 responseContent = await callNgmsOpenAITest(messages, finalOptions);
                 break;
             case 'sillytavern_preset':
-                responseContent = await callNgmsSillyTavernPreset(messages, finalOptions);
+                responseContent = await runWithSillyTavernProfileLock(
+                    () => callNgmsSillyTavernPreset(messages, finalOptions),
+                    finalOptions.signal,
+                );
                 break;
             default:
                 console.error(`[Amily2-Ngms外交部] 未支持的API模式: ${finalOptions.apiMode}`);
@@ -158,6 +168,7 @@ export async function callNgmsAI(messages, options = {}) {
         return responseContent;
 
     } catch (error) {
+        if (error?.name === 'AbortError') throw error;
         console.error(`[Amily2-Ngms外交部] API调用发生错误:`, error);
 
         if (error.message.includes('400')) {
@@ -316,12 +327,13 @@ async function callNgmsSillyTavernPreset(messages, options) {
             throw new Error('ConnectionManagerRequestService不可用');
         }
 
+        assertSillyTavernProfileRequestActive(options.signal);
         console.log(`[Amily2号-NgmsST预设] 通过配置文件 ${targetProfileName} 发送请求`);
         responsePromise = context.ConnectionManagerRequestService.sendRequest(
             targetProfile.id,
             messages,
             options.maxTokens || 4000,
-            options.customParams || {}
+            { ...(options.customParams || {}), signal: options.signal },
         );
 
     } finally {

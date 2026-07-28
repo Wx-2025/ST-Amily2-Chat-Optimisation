@@ -47,6 +47,7 @@ import {
 } from './fill-run-control.js';
 import {
     buildCacheStableFlowPrompt,
+    createTableFillRandomSeedMessages,
     planTableFillBatches,
 } from './table-fill-batching.js';
 import { collectTableFillOperationBatches } from './table-fill-batch-runner.js';
@@ -271,7 +272,7 @@ function updateButtonState(state, batchNum = 0, attemptNum = 0) {
     }
 }
 
-async function callTableModel(messages, requestLease, requestBudget) {
+async function callTableModel(messages, requestLease, requestBudget, signal) {
     try {
         const settings = extension_settings[extensionName] || {};
 
@@ -279,15 +280,19 @@ async function callTableModel(messages, requestLease, requestBudget) {
             log('使用独立API填表进行表格填充...', 'info');
             requestBudget?.assertAvailable();
             requestBudget?.consume('text-fallback');
-            const result = await callNccsAI(messages);
+            const result = await callNccsAI(messages, {
+                ...(signal ? { signal } : {}),
+                throwOnError: true,
+            });
             if (requestLease) assertTableFillRequestLease(requestLease, getContext());
-            if (typeof result !== 'string' || !result.trim()) {
+            const normalizedResult = typeof result === 'string' ? result : '';
+            if (!normalizedResult.trim()) {
                 throw createRetryableResponseError(
                     'TABLE_FILL_EMPTY_RESPONSE',
                     '独立API填表返回内容为空。',
                 );
             }
-            return result;
+            return normalizedResult;
         } else {
             log('使用 tableFilling slot 进行表格填充...', 'info');
             const result = await callAI(messages, {
@@ -295,15 +300,17 @@ async function callTableModel(messages, requestLease, requestBudget) {
                 requestBudget,
                 requestKind: 'text-fallback',
                 throwOnError: true,
+                ...(signal ? { signal } : {}),
             });
             if (requestLease) assertTableFillRequestLease(requestLease, getContext());
-            if (typeof result !== 'string' || !result.trim()) {
+            const normalizedResult = typeof result === 'string' ? result : '';
+            if (!normalizedResult.trim()) {
                 throw createRetryableResponseError(
                     'TABLE_FILL_EMPTY_RESPONSE',
                     'API返回内容为空。',
                 );
             }
-            return result;
+            return normalizedResult;
         }
     } catch (error) {
         if (isTableFillRequestLeaseError(error)) throw error;
@@ -312,7 +319,6 @@ async function callTableModel(messages, requestLease, requestBudget) {
         throw normalizedError;
     }
 }
-
 function getRawMessagesForSummary(startFloor, endFloor, context = getContext()) {
     const chat = context.chat;
     const settings = extension_settings[extensionName] || {};
@@ -461,10 +467,11 @@ async function runBatchAttempt(batchNum, attemptNum, runControl) {
         
         const worldBookContext = await getWorldBookContext();
         
-        const stableRequestSeed = runControl.getOrCreateStableSeed(generateRandomSeed);
-        const messages = [
-            { role: 'system', content: stableRequestSeed }
-        ];
+        const seedMessages = createTableFillRandomSeedMessages(
+            batchSettings,
+            () => runControl.getOrCreateStableSeed(generateRandomSeed),
+        );
+        const messages = [...seedMessages];
 
         let promptCounter = 0; 
         for (const item of order) {
@@ -493,12 +500,6 @@ async function runBatchAttempt(batchNum, attemptNum, runControl) {
             }
         }
 
-        if (!presetPrompts || presetPrompts.length === 0) {
-            const defaultPrompts = [
-                { role: 'system', content: stableRequestSeed }
-            ];
-            messages.splice(1, 0, ...defaultPrompts);
-        }
         messages.push({ role: 'system', content: TABLE_FILL_SAFETY_POLICY });
 
         const tableBatchResult = splitTablesAcrossRequests
@@ -524,7 +525,12 @@ async function runBatchAttempt(batchNum, attemptNum, runControl) {
                             'warn',
                         );
                     }
-                    return await callTableModel(batchMessages, fillLease, requestBudget);
+                    return await callTableModel(
+                        batchMessages,
+                        fillLease,
+                        requestBudget,
+                        batchMeta.signal,
+                    );
                 },
             })
             : null;
@@ -1099,10 +1105,11 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
         
         const worldBookContext = await getWorldBookContext();
 
-        const stableRequestSeed = runControl.getOrCreateStableSeed(generateRandomSeed);
-        const messages = [
-            { role: 'system', content: stableRequestSeed }
-        ];
+        const seedMessages = createTableFillRandomSeedMessages(
+            floorSettings,
+            () => runControl.getOrCreateStableSeed(generateRandomSeed),
+        );
+        const messages = [...seedMessages];
 
         let promptCounter = 0; 
         for (const item of order) {
@@ -1131,12 +1138,6 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
             }
         }
 
-        if (!presetPrompts || presetPrompts.length === 0) {
-            const defaultPrompts = [
-                { role: 'system', content: stableRequestSeed }
-            ];
-            messages.splice(1, 0, ...defaultPrompts);
-        }
         messages.push({ role: 'system', content: TABLE_FILL_SAFETY_POLICY });
 
         const tableBatchResult = splitTablesAcrossRequests
@@ -1163,7 +1164,12 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
                             'warn',
                         );
                     }
-                    return await callTableModel(batchMessages, fillLease, requestBudget);
+                    return await callTableModel(
+                        batchMessages,
+                        fillLease,
+                        requestBudget,
+                        batchMeta.signal,
+                    );
                 },
             })
             : null;

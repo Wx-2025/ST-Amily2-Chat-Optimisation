@@ -2,7 +2,14 @@ import { extension_settings, getContext } from "/scripts/extensions.js";
 import { characters, this_chid, getRequestHeaders, saveSettingsDebounced, eventSource, event_types } from "/script.js";
 import { extensionName } from "../../utils/settings.js";
 import { amilyHelper } from '../../core/tavern-helper/main.js';
-import { acquireProfileRequestPermit, bindSlotProfileRateLimit, getSlotProfile, providerToApiMode } from './api-resolver.js';
+import {
+    acquireProfileRequestPermit,
+    assertSillyTavernProfileRequestActive,
+    bindSlotProfileRateLimit,
+    getSlotProfile,
+    providerToApiMode,
+    runWithSillyTavernProfileLock,
+} from './api-resolver.js';
 import { configManager } from '../../utils/config/ConfigManager.js';
 import { detectVendor } from '../../utils/api-vendor.js';
 import { mergeSafeModelCallOptions } from './safe-call-options.js';
@@ -95,8 +102,11 @@ async function getPublicNccsStatus() {
 // =================================================================================================
 
 export async function callNccsAI(messages, options = {}) {
+    const throwOnError = options?.throwOnError === true;
     if (window.AMILY2_SYSTEM_PARALYZED === true) {
+        const error = new Error('Amily2 system integrity check failed.');
         console.error("[Amily2-Nccs制裁] 系统完整性已受损，所有外交活动被无限期中止。");
+        if (throwOnError) throw error;
         return null;
     }
 
@@ -108,8 +118,10 @@ export async function callNccsAI(messages, options = {}) {
 
     if (finalOptions.apiMode !== 'sillytavern_preset') {
         if (!finalOptions.apiUrl || !finalOptions.model || !finalOptions.apiKey) {
+            const error = new Error('独立API填表未配置完整连接。');
             console.warn("[Amily2-Nccs外交部] API配置不完整，无法调用AI");
             toastr.error("独立API填表未配置连接，请前往 API 连接 → 分配，给「独立API填表」挂上对话模型。", "独立API填表未配置");
+            if (throwOnError) throw error;
             return null;
         }
     } else {
@@ -129,11 +141,17 @@ export async function callNccsAI(messages, options = {}) {
                 responseContent = await callNccsOpenAITest(messages, finalOptions);
                 break;
             case 'sillytavern_preset':
-                responseContent = await callNccsSillyTavernPreset(messages, finalOptions);
+                responseContent = await runWithSillyTavernProfileLock(
+                    () => callNccsSillyTavernPreset(messages, finalOptions),
+                    finalOptions.signal,
+                );
                 break;
-            default:
-                console.error(`未支持的 API 模式: ${finalOptions.apiMode}`);
+            default: {
+                const error = new Error(`未支持的 API 模式: ${finalOptions.apiMode}`);
+                console.error(error.message);
+                if (throwOnError) throw error;
                 return null;
+            }
         }
         return responseContent;
     } catch (error) {
@@ -143,31 +161,11 @@ export async function callNccsAI(messages, options = {}) {
         }
         console.error(`[Amily2-Nccs] API 调用失败:`, error);
         toastr.error(`调用失败: ${error.message}`, "独立API填表");
+        if (throwOnError) throw error;
         return null;
     }
 }
 
-function raceAgainstSignal(promise, signal) {
-    if (!signal) return promise;
-    if (signal.aborted) {
-        const err = new Error('Aborted');
-        err.name = 'AbortError';
-        return Promise.reject(err);
-    }
-    return new Promise((resolve, reject) => {
-        const onAbort = () => {
-            signal.removeEventListener('abort', onAbort);
-            const err = new Error('Aborted');
-            err.name = 'AbortError';
-            reject(err);
-        };
-        signal.addEventListener('abort', onAbort, { once: true });
-        promise.then(
-            (v) => { signal.removeEventListener('abort', onAbort); resolve(v); },
-            (e) => { signal.removeEventListener('abort', onAbort); reject(e); },
-        );
-    });
-}
 
 async function fetchFakeStream(url, opts, signal) {
     const res = await fetchWithCapturedNccsTransport(url, { ...opts, signal });
@@ -287,14 +285,15 @@ async function callNccsSillyTavernPreset(messages, options) {
 
         if (!context.ConnectionManagerRequestService) throw new Error('ConnectionManagerRequestService unavailable');
 
+        assertSillyTavernProfileRequestActive(options.signal);
         const sendPromise = context.ConnectionManagerRequestService.sendRequest(
             targetProfile.id,
             messages,
             8192,
-            options.customParams || {}
+            { ...(options.customParams || {}), signal: options.signal },
         );
 
-        const result = await raceAgainstSignal(sendPromise, options.signal);
+        const result = await sendPromise;
         return normalizeApiResponse(result);
 
     } finally {

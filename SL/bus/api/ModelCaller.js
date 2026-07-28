@@ -1,6 +1,7 @@
 import { getRequestHeaders } from "/script.js";
 import { getContext, extension_settings } from "/scripts/extensions.js";
 import { amilyHelper } from '../../../core/tavern-helper/main.js';
+import { runWithSillyTavernProfileLock } from '../../../core/api/api-resolver.js';
 import Options from './Options.js';
 import RequestBody from './RequestBody.js';
 
@@ -50,7 +51,9 @@ export default class ModelCaller {
             let result;
 
             if (options.mode === 'preset') {
-                result = await this._callPreset(callerName, requestBody, options);
+                result = await runWithSillyTavernProfileLock(
+                    () => this._callPreset(callerName, requestBody, options),
+                );
             } else {
                 result = await this._callDirect(callerName, requestBody, options);
             }
@@ -394,7 +397,8 @@ export default class ModelCaller {
                 return await context.ConnectionManagerRequestService.sendRequest(
                     targetProfile.id,
                     requestBody.messages,
-                    options.maxTokens
+                    options.maxTokens,
+                    { signal: options.signal },
                 );
             }
 

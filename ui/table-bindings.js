@@ -43,7 +43,10 @@ import {
     getShujukuAccessDecision,
     subscribeShujukuAccess,
 } from '../core/table-system/compat/shujuku/access-policy.js';
-import { normalizeTablesPerFillRequest } from '../core/table-system/table-fill-batching.js';
+import {
+    normalizeTableFillParallelConcurrency,
+    normalizeTablesPerFillRequest,
+} from '../core/table-system/table-fill-batching.js';
 
 const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches;
 const getAllTablesContainer = () => document.getElementById('all-tables-container');
@@ -1321,6 +1324,68 @@ function bindTablesPerFillRequestSetting(panel) {
     input.dataset.amilyTablesPerRequestBound = 'true';
 }
 
+function bindTableFillBatchAccelerationSettings(panel) {
+    const parallelToggle = panel?.querySelector?.('#table-fill-parallel-enabled');
+    const concurrencyInput = panel?.querySelector?.('#table-fill-parallel-max-concurrency');
+    const omitSeedToggle = panel?.querySelector?.('#table-fill-omit-random-seed');
+    if (!parallelToggle && !concurrencyInput && !omitSeedToggle) return;
+
+    const settings = getLiveExtensionSettings();
+    const parallelEnabled = settings.table_fill_parallel_enabled === true;
+    if (parallelToggle) parallelToggle.checked = parallelEnabled;
+
+    if (concurrencyInput) {
+        const rawConcurrency = settings.table_fill_parallel_max_concurrency ?? 4;
+        const concurrency = normalizeTableFillParallelConcurrency(rawConcurrency);
+        concurrencyInput.value = concurrency;
+        concurrencyInput.disabled = !parallelEnabled;
+        if (rawConcurrency !== concurrency) {
+            updateAndSaveTableSetting('table_fill_parallel_max_concurrency', concurrency);
+        }
+    }
+
+    if (omitSeedToggle) {
+        omitSeedToggle.checked = settings.table_fill_omit_random_seed === true;
+    }
+
+    if (parallelToggle && parallelToggle.dataset.amilyTableFillParallelBound !== 'true') {
+        parallelToggle.addEventListener('change', function() {
+            updateAndSaveTableSetting('table_fill_parallel_enabled', this.checked);
+            if (concurrencyInput) concurrencyInput.disabled = !this.checked;
+            toastr.info(this.checked
+                ? '并行填表已启用：第 1 个真实子批完成后，其余子批按并发上限执行。'
+                : '并行填表已关闭：表格子批将继续串行执行。');
+        });
+        parallelToggle.dataset.amilyTableFillParallelBound = 'true';
+    }
+
+    if (concurrencyInput
+        && concurrencyInput.dataset.amilyTableFillParallelConcurrencyBound !== 'true') {
+        concurrencyInput.addEventListener('input', function() {
+            updateAndSaveTableSetting(
+                'table_fill_parallel_max_concurrency',
+                normalizeTableFillParallelConcurrency(this.value),
+            );
+        });
+        concurrencyInput.addEventListener('change', function() {
+            const concurrency = normalizeTableFillParallelConcurrency(this.value);
+            this.value = concurrency;
+            updateAndSaveTableSetting('table_fill_parallel_max_concurrency', concurrency);
+            toastr.info(`并行填表最多同时执行 ${concurrency} 个预热后的表格子批。`);
+        });
+        concurrencyInput.dataset.amilyTableFillParallelConcurrencyBound = 'true';
+    }
+
+    if (omitSeedToggle && omitSeedToggle.dataset.amilyTableFillOmitSeedBound !== 'true') {
+        omitSeedToggle.addEventListener('change', function() {
+            updateAndSaveTableSetting('table_fill_omit_random_seed', this.checked);
+            toastr.info(this.checked
+                ? '已移除填表提示词随机头；相同内容的跨轮缓存前缀将更稳定。'
+                : '已恢复每轮填表随机头。');
+        });
+        omitSeedToggle.dataset.amilyTableFillOmitSeedBound = 'true';
+    }
+}
 function bindWorldBookSettings() {
     const settings = getLiveExtensionSettings();
 
@@ -1552,6 +1617,7 @@ function bindWorldBookSettings() {
 export function bindTableEvents(panelElement = null) {
     const panel = panelElement || document.getElementById('amily2_memorisation_forms_panel');
     bindTablesPerFillRequestSetting(panel);
+    bindTableFillBatchAccelerationSettings(panel);
     if (!panel || panel.dataset.eventsBound) {
         return;
     }

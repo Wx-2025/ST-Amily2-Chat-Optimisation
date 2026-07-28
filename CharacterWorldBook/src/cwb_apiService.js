@@ -6,9 +6,11 @@ import { extension_settings, getContext } from "/scripts/extensions.js";
 import { compatibleTriggerSlash } from '../../core/tavernhelper-compatibility.js';
 import {
     acquireProfileRequestPermit,
+    assertSillyTavernProfileRequestActive,
     bindSlotProfileRateLimit,
     getSlotProfile,
     providerToApiMode,
+    runWithSillyTavernProfileLock,
 } from '../../core/api/api-resolver.js';
 import { apiProfileManager } from '../../utils/config/ApiProfileManager.js';
 import { configManager } from '../../utils/config/ConfigManager.js';
@@ -96,6 +98,13 @@ export function isCwbApiConfigured() {
 }
 
 async function callCwbSillyTavernPreset(messages, options) {
+    return runWithSillyTavernProfileLock(
+        () => callCwbSillyTavernPresetLocked(messages, options),
+        options.signal,
+    );
+}
+
+async function callCwbSillyTavernPresetLocked(messages, options) {
     console.log('[CWB-ST预设] 使用SillyTavern预设调用');
 
     const context = getContext();
@@ -134,11 +143,13 @@ async function callCwbSillyTavernPreset(messages, options) {
             throw new Error('ConnectionManagerRequestService不可用');
         }
 
+        assertSillyTavernProfileRequestActive(options.signal);
         console.log(`[CWB-ST预设] 通过配置文件 ${targetProfileName} 发送请求`);
         responsePromise = context.ConnectionManagerRequestService.sendRequest(
             targetProfile.id,
             messages,
-            options.maxTokens || 65000
+            options.maxTokens || 65000,
+            { signal: options.signal },
         );
 
     } finally {

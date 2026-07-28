@@ -200,4 +200,10 @@ export const tableSystemDefaultSettings = {
     batch_filling_threshold: 30,
     // 单次模型请求最多公开/处理的用户表数量（0 = 不按表拆批）
     table_fill_tables_per_request: 0,
+    // 先预热稳定提示前缀，再并行执行按表子批（默认关闭以保持兼容）
+    table_fill_parallel_enabled: false,
+    // 同时在途的表格子批请求上限（1-16）
+    table_fill_parallel_max_concurrency: 4,
+    // 省略每轮填表最前方的随机 system 消息，提高跨轮缓存复用机会
+    table_fill_omit_random_seed: false,
 };

@@ -42,6 +42,7 @@ import {
 } from './fill-run-control.js';
 import {
     buildCacheStableFlowPrompt,
+    createTableFillRandomSeedMessages,
     planTableFillBatches,
 } from './table-fill-batching.js';
 import { collectTableFillOperationBatches } from './table-fill-batch-runner.js';
@@ -520,7 +521,10 @@ async function callSecondaryModel(messages, signal, requestBudget) {
     if (settings.nccsEnabled) {
         requestBudget?.assertAvailable();
         requestBudget?.consume('text-fallback');
-        return await callNccsAI(messages, { signal });
+        return await callNccsAI(messages, {
+            signal,
+            throwOnError: true,
+        });
     }
     return await callAI(messages, {
         slot: 'tableFilling',
@@ -530,7 +534,6 @@ async function callSecondaryModel(messages, signal, requestBudget) {
         throwOnError: true,
     });
 }
-
 async function requestSecondaryContinuation(
     baseMessages,
     partialResponse,
@@ -1176,10 +1179,11 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
         }
         const presetPrompts = await getPresetPrompts('secondary_filler');
         
-        const stableRequestSeed = runControl.getOrCreateStableSeed(generateRandomSeed);
-        const messages = [
-            { role: 'system', content: stableRequestSeed }
-        ];
+        const seedMessages = createTableFillRandomSeedMessages(
+            settings,
+            () => runControl.getOrCreateStableSeed(generateRandomSeed),
+        );
+        const messages = [...seedMessages];
 
         const worldBookContext = await getWorldBookContext();
 
@@ -1255,7 +1259,11 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
                             'warn',
                         );
                     }
-                    return await callSecondaryModel(batchMessages, signal, requestBudget);
+                    return await callSecondaryModel(
+                        batchMessages,
+                        batchMeta.signal,
+                        requestBudget,
+                    );
                 },
             })
             : null;
