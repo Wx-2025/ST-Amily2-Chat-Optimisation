@@ -363,7 +363,17 @@
         line-height: 1.5;
     }
     #amily2_time_river_panel input[type="file"] {
-        display: none !important;
+        position: absolute !important;
+        width: 1px !important;
+        height: 1px !important;
+        padding: 0 !important;
+        margin: -1px !important;
+        overflow: hidden !important;
+        clip: rect(0, 0, 0, 0) !important;
+        clip-path: inset(50%) !important;
+        white-space: nowrap !important;
+        border: 0 !important;
+        opacity: 0 !important;
     }
     #amily2_time_river_panel .tr-file-picker {
         display: flex;
@@ -432,9 +442,9 @@
 <div class="tr-shell">
 <div class="amily2-header">
     <div class="am2-panel-title-row">
-        <div class="additional-features-title interactable" title="Amily2 时间河（Type2 内测）">
+        <div class="additional-features-title interactable" title="Amily2 时间河（Type2 重构内测）">
             <i class="fas fa-water"></i> 时间河
-            <span class="tr-beta">TYPE2 · 内测</span>
+            <span class="tr-beta">TYPE2 · 重构内测</span>
         </div>
         <button id="amily2_open_time_river_tutorial"
                 class="menu_button small_button secondary interactable am2-panel-tutorial-btn"
@@ -452,8 +462,8 @@
 <nav class="tr-stepper" aria-label="时间河工作流程">
     <div class="tr-step"><strong>1</strong><span>导入与预览</span></div>
     <div class="tr-step"><strong>2</strong><span>选择语料版本</span></div>
-    <div class="tr-step"><strong>3</strong><span>构建可靠索引</span></div>
-    <div class="tr-step"><strong>4</strong><span>绑定聊天游标</span></div>
+    <div class="tr-step"><strong>3</strong><span>绑定故事轨</span></div>
+    <div class="tr-step"><strong>4</strong><span>设置窗口并注入</span></div>
 </nav>
 
 <div id="tr-access-state" class="tr-status" role="status" aria-live="polite">
@@ -466,44 +476,42 @@
     </summary>
     <div class="tr-guide-body">
         <p class="tr-guide-lead">
-            先把小说建立成可检索语料，再让当前聊天沿着指定卷章使用它。页面标题旁的“教程”包含完整说明与排错方法。
+            先把小说在本地建立成连续故事轨，再让当前聊天沿着指定故事段使用它。页面标题旁的“教程”包含完整说明与排错方法。
         </p>
         <ol class="tr-guide-list">
             <li data-tr-guide-step="embedding">
-                <strong>配置 Embedding <span class="tr-guide-badge is-cost">必需 · 可能收费</span></strong>
-                在“API 连接”中为“智能检索 · 向量化”分配 Embedding 配置；普通对话模型不能替代。
+                <strong>Embedding <span class="tr-guide-badge">v1 本地轨不需要</span></strong>
+                当前连续故事轨不会调用 Embedding。仅旧版向量语料或以后主动开启的语义支流需要单独配置，普通对话模型不能替代 Embedding 模型。
             </li>
             <li data-tr-guide-step="preview">
                 <strong>导入并预览 <span class="tr-guide-badge">仅本地</span></strong>
                 选择 TXT / Markdown、确认编码并校对卷章目录。本地预览不会调用模型或产生向量费用。
             </li>
             <li data-tr-guide-step="persist">
-                <strong>确认持久化 <span class="tr-guide-badge">仅本地</span></strong>
-                确认来源可信后保存为 staging Revision；staging 版本还不能绑定聊天。
+                <strong>确认并发布 <span class="tr-guide-badge">仅本地</span></strong>
+                确认来源可信后，本地持久化、校验 Story Segment 并直接发布为 active Revision。
             </li>
             <li data-tr-guide-step="index">
-                <strong>构建索引 <span class="tr-guide-badge is-cost">可能收费</span></strong>
-                持久化后重新勾选费用确认，再“开始 / 继续”；失败块可重试，全部完成后状态变为 active。
+                <strong>旧版可靠索引 <span class="tr-guide-badge">仅兼容旧语料</span></strong>
+                v1 本地轨不执行向量摄取；旧版 legacy-vector 的 staging Revision 仍需完成索引，而且 staging 不能绑定聊天。
             </li>
             <li data-tr-guide-step="bind">
                 <strong>绑定当前聊天 <span class="tr-guide-badge">仅本地</span></strong>
-                选择 active Revision 并绑定。绑定只确定语料来源，不等于已经开启上下文注入。
+                选择可读的 active Revision、当前 Story Segment 与同章前导边界并绑定。绑定只确定语料来源，不等于已经开启上下文注入。
             </li>
             <li data-tr-guide-step="inject">
                 <strong>设置游标并开启注入</strong>
-                选择当前卷章与回看窗口，未来窗口固定为 0；开启注入并保存。本地预览不会调用 Embedding 或向量服务。
+                设置历史、当前、前导和总 Token 预算；前导内容只能到显式 horizon。开启注入并保存，本地预览不会调用 Embedding 或向量服务。
             </li>
         </ol>
         <div class="tr-guide-flow" aria-label="时间河状态流程">
             <span>本地导入</span><i class="fas fa-chevron-right"></i>
-            <span>staging</span><i class="fas fa-chevron-right"></i>
-            <span>构建索引</span><i class="fas fa-chevron-right"></i>
-            <span>active</span><i class="fas fa-chevron-right"></i>
+            <span>校验并发布 active</span><i class="fas fa-chevron-right"></i>
             <span>绑定聊天</span><i class="fas fa-chevron-right"></i>
             <span>开启并保存注入</span>
         </div>
         <p class="tr-guide-tip">
-            提示：剧情推进到下一章后，手动移动章节游标并保存；每个聊天的绑定与游标互相独立。
+            提示：剧情推进后，手动移动 Story Segment、核对 horizon 并保存；每个聊天的绑定与游标互相独立。旧版兼容模式的未来窗口固定为 0。
         </p>
     </div>
 </details>
@@ -511,7 +519,7 @@
 <fieldset class="settings-group tr-section">
     <legend><span class="tr-legend-index">01</span><i class="fas fa-file-import"></i> 导入与目录预览</legend>
     <p class="tr-note">
-        选择 TXT / Markdown 小说 → 导入并预览目录 → 确认持久化 → 构建索引。
+        选择 TXT / Markdown 小说 → 本地预览目录 → 确认持久化 → 校验并直接发布 active。
     </p>
     <div class="tr-grid">
         <div class="tr-stack">
@@ -547,15 +555,15 @@
         <div class="tr-metric">章：<strong id="tr-chapter-count">—</strong></div>
         <div class="tr-metric">一级块：<strong id="tr-primary-count">—</strong></div>
         <div class="tr-metric">二级块：<strong id="tr-retrieval-count">—</strong></div>
-        <div class="tr-metric">空间粗估：<strong id="tr-space-estimate">—</strong></div>
+        <div class="tr-metric">空间保守估算：<strong id="tr-space-estimate">—</strong></div>
     </div>
     <p class="tr-note">
-        解析阶段只生成本地预览。请检查识别出的卷章类型并编辑标题；Phase 1 不支持改变目录层级。只有明确确认后才会持久化语料，也只有再次确认后才允许启动可能产生模型费用的任务。
+        解析阶段只生成本地预览。请检查识别出的卷章与标题；标题可编辑，类型和目录层级在本版只读。空间数字为保守估算，不代表最终实际占用。确认提交后会在本地持久化、校验连续故事轨并直接发布，不会调用网络、Embedding 或向量服务。
     </p>
     <div class="tr-outline-wrap">
         <table class="tr-outline-table">
             <thead>
-                <tr><th scope="col" style="width: 58px;">序号</th><th scope="col" style="width: 130px;">类型</th><th scope="col">标题（可编辑）</th></tr>
+                <tr><th scope="col" style="width: 58px;">序号</th><th scope="col" style="width: 130px;">类型（只读）</th><th scope="col">标题（可编辑）</th></tr>
             </thead>
             <tbody id="tr-outline-body">
                 <tr><td colspan="3">解析后在此显示目录。</td></tr>
@@ -565,7 +573,7 @@
     <label class="tr-check-card">
         <input id="tr-paid-confirm" type="checkbox">
         <span>
-            我已核对目录与空间估算，并确认：提交后会把小说语料持久化到本地时间河存储；随后启动摄取任务可能调用当前配置的模型/向量服务并产生费用。
+            我已核对目录与空间保守估算，并确认把小说持久化到本地时间河存储、完成 Story Segment 完整性校验并发布为 active Revision。
         </span>
     </label>
     <div id="tr-paid-confirm-context" class="tr-status" role="status" aria-live="polite">
@@ -611,7 +619,7 @@
     <p class="tr-note">
         持久化或切换 Revision 后，需在上方重新核对并勾选费用确认，才可开始或重试。页面会在任务运行时自动刷新，最长约 10 分钟；暂停会取消当前浏览器请求，远端服务若已完成计费，本地只能安全停止后等待重试或人工核对。
     </p>
-    <div class="tr-actions">
+    <div id="tr-legacy-ingestion-actions" class="tr-actions">
         <button id="tr-run-ingestion" class="menu_button primary interactable" type="button" disabled>
             <i class="fas fa-play"></i> 开始 / 继续
         </button>
@@ -649,7 +657,20 @@
         <span>章节同步滑块：<strong id="tr-chapter-slider-label">—</strong></span>
         <input id="tr-chapter-slider" type="range" min="0" max="0" step="1" value="0" disabled>
     </label>
-    <div class="tr-grid tr-spaced">
+    <div id="tr-local-track-controls" class="tr-grid tr-spaced">
+        <label class="tr-stack">
+            <span>当前 Story Segment</span>
+            <select id="tr-segment-select" class="text_pole"></select>
+        </label>
+        <label class="tr-stack">
+            <span>允许前导至（同章连续段）</span>
+            <select id="tr-horizon-select" class="text_pole"></select>
+        </label>
+    </div>
+    <div id="tr-segment-status" class="tr-status" role="status" aria-live="polite">
+        选择可读的 v1 本地故事轨后显示精细游标。
+    </div>
+    <div id="tr-legacy-cursor-controls" class="tr-grid tr-spaced">
         <label class="tr-stack">
             <span>回看窗口（windowBack）</span>
             <input id="tr-window-back" class="text_pole" type="number" min="0" max="50" step="1" value="2">
@@ -660,20 +681,34 @@
         </label>
     </div>
     <div id="tr-future-warning" class="tr-warning is-safe" role="note">
-        未来泄漏硬保护：Phase 1 的 windowForward 固定为 0，不会检索当前章节之后的原文。
+        前导边界硬保护：v1 本地窗口只能读取到所选 horizon 的 sourceEnd，不能越过持久化边界。
+    </div>
+    <div id="tr-local-budget-controls" class="tr-grid tr-spaced">
+        <label class="tr-stack">
+            <span>历史 Token 预算</span>
+            <input id="tr-look-behind-tokens" class="text_pole" type="number" min="0" max="12000" step="128" value="1200">
+        </label>
+        <label class="tr-stack">
+            <span>当前段 Token 预算</span>
+            <input id="tr-current-tokens" class="text_pole" type="number" min="0" max="12000" step="128" value="500">
+        </label>
+        <label class="tr-stack">
+            <span>前导 Token 预算</span>
+            <input id="tr-lead-tokens" class="text_pole" type="number" min="0" max="12000" step="128" value="900">
+        </label>
     </div>
     <div class="tr-grid tr-spaced">
         <label class="tr-check-card">
             <input id="tr-injection-enabled" type="checkbox">
             <span>启用生成前原文窗口注入</span>
         </label>
-        <label class="tr-stack">
+        <label id="tr-legacy-top-k-control" class="tr-stack">
             <span>检索 Top K</span>
             <input id="tr-top-k" class="text_pole" type="number" min="1" max="30" step="1" value="6">
         </label>
         <label class="tr-stack">
-            <span>注入 Token 预算</span>
-            <input id="tr-token-budget" class="text_pole" type="number" min="256" max="12000" step="128" value="2400">
+            <span id="tr-token-budget-label">本地连续窗口总预算</span>
+            <input id="tr-token-budget" class="text_pole" type="number" min="256" max="24000" step="128" value="2400">
         </label>
     </div>
     <div class="tr-actions">
@@ -681,9 +716,9 @@
             <i class="fas fa-save"></i> 保存游标与注入设置
         </button>
         <button id="tr-preview-injection" class="menu_button secondary interactable" type="button" disabled>
-            <i class="fas fa-eye"></i> 本地预览检索范围
+            <i class="fas fa-eye"></i> 预览本地连续窗口
         </button>
     </div>
-    <pre id="tr-injection-preview" class="tr-preview" aria-live="polite">尚未生成预览；此预览不会调用 Embedding 或向量查询接口。</pre>
+    <pre id="tr-injection-preview" class="tr-preview" aria-live="polite">尚未生成预览；本地窗口预览不会调用 Embedding 或向量查询接口。</pre>
 </fieldset>
 </div>

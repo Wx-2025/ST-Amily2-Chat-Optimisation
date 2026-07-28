@@ -111,6 +111,9 @@
                         </div>
                         <label for="batch-filling-threshold">批处理阈值</label>
                         <input type="number" id="batch-filling-threshold" class="text_pole" value="30">
+                        <label for="table-fill-tables-per-request" title="将同一段正文拆成多个仅表格子集不同的请求，并在全部成功后一次提交。">每批处理表数</label>
+                        <input type="number" id="table-fill-tables-per-request" class="text_pole" min="0" max="128" step="1" value="0">
+                        <small class="notes" style="grid-column: 1 / -1;">0 = 不按表拆批；大于 0 时每次只向模型公开指定数量的表，最多 16 个子批。已声明外键的用户表会自动放在同一批且不会拆开；未声明关系的跨组依赖请调大“每批处理表数”。同一轮正文保持不变，所有子批校验成功后才会一次写入。</small>
                     </div>
                     <div class="control-block-with-switch" style="margin-top: 10px;">
                         <label for="show-table-in-chat-toggle">聊天内显示表格</label>
@@ -463,7 +466,7 @@
                     <p class="notes" style="margin-top: 8px; margin-bottom: 10px;">说明：可以导出不含剧情的"纯净预设"用于分享，或导出包含剧情的"完整备份"用于存档。</p>
 
                     <fieldset class="settings-group" style="border-style: dashed; padding: 8px; margin-bottom: 10px;">
-                        <legend><i class="fas fa-id-card"></i> 角色卡表格档案（2.3.0）</legend>
+                        <legend><i class="fas fa-id-card"></i> 角色卡表格档案</legend>
                         <div class="notes" style="margin-bottom: 8px;">
                             当前来源：<strong id="amily2-table-profile-source">检测中…</strong>
                         </div>
