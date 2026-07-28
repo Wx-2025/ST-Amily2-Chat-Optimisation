@@ -405,8 +405,11 @@ export async function testSybdApiConnection() {
         
         if (response && response.trim()) {
             console.log('[Amily2号-Sybd外交部] 测试消息响应:', response);
-            const formattedResponse = response.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-            toastr.success(`连接测试成功！AI回复: "${formattedResponse}"`, 'Sybd API连接测试成功', { "escapeHtml": false });
+            toastr.success(
+                `连接测试成功！AI回复: "${response}"`,
+                'Sybd API连接测试成功',
+                { escapeHtml: true },
+            );
             return true;
         } else {
             throw new Error('API未返回有效响应');
@@ -414,7 +417,11 @@ export async function testSybdApiConnection() {
         
     } catch (error) {
         console.error('[Amily2号-Sybd外交部] 连接测试失败:', error);
-        toastr.error(`连接测试失败: ${error.message}`, 'Sybd API连接测试失败');
+        toastr.error(
+            `连接测试失败: ${error.message}`,
+            'Sybd API连接测试失败',
+            { escapeHtml: true },
+        );
         return false;
     }
 }

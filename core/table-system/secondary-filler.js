@@ -3,7 +3,7 @@ import { loadWorldInfo } from "/scripts/world-info.js";
 import { renderTables } from '../../ui/table-bindings.js';
 import { updateOrInsertTableInChat } from '../../ui/message-table-renderer.js';
 import { extensionName } from "../../utils/settings.js";
-import { updateTableFromText, updateTableFromOps, getBatchFillerRuleTemplate, getBatchFillerFlowTemplate, convertAiFillableTablesToCsvString, getMemoryState, clearHighlights } from './manager.js';
+import { updateTableFromText, updateTableFromOps, updateTableFromOperationBatches, getBatchFillerRuleTemplate, getBatchFillerFlowTemplate, convertAiFillableTablesToCsvString, getMemoryState, clearHighlights } from './manager.js';
 import { commitToMessageAsync } from './infra/persistence.js';
 import { getPresetPrompts, getMixedOrder } from '../../PresetSettings/index.js';
 import { callAI, generateRandomSeed } from '../api.js';
@@ -28,16 +28,30 @@ import {
     assertTableFillRequestEvidence,
     assertTableFillRequestLease,
     captureTableFillRequestLease,
+    isTablePersistenceScopeReady,
     isTableFillRequestLeaseError,
 } from './infra/persistence-scope.js';
 import {
     canAutomaticallyRetryTableFill,
     createDeterministicTableFillError,
     createTableFillRunControl,
+    isTableFillBudgetError,
     normalizeTableFillInferenceError,
     resolveTableFillRunControl,
     runTableFillPostCommitEffects,
 } from './fill-run-control.js';
+import {
+    buildCacheStableFlowPrompt,
+    planTableFillBatches,
+} from './table-fill-batching.js';
+import { collectTableFillOperationBatches } from './table-fill-batch-runner.js';
+import {
+    TABLE_FILL_PROCESS_HASH_KEY,
+    SECONDARY_FAILURE_LATCH_KEY,
+    SECONDARY_RETRY_COUNT_KEY,
+    SECONDARY_RETRY_TARGET_KEY,
+    getTableFillContentHash,
+} from './infra/fill-progress.js';
 
 const CONTINUE_PROMPT_SECONDARY = '上一条回复不完整或缺少 <Amily2Edit> 指令块。请直接从中断处继续生成剩余内容，不要重复已输出的文本，也不要添加任何解释或寒暄，确保最终输出中包含完整的 <Amily2Edit>...</Amily2Edit> 指令块。';
 
@@ -47,9 +61,26 @@ let secondaryFillerManualRetryTimer = null;
 let secondaryFillerRetryGeneration = 0;
 let secondaryFillerRunning = false;
 let currentAbortController = null;
+let secondaryFillerPendingCatchUp = null;
+let secondaryFillerCatchUpTimer = null;
+let secondaryFillerPendingForceRuns = [];
+let secondaryFillerActiveForceRun = null;
 
-const SECONDARY_FAILURE_LATCH_KEY = 'amily2_secondary_retry_latch';
-const SECONDARY_RETRY_TARGET_KEY = 'amily2_secondary_retry_target_key';
+const SECONDARY_SCAN_HARD_LIMIT = 200;
+const SECONDARY_FORCE_QUEUE_LIMIT = 8;
+
+function assertSecondaryFillContinue(signal) {
+    if (!signal?.aborted) return;
+    const error = new Error('分步填表已被用户中断。');
+    error.name = 'AbortError';
+    throw error;
+}
+
+function describeSecondaryBatchBudget(error) {
+    const snapshot = error?.tableFillBatchBudgetSnapshot || error?.snapshot;
+    if (!snapshot) return '';
+    return `${snapshot.used ?? '?'} / ${snapshot.limit ?? '?'}`;
+}
 
 function getSecondaryFailureLatch(message) {
     const latch = message?.extra?.[SECONDARY_FAILURE_LATCH_KEY];
@@ -89,7 +120,7 @@ function getSecondaryRetryTargetKey(targetMessages) {
 
 function clearSecondaryRetryState(message) {
     if (!message?.extra) return;
-    delete message.extra.amily2_retry_count;
+    delete message.extra[SECONDARY_RETRY_COUNT_KEY];
     delete message.extra[SECONDARY_RETRY_TARGET_KEY];
 }
 
@@ -99,8 +130,8 @@ function captureSecondaryRetryState(message) {
         message,
         hadExtra: Boolean(message.extra),
         hadRetryCount: Boolean(message.extra
-            && Object.prototype.hasOwnProperty.call(message.extra, 'amily2_retry_count')),
-        retryCount: message.extra?.amily2_retry_count,
+            && Object.prototype.hasOwnProperty.call(message.extra, SECONDARY_RETRY_COUNT_KEY)),
+        retryCount: message.extra?.[SECONDARY_RETRY_COUNT_KEY],
         hadTargetKey: Boolean(message.extra
             && Object.prototype.hasOwnProperty.call(message.extra, SECONDARY_RETRY_TARGET_KEY)),
         targetKey: message.extra?.[SECONDARY_RETRY_TARGET_KEY],
@@ -112,8 +143,8 @@ function restoreSecondaryRetryState(backup) {
     const { message } = backup;
     if (backup.hadRetryCount || backup.hadTargetKey) {
         if (!message.extra) message.extra = {};
-        if (backup.hadRetryCount) message.extra.amily2_retry_count = backup.retryCount;
-        else delete message.extra.amily2_retry_count;
+        if (backup.hadRetryCount) message.extra[SECONDARY_RETRY_COUNT_KEY] = backup.retryCount;
+        else delete message.extra[SECONDARY_RETRY_COUNT_KEY];
         if (backup.hadTargetKey) message.extra[SECONDARY_RETRY_TARGET_KEY] = backup.targetKey;
         else delete message.extra[SECONDARY_RETRY_TARGET_KEY];
     } else if (message.extra) {
@@ -172,11 +203,287 @@ function cancelManualRetry() {
     }
 }
 
+function clearCatchUpTimer() {
+    if (!secondaryFillerCatchUpTimer) return;
+    clearTimeout(secondaryFillerCatchUpTimer);
+    secondaryFillerCatchUpTimer = null;
+}
+
+function clearPendingSecondaryCatchUp() {
+    clearCatchUpTimer();
+    secondaryFillerPendingCatchUp = null;
+}
+
+function clearPendingSecondaryCatchUpForScope(scope) {
+    if (!secondaryFillerPendingCatchUp
+        || !chatScopesMatch(secondaryFillerPendingCatchUp.scope, scope)) {
+        return false;
+    }
+    clearPendingSecondaryCatchUp();
+    return true;
+}
+
+function clearPendingSecondaryForceRuns() {
+    const pending = secondaryFillerPendingForceRuns;
+    secondaryFillerPendingForceRuns = [];
+    if (secondaryFillerActiveForceRun) {
+        secondaryFillerActiveForceRun.cancelled = true;
+    }
+    for (const entry of pending) {
+        for (const waiter of entry.waiters) {
+            try { waiter.resolve(false); } catch {}
+        }
+    }
+}
+
+function queueSecondaryForceRun(latestMessage, opts = {}) {
+    const context = getContext();
+    const scope = captureChatScope(context);
+    if (!scope?.chatId) return Promise.resolve(false);
+
+    return new Promise((resolve, reject) => {
+        const targetMessage = opts.targetMessage || null;
+        const duplicate = secondaryFillerPendingForceRuns.find(entry => (
+            chatScopesMatch(entry.scope, scope)
+            && entry.latestMessage === latestMessage
+            && entry.targetMessage === targetMessage
+        ));
+        if (duplicate) {
+            duplicate.waiters.push({ resolve, reject });
+            return;
+        }
+        if (secondaryFillerPendingForceRuns.length >= SECONDARY_FORCE_QUEUE_LIMIT) {
+            log(
+                `分步填表强制请求等待队列已达到 ${SECONDARY_FORCE_QUEUE_LIMIT} 条上限，本次请求未排入队列。`,
+                'error',
+            );
+            resolve(false);
+            return;
+        }
+        secondaryFillerPendingForceRuns.push({
+            scope,
+            latestMessage,
+            targetMessage,
+            opts: { ...opts },
+            waiters: [{ resolve, reject }],
+        });
+    });
+}
+
+function drainPendingSecondaryForceRuns() {
+    if (secondaryFillerRunning
+        || secondaryFillerDebounceTimer
+        || secondaryFillerRetryTimer
+        || secondaryFillerManualRetryTimer) {
+        return false;
+    }
+
+    while (secondaryFillerPendingForceRuns.length > 0) {
+        const entry = secondaryFillerPendingForceRuns.shift();
+        const context = getContext();
+        const scopeCurrent = chatScopesMatch(entry.scope, captureChatScope(context));
+        const latestCurrent = !entry.latestMessage || context.chat?.includes(entry.latestMessage);
+        const targetCurrent = !entry.targetMessage || context.chat?.includes(entry.targetMessage);
+        if (!scopeCurrent || !latestCurrent || !targetCurrent) {
+            for (const waiter of entry.waiters) waiter.resolve(false);
+            continue;
+        }
+
+        entry.cancelled = false;
+        secondaryFillerActiveForceRun = entry;
+        void fillWithSecondaryApi(entry.latestMessage, true, {
+            ...entry.opts,
+            __secondaryExpectedScope: entry.scope,
+        }).then(
+            result => {
+                for (const waiter of entry.waiters) {
+                    waiter.resolve(entry.cancelled ? false : (result ?? true));
+                }
+            },
+            error => {
+                for (const waiter of entry.waiters) {
+                    if (entry.cancelled) waiter.resolve(false);
+                    else waiter.reject(error);
+                }
+            },
+        ).finally(() => {
+            if (secondaryFillerActiveForceRun === entry) {
+                secondaryFillerActiveForceRun = null;
+            }
+            drainPendingSecondaryForceRuns();
+            schedulePendingSecondaryCatchUp();
+        });
+        return true;
+    }
+    return false;
+}
+
+function queueSecondaryCatchUpForScope(scope, reason = 'automatic-trigger') {
+    if (!scope?.chatId) return false;
+    const liveContext = getContext();
+    if (!chatScopesMatch(scope, captureChatScope(liveContext))) return false;
+
+    if (secondaryFillerPendingCatchUp
+        && !chatScopesMatch(secondaryFillerPendingCatchUp.scope, scope)) {
+        // A pending task must never cross chats. A CHAT_CHANGED caller normally
+        // clears it synchronously; this replacement is a second fail-closed
+        // guard for hosts that deliver events in a different listener order.
+        clearPendingSecondaryCatchUp();
+    }
+    secondaryFillerPendingCatchUp = Object.freeze({
+        scope,
+        reason,
+        queuedAt: Date.now(),
+    });
+    return true;
+}
+
+function queueCurrentSecondaryCatchUp(reason = 'automatic-trigger') {
+    let context = null;
+    try {
+        context = getContext();
+    } catch {
+        return false;
+    }
+    return queueSecondaryCatchUpForScope(captureChatScope(context), reason);
+}
+
+function latestAssistantMessage(context) {
+    const chat = context?.chat;
+    if (!Array.isArray(chat)) return null;
+    for (let index = chat.length - 1; index >= 0; index -= 1) {
+        if (!chat[index]?.is_user) return chat[index];
+    }
+    return null;
+}
+
+function schedulePendingSecondaryCatchUp() {
+    if (!secondaryFillerPendingCatchUp
+        || secondaryFillerCatchUpTimer
+        || secondaryFillerDebounceTimer
+        || secondaryFillerRetryTimer
+        || secondaryFillerManualRetryTimer
+        || secondaryFillerRunning) {
+        return false;
+    }
+
+    let context = null;
+    try {
+        context = getContext();
+    } catch {
+        return false;
+    }
+    const pending = secondaryFillerPendingCatchUp;
+    if (!chatScopesMatch(pending.scope, captureChatScope(context))) {
+        clearPendingSecondaryCatchUp();
+        return false;
+    }
+    // CHAT_CHANGED closes this gate until the exact new chat/store snapshot is
+    // published. Keep the pending wake-up intact; lifecycle-ready will call
+    // resumeSecondaryFillerCatchUp() and resume it without an unsafe lease.
+    if (!isTablePersistenceScopeReady(context)) return false;
+
+    secondaryFillerCatchUpTimer = setTimeout(() => {
+        secondaryFillerCatchUpTimer = null;
+        const queued = secondaryFillerPendingCatchUp;
+        const liveContext = getContext();
+        if (!queued
+            || !chatScopesMatch(queued.scope, captureChatScope(liveContext))) {
+            clearPendingSecondaryCatchUp();
+            return;
+        }
+        if (!isTablePersistenceScopeReady(liveContext)
+            || secondaryFillerDebounceTimer
+            || secondaryFillerRetryTimer
+            || secondaryFillerManualRetryTimer
+            || secondaryFillerRunning) {
+            return;
+        }
+
+        const latestMessage = latestAssistantMessage(liveContext);
+        secondaryFillerPendingCatchUp = null;
+        if (!latestMessage) return;
+        invokeSecondaryFillAndResume(latestMessage, false, {
+            __secondaryDebounced: true,
+            __secondaryExpectedScope: queued.scope,
+            __secondaryCatchUp: true,
+        });
+    }, 0);
+    return true;
+}
+
+function invokeSecondaryFillAndResume(latestMessage, forceRun, opts) {
+    void fillWithSecondaryApi(latestMessage, forceRun, opts)
+        .catch(error => {
+            console.error('[Amily2-副API] 延迟填表任务异常结束:', error);
+        })
+        .finally(() => {
+            // fillWithSecondaryApi normally drains from its locked finally.
+            // Delayed invocations can also return before acquiring that lock
+            // (for example, when their exact retry message was deleted).
+            drainPendingSecondaryForceRuns();
+            schedulePendingSecondaryCatchUp();
+        });
+}
+
+function scheduleManualSecondaryRetry(callback, delay = 300) {
+    cancelManualRetry();
+    const runWhenIdle = () => {
+        if (secondaryFillerRunning || secondaryFillerRetryTimer) {
+            // A review modal may remain open while a newer automatic fill is
+            // running or waiting for its own retry. Keep the user's explicit
+            // retry pending instead of cancelling the newer floor's retry.
+            secondaryFillerManualRetryTimer = setTimeout(runWhenIdle, delay);
+            return;
+        }
+        secondaryFillerManualRetryTimer = null;
+        callback();
+    };
+    secondaryFillerManualRetryTimer = setTimeout(runWhenIdle, delay);
+}
+
+function snapshotSecondaryRetryTargets(targetMessages) {
+    return Object.freeze(targetMessages.map(target => Object.freeze({
+        index: target.index,
+        msg: target.msg,
+        hash: target.hash,
+        contentLength: String(target.msg?.mes ?? '').length,
+    })));
+}
+
+function resolveSecondaryRetryTargets(snapshot, chat) {
+    if (!Array.isArray(snapshot) || snapshot.length === 0) return null;
+    const targets = [];
+    for (const target of snapshot) {
+        if (!Number.isSafeInteger(target?.index)
+            || chat?.[target.index] !== target.msg
+            || String(target.msg?.mes ?? '').length !== target.contentLength
+            || getTableFillContentHash(target.msg?.mes) !== target.hash) {
+            return null;
+        }
+        // A different fill path may durably complete only part of this failed
+        // batch while its automatic retry sleeps. Never replay completed
+        // floors, but retain the still-unprocessed members of the exact pinned
+        // retry snapshot.
+        if (target.msg?.extra?.[TABLE_FILL_PROCESS_HASH_KEY] === target.hash) {
+            continue;
+        }
+        targets.push({
+            index: target.index,
+            msg: target.msg,
+            hash: target.hash,
+        });
+    }
+    return targets;
+}
+
 function nextSecondaryInvocationOptions(opts = {}, internal = {}) {
     const {
         __secondaryRetryGeneration,
         __secondaryDebounced,
         __secondaryExpectedScope,
+        __secondaryCatchUp,
+        __secondaryRetryTargets,
         ...publicOptions
     } = opts;
     return {
@@ -268,8 +575,8 @@ async function markTargetsProcessed(
         message: target.msg,
         hadExtra: Boolean(target.msg.extra),
         hadHash: Boolean(target.msg.extra
-            && Object.prototype.hasOwnProperty.call(target.msg.extra, 'amily2_process_hash')),
-        hash: target.msg.extra?.amily2_process_hash,
+            && Object.prototype.hasOwnProperty.call(target.msg.extra, TABLE_FILL_PROCESS_HASH_KEY)),
+        hash: target.msg.extra?.[TABLE_FILL_PROCESS_HASH_KEY],
         hadFailureLatch: Boolean(target.msg.extra
             && Object.prototype.hasOwnProperty.call(target.msg.extra, SECONDARY_FAILURE_LATCH_KEY)),
         failureLatch: target.msg.extra?.[SECONDARY_FAILURE_LATCH_KEY],
@@ -279,8 +586,8 @@ async function markTargetsProcessed(
     const restoreHashes = () => {
         hashBackups.forEach(backup => {
             if (!backup.message.extra) return;
-            if (backup.hadHash) backup.message.extra.amily2_process_hash = backup.hash;
-            else delete backup.message.extra.amily2_process_hash;
+            if (backup.hadHash) backup.message.extra[TABLE_FILL_PROCESS_HASH_KEY] = backup.hash;
+            else delete backup.message.extra[TABLE_FILL_PROCESS_HASH_KEY];
             if (backup.hadFailureLatch) {
                 backup.message.extra[SECONDARY_FAILURE_LATCH_KEY] = backup.failureLatch;
             } else {
@@ -296,7 +603,7 @@ async function markTargetsProcessed(
     const applyHashes = () => {
         for (const target of targetMessages) {
             if (!target.msg.extra) target.msg.extra = {};
-            target.msg.extra.amily2_process_hash = target.hash;
+            target.msg.extra[TABLE_FILL_PROCESS_HASH_KEY] = target.hash;
             delete target.msg.extra[SECONDARY_FAILURE_LATCH_KEY];
         }
         clearSecondaryRetryState(retryMessage);
@@ -383,6 +690,38 @@ async function markTargetsFailed(
     return true;
 }
 
+async function pauseTargetsForManualReview(
+    targetMessages,
+    {
+        expectedScope,
+        retryMessage = null,
+        attempts = 1,
+    } = {},
+) {
+    try {
+        assertSecondaryFillerScope(expectedScope, targetMessages);
+        await markTargetsFailed(targetMessages, {
+            expectedScope,
+            retryMessage,
+            attempts,
+        });
+        return true;
+    } catch (latchError) {
+        if (latchError?.code === 'SECONDARY_FILLER_STALE_CHAT_CONTEXT'
+            || latchError?.code === 'TABLE_SYSTEM_STALE_CHAT_CONTEXT'
+            || latchError?.code === 'TABLE_SYSTEM_NO_ACTIVE_CHAT') {
+            throw latchError;
+        }
+        console.error(
+            '[Amily2-副API] 人工检查楼层的暂停标记持久化失败，将保留本次会话内暂停标记:',
+            latchError,
+        );
+        assertSecondaryFillerScope(expectedScope, targetMessages);
+        applySecondaryFailureLatch(targetMessages, attempts, retryMessage);
+        return false;
+    }
+}
+
 async function commitSecondaryFillResult(
     rawContent,
     targetMessages,
@@ -393,6 +732,7 @@ async function commitSecondaryFillResult(
 ) {
     // 候选状态与处理 hash 在同一补偿事务里存到 lastProcessedMsg(E)，成功后才发布 store。
     const applied = await updateTableFromText(rawContent, {
+        strictTextResponse: true,
         persistCandidate: state => markTargetsProcessed(targetMessages, {
             state,
             expectedScope,
@@ -474,6 +814,7 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
     const retryGeneration = opts.__secondaryRetryGeneration;
     const isScheduledRetry = Number.isSafeInteger(retryGeneration);
     const isDebouncedRun = opts.__secondaryDebounced === true;
+    const isCatchUpRun = opts.__secondaryCatchUp === true;
     const expectedInvocationScope = opts.__secondaryExpectedScope;
     if (isScheduledRetry && retryGeneration !== secondaryFillerRetryGeneration) {
         log('忽略已失效的分步填表重试任务。', 'info');
@@ -482,16 +823,21 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
     if (expectedInvocationScope) {
         const liveContext = getContext();
         if (!chatScopesMatch(expectedInvocationScope, captureChatScope(liveContext))
-            || (latestMessage && !liveContext.chat?.includes(latestMessage))) {
+            || (
+                latestMessage
+                && !opts.__secondaryRetryTargets
+                && !liveContext.chat?.includes(latestMessage)
+            )) {
             log('分步填表延迟任务所属聊天已经切换，已取消旧任务。', 'info');
             return;
         }
     }
-    if (secondaryFillerManualRetryTimer) {
+    if (secondaryFillerManualRetryTimer && !isScheduledRetry) {
         if (forceRun) {
             cancelManualRetry();
         } else {
-            log('分步填表正在等待用户请求的重新填表，跳过新的自动触发。', 'info');
+            queueCurrentSecondaryCatchUp('manual-retry-wait');
+            log('分步填表正在等待用户请求的重新填表；新的自动触发已合并到待补扫任务。', 'info');
             return;
         }
     }
@@ -499,12 +845,21 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
         if (forceRun) {
             cancelScheduledRetry();
         } else {
-            log('分步填表正在等待同一任务重试，跳过新的自动触发。', 'info');
+            queueCurrentSecondaryCatchUp('automatic-retry-wait');
+            log('分步填表正在等待同一任务重试；新的自动触发已合并到待补扫任务。', 'info');
             return;
         }
     }
     if (secondaryFillerRunning) {
-        log('分步填表正在进行中，跳过本次触发。', 'warn');
+        if (forceRun) {
+            log('分步填表正在进行中，本次强制请求已排队等待当前任务释放。', 'warn');
+            return await queueSecondaryForceRun(latestMessage, opts);
+        }
+        queueCurrentSecondaryCatchUp('running');
+        log(
+            '分步填表正在进行中；新的自动触发已合并到待补扫任务。',
+            'warn',
+        );
         return;
     }
     const settings = extension_settings[extensionName] || {};
@@ -519,15 +874,13 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
     const delay = Math.max(0, parseInt(settings.secondary_filler_delay || 0, 10));
     if (!forceRun && !isScheduledRetry && !isDebouncedRun && delay > 0) {
         const debounceScope = captureChatScope(getContext());
+        queueSecondaryCatchUpForScope(debounceScope, 'debounce');
         if (secondaryFillerDebounceTimer) {
             clearTimeout(secondaryFillerDebounceTimer);
         }
         secondaryFillerDebounceTimer = setTimeout(() => {
             secondaryFillerDebounceTimer = null;
-            fillWithSecondaryApi(latestMessage, forceRun, nextSecondaryInvocationOptions(opts, {
-                __secondaryDebounced: true,
-                __secondaryExpectedScope: debounceScope,
-            }));
+            schedulePendingSecondaryCatchUp();
         }, delay);
         console.log(`[Amily2-副API] 分步填表已按防抖延迟 ${delay}ms 调度。`);
         return;
@@ -566,11 +919,24 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
         log('当前聊天缺少稳定标识，已取消分步填表以避免跨聊天写入。', 'error');
         return;
     }
-
+    if (!isTablePersistenceScopeReady(context)) {
+        if (!forceRun) {
+            queueSecondaryCatchUpForScope(requestScope, 'table-lifecycle-not-ready');
+            log('表格生命周期尚未就绪，本次自动填表已保留为待补扫任务。', 'info');
+        } else {
+            log('表格生命周期尚未就绪，本次强制填表未执行。', 'warn');
+        }
+        return;
+    }
     // 所有早返检查通过后再获取锁，确保 finally 一定能解锁
     secondaryFillerRunning = true;
     const runAbortController = new AbortController();
     currentAbortController = runAbortController;
+    const cancelRunScheduledRetry = () => {
+        if (currentAbortController !== runAbortController) return false;
+        cancelScheduledRetry();
+        return true;
+    };
     const signal = runAbortController.signal;
     let fillResolved = false;
     let targetMessages = [];
@@ -579,35 +945,43 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
         // Bind the entire prompt (target message objects + table snapshot) to
         // one chat/store lease before any asynchronous prompt preparation.
         const fillLease = captureTableFillRequestLease(context);
+        const tableBatches = planTableFillBatches(
+            fillLease.state,
+            settings.table_fill_tables_per_request,
+        );
+        const splitTablesAcrossRequests = tableBatches.length > 1;
         const bufferSize = parseInt(settings.secondary_filler_buffer || 0, 10);
         const batchSize = parseInt(settings.secondary_filler_batch || 0, 10);
         const contextLimit = parseInt(settings.secondary_filler_context || 2, 10);
 
-        // 【V1.7.7 修复】限制最大回溯深度，防止更新后无限填补旧历史
-        // 扫描深度 = 上下文 + 填表批次 + 冗余量(10)
-        // bufferSize（保留楼层）仅用于限定尾部边界 validEndIndex，
-        // 不再回流到扫描起点，避免重复影响范围
-        const redundancy = 10;
-        const maxScanDepth = contextLimit + batchSize + redundancy;
-
         const chat = context.chat;
         const totalMessages = chat.length;
 
-        const getContentHash = (content) => {
-            content = String(content ?? '');
-            let hash = 0, i, chr;
-            if (content.length === 0) return hash;
-            for (i = 0; i < content.length; i++) {
-                chr = content.charCodeAt(i);
-                hash = ((hash << 5) - hash) + chr;
-                hash |= 0;
+        // Automatic retries are bound to the exact original message objects,
+        // indexes and content fingerprints. New messages that arrive during
+        // the retry delay are handled by the pending catch-up scan afterwards.
+        if (opts.__secondaryRetryTargets) {
+            const fixedTargets = resolveSecondaryRetryTargets(
+                opts.__secondaryRetryTargets,
+                chat,
+            );
+            if (!fixedTargets || fixedTargets.length === 0) {
+                clearSecondaryRetryState(latestMessage);
+                queueSecondaryCatchUpForScope(requestScope, 'retry-target-changed');
+                log('分步填表原重试目标已变化，已取消旧重试并保留一次当前聊天补扫。', 'warn');
+                return;
             }
-            return hash;
-        };
-
+            targetMessages = fixedTargets;
+            if (!chat.includes(latestMessage)) {
+                // The retry metadata carrier is not part of the semantic
+                // target set and may have been deleted independently. Keep the
+                // still-valid pinned targets retryable, and persist any
+                // bookkeeping on the last surviving target instead.
+                latestMessage = fixedTargets[fixedTargets.length - 1].msg;
+            }
         // 【SWIPED 旁路】swipe 后强制处理刚切出来的最新消息：
         // 跳过扫描 / bufferSize / batchSize 累积逻辑，直接锁定目标
-        if (opts.targetMessage) {
+        } else if (opts.targetMessage) {
             const targetIndex = chat.indexOf(opts.targetMessage);
             if (targetIndex < 0) {
                 console.log("[Amily2-副API] 旁路目标消息不在聊天列表中，跳过。");
@@ -617,7 +991,7 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
                 console.log("[Amily2-副API] 旁路目标是用户消息，跳过。");
                 return;
             }
-            const targetHash = getContentHash(opts.targetMessage.mes);
+            const targetHash = getTableFillContentHash(opts.targetMessage.mes);
             if (isSecondaryFailureLatched(opts.targetMessage, targetHash, forceRun)) {
                 log('目标楼层的内容未变化，且自动重试已达到上限；跳过本次自动触发。', 'info');
                 return;
@@ -630,40 +1004,61 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
         } else {
             // 常规扫描路径
             const validEndIndex = totalMessages - 1 - bufferSize;
-            const scanStartIndex = Math.max(0, validEndIndex - maxScanDepth);
 
             if (validEndIndex < 0) {
                 console.log(`[Amily2-副API] 消息数量不足以超出保留区(${bufferSize})，跳过。`);
                 return;
             }
 
-            // 【修复】改为正向扫描，优先处理最老的未处理消息，防止遗留消息被挤出扫描区
-            for (let i = scanStartIndex; i <= validEndIndex; i++) {
+            // The old window was only context + batch + 10 raw chat messages.
+            // With alternating user/assistant turns, context=2 + batch=20
+            // could expose fewer than twenty AI candidates and starve forever.
+            // Use a wider fixed recent-history window, but retain the previous
+            // oldest-first behavior inside that safety boundary so a backlog
+            // cannot be perpetually displaced by newly arriving messages.
+            // Realtime single-floor triggers retain the historical behavior:
+            // inspect the whole bounded window and fill the newest eligible
+            // floor. Otherwise an old backlog would keep the default mode
+            // permanently N turns behind. A coalesced catch-up run is the
+            // explicit backlog-drain path, so it consumes one oldest eligible
+            // floor per pass and requeues itself below.
+            const requiredCandidateCount = batchSize > 0
+                ? batchSize
+                : ((isCatchUpRun || forceRun) ? 1 : null);
+            const scanStartIndex = Math.max(
+                0,
+                validEndIndex - SECONDARY_SCAN_HARD_LIMIT + 1,
+            );
+            let skippedLatchedMessages = 0;
+            for (let i = scanStartIndex; i <= validEndIndex; i += 1) {
                 const msg = chat[i];
 
                 if (msg.is_user) continue;
 
-                const currentHash = getContentHash(msg.mes);
-                const savedHash = msg.extra?.amily2_process_hash;
+                const currentHash = getTableFillContentHash(msg.mes);
+                const savedHash = msg.extra?.[TABLE_FILL_PROCESS_HASH_KEY];
 
                 const hasSavedHash = Number.isSafeInteger(savedHash);
                 const isUnprocessed = !hasSavedHash;
                 const isChanged = hasSavedHash && savedHash !== currentHash;
 
                 if (isUnprocessed || isChanged) {
-                    if (isSecondaryFailureLatched(msg, currentHash, false)) {
-                        console.log(
-                            `[Amily2-副API] 楼层 ${i + 1} 已达到重试上限且内容未变化，`
-                            + '为保持顺序，暂停本次及后续楼层的自动填表。',
-                        );
-                        return;
+                    if (isSecondaryFailureLatched(msg, currentHash, forceRun)) {
+                        skippedLatchedMessages += 1;
+                        continue;
                     }
                     targetMessages.push({ index: i, msg: msg, hash: currentHash });
-
-                    if (batchSize > 0 && targetMessages.length >= batchSize) {
+                    if (requiredCandidateCount !== null
+                        && targetMessages.length >= requiredCandidateCount) {
                         break;
                     }
                 }
+            }
+            if (skippedLatchedMessages > 0) {
+                console.log(
+                    `[Amily2-副API] 已跳过 ${skippedLatchedMessages} 个内容未变化的失败锁楼层，`
+                    + '继续扫描后续可处理楼层。',
+                );
             }
 
             if (targetMessages.length === 0) {
@@ -673,12 +1068,23 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
 
             if (batchSize > 0) {
                 if (targetMessages.length < batchSize) {
-                    console.log(`[Amily2-副API] 批量模式: 当前累积 ${targetMessages.length}/${batchSize} 条未处理消息，暂不触发。`);
+                    console.log(
+                        `[Amily2-副API] 批量模式: 在最近 ${SECONDARY_SCAN_HARD_LIMIT} 条消息的硬上限内`
+                        + `累积 ${targetMessages.length}/${batchSize} 条可处理 AI 消息，暂不触发。`,
+                    );
                     return;
                 }
             } else {
                 targetMessages = [targetMessages[targetMessages.length - 1]];
             }
+        }
+
+        if (isCatchUpRun) {
+            // A coalesced wake-up can represent several message events. Keep
+            // one scope-bound continuation pending before consuming this
+            // candidate/batch, so completion, retry or a persisted failure
+            // latch will continue draining until no eligible work remains.
+            queueSecondaryCatchUpForScope(requestScope, 'catch-up-drain');
         }
 
         console.log(`[Amily2-副API] 触发填表: 处理 ${targetMessages.length} 条消息。索引范围: ${targetMessages[0].index} - ${targetMessages[targetMessages.length-1].index}`);
@@ -719,7 +1125,15 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
         }
 
         if (!coreContentText.trim()) {
-            console.log("[Amily2-副API] 目标内容处理后为空，跳过。");
+            console.log("[Amily2-副API] 目标内容处理后为空，记录为已处理并继续扫描后续楼层。");
+            await markTargetsProcessed(targetMessages, {
+                expectedScope: requestScope,
+                retryMessage: latestMessage,
+                requestLease: fillLease,
+            });
+            fillResolved = true;
+            runControl.markCommitted();
+            queueSecondaryCatchUpForScope(requestScope, 'filtered-empty-target');
             return;
         }
 
@@ -762,8 +1176,9 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
         }
         const presetPrompts = await getPresetPrompts('secondary_filler');
         
+        const stableRequestSeed = runControl.getOrCreateStableSeed(generateRandomSeed);
         const messages = [
-            { role: 'system', content: generateRandomSeed() }
+            { role: 'system', content: stableRequestSeed }
         ];
 
         const worldBookContext = await getWorldBookContext();
@@ -777,7 +1192,9 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
             );
         }
         const currentTableDataString = convertAiFillableTablesToCsvString();
-        const finalFlowPrompt = buildFillerFlowPrompt(flowTemplate, currentTableDataString);
+        const finalFlowPrompt = splitTablesAcrossRequests
+            ? buildCacheStableFlowPrompt(flowTemplate)
+            : buildFillerFlowPrompt(flowTemplate, currentTableDataString);
 
         let promptCounter = 0; 
         for (const item of order) {
@@ -814,6 +1231,84 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
         // 代码级安全边界必须独立于用户可编辑预设存在，并放在混合预设之后，
         // 防止旧预设中的“每轮必填/未知必补全”覆盖当前数据库事实边界。
         messages.push({ role: 'system', content: TABLE_FILL_SAFETY_POLICY });
+
+        const tableBatchResult = splitTablesAcrossRequests
+            ? await collectTableFillOperationBatches({
+                tableState: fillLease.state,
+                tableBatches,
+                stableMessages: messages,
+                settings,
+                slot: 'tableFilling',
+                signal,
+                runControl,
+                scope: 'secondary-filler',
+                assertContinue: () => assertSecondaryFillContinue(signal),
+                assertLease: () => {
+                    assertSecondaryFillerScope(requestScope, targetMessages);
+                    assertTableFillRequestLease(fillLease, getContext());
+                },
+                callText: async (batchMessages, requestBudget, batchMeta) => {
+                    if (batchMeta.fallbackReason) {
+                        log(
+                            `表格子批 ${batchMeta.batchIndex + 1}/${batchMeta.batchCount} `
+                            + `的 Tool Call V2 不可用（${batchMeta.fallbackReason}），改用严格文本指令。`,
+                            'warn',
+                        );
+                    }
+                    return await callSecondaryModel(batchMessages, signal, requestBudget);
+                },
+            })
+            : null;
+        if (tableBatchResult) {
+            assertSecondaryFillContinue(signal);
+            assertSecondaryFillerScope(requestScope, targetMessages);
+            assertTableFillRequestLease(fillLease, getContext());
+            if (tableBatchResult.operationCount === 0) {
+                await markTargetsProcessed(targetMessages, {
+                    expectedScope: requestScope,
+                    retryMessage: latestMessage,
+                    requestLease: fillLease,
+                });
+                runControl.markCommitted();
+            } else {
+                const applied = await updateTableFromOperationBatches(
+                    tableBatchResult.operationBatches,
+                    {
+                        persistCandidate: state => markTargetsProcessed(targetMessages, {
+                            state,
+                            expectedScope: requestScope,
+                            retryMessage: latestMessage,
+                            requestLease: fillLease,
+                        }),
+                        sourceMessages: context.chat,
+                        targetMessages,
+                        requestLease: fillLease,
+                        onCommitted: () => runControl.markCommitted(),
+                    },
+                );
+                if (!applied) {
+                    throw createDeterministicTableFillError(
+                        'TABLE_FILL_WRITE_REJECTED',
+                        '按表拆批结果未通过整轮校验，目标楼层未标记为已处理。',
+                    );
+                }
+                runControl.markCommitted();
+            }
+            fillResolved = true;
+            cancelRunScheduledRetry();
+            runTableFillPostCommitEffects('secondary-filler-table-batches', [
+                { label: 'render-tables', run: () => renderTables() },
+                { label: 'update-chat-table-view', run: () => updateOrInsertTableInChat() },
+                {
+                    label: 'notify-complete',
+                    run: () => toastr.success(
+                        `分步填表已按 ${tableBatchResult.tableBatches.length} 个表格子批原子完成。`,
+                        'Amily2-分步填表',
+                    ),
+                },
+            ]);
+            return;
+        }
 
         console.groupCollapsed(`[Amily2 分步填表] 即将发送至 API 的内容`);
         console.log("发送给AI的提示词: ", JSON.stringify(messages, null, 2));
@@ -919,7 +1414,32 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
                 const rangeLabel = `${targetMessages[0].index + 1} - ${targetMessages[targetMessages.length - 1].index + 1}`;
                 console.warn(`[Amily2-副API] 响应未包含 <Amily2Edit> 指令块（楼层 ${rangeLabel}），弹出检查窗口等待用户处理。`);
                 toastr.warning(`分步填表（楼层 ${rangeLabel}）的响应缺少 <Amily2Edit> 指令块，请在弹窗中处理。`, 'Amily2-分步填表');
-                clearSecondaryRetryState(latestMessage);
+                const reviewRetryTargetKey = getSecondaryRetryTargetKey(targetMessages);
+                const savedReviewRetryTargetKey = latestMessage?.extra?.[SECONDARY_RETRY_TARGET_KEY];
+                const reviewRetryCount = savedReviewRetryTargetKey === reviewRetryTargetKey
+                    ? Math.max(
+                        0,
+                        parseInt(
+                            latestMessage?.extra?.[SECONDARY_RETRY_COUNT_KEY] || 0,
+                            10,
+                        ) || 0,
+                    )
+                    : 0;
+                const reviewLatchPersisted = await pauseTargetsForManualReview(
+                    targetMessages,
+                    {
+                        expectedScope: requestScope,
+                        retryMessage: latestMessage,
+                        attempts: reviewRetryCount + 1,
+                    },
+                );
+                if (!reviewLatchPersisted) {
+                    toastr.warning(
+                        '人工检查楼层已在本次会话中暂停，但暂停标记暂未写入聊天存档；重新载入后可能再次触发。',
+                        'Amily2-分步填表',
+                    );
+                }
+                queueSecondaryCatchUpForScope(requestScope, 'manual-review-latch');
                 showTableFillReviewModal(rawContent, {
                     title: `分步填表响应检查 - 楼层 ${rangeLabel}`,
                     subtitle: `分步填表（楼层 ${rangeLabel}）的 AI 响应未包含有效的 <Amily2Edit> 指令块。请检查原始响应并选择处理方式。`,
@@ -988,22 +1508,21 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
                             return;
                         }
                         clearSecondaryRetryState(latestMessage);
-                        cancelScheduledRetry();
-                        cancelManualRetry();
+                        cancelRunScheduledRetry();
                         toastr.info('将重新执行分步填表...', 'Amily2-分步填表');
-                        secondaryFillerManualRetryTimer = setTimeout(() => {
-                            secondaryFillerManualRetryTimer = null;
-                            fillWithSecondaryApi(
+                        scheduleManualSecondaryRetry(() => {
+                            invokeSecondaryFillAndResume(
                                 latestMessage,
                                 true,
                                 nextSecondaryInvocationOptions(opts, {
                                     __secondaryExpectedScope: requestScope,
+                                    __secondaryRetryTargets: snapshotSecondaryRetryTargets(targetMessages),
                                     runControl: createTableFillRunControl({
                                         scope: 'secondary-filler-manual-retry',
                                     }),
                                 }),
                             );
-                        }, 300);
+                        });
                     },
                     onCancel: () => {
                         toastr.info('已取消本次分步填表。', 'Amily2-分步填表');
@@ -1025,7 +1544,7 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
             );
             fillResolved = true;
         }
-        cancelScheduledRetry();
+        cancelRunScheduledRetry();
         runTableFillPostCommitEffects('secondary-filler-complete', [{
             label: 'notify-complete',
             run: () => toastr.success("分步填表执行完毕。", "Amily2-分步填表"),
@@ -1033,7 +1552,7 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
 
     } catch (error) {
         if (fillResolved || runControl.committed) {
-            cancelScheduledRetry();
+            cancelRunScheduledRetry();
             console.error(
                 '[Amily2-副API] 表格已提交，但后置处理失败；已阻止模型重跑。',
                 error,
@@ -1049,7 +1568,7 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
             return;
         }
         if (error?.name === 'AbortError' || signal.aborted) {
-            cancelScheduledRetry();
+            cancelRunScheduledRetry();
             console.warn('[Amily2-副API] 分步填表已被用户中断，跳过结果处理与重试。');
             toastr.info('分步填表已中断。', 'Amily2-分步填表');
             clearSecondaryRetryState(latestMessage);
@@ -1060,7 +1579,7 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
             || error?.code === 'TABLE_SYSTEM_STALE_CHAT_CONTEXT'
             || error?.code === 'TABLE_SYSTEM_NO_ACTIVE_CHAT'
         ) {
-            cancelScheduledRetry();
+            cancelRunScheduledRetry();
             console.warn('[Amily2-副API] 聊天上下文已变化，旧填表结果已安全丢弃。', error);
             try {
                 toastr.info('聊天已切换，旧聊天的填表结果未写入。', 'Amily2-分步填表');
@@ -1068,7 +1587,8 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
             return;
         }
         if (error?.code === 'TABLE_SYSTEM_SNAPSHOT_MISMATCH') {
-            cancelScheduledRetry();
+            cancelRunScheduledRetry();
+            clearPendingSecondaryCatchUpForScope(requestScope);
             console.error(
                 '[Amily2-副API] 持久化后检测到本地快照变化；为避免重复写入，已停止自动重试。',
                 error,
@@ -1079,7 +1599,8 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
             return;
         }
         if (error?.code === 'SECONDARY_FILLER_CONFIGURATION') {
-            cancelScheduledRetry();
+            cancelRunScheduledRetry();
+            clearPendingSecondaryCatchUpForScope(requestScope);
             console.error('[Amily2-副API] 分步填表配置无效，已停止且不会自动重试。', error);
             try {
                 toastr.error(error.message, 'Amily2-分步填表');
@@ -1090,6 +1611,7 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
             console.warn('[Amily2-副API] 聊天或表格状态在模型请求期间发生变化，已丢弃过期结果。', error);
             toastr.warning('聊天或表格已变化，本次填表结果已安全丢弃。', 'Amily2-分步填表');
             clearSecondaryRetryState(latestMessage);
+            queueSecondaryCatchUpForScope(requestScope, 'request-lease-changed');
             return;
         }
         const normalizedError = normalizeTableFillInferenceError(error);
@@ -1100,7 +1622,7 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
         const retryTargetKey = getSecondaryRetryTargetKey(targetMessages);
         const savedRetryTargetKey = latestMessage?.extra?.[SECONDARY_RETRY_TARGET_KEY];
         const currentRetryCount = savedRetryTargetKey === retryTargetKey
-            ? Math.max(0, parseInt(latestMessage?.extra?.amily2_retry_count || 0, 10) || 0)
+            ? Math.max(0, parseInt(latestMessage?.extra?.[SECONDARY_RETRY_COUNT_KEY] || 0, 10) || 0)
             : 0;
 
         if (currentRetryCount < maxRetries
@@ -1122,7 +1644,7 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
             // 重试次数与目标指纹绑定，避免等待期间批次变化后让新楼层继承旧次数。
             if (latestMessage) {
                 if (!latestMessage.extra) latestMessage.extra = {};
-                latestMessage.extra.amily2_retry_count = nextRetryCount;
+                latestMessage.extra[SECONDARY_RETRY_COUNT_KEY] = nextRetryCount;
                 latestMessage.extra[SECONDARY_RETRY_TARGET_KEY] = retryTargetKey;
             }
 
@@ -1133,23 +1655,31 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
             secondaryFillerRetryTimer = setTimeout(() => {
                 if (scheduledGeneration !== secondaryFillerRetryGeneration) return;
                 secondaryFillerRetryTimer = null;
-                fillWithSecondaryApi(latestMessage, forceRun, nextSecondaryInvocationOptions(opts, {
+                invokeSecondaryFillAndResume(latestMessage, forceRun, nextSecondaryInvocationOptions(opts, {
                     __secondaryRetryGeneration: scheduledGeneration,
                     __secondaryDebounced: false,
                     __secondaryExpectedScope: requestScope,
+                    __secondaryRetryTargets: snapshotSecondaryRetryTargets(targetMessages),
                 }));
             }, 3000);
         } else {
-            cancelScheduledRetry();
+            cancelRunScheduledRetry();
             const attempts = currentRetryCount + 1;
             const rangeLabel = targetMessages.length > 0
                 ? `${targetMessages[0].index + 1}-${targetMessages[targetMessages.length - 1].index + 1}`
                 : '';
             let failureLocked = false;
             let failureLatchPersisted = false;
-            const stopReason = normalizedError.retryable === true
-                ? `已达到重试/请求预算上限（剩余 ${runControl.requestBudget.remaining}）`
-                : '该错误不可通过重复请求修复';
+            const splitBudgetUsage = describeSecondaryBatchBudget(error);
+            const stopReason = runControl.automaticRetriesDisabled
+                ? isTableFillBudgetError(error)
+                    ? `按表拆批真实请求预算已耗尽`
+                        + `${splitBudgetUsage ? `（${splitBudgetUsage}）` : ''}`
+                    : `按表拆批整轮禁止自动重跑`
+                        + `${splitBudgetUsage ? `（真实请求 ${splitBudgetUsage}）` : ''}`
+                : normalizedError.retryable === true
+                    ? `已达到重试/请求预算上限（剩余 ${runControl.requestBudget.remaining}）`
+                    : '该错误不可通过重复请求修复';
             console.log(`[Amily2-副API] ${stopReason}，放弃本次填表。`);
 
             if (targetMessages.length > 0) {
@@ -1174,6 +1704,9 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
             } else {
                 clearSecondaryRetryState(latestMessage);
             }
+            if (failureLocked) {
+                queueSecondaryCatchUpForScope(requestScope, 'terminal-failure-latch');
+            }
 
             console.log(`[Amily2-副API] 已达到最大重试次数 (${maxRetries})，本次填表已暂停。`);
             const pauseMessage = failureLatchPersisted
@@ -1195,21 +1728,51 @@ export async function fillWithSecondaryApi(latestMessage, forceRun = false, opts
         if (currentAbortController === runAbortController) {
             secondaryFillerRunning = false;
             currentAbortController = null;
+            drainPendingSecondaryForceRuns();
+            schedulePendingSecondaryCatchUp();
         }
     }
+}
+
+/**
+ * Record one coalesced full scan for the currently active chat.
+ *
+ * This is intentionally safe to call while filling, retrying or while the
+ * CHAT_CHANGED lifecycle gate is closed. The task only runs after all of
+ * those blockers are gone and the captured chat scope is still current.
+ */
+export function requestSecondaryFillerCatchUp(reason = 'external') {
+    const queued = queueCurrentSecondaryCatchUp(reason);
+    if (queued) schedulePendingSecondaryCatchUp();
+    return queued;
+}
+
+/**
+ * Resume an already queued wake-up after the table lifecycle publishes ready.
+ * Unlike requestSecondaryFillerCatchUp(), this never creates new work merely
+ * because a user opened or switched to a chat.
+ */
+export function resumeSecondaryFillerCatchUp() {
+    if (!secondaryFillerPendingCatchUp) return false;
+    return schedulePendingSecondaryCatchUp();
 }
 
 export function resetSecondaryFillerLock() {
     const wasLocked = secondaryFillerRunning
         || Boolean(secondaryFillerDebounceTimer)
         || Boolean(secondaryFillerRetryTimer)
-        || Boolean(secondaryFillerManualRetryTimer);
+        || Boolean(secondaryFillerManualRetryTimer)
+        || Boolean(secondaryFillerCatchUpTimer)
+        || Boolean(secondaryFillerPendingCatchUp)
+        || secondaryFillerPendingForceRuns.length > 0;
     if (secondaryFillerDebounceTimer) {
         clearTimeout(secondaryFillerDebounceTimer);
         secondaryFillerDebounceTimer = null;
     }
     cancelScheduledRetry();
     cancelManualRetry();
+    clearPendingSecondaryCatchUp();
+    clearPendingSecondaryForceRuns();
     if (currentAbortController) {
         try { currentAbortController.abort(); } catch {}
         currentAbortController = null;
@@ -1218,11 +1781,19 @@ export function resetSecondaryFillerLock() {
     return wasLocked;
 }
 
+/** CHAT_CHANGED hook: synchronously revoke every task owned by the old chat. */
+export function resetSecondaryFillerForChatChange() {
+    return resetSecondaryFillerLock();
+}
+
 export function isSecondaryFillerRunning() {
     return secondaryFillerRunning
         || Boolean(secondaryFillerDebounceTimer)
         || Boolean(secondaryFillerRetryTimer)
-        || Boolean(secondaryFillerManualRetryTimer);
+        || Boolean(secondaryFillerManualRetryTimer)
+        || Boolean(secondaryFillerCatchUpTimer)
+        || Boolean(secondaryFillerPendingCatchUp)
+        || secondaryFillerPendingForceRuns.length > 0;
 }
 
 export function abortCurrentSecondaryFiller() {
@@ -1230,7 +1801,10 @@ export function abortCurrentSecondaryFiller() {
         && !currentAbortController
         && !secondaryFillerDebounceTimer
         && !secondaryFillerRetryTimer
-        && !secondaryFillerManualRetryTimer) {
+        && !secondaryFillerManualRetryTimer
+        && !secondaryFillerCatchUpTimer
+        && !secondaryFillerPendingCatchUp
+        && secondaryFillerPendingForceRuns.length === 0) {
         return false;
     }
     if (secondaryFillerDebounceTimer) {
@@ -1239,6 +1813,8 @@ export function abortCurrentSecondaryFiller() {
     }
     cancelScheduledRetry();
     cancelManualRetry();
+    clearPendingSecondaryCatchUp();
+    clearPendingSecondaryForceRuns();
     if (currentAbortController) {
         try { currentAbortController.abort(); } catch {}
     }

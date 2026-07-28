@@ -165,8 +165,11 @@ export async function testConcurrentApiConnection() {
         
         if (response && response.trim()) {
             console.log('[Amily2号-Concurrent外交部] 测试消息响应:', response);
-            const formattedResponse = response.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-            toastr.success(`连接测试成功！AI回复: "${formattedResponse}"`, 'Concurrent API连接测试成功', { "escapeHtml": false });
+            toastr.success(
+                `连接测试成功！AI回复: "${response}"`,
+                'Concurrent API连接测试成功',
+                { escapeHtml: true },
+            );
             return true;
         } else {
             throw new Error('API未返回有效响应');
@@ -174,7 +177,11 @@ export async function testConcurrentApiConnection() {
         
     } catch (error) {
         console.error('[Amily2号-Concurrent外交部] 连接测试失败:', error);
-        toastr.error(`连接测试失败: ${error.message}`, 'Concurrent API连接测试失败');
+        toastr.error(
+            `连接测试失败: ${error.message}`,
+            'Concurrent API连接测试失败',
+            { escapeHtml: true },
+        );
         return false;
     }
 }

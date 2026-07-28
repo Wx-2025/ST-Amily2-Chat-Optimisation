@@ -571,8 +571,11 @@ export async function testCwbConnection() {
         
         if (response && response.trim()) {
             console.log('[CWB] 测试消息响应:', response);
-            const formattedResponse = response.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-            showToastr('success', `连接测试成功！AI回复: "${formattedResponse}"`, { escapeHtml: false }, 'CWB API连接测试成功');
+            showToastr(
+                'success',
+                `连接测试成功！AI回复: "${response}"`,
+                { escapeHtml: true },
+            );
             return true;
         } else {
             throw new Error('API未返回有效响应');
@@ -580,7 +583,11 @@ export async function testCwbConnection() {
         
     } catch (error) {
         console.error('[CWB] 连接测试失败:', error);
-        showToastr('error', `连接测试失败: ${error.message}`, 'CWB API连接测试失败');
+        showToastr(
+            'error',
+            `连接测试失败: ${error.message}`,
+            { escapeHtml: true },
+        );
         return false;
     }
 }

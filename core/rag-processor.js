@@ -207,7 +207,12 @@ async function ingestTextToHanlinyuan(text, source = 'manual', metadata = {}, pr
                 if (metadata.entryName && metadata.entryName.includes('微言录总结')) {
                     metadata.entryName = '对话记录小总结';
                 } else if (metadata.entryName && metadata.entryName.includes('宏史卷总结')) {
-                    metadata.entryName = '对话记录大总结';
+                    const fingerprint = metadata.entryName.match(
+                        /\[(?:sha256:[0-9a-f]{64}|fnv1a:[0-9a-f]{8})\]/iu,
+                    )?.[0];
+                    metadata.entryName = fingerprint
+                        ? `对话记录大总结 ${fingerprint}`
+                        : '对话记录大总结';
                 }
                 const entryName = metadata.entryName || '未知条目';
                 kbName = `${bookName}: ${entryName}`;

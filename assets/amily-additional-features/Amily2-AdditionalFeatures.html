@@ -375,6 +375,39 @@
 
           <div class="mhb-controls-wrapper">
 
+            <div class="sm-intro-box" style="border-left: 3px solid #58a6ff; margin-bottom: 12px;">
+                <small class="notes" style="display: block; line-height: 1.6;">
+                    <strong>滚动宏史卷：</strong>合并时会把“既有宏史卷 + 新微言录”重新压成一份活动摘要，
+                    不再把历代宏史卷线性前置。每次覆盖前都会把完整原史册保存为禁用正本；
+                    可在上方“总结归档与恢复”中一键回溯。达到下方阈值时只提醒，绝不会后台自动调用模型。
+                    禁用正本会随重铸次数持续增加，插件不会悄悄删除；确认不再需要后可在世界书中手动清理。
+                </small>
+            </div>
+
+            <button id="amily2_mhb_large_refine_active" class="menu_button primary small_button interactable" style="width: 100%; margin-bottom: 12px;">
+                <i class="fas fa-compress-alt"></i> 合并当前活动史册
+            </button>
+
+            <div class="auto-control-pair amily2-refinement-limit-row">
+                <label for="historiography_refine_reminder_blocks" title="尚未合并的微言录达到该数量时提醒；只提醒，不自动调用模型。">合并提醒块数:</label>
+                <input id="historiography_refine_reminder_blocks" type="number" min="5" max="500" class="text_pole" style="width: 90px;" value="40">
+            </div>
+
+            <div class="auto-control-pair amily2-refinement-limit-row">
+                <label for="historiography_refine_input_max_tokens" title="活动史册及其送入重铸模型前的估算 Token 硬上限；达到上限后会要求先合并。">史册/重铸输入上限:</label>
+                <input id="historiography_refine_input_max_tokens" type="number" min="5000" max="128000" step="1000" class="text_pole" style="width: 100px;" value="48000">
+            </div>
+
+            <div class="auto-control-pair amily2-refinement-limit-row">
+                <label for="historiography_rolling_summary_max_tokens" title="活动宏史卷的估算 Token 硬上限；超限结果不会写入，必须继续缩减。">活动宏史卷上限:</label>
+                <input id="historiography_rolling_summary_max_tokens" type="number" min="1000" max="32000" step="500" class="text_pole" style="width: 100px;" value="12000">
+            </div>
+
+            <small class="notes" style="display: block; margin: 6px 0 12px; line-height: 1.5;">
+                Token 为保守估算（中文约 1 字/Token）。活动史册达到输入上限后，新微言录会保持待重试、要求先合并；
+                重铸输入超限会在调用前停止，输出超限会回到预览继续编辑。任何一种情况都不会截断或覆盖原史册。
+            </small>
+
             <div class="mhb-selector-container">
 
                 <div class="mhb-selector-group">

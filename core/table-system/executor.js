@@ -273,38 +273,50 @@ function cleanValueStr(str) {
  */
 function _argsToOperation(name, args) {
     if (name === 'insertRow') {
+        const tableIndex = normalizeLegacyIndex(args[0]);
         if (args.length !== 2
-            || !isNonNegativeInteger(args[0])
+            || tableIndex === null
             || !isPlainDataObject(args[1])) {
             log('insertRow 参数无效：需要 (非负整数 tableIndex, data 对象)。', 'error');
             return null;
         }
-        return /** @type {Operation} */ ({ op: 'insertRow', tableIndex: args[0], data: args[1] });
+        return /** @type {Operation} */ ({ op: 'insertRow', tableIndex, data: args[1] });
     }
     if (name === 'updateRow') {
+        const tableIndex = normalizeLegacyIndex(args[0]);
+        const rowIndex = normalizeLegacyIndex(args[1]);
         if (args.length !== 3
-            || !isNonNegativeInteger(args[0])
-            || !isNonNegativeInteger(args[1])
+            || tableIndex === null
+            || rowIndex === null
             || !isPlainDataObject(args[2])) {
             log('updateRow 参数无效：需要 (非负整数 tableIndex, 非负整数 rowIndex, data 对象)。', 'error');
             return null;
         }
-        return /** @type {Operation} */ ({ op: 'updateRow', tableIndex: args[0], rowIndex: args[1], data: args[2] });
+        return /** @type {Operation} */ ({ op: 'updateRow', tableIndex, rowIndex, data: args[2] });
     }
     if (name === 'deleteRow') {
+        const tableIndex = normalizeLegacyIndex(args[0]);
+        const rowIndex = normalizeLegacyIndex(args[1]);
         if (args.length !== 2
-            || !isNonNegativeInteger(args[0])
-            || !isNonNegativeInteger(args[1])) {
+            || tableIndex === null
+            || rowIndex === null) {
             log('deleteRow 参数无效：需要 (非负整数 tableIndex, 非负整数 rowIndex)。', 'error');
             return null;
         }
-        return /** @type {Operation} */ ({ op: 'deleteRow', tableIndex: args[0], rowIndex: args[1] });
+        return /** @type {Operation} */ ({ op: 'deleteRow', tableIndex, rowIndex });
     }
     return null;
 }
 
-function isNonNegativeInteger(value) {
-    return Number.isInteger(value) && value >= 0;
+function normalizeLegacyIndex(value) {
+    if (Number.isSafeInteger(value) && value >= 0) {
+        return value;
+    }
+    if (typeof value !== 'string' || !/^[0-9]+$/u.test(value)) {
+        return null;
+    }
+    const normalized = Number(value);
+    return Number.isSafeInteger(normalized) ? normalized : null;
 }
 
 function isPlainDataObject(value) {
@@ -346,6 +358,218 @@ export function parseToOperations(aiResponseText) {
         ops.push(op);
     }
     return ops;
+}
+
+/**
+ * Strict parser used by autonomous table filling.
+ *
+ * The historical parseToOperations() API intentionally collapses malformed
+ * commands and a legitimate empty edit block to the same [] value.  That is
+ * useful for passive chat parsing, but an autonomous fill runner must know
+ * whether "no operations" was an explicit model decision or a parse failure
+ * before it marks source messages as processed.
+ *
+ * @param {string} aiResponseText
+ * @returns {{
+ *   ok: boolean,
+ *   empty: boolean,
+ *   operations: Operation[],
+ *   error: null | { code: string, message: string, line?: number }
+ * }}
+ */
+export function parseToOperationsDetailed(aiResponseText) {
+    const source = String(aiResponseText ?? '');
+    const openTags = source.match(/<Amily2Edit>/gu) || [];
+    const closeTags = source.match(/<\/Amily2Edit>/gu) || [];
+    if (openTags.length !== 1 || closeTags.length !== 1) {
+        return strictParseFailure(
+            'TABLE_FILL_EDIT_BLOCK_COUNT',
+            '响应必须包含且只能包含一对完整的 <Amily2Edit> 标签。',
+        );
+    }
+
+    const blockPattern = /<Amily2Edit>([\s\S]*?)<\/Amily2Edit>/u;
+    const match = blockPattern.exec(source);
+    if (!match) {
+        return strictParseFailure(
+            'TABLE_FILL_EDIT_BLOCK_INCOMPLETE',
+            '响应中的 <Amily2Edit> 标签未完整闭合。',
+        );
+    }
+
+    const outside = `${source.slice(0, match.index)}${source.slice(match.index + match[0].length)}`;
+    if (!isAllowedLegacyEditEnvelope(outside)) {
+        return strictParseFailure(
+            'TABLE_FILL_EDIT_BLOCK_OUTSIDE_CONTENT',
+            '严格文本填表响应在 <Amily2Edit> 块外只能包含完整的 thinking/finish 兼容标签。',
+        );
+    }
+
+    const block = match[1];
+    if (!block.trim()) {
+        return {
+            ok: true,
+            empty: true,
+            operations: [],
+            error: null,
+        };
+    }
+
+    const commentBlock = extractCompleteCommentOnlyBlock(block);
+    if (commentBlock.malformed) {
+        return strictParseFailure(
+            'TABLE_FILL_EDIT_BLOCK_MALFORMED_COMMENT',
+            'Amily2Edit 中的 HTML 注释未完整闭合或包含非法嵌套。',
+        );
+    }
+    const commandBlock = commentBlock.matched
+        ? commentBlock.content.trim()
+        : block.trim();
+    if (commentBlock.matched && !commandBlock) {
+        return {
+            ok: true,
+            empty: true,
+            operations: [],
+            error: null,
+        };
+    }
+    if (!commentBlock.matched && /<!--|-->/u.test(commandBlock)) {
+        return strictParseFailure(
+            'TABLE_FILL_EDIT_BLOCK_MALFORMED_COMMENT',
+            'Amily2Edit 中的 HTML 注释必须完整，且不能与裸文本混排。',
+        );
+    }
+
+    const commands = commandBlock.split(/\r?\n/u);
+    const operations = [];
+    let unknownCommentLine = false;
+    for (let index = 0; index < commands.length; index += 1) {
+        const trimmed = commands[index].trim();
+        if (!trimmed) continue;
+        if (!/^(?:insertRow|updateRow|deleteRow)\b/u.test(trimmed)) {
+            if (commentBlock.matched) {
+                if (isExplicitLegacyNoopLine(trimmed)) {
+                    continue;
+                }
+                unknownCommentLine = true;
+                continue;
+            }
+            return strictParseFailure(
+                'TABLE_FILL_EDIT_BLOCK_UNKNOWN_LINE',
+                `第 ${index + 1} 行不是允许的表格操作。`,
+                index + 1,
+            );
+        }
+        const parsed = parseFunctionCall(trimmed);
+        if (!parsed) {
+            return strictParseFailure(
+                'TABLE_FILL_EDIT_BLOCK_MALFORMED_COMMAND',
+                `第 ${index + 1} 行的表格操作无法解析。`,
+                index + 1,
+            );
+        }
+        const operation = _argsToOperation(parsed.name, parsed.args);
+        if (!operation) {
+            return strictParseFailure(
+                'TABLE_FILL_EDIT_BLOCK_INVALID_ARGUMENTS',
+                `第 ${index + 1} 行的表格操作参数无效。`,
+                index + 1,
+            );
+        }
+        operations.push(operation);
+    }
+
+    if (unknownCommentLine) {
+        return strictParseFailure(
+            'TABLE_FILL_EDIT_BLOCK_UNKNOWN_LINE',
+            '包含表格操作的 HTML 注释中混入了未知文本。',
+        );
+    }
+    if (operations.length === 0) {
+        if (commentBlock.matched) {
+            return {
+                ok: true,
+                empty: true,
+                operations: [],
+                error: null,
+            };
+        }
+        return strictParseFailure(
+            'TABLE_FILL_EDIT_BLOCK_NO_COMMANDS',
+            '非空的 <Amily2Edit> 块没有包含可执行的表格操作。',
+        );
+    }
+    return {
+        ok: true,
+        empty: false,
+        operations,
+        error: null,
+    };
+}
+
+function isAllowedLegacyEditEnvelope(outside) {
+    return /^(?:\s*<(thinking|finish|finsh)>[\s\S]*?<\/\1>\s*)*$/u.test(outside);
+}
+
+function isExplicitLegacyNoopLine(line) {
+    const source = String(line ?? '').trim();
+    if (!source) return true;
+    if (/^(?:\/\/|#)/u.test(source)) return true;
+
+    const normalized = source.replace(/[。.!！]+$/gu, '').trim();
+    return /^(?:无(?:可靠)?(?:的)?表格(?:更新|变更|修改)|无需(?:进行)?(?:表格)?(?:更新|变更|修改)|没有(?:可靠)?(?:的)?(?:表格)?(?:更新|变更|修改)|本轮(?:无需|无)(?:进行)?(?:表格)?(?:更新|变更|修改)|本轮保持原表|保持原表|(?:no|without)\s+(?:(?:reliable|table)\s+)*(?:changes?|updates?|modifications?)|no[\s-]?op|none)$/iu.test(normalized);
+}
+
+function extractCompleteCommentOnlyBlock(block) {
+    const source = String(block ?? '');
+    let cursor = 0;
+    const bodies = [];
+    let matched = false;
+
+    while (cursor < source.length) {
+        const whitespace = /^\s*/u.exec(source.slice(cursor))?.[0] || '';
+        cursor += whitespace.length;
+        if (cursor >= source.length) break;
+        if (!source.startsWith('<!--', cursor)) {
+            return {
+                matched: false,
+                malformed: matched || source.slice(cursor).includes('-->'),
+                content: '',
+            };
+        }
+        matched = true;
+        const bodyStart = cursor + 4;
+        const closeIndex = source.indexOf('-->', bodyStart);
+        if (closeIndex < 0) {
+            return { matched: false, malformed: true, content: '' };
+        }
+        const body = source.slice(bodyStart, closeIndex);
+        // Nested openers and "--" are not well-formed HTML comment data.
+        if (body.includes('<!--') || body.includes('--')) {
+            return { matched: false, malformed: true, content: '' };
+        }
+        bodies.push(body);
+        cursor = closeIndex + 3;
+    }
+
+    return {
+        matched,
+        malformed: false,
+        content: bodies.join('\n'),
+    };
+}
+
+function strictParseFailure(code, message, line) {
+    return {
+        ok: false,
+        empty: false,
+        operations: [],
+        error: {
+            code,
+            message,
+            ...(Number.isSafeInteger(line) ? { line } : {}),
+        },
+    };
 }
 
 /**

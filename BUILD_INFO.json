@@ -1,11 +1,11 @@
 {
-  "filesHash": "f59d02f64f441e302ef43a1b01cf7004ad9094a69e7b49b922bd143a836e0220",
+  "filesHash": "f915339a29af569d03c059ea4442570415b8b815de42beac8ea9cbd60db5f2dc",
   "minifyConfigHash": null,
   "obfuscatorVersion": "5.4.3",
-  "protectionConfigHash": "7d0eee7cef32f1c17e2839de784cf3f723dc40d30bece7d86cf2e8621b165830",
+  "protectionConfigHash": "42dfde70a837bfd1994cd4faee7a2e4fdf6ebb9d0a5a2f884aff53368166273d",
   "sourceBranch": "main",
-  "sourceCommit": "6a86d9a43f946ead64e603250a8a7fdeccc3edef",
+  "sourceCommit": "3634e855b040951cd3e9b2d83aa871557e7f1d90",
   "terserVersion": null,
   "variant": "original-format-protected",
-  "version": "2.3.1"
+  "version": "2.3.2"
 }

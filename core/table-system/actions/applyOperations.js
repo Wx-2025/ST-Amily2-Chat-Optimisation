@@ -157,11 +157,16 @@ const HANDLERS = {
  * @param {TableState} initialState
  * @param {Operation[]} operations
  * @param {{ strictRowBounds?: boolean }} [options]
- * @returns {{ state: TableState, changes: Change[] }}
+ * @returns {{
+ *   state: TableState,
+ *   changes: Change[],
+ *   accepted: boolean,
+ *   error?: Error,
+ * }}
  */
 export function applyOperations(initialState, operations, options = {}) {
     if (!Array.isArray(operations) || operations.length === 0) {
-        return { state: initialState, changes: [] };
+        return { state: initialState, changes: [], accepted: true };
     }
 
     const originalState = normalizeTableDatabaseState(JSON.parse(JSON.stringify(initialState)));
@@ -172,7 +177,7 @@ export function applyOperations(initialState, operations, options = {}) {
             `整批填表操作目标未通过 AI owner 边界，已原子回退: ${error.code || 'TABLE_ACCESS_DENIED'} ${error.message}`,
             'error',
         );
-        return { state: originalState, changes: [] };
+        return { state: originalState, changes: [], accepted: false };
     }
     let state = JSON.parse(JSON.stringify(originalState));
     /** @type {Change[]} */
@@ -181,34 +186,34 @@ export function applyOperations(initialState, operations, options = {}) {
     for (const op of operations) {
         if (!op || typeof op !== 'object' || typeof op.op !== 'string') {
             log(`发现非法操作，整批原子回退: ${JSON.stringify(op)}`, 'error');
-            return { state: originalState, changes: [] };
+            return { state: originalState, changes: [], accepted: false };
         }
         const handler = HANDLERS[op.op];
         if (!handler) {
             log(`发现未知操作类型 ${op.op}，整批原子回退。`, 'error');
-            return { state: originalState, changes: [] };
+            return { state: originalState, changes: [], accepted: false };
         }
         if (!Number.isSafeInteger(op.tableIndex) || op.tableIndex < 0) {
             log(`操作 ${op.op} 包含非法 tableIndex，整批原子回退。`, 'error');
-            return { state: originalState, changes: [] };
+            return { state: originalState, changes: [], accepted: false };
         }
         const targetTable = state[op.tableIndex];
         if (!targetTable) {
             log(`操作 ${op.op} 指向不存在的表格索引 ${op.tableIndex}，整批原子回退。`, 'error');
-            return { state: originalState, changes: [] };
+            return { state: originalState, changes: [], accepted: false };
         }
         if (targetTable?.owner && targetTable.owner !== 'user') {
             log(
                 `普通填表操作试图修改模块 ${targetTable.owner} 的表格索引 ${op.tableIndex}，整批原子回退。`,
                 'error',
             );
-            return { state: originalState, changes: [] };
+            return { state: originalState, changes: [], accepted: false };
         }
         if (op.op === 'insertRow' || op.op === 'updateRow') {
             const data = /** @type {InsertRowOperation|UpdateRowOperation} */(op).data;
             if (!data || typeof data !== 'object' || Array.isArray(data) || Object.keys(data).length === 0) {
                 log(`操作 ${op.op} 缺少有效 data，整批原子回退。`, 'error');
-                return { state: originalState, changes: [] };
+                return { state: originalState, changes: [], accepted: false };
             }
             const colCount = Array.isArray(targetTable.headers) ? targetTable.headers.length : 0;
             const hasInvalidColumn = Object.keys(data).some(key => {
@@ -217,7 +222,7 @@ export function applyOperations(initialState, operations, options = {}) {
             });
             if (hasInvalidColumn) {
                 log(`操作 ${op.op} 包含超出表结构范围的列索引，整批原子回退。`, 'error');
-                return { state: originalState, changes: [] };
+                return { state: originalState, changes: [], accepted: false };
             }
         }
         if (
@@ -232,7 +237,7 @@ export function applyOperations(initialState, operations, options = {}) {
             )
         ) {
             log(`updateRow 包含非法或已过期的 rowIndex，整批原子回退。`, 'error');
-            return { state: originalState, changes: [] };
+            return { state: originalState, changes: [], accepted: false };
         }
         if (
             op.op === 'deleteRow'
@@ -243,7 +248,7 @@ export function applyOperations(initialState, operations, options = {}) {
             )
         ) {
             log(`deleteRow 指向不存在的行，整批原子回退。`, 'error');
-            return { state: originalState, changes: [] };
+            return { state: originalState, changes: [], accepted: false };
         }
         try {
             const result = handler(state, op);
@@ -257,7 +262,7 @@ export function applyOperations(initialState, operations, options = {}) {
             log(`成功推演操作: ${opLabel}`, 'success');
         } catch (e) {
             log(`推演操作 ${op.op} 时发生运行时错误，整批原子回退: ${e.message}`, 'error');
-            return { state: originalState, changes: [] };
+            return { state: originalState, changes: [], accepted: false };
         }
     }
 
@@ -265,8 +270,8 @@ export function applyOperations(initialState, operations, options = {}) {
         state = validateTableState(state);
     } catch (error) {
         log(`整批填表操作未通过数据库约束校验，已原子回退: ${error.code || 'TABLE_VALIDATION_FAILED'} ${error.message}`, 'error');
-        return { state: originalState, changes: [] };
+        return { state: originalState, changes: [], accepted: false, error };
     }
 
-    return { state, changes: allChanges };
+    return { state, changes: allChanges, accepted: true };
 }

@@ -16,7 +16,10 @@ import { showGraphVisualization } from '../core/relationship-graph/visualizer.js
 import { escapeHTML } from '../utils/utils.js';
 import { configManager } from '../utils/config/ConfigManager.js';
 import { ruleProfileManager } from '../utils/config/RuleProfileManager.js';
-import { bindTableTemplateEditors } from './table/template-bindings.js';
+import {
+    bindTableTemplateEditors,
+    resolveTableTemplateLifecycleRefresh,
+} from './table/template-bindings.js';
 import { bindNccsApiEvents as bindNccsApiSettingsEvents } from './table/nccs-bindings.js';
 import { bindChatTableDisplaySetting as bindChatTableDisplaySettings } from './table/chat-display-bindings.js';
 import { bindShujukuCompatibilityControls } from './table/shujuku-compat-bindings.js';
@@ -24,15 +27,23 @@ import { readChatTableState } from '../core/table-system/infra/database-state.js
 import { createCharacterPortableTableProfile } from '../core/table-system/profile.js';
 import {
     getCurrentCharacterTableProfileStatus,
+    normalizeCharacterId,
     removeCharacterTableProfile,
     writeCharacterTableProfile,
 } from '../core/table-system/character-profile.js';
+import {
+    bindImportSyncCharacterProfileSetting,
+    captureCharacterProfileTarget,
+    isSameCharacterProfileTarget,
+} from './table/character-profile-controls.js';
 import { getCurrentTableTemplateSnapshot } from '../core/table-system/templates.js';
 import { subscribeTableLifecycleReady } from '../core/table-system/table-lifecycle.js';
+import { getChatContextEpoch } from '../core/table-system/infra/chat-scope.js';
 import {
     getShujukuAccessDecision,
     subscribeShujukuAccess,
 } from '../core/table-system/compat/shujuku/access-policy.js';
+import { normalizeTablesPerFillRequest } from '../core/table-system/table-fill-batching.js';
 
 const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches;
 const getAllTablesContainer = () => document.getElementById('all-tables-container');
@@ -66,15 +77,17 @@ function isTableSystemEnabled() {
     return getLiveExtensionSettings().table_system_enabled !== false;
 }
 
-function buildCurrentCharacterPortableProfile() {
-    const context = getContext();
+function buildCurrentCharacterPortableProfile(
+    context = getContext(),
+    characterId = normalizeCharacterId(context?.characterId),
+) {
     const envelope = readChatTableState(context);
     const existing = envelope?.profile;
-    const characterName = Number.isInteger(context?.characterId)
-        ? context.characters?.[context.characterId]?.name
+    const characterName = characterId !== null
+        ? context.characters?.[characterId]?.name
         : '';
     return createCharacterPortableTableProfile(TableManager.getMemoryState() || [], {
-        id: existing?.id || `character-table-profile-${context?.characterId ?? 'unknown'}`,
+        id: existing?.id || `character-table-profile-${characterId ?? 'unknown'}`,
         name: existing?.name || `${characterName || '角色'}的表格档案`,
         description: existing?.description || '由 Amily2 表格面板手动保存。',
         views: existing?.views || [],
@@ -108,26 +121,44 @@ function describeCurrentTableProfileSource() {
 function refreshTableProfileStatus(panel = document) {
     const status = panel.querySelector?.('#amily2-table-profile-source');
     if (status) status.textContent = describeCurrentTableProfileSource();
-    const hasCharacter = Number.isInteger(getContext()?.characterId);
+    const hasCharacter = Boolean(captureCharacterProfileTarget(getContext()));
     for (const selector of ['#amily2-save-profile-to-character-btn', '#amily2-remove-character-profile-btn']) {
         const button = panel.querySelector?.(selector);
         if (button) button.disabled = !hasCharacter;
     }
 }
 
-async function saveCurrentProfileToCharacter(panel, { askConfirmation = true } = {}) {
-    const context = getContext();
-    const characterId = context?.characterId;
-    if (!Number.isInteger(characterId)) {
+async function saveCurrentProfileToCharacter(
+    panel,
+    { askConfirmation = true, target = null } = {},
+) {
+    const capturedTarget = target || captureCharacterProfileTarget(getContext());
+    if (!capturedTarget) {
         toastr.warning('当前不是单角色聊天，不能写入角色卡表格档案。');
+        return false;
+    }
+    if (!isSameCharacterProfileTarget(getContext(), capturedTarget)) {
+        toastr.warning('角色卡或聊天已切换，本次导入不会写入任何角色卡。');
         return false;
     }
     if (askConfirmation && !window.confirm(
         '【危险操作】这会覆盖当前角色卡内已有的 Amily2 表格档案。\n\n只写入表结构、视图和模板，不写入当前聊天行数据。确定继续？',
     )) return false;
+    const freshContext = getContext();
+    if (!isSameCharacterProfileTarget(freshContext, capturedTarget)) {
+        toastr.warning('确认期间角色卡或聊天已切换，本次操作已取消。');
+        return false;
+    }
 
-    const profile = buildCurrentCharacterPortableProfile();
-    await writeCharacterTableProfile(context, characterId, profile);
+    const profile = buildCurrentCharacterPortableProfile(
+        freshContext,
+        capturedTarget.characterId,
+    );
+    await writeCharacterTableProfile(
+        freshContext,
+        capturedTarget.characterId,
+        profile,
+    );
     toastr.success('表格档案已写入当前角色卡；导出角色卡时会随卡携带。');
     refreshTableProfileStatus(panel);
     return true;
@@ -1253,6 +1284,43 @@ function updateAndSaveTableSetting(key, value) {
     saveSettingsDebounced();
 }
 
+function bindTablesPerFillRequestSetting(panel) {
+    const input = panel?.querySelector?.('#table-fill-tables-per-request');
+    if (!input) return;
+
+    const rawValue =
+        getLiveExtensionSettings().table_fill_tables_per_request ?? 0;
+    const value = normalizeTablesPerFillRequest(rawValue);
+    input.value = value;
+    if (rawValue !== value) {
+        updateAndSaveTableSetting('table_fill_tables_per_request', value);
+    }
+
+    // This control was added after the original table panel binding guard.
+    // Bind it independently so a panel that was mounted before the control
+    // finished loading can still acquire the listener when reopened.
+    if (input.dataset.amilyTablesPerRequestBound === 'true') return;
+
+    input.addEventListener('input', function() {
+        // Persist during editing as well as on blur. This avoids losing the
+        // value when the user immediately reloads/closes a mobile drawer,
+        // while SillyTavern's debounced writer still coalesces keystrokes.
+        updateAndSaveTableSetting(
+            'table_fill_tables_per_request',
+            normalizeTablesPerFillRequest(this.value),
+        );
+    });
+    input.addEventListener('change', function() {
+        const parsed = normalizeTablesPerFillRequest(this.value);
+        this.value = parsed;
+        updateAndSaveTableSetting('table_fill_tables_per_request', parsed);
+        toastr.info(parsed > 0
+            ? `每个模型请求最多处理 ${parsed} 张表；整轮将在全部子批成功后提交。`
+            : '已关闭按表拆批，单次请求将处理全部可填表格。');
+    });
+    input.dataset.amilyTablesPerRequestBound = 'true';
+}
+
 function bindWorldBookSettings() {
     const settings = getLiveExtensionSettings();
 
@@ -1483,6 +1551,7 @@ function bindWorldBookSettings() {
 
 export function bindTableEvents(panelElement = null) {
     const panel = panelElement || document.getElementById('amily2_memorisation_forms_panel');
+    bindTablesPerFillRequestSetting(panel);
     if (!panel || panel.dataset.eventsBound) {
         return;
     }
@@ -1497,7 +1566,6 @@ export function bindTableEvents(panelElement = null) {
     const maxRetriesSlider = document.getElementById('secondary-filler-max-retries');
     const delaySlider = document.getElementById('secondary-filler-delay');
     const batchFillingThresholdInput = document.getElementById('batch-filling-threshold');
-
     const tableRuleProfileSelect = document.getElementById('table-rule-profile-select');
     
     const updateFillingModeUI = () => {
@@ -1699,7 +1767,11 @@ export function bindTableEvents(panelElement = null) {
     subscribeShujukuAccess(syncShujukuCompatibilityAccess);
     syncShujukuCompatibilityAccess(getShujukuAccessDecision());
 
-    const renderAll = () => {
+    let templateEditorChatEpoch = getChatContextEpoch();
+    const renderAll = ({
+        refreshTemplateEditors = false,
+        forceTemplateEditors = false,
+    } = {}) => {
         renderTables();
         bindInjectionSettings();
         bindTableTemplateEditors({
@@ -1707,6 +1779,8 @@ export function bindTableEvents(panelElement = null) {
             log,
             defaultRuleTemplate: DEFAULT_AI_RULE_TEMPLATE,
             defaultFlowTemplate: DEFAULT_AI_FLOW_TEMPLATE,
+            refreshValues: refreshTemplateEditors,
+            forceRefreshValues: forceTemplateEditors,
         });
         refreshTableProfileStatus(panel);
         if (getShujukuAccessDecision().allowed) {
@@ -1714,7 +1788,22 @@ export function bindTableEvents(panelElement = null) {
         }
     };
 
-    subscribeTableLifecycleReady(renderAll);
+    // The panel can bind before the selected chat/profile has finished
+    // loading, in which case the editors initially contain global/default
+    // templates. Lifecycle ready is an authoritative data replacement
+    // boundary, so synchronize the already-bound editors at that point.
+    subscribeTableLifecycleReady(() => {
+        const currentChatEpoch = getChatContextEpoch();
+        const refreshMode = resolveTableTemplateLifecycleRefresh(
+            templateEditorChatEpoch,
+            currentChatEpoch,
+        );
+        renderAll({
+            refreshTemplateEditors: refreshMode.refreshValues,
+            forceTemplateEditors: refreshMode.forceRefreshValues,
+        });
+        templateEditorChatEpoch = currentChatEpoch;
+    });
     renderAll();
     bindWorldBookSettings();
     bindBatchFillButton(); // 【新增】绑定批量填表按钮
@@ -1768,6 +1857,11 @@ export function bindTableEvents(panelElement = null) {
     const saveProfileToCharacterBtn = panel.querySelector('#amily2-save-profile-to-character-btn');
     const removeCharacterProfileBtn = panel.querySelector('#amily2-remove-character-profile-btn');
     const syncImportedProfileCheckbox = panel.querySelector('#amily2-import-sync-character-profile');
+    bindImportSyncCharacterProfileSetting(
+        syncImportedProfileCheckbox,
+        getLiveExtensionSettings,
+        saveSettingsDebounced,
+    );
 
     if (openGraphBtn) {
         openGraphBtn.addEventListener('click', () => {
@@ -1782,19 +1876,38 @@ export function bindTableEvents(panelElement = null) {
         exportFullBtn.addEventListener('click', () => TableManager.exportPresetFull());
     }
     if (importBtn) {
-        importBtn.addEventListener('click', () => TableManager.importPreset({
-            onImported: async () => {
-                renderAll();
-                if (syncImportedProfileCheckbox?.checked) {
-                    try {
-                        await saveCurrentProfileToCharacter(panel, { askConfirmation: true });
-                    } catch (error) {
-                        console.error('[TableProfile] 导入后同步角色卡失败:', error);
-                        toastr.error(`同步角色卡失败：${error.message}`);
+        importBtn.addEventListener('click', () => {
+            const syncRequested = syncImportedProfileCheckbox?.checked === true;
+            const importTarget = syncRequested
+                ? captureCharacterProfileTarget(getContext())
+                : null;
+            return TableManager.importPreset({
+                onImported: async () => {
+                    // A successful import is another authoritative replacement
+                    // boundary. Reuse the lifecycle refresh path before Save
+                    // can write stale pre-import editor text back to settings.
+                    renderAll({
+                        refreshTemplateEditors: true,
+                        forceTemplateEditors: true,
+                    });
+                    if (syncRequested) {
+                        try {
+                            if (!importTarget) {
+                                toastr.warning('导入开始时没有选中角色卡，预设不会写入角色卡。');
+                                return;
+                            }
+                            await saveCurrentProfileToCharacter(panel, {
+                                askConfirmation: true,
+                                target: importTarget,
+                            });
+                        } catch (error) {
+                            console.error('[TableProfile] 导入后同步角色卡失败:', error);
+                            toastr.error(`同步角色卡失败：${error.message}`);
+                        }
                     }
-                }
-            },
-        }));
+                },
+            });
+        });
     }
     if (importGlobalBtn) {
         importGlobalBtn.addEventListener('click', () => {
@@ -1826,11 +1939,15 @@ export function bindTableEvents(panelElement = null) {
         });
     });
     removeCharacterProfileBtn?.addEventListener('click', () => {
-        const context = getContext();
-        const characterId = context?.characterId;
-        if (!Number.isInteger(characterId)) return;
+        const target = captureCharacterProfileTarget(getContext());
+        if (!target) return;
         if (!window.confirm('【危险操作】确定解除当前角色卡携带的 Amily2 表格档案？已有聊天快照不会被删除。')) return;
-        void removeCharacterTableProfile(context, characterId).then(() => {
+        const freshContext = getContext();
+        if (!isSameCharacterProfileTarget(freshContext, target)) {
+            toastr.warning('确认期间角色卡或聊天已切换，本次操作已取消。');
+            return;
+        }
+        void removeCharacterTableProfile(freshContext, target.characterId).then(() => {
             toastr.success('已解除当前角色卡的表格档案；已有聊天保持不变。');
             refreshTableProfileStatus(panel);
         }).catch(error => {

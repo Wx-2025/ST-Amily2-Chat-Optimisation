@@ -23,6 +23,7 @@ import { watchProfileSliderGuard } from './profile-slider-guard.js';
 import { refreshSuperMemoryPanel } from '../core/super-memory/bindings.js';
 import { refreshProgressiveMemorySourceOptions } from '../core/progressive-memory/bindings.js';
 import { refreshTimeRiverPanel } from '../core/time-river/bindings.js';
+import { getTimeRiverAccess } from '../core/time-river/auth.js';
 
 function displayDailyAuthCode() {
     const displayEl = document.getElementById('amily2_daily_code_display');
@@ -945,9 +946,9 @@ export function bindModalEvents() {
                 break;
             }
             case 'amily2_open_time_river': {
-                const timeRiverUserType = parseInt(localStorage.getItem("plugin_user_type") || "0", 10);
-                if (timeRiverUserType < 2) {
-                    toastr.info("时间河当前仅向 Type2 及以上用户开放。", "权限不足");
+                const hasTimeRiverAccess = getTimeRiverAccess().allowed;
+                if (!hasTimeRiverAccess) {
+                    toastr.info("时间河正在重构，当前仅向具有有效授权的 Type2 及以上用户开放。", "权限不足");
                     mainPanel.show();
                     return;
                 }

@@ -147,6 +147,7 @@ export {
 
 export const tableSystemDefaultSettings = {
     table_system_enabled: true,
+    table_import_sync_character_profile: false,
     shujuku_compat_enabled: false,
     shujuku_compat_auto_prompt_enabled: true,
     shujuku_compat_card_policies: [],
@@ -197,4 +198,6 @@ export const tableSystemDefaultSettings = {
 
     // 批量填表每批楼层数
     batch_filling_threshold: 30,
+    // 单次模型请求最多公开/处理的用户表数量（0 = 不按表拆批）
+    table_fill_tables_per_request: 0,
 };

@@ -123,6 +123,20 @@
     align-items: center;
     gap: 8px;
 }
+
+#amily2_manual_historiography_bureau .amily2-refinement-limit-row {
+    flex-wrap: wrap;
+}
+
+#amily2_manual_historiography_bureau .amily2-refinement-limit-row > label {
+    flex: 1 1 170px;
+    min-width: 0;
+}
+
+#amily2_manual_historiography_bureau .amily2-refinement-limit-row > input {
+    flex: 0 0 auto;
+    max-width: 100%;
+}
 #amily2_manual_historiography_bureau #amily2_mhb_small_expedition_execute {
     width: auto;  
     flex-grow: 0; 

@@ -8,10 +8,14 @@ import { showHtmlModal } from './page-window.js';
 import { configManager } from '../utils/config/ConfigManager.js';
 import { ruleProfileManager, resolveHistoriographyRuleConfig } from '../utils/config/RuleProfileManager.js';
 import { clearSecretInput, markSecretInputStored, readSecretInputUpdate } from './secret-input.js';
+import {
+  normalizeRefinementLimits,
+  REFINEMENT_INPUT_RESERVE_TOKENS,
+} from '../core/historiography-ledger.js';
 
 import {
   getAvailableWorldbooks, getLoresForWorldbook,
-  executeManualSummary, executeRefinement,
+  executeManualSummary, executeRefinement, executeActiveLedgerRefinement,
   executeExpedition, stopExpedition,
   archiveCurrentLedger, getArchivedLedgers, restoreArchivedLedger
 } from "../core/historiographer.js";
@@ -338,6 +342,145 @@ export function bindHistoriographyEvents() {
   const largeRefineBtn = document.getElementById(
     "amily2_mhb_large_refine_execute",
   );
+  const largeRefineActiveBtn = document.getElementById(
+    "amily2_mhb_large_refine_active",
+  );
+
+  const bindBoundedRefinementNumber = (id, key, min, max) => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    input.value = extension_settings[extensionName][key] ?? defaultSettings[key];
+    input.addEventListener("change", () => {
+      const parsed = Number.parseInt(input.value, 10);
+      if (!Number.isFinite(parsed) || parsed < min || parsed > max) {
+        input.value = defaultSettings[key];
+        extension_settings[extensionName][key] = defaultSettings[key];
+        saveSettings();
+        toastr.warning(
+          `数值需在 ${min}-${max} 之间，已恢复默认值 ${defaultSettings[key]}。`,
+          "宏史卷设置",
+        );
+        return;
+      }
+      extension_settings[extensionName][key] = parsed;
+      saveSettings();
+    });
+  };
+
+  bindBoundedRefinementNumber(
+    "historiography_refine_reminder_blocks",
+    "historiographyRefineReminderBlocks",
+    5,
+    500,
+  );
+
+  const inputLimit =
+    document.getElementById("historiography_refine_input_max_tokens");
+  const activeLimit =
+    document.getElementById("historiography_rolling_summary_max_tokens");
+  if (inputLimit && activeLimit) {
+    const getCurrentSettings = () => extension_settings[extensionName];
+    const initialSettings = getCurrentSettings();
+    const initialLimits = normalizeRefinementLimits(initialSettings);
+    const limitsWereNormalized =
+      initialSettings.historiographyRefineInputMaxTokens
+        !== initialLimits.inputMaxTokens
+      || initialSettings.historiographyRollingSummaryMaxTokens
+        !== initialLimits.activeMaxTokens;
+    initialSettings.historiographyRefineInputMaxTokens =
+      initialLimits.inputMaxTokens;
+    initialSettings.historiographyRollingSummaryMaxTokens =
+      initialLimits.activeMaxTokens;
+    inputLimit.value = initialLimits.inputMaxTokens;
+    activeLimit.value = initialLimits.activeMaxTokens;
+    if (limitsWereNormalized) saveSettings();
+
+    const persistLimits = (inputTokens, activeTokens, warning) => {
+      const settings = getCurrentSettings();
+      settings.historiographyRefineInputMaxTokens = inputTokens;
+      settings.historiographyRollingSummaryMaxTokens = activeTokens;
+      inputLimit.value = inputTokens;
+      activeLimit.value = activeTokens;
+      saveSettings();
+      if (warning) {
+        toastr.warning(warning, "宏史卷设置");
+      }
+    };
+
+    inputLimit.addEventListener("change", () => {
+      let inputTokens = Number.parseInt(inputLimit.value, 10);
+      let activeTokens = Number.parseInt(activeLimit.value, 10);
+      if (!Number.isFinite(inputTokens)
+        || inputTokens < 5000
+        || inputTokens > 128000) {
+        const normalized = normalizeRefinementLimits(getCurrentSettings());
+        persistLimits(
+          normalized.inputMaxTokens,
+          normalized.activeMaxTokens,
+          "输入上限需在 5000-128000 之间，已恢复到安全值。",
+        );
+        return;
+      }
+      if (!Number.isFinite(activeTokens)) {
+        activeTokens = defaultSettings.historiographyRollingSummaryMaxTokens;
+      }
+      if (activeTokens + REFINEMENT_INPUT_RESERVE_TOKENS > inputTokens) {
+        activeTokens = Math.max(
+          1000,
+          inputTokens - REFINEMENT_INPUT_RESERVE_TOKENS,
+        );
+        if (activeTokens + REFINEMENT_INPUT_RESERVE_TOKENS > inputTokens) {
+          inputTokens =
+            activeTokens + REFINEMENT_INPUT_RESERVE_TOKENS;
+        }
+        persistLimits(
+          inputTokens,
+          activeTokens,
+          `输入上限必须比活动宏史卷至少多 `
+            + `${REFINEMENT_INPUT_RESERVE_TOKENS} Token，`
+            + `已同步调整活动宏史卷上限为 ${activeTokens}。`,
+        );
+        return;
+      }
+      persistLimits(inputTokens, activeTokens);
+    });
+
+    activeLimit.addEventListener("change", () => {
+      let activeTokens = Number.parseInt(activeLimit.value, 10);
+      let inputTokens = Number.parseInt(inputLimit.value, 10);
+      if (!Number.isFinite(activeTokens)
+        || activeTokens < 1000
+        || activeTokens > 32000) {
+        const normalized = normalizeRefinementLimits(getCurrentSettings());
+        persistLimits(
+          normalized.inputMaxTokens,
+          normalized.activeMaxTokens,
+          "活动宏史卷上限需在 1000-32000 之间，已恢复到安全值。",
+        );
+        return;
+      }
+      if (!Number.isFinite(inputTokens)) {
+        inputTokens = defaultSettings.historiographyRefineInputMaxTokens;
+      }
+      if (activeTokens + REFINEMENT_INPUT_RESERVE_TOKENS > inputTokens) {
+        inputTokens =
+          activeTokens + REFINEMENT_INPUT_RESERVE_TOKENS;
+        persistLimits(
+          inputTokens,
+          activeTokens,
+          `为给固定提示和微言录保留 `
+            + `${REFINEMENT_INPUT_RESERVE_TOKENS} Token，`
+            + `已同步提高输入上限为 ${inputTokens}。`,
+        );
+        return;
+      }
+      persistLimits(inputTokens, activeTokens);
+    });
+  }
+
+  largeRefineActiveBtn?.addEventListener("click", () => {
+    executeActiveLedgerRefinement();
+  });
 
   const updateWorldbookList = async () => {
     largeWbSelector.innerHTML = '<option value="">正在遍览帝国疆域...</option>';

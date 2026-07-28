@@ -6,12 +6,18 @@ import {
   loadWorldInfo,
   createNewWorldInfo,
   createWorldInfoEntry,
-  saveWorldInfo,
 } from "/scripts/world-info.js";
-import { saveBook as loreSaveBook } from "./lore-service.js";
+import {
+  saveBook as loreSaveBook,
+  saveBookStrictUnlocked,
+  mutateBookStrict,
+  withLoreLock,
+} from "./lore-service.js";
 import { extensionName } from "../utils/settings.js";
-import { getChatIdentifier } from "./lore.js";
-import { compatibleWriteToLorebook } from "./tavernhelper-compatibility.js";
+import {
+  getChatIdentifier,
+  refreshWorldbookListOnly,
+} from "./lore.js";
 import { ingestTextToHanlinyuan } from "./rag-processor.js";
 import { showSummaryModal, showHtmlModal } from "../ui/page-window.js";
 import { getPresetPrompts, getMixedOrder } from '../PresetSettings/index.js';
@@ -19,6 +25,17 @@ import { generateRandomSeed } from "./api.js";
 import { callNgmsAI } from "./api/Ngms_api.js";
 import { executeAutoHide } from "./autoHideManager.js";
 import { resolveHistoriographyRuleConfig } from "../utils/config/RuleProfileManager.js";
+import {
+  PROGRESS_SEAL_REGEX,
+  appendMicroSummaryBlock,
+  buildRollingRefinementInput,
+  containsReservedLedgerStructure,
+  estimateHistoriographyMessagesTokens,
+  estimateHistoriographyTokens,
+  normalizeRefinementLimits,
+  parseLedgerForRefinement,
+  rollingLedgerFitsBudget,
+} from "./historiography-ledger.js";
 
 let reloadEditor = () => {
     console.warn("[大史官] reloadEditor 函数不可用，可能是旧版本。已使用空函数代替。");
@@ -40,8 +57,6 @@ let manualStopRequested = false;
 
 // 渐进记忆远带（真压缩·产物编排）需要定位金账条目，故导出
 export const RUNNING_LOG_COMMENT = "【敕史局】对话流水总帐";
-const PROGRESS_SEAL_REGEX =
-  /本条勿动【前(\d+)楼总结已完成】否则后续总结无法进行。$/;
 
 export async function readGoldenLedgerProgress(targetLorebookName) {
   if (!targetLorebookName) return 0;
@@ -57,6 +72,98 @@ export async function readGoldenLedgerProgress(targetLorebookName) {
   } catch (error) {
     console.error(`[大史官] 阅览《${targetLorebookName}》天机时出错:`, error);
     return 0;
+  }
+}
+
+const refinementReminderKeys = new Set();
+const vectorizedRollingContentFingerprints = new Set();
+
+async function runHistoriographyPostCommitEffect(label, effect) {
+  try {
+    await effect();
+  } catch (error) {
+    // The ledger is already durable. A UI/cache-adjacent effect must never
+    // turn that commit into a reported failure that the user could retry.
+    console.warn(`[大史官] 史册已提交，但后续动作“${label}”失败:`, error);
+  }
+}
+
+async function fingerprintText(text) {
+  const value = String(text ?? "");
+  const subtle = globalThis.crypto?.subtle;
+  if (subtle && typeof TextEncoder === "function") {
+    const digest = await subtle.digest("SHA-256", new TextEncoder().encode(value));
+    return `sha256:${Array.from(new Uint8Array(digest), byte =>
+      byte.toString(16).padStart(2, "0")).join("")}`;
+  }
+  // Non-cryptographic fallback is only an idempotency hint for old hosts.
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < value.length; index++) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return `fnv1a:${(hash >>> 0).toString(16).padStart(8, "0")}`;
+}
+
+export async function getActiveLedgerRefinementStatus() {
+  const targetLorebookName = await getTargetLorebookName();
+  if (!targetLorebookName) {
+    return {
+      available: false,
+      targetLorebookName: null,
+      loreKey: null,
+      parsed: null,
+    };
+  }
+
+  const bookData = await loadWorldInfo(targetLorebookName);
+  const loreKey = Object.keys(bookData?.entries || {}).find(
+    key =>
+      bookData.entries[key].comment === RUNNING_LOG_COMMENT
+      && !bookData.entries[key].disable,
+  );
+  if (!loreKey) {
+    return {
+      available: false,
+      targetLorebookName,
+      loreKey: null,
+      parsed: null,
+    };
+  }
+
+  const entry = bookData.entries[loreKey];
+  return {
+    available: true,
+    targetLorebookName,
+    loreKey,
+    parsed: parseLedgerForRefinement(entry.content),
+  };
+}
+
+async function maybeNotifyRefinementThreshold() {
+  try {
+    const settings = extension_settings[extensionName] || {};
+    const limits = normalizeRefinementLimits(settings);
+    const status = await getActiveLedgerRefinementStatus();
+    const pendingBlocks = status.parsed?.pendingBlockCount || 0;
+    if (!status.available || pendingBlocks < limits.reminderBlocks) return;
+
+    const reminderBand = Math.floor(pendingBlocks / limits.reminderBlocks);
+    const reminderKey =
+      `${status.targetLorebookName}:${status.loreKey}:`
+      + `${status.parsed?.compiledFloor || 0}:${reminderBand}`;
+    if (refinementReminderKeys.has(reminderKey)) return;
+    refinementReminderKeys.add(reminderKey);
+
+    toastr.warning(
+      `当前活动史册已有 ${pendingBlocks} 个尚未合并的微言录块。`
+      + `建议打开“总结模块 → 大总结（合并精炼）”，点击“合并当前活动史册”。`
+      + `这里只提醒，不会在后台自动调用模型。`,
+      "宏史卷待重铸",
+      { timeOut: 10000 },
+    );
+  } catch (error) {
+    console.warn("[大史官] 检查宏史卷重铸阈值失败，已跳过提醒:", error);
   }
 }
 
@@ -415,67 +522,73 @@ async function writeSummary(summary, startFloor, endFloor, toastTitle) {
     const context = getContext();
     const shouldWriteToLorebook = settings.historiographyWriteToLorebook ?? true;
     const shouldIngestToRag = settings.historiographyIngestToRag ?? false;
-
+    const refinementLimits = normalizeRefinementLimits(settings);
     if (!shouldWriteToLorebook && !shouldIngestToRag) {
         toastr.warning("“写入史册”和“存入翰林院”均未启用，总结任务已完成但未保存。", toastTitle);
         return true;
     }
 
-    if (shouldIngestToRag) {
-        try {
-            let targetLorebookName;
-            switch (settings.lorebookTarget) {
-                case "character_main":
-                    targetLorebookName = characters[context.characterId]?.data?.extensions?.world;
-                    if (!targetLorebookName) throw new Error("当前角色未绑定主世界书，无法为翰林院确定目标。");
-                    break;
-                case "dedicated":
-                    const chatIdentifier = await getChatIdentifier();
-                    targetLorebookName = `Amily2-Lore-${chatIdentifier}`;
-                    break;
-                default: throw new Error("未知的史册写入指令，无法为翰林院确定目标。");
+    let targetLorebookName;
+    try {
+        switch (settings.lorebookTarget) {
+            case "character_main":
+                targetLorebookName =
+                    characters[context.characterId]?.data?.extensions?.world;
+                if (!targetLorebookName) {
+                    throw new Error("当前角色未绑定主世界书。");
+                }
+                break;
+            case "dedicated": {
+                const chatIdentifier = await getChatIdentifier();
+                targetLorebookName = `Amily2-Lore-${chatIdentifier}`;
+                break;
             }
+            default:
+                throw new Error("未知的史册写入指令。");
+        }
+    } catch (error) {
+        toastr.error(`无法确定史册目标：${error.message}`, "国史馆");
+        return false;
+    }
 
+    const ingestMicroSummary = async () => {
+        try {
             toastr.info('正在将此份“微言录”送往翰林院...', '翰林院');
             const metadata = {
                 bookName: targetLorebookName,
                 entryName: `微言录总结: ${startFloor}-${endFloor}楼`
             };
             const result = await ingestTextToHanlinyuan(summary, 'lorebook', metadata);
-            if (result.success) toastr.success(`翰林院已成功接收记忆碎片！`, '翰林院');
-            else throw new Error(result.error);
+            if (!result.success) throw new Error(result.error);
+            toastr.success(`翰林院已成功接收记忆碎片！`, '翰林院');
+            return true;
         } catch (ragError) {
             console.error('[翰林院] 向量化处理失败:', ragError);
             toastr.error(`送往翰林院的文书处理失败: ${ragError.message}`, '翰林院');
+            return false;
         }
-    }
+    };
 
     if (shouldWriteToLorebook) {
+        const firstLedgerAppend = appendMicroSummaryBlock(
+            "",
+            summary,
+            startFloor,
+            endFloor,
+            refinementLimits.inputMaxTokens,
+        );
+        if (!firstLedgerAppend.fits) {
+            toastr.error(
+                `单批微言录写入后约 ${firstLedgerAppend.estimatedTokens} Token，已经超过活动史册硬上限 `
+                + `${firstLedgerAppend.maxTokens}。本批次未写入史册，进度未前移；`
+                + `请缩小每次总结层数或提高上限。`,
+                "微言录过长",
+                { timeOut: 12000 },
+            );
+            return false;
+        }
         try {
-            let targetLorebookName;
-            switch (settings.lorebookTarget) {
-                case "character_main":
-                    targetLorebookName = characters[context.characterId]?.data?.extensions?.world;
-                    if (!targetLorebookName) throw new Error("当前角色未绑定主世界书。");
-                    break;
-                case "dedicated":
-                    const chatIdentifier = await getChatIdentifier();
-                    targetLorebookName = `Amily2-Lore-${chatIdentifier}`;
-                    break;
-                default: throw new Error("未知的史册写入指令。");
-            }
-
-            const contentUpdateCallback = (oldContent) => {
-                const newSeal = `\n\n本条勿动【前${endFloor}楼总结已完成】否则后续总结无法进行。`;
-                const newChapter = `\n\n---\n\n【${startFloor}楼至${endFloor}楼详细总结记录】\n${summary}`;
-                if (oldContent) {
-                    const contentWithoutSeal = oldContent.replace(PROGRESS_SEAL_REGEX, "").trim();
-                    return contentWithoutSeal + newChapter + newSeal;
-                } else {
-                    const firstChapter = `以下是依照顺序已发生剧情` + newChapter;
-                    return firstChapter + newSeal;
-                }
-            };
+            let ledgerBudgetExceeded = null;
 
             console.log('[大史官-调试] 读取到的原始设置:', {
                 loreActivationMode: settings.loreActivationMode,
@@ -493,19 +606,139 @@ async function writeSummary(summary, startFloor, endFloor, toastTitle) {
 
             console.log('[大史官-调试] 构建并传递的选项:', optionsForNewEntry);
 
-            const success = await compatibleWriteToLorebook(
+            const targetWasListed = world_names.includes(targetLorebookName);
+            const persistence = await mutateBookStrict(
                 targetLorebookName,
-                RUNNING_LOG_COMMENT,
-                contentUpdateCallback,
-                optionsForNewEntry
+                (candidateBookData) => {
+                    if (!candidateBookData.entries
+                        || typeof candidateBookData.entries !== "object"
+                        || Array.isArray(candidateBookData.entries)) {
+                        throw new Error("目标世界书缺少有效的 entries 结构");
+                    }
+
+                    const existingEntry = Object.values(
+                        candidateBookData.entries,
+                    ).find(entry =>
+                        entry?.comment === RUNNING_LOG_COMMENT
+                        && !entry.disable);
+                    const oldContent = existingEntry?.content || "";
+                    const appendResult = appendMicroSummaryBlock(
+                        oldContent,
+                        summary,
+                        startFloor,
+                        endFloor,
+                        refinementLimits.inputMaxTokens,
+                    );
+                    if (!appendResult.fits) {
+                        // Cancel before persistence. Because candidateBookData
+                        // is a clone, neither the host cache nor its progress
+                        // seal has been modified.
+                        ledgerBudgetExceeded = {
+                            estimatedTokens: appendResult.estimatedTokens,
+                            maxTokens: appendResult.maxTokens,
+                        };
+                        return { changed: false, reason: "ledger-budget" };
+                    }
+
+                    let targetEntry = existingEntry;
+                    if (!targetEntry) {
+                        targetEntry = createWorldInfoEntry(
+                            targetLorebookName,
+                            candidateBookData,
+                        );
+                        if (!targetEntry) {
+                            throw new Error("无法创建活动史册条目");
+                        }
+                        const positionMap = {
+                            before_char: 0,
+                            after_char: 1,
+                            before_an: 2,
+                            after_an: 3,
+                            at_depth: 4,
+                        };
+                        Object.assign(targetEntry, {
+                            comment: RUNNING_LOG_COMMENT,
+                            key: optionsForNewEntry.keys,
+                            constant: optionsForNewEntry.isConstant,
+                            position:
+                                positionMap[
+                                    optionsForNewEntry.insertion_position
+                                ] ?? 4,
+                            depth:
+                                Number.parseInt(
+                                    optionsForNewEntry.depth,
+                                    10,
+                                ) || 998,
+                            disable: false,
+                        });
+                    }
+                    targetEntry.content = appendResult.content;
+                    return {
+                        changed: true,
+                        // Some SillyTavern versions answer a read for a
+                        // missing book with { entries: {} }; world_names is
+                        // the reliable signal for the post-commit list refresh.
+                        createdBook: !targetWasListed,
+                    };
+                },
             );
 
-            if (success) {
-                toastr.success(`编年史已成功更新！`, `${toastTitle} - 国史馆`);
-                executeAutoHide(); // 总结成功后立即触发自动隐藏
+            if (ledgerBudgetExceeded) {
+                toastr.error(
+                    `追加后活动史册约 ${ledgerBudgetExceeded.estimatedTokens} Token，`
+                    + `将超过硬上限 ${ledgerBudgetExceeded.maxTokens}，因此本批次尚未写入、总结进度也没有前移。`
+                    + `请先在“大总结”中合并当前活动史册，再继续补全；原聊天与原史册均保持不变。`,
+                    "活动史册已达上限",
+                    { timeOut: 14000 },
+                );
+                return false;
+            }
+
+            if (persistence.committed) {
+                // UI/list refreshes are deliberately post-commit. A rejected
+                // HTTP response must leave both host cache and visible
+                // progress on the previous authoritative revision.
+                if (persistence.mutation?.createdBook) {
+                    await runHistoriographyPostCommitEffect(
+                        "刷新世界书列表",
+                        () => refreshWorldbookListOnly(targetLorebookName),
+                    );
+                }
+                await runHistoriographyPostCommitEffect(
+                    "刷新世界书编辑器",
+                    () => reloadEditor(targetLorebookName),
+                );
+                await runHistoriographyPostCommitEffect(
+                    "发布世界书更新通知",
+                    () => document.dispatchEvent(new CustomEvent(
+                        'amily-lorebook-created',
+                        { detail: { bookName: targetLorebookName } },
+                    )),
+                );
+                await runHistoriographyPostCommitEffect(
+                    "显示写入成功提示",
+                    () => toastr.success(
+                        `编年史已成功更新！`,
+                        `${toastTitle} - 国史馆`,
+                    ),
+                );
+                await runHistoriographyPostCommitEffect(
+                    "自动隐藏已总结消息",
+                    () => executeAutoHide(),
+                );
+                await runHistoriographyPostCommitEffect(
+                    "检查宏史卷合并提醒",
+                    () => maybeNotifyRefinementThreshold(),
+                );
+                // When both destinations are enabled, the durable ledger is
+                // authoritative. Only ingest after it has accepted the block,
+                // so an over-budget retry cannot duplicate vector fragments.
+                if (shouldIngestToRag) {
+                    await ingestMicroSummary();
+                }
                 return true;
             } else {
-                // 错误已在 compatibleWriteToLorebook 内部处理和记录
+                console.warn("[大史官] 严格史册写入未产生持久化提交。");
                 return false;
             }
 
@@ -515,12 +748,11 @@ async function writeSummary(summary, startFloor, endFloor, toastTitle) {
             return false;
         }
     }
-    return true;
+    // RAG-only mode has no ledger capacity/persistence dependency.
+    return shouldIngestToRag ? ingestMicroSummary() : true;
 }
 
-const CHAPTER_SEAL_REGEX = /【前(\d+)楼篇章编撰已完成】/;
-
-export async function executeRefinement(worldbook, loreKey) {
+export async function executeRefinement(worldbook, loreKey, options = {}) {
     toastr.info(`遵旨！正在为您重铸《${worldbook}》中的【微言录合集】...`, "宏史卷重铸");
 
     try {
@@ -531,64 +763,64 @@ export async function executeRefinement(worldbook, loreKey) {
             return;
         }
 
-        const originalContent = entry.content;
+        const originalContent = String(entry.content || '');
+        const originalEntrySnapshot = Object.freeze({
+            loreKey: String(loreKey),
+            key: JSON.stringify(entry.key ?? []),
+            uid: String(entry.uid ?? loreKey),
+            comment: String(entry.comment ?? ''),
+            disable: Boolean(entry.disable),
+            content: originalContent,
+        });
         const settings = extension_settings[extensionName];
-
-        const progressSealMatch = originalContent.match(PROGRESS_SEAL_REGEX);
-        if (!progressSealMatch) {
+        const limits = normalizeRefinementLimits(settings);
+        const parsedLedger = parseLedgerForRefinement(originalContent);
+        if (parsedLedger.reason === 'legacy-vector-placeholder') {
+            toastr.error(
+                "该史册仍使用“旧宏史卷已由翰林院向量化注入”的占位格式，"
+                + "当前条目并不包含早期剧情正文。请先从禁用的旧宏史卷正本恢复，"
+                + "或从翰林院导出并恢复早期正文；在正文恢复前不会生成虚假的 1-N 楼滚动宏史卷。",
+                "需要先恢复早期正文",
+                { timeOut: 16000 },
+            );
+            return;
+        }
+        if (!parsedLedger.valid) {
             toastr.error("史册缺少【流水金印】，无法执行重铸。", "结构异常");
             return;
         }
-        const progressSeal = progressSealMatch[0];
-        const totalFloors = parseInt(progressSealMatch[1], 10);
-
-        const chapterSealMatch = originalContent.match(CHAPTER_SEAL_REGEX);
-        let lockedContent = "";
-        let contentToRefine = "";
-        let oldChapterFloor = 0;
-
-        if (chapterSealMatch) {
-            const chapterSealText = chapterSealMatch[0];
-            oldChapterFloor = parseInt(chapterSealMatch[1], 10);
-            const contentParts = originalContent.split(chapterSealText);
-            lockedContent = contentParts[0].trim();
-            contentToRefine = contentParts[1].replace(PROGRESS_SEAL_REGEX, '').trim();
-        } else {
-            contentToRefine = originalContent.replace(PROGRESS_SEAL_REGEX, '').trim();
-        }
-
-        if (!contentToRefine.trim()) {
+        if (!parsedLedger.pendingMicroContent.trim()
+            || parsedLedger.pendingBlockCount <= 0) {
             toastr.warning("史册条目中没有新的内容可供重铸。", "国库无新事");
             return;
         }
 
         const presetPrompts = await getPresetPrompts('large_summary');
 
-        let mixedOrder;
-        try {
-            const savedOrder = localStorage.getItem('amily2_prompt_presets_v2_mixed_order');
-            if (savedOrder) {
-                mixedOrder = JSON.parse(savedOrder);
-            }
-        } catch (e) {
-            console.error("[大史官] 加载混合顺序失败:", e);
-        }
         const order = getMixedOrder('large_summary') || [];
+        const requestSeed = generateRandomSeed();
 
-        
-        const messages = [
-            { role: 'system', content: generateRandomSeed() }
-        ];
- 
-        let promptCounter = 0; 
-        
-        for (const item of order) {
-            if (item.type === 'prompt') {
-                if (presetPrompts && presetPrompts[promptCounter]) {
-                    messages.push(presetPrompts[promptCounter]);
-                    promptCounter++; 
+        const buildRefinementMessages = (
+            refinementInput,
+            selectedBlockCount,
+        ) => {
+            const selectedEndFloor =
+                parsedLedger.pendingBlocks[selectedBlockCount - 1]?.endFloor
+                || parsedLedger.compiledFloor
+                || 0;
+            const messages = [{ role: 'system', content: requestSeed }];
+            let promptCounter = 0;
+            let coreContentInserted = false;
+
+            for (const item of order) {
+                if (item.type === 'prompt') {
+                    if (presetPrompts && presetPrompts[promptCounter]) {
+                        messages.push(presetPrompts[promptCounter]);
+                        promptCounter++;
+                    }
+                    continue;
                 }
-            } else if (item.type === 'conditional') {
+                if (item.type !== 'conditional') continue;
                 switch (item.id) {
                     case 'jailbreakPrompt':
                         if (settings.historiographyLargeJailbreakPrompt) {
@@ -601,16 +833,115 @@ export async function executeRefinement(worldbook, loreKey) {
                         }
                         break;
                     case 'coreContent':
-                        messages.push({ role: "user", content: `<核心处理内容>\n\n${contentToRefine}\n\n</核心处理内容>` });
+                        if (!coreContentInserted) {
+                            messages.push({
+                                role: "user",
+                                content:
+                                    `<核心处理内容>\n\n${refinementInput}\n\n</核心处理内容>`,
+                            });
+                            coreContentInserted = true;
+                        }
                         break;
                 }
             }
+
+            // Imported/legacy prompt orders may omit coreContent or contain it
+            // repeatedly. The evidence is mandatory and appears exactly once.
+            if (!coreContentInserted) {
+                messages.push({
+                    role: "user",
+                    content:
+                        `<核心处理内容>\n\n${refinementInput}\n\n</核心处理内容>`,
+                });
+            }
+            messages.push({
+                role: "system",
+                content:
+                    `必须把“既有宏史卷”和本批“待合并微言录”合并成一份覆盖 1-${selectedEndFloor} 楼的滚动宏史卷。`
+                    + `不得只总结新增部分，不得遗漏既有宏史卷中的关键事实。`
+                    + `最终输出不得超过约 ${limits.activeMaxTokens} Token；`
+                    + `仅输出可直接写入宏史卷的正文，不得输出流水金印、篇章封印或微言录标题。`,
+            });
+            return messages;
+        };
+
+        const buildCandidate = selectedBlockCount => {
+            const refinementInput = buildRollingRefinementInput(
+                parsedLedger,
+                selectedBlockCount,
+            );
+            const messages = buildRefinementMessages(
+                refinementInput,
+                selectedBlockCount,
+            );
+            return {
+                selectedBlockCount,
+                refinementInput,
+                messages,
+                estimatedTokens:
+                    estimateHistoriographyMessagesTokens(messages),
+            };
+        };
+
+        const fixedCandidate = buildCandidate(0);
+        if (fixedCandidate.estimatedTokens > limits.inputMaxTokens) {
+            toastr.error(
+                `既有宏史卷与完整固定提示约 ${fixedCandidate.estimatedTokens} Token，`
+                + `已经超过输入上限 ${limits.inputMaxTokens}。本次没有调用模型；`
+                + `请先手动缩短宏史卷或提高输入上限。`,
+                "宏史卷固定输入超限",
+                { timeOut: 14000 },
+            );
+            return;
+        }
+
+        // Input size grows monotonically with each oldest pending block, so a
+        // binary search selects the largest safe prefix without ever skipping
+        // older evidence.
+        let low = 1;
+        let high = parsedLedger.pendingBlockCount;
+        let selectedCandidate = null;
+        while (low <= high) {
+            const middle = Math.floor((low + high) / 2);
+            const candidate = buildCandidate(middle);
+            if (candidate.estimatedTokens <= limits.inputMaxTokens) {
+                selectedCandidate = candidate;
+                low = middle + 1;
+            } else {
+                high = middle - 1;
+            }
+        }
+        if (!selectedCandidate) {
+            const oneBlockCandidate = buildCandidate(1);
+            toastr.error(
+                `完整固定提示、既有宏史卷与最旧一块微言录约 `
+                + `${oneBlockCandidate.estimatedTokens} Token，超过输入上限 `
+                + `${limits.inputMaxTokens}。本次没有调用模型；请提高输入上限或手动缩短既有宏史卷。`,
+                "单块仍无法安全重铸",
+                { timeOut: 14000 },
+            );
+            return;
+        }
+
+        const selectedBlockCount = selectedCandidate.selectedBlockCount;
+        const remainingBlockCount =
+            parsedLedger.pendingBlockCount - selectedBlockCount;
+        const messages = selectedCandidate.messages;
+        if (remainingBlockCount > 0) {
+            toastr.info(
+                `本轮将在输入上限内合并最旧的 ${selectedBlockCount} 块；`
+                + `其余 ${remainingBlockCount} 块会原样保留。完成后可由您手动继续下一轮。`,
+                "分段重铸",
+                { timeOut: 10000 },
+            );
         }
 
         const getRefinedContent = async (retryCount = 0) => {
             toastr.info("正在召唤模型进行内容精炼...", "宏史卷重铸");
             // 历史总结统一走 NGMS slot；ngms 未配置时 callNgmsAI 自带错误提示。
-            const content = await callNgmsAI(messages);
+            const content = await callNgmsAI(messages, {
+                maxTokens: limits.activeMaxTokens,
+            });
             
             if (!content || !content.trim()) {
                 const maxRetries = settings.historiographyMaxRetries ?? 2;
@@ -636,65 +967,217 @@ export async function executeRefinement(worldbook, loreKey) {
         const processLoop = async (currentRefinedContent) => {
             showSummaryModal(currentRefinedContent, {
                 onConfirm: async (editedText) => {
-                    let finalContent;
-                    const newChapterSeal = `\n\n【前${totalFloors}楼篇章编撰已完成】`;
+                    if (containsReservedLedgerStructure(editedText)) {
+                        toastr.error(
+                            "输出中包含史册保留结构标记（流水金印、篇章封印或微言录标题）。"
+                            + "为避免破坏后续解析，本次没有写入；请在重新打开的预览中删除这些标记。",
+                            "宏史卷结构冲突",
+                            { timeOut: 12000 },
+                        );
+                        setTimeout(() => processLoop(editedText), 0);
+                        return;
+                    }
+                    const budgetResult = rollingLedgerFitsBudget(
+                        editedText,
+                        parsedLedger,
+                        limits.activeMaxTokens,
+                        selectedBlockCount,
+                    );
+                    if (!budgetResult.fits) {
+                        toastr.error(
+                            `当前滚动宏史卷约 ${budgetResult.estimatedTokens} Token，`
+                            + `超过宏史卷上限 ${budgetResult.maxTokens}。`
+                            + `为避免不可控上下文膨胀，本次没有写入；请在重新打开的预览中继续缩减。`,
+                            "宏史卷仍过长",
+                            { timeOut: 12000 },
+                        );
+                        // showSummaryModal closes the current dialog after
+                        // onConfirm returns. Reopen on the next task so two
+                        // modal dialogs never contend for the top layer.
+                        setTimeout(() => processLoop(editedText), 0);
+                        return;
+                    }
 
-                    const shouldVectorize = document.getElementById('amily2_vectorize_summary_content')?.checked ?? false;
+                    const finalContent = budgetResult.content;
+                    if (!finalContent) {
+                        toastr.error("无法构建滚动宏史卷，原始史册保持不变。", "重铸失败");
+                        return;
+                    }
 
-                    if (shouldVectorize && chapterSealMatch) {
-                        try {
-                            toastr.info(`正在将前 ${oldChapterFloor} 楼的“宏史卷”内容送往翰林院...`, '翰林院');
+                    try {
+                        await withLoreLock(
+                            `rollingRefinement(${worldbook}:${loreKey})`,
+                            async () => {
+                                if (options.requireCurrentTarget) {
+                                    const currentTarget =
+                                        await getTargetLorebookName();
+                                    if (currentTarget !== worldbook) {
+                                        const staleError = new Error(
+                                            "当前聊天的目标世界书已经变化",
+                                        );
+                                        staleError.code =
+                                            "HISTORIOGRAPHY_STALE_LEDGER";
+                                        throw staleError;
+                                    }
+                                }
+                                // The user may leave the preview open while
+                                // another summary is appended. Re-read under
+                                // the same write lock used for the final save,
+                                // otherwise another queued writer could slip
+                                // between the comparison and replacement.
+                                const latestBookData = await loadWorldInfo(worldbook);
+                                const latestEntry = latestBookData?.entries?.[loreKey];
+                                const latestActiveLoreKey = Object.keys(
+                                    latestBookData?.entries || {},
+                                ).find(key =>
+                                    latestBookData.entries[key].comment
+                                        === RUNNING_LOG_COMMENT
+                                    && !latestBookData.entries[key].disable);
+                                if (!latestEntry
+                                    || String(loreKey)
+                                        !== originalEntrySnapshot.loreKey
+                                    || (options.requireCurrentTarget
+                                        && String(latestActiveLoreKey ?? '')
+                                            !== originalEntrySnapshot.loreKey)
+                                    || JSON.stringify(latestEntry.key ?? [])
+                                        !== originalEntrySnapshot.key
+                                    || String(latestEntry.uid ?? loreKey)
+                                        !== originalEntrySnapshot.uid
+                                    || String(latestEntry.comment ?? '')
+                                        !== originalEntrySnapshot.comment
+                                    || Boolean(latestEntry.disable)
+                                        !== originalEntrySnapshot.disable
+                                    || String(latestEntry.content || '')
+                                        !== originalEntrySnapshot.content) {
+                                    const staleError = new Error(
+                                        "预览期间活动史册已发生变化",
+                                    );
+                                    staleError.code = "HISTORIOGRAPHY_STALE_LEDGER";
+                                    throw staleError;
+                                }
 
-                            const metadata = {
-                                bookName: worldbook,
-                                entryName: `宏史卷总结: 1-${oldChapterFloor}楼`
-                            };
-                            const ingestResult = await ingestTextToHanlinyuan(lockedContent, 'lorebook', metadata);
-                            // count=0 的"假成功"（如分块结果为空）同样视为失败——
-                            // 没有任何内容真正入库，此时移除原文等于数据凭空蒸发
-                            if (!ingestResult.success || !(ingestResult.count > 0)) {
-                                throw new Error(ingestResult.error || `向量化未产生任何入库条目（count=${ingestResult.count ?? 0}）`);
-                            }
-                            toastr.success(`翰林院已成功接收旧“宏史卷”记忆！新增 ${ingestResult.count} 条。`, '翰林院');
-
-                            // 向量库是设备本地的缓存级存储（清理向量库/迁移/换设备即失），
-                            // 原文不能只活在向量库里：转存为禁用的存档条目（不触发、零 token 占用），保住正本
-                            try {
-                                const archiveEntry = createWorldInfoEntry(worldbook, bookData);
-                                archiveEntry.comment = `宏史卷存档: 1-${oldChapterFloor}楼（已向量化，禁用态仅作备份）`;
-                                archiveEntry.content = lockedContent;
+                                const candidateBookData =
+                                    structuredClone(latestBookData);
+                                const candidateEntry =
+                                    candidateBookData?.entries?.[loreKey];
+                                if (!candidateEntry) {
+                                    throw new Error("无法建立独立的史册候选草稿");
+                                }
+                                // Fail closed: the byte-for-byte source ledger
+                                // and the rolling replacement are persisted in
+                                // one book save.
+                                const archiveEntry =
+                                    createWorldInfoEntry(
+                                        worldbook,
+                                        candidateBookData,
+                                    );
+                                if (!archiveEntry) {
+                                    throw new Error("无法创建重铸前正本存档条目");
+                                }
+                                const oldFloorLabel = parsedLedger.compiledFloor > 0
+                                    ? `原宏史卷至${parsedLedger.compiledFloor}楼`
+                                    : "首次重铸";
+                                const archiveTimestamp = new Date()
+                                    .toISOString()
+                                    .replace(/[:.]/g, "-")
+                                    .slice(0, 19);
+                                archiveEntry.comment =
+                                    `${RUNNING_LOG_COMMENT}_归档_${archiveTimestamp}_重铸前正本_`
+                                    + `1-${parsedLedger.totalFloors}楼（${oldFloorLabel}）`;
+                                archiveEntry.content = originalContent;
                                 archiveEntry.disable = true;
                                 archiveEntry.constant = false;
                                 archiveEntry.key = [];
-                            } catch (archiveErr) {
-                                console.warn('[大史官-宏史卷存档] 原文转存档条目失败:', archiveErr);
-                                toastr.warning('宏史卷原文转存档失败——正本目前仅存于向量库，建议手动备份该段内容。', '翰林院');
+
+                                candidateEntry.content = finalContent;
+                                await saveBookStrictUnlocked(
+                                    worldbook,
+                                    candidateBookData,
+                                );
+                            },
+                        );
+                        reloadEditor(worldbook);
+                        toastr.success(
+                            `史册已重铸为一份滚动宏史卷；重铸前完整正本已禁用归档于《${worldbook}》。`
+                            + (remainingBlockCount > 0
+                                ? ` 尚余 ${remainingBlockCount} 块微言录，请按需手动继续合并。`
+                                : " 本轮已合并全部待处理微言录。"),
+                            "宏史卷重铸完毕",
+                            { timeOut: 10000 },
+                        );
+
+                        const shouldVectorize =
+                            document.getElementById('amily2_vectorize_summary_content')?.checked
+                            ?? false;
+                        if (shouldVectorize && parsedLedger.existingRollingContent) {
+                            try {
+                                const fingerprint = await fingerprintText(
+                                    parsedLedger.existingRollingContent,
+                                );
+                                if (vectorizedRollingContentFingerprints.has(
+                                    fingerprint,
+                                )) {
+                                    toastr.info(
+                                        "同一旧宏史卷本次会话已向量化，已跳过重复入库。",
+                                        "翰林院",
+                                    );
+                                    return;
+                                }
+                                toastr.info(
+                                    `正在将前 ${parsedLedger.compiledFloor} 楼的旧宏史卷副本送往翰林院...`,
+                                    "翰林院",
+                                );
+                                const ingestResult = await ingestTextToHanlinyuan(
+                                    parsedLedger.existingRollingContent,
+                                    "lorebook",
+                                    {
+                                        bookName: worldbook,
+                                        entryName:
+                                            `宏史卷总结: 1-${parsedLedger.compiledFloor}楼 [${fingerprint}]`,
+                                    },
+                                );
+                                if (!ingestResult.success || !(ingestResult.count > 0)) {
+                                    throw new Error(
+                                        ingestResult.error
+                                        || `向量化未产生条目（count=${ingestResult.count ?? 0}）`,
+                                    );
+                                }
+                                vectorizedRollingContentFingerprints.add(
+                                    fingerprint,
+                                );
+                                toastr.success(
+                                    `旧宏史卷副本已进入翰林院，共 ${ingestResult.count} 条。`,
+                                    "翰林院",
+                                );
+                            } catch (error) {
+                                // Active rolling summary and disabled source
+                                // archive are already durable. Vector storage
+                                // is optional cache, so failure never rolls
+                                // back or deletes either source.
+                                console.error("[大史官-宏史卷向量化] 失败:", error);
+                                toastr.warning(
+                                    `滚动宏史卷已安全保存，但可选向量化失败：${error.message}`,
+                                    "翰林院",
+                                    { timeOut: 10000 },
+                                );
                             }
-
-                            const replacementText = `AI你好，以上内容为rag向量化后注入的相关剧情，以下内容是已发生的剧情回顾。\n\n（前${oldChapterFloor}楼聊天记录总结已由翰林院向量化注入。）\n\n【以下内容为${oldChapterFloor}楼以后的总结内容】`;
-
-                            finalContent = `${replacementText}\n\n---\n\n${editedText}${newChapterSeal}\n\n${progressSeal}`;
-
-                        } catch (error) {
-                            console.error('[大史官-宏史卷向量化] 失败:', error);
-                            toastr.error(`宏史卷向量化失败: ${error.message}，将执行标准保存（原文保留）。`, '翰林院');
-                            const divider = `\n\n===【截止至第${oldChapterFloor}楼的宏史卷】===\n\n`;
-                            finalContent = `${lockedContent}${divider}${editedText}${newChapterSeal}\n\n${progressSeal}`;
                         }
-                    } else {
-                        if (chapterSealMatch) {
-                            const divider = `\n\n===【截止至第${oldChapterFloor}楼的宏史卷】===\n\n`;
-                            finalContent = `${lockedContent}${divider}${editedText}${newChapterSeal}\n\n${progressSeal}`;
-                        } else {
-                            const header = `以下内容是【1楼-${totalFloors}楼】已发生的剧情回顾。\n\n---\n\n`;
-                            finalContent = `${header}${editedText}${newChapterSeal}\n\n${progressSeal}`;
+                    } catch (error) {
+                        if (error?.code === "HISTORIOGRAPHY_STALE_LEDGER") {
+                            toastr.warning(
+                                "预览期间活动史册已发生变化，本次旧结果已安全丢弃。请重新开始合并。",
+                                "史册已更新",
+                                { timeOut: 10000 },
+                            );
+                            return;
                         }
+                        console.error("[大史官-宏史卷存档] 写入失败:", error);
+                        toastr.error(
+                            `无法同时保存滚动宏史卷与重铸前正本：${error.message}。原活动史册保持不变。`,
+                            "宏史卷保存失败",
+                            { timeOut: 12000 },
+                        );
                     }
-
-                    entry.content = finalContent;
-                    await loreSaveBook(worldbook, bookData);
-                    reloadEditor(worldbook);
-                    toastr.success(`史册已成功重铸，并保存于《${worldbook}》！`, "宏史卷重铸完毕");
                 },
                 onRegenerate: async (dialog) => {
                     dialog.find('textarea').prop('disabled', true).val('正在重新生成，请稍候...');
@@ -716,6 +1199,46 @@ export async function executeRefinement(worldbook, loreKey) {
     } catch (error) {
         console.error("[大史官] 重铸任务失败:", error);
         toastr.error(`重铸史册时发生严重错误: ${error.message}`, "国史馆");
+    }
+}
+
+export async function executeActiveLedgerRefinement() {
+    try {
+        const status = await getActiveLedgerRefinementStatus();
+        if (!status.available || !status.targetLorebookName || !status.loreKey) {
+            toastr.warning(
+                "当前聊天没有可重铸的活动【对话流水总帐】。",
+                "宏史卷重铸",
+            );
+            return false;
+        }
+        if (status.parsed?.reason === 'legacy-vector-placeholder') {
+            toastr.error(
+                "该活动史册仍使用“旧宏史卷已由翰林院向量化注入”的占位格式，"
+                + "条目内没有可供重铸的早期剧情正文。请先恢复旧宏史卷正文再重铸。",
+                "需要先恢复早期正文",
+                { timeOut: 16000 },
+            );
+            return false;
+        }
+        if (!status.parsed?.valid) {
+            toastr.error("活动史册缺少流水金印，无法安全重铸。", "结构异常");
+            return false;
+        }
+        if (!status.parsed.pendingMicroContent.trim()) {
+            toastr.info("活动史册没有新的微言录块需要合并。", "宏史卷重铸");
+            return false;
+        }
+        await executeRefinement(
+            status.targetLorebookName,
+            status.loreKey,
+            { requireCurrentTarget: true },
+        );
+        return true;
+    } catch (error) {
+        console.error("[大史官] 无法打开当前活动史册重铸:", error);
+        toastr.error(`无法读取当前活动史册：${error.message}`, "宏史卷重铸");
+        return false;
     }
 }
 

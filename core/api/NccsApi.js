@@ -8,6 +8,21 @@ import { detectVendor } from '../../utils/api-vendor.js';
 import { mergeSafeModelCallOptions } from './safe-call-options.js';
 import { registerInternalBusPlugin } from '../../SL/bus/Amily2Bus.js';
 
+// Keep Nccs transport isolated from compatibility/card scripts loaded after
+// Amily. Some legacy runtimes replace window.fetch with a generation wrapper;
+// resolving fetch dynamically would let a background table-fill request re-enter
+// that runtime's own automatic table executor.
+const capturedNccsFetch = typeof globalThis.fetch === 'function'
+    ? globalThis.fetch.bind(globalThis)
+    : null;
+
+function fetchWithCapturedNccsTransport(input, init) {
+    if (!capturedNccsFetch) {
+        throw new Error('Fetch API unavailable');
+    }
+    return capturedNccsFetch(input, init);
+}
+
 let nccsCtx = null;
 // 在任何 top-level await 之前同步认领核心身份，避免 bootstrap 窗口关闭后注册。
 try {
@@ -155,7 +170,7 @@ function raceAgainstSignal(promise, signal) {
 }
 
 async function fetchFakeStream(url, opts, signal) {
-    const res = await fetch(url, { ...opts, signal });
+    const res = await fetchWithCapturedNccsTransport(url, { ...opts, signal });
     if (!res.ok) throw new Error(`Stream HTTP ${res.status}: ${await res.text()}`);
     
     const reader = res.body.getReader();
@@ -245,7 +260,10 @@ async function callNccsOpenAITest(messages, options) {
         return await fetchFakeStream('/api/backends/chat-completions/generate', fetchOpts, options.signal);
     }
 
-    const response = await fetch('/api/backends/chat-completions/generate', { ...fetchOpts, signal: options.signal });
+    const response = await fetchWithCapturedNccsTransport(
+        '/api/backends/chat-completions/generate',
+        { ...fetchOpts, signal: options.signal },
+    );
     if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
     return normalizeApiResponse(await response.json());
 }
@@ -321,7 +339,7 @@ export async function fetchNccsModels() {
                 throw new Error('API URL或Key未配置');
             }
 
-            const response = await fetch('/api/backends/chat-completions/status', {
+            const response = await fetchWithCapturedNccsTransport('/api/backends/chat-completions/status', {
                 method: 'POST',
                 headers: {
                     ...getRequestHeaders(),
@@ -401,8 +419,11 @@ export async function testNccsApiConnection() {
 
         if (response && response.trim()) {
             console.log('[Amily2号-Nccs外交部] 测试消息响应:', response);
-            const formattedResponse = response.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
-            toastr.success(`连接测试成功！AI回复: "${formattedResponse}"`, '独立API填表·测试成功', { "escapeHtml": false });
+            toastr.success(
+                `连接测试成功！AI回复: "${response}"`,
+                '独立API填表·测试成功',
+                { escapeHtml: true },
+            );
             return true;
         } else {
             throw new Error('API未返回有效响应');
@@ -410,7 +431,11 @@ export async function testNccsApiConnection() {
 
     } catch (error) {
         console.error('[Amily2号-Nccs外交部] 连接测试失败:', error);
-        toastr.error(`连接测试失败: ${error.message}`, '独立API填表·测试失败');
+        toastr.error(
+            `连接测试失败: ${error.message}`,
+            '独立API填表·测试失败',
+            { escapeHtml: true },
+        );
         return false;
     }
 }

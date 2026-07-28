@@ -2,7 +2,7 @@ import { extension_settings } from "/scripts/extensions.js";
 import { saveSettingsDebounced } from "/script.js";
 import { pluginAuthStatus } from "./auth-state.js";
 
-export const pluginVersion = "2.3.1";
+export const pluginVersion = "2.3.2";
 
 // 从当前文件 URL 动态推导插件文件夹名和根路径，兼容任意文件夹名（Dev / 正式版均适用）
 // URL 结构：.../scripts/extensions/third-party/<folderName>/utils/settings.js
@@ -978,6 +978,12 @@ export const historiographyDefaults = {
   // --- 💎 宏史卷 (史册精炼) 法典 ---
   historiographyLargeJailbreakPrompt: _historiographyLargeJailbreakPrompt,
   historiographyLargeRefinePrompt: _historiographyLargeRefinePrompt,
+  // 活动史册只保留一份滚动宏史卷；达到块数时仅提醒，不会后台自动调用模型。
+  historiographyRefineReminderBlocks: 40,
+  // 活动史册以及发送给重铸模型的“旧宏史卷 + 新微言录”硬上限。
+  historiographyRefineInputMaxTokens: 48000,
+  // 活动宏史卷的硬上限；超限结果必须在预览中继续缩减后才能写入。
+  historiographyRollingSummaryMaxTokens: 12000,
 };
 
 

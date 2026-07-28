@@ -48,6 +48,27 @@ const SUPPORTED_LEGACY_PRESET_VERSIONS = new Set([
     'Amily2-Table-Preset-v2.1',
     'Amily2-Table-Preset-v3.0-separated_templates',
 ]);
+const LEGACY_PRESET_VERSION_PREFIX = 'Amily2-Table-Preset-';
+const MAX_LEGACY_PRESET_VERSION_LENGTH = 128;
+
+/**
+ * Historical builds accepted third-party Amily2 table presets which retained
+ * the Amily2 namespace but carried their author's own version suffix. The
+ * version label is not a trust boundary: imported tables still pass the same
+ * schema, owner and size validation below.
+ */
+export function isSupportedLegacyTablePresetVersion(version) {
+    if (typeof version !== 'string'
+        || version.length === 0
+        || version.length > MAX_LEGACY_PRESET_VERSION_LENGTH
+        || /[\u0000-\u001f\u007f]/u.test(version)) {
+        return false;
+    }
+    if (SUPPORTED_LEGACY_PRESET_VERSIONS.has(version)) return true;
+    if (!version.startsWith(LEGACY_PRESET_VERSION_PREFIX)) return false;
+    const suffix = version.slice(LEGACY_PRESET_VERSION_PREFIX.length);
+    return suffix.length > 0 && suffix.trim() === suffix;
+}
 
 /**
  * @typedef {{
@@ -179,7 +200,15 @@ function _extractPresetTemplates(preset) {
     if (preset?.format === 'amily2.table-profile') {
         return { ...(preset.templates || {}) };
     }
-    if (preset?.version === 'Amily2-Table-Preset-v3.0-separated_templates') {
+    // Community presets historically kept the separated-template payload but
+    // used an author-specific Amily2 version suffix. Detect the payload shape
+    // after the version namespace has been validated instead of keying this
+    // compatibility path to one exact official label.
+    if ([
+        preset?.batchFillerRuleTemplate,
+        preset?.batchFillerFlowTemplate,
+        preset?.injectionFlowTemplate,
+    ].some(value => typeof value === 'string')) {
         return Object.fromEntries([
             ['batchFillerRuleTemplate', preset.batchFillerRuleTemplate],
             ['batchFillerFlowTemplate', preset.batchFillerFlowTemplate],
@@ -232,7 +261,7 @@ function _resolveImportedProfile(preset, options = {}) {
     if (!preset?.version || !Array.isArray(preset.tables)) {
         throw new Error('文件格式无效：需要 Amily2 TableProfile 或带版本号的传统表格预设。');
     }
-    if (!SUPPORTED_LEGACY_PRESET_VERSIONS.has(preset.version)) {
+    if (!isSupportedLegacyTablePresetVersion(preset.version)) {
         throw new Error(`不支持的表格预设版本：${String(preset.version)}`);
     }
     const tables = JSON.parse(JSON.stringify(preset.tables));
@@ -270,10 +299,20 @@ export function importPreset(hooksOrCallback) {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
+    input.style.display = 'none';
+    input.setAttribute('aria-hidden', 'true');
+    document.body.appendChild(input);
+
+    const cleanupInput = () => {
+        input.remove();
+    };
 
     input.onchange = e => {
         const file = e.target.files[0];
-        if (!file) return;
+        if (!file) {
+            cleanupInput();
+            return;
+        }
 
         const reader = new FileReader();
         reader.onload = async event => {
@@ -328,7 +367,14 @@ export function importPreset(hooksOrCallback) {
             } catch (error) {
                 log(`导入预设失败: ${error.message}`, 'error');
                 toastr.error(`导入失败：${error.message}`, '错误');
+            } finally {
+                cleanupInput();
             }
+        };
+        reader.onerror = () => {
+            log('导入预设失败: 无法读取所选文件。', 'error');
+            toastr.error('导入失败：无法读取所选文件。', '错误');
+            cleanupInput();
         };
         reader.readAsText(file);
     };

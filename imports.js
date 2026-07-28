@@ -39,6 +39,7 @@ export { characters, this_chid, eventSource, event_types, saveSettingsDebounced 
 export { injectTableData, generateTableContent } from "./core/table-system/injector.js";
 export {
     injectProgressiveMemory,
+    PROGRESSIVE_MEMORY_PROMPT_CLEAR_FAILED,
     clearProgressiveMemoryInjection,
     invalidateProgressiveMemoryContext,
     suspendProgressiveMemoryContext,
