@@ -450,6 +450,27 @@
                             <small class="notes" style="margin-top: 5px; display: block;">收到新消息后延迟多少毫秒再触发分步填表 (0 = 立即触发)；延迟期内若再次收到消息会重置计时，起到防抖作用。</small>
                         </div>
 
+                        <!-- 分步填表稀疏进度游标 -->
+                        <div class="control-block-with-switch" style="margin-bottom: 10px; flex-direction: column; align-items: flex-start;">
+                            <label for="secondary-filler-cursor">下一补扫起点（当前游标）</label>
+                            <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px; flex-wrap: wrap;">
+                                <input type="number" id="secondary-filler-cursor" min="1" step="1" value="1" class="text_pole" style="width: 90px;">
+                                <button id="amily2-refresh-secondary-filler-cursor" class="menu_button small_button interactable" type="button">
+                                    <i class="fas fa-sync-alt"></i> 刷新
+                                </button>
+                                <button id="amily2-apply-secondary-filler-cursor" class="menu_button warning small_button interactable" type="button">
+                                    <i class="fas fa-forward"></i> 跳过至此
+                                </button>
+                            </div>
+                            <span id="amily2-secondary-filler-cursor-status" class="notes" style="font-size: 12px; margin-top: 5px;">正在读取当前聊天进度...</span>
+                            <small class="notes" style="margin-top: 5px; display: block;">
+                                游标按聊天中的原始楼层计数（包含用户楼），表示最早仍待处理的 AI 楼层；它由逐楼处理标记实时推导，不是全局设置。
+                                数值调大后，目标之前尚未处理或异常暂停的 AI 楼层会明确标记为“手动略过”，正文变化后会重新变为待处理。
+                                本操作只修改补扫进度，不会调用模型，也不会回滚当前表格。
+                                为避免在已含后续结果的表上重复写入，这里不允许把数值调小；如需重填更早楼层，请先使用“填表记录”恢复目标之前的快照。
+                            </small>
+                        </div>
+
                         <!-- 中断与手动解锁（兜底） -->
                         <div class="control-block-with-switch" style="margin-bottom: 10px; flex-direction: column; align-items: flex-start;">
                             <label>填表运行控制</label>
