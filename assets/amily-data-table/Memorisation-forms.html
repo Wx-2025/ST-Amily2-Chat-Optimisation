@@ -84,6 +84,10 @@
             <div class="sinan-navigation-deck" style="gap: 5px; margin-bottom: 10px;">
                 <button class="sinan-nav-item active" data-tab="injection-settings"><i class="fas fa-cogs"></i> 注入设置</button>
                 <button class="sinan-nav-item" data-tab="action-center"><i class="fas fa-toolbox"></i> 操作中心</button>
+                <button class="sinan-nav-item amily2-fill-review-nav" data-tab="fill-review">
+                    <i class="fas fa-exclamation-triangle"></i> 错误审查
+                    <span id="amily2-fill-review-count-badge" class="amily2-fill-review-count-badge" hidden>0</span>
+                </button>
                 <button class="sinan-nav-item" data-tab="ai-template"><i class="fas fa-robot"></i> 指令模板</button>
                 <button class="sinan-nav-item" data-tab="world-settings"><i class="fas fa-globe"></i> 世界读取</button>
                 <button class="sinan-nav-item" data-tab="shujuku-compat" hidden><i class="fas fa-shield-alt"></i> 数据库兼容</button>
@@ -641,6 +645,27 @@
                         <button id="amily2-reset-theme-btn" class="menu_button small_button interactable"><i class="fas fa-undo"></i> 恢复默认</button>
                     </div>
                     <p class="notes" style="margin-top: 8px;">说明：导入下载的主题JSON文件，或将当前的外观导出分享。</p>
+                </div>
+
+                <div id="sinan-fill-review-tab" class="sinan-tab-pane">
+                    <div class="amily2-fill-review-panel-heading">
+                        <div>
+                            <h3><i class="fas fa-clipboard-check"></i> 填表错误审查</h3>
+                            <p class="notes">
+                                这里按当前聊天保存尚未处理的填表错误。关闭插件面板不会丢失记录；
+                                修复文本仍会经过严格解析与原子校验。
+                            </p>
+                        </div>
+                        <span id="amily2-fill-review-summary" class="amily2-fill-review-summary" role="status" aria-live="polite">
+                            正在读取当前聊天…
+                        </span>
+                    </div>
+                    <div id="amily2-fill-review-list"
+                         class="amily2-fill-review-list"
+                         aria-live="polite"
+                         aria-busy="false">
+                        <div class="amily2-fill-review-empty">当前聊天没有待处理的填表错误。</div>
+                    </div>
                 </div>
 
 

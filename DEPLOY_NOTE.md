@@ -6,6 +6,17 @@
 
 ## v2.3.3
 
+### 全链路反代防超时
+
+- **Profile 开关真正生效**：修复 API Profile 已保存 `fakeStream`、中央请求却仍写死 `stream: false` 的断链；分配了 Profile 后只认该 Profile 的防超时设置，不再被 NGMS / NCCS 历史隐藏开关残值覆盖
+- **所有生成槽统一接入**：正文与剧情优化、并发优化、聊天总结、独立 API 填表、术语表、角色世界书、一键生卡、旧卡兼容任务、shujuku Agent 工作负载以及连接测试均使用同一连接级流式策略；Embedding 与 Rerank 保持其原生非生成请求
+- **Tool Call 可安全流式**：共享聚合器按 Tool 索引重组 `id`、函数名和 `function.arguments` 分片，表格 Tool V2、兼容重试与严格文本回退不再因开启防超时而丢失工具参数
+- **OpenAI / Google 双协议**：OpenAI 兼容与 SillyTavern 后端代理统一解析 SSE；Google 原生连接切换至 `streamGenerateContent?alt=sse` 后还原标准候选结果；上游忽略 `stream: true` 而返回普通 JSON 时仍可兼容
+- **严格解析边界**：支持 CRLF、无空格 `data:`、跨网络包 UTF-8、无末尾换行和 `[DONE]`；损坏事件、空响应、上游流式错误与超限响应失败关闭，Agent 继续遵守 `256 KiB` 私有响应上限
+- **一键生卡双模式兼容**：界面实时预览回调仍逐片收到增量；没有预览回调但 Profile 开启防超时时，也会在后台流式聚合后一次返回完整文本
+- **ST 预设原生流式**：预设转发不再静默关闭防超时，也不再手工复刻宿主 Profile 请求体；改用 SillyTavern 原生 `ConnectionManagerRequestService` 的异步流，并在 Profile 互斥锁内按累计文本安全聚合，流结束后才恢复原配置
+- **发布保护与门禁**：共享流式解析器进入强制混淆清单，并新增普通 JSON 回退、文本分片、Tool 参数分片、Google 分片、损坏事件、上游错误、体积上限、Profile 权威与传输隔离回归
+
 ### 分步填表保留楼层修复
 
 - **自动路径统一服从保留区**：普通消息扫描、滑动/重新生成后的定点扫描以及失败重试都会重新计算当前聊天的保留边界；自动触发不再通过 `targetMessage` 旁路越过“保留楼层”，也不会在等待重试期间追入最新楼层

@@ -1436,3 +1436,224 @@ h3.table-updated {
     text-shadow: 0 0 8px #00BFFF, 0 0 12px rgba(0, 191, 255, 0.5);
     transition: color 0.4s ease-in-out, text-shadow 0.4s ease-in-out;
 }
+
+/* Persistent table-fill error review inbox */
+.amily2-fill-review-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.amily2-fill-review-nav.has-unresolved {
+    color: var(--warning, #ffb74d);
+}
+
+.amily2-fill-review-count-badge {
+    min-width: 1.45em;
+    padding: 1px 5px;
+    border-radius: 999px;
+    background: #c62828;
+    color: #fff;
+    font-size: 0.75em;
+    font-weight: 700;
+    line-height: 1.35;
+    text-align: center;
+}
+
+.amily2-fill-review-panel-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.amily2-fill-review-panel-heading h3 {
+    margin: 0 0 5px;
+}
+
+.amily2-fill-review-panel-heading .notes {
+    margin: 0;
+    line-height: 1.55;
+}
+
+.amily2-fill-review-summary {
+    flex: 0 0 auto;
+    padding: 4px 8px;
+    border: 1px solid var(--am2-table-border, rgba(255, 255, 255, 0.2));
+    border-radius: 999px;
+    color: var(--SmartThemeQuoteColor, #ffb74d);
+    font-size: 0.82em;
+}
+
+.amily2-fill-review-list {
+    display: grid;
+    gap: 10px;
+    min-height: 70px;
+}
+
+.amily2-fill-review-empty,
+.amily2-fill-review-load-error {
+    padding: 18px 12px;
+    border: 1px dashed var(--am2-table-border, rgba(255, 255, 255, 0.2));
+    border-radius: 6px;
+    color: var(--SmartThemeQuoteColor, #aaa);
+    text-align: center;
+}
+
+.amily2-fill-review-load-error {
+    color: var(--warning, #ffb74d);
+}
+
+.amily2-fill-review-card {
+    border: 1px solid var(--am2-table-border, rgba(255, 255, 255, 0.22));
+    border-left: 3px solid #e8a838;
+    border-radius: 7px;
+    background: rgba(0, 0, 0, 0.16);
+    overflow: hidden;
+}
+
+.amily2-fill-review-card.is-selected {
+    border-color: #58a6ff;
+    box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.35);
+}
+
+.amily2-fill-review-card.is-busy {
+    opacity: 0.78;
+}
+
+.amily2-fill-review-card-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 9px 10px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.amily2-fill-review-card-title {
+    min-width: 0;
+    font-weight: 650;
+    overflow-wrap: anywhere;
+}
+
+.amily2-fill-review-status {
+    flex: 0 0 auto;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: rgba(232, 168, 56, 0.16);
+    color: #ffcc80;
+    font-size: 0.76em;
+}
+
+.amily2-fill-review-status.is-stale {
+    background: rgba(244, 67, 54, 0.15);
+    color: #ef9a9a;
+}
+
+.amily2-fill-review-card-body {
+    display: grid;
+    gap: 9px;
+    padding: 0 10px 11px;
+}
+
+.amily2-fill-review-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 14px;
+    color: var(--SmartThemeQuoteColor, #aaa);
+    font-size: 0.8em;
+}
+
+.amily2-fill-review-error {
+    padding: 8px 9px;
+    border-radius: 5px;
+    background: rgba(244, 67, 54, 0.09);
+    overflow-wrap: anywhere;
+}
+
+.amily2-fill-review-error-code {
+    margin-bottom: 4px;
+    color: #ef9a9a;
+    font-family: var(--monoFontFamily, monospace);
+    font-size: 0.82em;
+}
+
+.amily2-fill-review-error-message,
+.amily2-fill-review-warning,
+.amily2-fill-review-conflict {
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.amily2-fill-review-warning,
+.amily2-fill-review-conflict {
+    padding: 7px 9px;
+    border-left: 3px solid #e8a838;
+    border-radius: 3px;
+    background: rgba(232, 168, 56, 0.1);
+    color: #ffcc80;
+}
+
+.amily2-fill-review-conflict {
+    border-left-color: #ef5350;
+    background: rgba(239, 83, 80, 0.09);
+    color: #ef9a9a;
+}
+
+.amily2-fill-review-editor-label {
+    display: grid;
+    gap: 5px;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+
+.amily2-fill-review-editor {
+    width: 100%;
+    min-height: 180px;
+    resize: vertical;
+    box-sizing: border-box;
+    font-family: var(--monoFontFamily, monospace);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 1.45;
+    white-space: pre;
+    overflow-wrap: normal;
+    overflow-x: auto;
+}
+
+.amily2-fill-review-editor[readonly] {
+    opacity: 0.72;
+}
+
+.amily2-fill-review-action-status {
+    min-height: 1.35em;
+    color: var(--SmartThemeQuoteColor, #bbb);
+    font-size: 0.82em;
+    overflow-wrap: anywhere;
+}
+
+.amily2-fill-review-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .amily2-fill-review-panel-heading,
+    .amily2-fill-review-card-summary {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .amily2-fill-review-summary,
+    .amily2-fill-review-status {
+        align-self: flex-start;
+    }
+
+    .amily2-fill-review-actions > .menu_button {
+        flex: 1 1 10em;
+    }
+}
