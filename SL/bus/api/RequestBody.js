@@ -34,6 +34,7 @@ export class RequestBody {
 
         // 基础字段 (Base Fields)
         const payload = {
+            ...params,
             chat_completion_source: 'openai',
             messages: this.messages,
             model: model,
@@ -46,8 +47,6 @@ export class RequestBody {
 
             max_tokens: maxTokens,
             temperature: temperature,
-            // 允许 Options 中的 params 覆盖上述字段
-            ...params
         };
 
         // 平台特定字段处理 (Platform Specific Logic)
@@ -74,11 +73,11 @@ export class RequestBody {
      */
     toMinimalPayload() {
         return {
+            ...this.options.params,
             messages: this.messages,
             // 同样需要联动
             stream: this.options.fakeStream,
             max_tokens: this.options.maxTokens,
-            ...this.options.params
         };
     }
 }

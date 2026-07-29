@@ -437,38 +437,87 @@ export default class SfiGenModule extends Module {
         });
 
         // Image hover and zoom
-        $(document).on('mouseenter', '.sfigen-img-wrapper', function() {
-            $(this).find('.sfigen-img-overlay').css('opacity', '1');
-            $(this).find('.sfigen-display-img').css('transform', 'scale(1.02)');
-        }).on('mouseleave', '.sfigen-img-wrapper', function() {
-            $(this).find('.sfigen-img-overlay').css('opacity', '0');
-            $(this).find('.sfigen-display-img').css('transform', 'scale(1)');
-        });
+        const imageWrapperSelector = '#chat .sfigen-image-container .sfigen-img-wrapper';
+        $(document)
+            .off('mouseenter.sfigenZoom mouseleave.sfigenZoom click.sfigenZoom', imageWrapperSelector)
+            .on('mouseenter.sfigenZoom', imageWrapperSelector, function() {
+                $(this).find('.sfigen-img-overlay').css('opacity', '1');
+                $(this).find('.sfigen-display-img').css('transform', 'scale(1.02)');
+            })
+            .on('mouseleave.sfigenZoom', imageWrapperSelector, function() {
+                $(this).find('.sfigen-img-overlay').css('opacity', '0');
+                $(this).find('.sfigen-display-img').css('transform', 'scale(1)');
+            })
+            .on('click.sfigenZoom', imageWrapperSelector, function(e) {
+                e.stopPropagation();
+                const imgUrl = $(this).find('.sfigen-display-img').first().attr('src');
+                if (typeof imgUrl !== 'string' || imgUrl.length === 0) return;
 
-        $(document).on('click', '.sfigen-img-wrapper', function(e) {
-            e.stopPropagation();
-            const imgUrl = $(this).find('img').attr('src');
-            
-            const overlay = $(`
-                <div id="sfigen-zoom-overlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.9); z-index: 9999; display: flex; justify-content: center; align-items: center; cursor: zoom-out; opacity: 0; transition: opacity 0.3s;">
-                    <img src="${imgUrl}" style="max-width: 95%; max-height: 95%; object-fit: contain; border-radius: 8px; box-shadow: 0 0 20px rgba(0,0,0,0.5); transform: scale(0.9); transition: transform 0.3s;">
-                    <div style="position: absolute; top: 20px; right: 20px; color: white; font-size: 24px; cursor: pointer;"><i class="fa-solid fa-xmark"></i></div>
-                </div>
-            `);
-            
-            $('body').append(overlay);
-            
-            setTimeout(() => {
-                overlay.css('opacity', '1');
-                overlay.find('img').css('transform', 'scale(1)');
-            }, 10);
-            
-            overlay.on('click', function() {
-                overlay.css('opacity', '0');
-                overlay.find('img').css('transform', 'scale(0.9)');
-                setTimeout(() => overlay.remove(), 300);
+                document.getElementById('sfigen-zoom-overlay')?.remove();
+
+                const overlayElement = document.createElement('div');
+                overlayElement.id = 'sfigen-zoom-overlay';
+                Object.assign(overlayElement.style, {
+                    position: 'fixed',
+                    top: '0',
+                    left: '0',
+                    width: '100vw',
+                    height: '100vh',
+                    background: 'rgba(0,0,0,0.9)',
+                    zIndex: '9999',
+                    display: 'flex',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    cursor: 'zoom-out',
+                    opacity: '0',
+                    transition: 'opacity 0.3s',
+                });
+
+                const zoomImage = document.createElement('img');
+                zoomImage.alt = 'CG';
+                zoomImage.src = imgUrl;
+                Object.assign(zoomImage.style, {
+                    maxWidth: '95%',
+                    maxHeight: '95%',
+                    objectFit: 'contain',
+                    borderRadius: '8px',
+                    boxShadow: '0 0 20px rgba(0,0,0,0.5)',
+                    transform: 'scale(0.9)',
+                    transition: 'transform 0.3s',
+                });
+
+                const closeButton = document.createElement('button');
+                closeButton.type = 'button';
+                closeButton.setAttribute('aria-label', '关闭图片预览');
+                Object.assign(closeButton.style, {
+                    position: 'absolute',
+                    top: '20px',
+                    right: '20px',
+                    color: 'white',
+                    fontSize: '24px',
+                    cursor: 'pointer',
+                    border: '0',
+                    background: 'transparent',
+                });
+                const closeIcon = document.createElement('i');
+                closeIcon.classList.add('fa-solid', 'fa-xmark');
+                closeButton.append(closeIcon);
+
+                overlayElement.append(zoomImage, closeButton);
+                document.body.append(overlayElement);
+                const overlay = $(overlayElement);
+
+                setTimeout(() => {
+                    overlay.css('opacity', '1');
+                    overlay.find('img').css('transform', 'scale(1)');
+                }, 10);
+
+                overlay.on('click', function() {
+                    overlay.css('opacity', '0');
+                    overlay.find('img').css('transform', 'scale(0.9)');
+                    setTimeout(() => overlay.remove(), 300);
+                });
             });
-        });
 
         // Save image
         $(document).on('click', '.sfigen-save-btn', async function(e) {

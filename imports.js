@@ -12,7 +12,7 @@ import './core/table-system/TableSystemService.js'
 // Register shujuku compatibility listeners only while a live Type2+
 // authorization exists. The bootstrap also revokes the facade and prompts on
 // a hot authorization downgrade.
-import './core/table-system/compat/shujuku/access-bootstrap.js'
+import './core/table-system/compat/tdb/access-bootstrap.js'
 import './core/combat/CombatService.js'
 import './core/time-river/chat-binding.js'
 import { getContext as getTimeRiverHostContext } from '/scripts/extensions.js';

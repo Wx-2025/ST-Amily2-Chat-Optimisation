@@ -5,6 +5,7 @@ import { acquireProfileRequestPermit, bindSlotProfileRateLimit, getSlotProfile, 
 import { configManager } from '../../utils/config/ConfigManager.js';
 import { detectVendor } from '../../utils/api-vendor.js';
 import { mergeSafeModelCallOptions } from './safe-call-options.js';
+import { readOpenAICompatibleResponse } from './streaming-response.js';
 
 async function getConcurrentApiSettings() {
     const s = extension_settings[extensionName] || {};
@@ -19,6 +20,7 @@ async function getConcurrentApiSettings() {
             model:       profile.model,
             maxTokens:   profile.maxTokens   ?? 8100,
             temperature: profile.temperature ?? 1,
+            fakeStream:  profile.fakeStream ?? false,
         }, profile);
     }
 
@@ -30,6 +32,7 @@ async function getConcurrentApiSettings() {
         model:       s.plotOpt_concurrentModel || '',
         maxTokens:   s.plotOpt_concurrentMaxTokens || 8100,
         temperature: s.plotOpt_concurrentTemperature || 1,
+        fakeStream:  false,
     };
 }
 
@@ -105,7 +108,7 @@ async function callConcurrentOpenAITest(messages, options) {
         model: options.model,
         reverse_proxy: options.apiUrl,
         proxy_password: options.apiKey,
-        stream: false,
+        stream: options.fakeStream === true,
         max_tokens: options.maxTokens || 8100,
         temperature: options.temperature || 1,
         top_p: options.top_p || 1,
@@ -136,7 +139,9 @@ async function callConcurrentOpenAITest(messages, options) {
         throw new Error(`Concurrent全兼容API请求失败: ${response.status} - ${errorText}`);
     }
 
-    const responseData = await response.json();
+    const responseData = await readOpenAICompatibleResponse(response, {
+        stream: options.fakeStream === true,
+    });
     return responseData?.choices?.[0]?.message?.content;
 }
 

@@ -16,6 +16,10 @@ import { apiProfileManager } from '../../utils/config/ApiProfileManager.js';
 import { configManager } from '../../utils/config/ConfigManager.js';
 import { detectVendor } from '../../utils/api-vendor.js';
 import { mergeSafeModelCallOptions } from '../../core/api/safe-call-options.js';
+import {
+    readOpenAICompatibleResponse,
+    readSillyTavernPresetResponse,
+} from '../../core/api/streaming-response.js';
 
 function normalizeApiResponse(responseData) {
     let data = responseData;
@@ -60,6 +64,7 @@ async function getCwbApiSettings() {
             tavernProfile: '',
             temperature:   profile.temperature ?? 0.7,
             maxTokens:     profile.maxTokens   ?? 65000,
+            fakeStream:    profile.fakeStream ?? false,
         }, profile);
     }
 
@@ -72,7 +77,8 @@ async function getCwbApiSettings() {
         model: settings.cwb_api_model || '',
         tavernProfile: settings.cwb_tavern_profile || '',
         temperature: settings.cwb_temperature ?? 0.7,
-        maxTokens: settings.cwb_max_tokens ?? 65000
+        maxTokens: settings.cwb_max_tokens ?? 65000,
+        fakeStream: false,
     };
 }
 
@@ -118,7 +124,6 @@ async function callCwbSillyTavernPresetLocked(messages, options) {
     }
 
     let originalProfile = '';
-    let responsePromise;
 
     try {
         originalProfile = await compatibleTriggerSlash('/profile');
@@ -145,13 +150,27 @@ async function callCwbSillyTavernPresetLocked(messages, options) {
 
         assertSillyTavernProfileRequestActive(options.signal);
         console.log(`[CWB-ST预设] 通过配置文件 ${targetProfileName} 发送请求`);
-        responsePromise = context.ConnectionManagerRequestService.sendRequest(
-            targetProfile.id,
-            messages,
-            options.maxTokens || 65000,
-            { signal: options.signal },
+        const useStream = options.fakeStream === true;
+        const result = await readSillyTavernPresetResponse(
+            context.ConnectionManagerRequestService.sendRequest(
+                targetProfile.id,
+                messages,
+                options.maxTokens || 65000,
+                { stream: useStream, signal: options.signal },
+            ),
+            { stream: useStream },
         );
 
+        if (!result) {
+            throw new Error('未收到API响应');
+        }
+
+        const normalizedResult = normalizeApiResponse(result);
+        if (normalizedResult.error) {
+            throw new Error(normalizedResult.error.message || 'SillyTavern预设API调用失败');
+        }
+
+        return normalizedResult.content;
     } finally {
         try {
             const currentProfileAfterCall = await compatibleTriggerSlash('/profile');
@@ -165,18 +184,6 @@ async function callCwbSillyTavernPresetLocked(messages, options) {
         }
     }
 
-    const result = await responsePromise;
-
-    if (!result) {
-        throw new Error('未收到API响应');
-    }
-
-    const normalizedResult = normalizeApiResponse(result);
-    if (normalizedResult.error) {
-        throw new Error(normalizedResult.error.message || 'SillyTavern预设API调用失败');
-    }
-
-    return normalizedResult.content;
 }
 
 async function callCwbOpenAITest(messages, options) {
@@ -200,7 +207,8 @@ async function callCwbOpenAITest(messages, options) {
         top_p: Math.max(0, Math.min(1, parseFloat(options.top_p ?? 1))),
         apiUrl: options.apiUrl.trim(),
         apiKey: (options.apiKey || '').trim(),
-        model: options.model.trim()
+        model: options.model.trim(),
+        fakeStream: options.fakeStream === true,
     };
 
     // 验证消息格式
@@ -229,7 +237,7 @@ async function callCwbOpenAITest(messages, options) {
         model: validatedOptions.model,
         proxy_password: validatedOptions.apiKey,
         reverse_proxy: validatedOptions.apiUrl,
-        stream: false,
+        stream: validatedOptions.fakeStream,
         temperature: validatedOptions.temperature,
         top_p: validatedOptions.top_p
     };
@@ -286,9 +294,11 @@ async function callCwbOpenAITest(messages, options) {
 
         let responseData;
         try {
-            responseData = await response.json();
+            responseData = await readOpenAICompatibleResponse(response, {
+                stream: validatedOptions.fakeStream,
+            });
         } catch (e) {
-            throw new Error('API返回的响应不是有效的JSON格式');
+            throw new Error(`API返回的响应无法解析：${e.message}`);
         }
 
         // 使用标准化响应处理
@@ -687,7 +697,10 @@ export async function callCustomOpenAI(messages) {
 
     if (apiSettings.apiMode === 'sillytavern_preset') {
         await acquireProfileRequestPermit(apiSettings);
-        return await callCwbSillyTavernPreset(messages, { tavernProfile: apiSettings.tavernProfile, maxTokens: apiSettings.maxTokens || 65000 });
+        return await callCwbSillyTavernPreset(messages, {
+            tavernProfile: apiSettings.tavernProfile,
+            maxTokens: apiSettings.maxTokens || 65000,
+        });
     } else {
         if (!apiSettings.apiUrl || !apiSettings.model) {
             throw new Error('API URL/Model未配置。');
@@ -701,7 +714,7 @@ export async function callCustomOpenAI(messages) {
             temperature: apiSettings.temperature ?? 1,
             top_p: 1,
             max_tokens: apiSettings.maxTokens ?? 65000,
-            stream: false,
+            stream: apiSettings.fakeStream === true,
             chat_completion_source: 'openai',
             reverse_proxy: apiSettings.apiUrl,
             proxy_password: apiSettings.apiKey,
@@ -736,7 +749,9 @@ export async function callCustomOpenAI(messages) {
                 const errTxt = await response.text();
                 throw new Error(`API请求失败: ${response.status} ${errTxt}`);
             }
-            const data = await response.json();
+            const data = await readOpenAICompatibleResponse(response, {
+                stream: apiSettings.fakeStream === true,
+            });
 
             if (data.choices && data.choices[0]?.message?.content) {
                 return data.choices[0].message.content.trim();

@@ -13,6 +13,10 @@ import {
 import { configManager } from '../../utils/config/ConfigManager.js';
 import { detectVendor } from '../../utils/api-vendor.js';
 import { mergeSafeModelCallOptions } from './safe-call-options.js';
+import {
+    readOpenAICompatibleResponse,
+    readSillyTavernPresetResponse,
+} from './streaming-response.js';
 
 let ChatCompletionService = undefined;
 try {
@@ -68,7 +72,7 @@ async function getNgmsApiSettings() {
             temperature:  profile.temperature ?? 1.0,
             customParams: profile.customParams ?? {},
             tavernProfile: '',
-            useFakeStream: s.ngmsFakeStreamEnabled ?? false,
+            useFakeStream: profile.fakeStream ?? false,
         }, profile);
     }
 
@@ -114,13 +118,6 @@ export async function callNgmsAI(messages, options = {}) {
             console.warn("[Amily2-Ngms外交部] API配置不完整，无法调用AI");
             toastr.error("总结模块（NGMS）未配置 API 连接配置，请前往 API 连接配置面板分配 profile 或填写 NGMS 独立设置。", "Amily2-NGMS 未配置");
             return null;
-        }
-    } else {
-        // [限制] 预设模式暂不支持流式
-        if (finalOptions.stream) {
-            console.warn("[Amily2-Ngms] 预设模式目前尚不支持流式处理方案，已自动切换为标准模式。");
-            toastr.warning("SillyTavern预设模式目前暂不支持流式处理（假流式），已为您切换为标准请求模式。该功能将在后续版本中支持。", "Ngms-外交部");
-            finalOptions.stream = false;
         }
     }
 
@@ -189,54 +186,6 @@ export async function callNgmsAI(messages, options = {}) {
     }
 }
 
-async function fetchFakeStream(url, opts) {
-    const res = await fetch(url, opts);
-    if (!res.ok) {
-        const errorText = await res.text();
-        throw new Error(`Stream HTTP ${res.status}: ${errorText}`);
-    }
-    
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let fullContent = "";
-    let buffer = "";
-    
-    try {
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop();
-
-            for (const line of lines) {
-                const trimmed = line.trim();
-                if (!trimmed || trimmed === 'data: [DONE]') continue;
-                if (trimmed.startsWith('data: ')) {
-                    try {
-                        const json = JSON.parse(trimmed.substring(6));
-                        const delta = json.choices?.[0]?.delta?.content;
-                        if (delta) fullContent += delta;
-                    } catch (e) {
-                        console.warn('[NgmsApi] SSE Parse Error:', e);
-                    }
-                }
-            }
-        }
-    } finally {
-        reader.releaseLock();
-    }
-    
-    if (!fullContent && buffer) {
-        try { 
-            const data = JSON.parse(buffer);
-            return data.choices?.[0]?.message?.content || data.content || buffer; 
-        } catch { return buffer; }
-    }
-    return fullContent;
-}
-
 async function callNgmsOpenAITest(messages, options) {
     const isGoogleApi = (await detectVendor(options.apiUrl)) === 'google';
 
@@ -273,10 +222,6 @@ async function callNgmsOpenAITest(messages, options) {
         signal: options.signal,
     };
 
-    if (options.stream) {
-        return await fetchFakeStream('/api/backends/chat-completions/generate', fetchOpts);
-    }
-
     const response = await fetch('/api/backends/chat-completions/generate', fetchOpts);
 
     if (!response.ok) {
@@ -284,7 +229,9 @@ async function callNgmsOpenAITest(messages, options) {
         throw new Error(`Ngms全兼容API请求失败: ${response.status} - ${errorText}`);
     }
 
-    const responseData = await response.json();
+    const responseData = await readOpenAICompatibleResponse(response, {
+        stream: options.stream === true,
+    });
     return responseData?.choices?.[0]?.message?.content;
 }
 
@@ -302,7 +249,6 @@ async function callNgmsSillyTavernPreset(messages, options) {
     }
 
     let originalProfile = '';
-    let responsePromise;
 
     try {
         originalProfile = await amilyHelper.triggerSlash('/profile');
@@ -329,13 +275,27 @@ async function callNgmsSillyTavernPreset(messages, options) {
 
         assertSillyTavernProfileRequestActive(options.signal);
         console.log(`[Amily2号-NgmsST预设] 通过配置文件 ${targetProfileName} 发送请求`);
-        responsePromise = context.ConnectionManagerRequestService.sendRequest(
-            targetProfile.id,
-            messages,
-            options.maxTokens || 4000,
-            { ...(options.customParams || {}), signal: options.signal },
+        const useStream = options.stream === true;
+        const result = await readSillyTavernPresetResponse(
+            context.ConnectionManagerRequestService.sendRequest(
+                targetProfile.id,
+                messages,
+                options.maxTokens || 4000,
+                { stream: useStream, signal: options.signal },
+            ),
+            { stream: useStream },
         );
 
+        if (!result) {
+            throw new Error('未收到API响应');
+        }
+
+        const normalizedResult = normalizeApiResponse(result);
+        if (normalizedResult.error) {
+            throw new Error(normalizedResult.error.message || 'SillyTavern预设API调用失败');
+        }
+
+        return normalizedResult.content;
     } finally {
         try {
             const currentProfileAfterCall = await amilyHelper.triggerSlash('/profile');
@@ -349,18 +309,6 @@ async function callNgmsSillyTavernPreset(messages, options) {
         }
     }
 
-    const result = await responsePromise;
-
-    if (!result) {
-        throw new Error('未收到API响应');
-    }
-
-    const normalizedResult = normalizeApiResponse(result);
-    if (normalizedResult.error) {
-        throw new Error(normalizedResult.error.message || 'SillyTavern预设API调用失败');
-    }
-
-    return normalizedResult.content;
 }
 
 export async function fetchNgmsModels() {

@@ -26,6 +26,8 @@ export class Options {
         this.tools = config.tools || null;
         /** @type {Object|string|null} tool_choice：'auto'|'none'|'required' 或 { type:'function', function:{ name } } */
         this.toolChoice = config.toolChoice || null;
+        /** @type {AbortSignal|undefined} */
+        this.signal = config.signal;
     }
 
     /**
@@ -52,6 +54,11 @@ class OptionsBuilder {
 
     setFakeStream(enabled) {
         this.config.fakeStream = enabled;
+        return this;
+    }
+
+    setSignal(signal) {
+        this.config.signal = signal;
         return this;
     }
 

@@ -181,11 +181,14 @@ export function showTableFillReviewModal(rawResponse, callbacks = {}) {
     const {
         title = '填表响应检查',
         subtitle = 'AI未返回有效的 <Amily2Edit> 指令块。您可以在下方查看/编辑原始响应，并选择后续处理方式。',
+        reviewId = null,
+        onOpenReview,
         onApply,
         onContinue,
         onRetry,
         onCancel,
     } = callbacks;
+    const inboxMode = Boolean(reviewId && typeof onOpenReview === 'function');
 
     const modalHtml = `
         <div class="amily2-fill-review-modal">
@@ -193,22 +196,30 @@ export function showTableFillReviewModal(rawResponse, callbacks = {}) {
                 <i class="fas fa-exclamation-triangle"></i> ${escapeHtml(subtitle)}
             </div>
             <textarea class="text_pole amily2-fill-review-text"
+                ${inboxMode ? 'readonly' : ''}
                 style="width: 100%; height: 45vh; resize: vertical; font-family: var(--monoFontFamily, monospace); font-size: 12px; white-space: pre; overflow-wrap: normal; overflow-x: auto;"
             >${escapeHtml(rawResponse || '')}</textarea>
             <div class="notes" style="margin-top: 8px; font-size: 0.85em; opacity: 0.8; line-height: 1.6;">
-                <div><b>继续补全</b>：让 AI 基于当前文本继续生成剩余内容，结果会追加到文本框后。</div>
-                <div><b>重新填表</b>：舍弃当前响应并重新向 AI 请求同一批次的填表。</div>
-                <div><b>手动应用</b>：将文本框中的当前内容直接作为最终结果写入表格（跳过格式校验）。</div>
-                <div><b>取消</b>：放弃本次填表，任务暂停。</div>
+                ${inboxMode
+                    ? `<div>这不是唯一副本：记录已进入当前聊天的插件面板 <b>错误审查</b>。
+                        关闭本窗口不会删除记录，也不会让对应楼层永久失联。</div>`
+                    : `<div><b>继续补全</b>：让 AI 基于当前文本继续生成剩余内容，结果会追加到文本框后。</div>
+                        <div><b>重新填表</b>：舍弃当前响应并重新向 AI 请求同一批次的填表。</div>
+                        <div><b>手动应用</b>：严格校验文本后写入表格；校验失败时不会写表。</div>
+                        <div><b>取消</b>：放弃本次填表，任务暂停。</div>`}
             </div>
         </div>
     `;
 
     const dialogElement = showHtmlModal(title, modalHtml, {
-        okText: '手动应用',
-        cancelText: '取消',
+        okText: inboxMode ? '打开错误审查' : '手动应用',
+        cancelText: inboxMode ? '稍后处理' : '取消',
         showCancel: true,
         onOk: (dialog) => {
+            if (inboxMode) {
+                onOpenReview(reviewId);
+                return;
+            }
             const editedText = dialog.find('.amily2-fill-review-text').val();
             if (onApply) {
                 onApply(editedText);
@@ -223,7 +234,7 @@ export function showTableFillReviewModal(rawResponse, callbacks = {}) {
 
     const textarea = dialogElement.find('.amily2-fill-review-text');
 
-    if (typeof onContinue === 'function') {
+    if (!inboxMode && typeof onContinue === 'function') {
         const continueButton = $('<button class="menu_button interactable" style="margin-right: auto;"><i class="fas fa-forward"></i> 继续补全</button>');
         continueButton.on('click', async () => {
             const currentText = textarea.val();
@@ -245,7 +256,7 @@ export function showTableFillReviewModal(rawResponse, callbacks = {}) {
         dialogElement.find('.popup-controls').prepend(continueButton);
     }
 
-    if (typeof onRetry === 'function') {
+    if (!inboxMode && typeof onRetry === 'function') {
         const retryButton = $('<button class="menu_button secondary interactable"><i class="fas fa-redo"></i> 重新填表</button>');
         retryButton.on('click', () => {
             dialogElement[0].close();

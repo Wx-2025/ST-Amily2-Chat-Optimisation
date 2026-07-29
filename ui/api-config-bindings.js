@@ -20,6 +20,7 @@ import { testNccsApiConnection } from '../core/api/NccsApi.js';
 import { showContentModal } from './page-window.js';
 import { acquireProfileRequestPermit, bindSlotProfileRateLimit } from '../core/api/api-resolver.js';
 import { isOfficialDeepSeekEndpoint } from '../core/api/deepseek-tool-routing.js';
+import { readOpenAICompatibleResponse } from '../core/api/streaming-response.js';
 import {
     getRegistry,
     detectVendorSync,
@@ -854,6 +855,7 @@ async function _testConnection($c) {
                 $result.text('模型列表 ✓，正在验证补全端点…').css('color', 'var(--SmartThemeQuoteColor)');
                 await acquireProfileRequestPermit(rateLimitSettings);
                 const officialDeepSeek = isOfficialDeepSeekEndpoint(apiUrl);
+                const useStream = $c.find('#amily2_pf_fake_stream').prop('checked') === true;
                 const genResp = await fetch('/api/backends/chat-completions/generate', {
                     method: 'POST',
                     headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
@@ -864,11 +866,13 @@ async function _testConnection($c) {
                         model,
                         messages:   [{ role: 'user', content: 'Hi' }],
                         max_tokens: 1,
-                        stream:     false,
+                        stream:     useStream,
                         ...(officialDeepSeek ? { include_reasoning: false } : {}),
                     }),
                 });
-                const genData = await genResp.json().catch(() => ({}));
+                const genData = await readOpenAICompatibleResponse(genResp, {
+                    stream: useStream,
+                }).catch(() => ({}));
                 if (!genResp.ok || genData?.error) {
                     const genErr = genData;
                     const genMsg = genErr?.error?.message || `补全端点返回 HTTP ${genResp.status}`;

@@ -156,7 +156,7 @@ const HANDLERS = {
  *
  * @param {TableState} initialState
  * @param {Operation[]} operations
- * @param {{ strictRowBounds?: boolean }} [options]
+ * @param {{ strictRowBounds?: boolean, logSuccessfulOperations?: boolean }} [options]
  * @returns {{
  *   state: TableState,
  *   changes: Change[],
@@ -259,7 +259,9 @@ export function applyOperations(initialState, operations, options = {}) {
             const opLabel = op.op + '(' + op.tableIndex
                 + (typeof (/** @type {any} */(op)).rowIndex === 'number' ? `, ${(/** @type {any} */(op)).rowIndex}` : '')
                 + ')';
-            log(`成功推演操作: ${opLabel}`, 'success');
+            if (options.logSuccessfulOperations !== false) {
+                log(`成功推演操作: ${opLabel}`, 'success');
+            }
         } catch (e) {
             log(`推演操作 ${op.op} 时发生运行时错误，整批原子回退: ${e.message}`, 'error');
             return { state: originalState, changes: [], accepted: false };

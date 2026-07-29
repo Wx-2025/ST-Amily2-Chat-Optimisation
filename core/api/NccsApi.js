@@ -13,6 +13,10 @@ import {
 import { configManager } from '../../utils/config/ConfigManager.js';
 import { detectVendor } from '../../utils/api-vendor.js';
 import { mergeSafeModelCallOptions } from './safe-call-options.js';
+import {
+    readOpenAICompatibleResponse,
+    readSillyTavernPresetResponse,
+} from './streaming-response.js';
 import { registerInternalBusPlugin } from '../../SL/bus/Amily2Bus.js';
 
 // Keep Nccs transport isolated from compatibility/card scripts loaded after
@@ -67,7 +71,7 @@ async function getNccsApiSettings() {
             temperature:  profile.temperature ?? 1.0,
             customParams: profile.customParams ?? {},
             tavernProfile: '',
-            useFakeStream: s.nccsFakeStreamEnabled ?? false,
+            useFakeStream: profile.fakeStream ?? false,
         }, profile);
     }
 
@@ -124,13 +128,6 @@ export async function callNccsAI(messages, options = {}) {
             if (throwOnError) throw error;
             return null;
         }
-    } else {
-        // [限制] 预设模式暂不支持流式
-        if (finalOptions.stream) {
-            console.warn("[Amily2-Nccs] 预设模式目前尚不支持流式处理方案，已自动切换为标准模式。");
-            toastr.warning("SillyTavern预设模式暂不支持流式处理，已切换为标准请求。", "独立API填表");
-            finalOptions.stream = false;
-        }
     }
 
     try {
@@ -166,51 +163,6 @@ export async function callNccsAI(messages, options = {}) {
     }
 }
 
-
-async function fetchFakeStream(url, opts, signal) {
-    const res = await fetchWithCapturedNccsTransport(url, { ...opts, signal });
-    if (!res.ok) throw new Error(`Stream HTTP ${res.status}: ${await res.text()}`);
-    
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let fullContent = "";
-    let buffer = "";
-    
-    try {
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop();
-
-            for (const line of lines) {
-                const trimmed = line.trim();
-                if (!trimmed || trimmed === 'data: [DONE]') continue;
-                if (trimmed.startsWith('data: ')) {
-                    try {
-                        const json = JSON.parse(trimmed.substring(6));
-                        const delta = json.choices?.[0]?.delta?.content;
-                        if (delta) fullContent += delta;
-                    } catch (e) {
-                        console.warn('[NccsApi] SSE Parse Error:', e);
-                    }
-                }
-            }
-        }
-    } finally {
-        reader.releaseLock();
-    }
-    
-    if (!fullContent && buffer) {
-        try { 
-            const data = JSON.parse(buffer);
-            return data.choices?.[0]?.message?.content || data.content || buffer; 
-        } catch { return buffer; }
-    }
-    return fullContent;
-}
 
 // =================================================================================================
 // Legacy Implementations
@@ -254,16 +206,15 @@ async function callNccsOpenAITest(messages, options) {
         body: JSON.stringify(body)
     };
 
-    if (options.stream) {
-        return await fetchFakeStream('/api/backends/chat-completions/generate', fetchOpts, options.signal);
-    }
-
     const response = await fetchWithCapturedNccsTransport(
         '/api/backends/chat-completions/generate',
         { ...fetchOpts, signal: options.signal },
     );
     if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
-    return normalizeApiResponse(await response.json());
+    const responseData = await readOpenAICompatibleResponse(response, {
+        stream: options.stream === true,
+    });
+    return normalizeApiResponse(responseData);
 }
 
 async function callNccsSillyTavernPreset(messages, options) {
@@ -286,14 +237,16 @@ async function callNccsSillyTavernPreset(messages, options) {
         if (!context.ConnectionManagerRequestService) throw new Error('ConnectionManagerRequestService unavailable');
 
         assertSillyTavernProfileRequestActive(options.signal);
-        const sendPromise = context.ConnectionManagerRequestService.sendRequest(
-            targetProfile.id,
-            messages,
-            8192,
-            { ...(options.customParams || {}), signal: options.signal },
+        const useStream = options.stream === true;
+        const result = await readSillyTavernPresetResponse(
+            context.ConnectionManagerRequestService.sendRequest(
+                targetProfile.id,
+                messages,
+                8192,
+                { stream: useStream, signal: options.signal },
+            ),
+            { stream: useStream },
         );
-
-        const result = await sendPromise;
         return normalizeApiResponse(result);
 
     } finally {

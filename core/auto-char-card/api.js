@@ -4,13 +4,15 @@ import { extensionName } from "../../utils/settings.js";
 import { acquireProfileRequestPermit, bindSlotProfileRateLimit, getSlotProfile } from '../api/api-resolver.js';
 import { apiKeyStore } from '../../utils/config/api-key-store/ApiKeyStore.js';
 import { mergeSafeModelCallOptions } from '../api/safe-call-options.js';
+import { readOpenAICompatibleResponse } from '../api/streaming-response.js';
 
 const DEFAULT_CONFIG = {
     apiUrl: "",
     apiKey: "",
     model: "",
     maxTokens: 4000,
-    temperature: 0.7
+    temperature: 0.7,
+    fakeStream: false,
 };
 
 /** 同步读取旧版配置（UI 加载 / 保存用） */
@@ -30,6 +32,8 @@ export async function getResolvedApiConfig(role) {
             model:       profile.model,
             maxTokens:   profile.maxTokens ?? DEFAULT_CONFIG.maxTokens,
             temperature: profile.temperature ?? DEFAULT_CONFIG.temperature,
+            fakeStream:  profile.fakeStream ?? false,
+            customParams: profile.customParams ?? {},
         }, profile);
     }
     const legacy = getApiConfig(role);
@@ -75,15 +79,21 @@ export async function callAi(role, messages, options = {}, onChunk = null) {
         throw new Error(`[自动构建器] ${roleName} API 配置不完整，请检查 URL、Key 和模型设置。`);
     }
 
-    console.log(`[自动构建器] 正在调用 AI (${roleName})...`, { model: config.model, messagesCount: messages.length, stream: !!onChunk });
+    const useStream = Boolean(onChunk || config.fakeStream);
+    console.log(`[自动构建器] 正在调用 AI (${roleName})...`, {
+        model: config.model,
+        messagesCount: messages.length,
+        stream: useStream,
+    });
 
     const body = {
+        ...(config.customParams || {}),
         chat_completion_source: 'openai',
         messages: messages,
         model: config.model,
         reverse_proxy: config.apiUrl,
         proxy_password: config.apiKey,
-        stream: !!onChunk, 
+        stream: useStream,
         max_tokens: config.maxTokens > 0 ? config.maxTokens : undefined,
         temperature: config.temperature,
         top_p: 1,
@@ -107,62 +117,25 @@ export async function callAi(role, messages, options = {}, onChunk = null) {
             throw new Error(`API 请求失败: ${response.status} - ${errorText}`);
         }
 
-        if (onChunk) {
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder("utf-8");
-            let fullContent = "";
-            let buffer = "";
+        const responseData = await readOpenAICompatibleResponse(response, {
+            stream: useStream,
+            onTextDelta: typeof onChunk === 'function' ? onChunk : undefined,
+        });
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop(); 
-                
-                for (const line of lines) {
-                    const trimmedLine = line.trim();
-                    if (trimmedLine.startsWith('data: ')) {
-                        const dataStr = trimmedLine.slice(6).trim();
-                        if (dataStr === '[DONE]') continue;
-                        try {
-                            const data = JSON.parse(dataStr);
-                            const delta = data.choices[0].delta?.content || "";
-                            if (delta) {
-                                fullContent += delta;
-                                onChunk(delta);
-                            }
-                        } catch (e) {
-                            
-                        }
-                    }
-                }
+        if (!responseData || !responseData.choices || responseData.choices.length === 0) {
+            if (responseData?.error) {
+                throw new Error(`API 返回错误: ${responseData.error.message || JSON.stringify(responseData.error)}`);
             }
-            console.log(`[自动构建器] AI (${roleName}) 流式响应结束。长度: ${fullContent.length}`);
-            return fullContent;
-        } else {
-            const responseData = await response.json();
-            
-            if (!responseData || !responseData.choices || responseData.choices.length === 0) {
-                if (responseData.error) {
-                    throw new Error(`API 返回错误: ${responseData.error.message || JSON.stringify(responseData.error)}`);
-                }
-                throw new Error('API 返回了空响应。');
-            }
-
-            const content = responseData.choices[0].message?.content;
-            
-            if (!content) {
-                console.warn(`[自动构建器] AI (${roleName}) 响应内容为空。完整响应:`, responseData);
-                if (responseData.choices && responseData.choices[0]) {
-                    console.warn("Choices[0]:", responseData.choices[0]);
-                }
-            }
-
-            console.log(`[自动构建器] AI (${roleName}) 响应接收成功。长度: ${content?.length}`);
-            return content;
+            throw new Error('API 返回了空响应。');
         }
+
+        const content = responseData.choices[0].message?.content;
+        if (!content) {
+            console.warn(`[自动构建器] AI (${roleName}) 响应内容为空。完整响应:`, responseData);
+        }
+
+        console.log(`[自动构建器] AI (${roleName}) 响应接收成功。长度: ${content?.length}`);
+        return content;
 
     } catch (error) {
         console.error(`[自动构建器] AI (${roleName}) 调用失败:`, error);

@@ -13,6 +13,10 @@ import {
 import { configManager } from '../../utils/config/ConfigManager.js';
 import { detectVendor } from '../../utils/api-vendor.js';
 import { mergeSafeModelCallOptions } from './safe-call-options.js';
+import {
+    readOpenAICompatibleResponse,
+    readSillyTavernPresetResponse,
+} from './streaming-response.js';
 
 let ChatCompletionService = undefined;
 try {
@@ -67,6 +71,7 @@ async function getSybdApiSettings() {
             maxTokens:    profile.maxTokens   ?? 4000,
             temperature:  profile.temperature ?? 0.7,
             customParams: profile.customParams ?? {},
+            fakeStream:   profile.fakeStream ?? false,
             tavernProfile: '',
         }, profile);
     }
@@ -80,6 +85,7 @@ async function getSybdApiSettings() {
         maxTokens:    s.sybdMaxTokens    || 4000,
         temperature:  s.sybdTemperature  || 0.7,
         customParams: {},
+        fakeStream: false,
         tavernProfile: s.sybdTavernProfile || '',
     };
 }
@@ -108,6 +114,7 @@ export async function callSybdAI(messages, options = {}) {
         apiMode: apiSettings.apiMode,
         tavernProfile: apiSettings.tavernProfile,
         customParams: apiSettings.customParams ?? {},
+        fakeStream: apiSettings.fakeStream ?? false,
     }, options);
 
     if (finalOptions.apiMode !== 'sillytavern_preset') {
@@ -193,7 +200,7 @@ async function callSybdOpenAITest(messages, options) {
         model: options.model,
         reverse_proxy: options.apiUrl,
         proxy_password: options.apiKey,
-        stream: false,
+        stream: options.fakeStream === true,
         max_tokens: options.maxTokens || 30000,
         temperature: options.temperature || 1,
     };
@@ -223,7 +230,9 @@ async function callSybdOpenAITest(messages, options) {
         throw new Error(`Sybd全兼容API请求失败: ${response.status} - ${errorText}`);
     }
 
-    const responseData = await response.json();
+    const responseData = await readOpenAICompatibleResponse(response, {
+        stream: options.fakeStream === true,
+    });
     return responseData?.choices?.[0]?.message?.content;
 }
 
@@ -241,7 +250,6 @@ async function callSybdSillyTavernPreset(messages, options) {
     }
 
     let originalProfile = '';
-    let responsePromise;
 
     try {
         originalProfile = await amilyHelper.triggerSlash('/profile');
@@ -268,13 +276,27 @@ async function callSybdSillyTavernPreset(messages, options) {
 
         assertSillyTavernProfileRequestActive(options.signal);
         console.log(`[Amily2号-SybdST预设] 通过配置文件 ${targetProfileName} 发送请求`);
-        responsePromise = context.ConnectionManagerRequestService.sendRequest(
-            targetProfile.id,
-            messages,
-            options.maxTokens || 4000,
-            { ...(options.customParams || {}), signal: options.signal },
+        const useStream = options.fakeStream === true;
+        const result = await readSillyTavernPresetResponse(
+            context.ConnectionManagerRequestService.sendRequest(
+                targetProfile.id,
+                messages,
+                options.maxTokens || 4000,
+                { stream: useStream, signal: options.signal },
+            ),
+            { stream: useStream },
         );
 
+        if (!result) {
+            throw new Error('未收到API响应');
+        }
+
+        const normalizedResult = normalizeApiResponse(result);
+        if (normalizedResult.error) {
+            throw new Error(normalizedResult.error.message || 'SillyTavern预设API调用失败');
+        }
+
+        return normalizedResult.content;
     } finally {
         try {
             const currentProfileAfterCall = await amilyHelper.triggerSlash('/profile');
@@ -288,18 +310,6 @@ async function callSybdSillyTavernPreset(messages, options) {
         }
     }
 
-    const result = await responsePromise;
-
-    if (!result) {
-        throw new Error('未收到API响应');
-    }
-
-    const normalizedResult = normalizeApiResponse(result);
-    if (normalizedResult.error) {
-        throw new Error(normalizedResult.error.message || 'SillyTavern预设API调用失败');
-    }
-
-    return normalizedResult.content;
 }
 
 export async function fetchSybdModels() {

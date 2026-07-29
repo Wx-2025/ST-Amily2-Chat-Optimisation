@@ -2,6 +2,11 @@ import { getRequestHeaders } from "/script.js";
 import { getContext, extension_settings } from "/scripts/extensions.js";
 import { amilyHelper } from '../../../core/tavern-helper/main.js';
 import { runWithSillyTavernProfileLock } from '../../../core/api/api-resolver.js';
+import { sanitizeCustomModelParams } from '../../../core/api/safe-call-options.js';
+import {
+    readOpenAICompatibleResponse,
+    readSillyTavernPresetResponse,
+} from '../../../core/api/streaming-response.js';
 import Options from './Options.js';
 import RequestBody from './RequestBody.js';
 
@@ -53,6 +58,7 @@ export default class ModelCaller {
             if (options.mode === 'preset') {
                 result = await runWithSillyTavernProfileLock(
                     () => this._callPreset(callerName, requestBody, options),
+                    options.signal,
                 );
             } else {
                 result = await this._callDirect(callerName, requestBody, options);
@@ -88,8 +94,8 @@ export default class ModelCaller {
     /**
      * 带工具的 agent loop（Phase A + A.5 双运输）。
      *
-     * 与 call() 不同：call() 经 _normalize 只返字符串、丢弃 tool_calls；本方法走非流式 raw 路径，
-     * 自动拼装工具、串行 dispatch tool_calls 回 handler、结果回喂后续轮，直到模型不再调用工具或触顶 maxSteps。
+     * 与 call() 不同：call() 经 _normalize 只返字符串、丢弃 tool_calls；本方法保留完整 raw message，
+     * 流式时先重组 tool_calls，再串行 dispatch 回 handler 并回喂后续轮，直到模型不再调用工具或触顶 maxSteps。
      *
      * 双运输（A.5）：
      *   - 'tools'：原生 OpenAI function calling（省输出 token，首选）
@@ -98,7 +104,7 @@ export default class ModelCaller {
      *
      * @param {string} callerName 插件名（日志用）
      * @param {Array} messages 初始消息（不被原地修改，内部克隆）
-     * @param {Options} options 连接配置（apiUrl/apiKey/model/...）；其 fakeStream/mode 在本方法内被强制为非流式 direct
+     * @param {Options} options 连接配置（apiUrl/apiKey/model/fakeStream/...）；工具循环固定使用 direct 运输
      * @param {Object} loop
      * @param {() => Object[]} loop.getToolDefs 返回本插件已 define 的工具 schema 数组
      * @param {(name: string, args: Object) => Promise<any>} loop.dispatch 派发 tool_call 到 handler
@@ -232,13 +238,14 @@ export default class ModelCaller {
             // ── json 运输 ────────────────────────────────────────────────
             const stepOptions = new Options({
                 mode: 'direct',
-                fakeStream: false,
+                fakeStream: options.fakeStream,
                 apiUrl: options.apiUrl,
                 apiKey: options.apiKey,
                 model: options.model,
                 maxTokens: options.maxTokens,
                 temperature: options.temperature,
                 params: options.params,
+                signal: options.signal,
             });
             const raw = await this._callDirect(callerName, new RequestBody(convo, stepOptions), stepOptions);
             if (raw && raw.error) {
@@ -296,10 +303,10 @@ export default class ModelCaller {
      * 三个失败点统一抛错，由调用方决定"报错(强制 tools)"还是"降级(auto)"。
      */
     async _requestToolsMessage(callerName, convo, options, toolDefs, toolChoice) {
-        // 强制非流式 direct（流式聚合会丢 tool_calls）
+        // 共享聚合器会完整重建 tool_calls，因此工具运输也可以启用防超时。
         const stepOptions = new Options({
             mode: 'direct',
-            fakeStream: false,
+            fakeStream: options.fakeStream,
             apiUrl: options.apiUrl,
             apiKey: options.apiKey,
             model: options.model,
@@ -308,6 +315,7 @@ export default class ModelCaller {
             params: options.params,
             tools: toolDefs,
             toolChoice,
+            signal: options.signal,
         });
         const raw = await this._callDirect(callerName, new RequestBody(convo, stepOptions), stepOptions);
         // 部分中转返回 HTTP 200 但 body 带 error（如"工具调用未启用"）
@@ -335,7 +343,8 @@ export default class ModelCaller {
         const fetchOpts = {
             method: 'POST',
             headers: { ...getRequestHeaders(), ...this.defaultHeaders },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
+            signal: options.signal,
         };
 
         return options.fakeStream
@@ -363,44 +372,25 @@ export default class ModelCaller {
         }
 
         try {
-            // 2. 根据流式需求分流处理
-            if (options.fakeStream) {
-                // 【流式预设请求】
-                // 难点：ST 的 ConnectionManagerRequestService 不暴露流。
-                // 策略：切换 Profile 后，手动向生成接口发送请求。
-                const url = '/api/backends/chat-completions/generate';
-                
-                // [修复]: 手动合并 Profile 中的关键参数，否则后端不会自动应用预设配置
-                // 提取逻辑已封装至 _buildProfilePayload
-                const profilePayload = this._buildProfilePayload(targetProfile);
-
-                // 合并顺序：基础Payload(msg) < Profile预设 < 显式Params覆盖
-                // toMinimalPayload 包含: messages, stream, max_tokens, ...params
-                const minimal = requestBody.toMinimalPayload();
-                
-                const finalPayload = {
-                    ...profilePayload,
-                    ...minimal, 
-                    ...options.params 
-                };
-
-                const fetchOpts = {
-                    method: 'POST',
-                    headers: { ...getRequestHeaders(), ...this.defaultHeaders },
-                    body: JSON.stringify(finalPayload)
-                };
-                return await this._fetchFakeStream(url, fetchOpts);
-            } else {
-                // 【非流式预设请求】
-                // 直接使用 ST 原生服务，最稳妥
-                if (!context.ConnectionManagerRequestService) throw new Error('ST Request Service unavailable');
-                return await context.ConnectionManagerRequestService.sendRequest(
+            if (!context.ConnectionManagerRequestService) {
+                throw new Error('ST Request Service unavailable');
+            }
+            const useStream = options.fakeStream === true;
+            const overridePayload = sanitizeCustomModelParams(options.params);
+            if (Array.isArray(options.tools) && options.tools.length > 0) {
+                overridePayload.tools = options.tools;
+                if (options.toolChoice) overridePayload.tool_choice = options.toolChoice;
+            }
+            return await readSillyTavernPresetResponse(
+                context.ConnectionManagerRequestService.sendRequest(
                     targetProfile.id,
                     requestBody.messages,
                     options.maxTokens,
-                    { signal: options.signal },
-                );
-            }
+                    { stream: useStream, signal: options.signal },
+                    overridePayload,
+                ),
+                { stream: useStream },
+            );
 
         } finally {
             // 3. 恢复 Profile
@@ -432,62 +422,7 @@ export default class ModelCaller {
     async _fetchFakeStream(url, opts) {
         const res = await fetch(url, opts);
         if (!res.ok) throw new Error(`Stream HTTP ${res.status}`);
-        const reader = res.body.getReader();
-        const decoder = new TextDecoder();
-        let fullContent = ""; // 用于存储最终拼接的纯文本
-        let buffer = ""; // 用于存储未处理完的数据片段
-        try {
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                // 1. 解码当前数据包
-                const chunk = decoder.decode(value, { stream: true });
-                buffer += chunk;
-
-                // 2. 处理 SSE 格式 (data: {...})
-                // 以双换行符分割每一条 SSE 消息
-                const lines = buffer.split('\n');
-
-                // 保留最后一个可能不完整的片段在 buffer 中
-                buffer = lines.pop();
-
-                for (const line of lines) {
-                    const trimmed = line.trim();
-                    if (!trimmed || trimmed === 'data: [DONE]') continue;
-
-                    if (trimmed.startsWith('data: ')) {
-                        try {
-                            const jsonStr = trimmed.substring(6); // 去掉 'data: '
-                            const json = JSON.parse(jsonStr);
-
-                            // 提取 delta content
-                            const delta = json.choices?.[0]?.delta?.content;
-                            if (delta) {
-                                fullContent += delta;
-                            }
-                        } catch (e) {
-                            // 忽略解析错误的行，防止因为个别丢包导致整个请求失败
-                            console.warn('[ModelCaller] SSE Parse Error:', e);
-                        }
-                    }
-                }
-            }
-        } finally {
-            reader.releaseLock();
-        }
-
-        // 如果 fullContent 是空的，说明可能服务端根本没返回 SSE 格式，而是直接返回了纯文本或 JSON
-        // 这种情况下尝试降级处理
-        if (!fullContent && buffer) {
-            try {
-                const json = JSON.parse(buffer);
-                return json; // 是标准 JSON
-            } catch {
-                return buffer; // 是纯文本
-            }
-        }
-
-        return fullContent;
+        return readOpenAICompatibleResponse(res, { stream: true });
     }
 
     // ========================================================================

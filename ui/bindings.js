@@ -758,15 +758,15 @@ export function bindModalEvents() {
                 },
                 "amily2_open_shujuku_tutorial": {
                     title: "数据库兼容 · 小白教程",
-                    url: `${extensionBasePath}/ShujukuCompatibility.md`,
+                    url: `${extensionBasePath}/TDBCompatibility.md`,
                     advancedTitle: "数据库与 Agent 兼容 · 进阶操作",
-                    advancedUrl: `${extensionBasePath}/ShujukuCompatibility-Advanced.md`,
+                    advancedUrl: `${extensionBasePath}/TDBCompatibility-Advanced.md`,
                 },
                 "amily2_open_shujuku_agent_tutorial": {
                     title: "数据库兼容 · 小白教程",
-                    url: `${extensionBasePath}/ShujukuCompatibility.md`,
+                    url: `${extensionBasePath}/TDBCompatibility.md`,
                     advancedTitle: "数据库与 Agent 兼容 · 进阶操作",
-                    advancedUrl: `${extensionBasePath}/ShujukuCompatibility-Advanced.md`,
+                    advancedUrl: `${extensionBasePath}/TDBCompatibility-Advanced.md`,
                 }
             };
             
