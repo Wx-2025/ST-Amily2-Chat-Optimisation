@@ -40,6 +40,8 @@ export { injectTableData, generateTableContent } from "./core/table-system/injec
 export {
     injectProgressiveMemory,
     PROGRESSIVE_MEMORY_PROMPT_CLEAR_FAILED,
+    PROGRESSIVE_MEMORY_STATUS_EVENT,
+    getProgressiveMemoryStatus,
     clearProgressiveMemoryInjection,
     invalidateProgressiveMemoryContext,
     suspendProgressiveMemoryContext,

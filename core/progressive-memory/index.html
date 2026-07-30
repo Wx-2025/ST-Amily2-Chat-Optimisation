@@ -42,6 +42,17 @@
     </fieldset>
 
     <fieldset class="sm-settings-group">
+        <legend><i class="fas fa-heartbeat"></i> 运行状态</legend>
+        <div class="sm-control-block" style="display: block;">
+            <strong id="pm-runtime-state" aria-live="polite">等待当前聊天的表格状态就绪</strong>
+            <small id="pm-runtime-detail" style="color: #888; font-size: 0.8em; display: block; margin-top: 4px;">尚无本轮取样数据</small>
+        </div>
+        <button type="button" id="pm-disable-clear" class="menu_button secondary interactable" title="立即关闭渐进记忆、使在途取样失效并清除当前宿主提示词注入">
+            <i class="fas fa-power-off"></i> 停用并清除
+        </button>
+    </fieldset>
+
+    <fieldset class="sm-settings-group">
         <legend><i class="fas fa-sliders-h"></i> 取样设置</legend>
         <div class="sm-control-block">
             <label title="最近 N 行全部保留（最近发生的事，完整保留）">最近完整保留行数:</label>
