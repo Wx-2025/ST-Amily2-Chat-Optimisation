@@ -5,6 +5,7 @@ import {
     pluginAuthStatus,
     activatePluginAuthorization,
     getPasswordForDate,
+    refreshUserInfo,
     resetPluginAuthorizationState,
 } from "../utils/auth.js";
 import { fetchModels, testApiConnection } from "../core/api.js";
@@ -780,19 +781,35 @@ export function bindModalEvents() {
         });
 
     container
+        .off("click.amily2.refresh_auth")
+        .on("click.amily2.refresh_auth", "#amily2_refresh_auth", async function() {
+            if (!pluginAuthStatus.authorized) return;
+
+            const button = $(this);
+            if (button.prop('disabled')) return;
+            const icon = button.find('i');
+            button.prop('disabled', true);
+            icon.addClass('fa-spin');
+            try {
+                await refreshUserInfo({ interactive: true });
+            } finally {
+                icon.removeClass('fa-spin');
+                button.prop('disabled', false);
+            }
+        });
+
+    container
         .off("click.amily2.reset_auth")
         .on("click.amily2.reset_auth", "#amily2_reset_auth", function() {
             if (!pluginAuthStatus.authorized) return;
             
-            if (confirm("确定要清除本地授权码吗？\n这将使您的授权失效，需要重新验证。\n\n这通常用于：\n1. 升级为高级用户\n2. 解决授权异常问题")) {
-                localStorage.removeItem("plugin_auth_code");
-                localStorage.removeItem("plugin_activated");
-                localStorage.removeItem("plugin_auto_login");
-                localStorage.removeItem("plugin_user_type");
-                localStorage.removeItem("plugin_valid_until");
-                sessionStorage.removeItem("plugin_auth_code");
-                resetPluginAuthorizationState('manual-reset');
-                
+            if (confirm("确定要清除本机授权信息吗？\n这将使当前授权失效，需要重新输入授权码。\n\n权限升级请优先使用“刷新权限信息”。\n仅在授权码失效、切换授权或本地状态异常时使用此操作。")) {
+                const resetResult = resetPluginAuthorizationState('manual-reset');
+                if (!resetResult.ok) {
+                    toastr.error("部分历史授权记录无法清除，请在浏览器站点设置中手动清除本站数据后重试。", "授权清理失败");
+                    return;
+                }
+
                 toastr.success("授权已清除，即将重新加载以生效...", "Amily2号");
                 
                 setTimeout(() => {
