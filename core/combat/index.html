@@ -1,0 +1,105 @@
+<section class="am2-combat-shell" aria-labelledby="amily2_combat_title">
+    <header class="am2-combat-header">
+        <div>
+            <div class="am2-combat-title-line">
+                <h3 id="amily2_combat_title">战斗演算</h3>
+                <span class="am2-combat-type3-badge">TYPE3 · PREVIEW</span>
+            </div>
+            <p>战斗只在当前聊天内存续。整回合原子结算，刷新后可从内部表恢复。</p>
+        </div>
+        <button id="amily2_back_to_main_from_combat" class="menu_button small_button" type="button">
+            <i class="fas fa-arrow-left"></i> 返回
+        </button>
+    </header>
+
+    <div id="amily2_combat_access_status" class="am2-combat-notice" role="status" aria-live="polite">
+        正在校验 Type3 授权……
+    </div>
+
+    <fieldset class="settings-group am2-combat-section">
+        <legend><i class="fas fa-file-shield"></i> 1. 战斗档案</legend>
+        <label class="am2-combat-field" for="amily2_combat_seed_text">
+            <span>战斗档案文本</span>
+            <textarea
+                id="amily2_combat_seed_text"
+                class="text_pole"
+                maxlength="131072"
+                rows="12"
+                spellcheck="false"
+                disabled
+                placeholder="粘贴一个或多个【战斗档案·角色名】文本。角色名在同一场战斗中必须唯一。"></textarea>
+        </label>
+        <div class="am2-combat-grid">
+            <label class="am2-combat-field" for="amily2_combat_seed">
+                <span>随机种子</span>
+                <input
+                    id="amily2_combat_seed"
+                    class="text_pole"
+                    type="text"
+                    maxlength="256"
+                    autocomplete="off"
+                    disabled
+                    placeholder="留空则由系统生成">
+            </label>
+            <div class="am2-combat-field">
+                <span>生命周期</span>
+                <div class="am2-combat-button-row">
+                    <button id="amily2_combat_start" class="menu_button" type="button" disabled>
+                        <i class="fas fa-play"></i> 开始
+                    </button>
+                    <button id="amily2_combat_restore" class="menu_button" type="button" disabled>
+                        <i class="fas fa-rotate"></i> 恢复
+                    </button>
+                    <button id="amily2_combat_end" class="menu_button danger_button" type="button" disabled>
+                        <i class="fas fa-flag-checkered"></i> 结束
+                    </button>
+                </div>
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset class="settings-group am2-combat-section">
+        <legend><i class="fas fa-heart-pulse"></i> 2. 当前战局</legend>
+        <div id="amily2_combat_meta" class="am2-combat-meta">尚未载入战斗。</div>
+        <div id="amily2_combatants" class="am2-combatant-grid" aria-live="polite">
+            <div class="am2-combat-empty">开始或恢复战斗后，这里会显示角色状态。</div>
+        </div>
+    </fieldset>
+
+    <fieldset class="settings-group am2-combat-section">
+        <legend><i class="fas fa-list-ol"></i> 3. 本回合行动</legend>
+        <div class="am2-combat-section-actions">
+            <p class="notes">行动槽按速度排序；目标指向另一个行动槽。高级链用于显式指定同阵营的绕速结算顺序。</p>
+            <button id="amily2_combat_add_slot" class="menu_button small_button" type="button" disabled>
+                <i class="fas fa-plus"></i> 添加行动槽
+            </button>
+        </div>
+        <div id="amily2_combat_slots" class="am2-combat-slot-list">
+            <div class="am2-combat-empty">载入战局后添加行动槽。</div>
+        </div>
+
+        <details class="am2-combat-advanced">
+            <summary>高级：目标链 JSON</summary>
+            <p class="notes">可选。格式为数组；留空或 <code>[]</code> 时，简单互指自动生成拼点链；无法唯一推导时会拒绝结算，需在此显式填写。</p>
+            <textarea
+                id="amily2_combat_chains"
+                class="text_pole"
+                rows="6"
+                spellcheck="false"
+                disabled
+                placeholder='[{"chainId":"chain-1","anchorSlotId":"slot-2","orderedSlotIds":["slot-1"],"clashSlotId":"slot-1"}]'>[]</textarea>
+        </details>
+
+        <div class="am2-combat-resolve-row">
+            <button id="amily2_combat_resolve" class="menu_button" type="button" disabled>
+                <i class="fas fa-dice"></i> 结算整回合
+            </button>
+            <span id="amily2_combat_operation_status" class="am2-combat-operation-status" role="status" aria-live="polite"></span>
+        </div>
+    </fieldset>
+
+    <fieldset class="settings-group am2-combat-section">
+        <legend><i class="fas fa-scroll"></i> 4. 战报</legend>
+        <pre id="amily2_combat_report" class="am2-combat-report" tabindex="0">暂无战报。</pre>
+    </fieldset>
+</section>
