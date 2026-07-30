@@ -1,0 +1,246 @@
+#amily2_combat_panel {
+    color: var(--am2-text, #e8e8ee);
+}
+
+#amily2_combat_panel .am2-combat-shell {
+    display: flex;
+    flex-direction: column;
+    gap: var(--am2-space-3, 12px);
+    min-width: 0;
+}
+
+#amily2_combat_panel .am2-combat-header,
+#amily2_combat_panel .am2-combat-title-line,
+#amily2_combat_panel .am2-combat-section-actions,
+#amily2_combat_panel .am2-combat-resolve-row,
+#amily2_combat_panel .am2-combat-button-row,
+#amily2_combat_panel .am2-combat-slot-heading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#amily2_combat_panel .am2-combat-header {
+    justify-content: space-between;
+}
+
+#amily2_combat_panel .am2-combat-header h3,
+#amily2_combat_panel .am2-combat-header p {
+    margin: 0;
+}
+
+#amily2_combat_panel .am2-combat-header p {
+    margin-top: 4px;
+    color: var(--am2-muted, rgba(232, 232, 238, 0.68));
+    font-size: 12px;
+}
+
+#amily2_combat_panel .am2-combat-type3-badge {
+    padding: 3px 7px;
+    border: 1px solid rgba(245, 185, 66, 0.4);
+    border-radius: 999px;
+    background: rgba(245, 185, 66, 0.12);
+    color: var(--am2-warning, #f5b942);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+
+#amily2_combat_panel .am2-combat-notice,
+#amily2_combat_panel .am2-combat-meta {
+    padding: 9px 10px;
+    border: 1px solid rgba(139, 108, 240, 0.25);
+    border-radius: var(--am2-radius-md, 10px);
+    background: rgba(139, 108, 240, 0.08);
+    font-size: 12px;
+    overflow-wrap: anywhere;
+}
+
+#amily2_combat_panel .am2-combat-notice[data-level="error"] {
+    border-color: rgba(255, 99, 99, 0.42);
+    background: rgba(255, 99, 99, 0.1);
+    color: #ffb1b1;
+}
+
+#amily2_combat_panel .am2-combat-notice[data-level="success"] {
+    border-color: rgba(104, 211, 145, 0.38);
+    background: rgba(104, 211, 145, 0.09);
+    color: #a8edc2;
+}
+
+#amily2_combat_panel .am2-combat-section {
+    min-width: 0;
+}
+
+#amily2_combat_panel .am2-combat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 10px;
+}
+
+#amily2_combat_panel .am2-combat-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+#amily2_combat_panel .am2-combat-field > span {
+    color: var(--am2-muted, rgba(232, 232, 238, 0.72));
+    font-size: 12px;
+    font-weight: 600;
+}
+
+#amily2_combat_panel textarea,
+#amily2_combat_panel input,
+#amily2_combat_panel select {
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+#amily2_combat_panel textarea {
+    resize: vertical;
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    line-height: 1.45;
+}
+
+#amily2_combat_panel .am2-combat-button-row,
+#amily2_combat_panel .am2-combat-section-actions,
+#amily2_combat_panel .am2-combat-resolve-row {
+    flex-wrap: wrap;
+}
+
+#amily2_combat_panel .am2-combat-section-actions {
+    justify-content: space-between;
+    margin-bottom: 9px;
+}
+
+#amily2_combat_panel .am2-combat-section-actions p {
+    flex: 1 1 280px;
+    margin: 0;
+}
+
+#amily2_combat_panel .am2-combatant-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 9px;
+    margin-top: 9px;
+}
+
+#amily2_combat_panel .am2-combatant-card,
+#amily2_combat_panel .am2-combat-slot {
+    min-width: 0;
+    padding: 10px;
+    border: var(--am2-border, 1px solid rgba(255, 255, 255, 0.12));
+    border-radius: var(--am2-radius-md, 10px);
+    background: var(--am2-surface, rgba(255, 255, 255, 0.04));
+}
+
+#amily2_combat_panel .am2-combatant-card h4 {
+    margin: 0 0 7px;
+    overflow-wrap: anywhere;
+}
+
+#amily2_combat_panel .am2-combatant-stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 8px;
+    font-size: 12px;
+}
+
+#amily2_combat_panel .am2-combatant-stats span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+#amily2_combat_panel .am2-combat-slot-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+#amily2_combat_panel .am2-combat-slot-heading {
+    justify-content: space-between;
+    margin-bottom: 8px;
+}
+
+#amily2_combat_panel .am2-combat-slot-id {
+    color: var(--am2-muted, rgba(232, 232, 238, 0.66));
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 11px;
+}
+
+#amily2_combat_panel .am2-combat-slot-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(120px, 1fr));
+    gap: 8px;
+}
+
+#amily2_combat_panel .am2-combat-advanced {
+    margin-top: 10px;
+}
+
+#amily2_combat_panel .am2-combat-advanced > summary {
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+#amily2_combat_panel .am2-combat-advanced textarea {
+    width: 100%;
+}
+
+#amily2_combat_panel .am2-combat-resolve-row {
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+#amily2_combat_panel .am2-combat-operation-status {
+    flex: 1 1 180px;
+    color: var(--am2-muted, rgba(232, 232, 238, 0.68));
+    font-size: 12px;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+#amily2_combat_panel .am2-combat-report {
+    min-height: 130px;
+    max-height: 340px;
+    margin: 0;
+    padding: 10px;
+    overflow: auto;
+    border: var(--am2-border, 1px solid rgba(255, 255, 255, 0.12));
+    border-radius: var(--am2-radius-md, 10px);
+    background: rgba(0, 0, 0, 0.24);
+    color: inherit;
+    font: 12px/1.5 ui-monospace, SFMono-Regular, Consolas, monospace;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+#amily2_combat_panel .am2-combat-empty {
+    padding: 12px;
+    color: var(--am2-muted, rgba(232, 232, 238, 0.62));
+    font-size: 12px;
+    text-align: center;
+}
+
+@media (max-width: 700px) {
+    #amily2_combat_panel .am2-combat-header {
+        align-items: flex-start;
+    }
+
+    #amily2_combat_panel .am2-combat-slot-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 430px) {
+    #amily2_combat_panel .am2-combat-slot-grid {
+        grid-template-columns: 1fr;
+    }
+
+    #amily2_combat_panel .am2-combat-operation-status {
+        text-align: left;
+    }
+}
