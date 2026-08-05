@@ -182,6 +182,26 @@
         </fieldset>
         <fieldset class="settings-group">
             <legend>自定义记忆块</legend>
+            <div class="control-block-with-switch" style="margin-bottom: 8px;">
+                <div>
+                    <label for="amily2_opt_combat_report_enabled">战斗战报（内置可选块）</label>
+                    <div style="font-size: 0.82em; opacity: 0.72;">
+                        有活动战斗时，把引擎既定结算追加到本次记忆注入底部，由正常 RP 主模型完成场景描写；不会额外调用模型。
+                    </div>
+                </div>
+                <label class="toggle-switch">
+                    <input id="amily2_opt_combat_report_enabled" type="checkbox" />
+                    <span class="slider"></span>
+                </label>
+            </div>
+            <div
+                id="amily2_opt_memory_block_runtime_status"
+                style="font-size: 0.82em; opacity: 0.78; margin-bottom: 8px;"
+                data-state="idle"
+                role="status"
+                aria-live="polite">
+                当前没有已安装的战报注入。
+            </div>
             <div style="font-size: 0.85em; opacity: 0.75; margin-bottom: 8px;">
                 每个块定义一个占位符：执行剧情优化时，主/拦截提示词中出现的占位符会被块的产出替换。
                 静态块直接输出固定内容；AI 调用块会用所选 API 槽独立请求一次，把回复作为替换值。

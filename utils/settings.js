@@ -923,6 +923,8 @@ export const plotOptDefaults = {
   plotOpt_ratePersonal: 0.1,
   plotOpt_rateErotic: 0.2,
   plotOpt_rateCuckold: 0.2,
+  // 战斗结算只作为同批记忆注入的可选底部块，不额外调用模型。
+  plotOpt_combatReportEnabled: false,
   plotOpt_selectedWorldbooks: [],
   plotOpt_autoSelectWorldbooks: [],
   plotOpt_enabledWorldbookEntries: {},

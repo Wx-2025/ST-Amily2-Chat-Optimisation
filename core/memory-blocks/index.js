@@ -58,6 +58,13 @@ export {
 } from './generator-handlers.js';
 
 export {
+    registerPluginHandler,
+    unregisterPluginHandler,
+    getPluginHandler,
+    listPluginHandlerKeys,
+} from './plugin-handler.js';
+
+export {
     applyToTemplate,
     applyToTemplates,
     generateBlockMap,
@@ -73,6 +80,20 @@ export {
 } from './chain.js';
 
 export {
+    MEMORY_BLOCK_INJECTION_KEY,
+    MEMORY_BLOCK_POLICY_INJECTION_KEY,
+    MEMORY_BLOCK_INJECTION_CONTEXT,
+    MEMORY_BLOCK_PROMPT_CLEAR_FAILED,
+    MEMORY_BLOCK_PROMPT_INSTALL_FAILED,
+    MEMORY_BLOCK_SYSTEM_POLICY,
+    createMemoryBlockInjectionController,
+    getMemoryBlockInjectionStatus,
+    injectMemoryBlockChain,
+    invalidateMemoryBlockChain,
+    clearMemoryBlockChain,
+} from './injection.js';
+
+export {
     CUSTOM_ID_PREFIX,
     isCustomBlockId,
     listCustomBlocks,
@@ -85,11 +106,16 @@ export {
 
 import './ai-call-handler.js'; // 副作用：注册 'ai_call' handler
 import { registerBuiltinBlocks } from './builtin-blocks.js';
+import { registerCombatReportMemoryBlock } from './combat-report-block.js';
 import { syncCustomBlocksFromSettings } from './custom-blocks.js';
 
 // 导入此模块即完成内置块注册与自定义块重放（均幂等）。
 // ST 在 import 扩展脚本前已加载完 extension_settings，此时读取是安全的。
 registerBuiltinBlocks();
+registerCombatReportMemoryBlock();
 syncCustomBlocksFromSettings();
 
-export { registerBuiltinBlocks };
+export {
+    registerBuiltinBlocks,
+    registerCombatReportMemoryBlock,
+};

@@ -598,6 +598,8 @@ function opt_loadSettings(panel) {
     panel.find('#amily2_opt_rate_personal').val(settings.plotOpt_ratePersonal);
     panel.find('#amily2_opt_rate_erotic').val(settings.plotOpt_rateErotic);
     panel.find('#amily2_opt_rate_cuckold').val(settings.plotOpt_rateCuckold);
+    panel.find('#amily2_opt_combat_report_enabled')
+        .prop('checked', settings.plotOpt_combatReportEnabled === true);
 
     opt_loadPromptPresets(panel);
 

@@ -6,6 +6,7 @@ import { escapeHTML } from '../utils/utils.js';
 
 const TABLE_CONTAINER_ID = 'amily2-chat-table-container';
 const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches;
+let scheduledTableRender = null;
 
 // 【V155.3】注入真正的游戏UI样式 (侧边栏+内容区)
 function injectChatTableStyles() {
@@ -461,9 +462,11 @@ function bindSwipePreventer(container) {
 }
 
 export function updateOrInsertTableInChat() {
+    if (scheduledTableRender !== null) return;
     injectChatTableStyles(); // 确保样式已注入
 
-    setTimeout(() => {
+    scheduledTableRender = setTimeout(() => {
+        scheduledTableRender = null;
         const context = getContext();
         if (!context || !context.chat || context.chat.length < 2) {
             removeTableContainer();
@@ -622,6 +625,10 @@ export function startContinuousRendering() {
 }
 
 export function stopContinuousRendering() {
+    if (scheduledTableRender !== null) {
+        clearTimeout(scheduledTableRender);
+        scheduledTableRender = null;
+    }
     if (chatObserver) {
         chatObserver.disconnect();
         chatObserver = null;

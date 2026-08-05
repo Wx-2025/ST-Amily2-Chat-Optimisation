@@ -22,7 +22,7 @@ let currentBatchNum = 0;
 let totalBatchesNum = 0;
 const MAX_BATCH_RETRIES = 2;
 
-export async function updateCardUpdateStatusDisplay($panel) {
+export async function updateCardUpdateStatusDisplay($panel, lorebookSnapshot = null) {
     if (!$panel || !$panel.length) return;
     const $statusDisplay = $panel.find(`#${SCRIPT_ID_PREFIX}-card-update-status-display`);
     const $totalMessagesDisplay = $panel.find(`#${SCRIPT_ID_PREFIX}-total-messages-display`);
@@ -40,12 +40,14 @@ export async function updateCardUpdateStatusDisplay($panel) {
             $statusDisplay.text('没有选择角色。');
             return;
         }
-        const bookName = await getTargetWorldBook();
+        const bookName = lorebookSnapshot?.bookName || await getTargetWorldBook();
         if (!bookName) {
             $statusDisplay.text('当前角色未设置主世界书或自定义世界书。');
             return;
         }
-        const entries = await safeLorebookEntries(bookName);
+        const entries = lorebookSnapshot?.bookName === bookName && Array.isArray(lorebookSnapshot.entries)
+            ? lorebookSnapshot.entries
+            : await safeLorebookEntries(bookName);
         const entryPrefixForCurrentChat = `角色卡更新-${state.currentChatFileIdentifier}-`;
 
         let latestEntryToShow = null;
@@ -75,6 +77,7 @@ export async function updateCardUpdateStatusDisplay($panel) {
         } else {
             $statusDisplay.text('当前聊天信息尚未在世界书中更新。');
         }
+        return { bookName, entries };
     } catch (e) {
         logError('加载/解析世界书条目以更新UI状态时失败:', e);
         $statusDisplay.text('获取世界书更新状态时出错。');
@@ -105,13 +108,14 @@ async function loadAllChatMessages($panel) {
         }
         
         logDebug(`成功为 ${state.currentChatFileIdentifier} 加载了 ${state.allChatMessages.length} 条消息。`);
-        await updateCardUpdateStatusDisplay($panel);
+        return await updateCardUpdateStatusDisplay($panel);
 
     } catch (error) {
         logError('使用 getContext() 获取聊天消息时发生严重错误:', error);
         showToastr('error', '获取聊天记录时发生内部错误。');
         state.allChatMessages = [];
     }
+    return null;
 }
 
 function processChatMessages(messages) {
@@ -343,7 +347,7 @@ async function proceedWithCardUpdate($panel, messagesToUse) {
     }
 }
 
-async function triggerAutomaticUpdate($panel) {
+async function triggerAutomaticUpdate($panel, lorebookSnapshot = null) {
     logDebug(`检查是否需要更新。总消息数: ${state.allChatMessages.length}, 自动更新启用: ${state.autoUpdateEnabled}`);
     if (!isCwbEnabled()) {
         logDebug('更新检查已跳过 - CharacterWorldBook总开关已关闭。');
@@ -361,9 +365,11 @@ async function triggerAutomaticUpdate($panel) {
             logDebug('角色上下文未准备好，跳过自动更新的世界书检查。');
             return;
         }
-        const bookName = await getTargetWorldBook();
+        const bookName = lorebookSnapshot?.bookName || await getTargetWorldBook();
         if (bookName) {
-            const entries = (await safeLorebookEntries(bookName)) || [];
+            const entries = lorebookSnapshot?.bookName === bookName && Array.isArray(lorebookSnapshot.entries)
+                ? lorebookSnapshot.entries
+                : (await safeLorebookEntries(bookName)) || [];
             const cleanChatId = state.currentChatFileIdentifier.replace(/ imported/g, '');
             const rosterEntry = entries.find(e => 
                 Array.isArray(e.keys) &&
@@ -439,8 +445,8 @@ export async function handleMessageReceived($panel) {
         return;
     }
 
-    await loadAllChatMessages($panel);
-    await triggerAutomaticUpdate($panel);
+    const lorebookSnapshot = await loadAllChatMessages($panel);
+    await triggerAutomaticUpdate($panel, lorebookSnapshot);
 }
 
 export async function resetScriptStateForNewChat($panel, newChatName) {

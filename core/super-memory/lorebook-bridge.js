@@ -3,6 +3,7 @@ import { extension_settings, getContext } from "/scripts/extensions.js";
 import { extensionName } from "../../utils/settings.js";
 import { this_chid, characters } from "/script.js";
 import { withLoreLock } from "../lore-service.js";
+import { indexLorebookEntriesByComment } from "./lorebook-entry-index.js";
 
 export function getMemoryBookName() {
     let charName = "Global";
@@ -55,6 +56,7 @@ export async function syncToLorebook(tableName, data, indexText, role, headers, 
 
     let entries = await amilyHelper.getLorebookEntries(bookName);
     if (!entries) entries = [];
+    const entriesByComment = indexLorebookEntriesByComment(entries);
 
     const entriesToUpdate = [];
     const entriesToCreate = [];
@@ -69,7 +71,7 @@ export async function syncToLorebook(tableName, data, indexText, role, headers, 
     };
 
     const processEntry = (comment, keys, content, type = 'selective', enabled = true, excludeRecursion = false, specificOrder = null, specificDepth = null) => {
-        const existingEntry = entries.find(e => e.comment === comment);
+        const existingEntry = entriesByComment.get(comment);
         if (existingEntry) {
             let isChanged = false;
             
@@ -215,7 +217,7 @@ export async function syncToLorebook(tableName, data, indexText, role, headers, 
         }
     }
 
-    console.log(`[Amily2-Bridge-GC] ${tableName} 的活跃主键 (Active Keys):`, Array.from(activeKeys));
+    console.log(`[Amily2-Bridge-GC] ${tableName} 的活跃主键数量 (Active Keys): ${activeKeys.size}`);
 
     for (const entry of entries) {
         if (entry.comment && entry.comment.startsWith(tablePrefix)) {

@@ -12,14 +12,15 @@
  *     仅在运行时调用，与既有 manager ↔ ui/table-bindings 环同模式，安全
  */
 
+import { getContext } from '/scripts/extensions.js';
 import { log } from '../logger.js';
-import { renderTables } from '../../../ui/table-bindings.js';
+import { updateRenderedTableRowStatus } from '../../../ui/table-bindings.js';
 import { dispatchTableUpdate, dispatchAllTablesUpdate } from '../events-dispatch.js';
-import { loadTables } from '../manager.js';
+import { loadTables, setMemoryState } from '../manager.js';
 
 import {
     getState,
-    setState,
+    getStateRevision,
     addHighlight,
     markTableUpdated,
     getUpdatedTables,
@@ -36,7 +37,13 @@ import {
     normalizeTableIdentity,
 } from '../infra/database-state.js';
 import { applyPendingRecordDeletions, validateTableState } from '../module-tables.js';
+import { captureChatScope, chatScopesMatch } from '../infra/chat-scope.js';
 import { CURRENT_TABLE_FILL_PROTOCOL_VERSION } from '../table-fill-protocol.js';
+import { createRowStatusCandidate } from './row-status-candidate.js';
+
+const ROW_STATUS_PERSIST_DELAY_MS = 75;
+let rowStatusPersistenceTimer = null;
+let rowStatusPersistenceSequence = 0;
 
 function createMutationDraft() {
     const current = getState();
@@ -56,33 +63,89 @@ function acceptMutation(draft, action, { persist = true } = {}) {
     let applied = false;
     try {
         const validated = validateTableState(draft);
-        setState(validated);
+        setMemoryState(validated);
         applied = true;
         if (persist && !commitToLastMessage(validated)) {
             throw Object.assign(new Error('当前聊天状态无法持久化。'), { code: 'TABLE_PERSIST_FAILED' });
         }
+        if (persist) cancelScheduledRowStatusPersistence();
         return validated;
     } catch (error) {
-        if (applied) setState(previous);
+        if (applied) setMemoryState(previous);
         log(`${action}失败，变更已回退: ${error.code || 'TABLE_VALIDATION_FAILED'} ${error.message}`, 'error');
         if (typeof toastr !== 'undefined') toastr.error(error.message, `${action}失败`);
         return null;
     }
 }
 
-async function acceptMutationAsync(draft, action) {
-    try {
-        const validated = validateTableState(draft);
-        if (!await commitToLastMessageAsync(validated)) {
-            throw Object.assign(new Error('当前聊天状态无法持久化。'), { code: 'TABLE_PERSIST_FAILED' });
-        }
-        setState(validated);
-        return validated;
-    } catch (error) {
-        log(`${action}失败，变更已回退: ${error.code || 'TABLE_VALIDATION_FAILED'} ${error.message}`, 'error');
-        if (typeof toastr !== 'undefined') toastr.error(error.message, `${action}失败`);
-        return null;
+function cancelScheduledRowStatusPersistence() {
+    rowStatusPersistenceSequence += 1;
+    if (rowStatusPersistenceTimer !== null) {
+        clearTimeout(rowStatusPersistenceTimer);
+        rowStatusPersistenceTimer = null;
     }
+}
+
+function scheduleRowStatusPersistence() {
+    const sequence = ++rowStatusPersistenceSequence;
+    const expectedScope = captureChatScope(getContext());
+    if (rowStatusPersistenceTimer !== null) clearTimeout(rowStatusPersistenceTimer);
+    rowStatusPersistenceTimer = setTimeout(() => {
+        rowStatusPersistenceTimer = null;
+        void persistLatestRowStatusSnapshot(sequence, expectedScope);
+    }, ROW_STATUS_PERSIST_DELAY_MS);
+}
+
+async function persistLatestRowStatusSnapshot(sequence, expectedScope) {
+    if (sequence !== rowStatusPersistenceSequence
+        || !chatScopesMatch(expectedScope, captureChatScope(getContext()))) {
+        return;
+    }
+
+    const state = getState();
+    if (!Array.isArray(state)) return;
+    const expectedStateRevision = getStateRevision();
+    const transaction = { expectedStateRevision };
+    if (expectedScope?.chatId) {
+        transaction.expectedChatId = expectedScope.chatId;
+        transaction.expectedChatScope = expectedScope;
+    }
+
+    let committed = false;
+    try {
+        committed = await commitToLastMessageAsync(state, undefined, transaction);
+    } catch (error) {
+        log(`删除状态后台保存失败: ${error.code || 'TABLE_PERSIST_FAILED'} ${error.message}`, 'error');
+    }
+
+    const stillLatest = sequence === rowStatusPersistenceSequence
+        && getStateRevision() === expectedStateRevision
+        && chatScopesMatch(expectedScope, captureChatScope(getContext()));
+    if (!committed && stillLatest) {
+        log('删除状态尚未持久化；数据没有被永久删除，后续表格提交会再次保存当前状态。', 'warn');
+        if (typeof toastr !== 'undefined') {
+            toastr.warning('删除标记暂未保存，原记录仍然安全。', '表格保存延迟');
+        }
+    }
+}
+
+function applyRowStatusMutation(tableIndex, rowIndex, nextStatus, action) {
+    const mutation = createRowStatusCandidate(getState(), tableIndex, rowIndex, nextStatus);
+    if (!mutation || !mutation.changed) return false;
+
+    try {
+        setMemoryState(mutation.state);
+    } catch (error) {
+        log(`${action}失败: ${error.code || 'TABLE_STATE_UPDATE_FAILED'} ${error.message}`, 'error');
+        if (typeof toastr !== 'undefined') toastr.error(error.message, `${action}失败`);
+        return false;
+    }
+
+    markTableUpdated(tableIndex);
+    updateRenderedTableRowStatus(tableIndex, rowIndex);
+    dispatchTableUpdate(tableIndex);
+    scheduleRowStatusPersistence();
+    return mutation.table;
 }
 
 export function deleteColumn(tableIndex, colIndex) {
@@ -242,33 +305,22 @@ export function updateHeader(tableIndex, colIndex, value) {
 }
 
 export async function deleteRow(tableIndex, rowIndex) {
-    const tables = createMutationDraft();
-    const table = tables?.[tableIndex];
-    if (!table || !table.rows[rowIndex]) return;
-
-    if (!table.rowStatuses) {
-        table.rowStatuses = Array(table.rows.length).fill('normal');
-    }
-
-    table.rowStatuses[rowIndex] = 'pending-deletion';
-    if (!await acceptMutationAsync(tables, '标记删除行')) return;
-    markTableUpdated(tableIndex);
+    const table = applyRowStatusMutation(
+        tableIndex,
+        rowIndex,
+        'pending-deletion',
+        '标记删除行',
+    );
+    if (!table) return false;
     log(`表格 [${table.name}] 的第 ${rowIndex + 1} 行已标记为待删除。`, 'info');
-    renderTables();
-    dispatchTableUpdate(tableIndex);
+    return true;
 }
 
 export async function restoreRow(tableIndex, rowIndex) {
-    const tables = createMutationDraft();
-    const table = tables?.[tableIndex];
-    if (!table || !table.rows[rowIndex] || !table.rowStatuses) return;
-
-    table.rowStatuses[rowIndex] = 'normal';
-    if (!await acceptMutationAsync(tables, '恢复行')) return;
-    markTableUpdated(tableIndex);
+    const table = applyRowStatusMutation(tableIndex, rowIndex, 'normal', '恢复行');
+    if (!table) return false;
     log(`表格 [${table.name}] 的第 ${rowIndex + 1} 行已恢复。`, 'info');
-    renderTables();
-    dispatchTableUpdate(tableIndex);
+    return true;
 }
 
 export function commitPendingDeletions() {

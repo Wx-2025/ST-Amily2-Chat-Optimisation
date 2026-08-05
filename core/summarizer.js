@@ -648,7 +648,7 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
             } else {
                 finalContentToAppend = optimizedContent;
             }
-            
+
             onProgress('记忆重构完成，正在注入...', true);
             return { contentToAppend: finalContentToAppend };
         } else {

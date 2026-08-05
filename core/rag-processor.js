@@ -885,8 +885,16 @@ function generateHash(text) {
 }
 
 
+async function createQueryEmbedding(queryText) {
+    const queryEmbedding = (await getEmbeddings([queryText]))[0];
+    if (!queryEmbedding) {
+        throw new Error("未能生成查询向量。");
+    }
+    return queryEmbedding;
+}
+
 async function queryVectors(queryText, options = {}) {
-    const { includeBases = null } = options;
+    const { includeBases = null, queryEmbeddingPromise = null } = options;
     let basesToQuery = [];
 
     console.log(`[翰林院-日志] 开始向量查询... (目标: ${includeBases ? '指定知识库' : '所有启用库'})`);
@@ -945,10 +953,7 @@ async function queryVectors(queryText, options = {}) {
         return [];
     }
 
-    const queryEmbedding = (await getEmbeddings([queryText]))[0];
-    if (!queryEmbedding) {
-        throw new Error("未能生成查询向量。");
-    }
+    const queryEmbedding = await (queryEmbeddingPromise || createQueryEmbedding(queryText));
     
     const queryPromises = basesToQuery.map(base => _executeQueryForBase(base, queryText, queryEmbedding));
 
@@ -1824,6 +1829,9 @@ async function rearrangeChat(chat, contextSize, abort, type) {
             console.log('[翰林院] 进入多路并行独立检索流程...');
 
             const allEnabledBases = Object.values(getKnowledgeBases()).filter(b => b.enabled);
+            const sharedQueryEmbeddingPromise = allEnabledBases.length > 0
+                ? createQueryEmbedding(queryText)
+                : null;
             const prioritySourceNames = Object.keys(prioritySettings.sources).filter(
                 key => prioritySettings.sources[key] && prioritySettings.sources[key].enabled
             );
@@ -1839,7 +1847,10 @@ async function rearrangeChat(chat, contextSize, abort, type) {
 
                 if (priorityGroup.length > 0) {
                     console.log(`[翰林院] 创建优先查询组: ${sourceName} (${priorityGroup.length}个库)`);
-                    const promise = queryVectors(queryText, { includeBases: priorityGroup })
+                    const promise = queryVectors(queryText, {
+                        includeBases: priorityGroup,
+                        queryEmbeddingPromise: sharedQueryEmbeddingPromise,
+                    })
                         .then(candidates => {
                             console.log(`[翰林院] 优先组 ${sourceName} 返回 ${candidates.length} 条结果。`);
                             let processed = candidates.filter(r => r.metadata?.source === sourceName);
@@ -1856,7 +1867,10 @@ async function rearrangeChat(chat, contextSize, abort, type) {
             const normalBases = remainingBases;
             if (normalBases.length > 0) {
                 console.log(`[翰林院] 创建常规查询组 (${normalBases.length}个库)`);
-                const promise = queryVectors(queryText, { includeBases: normalBases })
+                const promise = queryVectors(queryText, {
+                    includeBases: normalBases,
+                    queryEmbeddingPromise: sharedQueryEmbeddingPromise,
+                })
                     .then(async (candidates) => {
                         console.log(`[翰林院] 常规组返回 ${candidates.length} 条结果。`);
                         console.log('[翰林院] 开始处理常规池...');

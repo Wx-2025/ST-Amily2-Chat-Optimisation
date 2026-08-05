@@ -20,6 +20,14 @@ import { resolveTableRuleConfig } from '../../utils/config/RuleProfileManager.js
 import { showTableFillReviewModal } from '../../ui/page-window.js';
 import { TABLE_FILL_SAFETY_POLICY } from './settings.js';
 import {
+    TABLE_FILL_TEXT_PROTOCOL_POLICY,
+    buildTableFillPromptChannels,
+    buildTextSourceMessage,
+    buildToolFlowMessage,
+    buildToolRuleMessages,
+    buildToolSourceMessage,
+} from './fill-prompt-channels.js';
+import {
     BATCH_REQUIRED_FILLER_BLOCKS,
     buildFillerFlowPrompt,
     completeFillerPromptOrder,
@@ -471,42 +479,54 @@ async function runBatchAttempt(batchNum, attemptNum, runControl) {
             batchSettings,
             () => runControl.getOrCreateStableSeed(generateRandomSeed),
         );
-        const messages = [...seedMessages];
-
-        let promptCounter = 0; 
-        for (const item of order) {
-            if (item.type === 'prompt') {
-                if (presetPrompts && presetPrompts[promptCounter]) {
-                    messages.push(presetPrompts[promptCounter]);
-                    promptCounter++;
-                }
-            } else if (item.type === 'conditional') {
-                switch (item.id) {
+        const promptChannels = buildTableFillPromptChannels({
+            seedMessages,
+            order,
+            presetPrompts,
+            resolveConditional(id) {
+                switch (id) {
                     case 'worldbook':
-                        if (worldBookContext) {
-                            messages.push({ role: 'system', content: worldBookContext });
-                        }
-                        break;
+                        return worldBookContext
+                            ? { shared: { role: 'system', content: worldBookContext } }
+                            : null;
                     case 'ruleTemplate':
-                        messages.push({ role: "system", content: ruleTemplate });
-                        break;
+                        return {
+                            text: { role: 'system', content: ruleTemplate },
+                            tool: buildToolRuleMessages(ruleTemplate),
+                        };
                     case 'flowTemplate':
-                        messages.push({ role: "system", content: finalFlowPrompt });
-                        break;
+                        return {
+                            text: { role: 'system', content: finalFlowPrompt },
+                            tool: buildToolFlowMessage(currentTableDataString, {
+                                deferred: splitTablesAcrossRequests,
+                            }),
+                        };
                     case 'coreContent':
-                        messages.push({ role: 'user', content: `请严格根据以下"对话记录"中的内容进行填写表格，并按照指定的格式输出，不要添加任何额外信息。\n\n<对话记录>\n${batchContent}\n</对话记录>` });
-                        break;
+                        return {
+                            text: buildTextSourceMessage('对话记录', batchContent),
+                            tool: buildToolSourceMessage('对话记录', batchContent),
+                        };
+                    default:
+                        return null;
                 }
-            }
-        }
-
-        messages.push({ role: 'system', content: TABLE_FILL_SAFETY_POLICY });
+            },
+        });
+        const textMessages = [
+            ...promptChannels.textMessages,
+            { role: 'system', content: TABLE_FILL_SAFETY_POLICY },
+            { role: 'system', content: TABLE_FILL_TEXT_PROTOCOL_POLICY },
+        ];
+        const toolMessages = [
+            ...promptChannels.toolMessages,
+            { role: 'system', content: TABLE_FILL_SAFETY_POLICY },
+        ];
 
         const tableBatchResult = splitTablesAcrossRequests
             ? await collectTableFillOperationBatches({
                 tableState: fillLease.state,
                 tableBatches,
-                stableMessages: messages,
+                stableToolMessages: toolMessages,
+                stableTextMessages: textMessages,
                 settings: batchSettings,
                 slot: 'tableFilling',
                 runControl,
@@ -585,13 +605,13 @@ async function runBatchAttempt(batchNum, attemptNum, runControl) {
         }
 
         console.groupCollapsed(`[Amily2 立即远征] 批次 ${batchNum}/${totalBatches} - 即将发送至 API 的内容`);
-        console.dir(messages);
+        console.dir(batchSettings.tableFillFunctionCall ? toolMessages : textMessages);
         console.groupEnd();
 
         assertTableFillRequestLease(fillLease, getContext());
         assertBatchFillerScope(activeBatchChatScope);
         const toolResult = batchSettings.tableFillFunctionCall
-            ? await requestTableFillOperationsV2(messages, {
+            ? await requestTableFillOperationsV2(toolMessages, {
                 tableState: fillLease.state,
                 settings: batchSettings,
                 slot: 'tableFilling',
@@ -653,7 +673,7 @@ async function runBatchAttempt(batchNum, attemptNum, runControl) {
                 toastr.warning('Tool Call V2 当前不可用，已改用严格文本填表。', `批次 ${batchNum}`);
             }
             const resultText = await callTableModel(
-                messages,
+                textMessages,
                 fillLease,
                 immediateRequestBudget,
             );
@@ -677,7 +697,7 @@ async function runBatchAttempt(batchNum, attemptNum, runControl) {
                             return null;
                         }
                         const merged = await requestContinuation(
-                            messages,
+                            textMessages,
                             currentText,
                             fillLease,
                             immediateRequestBudget,
@@ -1109,42 +1129,54 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
             floorSettings,
             () => runControl.getOrCreateStableSeed(generateRandomSeed),
         );
-        const messages = [...seedMessages];
-
-        let promptCounter = 0; 
-        for (const item of order) {
-            if (item.type === 'prompt') {
-                if (presetPrompts && presetPrompts[promptCounter]) {
-                    messages.push(presetPrompts[promptCounter]);
-                    promptCounter++; 
-                }
-            } else if (item.type === 'conditional') {
-                switch (item.id) {
+        const promptChannels = buildTableFillPromptChannels({
+            seedMessages,
+            order,
+            presetPrompts,
+            resolveConditional(id) {
+                switch (id) {
                     case 'worldbook':
-                        if (worldBookContext) {
-                            messages.push({ role: 'system', content: worldBookContext });
-                        }
-                        break;
+                        return worldBookContext
+                            ? { shared: { role: 'system', content: worldBookContext } }
+                            : null;
                     case 'ruleTemplate':
-                        messages.push({ role: "system", content: ruleTemplate });
-                        break;
+                        return {
+                            text: { role: 'system', content: ruleTemplate },
+                            tool: buildToolRuleMessages(ruleTemplate),
+                        };
                     case 'flowTemplate':
-                        messages.push({ role: "system", content: finalFlowPrompt });
-                        break;
+                        return {
+                            text: { role: 'system', content: finalFlowPrompt },
+                            tool: buildToolFlowMessage(currentTableDataString, {
+                                deferred: splitTablesAcrossRequests,
+                            }),
+                        };
                     case 'coreContent':
-                        messages.push({ role: 'user', content: `请严格根据以下"对话记录"中的内容进行填写表格，并按照指定的格式输出，不要添加任何额外信息。\n\n<对话记录>\n${batchContent}\n</对话记录>` });
-                        break;
+                        return {
+                            text: buildTextSourceMessage('对话记录', batchContent),
+                            tool: buildToolSourceMessage('对话记录', batchContent),
+                        };
+                    default:
+                        return null;
                 }
-            }
-        }
-
-        messages.push({ role: 'system', content: TABLE_FILL_SAFETY_POLICY });
+            },
+        });
+        const textMessages = [
+            ...promptChannels.textMessages,
+            { role: 'system', content: TABLE_FILL_SAFETY_POLICY },
+            { role: 'system', content: TABLE_FILL_TEXT_PROTOCOL_POLICY },
+        ];
+        const toolMessages = [
+            ...promptChannels.toolMessages,
+            { role: 'system', content: TABLE_FILL_SAFETY_POLICY },
+        ];
 
         const tableBatchResult = splitTablesAcrossRequests
             ? await collectTableFillOperationBatches({
                 tableState: fillLease.state,
                 tableBatches,
-                stableMessages: messages,
+                stableToolMessages: toolMessages,
+                stableTextMessages: textMessages,
                 settings: floorSettings,
                 slot: 'tableFilling',
                 signal,
@@ -1230,13 +1262,13 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
         }
 
         console.groupCollapsed(`[Amily2 楼层填表] 楼层 ${startFloor}-${endFloor} - 即将发送至 API 的内容`);
-        console.dir(messages);
+        console.dir(floorSettings.tableFillFunctionCall ? toolMessages : textMessages);
         console.groupEnd();
 
         assertTableFillRequestLease(fillLease, getContext());
         assertBatchFillerScope(requestScope);
         const toolResult = floorSettings.tableFillFunctionCall
-            ? await requestTableFillOperationsV2(messages, {
+            ? await requestTableFillOperationsV2(toolMessages, {
                 tableState: fillLease.state,
                 settings: floorSettings,
                 slot: 'tableFilling',
@@ -1309,7 +1341,7 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
                 toastr.warning('Tool Call V2 当前不可用，已改用严格文本填表。', `楼层 ${startFloor}-${endFloor}`);
             }
             const resultText = await callTableModel(
-                messages,
+                textMessages,
                 fillLease,
                 runControl.requestBudget,
             );
@@ -1332,7 +1364,7 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
                             return null;
                         }
                         const merged = await requestContinuation(
-                            messages,
+                            textMessages,
                             currentText,
                             fillLease,
                             runControl.requestBudget,
