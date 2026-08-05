@@ -14,7 +14,9 @@
 #amily2_combat_panel .am2-combat-section-actions,
 #amily2_combat_panel .am2-combat-resolve-row,
 #amily2_combat_panel .am2-combat-button-row,
-#amily2_combat_panel .am2-combat-slot-heading {
+#amily2_combat_panel .am2-combat-slot-heading,
+#amily2_combat_panel .am2-combat-source-toolbar,
+#amily2_combat_panel .am2-combat-source-heading {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -98,6 +100,11 @@
     box-sizing: border-box;
 }
 
+#amily2_combat_panel button {
+    white-space: nowrap;
+    writing-mode: horizontal-tb;
+}
+
 #amily2_combat_panel textarea {
     resize: vertical;
     font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
@@ -106,8 +113,111 @@
 
 #amily2_combat_panel .am2-combat-button-row,
 #amily2_combat_panel .am2-combat-section-actions,
-#amily2_combat_panel .am2-combat-resolve-row {
+#amily2_combat_panel .am2-combat-resolve-row,
+#amily2_combat_panel .am2-combat-source-toolbar,
+#amily2_combat_panel .am2-combat-source-heading {
     flex-wrap: wrap;
+}
+
+#amily2_combat_panel .am2-combat-source-toolbar {
+    justify-content: space-between;
+    margin-top: 10px;
+}
+
+#amily2_combat_panel .am2-combat-source-heading {
+    justify-content: space-between;
+    margin: 12px 0 7px;
+    font-size: 12px;
+}
+
+#amily2_combat_panel .am2-combat-source-heading > span {
+    color: var(--am2-muted, rgba(232, 232, 238, 0.66));
+}
+
+#amily2_combat_panel .am2-combat-mapping-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+    gap: 10px;
+    margin-top: 8px;
+}
+
+#amily2_combat_panel .am2-combat-mapping-group {
+    min-width: 0;
+    padding: 9px;
+    border: var(--am2-border, 1px solid rgba(255, 255, 255, 0.12));
+    border-radius: var(--am2-radius-md, 10px);
+    background: rgba(255, 255, 255, 0.025);
+}
+
+#amily2_combat_panel .am2-combat-mapping-group h4 {
+    margin: 0 0 8px;
+    font-size: 12px;
+}
+
+#amily2_combat_panel .am2-combat-mapping-fields {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+}
+
+#amily2_combat_panel .am2-combat-source-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    max-height: 320px;
+    padding: 8px;
+    overflow: auto;
+    border: var(--am2-border, 1px solid rgba(255, 255, 255, 0.12));
+    border-radius: var(--am2-radius-md, 10px);
+    background: rgba(0, 0, 0, 0.12);
+}
+
+#amily2_combat_panel .am2-combat-source-row {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) minmax(88px, 128px) auto;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+    padding: 8px 9px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.025);
+}
+
+#amily2_combat_panel .am2-combat-source-row input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
+
+#amily2_combat_panel .am2-combat-source-faction {
+    width: 100%;
+    min-width: 0;
+    writing-mode: horizontal-tb;
+}
+
+#amily2_combat_panel .am2-combat-source-label {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+#amily2_combat_panel .am2-combat-source-label strong,
+#amily2_combat_panel .am2-combat-source-label span {
+    display: block;
+}
+
+#amily2_combat_panel .am2-combat-source-label span,
+#amily2_combat_panel .am2-combat-source-count {
+    color: var(--am2-muted, rgba(232, 232, 238, 0.66));
+    font-size: 11px;
+}
+
+#amily2_combat_panel .am2-combat-source-row[data-valid="false"] {
+    border-color: rgba(255, 99, 99, 0.35);
+    background: rgba(255, 99, 99, 0.06);
+}
+
+#amily2_combat_panel .am2-combat-lifecycle-grid {
+    margin-top: 10px;
 }
 
 #amily2_combat_panel .am2-combat-section-actions {
@@ -233,6 +343,10 @@
     #amily2_combat_panel .am2-combat-slot-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+
+    #amily2_combat_panel .am2-combat-mapping-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 @media (max-width: 430px) {
@@ -242,5 +356,17 @@
 
     #amily2_combat_panel .am2-combat-operation-status {
         text-align: left;
+    }
+
+    #amily2_combat_panel .am2-combat-mapping-fields {
+        grid-template-columns: 1fr;
+    }
+
+    #amily2_combat_panel .am2-combat-source-row {
+        grid-template-columns: auto minmax(0, 1fr) minmax(82px, 110px);
+    }
+
+    #amily2_combat_panel .am2-combat-source-count {
+        grid-column: 2 / -1;
     }
 }

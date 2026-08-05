@@ -5,7 +5,7 @@
                 <h3 id="amily2_combat_title">战斗演算</h3>
                 <span class="am2-combat-type3-badge">TYPE3 · PREVIEW</span>
             </div>
-            <p>战斗只在当前聊天内存续。整回合原子结算，刷新后可从内部表恢复。</p>
+            <p>战斗只在当前页面与聊天内存续。整回合原子结算；刷新页面、重载扩展、切换聊天或授权失效都会释放战局。</p>
         </div>
         <button id="amily2_back_to_main_from_combat" class="menu_button small_button" type="button">
             <i class="fas fa-arrow-left"></i> 返回
@@ -17,19 +17,51 @@
     </div>
 
     <fieldset class="settings-group am2-combat-section">
-        <legend><i class="fas fa-file-shield"></i> 1. 战斗档案</legend>
-        <label class="am2-combat-field" for="amily2_combat_seed_text">
-            <span>战斗档案文本</span>
-            <textarea
-                id="amily2_combat_seed_text"
-                class="text_pole"
-                maxlength="131072"
-                rows="12"
-                spellcheck="false"
-                disabled
-                placeholder="粘贴一个或多个【战斗档案·角色名】文本。角色名在同一场战斗中必须唯一。"></textarea>
-        </label>
+        <legend><i class="fas fa-table-list"></i> 1. 数据源与初始化</legend>
+        <p class="notes">
+            从当前聊天的用户表读取角色与技能。字段映射只在初始化时使用，角色会复制进一张临时战斗表；不会改写原表，也不会创建长期战斗表。
+        </p>
         <div class="am2-combat-grid">
+            <label class="am2-combat-field" for="amily2_combat_character_table">
+                <span>战斗角色表</span>
+                <select id="amily2_combat_character_table" class="text_pole" disabled>
+                    <option value="">等待读取表格……</option>
+                </select>
+            </label>
+            <label class="am2-combat-field" for="amily2_combat_skill_table">
+                <span>技能表</span>
+                <select id="amily2_combat_skill_table" class="text_pole" disabled>
+                    <option value="">等待读取表格……</option>
+                </select>
+            </label>
+        </div>
+
+        <div class="am2-combat-source-toolbar">
+            <button id="amily2_combat_source_refresh" class="menu_button small_button" type="button" disabled>
+                <i class="fas fa-arrows-rotate"></i> 重新读取表格
+            </button>
+            <span id="amily2_combat_source_status" class="am2-combat-operation-status" role="status" aria-live="polite">
+                尚未读取数据源。
+            </span>
+        </div>
+
+        <details id="amily2_combat_mapping_details" class="am2-combat-advanced">
+            <summary>字段映射（已自动识别，可手动调整）</summary>
+            <p class="notes">“角色名 / 所属角色 / 技能名 / 结算公式”为必需字段；关联列决定一名角色会取得哪些技能。</p>
+            <div id="amily2_combat_source_mapping" class="am2-combat-mapping-grid">
+                <div class="am2-combat-empty">选择角色表和技能表后显示字段映射。</div>
+            </div>
+        </details>
+
+        <div class="am2-combat-source-heading">
+            <strong>参战角色</strong>
+            <span>至少选择 1 名；阵营仅用于本场临时战斗，不写回原表。</span>
+        </div>
+        <div id="amily2_combat_source_rows" class="am2-combat-source-rows" aria-live="polite">
+            <div class="am2-combat-empty">读取表格后在这里选择参战角色。</div>
+        </div>
+
+        <div class="am2-combat-grid am2-combat-lifecycle-grid">
             <label class="am2-combat-field" for="amily2_combat_seed">
                 <span>随机种子</span>
                 <input
@@ -45,10 +77,10 @@
                 <span>生命周期</span>
                 <div class="am2-combat-button-row">
                     <button id="amily2_combat_start" class="menu_button" type="button" disabled>
-                        <i class="fas fa-play"></i> 开始
+                        <i class="fas fa-play"></i> 初始化战斗
                     </button>
                     <button id="amily2_combat_restore" class="menu_button" type="button" disabled>
-                        <i class="fas fa-rotate"></i> 恢复
+                        <i class="fas fa-rotate"></i> 读取本页战局
                     </button>
                     <button id="amily2_combat_end" class="menu_button danger_button" type="button" disabled>
                         <i class="fas fa-flag-checkered"></i> 结束
@@ -56,6 +88,25 @@
                 </div>
             </div>
         </div>
+
+        <details class="am2-combat-advanced am2-combat-legacy-source">
+            <summary>高级兼容：旧版战斗档案文本</summary>
+            <p class="notes">仅用于已经维护旧格式档案的开发者。正常使用无需复制或编辑这段文本。</p>
+            <label class="am2-combat-field" for="amily2_combat_seed_text">
+                <span>旧版【战斗档案·角色名】文本</span>
+                <textarea
+                    id="amily2_combat_seed_text"
+                    class="text_pole"
+                    maxlength="131072"
+                    rows="10"
+                    spellcheck="false"
+                    disabled
+                    placeholder="粘贴一个或多个旧版战斗档案文本。"></textarea>
+            </label>
+            <button id="amily2_combat_legacy_start" class="menu_button small_button" type="button" disabled>
+                <i class="fas fa-code"></i> 使用旧版文本初始化
+            </button>
+        </details>
     </fieldset>
 
     <fieldset class="settings-group am2-combat-section">
@@ -100,6 +151,7 @@
 
     <fieldset class="settings-group am2-combat-section">
         <legend><i class="fas fa-scroll"></i> 4. 战报</legend>
+        <p class="notes">在“记忆管理 → 自定义记忆块”开启“战斗战报”后，最新结算会随正常记忆结果一并注入，由 RP 主模型描写；不会额外调用模型。</p>
         <pre id="amily2_combat_report" class="am2-combat-report" tabindex="0">暂无战报。</pre>
     </fieldset>
 </section>

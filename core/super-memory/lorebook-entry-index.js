@@ -1,0 +1,1 @@
+export function indexLorebookEntriesByComment(entries){const byComment=new Map;for(const entry of Array.isArray(entries)?entries:[])entry&&"string"==typeof entry.comment&&!byComment.has(entry.comment)&&byComment.set(entry.comment,entry);return byComment}
