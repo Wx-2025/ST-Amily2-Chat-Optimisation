@@ -327,6 +327,77 @@ function isPlainDataObject(value) {
 }
 
 /**
+ * Collect legacy commands without requiring a whole function call to stay on one line.
+ * @param {string} commandBlock
+ * @returns {{ text: string, line: number }[]}
+ */
+function collectLegacyCommandEntries(commandBlock) {
+    const lines = String(commandBlock ?? '').split(/\r?\n/u);
+    /** @type {{ text: string, line: number }[]} */
+    const entries = [];
+    /** @type {{ text: string, line: number } | null} */
+    let pending = null;
+
+    for (let index = 0; index < lines.length; index += 1) {
+        const line = lines[index];
+        const trimmed = line.trim();
+
+        if (!pending) {
+            if (!trimmed) continue;
+            if (!/^(?:insertRow|updateRow|deleteRow)\b/u.test(trimmed)) {
+                entries.push({ text: trimmed, line: index + 1 });
+                continue;
+            }
+            pending = { text: trimmed, line: index + 1 };
+        } else {
+            pending.text += `\n${line}`;
+        }
+
+        if (hasClosedLegacyCall(pending.text)) {
+            entries.push(pending);
+            pending = null;
+        }
+    }
+
+    if (pending) entries.push(pending);
+    return entries;
+}
+
+function hasClosedLegacyCall(commandText) {
+    let inQuote = false;
+    let quoteChar = '';
+    let parenthesisDepth = 0;
+    let sawOpeningParenthesis = false;
+
+    for (let index = 0; index < commandText.length; index += 1) {
+        const char = commandText[index];
+        const escaped = isEscaped(commandText, index);
+
+        if (inQuote) {
+            if (char === quoteChar && !escaped) inQuote = false;
+            continue;
+        }
+
+        const openingQuote = getOpeningQuote(char);
+        if (openingQuote && !escaped) {
+            inQuote = true;
+            quoteChar = openingQuote.close;
+            continue;
+        }
+
+        if (char === '(' || char === '\uFF08') {
+            parenthesisDepth += 1;
+            sawOpeningParenthesis = true;
+        } else if ((char === ')' || char === '\uFF09') && sawOpeningParenthesis) {
+            parenthesisDepth -= 1;
+            if (parenthesisDepth <= 0) return true;
+        }
+    }
+
+    return false;
+}
+
+/**
  * 把 LLM 返回的文本块解析为 Operation[]。
  * 不在文本中找到 <Amily2Edit> 块时返回空数组（不视为错误）。
  *
@@ -341,13 +412,13 @@ export function parseToOperations(aiResponseText) {
     const commandBlock = match[1].replace(/<!--|-->/g, '').trim();
     if (!commandBlock) return [];
 
-    const commands = commandBlock.split('\n').filter(line => line.trim() !== '');
+    const commands = collectLegacyCommandEntries(commandBlock);
     if (commands.length === 0) return [];
 
     /** @type {Operation[]} */
     const ops = [];
-    for (const commandString of commands) {
-        const trimmed = commandString.trim();
+    for (const command of commands) {
+        const trimmed = command.text.trim();
         if (!/^(?:insertRow|updateRow|deleteRow)\b/u.test(trimmed)) {
             continue;
         }
@@ -440,11 +511,11 @@ export function parseToOperationsDetailed(aiResponseText) {
         );
     }
 
-    const commands = commandBlock.split(/\r?\n/u);
+    const commands = collectLegacyCommandEntries(commandBlock);
     const operations = [];
     let unknownCommentLine = false;
-    for (let index = 0; index < commands.length; index += 1) {
-        const trimmed = commands[index].trim();
+    for (const command of commands) {
+        const trimmed = command.text.trim();
         if (!trimmed) continue;
         if (!/^(?:insertRow|updateRow|deleteRow)\b/u.test(trimmed)) {
             if (commentBlock.matched) {
@@ -456,24 +527,24 @@ export function parseToOperationsDetailed(aiResponseText) {
             }
             return strictParseFailure(
                 'TABLE_FILL_EDIT_BLOCK_UNKNOWN_LINE',
-                `第 ${index + 1} 行不是允许的表格操作。`,
-                index + 1,
+                `第 ${command.line} 行不是允许的表格操作。`,
+                command.line,
             );
         }
         const parsed = parseFunctionCall(trimmed);
         if (!parsed) {
             return strictParseFailure(
                 'TABLE_FILL_EDIT_BLOCK_MALFORMED_COMMAND',
-                `第 ${index + 1} 行的表格操作无法解析。`,
-                index + 1,
+                `第 ${command.line} 行开始的表格操作无法解析。`,
+                command.line,
             );
         }
         const operation = _argsToOperation(parsed.name, parsed.args);
         if (!operation) {
             return strictParseFailure(
                 'TABLE_FILL_EDIT_BLOCK_INVALID_ARGUMENTS',
-                `第 ${index + 1} 行的表格操作参数无效。`,
-                index + 1,
+                `第 ${command.line} 行开始的表格操作参数无效。`,
+                command.line,
             );
         }
         operations.push(operation);
@@ -508,7 +579,7 @@ export function parseToOperationsDetailed(aiResponseText) {
 }
 
 function isAllowedLegacyEditEnvelope(outside) {
-    return /^(?:\s*<(thinking|finish|finsh)>[\s\S]*?<\/\1>\s*)*$/u.test(outside);
+    return /^\s*(?:<(thinking|finish|finsh)>[\s\S]*?<\/\1>\s*)*$/u.test(outside);
 }
 
 function isExplicitLegacyNoopLine(line) {
