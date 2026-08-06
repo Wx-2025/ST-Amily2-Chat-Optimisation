@@ -472,7 +472,7 @@ export function parseToOperationsDetailed(aiResponseText) {
     if (!isAllowedLegacyEditEnvelope(outside)) {
         return strictParseFailure(
             'TABLE_FILL_EDIT_BLOCK_OUTSIDE_CONTENT',
-            '严格文本填表响应在 <Amily2Edit> 块外只能包含完整的 thinking/finish 兼容标签。',
+            '严格文本填表响应在 <Amily2Edit> 块外只能包含完整的 thinking/finish 兼容标签或 HTML 注释。',
         );
     }
 
@@ -579,7 +579,7 @@ export function parseToOperationsDetailed(aiResponseText) {
 }
 
 function isAllowedLegacyEditEnvelope(outside) {
-    return /^\s*(?:<(thinking|finish|finsh)>[\s\S]*?<\/\1>\s*)*$/u.test(outside);
+    return /^\s*(?:(?:<(thinking|finish|finsh)>[\s\S]*?<\/\1>|<!--(?:(?!--)[\s\S])*-->)\s*)*$/u.test(outside);
 }
 
 function isExplicitLegacyNoopLine(line) {
