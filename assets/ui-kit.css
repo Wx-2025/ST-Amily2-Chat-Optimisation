@@ -2462,6 +2462,74 @@
     line-height: 1.4;
 }
 
+#amily2_api_config_panel .am2-ac-vault {
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+    margin-top: 4px;
+    padding: 11px 12px;
+    border: 1px solid rgba(112, 170, 255, 0.22);
+    border-radius: 10px;
+    background: rgba(56, 112, 190, 0.08);
+}
+
+#amily2_api_config_panel .am2-ac-vault[hidden] {
+    display: none;
+}
+
+#amily2_api_config_panel .am2-ac-vault-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+#amily2_api_config_panel .am2-ac-vault-badge {
+    flex: 0 0 auto;
+    padding: 3px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--am2-muted);
+    font-size: 11px;
+    line-height: 1.35;
+}
+
+#amily2_api_config_panel .am2-ac-vault-badge[data-state="checking"],
+#amily2_api_config_panel .am2-ac-vault-badge[data-state="migration-pending"],
+#amily2_api_config_panel .am2-ac-vault-badge[data-state="recovery-pending"],
+#amily2_api_config_panel .am2-ac-vault-badge[data-state="cleanup-pending"] {
+    border-color: rgba(112, 170, 255, 0.34);
+    color: #9fc5ff;
+}
+
+#amily2_api_config_panel .am2-ac-vault-badge[data-state="synced"],
+#amily2_api_config_panel .am2-ac-vault-badge[data-state="restored"] {
+    border-color: rgba(95, 205, 145, 0.34);
+    color: #8de0b3;
+}
+
+#amily2_api_config_panel .am2-ac-vault-badge[data-state="conflict"],
+#amily2_api_config_panel .am2-ac-vault-badge[data-state="error"],
+#amily2_api_config_panel .am2-ac-vault-badge[data-state="unavailable"],
+#amily2_api_config_panel .am2-ac-vault-badge[data-state="remote-empty"] {
+    border-color: rgba(255, 181, 71, 0.36);
+    color: var(--am2-warning);
+}
+
+#amily2_api_config_panel .am2-ac-vault-status,
+#amily2_api_config_panel .am2-ac-vault-note,
+#amily2_api_config_panel .am2-ac-vault-revision {
+    margin: 0;
+    color: var(--am2-muted);
+    font-size: 11.5px;
+    line-height: 1.45;
+}
+
+#amily2_api_config_panel .am2-ac-vault-status {
+    color: var(--am2-text);
+}
+
 @media (max-width: 560px) {
     /* 表单双列字段：窄屏可单列（仅表单内部，不是整页竖堆） */
     #amily2_api_config_panel .am2-ac-field-row {
