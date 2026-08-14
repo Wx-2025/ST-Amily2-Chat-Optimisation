@@ -66,7 +66,8 @@ export { pluginVersion, extensionName, defaultSettings } from './utils/settings.
 export { ruleProfileManager, RULE_SLOTS, resolveSlotRuleConfig, resolveCondensationRuleConfig, resolveQueryPreprocessingRuleConfig, resolveTableRuleConfig, resolveHistoriographyRuleConfig, resolveRuleConfig } from './utils/config/RuleProfileManager.js';
 export { bindApiConfigPanel } from './ui/api-config-bindings.js';
 export { bindRuleConfigPanel } from './ui/rule-config-bindings.js';
-export { checkAuthorization, refreshUserInfo } from './utils/auth.js';
+export { checkAuthorization, refreshUserInfo, scheduleAuthorizationRevalidation } from './utils/auth.js';
+export { scheduleVaultReconcile } from './utils/config/api-key-store/vault-sync-controller.js';
 export { tableSystemDefaultSettings } from './core/table-system/settings.js';
 export { manageLorebookEntriesForChat } from './core/lore.js';
 

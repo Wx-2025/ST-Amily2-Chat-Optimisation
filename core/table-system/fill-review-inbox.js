@@ -102,17 +102,167 @@ export function tableFillReviewResponseMatchesTargets(record) {
         && expected === createTableFillReviewTargetSignature(record?.targets);
 }
 
-function tableFillReviewTargetMatchesMessage(context, target) {
-    const index = Number(target?.index);
+function tableFillReviewTargetMatchesContent(target, content) {
+    const normalized = String(content ?? '');
+    return target?.contentHash === getTableFillContentHash(normalized)
+        && target?.contentLength === normalized.length
+        && target?.contentFingerprint === getTableFillContentFingerprint(normalized);
+}
+
+function createTableFillReviewLocation({
+    index,
+    message,
+    carrier,
+    content,
+    hidden,
+    branchIndex = null,
+    contentVerified = true,
+}) {
+    const progress = contentVerified
+        ? getTableFillMessageProgress({
+            is_user: Boolean(message?.is_user),
+            mes: content,
+            extra: carrier?.extra,
+        })
+        : { processed: false, reviewPending: false };
+    return Object.freeze({
+        key: hidden ? `${index}:swipe:${branchIndex}` : `${index}:current`,
+        index,
+        message,
+        carrier,
+        content,
+        hidden,
+        branchIndex,
+        contentVerified,
+        marker: carrier?.extra?.[SECONDARY_REVIEW_PENDING_KEY],
+        processed: progress.processed,
+        reviewPending: progress.reviewPending,
+    });
+}
+
+/**
+ * Return the current message plus independently persisted swipe branches.
+ *
+ * SillyTavern normally mirrors the selected swipe into message.extra. The
+ * selected index is only a hint, though: old/imported chats may have a stale
+ * swipe_id. Deduplicate a branch only when both its content and marker are an
+ * unambiguous byte-for-byte mirror of the current message.
+ */
+function collectTableFillReviewLocations(context, index) {
     const message = context?.chat?.[index];
     if (!Number.isSafeInteger(index) || index < 0 || !message || message.is_user) {
-        return false;
+        return [];
     }
-    const content = String(message.mes ?? '');
-    return !getTableFillMessageProgress(message).processed
-        && target.contentHash === getTableFillContentHash(content)
-        && target.contentLength === content.length
-        && target.contentFingerprint === getTableFillContentFingerprint(content);
+    const currentContent = String(message.mes ?? '');
+    const currentMarker = message.extra?.[SECONDARY_REVIEW_PENDING_KEY];
+    const locations = [createTableFillReviewLocation({
+        index,
+        message,
+        carrier: message,
+        content: currentContent,
+        hidden: false,
+    })];
+    const swipes = Array.isArray(message.swipes) ? message.swipes : null;
+    const swipeInfo = Array.isArray(message.swipe_info) ? message.swipe_info : null;
+    if (!swipeInfo) {
+        return locations;
+    }
+    if (!swipes || swipes.length !== swipeInfo.length) {
+        for (let branchIndex = 0; branchIndex < swipeInfo.length; branchIndex += 1) {
+            const carrier = swipeInfo[branchIndex];
+            if (!carrier || typeof carrier !== 'object' || Array.isArray(carrier)
+                || !hasOwn(carrier.extra, SECONDARY_REVIEW_PENDING_KEY)) continue;
+            locations.push(createTableFillReviewLocation({
+                index,
+                message,
+                carrier,
+                content: '',
+                hidden: true,
+                branchIndex,
+                contentVerified: false,
+            }));
+        }
+        return locations;
+    }
+
+    const mirroredIndexes = [];
+    for (let branchIndex = 0; branchIndex < swipes.length; branchIndex += 1) {
+        const info = swipeInfo[branchIndex];
+        if (!info || typeof info !== 'object' || Array.isArray(info)) continue;
+        const content = String(swipes[branchIndex] ?? '');
+        const marker = info.extra?.[SECONDARY_REVIEW_PENDING_KEY];
+        if (content === currentContent && sameSerializedValue(marker, currentMarker)) {
+            mirroredIndexes.push(branchIndex);
+        }
+    }
+    const selectedIndex = Number.isSafeInteger(message.swipe_id)
+        && message.swipe_id >= 0
+        && message.swipe_id < swipes.length
+        && mirroredIndexes.includes(message.swipe_id)
+        ? message.swipe_id
+        : (mirroredIndexes.length === 1 ? mirroredIndexes[0] : null);
+
+    for (let branchIndex = 0; branchIndex < swipes.length; branchIndex += 1) {
+        if (branchIndex === selectedIndex) continue;
+        const carrier = swipeInfo[branchIndex];
+        if (!carrier || typeof carrier !== 'object' || Array.isArray(carrier)) continue;
+        locations.push(createTableFillReviewLocation({
+            index,
+            message,
+            carrier,
+            content: String(swipes[branchIndex] ?? ''),
+            hidden: true,
+            branchIndex,
+        }));
+    }
+    return locations;
+}
+
+function resolveTableFillReviewTargetEvidence(context, target, reviewId) {
+    const index = Number(target?.index);
+    const locations = collectTableFillReviewLocations(context, index);
+    const candidates = locations
+        .filter(location => location.contentVerified
+            && !location.processed
+            && tableFillReviewTargetMatchesContent(target, location.content));
+    const exactMarkers = candidates.filter(location => (
+        tableFillReviewMarkerMatchesTarget(location.marker, reviewId, target)
+    ));
+    const unresolvedMarkers = locations.filter(location => (
+        !location.contentVerified
+        && tableFillReviewMarkerMatchesTarget(location.marker, reviewId, target)
+    ));
+    const allExactMarkers = [...exactMarkers, ...unresolvedMarkers];
+    if (exactMarkers.length === 1 && unresolvedMarkers.length === 0) {
+        return Object.freeze({
+            kind: 'exact',
+            location: exactMarkers[0],
+            candidates: Object.freeze(candidates),
+            exactMarkers: Object.freeze(allExactMarkers),
+        });
+    }
+    if (allExactMarkers.length > 0 || candidates.length > 1) {
+        return Object.freeze({
+            kind: 'ambiguous',
+            location: null,
+            candidates: Object.freeze(candidates),
+            exactMarkers: Object.freeze(allExactMarkers),
+        });
+    }
+    if (candidates.length === 1 && !candidates[0].reviewPending) {
+        return Object.freeze({
+            kind: 'inferred',
+            location: candidates[0],
+            candidates: Object.freeze(candidates),
+            exactMarkers: Object.freeze(allExactMarkers),
+        });
+    }
+    return Object.freeze({
+        kind: 'stale',
+        location: null,
+        candidates: Object.freeze(candidates),
+        exactMarkers: Object.freeze(allExactMarkers),
+    });
 }
 
 function tableFillReviewMarkerMatchesTarget(marker, reviewId, target) {
@@ -122,6 +272,154 @@ function tableFillReviewMarkerMatchesTarget(marker, reviewId, target) {
         && marker.contentHash === target.contentHash
         && marker.contentLength === target.contentLength
         && marker.contentFingerprint === target.contentFingerprint);
+}
+
+/**
+ * Capture the one physical swipe_info branch that mirrors each currently
+ * resolved review target. A branch is eligible only when both its body and its
+ * pending marker match the inbox target's strong evidence. Duplicate matches
+ * are deliberately ignored: another legitimate branch must never be cleared
+ * merely because it lives on the same floor.
+ */
+export function createTableFillReviewSwipeMarkerCleanupPlan(
+    context,
+    reviewIds,
+    resolvedMessages,
+) {
+    const ids = new Set(
+        [...(reviewIds || [])].map(value => String(value ?? '')).filter(Boolean),
+    );
+    const resolved = new Set(resolvedMessages || []);
+    if (ids.size === 0 || resolved.size === 0) {
+        return Object.freeze({ mutations: Object.freeze([]) });
+    }
+
+    const claimsByCarrier = new Map();
+    for (const record of readTableFillReviewRecords(context)) {
+        if (!ids.has(record.id)) continue;
+        for (const target of record.targets || []) {
+            const index = Number(target?.index);
+            const message = context?.chat?.[index];
+            const currentContent = String(message?.mes ?? '');
+            const currentMarker = message?.extra?.[SECONDARY_REVIEW_PENDING_KEY];
+            if (!resolved.has(message)
+                || message?.is_user
+                || !tableFillReviewTargetMatchesContent(target, currentContent)
+                || !tableFillReviewMarkerMatchesTarget(currentMarker, record.id, target)) {
+                continue;
+            }
+            const swipes = Array.isArray(message.swipes) ? message.swipes : null;
+            const swipeInfo = Array.isArray(message.swipe_info) ? message.swipe_info : null;
+            if (!swipes || !swipeInfo || swipes.length !== swipeInfo.length) continue;
+
+            const candidates = [];
+            for (let branchIndex = 0; branchIndex < swipes.length; branchIndex += 1) {
+                const carrier = swipeInfo[branchIndex];
+                const content = String(swipes[branchIndex] ?? '');
+                const marker = carrier?.extra?.[SECONDARY_REVIEW_PENDING_KEY];
+                if (!carrier || typeof carrier !== 'object' || Array.isArray(carrier)
+                    || !tableFillReviewTargetMatchesContent(target, content)
+                    || !tableFillReviewMarkerMatchesTarget(marker, record.id, target)) {
+                    continue;
+                }
+                candidates.push({ branchIndex, carrier, content, marker });
+            }
+            if (candidates.length !== 1) continue;
+            const candidate = candidates[0];
+            const claim = Object.freeze({
+                index,
+                message,
+                target: clone(target),
+                reviewId: record.id,
+                currentContent,
+                currentMarker: clone(currentMarker),
+                swipes,
+                swipesLength: swipes.length,
+                swipeInfo,
+                swipeInfoLength: swipeInfo.length,
+                branchIndex: candidate.branchIndex,
+                carrier: candidate.carrier,
+                carrierExtra: candidate.carrier.extra,
+                branchContent: candidate.content,
+                marker: clone(candidate.marker),
+                hadExtra: hasOwn(candidate.carrier, 'extra'),
+            });
+            const claims = claimsByCarrier.get(candidate.carrier) || [];
+            claims.push(claim);
+            claimsByCarrier.set(candidate.carrier, claims);
+        }
+    }
+
+    const mutations = [];
+    for (const claims of claimsByCarrier.values()) {
+        if (claims.length === 1) mutations.push(claims[0]);
+    }
+    return Object.freeze({ mutations: Object.freeze(mutations) });
+}
+
+export function tableFillReviewSwipeMarkerCleanupMatches(context, plan) {
+    return (plan?.mutations || []).every(mutation => {
+        const message = context?.chat?.[mutation.index];
+        return message === mutation.message
+            && String(message?.mes ?? '') === mutation.currentContent
+            && tableFillReviewTargetMatchesContent(mutation.target, message?.mes)
+            && sameSerializedValue(
+                message?.extra?.[SECONDARY_REVIEW_PENDING_KEY],
+                mutation.currentMarker,
+            )
+            && message.swipes === mutation.swipes
+            && mutation.swipes.length === mutation.swipesLength
+            && message.swipe_info === mutation.swipeInfo
+            && mutation.swipeInfo.length === mutation.swipeInfoLength
+            && String(mutation.swipes[mutation.branchIndex] ?? '')
+                === mutation.branchContent
+            && mutation.swipeInfo[mutation.branchIndex] === mutation.carrier
+            && mutation.carrier.extra === mutation.carrierExtra
+            && tableFillReviewTargetMatchesContent(
+                mutation.target,
+                mutation.swipes[mutation.branchIndex],
+            )
+            && sameSerializedValue(
+                mutation.carrier?.extra?.[SECONDARY_REVIEW_PENDING_KEY],
+                mutation.marker,
+            );
+    });
+}
+
+export function applyTableFillReviewSwipeMarkerCleanup(plan) {
+    for (const mutation of plan?.mutations || []) {
+        delete mutation.carrier.extra?.[SECONDARY_REVIEW_PENDING_KEY];
+    }
+}
+
+function tableFillReviewSwipeMarkerCleanupMutationIsStaged(context, mutation) {
+    const message = context?.chat?.[mutation.index];
+    const extra = mutation.carrier?.extra;
+    return message === mutation.message
+        && String(message?.mes ?? '') === mutation.currentContent
+        && message.swipes === mutation.swipes
+        && mutation.swipes.length === mutation.swipesLength
+        && message.swipe_info === mutation.swipeInfo
+        && mutation.swipeInfo.length === mutation.swipeInfoLength
+        && String(mutation.swipes[mutation.branchIndex] ?? '')
+            === mutation.branchContent
+        && mutation.swipeInfo[mutation.branchIndex] === mutation.carrier
+        && extra === mutation.carrierExtra
+        && Boolean(extra)
+        && !hasOwn(extra, SECONDARY_REVIEW_PENDING_KEY);
+}
+
+export function tableFillReviewSwipeMarkerCleanupIsStaged(context, plan) {
+    return (plan?.mutations || []).every(mutation => (
+        tableFillReviewSwipeMarkerCleanupMutationIsStaged(context, mutation)
+    ));
+}
+
+export function restoreTableFillReviewSwipeMarkerCleanup(context, plan) {
+    for (const mutation of plan?.mutations || []) {
+        if (!tableFillReviewSwipeMarkerCleanupMutationIsStaged(context, mutation)) continue;
+        mutation.carrierExtra[SECONDARY_REVIEW_PENDING_KEY] = clone(mutation.marker);
+    }
 }
 
 function sortTableFillReviewRecords(records) {
@@ -154,89 +452,81 @@ export function planTableFillReviewReconciliation(
         recordsById.set(record.id, group);
     }
 
-    const claimsByIndex = new Map();
     const evidenceIndexes = new Set();
+    const locationsByIndex = new Map();
+    const getLocations = index => {
+        if (!locationsByIndex.has(index)) {
+            locationsByIndex.set(index, collectTableFillReviewLocations(context, index));
+        }
+        return locationsByIndex.get(index);
+    };
+    for (let index = 0; index < chat.length; index += 1) {
+        const locations = getLocations(index);
+        if (locations.some(location => hasOwn(
+            location.carrier?.extra,
+            SECONDARY_REVIEW_PENDING_KEY,
+        ))) {
+            evidenceIndexes.add(index);
+        }
+    }
+
+    const targetStates = [];
+    const statesByRecord = new Map();
     for (const record of originalRecords) {
-        const seenIndexes = new Set();
+        const recordStates = [];
         for (const target of record.targets || []) {
             const index = Number(target?.index);
             if (Number.isSafeInteger(index) && index >= 0 && index < chat.length) {
                 evidenceIndexes.add(index);
             }
-            if (seenIndexes.has(index)
-                || !tableFillReviewTargetMatchesMessage(context, target)) {
-                continue;
+            const resolution = resolveTableFillReviewTargetEvidence(
+                context,
+                target,
+                record.id,
+            );
+            const state = { record, target, resolution, kind: resolution.kind };
+            targetStates.push(state);
+            recordStates.push(state);
+        }
+        statesByRecord.set(record, recordStates);
+    }
+
+    // A missing marker may infer ownership only when exactly one record claims
+    // that physical branch. Exact review-id evidence wins over inference; all
+    // other collisions remain retained but deliberately non-actionable.
+    const claimsByLocation = new Map();
+    for (const state of targetStates) {
+        if (!state.resolution.location
+            || !['exact', 'inferred'].includes(state.kind)) continue;
+        const key = state.resolution.location.key;
+        const claims = claimsByLocation.get(key) || [];
+        claims.push(state);
+        claimsByLocation.set(key, claims);
+    }
+    const ownerByLocation = new Map();
+    for (const [key, claims] of claimsByLocation) {
+        if (claims.length === 1) {
+            ownerByLocation.set(key, claims[0]);
+            continue;
+        }
+        const exactClaims = claims.filter(state => state.kind === 'exact');
+        if (exactClaims.length === 1) {
+            ownerByLocation.set(key, exactClaims[0]);
+            for (const claim of claims) {
+                if (claim !== exactClaims[0]) claim.kind = 'ambiguous';
             }
-            seenIndexes.add(index);
-            const claims = claimsByIndex.get(index) || [];
-            claims.push(Object.freeze({ record, target }));
-            claimsByIndex.set(index, claims);
+        } else {
+            for (const claim of claims) claim.kind = 'ambiguous';
         }
-    }
-    for (let index = 0; index < chat.length; index += 1) {
-        if (hasOwn(chat[index]?.extra, SECONDARY_REVIEW_PENDING_KEY)) {
-            evidenceIndexes.add(index);
-        }
-    }
-
-    const ownerByIndex = new Map();
-    const recoveryGroups = new Map();
-    for (const index of evidenceIndexes) {
-        const message = chat[index];
-        if (!message) continue;
-        const marker = message.extra?.[SECONDARY_REVIEW_PENDING_KEY];
-        const claims = claimsByIndex.get(index) || [];
-        const markerReviewId = typeof marker?.reviewId === 'string'
-            ? marker.reviewId
-            : '';
-        const markedClaims = markerReviewId
-            ? claims.filter(claim => claim.record.id === markerReviewId)
-            : [];
-        let owner = null;
-
-        if (markedClaims.length === 1) {
-            owner = Object.freeze({
-                kind: 'record',
-                record: markedClaims[0].record,
-                target: markedClaims[0].target,
-            });
-        } else if (!getTableFillMessageProgress(message).reviewPending
-            && claims.length === 1) {
-            owner = Object.freeze({
-                kind: 'record',
-                record: claims[0].record,
-                target: claims[0].target,
-            });
-        } else if (getTableFillMessageProgress(message).reviewPending
-            || claims.length > 1) {
-            const reusableMarkerId = markerReviewId
-                && markerReviewId.length <= 200
-                && !recordsById.has(markerReviewId);
-            const groupKey = reusableMarkerId
-                ? `marker:${markerReviewId}`
-                : `target:${index}`;
-            const group = recoveryGroups.get(groupKey) || {
-                id: reusableMarkerId ? markerReviewId : null,
-                targets: [],
-                createdAt: Number.isFinite(marker?.createdAt) ? marker.createdAt : now,
-            };
-            group.targets.push(Object.freeze({ index, msg: message }));
-            recoveryGroups.set(groupKey, group);
-            owner = Object.freeze({ kind: 'recovery', groupKey });
-        }
-        if (owner) ownerByIndex.set(index, owner);
     }
 
     const nextRecords = [];
     let trimmedRecordCount = 0;
     let removedRecordCount = 0;
     for (const record of originalRecords) {
-        const retainedTargets = (record.targets || []).filter(target => {
-            const owner = ownerByIndex.get(target.index);
-            return owner?.kind === 'record'
-                && owner.record === record
-                && owner.target === target;
-        });
+        const retainedTargets = (statesByRecord.get(record) || [])
+            .filter(state => state.kind !== 'stale')
+            .map(state => state.target);
         if (retainedTargets.length === 0) {
             removedRecordCount += 1;
             continue;
@@ -253,9 +543,99 @@ export function planTableFillReviewReconciliation(
         }
     }
 
+    const associatedMarkerLocations = new Set();
+    const protectedMarkerLocations = new Set();
+    for (const state of targetStates) {
+        for (const location of state.resolution.exactMarkers) {
+            associatedMarkerLocations.add(location.key);
+        }
+        if (state.resolution.exactMarkers.length > 1) {
+            for (const location of state.resolution.exactMarkers) {
+                protectedMarkerLocations.add(location.key);
+            }
+        }
+    }
+
+    const recoveryGroups = new Map();
+    for (const locations of locationsByIndex.values()) {
+        for (const location of locations) {
+            if (!location.reviewPending
+                || associatedMarkerLocations.has(location.key)) continue;
+            const markerReviewId = typeof location.marker?.reviewId === 'string'
+                ? location.marker.reviewId
+                : '';
+            const reusableMarkerId = markerReviewId
+                && markerReviewId.length <= 200
+                && !recordsById.has(markerReviewId);
+            // A hidden marker cannot be rewritten by the existing atomic
+            // reconciliation transaction. Recover it only when its own id can
+            // be retained byte-for-byte.
+            if (location.hidden && !reusableMarkerId) continue;
+            const groupKey = reusableMarkerId
+                ? `marker:${markerReviewId}`
+                : `location:${location.key}`;
+            const group = recoveryGroups.get(groupKey) || {
+                id: reusableMarkerId ? markerReviewId : null,
+                locations: [],
+                createdAt: Number.isFinite(location.marker?.createdAt)
+                    ? location.marker.createdAt
+                    : now,
+            };
+            group.locations.push(location);
+            recoveryGroups.set(groupKey, group);
+        }
+    }
+
     const usedReviewIds = new Set(nextRecords.map(record => record.id));
     let recoveredRecordCount = 0;
     for (const [groupKey, group] of recoveryGroups) {
+        const indexes = group.locations.map(location => location.index);
+        if (new Set(indexes).size !== indexes.length) {
+            // Repeated markers on two branches of one floor do not establish
+            // which branch owns the record. Preserve every carrier unchanged.
+            for (const location of group.locations) {
+                protectedMarkerLocations.add(location.key);
+            }
+            const currentLocation = group.locations.find(location => !location.hidden);
+            const hasHiddenLocation = group.locations.some(location => location.hidden);
+            // When the selected message itself is locked, retaining only the
+            // markers would leave no review-center entry capable of explaining
+            // or releasing that lock. Rebuild one representative target under
+            // the original marker id. Resolution deliberately sees the two
+            // exact physical locations and classifies this record ambiguous,
+            // so neither edit nor retry can choose a branch implicitly.
+            if (group.id && currentLocation && hasHiddenLocation
+                && !usedReviewIds.has(group.id)) {
+                const recoveryRecord = createTableFillReviewRecord({
+                    id: group.id,
+                    source: 'secondary-recovery',
+                    error: {
+                        phase: 'reconcile',
+                        code: 'TABLE_FILL_REVIEW_AMBIGUOUS_RECOVERED',
+                        message: '同一楼层的当前正文与隐藏滑动分支都保留了同一审查标记；已恢复为仅可检查的冲突工单。',
+                    },
+                    rawResponse: '',
+                    attempts: 1,
+                    targetMessages: [Object.freeze({
+                        index: currentLocation.index,
+                        msg: currentLocation.message,
+                    })],
+                    tableState,
+                    createdAt: group.createdAt,
+                    updatedAt: now,
+                });
+                usedReviewIds.add(recoveryRecord.id);
+                nextRecords.push(recoveryRecord);
+                recoveredRecordCount += 1;
+            }
+            continue;
+        }
+        const targetMessages = group.locations.map(location => Object.freeze({
+            index: location.index,
+            msg: location.hidden
+                ? Object.freeze({ is_user: false, mes: location.content })
+                : location.message,
+        }));
         let recoveryRecord = createTableFillReviewRecord({
             ...(group.id ? { id: group.id } : {}),
             source: 'secondary-recovery',
@@ -266,7 +646,7 @@ export function planTableFillReviewReconciliation(
             },
             rawResponse: '',
             attempts: 1,
-            targetMessages: group.targets,
+            targetMessages,
             tableState,
             createdAt: group.createdAt,
             updatedAt: now,
@@ -277,7 +657,7 @@ export function planTableFillReviewReconciliation(
                 error: recoveryRecord.error,
                 rawResponse: '',
                 attempts: 1,
-                targetMessages: group.targets,
+                targetMessages,
                 tableState,
                 createdAt: group.createdAt,
                 updatedAt: now,
@@ -286,9 +666,9 @@ export function planTableFillReviewReconciliation(
         usedReviewIds.add(recoveryRecord.id);
         nextRecords.push(recoveryRecord);
         recoveredRecordCount += 1;
-        for (const target of recoveryRecord.targets) {
-            ownerByIndex.set(target.index, Object.freeze({
-                kind: 'record',
+        for (const location of group.locations) {
+            const target = recoveryRecord.targets.find(item => item.index === location.index);
+            ownerByLocation.set(location.key, Object.freeze({
                 record: recoveryRecord,
                 target,
                 recoveredFrom: groupKey,
@@ -303,10 +683,14 @@ export function planTableFillReviewReconciliation(
     for (const index of evidenceIndexes) {
         const message = chat[index];
         if (!message) continue;
+        const currentLocation = getLocations(index)
+            .find(location => !location.hidden);
+        if (!currentLocation
+            || protectedMarkerLocations.has(currentLocation.key)) continue;
         const existingMarker = message.extra?.[SECONDARY_REVIEW_PENDING_KEY];
         const wasReviewPending = getTableFillMessageProgress(message).reviewPending;
-        const owner = ownerByIndex.get(index);
-        const desiredMarker = owner?.kind === 'record'
+        const owner = ownerByLocation.get(currentLocation.key);
+        const desiredMarker = owner?.record && owner?.target
             ? createSecondaryReviewPendingMarker(
                 owner.record.id,
                 owner.target.contentHash,
@@ -549,40 +933,45 @@ export function applyTableFillReviewMarkers(context, record) {
 }
 
 export function resolveTableFillReviewTargets(context, record) {
-    const chat = Array.isArray(context?.chat) ? context.chat : [];
     const currentTargets = [];
+    const hiddenTargets = [];
+    const ambiguousTargets = [];
     const staleTargets = [];
     for (const target of record?.targets || []) {
-        const message = chat[target.index];
-        const content = String(message?.mes ?? '');
-        const marker = message?.extra?.[SECONDARY_REVIEW_PENDING_KEY];
-        const current = Boolean(
-            message
-            && !message.is_user
-            && marker?.version === 1
-            && marker.reviewId === record.id
-            && target.contentHash === getTableFillContentHash(content)
-            && target.contentLength === content.length
-            && target.contentFingerprint === getTableFillContentFingerprint(content)
-            && marker.contentHash === target.contentHash
-            && marker.contentLength === target.contentLength
-            && marker.contentFingerprint === target.contentFingerprint
-            && !getTableFillMessageProgress(message).processed,
+        const evidence = resolveTableFillReviewTargetEvidence(
+            context,
+            target,
+            record.id,
         );
+        const location = evidence.kind === 'exact' ? evidence.location : null;
         const resolved = Object.freeze({
             index: target.index,
-            msg: message,
+            msg: context?.chat?.[target.index],
             hash: target.contentHash,
             contentLength: target.contentLength,
             contentFingerprint: target.contentFingerprint,
+            ...(location?.hidden ? {
+                hidden: true,
+                branchIndex: location.branchIndex,
+            } : {}),
         });
-        if (current) currentTargets.push(resolved);
-        else staleTargets.push(resolved);
+        if (location && !location.hidden) {
+            currentTargets.push(resolved);
+        } else if (location?.hidden) {
+            hiddenTargets.push(resolved);
+        } else {
+            staleTargets.push(resolved);
+            if (evidence.kind === 'ambiguous') ambiguousTargets.push(resolved);
+        }
     }
+    const targetCount = record?.targets?.length || 0;
     return Object.freeze({
         currentTargets: Object.freeze(currentTargets),
+        hiddenTargets: Object.freeze(hiddenTargets),
+        ambiguousTargets: Object.freeze(ambiguousTargets),
         staleTargets: Object.freeze(staleTargets),
-        allCurrent: currentTargets.length === (record?.targets?.length || 0),
+        allCurrent: currentTargets.length === targetCount,
+        allRetained: currentTargets.length + hiddenTargets.length === targetCount,
     });
 }
 

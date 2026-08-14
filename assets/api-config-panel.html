@@ -221,8 +221,19 @@
                     </div>
                     <select id="amily2_keystore_mode" class="text_pole am2-ac-input am2-ac-input-sm">
                         <option value="local">本机</option>
-                        <option value="cloud">加密云同步</option>
+                        <option value="cloud">加密云同步（手动私钥）</option>
+                        <option value="vault">授权码云同步（Type2+）</option>
                     </select>
+                </div>
+            </div>
+
+
+            <div id="amily2_manual_cloud_recovery" class="am2-ac-cloud" hidden>
+                <p id="amily2_manual_cloud_recovery_status" class="am2-ac-warn" role="status" aria-live="polite">
+                    检测到已有共享加密配置，请先导入原私钥。
+                </p>
+                <div class="am2-ac-inline-actions">
+                    <button id="amily2_manual_cloud_recovery_import" class="am2-ac-ghost" type="button">导入原私钥</button>
                 </div>
             </div>
 
@@ -242,6 +253,31 @@
                     <input id="amily2_import_key_bundle_input" type="file" accept=".json,application/json" style="display:none;" />
                 </div>
                 <p class="am2-ac-warn">重新生成后，已加密的密钥全部失效，需重新输入。</p>
+
+                <section id="amily2_vault_sync_section" class="am2-ac-vault" hidden aria-labelledby="amily2_vault_sync_title">
+                    <div class="am2-ac-vault-head">
+                        <div class="am2-ac-setting-label">
+                            <strong id="amily2_vault_sync_title">授权码云密钥库</strong>
+                            <small>私钥使用当前服务器授权码加密后备份；授权码不会写入酒馆设置。</small>
+                        </div>
+                        <span id="amily2_vault_sync_badge" class="am2-ac-vault-badge" data-state="idle">未检查</span>
+                    </div>
+                    <p id="amily2_vault_sync_status" class="am2-ac-vault-status" role="status" aria-live="polite">
+                        选择此模式后，将检查当前授权与云端密钥。
+                    </p>
+                    <small id="amily2_vault_sync_revision" class="am2-ac-vault-revision" hidden></small>
+                    <div class="am2-ac-inline-actions">
+                        <button id="amily2_vault_sync_now" class="am2-ac-ghost amily2-vbtn" type="button">
+                            <span class="vbtn-icon"><i class="fas fa-cloud-arrow-up"></i></span>
+                            <span class="vbtn-label">立即同步</span>
+                        </button>
+                        <button id="amily2_vault_use_remote" class="am2-ac-ghost" type="button" hidden>采用云端</button>
+                        <button id="amily2_vault_use_local" class="am2-ac-danger" type="button" hidden>用本机覆盖云端</button>
+                        <button id="amily2_vault_clear_device_key" class="am2-ac-ghost" type="button" disabled>清除此设备密钥</button>
+                        <button id="amily2_vault_discard_encrypted" class="am2-ac-danger" type="button" hidden disabled>放弃无法恢复的密文</button>
+                    </div>
+                    <p class="am2-ac-vault-note">若本机与云端指纹不同，插件会暂停同步并要求手动选择，不会静默覆盖。</p>
+                </section>
             </div>
         </div>
 

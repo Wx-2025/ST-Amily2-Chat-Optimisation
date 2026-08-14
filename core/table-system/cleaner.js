@@ -2,6 +2,7 @@ import { getContext, extension_settings } from '/scripts/extensions.js';
 import { saveChatDebounced } from '/script.js';
 import { log } from './logger.js';
 import { extensionName } from '../../utils/settings.js';
+import { TABLE_SNAPSHOT_PROVENANCE_KEY } from './infra/snapshot-provenance.js';
 
 const TABLE_DATA_KEY = 'amily2_tables_data';
 
@@ -20,8 +21,15 @@ export async function clearTableRecordsBefore(floorIndex) {
 
     for (let i = 0; i < targetIndex; i++) {
         const message = chat[i];
-        if (message.extra && message.extra[TABLE_DATA_KEY]) {
+        if (message.extra && (
+            Object.prototype.hasOwnProperty.call(message.extra, TABLE_DATA_KEY)
+            || Object.prototype.hasOwnProperty.call(
+                message.extra,
+                TABLE_SNAPSHOT_PROVENANCE_KEY,
+            )
+        )) {
             delete message.extra[TABLE_DATA_KEY];
+            delete message.extra[TABLE_SNAPSHOT_PROVENANCE_KEY];
             if (Object.keys(message.extra).length === 0) {
                 delete message.extra;
             }

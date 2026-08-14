@@ -794,6 +794,9 @@ export function bindModalEvents() {
             icon.addClass('fa-spin');
             try {
                 await refreshUserInfo({ interactive: true });
+            } catch (error) {
+                console.warn('[Amily2] 手动刷新权限信息失败:', error);
+                toastr.error('权限刷新失败，请稍后重试。', '权限刷新失败');
             } finally {
                 icon.removeClass('fa-spin');
                 button.prop('disabled', false);

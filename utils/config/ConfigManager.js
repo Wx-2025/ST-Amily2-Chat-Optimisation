@@ -28,7 +28,15 @@ const LS_PREFIX = 'amily2_secure_';
 
 // ── ConfigManager ────────────────────────────────────────────────────────────
 
-class ConfigManager {
+export class ConfigManager {
+    constructor() {
+        this._vaultSensitiveCache = new Map();
+        this._vaultCacheScope = null;
+        this._vaultCacheRevision = 0;
+        this._vaultFieldRevisions = new Map();
+        this._manualCloudFieldStates = new Map();
+    }
+
     async init() {
         await apiKeyStore.init();
         await this.syncSensitiveCache({ force: true });
@@ -42,6 +50,9 @@ class ConfigManager {
      */
     get(key) {
         if (SENSITIVE_KEYS.has(key)) {
+            if (apiKeyStore.getMode() === 'vault') {
+                return this._vaultSensitiveCache.get(key) ?? '';
+            }
             return localStorage.getItem(LS_PREFIX + key) ?? '';
         }
         return extension_settings[extensionName]?.[key];
@@ -54,6 +65,9 @@ class ConfigManager {
      */
     has(key) {
         if (SENSITIVE_KEYS.has(key)) {
+            if (apiKeyStore.getMode() === 'vault') {
+                return Boolean(this._vaultSensitiveCache.get(key));
+            }
             return Boolean(localStorage.getItem(LS_PREFIX + key));
         }
         const value = extension_settings[extensionName]?.[key];
@@ -69,17 +83,58 @@ class ConfigManager {
      */
     set(key, value) {
         if (SENSITIVE_KEYS.has(key)) {
-            this._setSensitiveCacheValue(key, value);
+            const mode = apiKeyStore.getMode();
+            if (mode === 'vault') {
+                const previousValue = this._vaultSensitiveCache.get(key);
+                const fieldRevision = (this._vaultFieldRevisions.get(key) || 0) + 1;
+                this._vaultFieldRevisions.set(key, fieldRevision);
+                this._vaultCacheRevision += 1;
+                this._setVaultSensitiveCacheValue(key, value);
+                apiKeyStore.setKey(key, value).catch(() => {
+                    if (this._vaultFieldRevisions.get(key) !== fieldRevision) return;
+                    this._setVaultSensitiveCacheValue(key, previousValue);
+                    this._vaultFieldRevisions.set(key, fieldRevision + 1);
+                    this._vaultCacheRevision += 1;
+                    console.warn(`[ConfigManager] 授权码云同步字段 "${key}" 失败，本次修改未提交。`);
+                });
+            } else if (mode === 'cloud') {
+                const previousState = this._manualCloudFieldStates.get(key);
+                const state = previousState?.pending > 0
+                    ? previousState
+                    : {
+                        revision: previousState?.revision || 0,
+                        pending: 0,
+                        durableValue: localStorage.getItem(LS_PREFIX + key),
+                    };
+                const fieldRevision = state.revision + 1;
+                state.revision = fieldRevision;
+                state.pending += 1;
+                this._manualCloudFieldStates.set(key, state);
+                this._setSensitiveCacheValue(key, value);
+                apiKeyStore.setKey(key, value).then(() => {
+                    if (this._manualCloudFieldStates.get(key) !== state) return;
+                    state.durableValue = value !== null && value !== undefined && value !== ''
+                        ? String(value)
+                        : null;
+                    state.pending = Math.max(0, state.pending - 1);
+                }).catch(() => {
+                    if (this._manualCloudFieldStates.get(key) !== state) return;
+                    state.pending = Math.max(0, state.pending - 1);
+                    if (state.revision !== fieldRevision) return;
+                    this._setSensitiveCacheValue(key, state.durableValue);
+                    state.revision = fieldRevision + 1;
+                    console.warn(`[ConfigManager] 云同步敏感字段 "${key}" 失败，本次修改未提交。`);
+                });
+            } else {
+                this._manualCloudFieldStates.delete(key);
+                this._setSensitiveCacheValue(key, value);
+                apiKeyStore.notePlaintextMutation();
+            }
             // 确保 extension_settings 中不保留该敏感字段
             const settings = extension_settings[extensionName];
             if (settings && Object.prototype.hasOwnProperty.call(settings, key)) {
                 delete settings[key];
                 saveSettingsDebounced();
-            }
-            if (apiKeyStore.getMode() === 'cloud') {
-                apiKeyStore.setKey(key, value).catch(e => {
-                    console.error(`[ConfigManager] 云同步敏感字段 "${key}" 失败:`, e);
-                });
             }
         } else {
             if (!extension_settings[extensionName]) {
@@ -103,7 +158,11 @@ class ConfigManager {
         const base = extension_settings[extensionName] ?? {};
         const result = { ...base };
         for (const key of SENSITIVE_KEYS) {
-            const val = localStorage.getItem(LS_PREFIX + key);
+            const val = apiKeyStore.getMode() === 'vault'
+                ? (this._vaultSensitiveCache.has(key)
+                    ? this._vaultSensitiveCache.get(key)
+                    : null)
+                : localStorage.getItem(LS_PREFIX + key);
             // null 表示 localStorage 中不存在，保留 base 中原值（如有）
             if (val !== null) {
                 result[key] = val;
@@ -147,16 +206,130 @@ class ConfigManager {
     }
 
     async syncSensitiveCache({ force = false } = {}) {
-        if (apiKeyStore.getMode() !== 'cloud') return;
+        const mode = apiKeyStore.getMode();
+        if (mode !== 'cloud' && mode !== 'vault') return;
         await apiKeyStore.init();
         if (!apiKeyStore.isCloudReady()) return;
 
+        let snapshot;
+        try {
+            snapshot = await apiKeyStore.readEncryptedPlainSnapshot();
+        } catch {
+            // A missing, mismatched or damaged private key must not block the
+            // host/plugin bootstrap and must not erase an existing safe cache.
+            console.warn('[ConfigManager] 加密凭证尚未就绪，已保留当前缓存。');
+            return;
+        }
+        if (snapshot.mutationRevision !== apiKeyStore.getMutationRevision()) return;
+
+        if (mode === 'vault') {
+            const scopeHash = apiKeyStore.getActiveVaultScopeHash();
+            if (!scopeHash) return;
+            this.hydrateVaultSensitiveCache({
+                values: snapshot.values,
+                scopeHash,
+                expectedMutationRevision: snapshot.mutationRevision,
+            });
+            try {
+                apiKeyStore.finalizeVaultMigration({
+                    scopeHash,
+                    expectedMutationRevision: snapshot.mutationRevision,
+                    fingerprint: snapshot.fingerprint,
+                    remoteRevision: snapshot.remoteRevision,
+                    cipherFields: snapshot.cipherFields,
+                    validatedFields: snapshot.validatedFields,
+                });
+            } catch {
+                // Journal validation is cleanup, not a bootstrap dependency.
+                // Preserve the encrypted cache and the plaintext fallback so a
+                // damaged/stale journal cannot block the plugin from loading.
+                console.warn('[ConfigManager] Vault 迁移回退尚未完成验证，已保留回退数据。');
+            }
+            return;
+        }
+
+        const nextValues = new Map();
         for (const key of SENSITIVE_KEYS) {
             const cached = localStorage.getItem(LS_PREFIX + key);
             if (!force && cached !== null && cached !== '') continue;
-
-            const value = await apiKeyStore.getKey(key);
+            nextValues.set(key, Object.prototype.hasOwnProperty.call(snapshot.values, key)
+                ? snapshot.values[key]
+                : '');
+        }
+        if (snapshot.mutationRevision !== apiKeyStore.getMutationRevision()) return;
+        for (const [key, value] of nextValues) {
             this._setSensitiveCacheValue(key, value);
+        }
+    }
+
+    hydrateVaultSensitiveCache({ values, scopeHash, expectedMutationRevision }) {
+        if (apiKeyStore.getMode() !== 'vault'
+            || scopeHash !== apiKeyStore.getActiveVaultScopeHash()
+            || expectedMutationRevision !== apiKeyStore.getMutationRevision()) {
+            throw new Error('Vault cache hydration is stale.');
+        }
+        const staged = new Map();
+        for (const key of SENSITIVE_KEYS) {
+            const value = Object.prototype.hasOwnProperty.call(values || {}, key)
+                ? values[key]
+                : '';
+            if (typeof value !== 'string') {
+                throw new TypeError('Vault cache contains an invalid credential value.');
+            }
+            if (value) staged.set(key, value);
+        }
+        this._vaultSensitiveCache = staged;
+        this._vaultCacheScope = scopeHash;
+        this._vaultFieldRevisions.clear();
+        this._vaultCacheRevision += 1;
+        return this.getVaultCacheStatus();
+    }
+
+    clearVaultSensitiveCache({ clearPersistentFallback = false } = {}) {
+        this._vaultSensitiveCache.clear();
+        this._vaultCacheScope = null;
+        this._vaultFieldRevisions.clear();
+        this._vaultCacheRevision += 1;
+        if (clearPersistentFallback) {
+            for (const key of SENSITIVE_KEYS) {
+                localStorage.removeItem(LS_PREFIX + key);
+            }
+        }
+    }
+
+    /**
+     * Retire every decrypted Vault credential in the current synchronous turn.
+     *
+     * Authorization cleanup also asks VaultSyncController to abort network work
+     * and retire device state asynchronously. That promise boundary is too late
+     * for callers which immediately continue after logout/expiry, especially
+     * profile credentials that are decrypted directly by ApiKeyStore instead of
+     * being served from ConfigManager's fixed-field cache.
+     *
+     * Migration plaintext is intentionally preserved. It may only be removed
+     * after the existing reload/durability validation succeeds.
+     */
+    suspendVaultSensitiveRuntime() {
+        this.clearVaultSensitiveCache();
+        if (apiKeyStore.getMode() !== 'vault') return false;
+        apiKeyStore.suspendVaultRuntimeState();
+        return true;
+    }
+
+    getVaultCacheStatus() {
+        return Object.freeze({
+            ready: Boolean(this._vaultCacheScope),
+            scopeBound: Boolean(this._vaultCacheScope),
+            revision: this._vaultCacheRevision,
+            populatedFields: this._vaultSensitiveCache.size,
+        });
+    }
+
+    _setVaultSensitiveCacheValue(key, value) {
+        if (value !== null && value !== undefined && value !== '') {
+            this._vaultSensitiveCache.set(key, String(value));
+        } else {
+            this._vaultSensitiveCache.delete(key);
         }
     }
 

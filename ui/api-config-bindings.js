@@ -7,7 +7,16 @@
  */
 
 import { apiProfileManager, PROFILE_TYPES, SLOTS, clearLegacyConfig } from '../utils/config/ApiProfileManager.js';
-import { apiKeyStore } from '../utils/config/api-key-store/ApiKeyStore.js';
+import { apiKeyStore, CloudTransitionError } from '../utils/config/api-key-store/ApiKeyStore.js';
+import {
+    clearVaultDeviceKey,
+    discardVaultEncryptedState,
+    disableVaultSync,
+    enableVaultSync,
+    getVaultSyncStatus,
+    reconcileVaultSync,
+    subscribeVaultSyncStatus,
+} from '../utils/config/api-key-store/vault-sync-controller.js';
 import { configManager } from '../utils/config/ConfigManager.js';
 import { getRequestHeaders, saveSettingsDebounced } from '/script.js';
 import { extension_settings } from '/scripts/extensions.js';
@@ -94,6 +103,8 @@ let _editingId      = null;   // 当前编辑的 Profile ID（null = 新建）
 let _currentFilter  = 'all';  // 当前类型筛选
 let _slotAssignmentPanel = null;
 let _slotAssignmentRefreshBound = false;
+let _vaultSyncPanel = null;
+let _vaultSyncUnsubscribe = null;
 
 // ── 入口：绑定整个面板 ────────────────────────────────────────────────────────
 
@@ -192,61 +203,468 @@ export function bindApiConfigPanel(container) {
 
 // ── 存储模式 ──────────────────────────────────────────────────────────────────
 
+const VAULT_STATUS_COPY = Object.freeze({
+    disabled: Object.freeze({ badge: '已关闭', message: '授权码云同步已关闭。' }),
+    unavailable: Object.freeze({ badge: '不可用', message: '当前授权不支持此功能，请使用有效的 Type2 或以上服务器授权。' }),
+    idle: Object.freeze({ badge: '待同步', message: '授权码云同步已启用，尚未检查云端密钥。' }),
+    checking: Object.freeze({ badge: '检查中', message: '正在安全检查本机与云端密钥，请稍候。' }),
+    'migration-pending': Object.freeze({ badge: '正在迁移', message: '正在准备本机密钥并启用授权码云同步，请稍候。' }),
+    'recovery-pending': Object.freeze({ badge: '等待恢复', message: '云端密钥可用，正在等待安全恢复到此设备。' }),
+    'cleanup-pending': Object.freeze({ badge: '正在切换', message: '正在安全结束授权码云同步并切换存储模式。' }),
+    'remote-empty': Object.freeze({ badge: '云端为空', message: '云端暂无密钥；立即同步可将本机密钥加密备份。' }),
+    synced: Object.freeze({ badge: '已同步', message: '本机与云端密钥已同步。' }),
+    restored: Object.freeze({ badge: '已恢复', message: '已从授权码云端恢复此设备的私钥。' }),
+    conflict: Object.freeze({ badge: '需要选择', message: '本机与云端指纹不同，已暂停同步。请明确选择要保留的一份。' }),
+    error: Object.freeze({ badge: '同步失败', message: '云密钥服务暂不可用，本机密钥未改动。' }),
+});
+const API_KEY_STORAGE_EVENT_NAMESPACE = '.amily2.apiKeyStorage';
+
+function _normalizeVaultSyncStatus(snapshot) {
+    const raw = snapshot && typeof snapshot === 'object' ? snapshot : {};
+    const status = Object.prototype.hasOwnProperty.call(VAULT_STATUS_COPY, raw.status)
+        ? raw.status
+        : 'error';
+    const revision = Number(raw.revision);
+    const fingerprint = typeof raw.fingerprint === 'string'
+        && /^sha256:[0-9a-f]{64}$/u.test(raw.fingerprint)
+        ? raw.fingerprint
+        : null;
+    return Object.freeze({
+        enabled: raw.enabled === true,
+        status,
+        revision: Number.isSafeInteger(revision) && revision >= 0 ? revision : 0,
+        fingerprint,
+        canUseRemote: raw.canUseRemote === true,
+        canOverwriteRemote: raw.canOverwriteRemote === true,
+        canDiscardEncrypted: raw.canDiscardEncrypted === true,
+        canClearDeviceKey: raw.canClearDeviceKey === true,
+    });
+}
+
+function _renderVaultSyncStatus($c, snapshot = getVaultSyncStatus()) {
+    const state = _normalizeVaultSyncStatus(snapshot);
+    const copy = VAULT_STATUS_COPY[state.status];
+    const busy = [
+        'checking',
+        'migration-pending',
+        'cleanup-pending',
+    ].includes(state.status);
+    const canClearDeviceKey = ['synced', 'restored'].includes(state.status)
+        && state.canClearDeviceKey;
+    const $syncButton = $c.find('#amily2_vault_sync_now');
+
+    $c.find('#amily2_keystore_mode').prop('disabled', busy);
+    $c.find('#amily2_vault_sync_badge')
+        .attr('data-state', state.status)
+        .text(copy.badge);
+    $c.find('#amily2_vault_sync_status').text(copy.message);
+    $c.find('#amily2_vault_sync_revision')
+        .prop('hidden', state.revision === 0 && !state.fingerprint)
+        .text([
+            state.revision > 0 ? `云端修订：${state.revision}` : '',
+            state.fingerprint ? `指纹：${state.fingerprint}` : '',
+        ].filter(Boolean).join(' · '));
+
+    $syncButton.prop('disabled', busy || !state.enabled);
+    $syncButton.find('.vbtn-icon i').toggleClass('fa-spin', busy);
+    $syncButton.find('.vbtn-label').text(busy ? '正在同步' : '立即同步');
+    $c.find('#amily2_vault_use_remote')
+        .prop('hidden', !state.canUseRemote)
+        .prop('disabled', busy);
+    $c.find('#amily2_vault_use_local')
+        .prop('hidden', !state.canOverwriteRemote)
+        .prop('disabled', busy);
+    $c.find('#amily2_vault_discard_encrypted')
+        .prop('hidden', !state.canDiscardEncrypted)
+        .prop('disabled', busy || !state.canDiscardEncrypted);
+    $c.find('#amily2_vault_clear_device_key').prop('disabled', busy || !canClearDeviceKey);
+}
+
+async function _runVaultSyncAction($c, action, options = {}) {
+    const successStatuses = Array.isArray(options.successStatuses)
+        ? options.successStatuses
+        : [];
+    $c.find([
+        '#amily2_vault_sync_now',
+        '#amily2_vault_use_remote',
+        '#amily2_vault_use_local',
+        '#amily2_vault_clear_device_key',
+        '#amily2_vault_discard_encrypted',
+        '#amily2_keystore_mode',
+    ].join(',')).prop('disabled', true);
+    try {
+        const snapshot = await action();
+        const state = _normalizeVaultSyncStatus(snapshot);
+        _renderVaultSyncStatus($c, state);
+        if (options.successMessage && successStatuses.includes(state.status)) {
+            toastr.success(options.successMessage);
+        }
+        return state;
+    } catch {
+        // Vault exceptions may carry transport details. Keep credentials and remote
+        // responses out of the DOM/toast and let the controller publish safe status.
+        console.warn('[ApiConfig] 授权码云同步操作失败。');
+        _renderVaultSyncStatus($c);
+        toastr.error('云密钥操作失败，本机数据未被清除。请稍后重试。');
+        return null;
+    }
+}
+
+const MANUAL_CLOUD_RECOVERY_COPY = Object.freeze({
+    'needs-import': '检测到已有共享加密配置，但本设备缺少匹配私钥。请先导入原私钥；共享备份与本机配置均未改动。',
+    ready: '原私钥已就绪。请重新选择“加密云同步”，插件会再次检查后再切换。',
+    conflict: '原私钥已就绪，但本机与共享云端配置不同。请重新选择“加密云同步”并明确采用哪一份。',
+    invalid: '检测到共享加密配置无法通过完整性检查。请尝试导入原私钥后重试；共享备份与本机配置均未改动。',
+});
+
+function _normalizeManualCloudState(raw) {
+    const state = typeof raw?.state === 'string' ? raw.state : 'invalid';
+    if (state === 'needs-private-key') return 'needs-import';
+    if (state === 'damaged') return 'invalid';
+    return ['empty', 'ready', 'needs-import', 'conflict', 'invalid'].includes(state)
+        ? state
+        : 'invalid';
+}
+
+function _showManualCloudRecovery($c, state) {
+    const copy = MANUAL_CLOUD_RECOVERY_COPY[state] || MANUAL_CLOUD_RECOVERY_COPY.invalid;
+    $c.find('#amily2_manual_cloud_recovery_status').text(copy);
+    $c.find('#amily2_manual_cloud_recovery').prop('hidden', false);
+}
+
+function _hideManualCloudRecovery($c) {
+    $c.find('#amily2_manual_cloud_recovery').prop('hidden', true);
+}
+
+function _chooseManualCloudConflictStrategy() {
+    const useRemote = confirm(
+        '检测到本机与共享云端的 API 密钥不同。\n\n'
+        + '“确定”：采用云端配置。\n'
+        + '“取消”：继续选择“用本机覆盖”或“取消切换”。',
+    );
+    if (useRemote) return 'use-cloud';
+
+    const overwriteRemote = confirm(
+        '是否用本机覆盖共享云端备份？这会影响其他使用该共享备份的设备。\n\n'
+        + '“确定”：用本机覆盖共享云端备份。\n'
+        + '“取消”：取消切换，不改动本机或共享备份。',
+    );
+    return overwriteRemote ? 'overwrite-cloud' : null;
+}
+
+function _isManualCloudChoiceError(error) {
+    return error instanceof CloudTransitionError
+        || error?.code === 'MANUAL_CLOUD_NEEDS_CHOICE';
+}
+
 function _bindStorageMode($c) {
     const $select = $c.find('#amily2_keystore_mode');
     const $cloud  = $c.find('#amily2_cloud_key_section');
+    const $vault  = $c.find('#amily2_vault_sync_section');
     const $note   = $c.find('#amily2_keystore_mode_note');
     const $importInput = $c.find('#amily2_import_key_bundle_input');
+    let manualCloudImportInspection = null;
 
     const MODE_NOTES = {
         local: '本机存储：密钥只在当前浏览器，不会上传。换设备要重新填。',
-        cloud: '加密云同步：密钥加密后随设置同步。私钥只在本机，服务端只能看到密文。',
+        cloud: '加密云同步：密钥随设置同步，私钥需手动导入或导出。',
+        vault: '授权码云同步：Type2 及以上可加密备份私钥，并在新设备恢复。',
+    };
+
+    const renderMode = mode => {
+        $select.val(mode);
+        $cloud.toggle(mode === 'cloud' || mode === 'vault');
+        $vault.prop('hidden', mode !== 'vault');
+        $note.text(MODE_NOTES[mode] || MODE_NOTES.local);
+        if (mode === 'cloud' || mode === 'vault') _refreshFingerprint($c);
+        if (mode === 'vault') {
+            _renderVaultSyncStatus($c);
+        } else {
+            $select.prop('disabled', false);
+        }
     };
 
     // 初始状态
     const currentMode = apiKeyStore.getMode();
-    $select.val(currentMode);
-    $cloud.toggle(currentMode === 'cloud');
-    $note.text(MODE_NOTES[currentMode]);
-    if (currentMode === 'cloud') _refreshFingerprint($c);
+    renderMode(currentMode);
+
+    if (_vaultSyncUnsubscribe) _vaultSyncUnsubscribe();
+    _vaultSyncPanel = $c[0];
+    _vaultSyncUnsubscribe = subscribeVaultSyncStatus(snapshot => {
+        if (_vaultSyncPanel === $c[0]) _renderVaultSyncStatus($c, snapshot);
+    });
 
     // 切换模式
-    $select.on('change', async function () {
+    $select.off(API_KEY_STORAGE_EVENT_NAMESPACE)
+        .on(`change${API_KEY_STORAGE_EVENT_NAMESPACE}`, async function () {
         const newMode = $(this).val();
-        const confirmed = newMode === 'cloud'
-            ? confirm('切换到加密云同步模式：\n将自动为本设备生成 RSA 密钥对，现有 Key 会重新加密存储。\n\n确认切换？')
-            : confirm('切换回本地存储模式：\n已加密的 Key 将解密迁移至本地，云端密文会被清除。\n\n确认切换？');
+        const previousMode = apiKeyStore.getMode();
+        const vaultStatusBeforeChange = _normalizeVaultSyncStatus(getVaultSyncStatus());
+        const pendingVaultChoice = previousMode !== 'vault'
+            && vaultStatusBeforeChange.enabled
+            && vaultStatusBeforeChange.status === 'conflict';
+        if (newMode === previousMode && !pendingVaultChoice) return;
+        let manualCloudStrategy = 'auto';
+        let manualCloudInspection = null;
+        const confirmations = {
+            local: previousMode === 'vault'
+                ? '切换回本机存储：\n已加密的 Key 将解密迁移至本机，并停止授权码云同步。服务器备份不会被删除。\n\n确认切换？'
+                : '仅本设备退出加密云同步：\n密钥会在本设备解密保存；共享加密备份及私钥不会删除，其他设备不受影响。\n\n确认切换？',
+            cloud: previousMode === 'vault'
+                ? '切换到手动私钥模式：\n将停止授权码云同步，服务器备份不会被删除。以后换设备需手动导入私钥。\n\n确认切换？'
+                : '切换到加密云同步模式：\n插件会先检查共享配置；仅在没有共享配置时生成密钥对。\n\n确认切换？',
+            vault: '切换到授权码云同步：\n仅 Type2 及以上服务器授权可用。插件会检查云端密钥；若指纹冲突，将等待你手动选择。\n\n确认切换？',
+        };
+        if (newMode === 'cloud' && previousMode === 'local') {
+            let manualCloudState;
+            try {
+                manualCloudInspection = await apiKeyStore.inspectManualCloudState();
+                manualCloudState = _normalizeManualCloudState(manualCloudInspection);
+            } catch {
+                manualCloudState = 'invalid';
+            }
+            if (manualCloudState === 'needs-import' || manualCloudState === 'invalid') {
+                renderMode(previousMode);
+                _showManualCloudRecovery($c, manualCloudState);
+                toastr.warning(MANUAL_CLOUD_RECOVERY_COPY[manualCloudState]);
+                return;
+            }
+            _hideManualCloudRecovery($c);
+            if (manualCloudState === 'conflict') {
+                manualCloudStrategy = _chooseManualCloudConflictStrategy();
+                if (!manualCloudStrategy) {
+                    renderMode(previousMode);
+                    return;
+                }
+            } else if (!confirm(confirmations.cloud)) {
+                renderMode(previousMode);
+                return;
+            }
+        } else if (!confirm(confirmations[newMode])) {
+            renderMode(previousMode);
+            return;
+        }
 
-        if (!confirmed) {
-            $select.val(apiKeyStore.getMode());
+        $select.prop('disabled', true);
+        if (pendingVaultChoice) {
+            await disableVaultSync({ targetMode: previousMode, interactive: true });
+            if (newMode === previousMode) {
+                renderMode(previousMode);
+                return;
+            }
+        }
+        if (newMode === 'vault') {
+            const state = await _runVaultSyncAction(
+                $c,
+                () => enableVaultSync({ interactive: true }),
+                {
+                    successStatuses: ['synced', 'restored'],
+                    successMessage: '授权码云同步已启用。',
+                },
+            );
+            if (state && ['error', 'unavailable', 'remote-empty'].includes(state.status)) {
+                toastr.warning('授权码云同步尚未启用，请根据状态提示重试或检查授权。');
+            }
+            // A fingerprint conflict deliberately does not commit Vault mode.
+            // Keep the pending panel visible so the user can make the explicit
+            // choice; a reload safely returns to the previously committed mode.
+            const pendingState = state && !['synced', 'restored'].includes(state.status);
+            renderMode(pendingState ? 'vault' : apiKeyStore.getMode());
+            if (pendingState) _renderVaultSyncStatus($c, state);
+            return;
+        }
+
+        if (previousMode === 'vault') {
+            await _runVaultSyncAction(
+                $c,
+                () => disableVaultSync({ targetMode: newMode, interactive: true }),
+                {
+                    successStatuses: ['disabled'],
+                    successMessage: '授权码云同步已关闭。',
+                },
+            );
+            renderMode(apiKeyStore.getMode());
             return;
         }
 
         try {
-            await apiKeyStore.setMode(newMode);
+            const transitionOptions = (inspection) => ({
+                strategy: manualCloudStrategy,
+                expectedRemoteToken: inspection?.remoteSnapshotToken ?? null,
+                expectedLocalMutationRevision: inspection?.localMutationRevision ?? null,
+            });
+            try {
+                await apiKeyStore.setMode(newMode, transitionOptions(manualCloudInspection));
+            } catch (error) {
+                if (newMode !== 'cloud' || previousMode !== 'local'
+                    || !_isManualCloudChoiceError(error)) throw error;
+                manualCloudInspection = await apiKeyStore.inspectManualCloudState();
+                const refreshedState = _normalizeManualCloudState(manualCloudInspection);
+                if (refreshedState === 'needs-import' || refreshedState === 'invalid') {
+                    throw new Error('The shared encrypted credential image is not recoverable on this device.');
+                }
+                manualCloudStrategy = _chooseManualCloudConflictStrategy();
+                if (!manualCloudStrategy) {
+                    renderMode(previousMode);
+                    return;
+                }
+                await apiKeyStore.setMode(newMode, transitionOptions(manualCloudInspection));
+            }
             if (newMode === 'cloud') {
                 await configManager.syncSensitiveCache({ force: true });
             }
-            $cloud.toggle(newMode === 'cloud');
-            $note.text(MODE_NOTES[newMode]);
-            if (newMode === 'cloud') _refreshFingerprint($c);
-            toastr.success(`已切换为${newMode === 'cloud' ? '加密云同步' : '本地存储'}模式。`);
-        } catch (e) {
-            console.error('[ApiConfig] 模式切换失败:', e);
-            toastr.error('模式切换失败，请查看控制台。');
-            $select.val(apiKeyStore.getMode());
+            _hideManualCloudRecovery($c);
+            renderMode(newMode);
+            const modeName = newMode === 'vault'
+                ? '授权码云同步'
+                : newMode === 'cloud' ? '加密云同步' : '本机存储';
+            toastr.success(`已切换为${modeName}模式。`);
+        } catch {
+            console.warn('[ApiConfig] 密钥存储模式切换失败。');
+            toastr.error('模式切换失败，本机密钥与共享备份均未改动。');
+            renderMode(apiKeyStore.getMode());
+            return;
         }
     });
 
-    // 重新生成密钥对
-    $c.find('#amily2_generate_keypair').on('click', async () => {
-        if (!confirm('重新生成密钥对后，所有已加密的 API Key 将失效，需要逐一重新输入。\n\n确认重新生成？')) return;
-        await apiKeyStore.generateKeyPair();
-        _refreshFingerprint($c);
-        toastr.warning('新密钥对已生成，请重新输入各 Profile 的 API Key。');
+    $c.find('#amily2_vault_sync_now')
+        .off(API_KEY_STORAGE_EVENT_NAMESPACE)
+        .on(`click${API_KEY_STORAGE_EVENT_NAMESPACE}`, () => _runVaultSyncAction(
+            $c,
+            () => reconcileVaultSync({ strategy: 'auto', interactive: true }),
+            {
+                successStatuses: ['synced', 'restored'],
+                successMessage: '云密钥同步完成。',
+            },
+        ));
+
+    $c.find('#amily2_vault_use_remote')
+        .off(API_KEY_STORAGE_EVENT_NAMESPACE)
+        .on(`click${API_KEY_STORAGE_EVENT_NAMESPACE}`, () => {
+        if (!confirm('采用云端密钥将替换此设备当前私钥。确认继续？')) return;
+        const expectedRemote = _normalizeVaultSyncStatus(getVaultSyncStatus());
+        _runVaultSyncAction(
+            $c,
+            () => reconcileVaultSync({
+                strategy: 'use-remote',
+                expectedRemote: {
+                    revision: expectedRemote.revision,
+                    fingerprint: expectedRemote.fingerprint,
+                },
+                interactive: true,
+            }),
+            {
+                successStatuses: ['synced', 'restored'],
+                successMessage: '已采用云端密钥。',
+            },
+        );
     });
 
-    $c.find('#amily2_export_key_bundle').on('click', async () => {
+    $c.find('#amily2_vault_use_local')
+        .off(API_KEY_STORAGE_EVENT_NAMESPACE)
+        .on(`click${API_KEY_STORAGE_EVENT_NAMESPACE}`, () => {
+        const expectedRemote = _normalizeVaultSyncStatus(getVaultSyncStatus());
+        const remoteIsEmpty = expectedRemote.revision === 0 && !expectedRemote.fingerprint;
+        if (!confirm(remoteIsEmpty
+            ? '用当前设备密钥初始化此授权的云端备份？此操作只会在云端仍为空时执行。'
+            : '用本机覆盖云端会替换服务器上的密钥备份；与旧密钥对应的同步密文也可能无法再恢复，其他设备需要重新同步。确认继续？')) return;
+        _runVaultSyncAction(
+            $c,
+            () => reconcileVaultSync({
+                strategy: remoteIsEmpty ? 'initialize-remote' : 'overwrite-remote',
+                expectedRemote: {
+                    revision: expectedRemote.revision,
+                    fingerprint: expectedRemote.fingerprint,
+                },
+                interactive: true,
+            }),
+            {
+                successStatuses: ['synced'],
+                successMessage: '已用本机密钥更新云端备份。',
+            },
+        );
+    });
+
+    $c.find('#amily2_vault_clear_device_key')
+        .off(API_KEY_STORAGE_EVENT_NAMESPACE)
+        .on(`click${API_KEY_STORAGE_EVENT_NAMESPACE}`, () => {
+            const state = _normalizeVaultSyncStatus(getVaultSyncStatus());
+            const safeToClear = ['synced', 'restored'].includes(state.status)
+                && state.canClearDeviceKey;
+            if (!safeToClear) {
+                _renderVaultSyncStatus($c, state);
+                toastr.warning('仅当本机与云端密钥确认一致后，才能清除此设备密钥。');
+                return;
+            }
+            if (!confirm('只清除此设备保存的私钥？已确认云端存在匹配备份；已加密的 API Key 不会删除，之后需再次恢复私钥才能使用。')) return;
+            _runVaultSyncAction($c, () => clearVaultDeviceKey());
+        });
+
+    $c.find('#amily2_vault_discard_encrypted')
+        .off(API_KEY_STORAGE_EVENT_NAMESPACE)
+        .on(`click${API_KEY_STORAGE_EVENT_NAMESPACE}`, async () => {
+            if (apiKeyStore.getMode() !== 'vault') return;
+            const state = _normalizeVaultSyncStatus(getVaultSyncStatus());
+            if (!state.canDiscardEncrypted) {
+                _renderVaultSyncStatus($c, state);
+                return;
+            }
+            if (!confirm('确认放弃此设备当前无法恢复的全部加密 API Key？\n\n这会清除同步密文和本机回退，切换为空的本机存储；服务器上的密钥备份不会删除。此操作不可撤销。')) return;
+            try {
+                const result = await discardVaultEncryptedState();
+                if (!result || result.status !== 'disabled') {
+                    _renderVaultSyncStatus($c, result);
+                    return;
+                }
+                renderMode('local');
+                toastr.warning('已放弃无法恢复的密文并切换为空的本机存储。');
+            } catch {
+                toastr.error('清理失败，原加密配置已保留。');
+            }
+        });
+
+    // 重新生成密钥对
+    $c.find('#amily2_generate_keypair')
+        .off(API_KEY_STORAGE_EVENT_NAMESPACE)
+        .on(`click${API_KEY_STORAGE_EVENT_NAMESPACE}`, async () => {
+        if (apiKeyStore.getMode() === 'vault') {
+            toastr.info('请先切换到“加密云同步（手动私钥）”模式，再重新生成密钥对。');
+            return;
+        }
+        let keyRotationInspection;
+        try {
+            keyRotationInspection = await apiKeyStore.inspectManualCloudState();
+        } catch {
+            toastr.error('无法确认共享加密备份状态，未重新生成密钥。');
+            return;
+        }
+        const keyRotationState = _normalizeManualCloudState(keyRotationInspection);
+        if (apiKeyStore.getMode() === 'local' && keyRotationState !== 'empty') {
+            _showManualCloudRecovery($c, keyRotationState);
+            toastr.warning('检测到共享加密备份，已阻止重新生成密钥。请先恢复或明确切换存储模式。');
+            return;
+        }
+        if (apiKeyStore.getMode() === 'cloud'
+            && (keyRotationState === 'needs-import' || keyRotationState === 'invalid')) {
+            toastr.warning('当前设备无法验证共享加密备份，已阻止重新生成密钥。');
+            return;
+        }
+        if (!confirm('重新生成密钥对后，所有已加密的 API Key 将失效，需要逐一重新输入。\n\n确认重新生成？')) return;
+        try {
+            await apiKeyStore.generateKeyPair({
+                expectedRemoteToken: keyRotationInspection.remoteSnapshotToken,
+                expectedLocalMutationRevision: keyRotationInspection.localMutationRevision,
+            });
+            await _refreshFingerprint($c);
+            toastr.warning('新密钥对已生成，请重新输入各 Profile 的 API Key。');
+        } catch {
+            toastr.error('共享加密备份已变化或密钥重置失败，现有配置未改动。');
+        }
+    });
+
+    $c.find('#amily2_export_key_bundle')
+        .off(API_KEY_STORAGE_EVENT_NAMESPACE)
+        .on(`click${API_KEY_STORAGE_EVENT_NAMESPACE}`, async () => {
         try {
             const bundle = await apiKeyStore.exportPrivateKeyBundle();
             _downloadJson(
@@ -254,31 +672,98 @@ function _bindStorageMode($c) {
                 bundle
             );
             toastr.success('私钥包已导出，请妥善保管。');
-        } catch (e) {
-            console.error('[ApiConfig] 导出私钥包失败:', e);
-            toastr.error(e.message || '导出私钥包失败。');
+        } catch {
+            console.warn('[ApiConfig] 导出私钥包失败。');
+            toastr.error('导出私钥包失败，请确认本设备已有可用私钥。');
         }
     });
 
-    $c.find('#amily2_import_key_bundle').on('click', () => {
+    $c.find('#amily2_manual_cloud_recovery_import')
+        .off(API_KEY_STORAGE_EVENT_NAMESPACE)
+        .on(`click${API_KEY_STORAGE_EVENT_NAMESPACE}`, async () => {
+        if (apiKeyStore.getMode() !== 'local') {
+            toastr.info('恢复入口仅用于本设备仍处于本机存储时导入原私钥。');
+            return;
+        }
+        try {
+            manualCloudImportInspection = await apiKeyStore.inspectManualCloudState();
+        } catch {
+            toastr.error('无法确认共享加密备份状态，未打开私钥文件。');
+            return;
+        }
+        renderMode('local');
         $importInput.val('');
         $importInput.trigger('click');
     });
 
-    $importInput.on('change', async function () {
+    $c.find('#amily2_import_key_bundle')
+        .off(API_KEY_STORAGE_EVENT_NAMESPACE)
+        .on(`click${API_KEY_STORAGE_EVENT_NAMESPACE}`, async () => {
+        if (apiKeyStore.getMode() === 'vault') {
+            toastr.info('请先切换到“加密云同步（手动私钥）”模式，再导入私钥。');
+            return;
+        }
+        try {
+            manualCloudImportInspection = await apiKeyStore.inspectManualCloudState();
+        } catch {
+            toastr.error('无法确认共享加密备份状态，未打开私钥文件。');
+            return;
+        }
+        $importInput.val('');
+        $importInput.trigger('click');
+    });
+
+    $importInput.off(API_KEY_STORAGE_EVENT_NAMESPACE)
+        .on(`change${API_KEY_STORAGE_EVENT_NAMESPACE}`, async function () {
         const file = this.files?.[0];
         if (!file) return;
+        if (apiKeyStore.getMode() === 'vault') {
+            $importInput.val('');
+            toastr.info('请先切换到“加密云同步（手动私钥）”模式，再导入私钥。');
+            return;
+        }
 
+        if (!manualCloudImportInspection) {
+            try {
+                manualCloudImportInspection = await apiKeyStore.inspectManualCloudState();
+            } catch {
+                $importInput.val('');
+                toastr.error('无法确认共享加密备份状态，未导入私钥。');
+                return;
+            }
+        }
         try {
+            const importedWhileLocal = apiKeyStore.getMode() === 'local';
             const text = await file.text();
-            await apiKeyStore.importPrivateKeyBundle(text);
-            await configManager.syncSensitiveCache({ force: true });
+            await apiKeyStore.importPrivateKeyBundle(text, {
+                expectedRemoteToken: manualCloudImportInspection?.remoteSnapshotToken ?? null,
+                expectedLocalMutationRevision: manualCloudImportInspection?.localMutationRevision ?? null,
+            });
             await _refreshFingerprint($c);
-            toastr.success('私钥包导入成功，已尝试恢复云同步的 API Key 缓存。');
-        } catch (e) {
-            console.error('[ApiConfig] 导入私钥包失败:', e);
-            toastr.error(e.message || '导入私钥包失败。');
+            if (importedWhileLocal) {
+                let manualCloudState;
+                try {
+                    manualCloudState = _normalizeManualCloudState(
+                        await apiKeyStore.inspectManualCloudState(),
+                    );
+                } catch {
+                    manualCloudState = 'invalid';
+                }
+                _showManualCloudRecovery($c, manualCloudState);
+                toastr.success('原私钥已导入；本设备仍保持本机存储，请重新选择云同步完成检查。');
+            } else {
+                await configManager.syncSensitiveCache({ force: true });
+                _hideManualCloudRecovery($c);
+                toastr.success('私钥包导入成功，已恢复本设备的加密密钥缓存。');
+            }
+        } catch {
+            console.warn('[ApiConfig] 导入私钥包失败。');
+            if (apiKeyStore.getMode() === 'local') {
+                _showManualCloudRecovery($c, 'invalid');
+            }
+            toastr.error('导入私钥失败；本机配置与共享备份均未改动，请选择匹配的原私钥包。');
         } finally {
+            manualCloudImportInspection = null;
             $importInput.val('');
         }
     });
@@ -367,12 +852,17 @@ export function renderProfileList($c) {
             openModal($c, $(this).data('id'));
         }
     });
-    $list.find('.amily2_delete_profile').on('click', function (e) {
+    $list.find('.amily2_delete_profile').on('click', async function (e) {
         e.stopPropagation();
         const id   = $(this).data('id');
         const name = apiProfileManager.getProfile(id)?.name || id;
         if (!confirm(`删除「${name}」？密钥会一并清除。`)) return;
-        apiProfileManager.deleteProfile(id);
+        try {
+            await apiProfileManager.deleteProfile(id);
+        } catch {
+            toastr.error('密钥删除失败，Profile 未被移除。');
+            return;
+        }
         if (_editingId === id) closeModal($c);
         renderProfileList($c);
         renderSlotAssignments($c);
@@ -1109,7 +1599,7 @@ function _insertParamToCustomParams($c, paramName, paramType) {
 /**
  * 清除旧配置残留 —— 二次确认 → 调 clearLegacyConfig → 反馈结果。
  */
-function _handleClearLegacyConfig($c) {
+async function _handleClearLegacyConfig($c) {
     const confirmed = window.confirm(
         '【清除旧配置残留】\n\n' +
         '即将删除以下数据：\n' +
@@ -1121,7 +1611,7 @@ function _handleClearLegacyConfig($c) {
     if (!confirmed) return;
 
     try {
-        const result = clearLegacyConfig();
+        const result = await clearLegacyConfig();
         if (!result.ok) {
             toastr.error(result.error || '清除失败，未知错误。', '清除被阻止');
             return;

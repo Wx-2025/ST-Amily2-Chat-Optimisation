@@ -215,20 +215,23 @@ class ApiProfileManager {
     /**
      * 删除 Profile（同时清理存储的 Key 和功能槽引用）。
      */
-    deleteProfile(id) {
+    async deleteProfile(id) {
         const assignedSlots = this._assignedSlots(id);
         clearApiRequestRateLimit(id, 'API 连接配置已删除，取消等待中的请求。');
-        const s   = this._settings();
-        s[EXT_PROFILES] = this._profiles().filter(p => p.id !== id);
+        // 先持久删除异步 Key；失败时不触碰 Profile/槽位元数据。
+        try {
+            await apiKeyStore.deleteById(id);
+        } catch (error) {
+            console.warn('[ApiProfiles] Profile 密钥删除失败，已保留 Profile 元数据。');
+            throw error;
+        }
 
-        // 清理功能槽引用
+        const s = this._settings();
+        s[EXT_PROFILES] = this._profiles().filter(p => p.id !== id);
         const asgn = this._assignments();
         for (const slot in asgn) {
             if (asgn[slot] === id) delete asgn[slot];
         }
-
-        // 清理 Key
-        apiKeyStore.deleteById(id);
 
         this._save();
         this._emitLifecycle({
@@ -671,7 +674,7 @@ const LEGACY_MIGRATION_VERSION = 3;
  *
  * @returns {{ ok: boolean, error?: string, clearedFields: number, clearedKeys: number }}
  */
-export function clearLegacyConfig() {
+export async function clearLegacyConfig() {
     const s = extension_settings[extensionName];
     if (!s) return { ok: false, error: 'extension_settings 不存在', clearedFields: 0, clearedKeys: 0 };
 
@@ -755,8 +758,10 @@ export function clearLegacyConfig() {
     // The new legacy-mode path stores one-click character-card credentials in
     // ApiKeyStore. Once its legacy configuration is explicitly cleared, those
     // credentials are no longer needed either.
-    apiKeyStore.deleteById('legacy_acc_executor');
-    apiKeyStore.deleteById('legacy_acc_planner');
+    await Promise.all([
+        apiKeyStore.deleteById('legacy_acc_executor'),
+        apiKeyStore.deleteById('legacy_acc_planner'),
+    ]);
 
     saveSettingsDebounced();
     console.info(`[ApiProfiles] 清除旧配置残留：${clearedFields} 个字段 + ${clearedKeys} 个 Key。`);
