@@ -7,6 +7,13 @@ import { amilyHelper } from '../core/tavern-helper/main.js';
 import { escapeHTML } from '../utils/utils.js';
 const { SillyTavern } = window;
 
+function normalizeFiniteInteger(value, fallback) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return fallback;
+    const integer = Math.trunc(numeric);
+    return Number.isSafeInteger(integer) ? integer : fallback;
+}
+
 class WorldEditor {
     constructor() {
         this.isLoading = false;
@@ -324,8 +331,8 @@ class WorldEditor {
                 keys: e.key || [],
                 content: e.content || '',
                 position: positionMap[e.position] || 'at_depth',
-                depth: e.depth != null ? e.depth : 4,
-                order: e.order != null ? e.order : 100,
+                depth: normalizeFiniteInteger(e.depth, 4),
+                order: normalizeFiniteInteger(e.order, 100),
                 comment: e.comment || '',
                 exclude_recursion: e.excludeRecursion || false,
                 prevent_recursion: e.preventRecursion || false

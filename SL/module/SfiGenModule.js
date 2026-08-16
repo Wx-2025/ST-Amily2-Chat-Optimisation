@@ -4,6 +4,7 @@ import { saveSettingsDebounced, saveChat, reloadCurrentChat, eventSource, event_
 import { registerSlashCommand } from '../../../../../slash-commands.js';
 import { extensionName } from '../../utils/settings.js';
 import { clearSecretInput, markSecretInputStored, readSecretInputUpdate } from '../../ui/secret-input.js';
+import { normalizePublicHttpsImageUrl, normalizeSfiGenTag, parsePublicHttpsImageUrlList } from '../../core/security/sfigen-input.js';
 const sfigenSettingsKey = 'sfigen_settings';
 
 const defaultSettings = {
@@ -50,6 +51,7 @@ export default class SfiGenModule extends Module {
                 this.settings[key] = defaultSettings[key];
             }
         }
+        this.settings.regex_tag = normalizeSfiGenTag(this.settings.regex_tag);
     }
 
     _saveSettings() {
@@ -106,8 +108,10 @@ export default class SfiGenModule extends Module {
             this.settings.cfg = $(e.target).val();
             this._saveSettings();
         });
-        $el.find('#sfigen_regex_tag').val(this.settings.regex_tag).on('input', (e) => {
-            this.settings.regex_tag = $(e.target).val();
+        $el.find('#sfigen_regex_tag').val(this.settings.regex_tag).on('change', (e) => {
+            const normalizedTag = normalizeSfiGenTag($(e.target).val());
+            $(e.target).val(normalizedTag);
+            this.settings.regex_tag = normalizedTag;
             this._saveSettings();
         });
         $el.find('#sfigen_prefix_prompt').val(this.settings.prefix_prompt).on('input', (e) => {
@@ -151,8 +155,6 @@ export default class SfiGenModule extends Module {
             finalPrompt = `${this.settings.prefix_prompt.trim()}, ${prompt}`;
         }
         
-        console.log(`[SfiGen] 开始生成图片，最终提示词:`, finalPrompt);
-        
         if (!this.settings.api_key) {
             console.warn(`[SfiGen] 未配置 API Key`);
             toastr.error('请先在扩展设置中配置 SiliconFlow API Key');
@@ -184,21 +186,21 @@ export default class SfiGenModule extends Module {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                throw new Error('IMAGE_API_REQUEST_FAILED');
             }
 
             const data = await response.json();
-            
-            if (data.images && data.images.length > 0) {
+            const imageUrl = normalizePublicHttpsImageUrl(data?.images?.[0]?.url);
+
+            if (imageUrl) {
                 toastr.success('图片生成成功！');
-                return data.images[0].url;
+                return imageUrl;
             } else {
-                throw new Error('API 返回数据中没有图片 URL');
+                throw new Error('IMAGE_API_INVALID_URL');
             }
-        } catch (error) {
-            console.error(`[SfiGen] 生成图片失败:`, error);
-            toastr.error(`生成图片失败: ${error.message}`);
+        } catch {
+            console.warn('[SfiGen] 图片生成请求失败或返回了不安全的图片地址');
+            toastr.error('图片生成失败，请检查配置或稍后重试');
             return null;
         }
     }
@@ -222,7 +224,7 @@ export default class SfiGenModule extends Module {
         }
 
         let html = messageElement.html();
-        const tag = this.settings.regex_tag || 'sfigen';
+        const tag = normalizeSfiGenTag(this.settings.regex_tag);
         
         let newHtml = html;
         let hasMatch = false;
@@ -240,19 +242,22 @@ export default class SfiGenModule extends Module {
         // 2. 匹配 [tag_img: prompt | url1,url2]
         const regexImg = new RegExp(`\\[${tag}_img:\\s*([^\\]]+)\\]`, 'gi');
         newHtml = newHtml.replace(regexImg, (match, content) => {
-            hasMatch = true;
-            
             let prompt = "未知提示词";
             let imageList = [];
             
             if (content.includes('|')) {
                 const parts = content.split('|');
                 prompt = parts[0].trim();
-                imageList = parts[1].split(',').map(u => u.trim());
+                imageList = parsePublicHttpsImageUrlList(parts.slice(1).join('|'));
             } else {
-                imageList = content.split(',').map(u => u.trim());
+                imageList = parsePublicHttpsImageUrlList(content);
             }
-            
+
+            if (imageList.length === 0) {
+                return match;
+            }
+
+            hasMatch = true;
             const displayUrl = imageList[imageList.length - 1];
             const buttonId = `sfigen-btn-${messageId}-${Math.random().toString(36).substr(2, 9)}`;
             const safePrompt = this._escapeHtml(prompt);
@@ -270,7 +275,7 @@ export default class SfiGenModule extends Module {
 
             return `<div class="sfigen-image-container" data-message-id="${messageId}" data-prompt="${safePrompt}" data-original-tag="${safeMatch}" data-urls="${this._escapeHtml(imageList.join(','))}" style="width: 96%; max-width: 600px; background: var(--SmartThemeBlurTintColor); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden; margin: 20px auto; padding: 15px; text-align: center; position: relative; z-index: 10;">
                 <div style="width: calc(100% - 4px); margin: 2px auto 15px auto; border: 2px solid rgba(0,0,0,0.15); border-radius: 8px; overflow: hidden; position: relative; cursor: pointer;" class="sfigen-img-wrapper">
-                    <img src="${this._escapeHtml(displayUrl)}" class="sfigen-display-img" style="width: 100%; display: block; transition: transform 0.3s;" alt="CG" title="点击放大">
+                    <img src="${this._escapeHtml(displayUrl)}" referrerpolicy="no-referrer" class="sfigen-display-img" style="width: 100%; display: block; transition: transform 0.3s;" alt="CG" title="点击放大">
                     <div class="sfigen-img-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3); display: flex; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.2s;">
                         <i class="fa-solid fa-magnifying-glass-plus" style="color: white; font-size: 2em;"></i>
                     </div>
@@ -341,10 +346,11 @@ export default class SfiGenModule extends Module {
             const imageUrl = await this._generateImage(prompt);
             
             if (imageUrl) {
-                const tag = this.settings.regex_tag || 'sfigen';
+                const tag = normalizeSfiGenTag(this.settings.regex_tag);
                 
-                let existingUrls = container.data('urls') ? String(container.data('urls')).split(',') : [];
+                let existingUrls = parsePublicHttpsImageUrlList(String(container.data('urls') || ''));
                 existingUrls.push(imageUrl);
+                existingUrls = [...new Set(existingUrls)];
                 const urlsString = existingUrls.join(',');
                 
                 const newTag = `[${tag}_img: ${prompt} | ${urlsString}]`;
@@ -411,7 +417,7 @@ export default class SfiGenModule extends Module {
 
                         const finalHtml = `<div class="sfigen-image-container" data-message-id="${messageId}" data-prompt="${safePrompt}" data-original-tag="${safeNewTag}" data-urls="${safeUrlsString}" style="width: 96%; max-width: 600px; background: var(--SmartThemeBlurTintColor); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden; margin: 20px auto; padding: 15px; text-align: center; position: relative; z-index: 10;">
                             <div style="width: calc(100% - 4px); margin: 2px auto 15px auto; border: 2px solid rgba(0,0,0,0.15); border-radius: 8px; overflow: hidden; position: relative; cursor: pointer;" class="sfigen-img-wrapper">
-                                <img src="${safeImageUrl}" class="sfigen-display-img" style="width: 100%; display: block; transition: transform 0.3s;" alt="CG" title="点击放大">
+                                <img src="${safeImageUrl}" referrerpolicy="no-referrer" class="sfigen-display-img" style="width: 100%; display: block; transition: transform 0.3s;" alt="CG" title="点击放大">
                                 <div class="sfigen-img-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3); display: flex; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.2s;">
                                     <i class="fa-solid fa-magnifying-glass-plus" style="color: white; font-size: 2em;"></i>
                                 </div>
@@ -450,8 +456,8 @@ export default class SfiGenModule extends Module {
             })
             .on('click.sfigenZoom', imageWrapperSelector, function(e) {
                 e.stopPropagation();
-                const imgUrl = $(this).find('.sfigen-display-img').first().attr('src');
-                if (typeof imgUrl !== 'string' || imgUrl.length === 0) return;
+                const imgUrl = normalizePublicHttpsImageUrl($(this).find('.sfigen-display-img').first().attr('src'));
+                if (!imgUrl) return;
 
                 document.getElementById('sfigen-zoom-overlay')?.remove();
 
@@ -475,6 +481,7 @@ export default class SfiGenModule extends Module {
 
                 const zoomImage = document.createElement('img');
                 zoomImage.alt = 'CG';
+                zoomImage.referrerPolicy = 'no-referrer';
                 zoomImage.src = imgUrl;
                 Object.assign(zoomImage.style, {
                     maxWidth: '95%',
@@ -523,10 +530,18 @@ export default class SfiGenModule extends Module {
         $(document).on('click', '.sfigen-save-btn', async function(e) {
             e.preventDefault();
             e.stopPropagation();
-            const url = $(this).data('url');
+            const url = normalizePublicHttpsImageUrl(String($(this).data('url') || ''));
+            if (!url) {
+                toastr.error('图片地址不安全，已拒绝下载');
+                return;
+            }
             
             try {
-                const response = await fetch(url);
+                const response = await fetch(url, {
+                    credentials: 'omit',
+                    referrerPolicy: 'no-referrer',
+                });
+                if (!response.ok) throw new Error('IMAGE_DOWNLOAD_FAILED');
                 const blob = await response.blob();
                 
                 const downloadUrl = window.URL.createObjectURL(blob);
@@ -544,8 +559,8 @@ export default class SfiGenModule extends Module {
                 document.body.removeChild(a);
                 
                 toastr.success('图片已保存到默认下载目录');
-            } catch (error) {
-                console.error(`[SfiGen] 保存图片失败:`, error);
+            } catch {
+                console.warn('[SfiGen] 图片下载失败');
                 toastr.error('保存图片失败');
             }
         });
@@ -557,7 +572,8 @@ export default class SfiGenModule extends Module {
             
             const btn = $(this);
             const container = btn.closest('.sfigen-image-container');
-            const targetUrl = btn.data('url');
+            const targetUrl = normalizePublicHttpsImageUrl(String(btn.data('url') || ''));
+            if (!targetUrl) return;
             
             container.find('.sfigen-display-img').attr('src', targetUrl);
             container.find('.sfigen-save-btn').data('url', targetUrl);
@@ -576,7 +592,7 @@ export default class SfiGenModule extends Module {
             const imageUrl = await this._generateImage(value);
             if (imageUrl) {
                 const context = getContext();
-                const message = `<img src="${imageUrl}" alt="Generated Image" style="max-width: 100%; border-radius: 8px;" />`;
+                const message = `<img src="${this._escapeHtml(imageUrl)}" referrerpolicy="no-referrer" alt="Generated Image" style="max-width: 100%; border-radius: 8px;" />`;
                 
                 context.chat.push({
                     name: 'System',
