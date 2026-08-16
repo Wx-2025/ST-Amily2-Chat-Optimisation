@@ -3080,3 +3080,8 @@
     min-width: 0 !important;
     white-space: nowrap !important;
 }
+
+/* Preserve the native hidden contract after every panel display override. */
+#amily2_api_config_panel [hidden] {
+    display: none !important;
+}

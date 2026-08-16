@@ -454,6 +454,7 @@ function _bindStorageMode($c) {
             }
         }
         if (newMode === 'vault') {
+            _hideManualCloudRecovery($c);
             const state = await _runVaultSyncAction(
                 $c,
                 () => enableVaultSync({ interactive: true }),
