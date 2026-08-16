@@ -972,6 +972,15 @@
     border-radius: 0 0 var(--am2-radius-md) var(--am2-radius-md);
 }
 
+/* Row and column menus are positioned inside editable table cells. */
+#amily2_memorisation_forms_panel table[id^="amily2-table-"] {
+    overflow: visible;
+}
+
+#amily2_memorisation_forms_panel #all-tables-container.amily2-menu-layer-open {
+    overflow: visible;
+}
+
 #amily2_memorisation_forms_panel th,
 #amily2_memorisation_forms_panel td {
     border: 1px solid rgba(255, 255, 255, 0.08) !important;
