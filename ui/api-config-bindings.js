@@ -1356,7 +1356,10 @@ async function _testConnection($c) {
                         chat_completion_source: officialDeepSeek ? 'deepseek' : 'openai',
                         model,
                         messages:   [{ role: 'user', content: 'Hi' }],
-                        max_tokens: 1,
+                        // Newer reasoning/coding models commonly reject a one-token
+                        // completion budget. Keep the probe small enough for a test,
+                        // but large enough to exercise the real completion path.
+                        max_tokens: 8192,
                         stream:     useStream,
                         ...(officialDeepSeek ? { include_reasoning: false } : {}),
                     }),
