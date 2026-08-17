@@ -22,6 +22,7 @@ import { openAutoCharCardWindow } from '../core/auto-char-card/ui-bindings.js';
 import { showPresetSettings } from '../PresetSettings/prese_ui.js';
 import { watchProfileSliderGuard } from './profile-slider-guard.js';
 import { refreshSuperMemoryPanel } from '../core/super-memory/bindings.js';
+import { hasSuperMemoryAccess } from '../core/super-memory/access-policy.js';
 import { refreshProgressiveMemorySourceOptions } from '../core/progressive-memory/bindings.js';
 import { refreshTimeRiverPanel } from '../core/time-river/bindings.js';
 import { getTimeRiverAccess } from '../core/time-river/auth.js';
@@ -948,9 +949,8 @@ export function bindModalEvents() {
                 textOptimizationPanel.show();
                 break;
             case 'amily2_open_super_memory':
-                const userType = parseInt(localStorage.getItem("plugin_user_type") || "0");
-                if (userType < 2) {
-                    toastr.warning("此功能为内测功能，仅限我看顺眼的用户使用。", "权限不足");
+                if (!hasSuperMemoryAccess()) {
+                    toastr.warning("超级记忆需要有效的正式 Type1 及以上授权，临时每日码不可用。", "权限不足");
                     mainPanel.show();
                     return;
                 }

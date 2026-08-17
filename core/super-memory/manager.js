@@ -9,6 +9,7 @@ import {
     normalizeTableUpdatePayload,
     subscribeTableUpdates,
 } from "../internal/table-update-channel.js";
+import { getSuperMemoryAccessDecision, hasSuperMemoryAccess } from "./access-policy.js";
 import { eventSource, event_types } from "/script.js";
 
 /* ── [AMILY2-MODIFIED] ── pipeline integration: awaitSync() export ── */
@@ -27,10 +28,10 @@ export async function awaitSync() {
 }
 
 export async function initializeSuperMemory() {
-    const userType = parseInt(localStorage.getItem("plugin_user_type") || "0");
-    if (userType < 2) {
-        console.warn('[Amily2-SuperMemory] 权限不足 (Type < 2)，拒绝初始化超级记忆系统。');
-        if (window.$) $('#sm-system-status').text('未授权').css('color', 'red');
+    const access = getSuperMemoryAccessDecision();
+    if (!access.allowed) {
+        console.warn(`[Amily2-SuperMemory] 权限不足 (${access.reason})，拒绝初始化超级记忆系统。`);
+        if (window.$) $('#sm-system-status').text('需要正式 Type1 授权').css('color', 'red');
         return;
     }
 
@@ -61,6 +62,7 @@ export async function initializeSuperMemory() {
     // 无需自行补同步：loadTables() 三个分支结尾都会 dispatchAllTablesUpdate()，
     // 新状态会经内部 channel 自动入队。这里只负责确保新角色的记忆世界书存在。
     eventSource.on(event_types.CHAT_CHANGED, async () => {
+        if (!hasSuperMemoryAccess()) return;
         const settings = extension_settings[extensionName] || {};
         if (settings.super_memory_enabled === false) return;
         await checkWorldBookStatus();
@@ -90,6 +92,7 @@ async function checkWorldBookStatus() {
  * 内部更新入口，接受并重新校验 table-update channel 的 payload 结构。
  */
 function enqueueTableUpdate(payload) {
+    if (!hasSuperMemoryAccess()) return;
     const settings = extension_settings[extensionName] || {};
     if (settings.super_memory_enabled === false) return;
 
@@ -164,6 +167,7 @@ async function processQueue() {
 }
 
 async function processUpdateTask(task) {
+    if (!hasSuperMemoryAccess()) return;
     const { tableName, data, role, hint, headers, rowStatuses } = task;
 
     const settings = extension_settings[extensionName] || {};
@@ -271,6 +275,10 @@ function updateDashboardCounters() {
 }
 
 export async function forceSyncAll() {
+    if (!hasSuperMemoryAccess()) {
+        console.warn('[Amily2-SuperMemory] 当前授权不满足正式 Type1 要求，已跳过全量同步。');
+        return;
+    }
     console.log('[Amily2-SuperMemory] 正在执行全量同步...');
 
     // 楼层数检查
@@ -314,6 +322,10 @@ export async function forceSyncAll() {
 }
 
 export async function purgeSuperMemory() {
+    if (!hasSuperMemoryAccess()) {
+        if (window.toastr) toastr.warning('超级记忆需要有效的正式 Type1 及以上授权。');
+        return;
+    }
     try {
         console.log('[Amily2-SuperMemory] 开始清空记忆...');
         const bookName = getMemoryBookName();
