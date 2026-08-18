@@ -203,6 +203,14 @@
         自选一段聊天范围，生成总结并保存。
     </small>
 
+    <div class="amily2_settings_block">
+        <label for="historiography_prompt_protocol_selector">提示词版本:</label>
+        <select id="historiography_prompt_protocol_selector" class="text_pole">
+            <option value="segmented-v1">分段史册 v1（当前）</option>
+            <option value="legacy-v0.1">滚动史册 v0.1（兼容）</option>
+        </select>
+    </div>
+
 
     <fieldset class="settings-group" style="border-style: dashed;">
         <legend>小总结</legend>
@@ -316,6 +324,49 @@
     <hr class="header-divider" style="margin: 20px 0;">
 
     <fieldset class="settings-group" style="border-style: dashed;">
+        <legend>史册格式与迁移</legend>
+
+        <div class="auto-control-pair">
+            <label for="historiography_preferred_protocol" title="只决定没有活动史册时创建哪种格式；已有史册按其自身协议运行。">新建史册格式:</label>
+            <select id="historiography_preferred_protocol" class="text_pole" style="width: 190px;">
+                <option value="segmented-v1">分段史册 v1</option>
+                <option value="legacy-v0.1">滚动史册 v0.1</option>
+            </select>
+        </div>
+
+        <div id="historiography_ledger_status" class="sm-intro-box" style="margin: 10px 0;">
+            <small class="notes">尚未读取当前活动史册。</small>
+        </div>
+
+        <div class="editor-buttons-panel" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px;">
+            <button id="historiography_refresh_ledger_status" class="menu_button secondary small_button interactable" type="button">
+                <i class="fas fa-sync-alt"></i> 刷新状态
+            </button>
+            <button id="historiography_preview_migration" class="menu_button secondary small_button interactable" type="button">
+                <i class="fas fa-search"></i> 预览旧账迁移
+            </button>
+            <button id="historiography_execute_migration" class="menu_button primary small_button interactable" type="button" disabled>
+                <i class="fas fa-code-branch"></i> 执行迁移
+            </button>
+            <button id="historiography_rollback_segmented" class="menu_button secondary small_button interactable" type="button" disabled>
+                <i class="fas fa-undo"></i> 回滚为旧格式
+            </button>
+            <button id="historiography_retry_segment_vectors" class="menu_button secondary small_button interactable" type="button" disabled title="重新检查失败任务；Embedding 模型或维度变化时，按新 fingerprint 重建全部宏史卷分段索引。">
+                <i class="fas fa-database"></i> 检查/重建向量
+            </button>
+            <button id="historiography_export_diagnostics" class="menu_button secondary small_button interactable" type="button" title="校验分段史册并下载不含正文的 JSON 诊断报告；孤儿条目只报告，不自动删除。">
+                <i class="fas fa-file-export"></i> 校验/导出诊断
+            </button>
+            <button id="historiography_repair_safe_states" class="menu_button secondary small_button interactable" type="button" disabled title="仅按刚生成的诊断恢复 Manifest、尾部、分段和源归档的启用/禁用位。">
+                <i class="fas fa-tools"></i> 应用安全加载修复
+            </button>
+        </div>
+    </fieldset>
+
+    <!-- 上下分割线 -->
+    <hr class="header-divider" style="margin: 20px 0;">
+
+    <fieldset class="settings-group" style="border-style: dashed;">
         <legend>总结归档与恢复</legend>
         <small class="notes" style="text-align: center; display: block; margin-bottom: 15px;">
             管理多份总结记录，可以封存当前进度，或恢复以前的总结。
@@ -377,10 +428,8 @@
 
             <div class="sm-intro-box" style="border-left: 3px solid #58a6ff; margin-bottom: 12px;">
                 <small class="notes" style="display: block; line-height: 1.6;">
-                    <strong>滚动宏史卷：</strong>合并时会把“既有宏史卷 + 新微言录”重新压成一份活动摘要，
-                    不再把历代宏史卷线性前置。每次覆盖前都会把完整原史册保存为禁用正本；
-                    可在上方“总结归档与恢复”中一键回溯。达到下方阈值时只提醒，绝不会后台自动调用模型。
-                    禁用正本会随重铸次数持续增加，插件不会悄悄删除；确认不再需要后可在世界书中手动清理。
+                    <strong>分段宏史卷：</strong>每次只编纂活动尾部最旧的连续微言录，不会把旧宏史卷再次发送给模型。
+                    分段、源微言录归档、尾部裁剪和 Manifest 更新在同一次严格保存中完成。旧格式仍可选用兼容提示词并回滚。
                 </small>
             </div>
 
@@ -394,6 +443,11 @@
             </div>
 
             <div class="auto-control-pair amily2-refinement-limit-row">
+                <label for="historiography_segment_max_blocks" title="分段协议每次最多选取最旧的连续微言录块数，仍受输入 Token 上限约束。">单次最多编纂块数:</label>
+                <input id="historiography_segment_max_blocks" type="number" min="1" max="20" class="text_pole" style="width: 90px;" value="4">
+            </div>
+
+            <div class="auto-control-pair amily2-refinement-limit-row">
                 <label for="historiography_refine_input_max_tokens" title="活动史册及其送入重铸模型前的估算 Token 硬上限；达到上限后会要求先合并。">史册/重铸输入上限:</label>
                 <input id="historiography_refine_input_max_tokens" type="number" min="5000" max="128000" step="1000" class="text_pole" style="width: 100px;" value="48000">
             </div>
@@ -403,8 +457,19 @@
                 <input id="historiography_rolling_summary_max_tokens" type="number" min="1000" max="32000" step="500" class="text_pole" style="width: 100px;" value="12000">
             </div>
 
+            <div class="auto-control-pair amily2-refinement-limit-row">
+                <label for="historiography_vector_retain_recent" title="向量回读验证后，最多保留在世界书上下文中的最近宏史卷分段数；Token 上限优先。">向量常驻最近段:</label>
+                <input id="historiography_vector_retain_recent" type="number" min="1" max="100" class="text_pole" style="width: 100px;" value="2">
+            </div>
+
+            <div class="auto-control-pair amily2-refinement-limit-row">
+                <label for="historiography_resident_max_tokens" title="已加载宏史卷分段与活动微言录尾部的合计本地估算上限；未验证分段不会为满足预算而被强制卸载。">常驻史册总上限:</label>
+                <input id="historiography_resident_max_tokens" type="number" min="5000" max="256000" step="1000" class="text_pole" style="width: 110px;" value="72000">
+            </div>
+
             <small class="notes" style="display: block; margin: 6px 0 12px; line-height: 1.5;">
-                Token 为保守估算（中文约 1 字/Token）。活动史册达到输入上限后，新微言录会保持待重试、要求先合并；
+                Token 为保守估算（中文约 1 字/Token）。常驻总量包含仍加载的宏史卷分段与活动尾部；
+                未通过向量回读的分段不会为凑预算而禁用，超额时会显示安全阻塞原因。活动史册达到输入上限后，新微言录会保持待重试、要求先合并；
                 重铸输入超限会在调用前停止，输出超限会回到预览继续编辑。任何一种情况都不会截断或覆盖原史册。
             </small>
 
