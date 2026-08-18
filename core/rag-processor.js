@@ -18,12 +18,20 @@ import { extensionName } from '../utils/settings.js';
 import * as IngestionManager from './ingestion-manager.js'; 
 import {
     getEmbeddings,
+    getEmbedRetrievalSettings,
     fetchEmbeddingModels as apiFetchEmbeddingModels,
     fetchRerankModels as apiFetchRerankModels,
     executeRerank,
     getRerankSettings,
     testApiConnection as apiTestApiConnection
 } from './rag-api.js';
+import {
+    TIME_RIVER_VECTOR_PREFIX,
+    parseStoredVectorText,
+} from './time-river/vector-adapter.js';
+import {
+    createHistoriographyVectorPipeline,
+} from './historiography/vector-pipeline.js';
 import { superSort } from './super-sorter.js';
 import { executeGraphRetrieval } from './relationship-graph/executor.js';
 import { initializeArchiveManager } from './archive-manager.js';
@@ -128,6 +136,7 @@ export {
     getMessagesForCondensation,
     processCondensation,
     ingestTextToHanlinyuan,
+    prepareHistoriographySegmentVectorIngestion,
     getCollectionId, 
     toggleSessionLock,
     isSessionLocked,
@@ -144,6 +153,11 @@ export {
     debounce,
     renameKnowledgeBase,
 };
+
+const HISTORIOGRAPHY_VECTOR_BASE_SCHEMA =
+    'amily2.historiography-vector-base';
+const HISTORIOGRAPHY_VECTOR_BASE_VERSION = 1;
+const HISTORIOGRAPHY_VECTOR_COLLECTION = /^tr-[0-9a-f]{40}$/u;
 
 
 function initialize() {
@@ -311,6 +325,70 @@ async function ingestTextToHanlinyuan(text, source = 'manual', metadata = {}, pr
         logCallback(`[翰林院-核心] 文本录入失败: ${error.message}`, 'error');
         return { success: false, error: error.message };
     }
+}
+
+/**
+ * Prepare one immutable macro segment for idempotent vector delivery.
+ *
+ * Preparation may call the configured embedding provider, but it never writes
+ * the vector store. The caller must first persist `prepared.job` in the
+ * historiography Manifest, then pass that exact object to `deliver()`.
+ */
+async function prepareHistoriographySegmentVectorIngestion({
+    ledgerId,
+    scopeKey,
+    segmentId,
+    contentHash,
+    text,
+    bookName,
+    startFloor,
+    endFloor,
+    signal = null,
+}) {
+    if (!settings || !context) {
+        const error = new Error('翰林院尚未初始化。');
+        error.code = 'HISTORIOGRAPHY_VECTOR_NOT_INITIALIZED';
+        throw error;
+    }
+    const entryName = `宏史卷分段: ${segmentId} (${startFloor}-${endFloor}楼)`;
+    const chunks = _chunkForLorebook(String(text ?? ''), {
+        bookName,
+        entryName,
+    });
+    if (!chunks.length) {
+        const error = new Error('宏史卷分段没有产生可摄取文本块。');
+        error.code = 'HISTORIOGRAPHY_VECTOR_EMPTY';
+        throw error;
+    }
+    const pipeline = createHistoriographyVectorPipeline({
+        getEmbeddingSettings: getEmbedRetrievalSettings,
+        embedTexts: getEmbeddings,
+        fetchImpl: globalThis.fetch,
+        getRequestHeaders: () => context.getRequestHeaders(),
+    });
+    const prepared = await pipeline.prepare({
+        ledgerId,
+        scopeKey,
+        segmentId,
+        contentHash,
+        chunks,
+        signal,
+    });
+    return Object.freeze({
+        job: prepared.job,
+        async deliver(persistedJob, deliverySignal = signal) {
+            const receipt = await prepared.deliver(
+                persistedJob,
+                deliverySignal,
+            );
+            registerHistoriographyVectorBase(prepared.job, {
+                bookName,
+                startFloor,
+                endFloor,
+            });
+            return receipt;
+        },
+    });
 }
 
 function getSettings() {
@@ -828,11 +906,64 @@ function addKnowledgeBase(name, source = 'manual', chatId = null) {
     return newBase;
 }
 
+function isHistoriographyVectorBase(base) {
+    const marker = base?.historiographyVector;
+    return marker?.schema === HISTORIOGRAPHY_VECTOR_BASE_SCHEMA
+        && marker?.version === HISTORIOGRAPHY_VECTOR_BASE_VERSION
+        && HISTORIOGRAPHY_VECTOR_COLLECTION.test(
+            String(base?.collectionId ?? ''),
+        );
+}
+
+function registerHistoriographyVectorBase(job, range = {}) {
+    const bases = getLocalKnowledgeBases();
+    const marker = {
+        schema: HISTORIOGRAPHY_VECTOR_BASE_SCHEMA,
+        version: HISTORIOGRAPHY_VECTOR_BASE_VERSION,
+        ledgerId: String(job.ledgerId),
+        scopeHash: String(job.scopeHash),
+        segmentId: String(job.segmentId),
+        contentHash: String(job.contentHash),
+        fingerprint: String(job.fingerprint),
+    };
+    let base = Object.values(bases).find(candidate =>
+        isHistoriographyVectorBase(candidate)
+        && candidate.collectionId === job.collectionId);
+    if (!base) {
+        base = addKnowledgeBase(
+            `宏史卷 ${range.startFloor ?? '?'}-${range.endFloor ?? '?'}楼 · ${job.segmentId}`,
+            'lorebook',
+        );
+    }
+    Object.assign(base, {
+        collectionId: String(job.collectionId),
+        enabled: true,
+        historiographyVector: marker,
+    });
+    for (const candidate of Object.values(bases)) {
+        const current = candidate?.historiographyVector;
+        if (!isHistoriographyVectorBase(candidate)
+            || candidate.id === base.id
+            || current.scopeHash !== marker.scopeHash
+            || current.ledgerId !== marker.ledgerId
+            || current.segmentId !== marker.segmentId) {
+            continue;
+        }
+        // A verified replacement in a new vector space supersedes the old
+        // collection. On delivery failure this function is never reached, so
+        // the previously verified base stays queryable.
+        candidate.enabled = false;
+    }
+    saveSettings();
+    return base;
+}
+
 /**
  * 计算知识库的向量集合 ID（单一事实来源）。
  * 聊天级库（kb.chatId）按聊天命名空间，其余按 owner/角色命名空间。
  */
 function getKbCollectionId(kb, scope = 'local') {
+    if (isHistoriographyVectorBase(kb)) return kb.collectionId;
     if (kb.chatId) return `${kb.chatId}_${kb.id}`;
     if (scope === 'global') return `${kb.owner || GLOBAL_SCOPE_ID}_${kb.id}`;
     return `${getCharacterStableId()}_${kb.id}`;
@@ -992,7 +1123,9 @@ async function _executeQueryForBase(base, queryText, queryEmbedding = null) {
     const charId = getCharacterStableId();
     let collectionId;
 
-    switch (base.scope) {
+    if (isHistoriographyVectorBase(base)) {
+        collectionId = base.collectionId;
+    } else switch (base.scope) {
         case 'legacy':
             collectionId = await getDynamicCollectionId();
             break;
@@ -1055,8 +1188,32 @@ async function _executeQueryForBase(base, queryText, queryEmbedding = null) {
             rawData = result.data;
         }
 
-        const data = rawData.map(item => {
-            if (!item || typeof item.text !== 'string') return null;
+        const data = [];
+        for (const rawItem of rawData) {
+            if (!rawItem || typeof rawItem.text !== 'string') continue;
+            let item = rawItem;
+            if (isHistoriographyVectorBase(base)
+                && rawItem.text.startsWith(TIME_RIVER_VECTOR_PREFIX)) {
+                try {
+                    const parsed = await parseStoredVectorText(rawItem.text, {
+                        expectedCollectionId: collectionId,
+                        expectedFingerprint:
+                            base.historiographyVector.fingerprint,
+                    });
+                    const marker = base.historiographyVector;
+                    if (parsed.metadata?.historiographyVector !== true
+                        || parsed.metadata?.ledgerId !== marker.ledgerId
+                        || parsed.metadata?.segmentId !== marker.segmentId
+                        || parsed.metadata?.contentHash !== marker.contentHash) {
+                        continue;
+                    }
+                    item = { ...rawItem, text: parsed.text };
+                } catch {
+                    // A malformed or cross-collection envelope is untrusted
+                    // vector-server data and must never enter the prompt.
+                    continue;
+                }
+            }
 
             const newMetadata = { source: 'unknown', sourceName: '未知' };
             const tagMatch = item.text.match(/^<([^>]+)>/);
@@ -1104,12 +1261,12 @@ async function _executeQueryForBase(base, queryText, queryEmbedding = null) {
                     break;
             }
             
-            return {
+            data.push({
                 ...item,
                 score: item.score || 1.0, 
                 metadata: newMetadata
-            };
-        }).filter(Boolean);
+            });
+        }
 
         console.log(`[翰林院-V13 修复] 重建元数据后，知识库 ${base.name} 返回 ${data.length} 条结果。`);
         return data;

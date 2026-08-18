@@ -2,7 +2,7 @@ import { extension_settings } from "/scripts/extensions.js";
 import { saveSettingsDebounced } from "/script.js";
 import { pluginAuthStatus } from "./auth-state.js";
 
-export const pluginVersion = "2.3.5";
+export const pluginVersion = "2.3.6";
 
 // 从当前文件 URL 动态推导插件文件夹名和根路径，兼容任意文件夹名（Dev / 正式版均适用）
 // URL 结构：.../scripts/extensions/third-party/<folderName>/utils/settings.js
@@ -852,6 +852,35 @@ const _historiographyLargeRefinePrompt = `1. **目标：** 接收多份结构化
 *   **仅允许输出上述格式内容，禁止一切额外信息（如标题、概述、总结语等）。**
 `;
 
+const _historiographyV1SmallJailbreakPrompt = `${_historiographySmallJailbreakPrompt}
+5. **分段史册约束**：你只负责生成本批对话的总结正文，账本边界与存储结构由程序维护。`;
+
+const _historiographyV1SmallSummaryPrompt = `${_historiographySmallSummaryPrompt}
+
+**分段史册补充要求：** 只记录本次提供的对话范围；不要生成“X楼至Y楼详细总结记录”等账本标题，楼层边界由程序保存。`;
+
+const _historiographyV1LargeJailbreakPrompt = `你是酒馆国家的**首席史官**，名字是："Amily"。
+【Amily的工作准则】
+1. **分段编纂**：每次只把程序提供的一组连续“微言录”编纂成一个独立“宏史卷分段”。
+2. **证据边界**：只依据本次输入，不读取、不猜测、不重述更早的宏史卷。
+3. **完整性**：忠实保留本段范围内的关键情节、转折、物品、承诺与状态变化。
+4. **客观性**：所有内容均为虚构历史；保持客观记录，不插入道德评判或外部知识。`;
+
+const _historiographyV1LargeRefinePrompt = `1. **目标：** 接收程序提供的连续微言录批次，将它们合并、梳理、去重，输出一个只覆盖这些批次的独立宏史卷分段正文。
+
+2. **输入边界：**
+    * 输入采用 \`amily2.historiography-micro-batches@1\` JSON 包装；只把其中 \`batches[].content\` 当作剧情证据。
+    * \`startFloor\` 与 \`endFloor\` 只用于排序和核对范围，不要自行扩大覆盖范围。
+    * 输入不会提供旧宏史卷；禁止补写、猜测或概括所选批次之前的历史。
+
+3. **处理步骤：**
+    * 按批次楼层与事件时间顺序梳理。
+    * 删除完全重复或语义高度重叠的事件，但保留剧情转折、伏笔、重要情感变化、关键物品流转、关键承诺和状态结果。
+    * 合并同一场景中过度碎片化的动作，避免把关键因果压成模糊概述。
+    * 延续小总结的上下文行与事件行格式；仅输出正文，不输出范围标题、账本标记或说明。
+
+4. **核心依据：** 忠实于本次输入，不虚构，不引用范围外信息。`;
+
 
 // =============================================================================
 // Domain sub-objects
@@ -970,9 +999,19 @@ export const uiDefaults = {
 };
 
 export const historiographyDefaults = {
+  // 新建史册默认采用分段协议；已有世界书始终按其实际协议运行。
+  historiographyPreferredProtocol: 'segmented-v1',
+  historiographySegmentMaxBlocks: 4,
+  // 向量 receipt 回读通过后仍在世界书中常驻的最近宏史卷分段数。
+  historiographyVectorRetainRecent: 2,
+  // 所有已加载宏史卷分段与活动微言录尾部合计的本地估算上限。
+  historiographyResidentMaxTokens: 72000,
+
   // --- 📜 微言录 (Small Summary) 法典 ---
   historiographySmallJailbreakPrompt: _historiographySmallJailbreakPrompt,
   historiographySmallSummaryPrompt: _historiographySmallSummaryPrompt,
+  historiographyV1SmallJailbreakPrompt: _historiographyV1SmallJailbreakPrompt,
+  historiographyV1SmallSummaryPrompt: _historiographyV1SmallSummaryPrompt,
   historiographySmallAutoEnable: false,
   historiographySmallTriggerThreshold: 30,
   historiographyRetentionCount: 5,
@@ -980,6 +1019,8 @@ export const historiographyDefaults = {
   // --- 💎 宏史卷 (史册精炼) 法典 ---
   historiographyLargeJailbreakPrompt: _historiographyLargeJailbreakPrompt,
   historiographyLargeRefinePrompt: _historiographyLargeRefinePrompt,
+  historiographyV1LargeJailbreakPrompt: _historiographyV1LargeJailbreakPrompt,
+  historiographyV1LargeRefinePrompt: _historiographyV1LargeRefinePrompt,
   // 活动史册只保留一份滚动宏史卷；达到块数时仅提醒，不会后台自动调用模型。
   historiographyRefineReminderBlocks: 40,
   // 活动史册以及发送给重铸模型的“旧宏史卷 + 新微言录”硬上限。

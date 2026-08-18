@@ -504,3 +504,31 @@
 .ngms-button-row .menu_button i {
     font-size: 14px;
 }
+
+/* SillyTavern 原生世界书编辑器：宏史卷内部条目只读标识 */
+#world_popup_entries_list .amily2-historiography-protected-entry {
+    border-color: color-mix(in srgb, var(--SmartThemeQuoteColor) 65%, transparent);
+    box-shadow: inset 3px 0 0 color-mix(in srgb, var(--SmartThemeQuoteColor) 80%, transparent);
+}
+
+#world_popup_entries_list .amily2-historiography-protected-entry [data-amily-historiography-lock="true"] {
+    cursor: not-allowed;
+}
+
+#world_popup_entries_list .amily2-historiography-protected-entry textarea[readonly],
+#world_popup_entries_list .amily2-historiography-protected-entry input[readonly] {
+    cursor: text;
+    opacity: 0.82;
+}
+
+.amily2-historiography-readonly-badge {
+    flex: 0 0 auto;
+    padding: 2px 7px;
+    border: 1px solid var(--SmartThemeQuoteColor);
+    border-radius: 999px;
+    color: var(--SmartThemeQuoteColor);
+    font-size: 0.72em;
+    line-height: 1.45;
+    white-space: nowrap;
+    user-select: none;
+}

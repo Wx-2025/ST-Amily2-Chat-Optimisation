@@ -1,4 +1,6 @@
 import { extension_settings, getContext } from "/scripts/extensions.js";
+import { eventSource, event_types } from "/script.js";
+import { loadWorldInfo, world_names } from "/scripts/world-info.js";
 import {
   extensionName,
   defaultSettings,
@@ -17,8 +19,25 @@ import {
   getAvailableWorldbooks, getLoresForWorldbook,
   executeManualSummary, executeRefinement, executeActiveLedgerRefinement,
   executeExpedition, stopExpedition,
-  archiveCurrentLedger, getArchivedLedgers, restoreArchivedLedger
+  archiveCurrentLedger, getArchivedLedgers, restoreArchivedLedger,
+  getHistoriographyLedgerStatus, previewActiveLedgerMigration,
+  executeActiveLedgerMigration, rollbackActiveSegmentedLedger,
+  retryActiveSegmentVectors,
+  diagnoseActiveHistoriographyLedger,
+  repairActiveHistoriographyLedger,
 } from "../core/historiographer.js";
+import {
+  HISTORIOGRAPHY_PROTOCOL_LEGACY,
+  HISTORIOGRAPHY_PROTOCOL_SEGMENTED,
+  MAX_SEGMENT_MAX_BLOCKS,
+  MIN_SEGMENT_MAX_BLOCKS,
+} from '../core/historiography/constants.js';
+import {
+  resolveHistoriographyPromptKeys,
+} from '../core/historiography/prompt-profiles.js';
+import {
+  initializeHistoriographyEditorProtection,
+} from '../core/historiography/editor-protection.js';
 
 import { testNgmsApiConnection, fetchNgmsModels } from "../core/api/Ngms_api.js";
 
@@ -28,6 +47,20 @@ function getHistoriographyRuleConfig() {
 
 function _escapeHtml(text) {
   return String(text ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function _downloadHistoriographyDiagnostic(report) {
+  const blob = new Blob([JSON.stringify(report, null, 2)], {
+    type: 'application/json;charset=utf-8',
+  });
+  const href = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = href;
+  anchor.download = `amily2-historiography-diagnostic-${Date.now()}.json`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(href);
 }
 
 function _populateHistRuleProfileSelect(select, detail) {
@@ -51,34 +84,32 @@ function setupPromptEditor(type) {
   const restoreBtn = document.getElementById(
     `amily2_mhb_${type}_restore_button`,
   );
+  const protocolSelector = document.getElementById(
+    'historiography_prompt_protocol_selector',
+  );
 
-  const jailbreakKey =
-    type === "small"
-      ? "historiographySmallJailbreakPrompt"
-      : "historiographyLargeJailbreakPrompt";
-  const mainPromptKey =
-    type === "small"
-      ? "historiographySmallSummaryPrompt"
-      : "historiographyLargeRefinePrompt";
+  const getKeys = () => resolveHistoriographyPromptKeys(
+    type,
+    protocolSelector?.value || HISTORIOGRAPHY_PROTOCOL_SEGMENTED,
+  );
 
   const updateEditorView = () => {
     const selected = selector.value;
-    if (selected === "jailbreak") {
-      editor.value = extension_settings[extensionName][jailbreakKey];
-    } else {
-      editor.value = extension_settings[extensionName][mainPromptKey];
-    }
+    const keys = getKeys();
+    const key = selected === 'jailbreak' ? keys.jailbreak : keys.task;
+    editor.value = extension_settings[extensionName][key]
+      ?? defaultSettings[key]
+      ?? '';
   };
 
   selector.addEventListener("change", updateEditorView);
+  protocolSelector?.addEventListener('change', updateEditorView);
 
   saveBtn.addEventListener("click", () => {
     const selected = selector.value;
-    if (selected === "jailbreak") {
-      extension_settings[extensionName][jailbreakKey] = editor.value;
-    } else {
-      extension_settings[extensionName][mainPromptKey] = editor.value;
-    }
+    const keys = getKeys();
+    const key = selected === 'jailbreak' ? keys.jailbreak : keys.task;
+    extension_settings[extensionName][key] = editor.value;
     if (saveSettings()) {
       toastr.success(
         `${type === "small" ? "微言录" : "宏史卷"}的${selected === "jailbreak" ? "破限谕旨" : "纲要"}已保存！`,
@@ -88,11 +119,9 @@ function setupPromptEditor(type) {
 
   restoreBtn.addEventListener("click", () => {
     const selected = selector.value;
-    if (selected === "jailbreak") {
-      editor.value = defaultSettings[jailbreakKey];
-    } else {
-      editor.value = defaultSettings[mainPromptKey];
-    }
+    const keys = getKeys();
+    const key = selected === 'jailbreak' ? keys.jailbreak : keys.task;
+    editor.value = defaultSettings[key];
     toastr.info("已恢复为默认谕旨，请点击“保存当前”以确认。");
   });
 
@@ -104,6 +133,7 @@ function setupPromptEditor(type) {
     expandBtn.addEventListener('click', () => {
         const selectedValue = selector.value;
         const selectedText = selector.options[selector.selectedIndex].text; 
+        const selectedKeys = getKeys();
         const currentContent = editor.value;
 
         const dialogHtml = `
@@ -124,11 +154,10 @@ function setupPromptEditor(type) {
         dialogElement.find('.popup-button-ok').on('click', () => {
             const newContent = dialogTextarea.val();
             editor.value = newContent;
-            if (selectedValue === "jailbreak") {
-                extension_settings[extensionName][jailbreakKey] = newContent;
-            } else {
-                extension_settings[extensionName][mainPromptKey] = newContent;
-            }
+            const key = selectedValue === 'jailbreak'
+              ? selectedKeys.jailbreak
+              : selectedKeys.task;
+            extension_settings[extensionName][key] = newContent;
             if (saveSettings()) {
                 toastr.success(`${type === 'small' ? '微言录' : '宏史卷'}的${selectedText}已镌刻！`);
             }
@@ -143,6 +172,41 @@ function setupPromptEditor(type) {
 
 export function bindHistoriographyEvents() {
     console.log("[Amily2号-工部] 【敕史局】的专属工匠已就位...");
+
+    initializeHistoriographyEditorProtection({
+      loadBook: loadWorldInfo,
+      getSelectedBookName: () => {
+        const index = Number.parseInt(
+          document.getElementById('world_editor_select')?.value,
+          10,
+        );
+        return Number.isInteger(index) && index >= 0
+          ? world_names[index] || null
+          : null;
+      },
+      subscribeWorldInfoUpdated: callback => {
+        const handler = (name, data) => callback(name, data);
+        eventSource.on(event_types.WORLDINFO_UPDATED, handler);
+        return () => {
+          if (typeof eventSource.off === 'function') {
+            eventSource.off(event_types.WORLDINFO_UPDATED, handler);
+          } else if (typeof eventSource.removeListener === 'function') {
+            eventSource.removeListener(
+              event_types.WORLDINFO_UPDATED,
+              handler,
+            );
+          }
+        };
+      },
+      onBlocked: () => toastr.warning(
+        '该条目属于宏史卷内部结构。请使用 Amily 的诊断、迁移或回滚功能处理。',
+        '史册只读保护',
+      ),
+      onError: error => console.warn(
+        '[大史官] 原生世界书只读保护刷新失败:',
+        error,
+      ),
+    });
 
     setupPromptEditor("small");
     setupPromptEditor("large");
@@ -326,6 +390,306 @@ export function bindHistoriographyEvents() {
         }
     });
 
+    // ========== 分段史册状态、迁移与回滚 ==========
+    const preferredProtocolSelect = document.getElementById(
+      'historiography_preferred_protocol',
+    );
+    const ledgerStatusBox = document.getElementById(
+      'historiography_ledger_status',
+    );
+    const refreshLedgerStatusBtn = document.getElementById(
+      'historiography_refresh_ledger_status',
+    );
+    const previewMigrationBtn = document.getElementById(
+      'historiography_preview_migration',
+    );
+    const executeMigrationBtn = document.getElementById(
+      'historiography_execute_migration',
+    );
+    const rollbackSegmentedBtn = document.getElementById(
+      'historiography_rollback_segmented',
+    );
+    const retrySegmentVectorsBtn = document.getElementById(
+      'historiography_retry_segment_vectors',
+    );
+    const exportDiagnosticsBtn = document.getElementById(
+      'historiography_export_diagnostics',
+    );
+    const repairLedgerBtn = document.getElementById(
+      'historiography_repair_safe_states',
+    );
+    let migrationPreviewSnapshot = null;
+    let ledgerStatusSnapshot = null;
+    let diagnosticSnapshot = null;
+
+    preferredProtocolSelect.value =
+      extension_settings[extensionName].historiographyPreferredProtocol
+      === HISTORIOGRAPHY_PROTOCOL_LEGACY
+        ? HISTORIOGRAPHY_PROTOCOL_LEGACY
+        : HISTORIOGRAPHY_PROTOCOL_SEGMENTED;
+    preferredProtocolSelect.addEventListener('change', () => {
+      extension_settings[extensionName].historiographyPreferredProtocol =
+        preferredProtocolSelect.value === HISTORIOGRAPHY_PROTOCOL_LEGACY
+          ? HISTORIOGRAPHY_PROTOCOL_LEGACY
+          : HISTORIOGRAPHY_PROTOCOL_SEGMENTED;
+      saveSettings();
+      migrationPreviewSnapshot = null;
+      diagnosticSnapshot = null;
+      executeMigrationBtn.disabled = true;
+      repairLedgerBtn.disabled = true;
+    });
+
+    const renderLedgerStatus = status => {
+      if (!status.available) {
+        const message = status.reason === 'no-target'
+          ? '当前聊天没有可用的目标世界书。'
+          : `当前没有活动史册；下一次写入将创建 ${
+              status.protocol === HISTORIOGRAPHY_PROTOCOL_LEGACY
+                ? '滚动史册 v0.1'
+                : '分段史册 v1'
+            }。`;
+        ledgerStatusBox.innerHTML = `<small class="notes">${_escapeHtml(message)}</small>`;
+        previewMigrationBtn.disabled = true;
+        rollbackSegmentedBtn.disabled = true;
+        retrySegmentVectorsBtn.disabled = true;
+        archiveCurrentBtn.disabled = false;
+        restoreArchiveBtn.disabled = false;
+        return;
+      }
+      if (status.protocol === HISTORIOGRAPHY_PROTOCOL_SEGMENTED) {
+        const vectorStates = status.vectorStates || {};
+        const verified = vectorStates.verified || 0;
+        const retryable = vectorStates.retryable || 0;
+        const pending = vectorStates.pending || 0;
+        const notRequested = vectorStates['not-requested'] || 0;
+        const residency = status.residency || {};
+        const residentWarning = residency.fits === false
+          ? `<br><span style="color: var(--SmartThemeQuoteColor);">常驻预算超出 ${residency.overBy} Token；其中 ${residency.safetyLoadedTokens || 0} Token 因向量尚未验证而安全保留。</span>`
+          : '';
+        ledgerStatusBox.innerHTML = `
+          <small class="notes">
+            <strong>分段史册 v1</strong> · revision ${status.revision}<br>
+            已总结至 ${status.lastSummarizedFloor} 楼 · ${status.segmentCount} 个宏史卷分段 · ${status.pendingBlockCount} 个待编纂批次<br>
+            向量：${verified} 段已验证 · ${retryable} 段待重试 · ${pending} 段待收讫 · ${notRequested} 段未请求；当前加载 ${status.vectorLoadedCount} 段<br>
+            常驻 Token：${residency.totalTokens ?? 0}/${residency.maxTokens ?? '?'}（活动尾部 ${residency.tailTokens ?? 0}，宏史卷 ${residency.segmentTokens ?? 0}）${residentWarning}
+          </small>`;
+        previewMigrationBtn.disabled = true;
+        rollbackSegmentedBtn.disabled = !status.canRollback;
+        archiveCurrentBtn.disabled = true;
+        restoreArchiveBtn.disabled = true;
+        retrySegmentVectorsBtn.disabled = !status.canRetryVectors;
+        return;
+      }
+      ledgerStatusBox.innerHTML = `
+        <small class="notes">
+          <strong>滚动史册 v0.1</strong><br>
+          已总结至 ${status.lastSummarizedFloor} 楼 · 宏史卷至 ${status.compiledFloor} 楼 · ${status.pendingBlockCount} 个待合并批次
+        </small>`;
+      previewMigrationBtn.disabled = false;
+      rollbackSegmentedBtn.disabled = true;
+      retrySegmentVectorsBtn.disabled = true;
+      archiveCurrentBtn.disabled = false;
+      restoreArchiveBtn.disabled = false;
+    };
+
+    const refreshLedgerStatus = async () => {
+      ledgerStatusBox.innerHTML = '<small class="notes">正在校验活动史册...</small>';
+      migrationPreviewSnapshot = null;
+      diagnosticSnapshot = null;
+      executeMigrationBtn.disabled = true;
+      repairLedgerBtn.disabled = true;
+      try {
+        ledgerStatusSnapshot = await getHistoriographyLedgerStatus();
+        renderLedgerStatus(ledgerStatusSnapshot);
+      } catch (error) {
+        ledgerStatusSnapshot = null;
+        ledgerStatusBox.innerHTML = `<small class="notes" style="color: var(--SmartThemeQuoteColor);">校验失败：${_escapeHtml(error.message)}</small>`;
+        previewMigrationBtn.disabled = true;
+        rollbackSegmentedBtn.disabled = true;
+        retrySegmentVectorsBtn.disabled = true;
+      }
+    };
+
+    refreshLedgerStatusBtn.addEventListener('click', refreshLedgerStatus);
+    previewMigrationBtn.addEventListener('click', async () => {
+      previewMigrationBtn.disabled = true;
+      try {
+        const preview = await previewActiveLedgerMigration();
+        migrationPreviewSnapshot = preview.migratable ? preview : null;
+        executeMigrationBtn.disabled = !preview.migratable;
+        const diagnostics = preview.diagnostics.length
+          ? preview.diagnostics.map(item =>
+              `<li><strong>${_escapeHtml(item.severity)}</strong> · ${_escapeHtml(item.code)}：${_escapeHtml(item.message)}</li>`
+            ).join('')
+          : '<li>未发现结构问题。</li>';
+        showHtmlModal('旧账迁移预览', `
+          <div class="historiography-migration-preview">
+            <p><strong>${preview.migratable ? '可以迁移' : '已阻止迁移'}</strong></p>
+            <p>总进度：${preview.totalFloors} 楼<br>旧宏史卷：1-${preview.compiledFloor} 楼<br>待迁移微言录：${preview.pendingBlockCount} 块</p>
+            <ul>${diagnostics}</ul>
+            ${preview.macroPreview
+              ? `<details><summary>旧宏史卷正文预览</summary><pre style="white-space: pre-wrap; overflow-wrap: anywhere;">${_escapeHtml(preview.macroPreview)}</pre></details>`
+              : ''}
+          </div>`, {
+          okText: '关闭预览',
+          showCancel: false,
+        });
+      } catch (error) {
+        migrationPreviewSnapshot = null;
+        executeMigrationBtn.disabled = true;
+        toastr.error(`迁移预览失败：${error.message}`, '史册迁移');
+      } finally {
+        previewMigrationBtn.disabled =
+          ledgerStatusSnapshot?.protocol
+          !== HISTORIOGRAPHY_PROTOCOL_LEGACY;
+      }
+    });
+
+    executeMigrationBtn.addEventListener('click', async () => {
+      if (!migrationPreviewSnapshot) {
+        toastr.warning('请先生成一份通过校验的迁移预览。', '史册迁移');
+        return;
+      }
+      if (!confirm(
+        '确定将当前旧版史册迁移为分段史册吗？\n'
+        + '旧条目会在同一次保存中变成字节级禁用归档，不会删除。',
+      )) return;
+      executeMigrationBtn.disabled = true;
+      try {
+        await executeActiveLedgerMigration(migrationPreviewSnapshot);
+        toastr.success('旧版史册已迁移为分段史册。', '史册迁移');
+        migrationPreviewSnapshot = null;
+        await refreshLedgerStatus();
+      } catch (error) {
+        toastr.error(`迁移失败：${error.message}`, '史册迁移', {
+          timeOut: 12000,
+        });
+      }
+    });
+
+    rollbackSegmentedBtn.addEventListener('click', async () => {
+      if (!ledgerStatusSnapshot
+        || ledgerStatusSnapshot.protocol
+          !== HISTORIOGRAPHY_PROTOCOL_SEGMENTED) {
+        return;
+      }
+      if (!confirm(
+        '确定回滚为旧版滚动史册吗？\n'
+        + '分段条目只会被禁用，不会删除；若迁移后已有新内容，将由程序确定性投影为旧格式。',
+      )) return;
+      rollbackSegmentedBtn.disabled = true;
+      try {
+        const result = await rollbackActiveSegmentedLedger(
+          ledgerStatusSnapshot,
+        );
+        toastr.success(
+          result.rollbackMode === 'exact-source'
+            ? '已恢复迁移前的字节级旧史册正本。'
+            : '已将当前分段史册确定性投影为旧格式。',
+          '史册回滚',
+        );
+        await refreshLedgerStatus();
+      } catch (error) {
+        toastr.error(`回滚失败：${error.message}`, '史册回滚', {
+          timeOut: 12000,
+        });
+        await refreshLedgerStatus();
+      }
+    });
+    retrySegmentVectorsBtn.addEventListener('click', async () => {
+      if (!ledgerStatusSnapshot?.canRetryVectors) return;
+      retrySegmentVectorsBtn.disabled = true;
+      const originalHtml = retrySegmentVectorsBtn.innerHTML;
+      try {
+        const result = await retryActiveSegmentVectors({
+          onProgress: progress => {
+            if (progress.phase === 'preparing') {
+              retrySegmentVectorsBtn.textContent =
+                `检查 ${progress.index}/${progress.total}`;
+            } else if (progress.phase === 'delivering') {
+              retrySegmentVectorsBtn.textContent =
+                `回读 ${progress.index}/${progress.total}`;
+            }
+          },
+        });
+        const message = result.failed > 0
+          ? `检查完成：${result.verified} 段已重建，${result.skipped} 段无需变更，${result.failed} 段保持加载并待重试。`
+          : `检查完成：${result.verified} 段已重建，${result.skipped} 段无需变更。`;
+        toastr[result.failed > 0 ? 'warning' : 'success'](
+          message,
+          '宏史卷向量索引',
+          { timeOut: 12000 },
+        );
+      } catch (error) {
+        toastr.error(`向量检查已停止：${error.message}`, '宏史卷向量索引', {
+          timeOut: 12000,
+        });
+      } finally {
+        retrySegmentVectorsBtn.innerHTML = originalHtml;
+        await refreshLedgerStatus();
+      }
+    });
+    exportDiagnosticsBtn.addEventListener('click', async () => {
+      exportDiagnosticsBtn.disabled = true;
+      try {
+        diagnosticSnapshot = await diagnoseActiveHistoriographyLedger();
+        repairLedgerBtn.disabled =
+          (diagnosticSnapshot.safeRepairs?.length || 0) === 0;
+        _downloadHistoriographyDiagnostic(diagnosticSnapshot);
+        const diagnosticItems = diagnosticSnapshot.diagnostics?.length
+          ? diagnosticSnapshot.diagnostics.map(item =>
+              `<li><strong>${_escapeHtml(item.severity)}</strong> · ${_escapeHtml(item.code)}：${_escapeHtml(item.message)}${item.details?.suggestion ? `<br><small>${_escapeHtml(item.details.suggestion)}</small>` : ''}</li>`
+            ).join('')
+          : '<li>未发现结构或加载状态问题。</li>';
+        const orphanItems = diagnosticSnapshot.orphanEntries?.length
+          ? diagnosticSnapshot.orphanEntries.map(item =>
+              `<li>${_escapeHtml(item.kind)} · UID ${_escapeHtml(item.entryUid)} · 键 ${_escapeHtml(item.key)}</li>`
+            ).join('')
+          : '<li>没有检测到孤儿内部条目。</li>';
+        showHtmlModal('分段史册诊断', `
+          <p><strong>${diagnosticSnapshot.valid ? '校验通过' : '需要处理'}</strong> · ${diagnosticSnapshot.summary.errors} 个错误 · ${diagnosticSnapshot.summary.warnings} 个警告 · ${diagnosticSnapshot.summary.orphans} 个孤儿候选</p>
+          <p><small>完整的脱敏 JSON 报告已下载。孤儿条目不会自动删除；只有 disable 加载位可以通过安全修复按钮恢复。</small></p>
+          <h4>诊断</h4><ul>${diagnosticItems}</ul>
+          <h4>孤儿候选</h4><ul>${orphanItems}</ul>
+        `, {
+          okText: '关闭',
+          showCancel: false,
+        });
+      } catch (error) {
+        diagnosticSnapshot = null;
+        repairLedgerBtn.disabled = true;
+        toastr.error(`诊断失败：${error.message}`, '分段史册诊断', {
+          timeOut: 12000,
+        });
+      } finally {
+        exportDiagnosticsBtn.disabled = false;
+      }
+    });
+    repairLedgerBtn.addEventListener('click', async () => {
+      if (!diagnosticSnapshot?.safeRepairs?.length) return;
+      if (!confirm(
+        `将按刚才的诊断修复 ${diagnosticSnapshot.safeRepairs.length} 个条目的启用/禁用状态。\n`
+        + '不会改正文、hash、Manifest 引用或删除孤儿条目。继续吗？',
+      )) return;
+      repairLedgerBtn.disabled = true;
+      try {
+        const result = await repairActiveHistoriographyLedger(
+          diagnosticSnapshot,
+        );
+        toastr.success(
+          `已修复 ${result?.repaired || 0} 个条目的安全加载状态。`,
+          '分段史册恢复',
+        );
+        diagnosticSnapshot = null;
+        await refreshLedgerStatus();
+      } catch (error) {
+        toastr.error(`安全修复失败：${error.message}`, '分段史册恢复', {
+          timeOut: 12000,
+        });
+      }
+    });
+    refreshLedgerStatus();
+
   // ========== 💎 宏史卷 (史册精炼) 绑定 ==========
   const largeWbSelector = document.getElementById(
     "amily2_mhb_large_worldbook_selector",
@@ -372,6 +736,24 @@ export function bindHistoriographyEvents() {
     "historiographyRefineReminderBlocks",
     5,
     500,
+  );
+  bindBoundedRefinementNumber(
+    'historiography_segment_max_blocks',
+    'historiographySegmentMaxBlocks',
+    MIN_SEGMENT_MAX_BLOCKS,
+    MAX_SEGMENT_MAX_BLOCKS,
+  );
+  bindBoundedRefinementNumber(
+    'historiography_vector_retain_recent',
+    'historiographyVectorRetainRecent',
+    1,
+    100,
+  );
+  bindBoundedRefinementNumber(
+    'historiography_resident_max_tokens',
+    'historiographyResidentMaxTokens',
+    5000,
+    256000,
   );
 
   const inputLimit =
