@@ -273,6 +273,19 @@
                         <p class="notes" style="margin: 0 0 10px;">
                             只会静态读取当前角色卡并先显示确认摘要；不会执行卡内脚本、修改原角色卡或静默覆盖已有表格数据。
                         </p>
+                        <section class="amily2-shujuku-compat-card" aria-labelledby="amily2-shujuku-chat-recovery-heading">
+                            <div id="amily2-shujuku-chat-recovery-heading" class="amily2-shujuku-compat-card-title">
+                                <i class="fas fa-history"></i> 旧聊天表格恢复
+                            </div>
+                            <div id="amily2-shujuku-chat-recovery-status" class="notes" aria-live="polite">检测中…</div>
+                            <select id="amily2-shujuku-chat-recovery-lane" class="text_pole" hidden disabled style="margin-top:7px;">
+                                <option value="">请选择数据隔离线</option>
+                            </select>
+                            <button id="amily2-shujuku-recover-current-chat-btn" class="menu_button small_button interactable" type="button" disabled style="margin-top:7px;">
+                                <i class="fas fa-search"></i> 扫描当前聊天旧表格
+                            </button>
+                            <p class="notes">仅扫描当前聊天内的 `TavernDB_ACU_*` 数据；多条隔离线必须手动选择，写入前会再次核对来源摘要和当前表状态。</p>
+                        </section>
                         <section class="amily2-shujuku-compat-card" aria-labelledby="amily2-shujuku-resource-heading">
                             <div id="amily2-shujuku-resource-heading" class="amily2-shujuku-compat-card-title">
                                 <i class="fas fa-box-open"></i> B3 已登记资源
@@ -351,7 +364,8 @@
                         <div class="notes" style="padding: 7px; margin-bottom: 8px; border: 1px dashed var(--SmartThemeQuoteColor); border-radius: 4px;">
                             <div><strong>B3 已提供受控兼容：</strong>仅可读取、导入并绑定迁移清单内摘要匹配的表格模板和剧情预设；第三方剧情任务及 Agent 世界书不会自动执行。</div>
                             <div style="margin-top: 4px;"><strong>B4 已提供受限兼容：</strong>有界 AI 剧情尾部、专用槽脱敏摘要与严格限额的 callAI 可分别授权；Agent 方法仅在可选 Provider 已安装且逐项授权后出现，核心不会直接开放世界书。</div>
-                            <div style="margin-top: 4px;">当前档案检测到的未实现请求：<span id="amily2-shujuku-unsupported-groups">检测中…</span></div>
+                            <div style="margin-top: 4px;">当前档案检测到的未实现请求类型：<span id="amily2-shujuku-unsupported-groups">检测中…</span></div>
+                            <div id="amily2-shujuku-unsupported-methods" class="amily2-shujuku-unsupported-methods">检测中…</div>
                         </div>
                         <div id="amily2-shujuku-action-confirm-dialog"
                              role="dialog"

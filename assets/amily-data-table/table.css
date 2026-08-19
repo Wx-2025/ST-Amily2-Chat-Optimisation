@@ -603,6 +603,18 @@
     text-align: left;
 }
 
+.amily2-shujuku-unsupported-methods {
+    max-height: 12em;
+    margin-top: 6px;
+    padding: 7px 8px;
+    overflow: auto;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 4px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 1.45;
+}
+
 .amily2-shujuku-scope-summary {
     grid-template-columns: repeat(3, minmax(0, 1fr));
 }
