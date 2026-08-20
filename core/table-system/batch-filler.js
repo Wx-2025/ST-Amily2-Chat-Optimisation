@@ -1045,7 +1045,7 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
     if (!tableSystemEnabled) {
         log('表格系统总开关已关闭，跳过楼层填表。', 'info');
         toastr.info('表格系统总开关已关闭，无法执行楼层填表。');
-        return;
+        return false;
     }
 
     const context = getContext();
@@ -1055,12 +1055,12 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
     if (!requestScope.chatId) {
         log('当前聊天缺少可验证的聊天标识，无法安全执行楼层填表。', 'error');
         toastr.error('当前聊天尚未完成初始化，请保存或重新打开聊天后再试。', '无法开始填表');
-        return;
+        return false;
     }
 
     if (endFloor > currentChatLength) {
         toastr.warning(`结束楼层 ${endFloor} 超出了当前聊天记录长度 ${currentChatLength}。`);
-        return;
+        return false;
     }
 
     const ruleTemplate = getBatchFillerRuleTemplate();
@@ -1069,7 +1069,7 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
     if (!ruleTemplate || !flowTemplate) {
         log('规则或流程提示词为空，无法开始楼层填表。', 'error');
         toastr.error('请确保"规则提示词"和"流程提示词"都已填写。', '无法开始');
-        return;
+        return false;
     }
 
     try {
@@ -1091,7 +1091,7 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
         const purifiedMessages = getRawMessagesForSummary(startFloor, endFloor, context);
         if (!purifiedMessages || purifiedMessages.length === 0) {
             toastr.warning('指定楼层范围内没有有效内容可处理。');
-            return;
+            return false;
         }
 
         const batchContent = purifiedMessages.map(m => `【第 ${m.floor} 楼】 ${m.author}: ${m.content}`).join('\n');
@@ -1258,7 +1258,7 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
                     },
                 ],
             );
-            return;
+            return true;
         }
 
         console.groupCollapsed(`[Amily2 楼层填表] 楼层 ${startFloor}-${endFloor} - 即将发送至 API 的内容`);
@@ -1463,7 +1463,7 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
                         toastr.info(`已取消楼层 ${startFloor}-${endFloor} 的填表。`);
                     },
                 });
-                return;
+                return false;
             }
 
             let applied = await commitExplicitManualTextNoop(
@@ -1503,6 +1503,8 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
             ]);
         }
 
+        return true;
+
     } catch (error) {
         if (runControl.committed) {
             log(
@@ -1516,12 +1518,12 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
                     '填表已保存',
                 ),
             }]);
-            return;
+            return true;
         }
         if (error?.name === 'AbortError' || signal?.aborted) {
             log(`楼层 ${startFloor}-${endFloor} 的填表已在提交前取消。`, 'warn');
             toastr.info('本次楼层填表已取消，未提交任何子批结果。');
-            return;
+            return false;
         }
         if (error?.code === 'BATCH_FILLER_STALE_CHAT_CONTEXT'
             || error?.code === 'BATCH_FILLER_MISSING_CHAT_CONTEXT'
@@ -1529,34 +1531,35 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
             || error?.code === 'TABLE_SYSTEM_NO_ACTIVE_CHAT') {
             log(`楼层 ${startFloor}-${endFloor} 因聊天上下文已变化而停止：${error.message}`, 'warn');
             toastr.warning('聊天已经切换，旧聊天的填表结果已丢弃。', '填表已停止');
-            return;
+            return false;
         }
         if (error?.code === 'TABLE_SYSTEM_SNAPSHOT_MISMATCH') {
             log(`楼层 ${startFloor}-${endFloor} 保存后检测到本地快照变化，已停止以避免重复写入。`, 'error');
             toastr.warning('服务器可能已经保存本次结果。请重新打开聊天确认，系统不会自动重试。', '需要重新载入');
-            return;
+            return false;
         }
         if (isTableFillRequestLeaseError(error)) {
             log(`楼层 ${startFloor}-${endFloor} 的聊天或表格请求租约已失效，过期结果已丢弃。`, 'warn');
             toastr.warning('聊天或表格已变化，本次楼层填表结果已安全丢弃。', '处理停止');
-            return;
+            return false;
         }
         const normalizedError = normalizeTableFillInferenceError(error);
         log(`楼层 ${startFloor}-${endFloor} 填表失败: ${normalizedError.message}`, 'error');
         toastr.error(`楼层填表失败: ${normalizedError.message}`, '处理失败');
+        return false;
     }
 }
 
 
-export async function startCurrentFloorFilling() {
+export async function startCurrentFloorFilling(options = {}) {
     const context = getContext();
     const currentFloor = context.chat.length;
     
     if (currentFloor === 0) {
         toastr.info('当前没有聊天记录。');
-        return;
+        return false;
     }
     
     log(`准备填写当前楼层（第 ${currentFloor} 楼）...`, 'info');
-    await startFloorRangeFilling(currentFloor, currentFloor);
+    return startFloorRangeFilling(currentFloor, currentFloor, options);
 }
