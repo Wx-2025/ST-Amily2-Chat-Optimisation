@@ -368,16 +368,16 @@
                             <div id="amily2-shujuku-unsupported-methods" class="amily2-shujuku-unsupported-methods">检测中…</div>
                         </div>
                         <div id="amily2-shujuku-action-confirm-dialog"
+                             class="amily2-shujuku-action-dialog"
                              role="dialog"
                              aria-modal="true"
                              aria-labelledby="amily2-shujuku-action-confirm-title"
                              aria-describedby="amily2-shujuku-action-confirm-message"
-                             hidden
-                             style="position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.65);">
-                            <div style="width:min(560px,100%);max-height:min(80vh,720px);overflow:auto;padding:16px;border:1px solid var(--SmartThemeBorderColor);border-radius:8px;background:var(--SmartThemeBlurTintColor, #222);box-shadow:0 12px 36px rgba(0,0,0,.45);">
-                                <div id="amily2-shujuku-action-confirm-title" style="font-weight:700;margin-bottom:10px;">确认兼容操作</div>
-                                <div id="amily2-shujuku-action-confirm-message" class="notes" style="white-space:pre-wrap;margin-bottom:14px;"></div>
-                                <div class="action-center-buttons" style="gap:8px;justify-content:flex-end;">
+                             hidden>
+                            <div class="amily2-shujuku-action-dialog-surface">
+                                <div id="amily2-shujuku-action-confirm-title" class="amily2-shujuku-action-dialog-title">确认兼容操作</div>
+                                <div id="amily2-shujuku-action-confirm-message" class="notes amily2-shujuku-action-dialog-message"></div>
+                                <div class="action-center-buttons amily2-shujuku-action-dialog-actions">
                                     <button id="amily2-shujuku-action-cancel-btn" class="menu_button small_button interactable" type="button">
                                         <i class="fas fa-times"></i> 取消
                                     </button>

@@ -645,6 +645,82 @@
     cursor: not-allowed;
 }
 
+/* The compatibility panel lives inside transformed/scrollable host overlays.
+ * The confirmation is temporarily portalled to document.body so fixed
+ * positioning is relative to the viewport rather than to that panel. */
+.amily2-shujuku-action-dialog {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 100dvw;
+    height: 100dvh;
+    padding: 16px;
+    overflow: hidden;
+    overscroll-behavior: contain;
+    background: rgba(0, 0, 0, 0.65);
+}
+
+.amily2-shujuku-action-dialog[hidden] {
+    display: none !important;
+}
+
+.amily2-shujuku-action-dialog-surface {
+    display: flex;
+    flex-direction: column;
+    width: min(560px, 100%);
+    max-height: min(calc(100dvh - 32px), 720px);
+    min-height: 0;
+    padding: 16px;
+    overflow: hidden;
+    box-sizing: border-box;
+    border: 1px solid var(--SmartThemeBorderColor);
+    border-radius: 8px;
+    background: var(--SmartThemeBlurTintColor, #222);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+}
+
+.amily2-shujuku-action-dialog-title {
+    flex: 0 0 auto;
+    margin-bottom: 10px;
+    font-weight: 700;
+}
+
+.amily2-shujuku-action-dialog-message {
+    flex: 1 1 auto;
+    min-height: 0;
+    margin: 0 0 14px;
+    overflow: auto;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    text-align: left;
+    overscroll-behavior: contain;
+}
+
+.amily2-shujuku-action-dialog-actions {
+    flex: 0 0 auto;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+@media (max-width: 600px), (max-height: 520px) {
+    .amily2-shujuku-action-dialog {
+        padding: 8px;
+    }
+
+    .amily2-shujuku-action-dialog-surface {
+        max-height: calc(100dvh - 16px);
+        padding: 12px;
+    }
+
+    .amily2-shujuku-action-dialog-actions > .menu_button {
+        min-width: min(9em, 100%);
+    }
+}
+
 .amily2-shujuku-onboarding-dialog {
     width: min(92vw, 720px);
     max-width: 720px;
