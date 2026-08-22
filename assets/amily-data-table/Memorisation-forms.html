@@ -360,7 +360,13 @@
                             <button id="amily2-shujuku-revoke-btn" class="menu_button small_button interactable" type="button" disabled>
                                 <i class="fas fa-ban"></i> 撤销当前聊天授权
                             </button>
+                            <button id="amily2-shujuku-force-once-btn" class="menu_button warning small_button interactable" type="button" disabled>
+                                <i class="fas fa-plug"></i> 强制单次挂载 ACUAPI
+                            </button>
                         </div>
+                        <p class="notes" style="margin: 0 0 8px;">
+                            仅在静态检测遗漏时使用：只开放表快照与更新通知，绑定当前聊天和当前页面；刷新或切换聊天即失效，不保存授权，也不开放写表、SQL、模型或 Agent 能力。
+                        </p>
                         <div class="notes" style="padding: 7px; margin-bottom: 8px; border: 1px dashed var(--SmartThemeQuoteColor); border-radius: 4px;">
                             <div><strong>B3 已提供受控兼容：</strong>仅可读取、导入并绑定迁移清单内摘要匹配的表格模板和剧情预设；第三方剧情任务及 Agent 世界书不会自动执行。</div>
                             <div style="margin-top: 4px;"><strong>B4 已提供受限兼容：</strong>有界 AI 剧情尾部、专用槽脱敏摘要与严格限额的 callAI 可分别授权；Agent 方法仅在可选 Provider 已安装且逐项授权后出现，核心不会直接开放世界书。</div>
