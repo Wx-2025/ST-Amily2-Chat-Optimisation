@@ -62,6 +62,7 @@ import { collectTableFillOperationBatches } from './table-fill-batch-runner.js';
 import { commitToLastMessageAsync } from './infra/persistence.js';
 import { createManualFillHandoffTransaction } from './manual-fill-handoff.js';
 import { parseToOperationsDetailed } from './executor.js';
+import { dispatchTableFillStart } from '../internal/table-fill-lifecycle-channel.js';
 
 const CONTINUE_PROMPT = '上一条回复不完整或缺少 <Amily2Edit> 指令块。请直接从中断处继续生成剩余内容，不要重复已输出的文本，也不要添加任何解释或寒暄，确保最终输出中包含完整的 <Amily2Edit>...</Amily2Edit> 指令块。';
 
@@ -1031,6 +1032,7 @@ export function startBatchFilling() {
     }
 
     log(`准备开始批量填表任务，共 ${totalBatches} 个批次。`, 'info');
+    dispatchTableFillStart({ mode: 'batch' });
     processNextBatch();
 }
 
@@ -1093,6 +1095,12 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
             toastr.warning('指定楼层范围内没有有效内容可处理。');
             return false;
         }
+
+        dispatchTableFillStart({
+            mode: 'floor-range',
+            startFloor,
+            endFloor,
+        });
 
         const batchContent = purifiedMessages.map(m => `【第 ${m.floor} 楼】 ${m.author}: ${m.content}`).join('\n');
         const currentTableDataString = convertAiFillableTablesToCsvString();

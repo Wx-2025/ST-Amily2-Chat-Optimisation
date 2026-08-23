@@ -1,6 +1,7 @@
 import { amilyHelper } from "../tavern-helper/main.js";
 import * as charApi from "./char-api.js";
 import { callAi } from "./api.js";
+import { assertCompleteToolPolicyRegistry } from "./tool-policy.js";
 
 export const tools = {
     
@@ -489,7 +490,7 @@ Output ONLY valid JSON.`;
 };
 
 export function getToolDefinitions() {
-    return [
+    const definitions = [
         {
             name: "read_world_info",
             description: "读取世界书的索引（包含关键字和注释的条目列表）。不返回完整内容。",
@@ -696,4 +697,9 @@ export function getToolDefinitions() {
             }
         }
     ];
+    assertCompleteToolPolicyRegistry(
+        Object.keys(tools),
+        definitions.map(definition => definition.name),
+    );
+    return definitions;
 }

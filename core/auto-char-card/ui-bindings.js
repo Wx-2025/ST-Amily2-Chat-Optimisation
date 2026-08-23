@@ -7,6 +7,7 @@ import { getResolvedApiConfig, setApiConfig, testConnection, fetchModels } from 
 import { tools } from "./tools.js";
 import { syncSlot } from "../../ui/profile-sync.js";
 import { clearSecretInput, markSecretInputStored, readSecretInputUpdate } from "../../ui/secret-input.js";
+import { pluginAuthStatus, subscribePluginAuthStatus } from "../../utils/auth-state.js";
 
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
 
@@ -15,11 +16,24 @@ let agentManager = null;
 let previousCharData = {};
 let previousWorldData = {};
 let isWaitingForApproval = false;
+let activeApprovalRequest = null;
 let openedFiles = new Map(); 
 let activeFileId = null;
 let promptLogContent = "=== Prompt Log ===\n\n";
 
+subscribePluginAuthStatus(transition => {
+    if (transition.authorized === true) return;
+    agentManager?.revokeToolApprovals('PLUGIN_AUTH_REVOKED');
+    resetApprovalUi();
+    $('#acc-stop-btn').hide();
+    $('#acc-status-indicator').removeClass('status-working').addClass('status-idle').text('授权已撤销');
+});
+
 export async function openAutoCharCardWindow() {
+    if (pluginAuthStatus.authorized !== true) {
+        toastr.warning('插件授权当前无效，自动构建器不会启动。');
+        return;
+    }
     if ($('#acc-window').length > 0) {
         $('#acc-window').show();
         return;
@@ -144,6 +158,28 @@ function handlePromptLog(messages) {
     }
 }
 
+function getSelectedApprovalContext() {
+    return {
+        chid: $('#acc-target-char').val(),
+        bookName: $('#acc-target-world').val(),
+    };
+}
+
+function resetApprovalUi() {
+    isWaitingForApproval = false;
+    activeApprovalRequest = null;
+    const btn = $('#acc-send-btn');
+    btn.html('<i class="fas fa-paper-plane"></i>');
+    btn.prop('title', '发送');
+    btn.removeClass('acc-btn-success');
+    $('#acc-reject-btn').remove();
+    $('#acc-user-input').attr('placeholder', '描述您的需求...');
+}
+
+function syncActiveApprovalRequest(nextApproval) {
+    if (nextApproval) activeApprovalRequest = nextApproval;
+}
+
 function restoreChatHistory() {
     const stream = $('#acc-chat-stream');
     stream.empty();
@@ -222,6 +258,7 @@ function renderSessionsList() {
             if (e.target === delBtn[0] || delBtn.has(e.target).length > 0) return;
             if (!isActive) {
                 if (agentManager.loadSession(session.id)) {
+                    resetApprovalUi();
                     restoreChatHistory();
                     renderSessionsList();
                     populateDropdowns();
@@ -236,6 +273,7 @@ function renderSessionsList() {
             e.stopPropagation();
             if (confirm('确定要删除这个会话吗？')) {
                 agentManager.deleteSession(session.id);
+                resetApprovalUi();
                 renderSessionsList();
                 if (isActive) {
                     restoreChatHistory();
@@ -316,6 +354,10 @@ function bindEvents() {
         masterToggle.addEventListener('change', () => {
             if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
             extension_settings[extensionName].autoCharCardEnabled = masterToggle.checked;
+            if (!masterToggle.checked && agentManager) {
+                agentManager.revokeToolApprovals('MASTER_SWITCH_REVOKED');
+                resetApprovalUi();
+            }
             saveSettingsDebounced();
         });
     }
@@ -445,6 +487,8 @@ function bindEvents() {
 
     $('#acc-close-btn').on('click', () => {
         if (confirm('确定要关闭自动构建器吗？当前任务可能会丢失。')) {
+            agentManager?.stop();
+            resetApprovalUi();
             windowEl.remove();
             minIcon.hide();
             isInitialized = false;
@@ -474,6 +518,7 @@ function bindEvents() {
     $('#acc-stop-btn').on('click', () => {
         if (agentManager) {
             agentManager.stop();
+            resetApprovalUi();
             toastr.info('已请求停止生成');
             $('#acc-stop-btn').hide();
             $('#acc-status-indicator').removeClass('status-working').addClass('status-idle').text('已停止');
@@ -484,7 +529,15 @@ function bindEvents() {
     $('#acc-require-approval').on('change', function() {
         if (agentManager) {
             agentManager.setApprovalRequired($(this).is(':checked'));
+            if (!agentManager.pendingToolCall) resetApprovalUi();
         }
+    });
+
+    $('#acc-target-char, #acc-target-world').on('change', () => {
+        if (!agentManager || !agentManager.pendingToolCall) return;
+        agentManager.revokeToolApprovals('TARGET_SELECTION_CHANGED');
+        resetApprovalUi();
+        toastr.warning('目标角色或世界书已切换，待批准写入已撤销。');
     });
 
     
@@ -522,6 +575,7 @@ function bindEvents() {
     $('#acc-new-session-btn').on('click', () => {
         if (agentManager) {
             agentManager.createNewSession();
+            resetApprovalUi();
             restoreChatHistory();
             renderSessionsList();
             populateDropdowns();
@@ -672,19 +726,20 @@ function bindEvents() {
 async function handleSendMessage() {
     const input = $('#acc-user-input');
     const message = input.val().trim();
+
+    if (pluginAuthStatus.authorized !== true) {
+        agentManager?.revokeToolApprovals('PLUGIN_AUTH_REVOKED');
+        resetApprovalUi();
+        toastr.warning('插件授权当前无效，未执行任何工具。');
+        return;
+    }
     
     if (isWaitingForApproval) {
         if (!agentManager) return;
-        
-        isWaitingForApproval = false;
-        
-        const btn = $('#acc-send-btn');
-        btn.html('<i class="fas fa-paper-plane"></i>');
-        btn.prop('title', '发送');
-        btn.removeClass('acc-btn-success');
-        $('#acc-reject-btn').remove(); 
-        
-        input.attr('placeholder', '描述您的需求...');
+
+        const approvalRequest = activeApprovalRequest;
+        const selectedContext = getSelectedApprovalContext();
+        resetApprovalUi();
         input.val('');
         
         if (message) {
@@ -697,7 +752,9 @@ async function handleSendMessage() {
                 updatePreview,
                 showApprovalRequest,
                 handleContextUpdate,
-                handlePromptLog
+                handlePromptLog,
+                approvalRequest?.approvalId,
+                selectedContext
             );
         } else {
             
@@ -708,7 +765,9 @@ async function handleSendMessage() {
                 updatePreview,
                 showApprovalRequest,
                 handleContextUpdate,
-                handlePromptLog
+                handlePromptLog,
+                approvalRequest?.approvalId,
+                selectedContext
             );
         }
         return;
@@ -736,7 +795,7 @@ async function handleSendMessage() {
     $('#acc-status-indicator').removeClass('status-idle').addClass('status-working').text('工作中...');
 
     try {
-        agentManager.setContext(selectedCharId, selectedWorld);
+        await agentManager.setContext(selectedCharId, selectedWorld);
         agentManager.setApprovalRequired($('#acc-require-approval').is(':checked'));
         $('#acc-stop-btn').show();
         
@@ -760,8 +819,9 @@ async function handleSendMessage() {
     }
 }
 
-function showApprovalRequest(toolName, args) {
+function showApprovalRequest(toolName, args, approvalRequest) {
     isWaitingForApproval = true;
+    activeApprovalRequest = approvalRequest || null;
     
     
     updatePreview(toolName, args, false);
@@ -796,17 +856,11 @@ function showApprovalRequest(toolName, args) {
         
         rejectBtn.on('click', async () => {
             if (!isWaitingForApproval) return;
-            isWaitingForApproval = false;
-            
+            const approvalRequest = activeApprovalRequest;
             const input = $('#acc-user-input');
             const message = input.val().trim();
-            
-            
-            btn.html('<i class="fas fa-paper-plane"></i>');
-            btn.prop('title', '发送');
-            btn.removeClass('acc-btn-success');
-            rejectBtn.remove();
-            input.attr('placeholder', '描述您的需求...');
+
+            resetApprovalUi();
             input.val('');
 
             
@@ -822,7 +876,9 @@ function showApprovalRequest(toolName, args) {
                 updatePreview,
                 showApprovalRequest,
                 handleContextUpdate,
-                handlePromptLog
+                handlePromptLog,
+                approvalRequest?.approvalId,
+                getSelectedApprovalContext()
             );
         });
     }
@@ -833,7 +889,7 @@ function showApprovalRequest(toolName, args) {
             <details>
                 <summary class="acc-tool-header" style="cursor: pointer;">
                     <i class="fas fa-code"></i> 请求执行: ${escapeHtmlText(toolName)}
-                    <span style="float: right; font-size: 10px; color: #888;">(点击展开)</span>
+                    <span style="float: right; font-size: 10px; color: #888;">${escapeHtmlText(approvalRequest?.riskLabel || '需批准')} · 单次批次</span>
                 </summary>
                 <pre class="acc-tool-content">${escapeHtmlText(JSON.stringify(args, null, 2))}</pre>
             </details>
@@ -1132,7 +1188,7 @@ function renderEditor() {
                                         renderChange();
                                         if (agentManager) {
                                             const newDiff = reconstructDiff(file.segments);
-                                            agentManager.updatePendingToolArgs({ diff: newDiff });
+                                            syncActiveApprovalRequest(agentManager.updatePendingToolArgs({ diff: newDiff }));
                                         }
                                     };
                                     
@@ -1142,7 +1198,7 @@ function renderEditor() {
                                         segment.new = $(this).text();
                                         if (agentManager) {
                                             const newDiff = reconstructDiff(file.segments);
-                                            agentManager.updatePendingToolArgs({ diff: newDiff });
+                                            syncActiveApprovalRequest(agentManager.updatePendingToolArgs({ diff: newDiff }));
                                         }
                                     });
                                     
@@ -1165,7 +1221,7 @@ function renderEditor() {
                                         renderChange();
                                         if (agentManager) {
                                             const newDiff = reconstructDiff(file.segments);
-                                            agentManager.updatePendingToolArgs({ diff: newDiff });
+                                            syncActiveApprovalRequest(agentManager.updatePendingToolArgs({ diff: newDiff }));
                                         }
                                     });
                                     

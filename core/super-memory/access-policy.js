@@ -2,8 +2,9 @@ import {
     pluginAuthStatus,
     subscribePluginAuthStatus,
 } from '../../utils/auth-state.js';
+import { requireModuleMinimumUserType } from '../../utils/module-access-policy.js';
 
-export const SUPER_MEMORY_MIN_USER_TYPE = 1;
+export const SUPER_MEMORY_MIN_USER_TYPE = requireModuleMinimumUserType('SuperMemory');
 
 export function getSuperMemoryAccessDecision(authState = pluginAuthStatus) {
     const authorized = authState?.authorized === true;
