@@ -211,7 +211,7 @@ const VAULT_STATUS_COPY = Object.freeze({
     idle: Object.freeze({ badge: '待同步', message: '授权码云同步已启用，尚未检查云端密钥。' }),
     checking: Object.freeze({ badge: '检查中', message: '正在安全检查本机与云端密钥，请稍候。' }),
     'migration-pending': Object.freeze({ badge: '正在迁移', message: '正在准备本机密钥并启用授权码云同步，请稍候。' }),
-    'recovery-pending': Object.freeze({ badge: '等待恢复', message: '云端密钥可用，正在等待安全恢复到此设备。' }),
+    'recovery-pending': Object.freeze({ badge: '恢复未完成', message: '云端密钥可用，但本机恢复未完成。请点击“立即同步”重试；现有密钥不会被覆盖。' }),
     'cleanup-pending': Object.freeze({ badge: '正在切换', message: '正在安全结束授权码云同步并切换存储模式。' }),
     'remote-empty': Object.freeze({ badge: '云端为空', message: '云端暂无密钥；立即同步可将本机密钥加密备份。' }),
     synced: Object.freeze({ badge: '已同步', message: '本机与云端密钥已同步。' }),
