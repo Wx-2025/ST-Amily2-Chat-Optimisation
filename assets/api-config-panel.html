@@ -265,6 +265,17 @@
                     <p id="amily2_vault_sync_status" class="am2-ac-vault-status" role="status" aria-live="polite">
                         选择此模式后，将检查当前授权与云端密钥。
                     </p>
+                    <div id="amily2_vault_session_recovery" class="am2-ac-setting am2-ac-setting-stack" hidden>
+                        <div class="am2-ac-setting-label">
+                            <strong>恢复本设备服务器会话</strong>
+                            <small>更新或重新打开浏览器后，服务器授权码不会自动保留。重新验证只恢复当前会话，不会重置本机密钥、覆盖云端或保存授权码。</small>
+                        </div>
+                        <div class="am2-ac-inline-actions">
+                            <input id="amily2_vault_reauth_code" type="password" autocomplete="off" maxlength="512"
+                                class="text_pole am2-ac-input" placeholder="重新输入原服务器授权码" />
+                            <button id="amily2_vault_reauth_submit" class="am2-ac-ghost" type="button">验证并恢复</button>
+                        </div>
+                    </div>
                     <small id="amily2_vault_sync_revision" class="am2-ac-vault-revision" hidden></small>
                     <div class="am2-ac-inline-actions">
                         <button id="amily2_vault_sync_now" class="am2-ac-ghost amily2-vbtn" type="button">

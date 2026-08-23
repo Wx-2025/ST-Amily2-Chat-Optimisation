@@ -16,7 +16,9 @@ import {
     getVaultSyncStatus,
     reconcileVaultSync,
     subscribeVaultSyncStatus,
+    VAULT_UNAVAILABLE_REASONS,
 } from '../utils/config/api-key-store/vault-sync-controller.js';
+import { restoreServerAuthorizationSession } from '../utils/auth.js';
 import { configManager } from '../utils/config/ConfigManager.js';
 import { getRequestHeaders, saveSettingsDebounced } from '/script.js';
 import { extension_settings } from '/scripts/extensions.js';
@@ -217,6 +219,11 @@ const VAULT_STATUS_COPY = Object.freeze({
     conflict: Object.freeze({ badge: '需要选择', message: '本机与云端指纹不同，已暂停同步。请明确选择要保留的一份。' }),
     error: Object.freeze({ badge: '同步失败', message: '云密钥服务暂不可用，本机密钥未改动。' }),
 });
+const VAULT_SESSION_CREDENTIAL_COPY = Object.freeze({
+    badge: '需重新验证',
+    message: '服务器授权仍在，但当前浏览器会话缺少云密钥解封凭据。请重新输入原服务器授权码；本机密钥与云端备份均不会改动。',
+});
+const VAULT_UNAVAILABLE_REASON_VALUES = new Set(Object.values(VAULT_UNAVAILABLE_REASONS));
 const API_KEY_STORAGE_EVENT_NAMESPACE = '.amily2.apiKeyStorage';
 
 function _normalizeVaultSyncStatus(snapshot) {
@@ -229,11 +236,16 @@ function _normalizeVaultSyncStatus(snapshot) {
         && /^sha256:[0-9a-f]{64}$/u.test(raw.fingerprint)
         ? raw.fingerprint
         : null;
+    const reason = typeof raw.reason === 'string'
+        && VAULT_UNAVAILABLE_REASON_VALUES.has(raw.reason)
+        ? raw.reason
+        : null;
     return Object.freeze({
         enabled: raw.enabled === true,
         status,
         revision: Number.isSafeInteger(revision) && revision >= 0 ? revision : 0,
         fingerprint,
+        reason,
         canUseRemote: raw.canUseRemote === true,
         canOverwriteRemote: raw.canOverwriteRemote === true,
         canDiscardEncrypted: raw.canDiscardEncrypted === true,
@@ -243,7 +255,11 @@ function _normalizeVaultSyncStatus(snapshot) {
 
 function _renderVaultSyncStatus($c, snapshot = getVaultSyncStatus()) {
     const state = _normalizeVaultSyncStatus(snapshot);
-    const copy = VAULT_STATUS_COPY[state.status];
+    const missingSessionCredential = state.status === 'unavailable'
+        && state.reason === VAULT_UNAVAILABLE_REASONS.SESSION_CREDENTIAL_MISSING;
+    const copy = missingSessionCredential
+        ? VAULT_SESSION_CREDENTIAL_COPY
+        : VAULT_STATUS_COPY[state.status];
     const busy = [
         'checking',
         'migration-pending',
@@ -252,6 +268,9 @@ function _renderVaultSyncStatus($c, snapshot = getVaultSyncStatus()) {
     const canClearDeviceKey = ['synced', 'restored'].includes(state.status)
         && state.canClearDeviceKey;
     const $syncButton = $c.find('#amily2_vault_sync_now');
+    const $recovery = $c.find('#amily2_vault_session_recovery');
+    const $recoveryInput = $c.find('#amily2_vault_reauth_code');
+    const $recoveryButton = $c.find('#amily2_vault_reauth_submit');
 
     $c.find('#amily2_keystore_mode').prop('disabled', busy);
     $c.find('#amily2_vault_sync_badge')
@@ -265,7 +284,7 @@ function _renderVaultSyncStatus($c, snapshot = getVaultSyncStatus()) {
             state.fingerprint ? `指纹：${state.fingerprint}` : '',
         ].filter(Boolean).join(' · '));
 
-    $syncButton.prop('disabled', busy || !state.enabled);
+    $syncButton.prop('disabled', busy || !state.enabled || state.status === 'unavailable');
     $syncButton.find('.vbtn-icon i').toggleClass('fa-spin', busy);
     $syncButton.find('.vbtn-label').text(busy ? '正在同步' : '立即同步');
     $c.find('#amily2_vault_use_remote')
@@ -278,6 +297,10 @@ function _renderVaultSyncStatus($c, snapshot = getVaultSyncStatus()) {
         .prop('hidden', !state.canDiscardEncrypted)
         .prop('disabled', busy || !state.canDiscardEncrypted);
     $c.find('#amily2_vault_clear_device_key').prop('disabled', busy || !canClearDeviceKey);
+    $recovery.prop('hidden', !missingSessionCredential);
+    $recoveryInput.prop('disabled', busy || !missingSessionCredential);
+    $recoveryButton.prop('disabled', busy || !missingSessionCredential);
+    if (!missingSessionCredential) $recoveryInput.val('');
 }
 
 async function _runVaultSyncAction($c, action, options = {}) {
@@ -290,6 +313,8 @@ async function _runVaultSyncAction($c, action, options = {}) {
         '#amily2_vault_use_local',
         '#amily2_vault_clear_device_key',
         '#amily2_vault_discard_encrypted',
+        '#amily2_vault_reauth_code',
+        '#amily2_vault_reauth_submit',
         '#amily2_keystore_mode',
     ].join(',')).prop('disabled', true);
     try {
@@ -538,6 +563,58 @@ function _bindStorageMode($c) {
                 successMessage: '云密钥同步完成。',
             },
         ));
+
+    const restoreVaultSessionCredential = async () => {
+        const state = _normalizeVaultSyncStatus(getVaultSyncStatus());
+        if (state.status !== 'unavailable'
+            || state.reason !== VAULT_UNAVAILABLE_REASONS.SESSION_CREDENTIAL_MISSING) {
+            _renderVaultSyncStatus($c, state);
+            return;
+        }
+
+        const $input = $c.find('#amily2_vault_reauth_code');
+        let credential = String($input.val() || '').trim();
+        $input.val('');
+        if (!credential || credential.length > 512) {
+            credential = '';
+            toastr.warning('请输入原服务器授权码。');
+            return;
+        }
+
+        $input.prop('disabled', true);
+        $c.find('#amily2_vault_reauth_submit').prop('disabled', true);
+        try {
+            const restored = await restoreServerAuthorizationSession(credential);
+            credential = '';
+            if (!restored) {
+                _renderVaultSyncStatus($c);
+                toastr.error('恢复失败，授权状态、本机密钥和云端备份均未改动。');
+                return;
+            }
+            await _runVaultSyncAction(
+                $c,
+                () => reconcileVaultSync({ strategy: 'auto', interactive: true }),
+                {
+                    successStatuses: ['synced', 'restored'],
+                    successMessage: '服务器会话与云密钥已恢复。',
+                },
+            );
+        } finally {
+            credential = '';
+            _renderVaultSyncStatus($c);
+        }
+    };
+
+    $c.find('#amily2_vault_reauth_submit')
+        .off(API_KEY_STORAGE_EVENT_NAMESPACE)
+        .on(`click${API_KEY_STORAGE_EVENT_NAMESPACE}`, restoreVaultSessionCredential);
+    $c.find('#amily2_vault_reauth_code')
+        .off(API_KEY_STORAGE_EVENT_NAMESPACE)
+        .on(`keydown${API_KEY_STORAGE_EVENT_NAMESPACE}`, event => {
+            if (event.key !== 'Enter') return;
+            event.preventDefault();
+            void restoreVaultSessionCredential();
+        });
 
     $c.find('#amily2_vault_use_remote')
         .off(API_KEY_STORAGE_EVENT_NAMESPACE)
