@@ -121,7 +121,12 @@ function normalizeDependencies(dependencies) {
         : async () => {
             throw new Error('错误审查的“重新填表”接口尚未就绪。');
         };
-    return Object.freeze({ listReviews, applyReview, retryReview });
+    const ignoreReview = typeof dependencies?.ignoreReview === 'function'
+        ? dependencies.ignoreReview
+        : async () => {
+            throw new Error('错误审查的“忽略该错误”接口尚未就绪。');
+        };
+    return Object.freeze({ listReviews, applyReview, retryReview, ignoreReview });
 }
 
 function resolveElements(panel) {
@@ -271,8 +276,18 @@ function createReviewCard(state, record) {
         'fas fa-redo',
         'menu_button secondary interactable',
     );
+    const ignoreButton = createActionButton(
+        doc,
+        '忽略该错误',
+        'fas fa-eye-slash',
+        'menu_button danger interactable',
+    );
     applyButton.disabled = busy || !reviewId || !editable;
     retryButton.disabled = busy || !reviewId || record?.retryable !== true;
+    ignoreButton.disabled = busy || !reviewId || record?.dismissible !== true;
+    ignoreButton.title = record?.dismissible === true
+        ? '不写入表格，并将对应楼层标记为人工跳过'
+        : '请先切换到这条错误明确对应的滑动分支';
 
     applyButton.addEventListener('click', () => {
         void runReviewAction(state, {
@@ -291,7 +306,15 @@ function createReviewCard(state, record) {
             statusElement: actionStatus,
         });
     });
-    actions.append(applyButton, retryButton);
+    ignoreButton.addEventListener('click', () => {
+        void runReviewAction(state, {
+            card,
+            reviewId,
+            action: 'ignore',
+            statusElement: actionStatus,
+        });
+    });
+    actions.append(applyButton, retryButton, ignoreButton);
     body.append(actionStatus, actions);
     details.append(body);
     card.append(details);
@@ -315,7 +338,9 @@ async function runReviewAction(
     setCardBusy(card, true);
     statusElement.textContent = action === 'apply'
         ? '正在严格校验并保存修复…'
-        : '正在重新请求填表…';
+        : (action === 'retry'
+            ? '正在重新请求填表…'
+            : '正在忽略错误并标记目标楼层为人工跳过…');
 
     try {
         if (action === 'apply') {
@@ -323,7 +348,7 @@ async function runReviewAction(
             await state.dependencies.applyReview(reviewId, editedText);
             state.drafts.delete(reviewId);
             notify('success', '修复已通过校验并保存。');
-        } else {
+        } else if (action === 'retry') {
             const outcome = await state.dependencies.retryReview(reviewId);
             if (outcome?.resolved === false) {
                 notify('warning', '重新填表仍需处理，错误记录已更新。');
@@ -331,6 +356,10 @@ async function runReviewAction(
                 state.drafts.delete(reviewId);
                 notify('success', '重新填表已完成。');
             }
+        } else {
+            await state.dependencies.ignoreReview(reviewId);
+            state.drafts.delete(reviewId);
+            notify('success', '已忽略该错误；目标楼层已标记为人工跳过，表格内容未改动。');
         }
         state.actionMessages.delete(reviewId);
     } catch (error) {
