@@ -18,6 +18,77 @@ import {
     debounce
 } from '../core/rag-processor.js';
 
+import { t, applyTranslations, subscribeLocaleChange } from '../utils/i18n/index.js';
+
+// Keep locale refresh limited to display text. Never replay initialization or change handlers.
+const vectorTextBindings = new Map();
+
+function clearVectorBinding(element, property = 'textContent') {
+    const attribute = property === 'textContent' ? 'data-amily-i18n' : `data-amily-i18n-${property}`;
+    element.removeAttribute(attribute);
+    vectorTextBindings.get(element)?.delete(property);
+}
+
+function setVectorText(element, key, params = {}, property = 'textContent') {
+    clearVectorBinding(element, property);
+    const value = t(key, params);
+    element[property] = value;
+    if (!vectorTextBindings.has(element)) vectorTextBindings.set(element, new Map());
+    vectorTextBindings.get(element).set(property, { key, params, value });
+}
+
+function setVectorValueOrFallback(element, value, fallbackKey) {
+    if (value) {
+        clearVectorBinding(element);
+        element.textContent = value;
+    } else {
+        setVectorText(element, fallbackKey);
+    }
+}
+
+function vectorHtml(key, params = {}) {
+    return `<span data-vector-i18n="${escapeAttribute(key)}" data-vector-params="${escapeAttribute(JSON.stringify(params))}">${escapeTextareaContent(t(key, params))}</span>`;
+}
+
+function vectorTitle(key, params = {}) {
+    return `title="${escapeAttribute(t(key, params))}" data-vector-title="${escapeAttribute(key)}" data-vector-params="${escapeAttribute(JSON.stringify(params))}"`;
+}
+
+function vectorOption(key, value) {
+    return `<option value="${escapeAttribute(value)}" data-amily-i18n="${escapeAttribute(key)}">${escapeTextareaContent(t(key))}</option>`;
+}
+
+function vectorToast(kind, message, title, options = {}) {
+    return toastr[kind](message, title, { ...options, escapeHtml: true });
+}
+
+function refreshVectorTranslations() {
+    for (const [element, bindings] of vectorTextBindings) {
+        if (!element.isConnected) {
+            vectorTextBindings.delete(element);
+            continue;
+        }
+        for (const [property, binding] of bindings) {
+            // Business callbacks may already have replaced a translated status with raw data.
+            if (element[property] !== binding.value) {
+                bindings.delete(property);
+                continue;
+            }
+            element[property] = t(binding.key, binding.params);
+            binding.value = element[property];
+        }
+    }
+    for (const element of document.querySelectorAll('[data-vector-i18n], [data-vector-title]')) {
+        const params = JSON.parse(element.getAttribute('data-vector-params') || '{}');
+        const textKey = element.getAttribute('data-vector-i18n');
+        const titleKey = element.getAttribute('data-vector-title');
+        if (textKey) element.textContent = t(textKey, params);
+        if (titleKey) element.title = t(titleKey, params);
+    }
+}
+
+subscribeLocaleChange(refreshVectorTranslations);
+
 'use strict';
 
 function escapeTextareaContent(text) {
@@ -40,9 +111,9 @@ function _populateHlyRuleProfileSelect(select, slot, detail) {
     const profiles = detail?.profiles ?? ruleProfileManager.listProfiles();
     const assigned = detail?.assignments?.[slot] ?? ruleProfileManager.getAssignment(slot) ?? '';
     select.innerHTML = [
-        '<option value="">— 未分配 —</option>',
+        vectorOption('vectorUi.unassigned', ''),
         ...profiles.map(p =>
-            `<option value="${p.id}" ${p.id === assigned ? 'selected' : ''}>${escapeTextareaContent(p.name || p.id)}</option>`
+            `<option value="${escapeAttribute(p.id)}" ${p.id === assigned ? 'selected' : ''}>${escapeTextareaContent(p.name || p.id)}</option>`
         ),
     ].join('');
 }
@@ -152,6 +223,7 @@ export function bindHanlinyuanEvents() {
         return;
     }
 
+    applyTranslations(document.getElementById('hly-modal-container')?.parentElement);
     setupGlobalEventHandlers();
     syncSlot('ragEmbed');
     syncSlot('ragRerank');
@@ -201,16 +273,17 @@ export function bindHanlinyuanEvents() {
     fileInput.addEventListener('change', (event) => {
         selectedFile = event.target.files[0];
         if (selectedFile) {
+            clearVectorBinding(fileNameSpan);
             fileNameSpan.textContent = selectedFile.name;
             fileNameSpan.title = selectedFile.name;
         } else {
-            fileNameSpan.textContent = '未选择文件';
+            setVectorText(fileNameSpan, 'vectorUi.noFile');
         }
     });
 
     startBtn.addEventListener('click', async () => {
         if (!selectedFile) {
-            toastr.warning('请先选择一个 .txt 文件');
+            vectorToast('warning', t('vectorUi.selectTextFile'));
             return;
         }
 
@@ -220,15 +293,15 @@ export function bindHanlinyuanEvents() {
 
         if (savedState) {
             const progressPercentage = ((savedState.processedChunks / savedState.totalChunks) * 100).toFixed(1);
-            const userChoice = confirm(`启禀大人，发现此书上次录入已完成 ${progressPercentage}%。是否从上次中断之处继续？`);
+            const userChoice = confirm(t('vectorUi.resumePrompt', { p0: progressPercentage }));
 
             if (userChoice) {
                 resumeFromIndex = savedState.processedChunks;
-                toastr.info(`遵命，将从第 ${resumeFromIndex + 1} 块继续录入。`, '圣旨已达');
+                vectorToast('info', t('vectorUi.resumeStarted', { p0: resumeFromIndex + 1 }), t('vectorUi.noticeDone'));
                 log(`[断点续传] 用户选择继续任务 ${jobId}，从第 ${resumeFromIndex} 块开始。`, 'info');
             } else {
                 IngestionManager.clearJob(jobId);
-                toastr.info('遵命，将从头开始录入此书。', '圣旨已达');
+                vectorToast('info', t('vectorUi.restartStarted'), t('vectorUi.noticeDone'));
                 log(`[断点续传] 用户选择放弃旧任务 ${jobId}，重新开始。`, 'warn');
             }
         }
@@ -238,14 +311,14 @@ export function bindHanlinyuanEvents() {
 
         controlsContainer.style.display = 'none';
         progressContainer.style.display = 'block';
-        statusText.textContent = '正在读取文件...';
+        setVectorText(statusText, 'vectorUi.readingFile');
         progressBar.value = 0;
 
         try {
             const text = await readTextFile(selectedFile, encodingSelect?.value || 'UTF-8');
 
             const progressCallback = (progress) => {
-                statusText.textContent = `处理中: ${progress.message} (${progress.processed}/${progress.total})`;
+                setVectorText(statusText, 'vectorUi.ingestionProgress', { p0: progress.message, p1: progress.processed, p2: progress.total });
                 progressBar.value = (progress.processed / progress.total) * 100;
             };
 
@@ -267,8 +340,8 @@ export function bindHanlinyuanEvents() {
             );
 
             if (result.success) {
-                toastr.success(`成功录入 ${result.count} 个知识块`);
-                statusText.textContent = `任务完成！成功录入 ${result.count} 个知识块。`;
+                vectorToast('success', t('vectorUi.chunksImported', { p0: result.count }));
+                setVectorText(statusText, 'vectorUi.ingestionComplete', { p0: result.count });
                 progressBar.value = 100;
                 updatePanelStatus();
             } else {
@@ -277,11 +350,11 @@ export function bindHanlinyuanEvents() {
 
         } catch (error) {
             if (error.name === 'AbortError') {
-                toastr.info('任务已由用户中止。进度已保存，可随时继续。');
-                statusText.textContent = '任务已中止。';
+                vectorToast('info', t('vectorUi.abortedSaved'));
+                setVectorText(statusText, 'vectorUi.aborted');
             } else {
-                toastr.error(`录入失败: ${error.message}。进度已保存，可稍后重试。`);
-                statusText.textContent = `错误: ${error.message}`;
+                vectorToast('error', t('vectorUi.ingestionRetry', { p0: error.message }));
+                setVectorText(statusText, 'vectorUi.errorDetail', { p0: error.message });
             }
         } finally {
             setTimeout(() => {
@@ -289,7 +362,7 @@ export function bindHanlinyuanEvents() {
                 progressContainer.style.display = 'none';
                 fileInput.value = '';
                 selectedFile = null;
-                fileNameSpan.textContent = '未选择文件';
+                setVectorText(fileNameSpan, 'vectorUi.noFile');
             }, 3000);
         }
     });
@@ -312,11 +385,11 @@ function bindSessionLockEvent() {
         if (isNowLocked) {
             const lockedInfo = HanlinyuanCore.getLockedSessionInfo();
             if (lockedInfo) {
-                toastr.success(`会话已锁定到: ${lockedInfo.id}`, '圣旨已下');
+                vectorToast('success', t('vectorUi.sessionLockedTo', { p0: lockedInfo.id }), t('vectorUi.noticeIssued'));
                 log(`会话已锁定到宝库: ${lockedInfo.id}`, 'success');
             }
         } else {
-            toastr.info('会话已解锁，将跟随当前角色。', '诏曰');
+            vectorToast('info', t('vectorUi.sessionUnlocked'), t('vectorUi.noticeAnnounce'));
             log('会话已解锁。', 'info');
         }
         // 锁定/解锁后，立即刷新状态面板以反映正确的ID和数量
@@ -337,13 +410,13 @@ function updateSessionLockUI(isLocked) {
     if (isLocked) {
         lockButton.classList.add('active');
         icon.className = 'fas fa-lock';
-        text.textContent = '解锁会话';
-        lockButton.title = '点击以解锁，让翰林院跟随当前角色';
+        setVectorText(text, 'vectorUi.unlockSession');
+        setVectorText(lockButton, 'vectorUi.unlockTip', {}, 'title');
     } else {
         lockButton.classList.remove('active');
         icon.className = 'fas fa-lock-open';
-        text.textContent = '锁定会话';
-        lockButton.title = '点击以锁定，让翰林院固定操作当前角色的宝库';
+        setVectorText(text, 'vectorUi.lockSession');
+        setVectorText(lockButton, 'vectorUi.lockTip', {}, 'title');
     }
 }
 
@@ -365,8 +438,10 @@ function bindTutorialEvents() {
     if (tutorialButton) {
         tutorialButton.addEventListener('click', () => {
 
-            showContentModal("智能检索 · 小白教程", `${extensionBasePath}/HanLin.md`, {
-                advancedTitle: "智能检索 · 进阶操作",
+            showContentModal(t('vectorUi.tutorialTitle'), `${extensionBasePath}/HanLin.md`, {
+                titleKey: 'vectorUi.tutorialTitle',
+                advancedTitle: t('vectorUi.advancedTutorialTitle'),
+                advancedTitleKey: 'vectorUi.advancedTutorialTitle',
                 advancedUrl: `${extensionBasePath}/HanLin-Advanced.md`,
             });
         });
@@ -409,7 +484,7 @@ function bindInternalUIEvents() {
         condensationRuleSelect.addEventListener('change', () => {
             ruleProfileManager.setAssignment('condensation', condensationRuleSelect.value || null);
             const name = condensationRuleSelect.selectedOptions[0]?.textContent || '';
-            toastr.info(condensationRuleSelect.value ? `浓缩提取规则已切换为「${name}」` : '浓缩提取规则已取消分配');
+            vectorToast('info', condensationRuleSelect.value ? t('vectorUi.condensationRuleChanged', { p0: name }) : t('vectorUi.condensationRuleCleared'));
         });
     }
 
@@ -420,7 +495,7 @@ function bindInternalUIEvents() {
         queryPrepRuleSelect.addEventListener('change', () => {
             ruleProfileManager.setAssignment('queryPreprocessing', queryPrepRuleSelect.value || null);
             const name = queryPrepRuleSelect.selectedOptions[0]?.textContent || '';
-            toastr.info(queryPrepRuleSelect.value ? `查询预处理规则已切换为「${name}」` : '查询预处理规则已取消分配');
+            vectorToast('info', queryPrepRuleSelect.value ? t('vectorUi.queryRuleChanged', { p0: name }) : t('vectorUi.queryRuleCleared'));
         });
     }
 
@@ -460,7 +535,7 @@ function bindInternalUIEvents() {
             // 更新按钮上的计数
             const selectedCount = optionsContainer.querySelectorAll('.hly-hist-entry-checkbox:checked').length;
             const totalCount = allEntryCheckboxes.length;
-            multiSelectBtn.querySelector('span').textContent = `已选择 ${selectedCount} / ${totalCount} 个条目`;
+            setVectorText(multiSelectBtn.querySelector('span'), 'vectorUi.selectedEntries', { p0: selectedCount, p1: totalCount });
         });
 
         // 点击外部关闭下拉框
@@ -529,7 +604,7 @@ function initializeUnifiedInjectionEditor() {
 
         // 从设置加载值，如果未定义则提供默认值
         templateEditor.value = sourceSettings.template || '';
-        templateNotes.textContent = `以 ${placeholderMap[source] || '{{text}}'} 为占位符。`;
+        setVectorText(templateNotes, 'vectorUi.placeholderHelp', { p0: placeholderMap[source] || '{{text}}' });
 
         const position = sourceSettings.position !== undefined ? String(sourceSettings.position) : '2';
         positionRadios.forEach(radio => radio.checked = radio.value === position);
@@ -596,20 +671,20 @@ function handleApiModeChange() {
         case 'google_direct':
             // Google模式下，URL是固定的，所以隐藏URL输入框
             urlDocket.style.display = 'none';
-            keyDocket.querySelector('label').textContent = 'Google API Key:';
-            keyDocket.querySelector('input').placeholder = '请输入您的Google API Key';
+            setVectorText(keyDocket.querySelector('label'), 'vectorUi.googleKeyLabel');
+            setVectorText(keyDocket.querySelector('input'), 'vectorUi.googleKeyPlaceholder', {}, 'placeholder');
             break;
         case 'local_proxy':
-            urlDocket.querySelector('label').textContent = '本地代理地址:';
-            urlDocket.querySelector('input').placeholder = '例如 http://127.0.0.1:8000/v1';
+            setVectorText(urlDocket.querySelector('label'), 'vectorUi.proxyUrlLabel');
+            setVectorText(urlDocket.querySelector('input'), 'vectorUi.proxyUrlPlaceholder', {}, 'placeholder');
             // 本地代理通常不需要key
             keyDocket.style.display = 'none';
             break;
         case 'custom':
         default:
-            urlDocket.querySelector('label').textContent = '自定义路径:';
-            urlDocket.querySelector('input').placeholder = '输入兼容OpenAI的embeddings端点';
-            keyDocket.querySelector('label').textContent = '通行令牌 (API Key):';
+            setVectorText(urlDocket.querySelector('label'), 'vectorUi.customUrlLabel');
+            setVectorText(urlDocket.querySelector('input'), 'vectorUi.customUrlPlaceholder', {}, 'placeholder');
+            setVectorText(keyDocket.querySelector('label'), 'vectorUi.tokenLabel');
             break;
     }
 }
@@ -777,16 +852,16 @@ function saveSettingsFromUI(isAutoSave = true) {
 
     if (!isAutoSave) {
         log('【手动存档】所有设定已存档封印。', 'success');
-        toastr.success('翰林院设定已存档封印。', '圣旨已达');
+        vectorToast('success', t('vectorUi.settingsSaved'), t('vectorUi.noticeDone'));
     }
     // 自动保存的日志已在 updateAndSaveSetting 中处理，此处不再重复
 }
 
 function resetSettingsToUI() {
-    if (confirm('您确定要将所有设定恢复为出厂默认值吗？')) {
+    if (confirm(t('vectorUi.resetPrompt'))) {
         HanlinyuanCore.resetSettings();
         loadSettingsToUI();
-        toastr.info('翰林院设定已重置为初始状态。', '诏曰');
+        vectorToast('info', t('vectorUi.settingsReset'), t('vectorUi.noticeAnnounce'));
     }
 }
 
@@ -799,15 +874,18 @@ async function updatePanelStatus() {
     if (isLocked) {
         const lockedInfo = HanlinyuanCore.getLockedSessionInfo();
         if (lockedInfo) {
-            charNameEl.textContent = '会话已锁定';
+            setVectorText(charNameEl, 'vectorUi.sessionLocked');
+            clearVectorBinding(chatIdEl);
             chatIdEl.textContent = lockedInfo.id;
-            chatIdEl.title = `当前所有操作都将指向这个锁定的宝库：${lockedInfo.id}`;
+            setVectorText(chatIdEl, 'vectorUi.lockedTargetTip', { p0: lockedInfo.id }, 'title');
             charNameEl.classList.add('hly-locked-status');
             chatIdEl.classList.add('hly-locked-status');
         }
     } else {
+        clearVectorBinding(charNameEl);
         charNameEl.textContent = ContextUtils.getCharacterName();
-        chatIdEl.textContent = ContextUtils.getChatId() || '无';
+        setVectorValueOrFallback(chatIdEl, ContextUtils.getChatId(), 'vectorUi.none');
+        clearVectorBinding(chatIdEl, 'title');
         chatIdEl.title = '';
         charNameEl.classList.remove('hly-locked-status');
         chatIdEl.classList.remove('hly-locked-status');
@@ -821,7 +899,7 @@ async function updatePanelStatus() {
     } catch (error) {
         console.error('[翰林院-枢纽] 更新忆识数量失败:', error);
         countEl.textContent = 'N/A';
-        countEl.title = `无法获取总数: ${error.message}`;
+        setVectorText(countEl, 'vectorUi.countFailed', { p0: error.message }, 'title');
     }
 
     // 显示上次凝识记录
@@ -834,9 +912,9 @@ async function updatePanelStatus() {
         if (settings.condensationHistory && settings.condensationHistory[collectionId]) {
             const record = settings.condensationHistory[collectionId];
             // V5.4 - record.end is now always a number, so the text is simpler.
-            recordEl.innerHTML = `<p class="hly-record-hint"><i>上次已从第 ${record.start} 楼凝识至第 ${record.end} 楼。</i></p>`;
+            recordEl.innerHTML = `<p class="hly-record-hint"><i>${vectorHtml('vectorUi.lastCondensation', { start: record.start, end: record.end })}</i></p>`;
         } else {
-            recordEl.innerHTML = `<p class="hly-record-hint">可在此预览凝识结果。</p>`;
+            recordEl.innerHTML = `<p class="hly-record-hint">${vectorHtml('vectorUi.previewHint')}</p>`;
         }
     }
 
@@ -847,16 +925,16 @@ async function updatePanelStatus() {
 async function moveAllKnowledgeBases(direction) {
     const isMovingToLocal = direction === 'globalToLocal';
     const sourceScope = isMovingToLocal ? 'global' : 'local';
-    const targetScope = isMovingToLocal ? '局部' : '全局';
+    const targetScope = isMovingToLocal ? t('vectorUi.localScope') : t('vectorUi.globalScope');
     const sourceKbs = isMovingToLocal ? HanlinyuanCore.getGlobalKnowledgeBases() : HanlinyuanCore.getLocalKnowledgeBases();
     const kbIds = Object.keys(sourceKbs);
 
     if (kbIds.length === 0) {
-        toastr.info(`源区域（${isMovingToLocal ? '全局' : '局部'}）没有任何知识库可供移动。`, '圣谕');
+        vectorToast('info', t('vectorUi.nothingToMove', { p0: isMovingToLocal ? t('vectorUi.globalScope') : t('vectorUi.localScope') }), t('vectorUi.noticeInfo'));
         return;
     }
 
-    if (!confirm(`您确定要将 ${kbIds.length} 个知识库从【${isMovingToLocal ? '全局' : '局部'}】移动到【${targetScope}】吗？`)) {
+    if (!confirm(t('vectorUi.moveAllPrompt', { p0: kbIds.length, p1: isMovingToLocal ? t('vectorUi.globalScope') : t('vectorUi.localScope'), p2: targetScope }))) {
         return;
     }
 
@@ -866,10 +944,10 @@ async function moveAllKnowledgeBases(direction) {
 
     try {
         await Promise.all(movePromises);
-        toastr.success(`所有 ${kbIds.length} 个知识库均已成功移动。`, '大功告成');
+        vectorToast('success', t('vectorUi.allMoved', { p0: kbIds.length }), t('vectorUi.success'));
         log(`批量移动完成。`, 'success');
     } catch (error) {
-        toastr.error(`批量移动过程中发生错误: ${error.message}`, '警报');
+        vectorToast('error', t('vectorUi.bulkMoveFailed', { p0: error.message }), t('vectorUi.alert'));
         log(`批量移动失败: ${error.message}`, 'error');
     } finally {
         await updatePanelStatus();
@@ -880,15 +958,15 @@ async function deleteAllLocalKnowledgeBases() {
     const kbIds = Object.keys(localKbs);
 
     if (kbIds.length === 0) {
-        toastr.info('当前角色没有任何局部知识库可供删除。', '圣谕');
+        vectorToast('info', t('vectorUi.nothingToDelete'), t('vectorUi.noticeInfo'));
         return;
     }
 
-    if (!confirm(`您确定要永久删除【当前角色】的全部 ${kbIds.length} 个局部知识库吗？此操作无法恢复！`)) {
+    if (!confirm(t('vectorUi.deleteAllPrompt', { p0: kbIds.length }))) {
         return;
     }
 
-    toastr.info(`正在删除 ${kbIds.length} 个局部知识库...`, '圣旨');
+    vectorToast('info', t('vectorUi.deletingLocal', { p0: kbIds.length }), t('vectorUi.notice'));
     log(`开始批量删除 ${kbIds.length} 个局部知识库...`, 'warn');
 
     let successCount = 0;
@@ -906,9 +984,9 @@ async function deleteAllLocalKnowledgeBases() {
     }
 
     if (errorCount > 0) {
-        toastr.error(`操作完成，但有 ${errorCount} 个知识库删除失败。`, '警报');
+        vectorToast('error', t('vectorUi.partialDelete', { p0: errorCount }), t('vectorUi.alert'));
     } else {
-        toastr.success(`所有 ${successCount} 个局部知识库均已成功删除。`, '大功告成');
+        vectorToast('success', t('vectorUi.allDeleted', { p0: successCount }), t('vectorUi.success'));
     }
 
     log(`局部知识库批量删除完成。成功: ${successCount}, 失败: ${errorCount}`, 'info');
@@ -923,7 +1001,7 @@ async function renderKnowledgeBases() {
     if (!localContainer || !globalContainer || !localCharNameEl) return;
 
     // 更新局部知识库标题中的角色名
-    localCharNameEl.textContent = ContextUtils.getCharacterName() || '当前角色';
+    setVectorValueOrFallback(localCharNameEl, ContextUtils.getCharacterName(), 'vectorUi.currentCharacter');
 
     try {
         const localKbs = HanlinyuanCore.getLocalKnowledgeBases();
@@ -936,8 +1014,8 @@ async function renderKnowledgeBases() {
 
     } catch (error) {
         console.error('[翰林院-枢纽] 渲染知识库列表失败:', error);
-        localContainer.innerHTML = `<p class="hly-notes log-error"><i>加载失败: ${escapeTextareaContent(error.message)}</i></p>`;
-        globalContainer.innerHTML = `<p class="hly-notes log-error"><i>加载失败: ${escapeTextareaContent(error.message)}</i></p>`;
+        localContainer.innerHTML = `<p class="hly-notes log-error"><i>${vectorHtml('vectorUi.loadError', { error: error.message })}</i></p>`;
+        globalContainer.innerHTML = `<p class="hly-notes log-error"><i>${vectorHtml('vectorUi.loadError', { error: error.message })}</i></p>`;
     }
 }
 
@@ -998,7 +1076,7 @@ async function _renderKbList(kbs, container, scope, placeholderId) {
         const groupHtml = `
             <details class="hly-kb-group-details">
                 <summary class="hly-kb-group-summary">
-                    <span class="hly-kb-group-title"><i class="fas fa-folder"></i> 自动凝识记录 (${autoCondenseGroup.length}个片段, 共${totalVectors}条)</span>
+                    <span class="hly-kb-group-title"><i class="fas fa-folder"></i> ${vectorHtml('vectorUi.autoGroup', { chunks: autoCondenseGroup.length, count: totalVectors })}</span>
                 </summary>
                 <div class="hly-kb-group-content">
                     <!-- 子项目将在这里渲染 -->
@@ -1031,27 +1109,27 @@ function _createKbItemElement(id, kb, scope, vectorCount) {
     item.dataset.kbScope = scope;
 
     const moveButtonHtml = scope === 'local'
-        ? `<button class="hly-kb-move-btn" title="上移到全局"><i class="fas fa-arrow-up"></i></button>`
-        : `<button class="hly-kb-move-btn" title="下移到局部"><i class="fas fa-arrow-down"></i></button>`;
+        ? `<button class="hly-kb-move-btn" ${vectorTitle("vectorUi.moveUpTip")}><i class="fas fa-arrow-up"></i></button>`
+        : `<button class="hly-kb-move-btn" ${vectorTitle("vectorUi.moveDownTip")}><i class="fas fa-arrow-down"></i></button>`;
 
     // 聊天级库（独立聊天记忆产物）标记：仅所属聊天可检索
     const chatBadgeHtml = kb.chatId
-        ? `<span title="聊天专属记忆，仅在聊天 ${escapeAttribute(kb.chatId)} 中可被检索" style="font-size: 0.8em; padding: 0 5px; border-radius: 3px; background: rgba(88,166,255,0.25); margin-left: 4px; white-space: nowrap;"><i class="fas fa-comment"></i> 聊天级</span>`
+        ? `<span ${vectorTitle('vectorUi.chatOnlyTip', { chatId: kb.chatId })} style="font-size: 0.8em; padding: 0 5px; border-radius: 3px; background: rgba(88,166,255,0.25); margin-left: 4px; white-space: nowrap;"><i class="fas fa-comment"></i> ${vectorHtml('vectorUi.chatOnly')}</span>`
         : '';
 
     item.innerHTML = `
         <div class="hly-kb-name-container">
             <input type="checkbox" class="hly-kb-item-checkbox" data-kb-id="${escapeAttribute(id)}">
-            <span class="hly-kb-name" title="ID: ${escapeAttribute(id)}">${escapeTextareaContent(kb.name || '')} (${Number(vectorCount) || 0}条)</span>${chatBadgeHtml}
+            <span class="hly-kb-name" title="ID: ${escapeAttribute(id)}">${escapeTextareaContent(kb.name || '')} ${vectorHtml('vectorUi.recordCount', { count: Number(vectorCount) || 0 })}</span>${chatBadgeHtml}
         </div>
         <div class="hly-kb-actions">
             ${moveButtonHtml}
-            <button class="hly-kb-rename-btn" title="重命名"><i class="fas fa-pen-to-square"></i></button>
-            <label class="hly-toggle-switch" title="启用/禁用此知识库">
+            <button class="hly-kb-rename-btn" ${vectorTitle("vectorUi.renameTip")}><i class="fas fa-pen-to-square"></i></button>
+            <label class="hly-toggle-switch" ${vectorTitle("vectorUi.toggleTip")}>
                 <input type="checkbox" class="hly-kb-toggle" ${kb.enabled ? 'checked' : ''}>
                 <span class="hly-toggle-slider"></span>
             </label>
-            <button class="hly-kb-delete-btn" title="删除此知识库">&times;</button>
+            <button class="hly-kb-delete-btn" ${vectorTitle("vectorUi.deleteKnowledgeTip")}>&times;</button>
         </div>
     `;
     return item;
@@ -1069,7 +1147,7 @@ async function handleKbAction(event) {
     // 重命名操作
     if (target.closest('.hly-kb-rename-btn')) {
         const currentName = listItem.querySelector('.hly-kb-name').textContent.split(' (')[0];
-        const newName = prompt(`请输入知识库的新名称:`, currentName);
+        const newName = prompt(t('vectorUi.renamePrompt'), currentName);
 
         if (newName && newName.trim() && newName.trim() !== currentName) {
             try {
@@ -1078,7 +1156,7 @@ async function handleKbAction(event) {
                 await updatePanelStatus();
             } catch (error) {
                 log(`重命名知识库 ${currentName} 失败: ${error.message}`, 'error');
-                toastr.error(`重命名失败: ${error.message}`);
+                vectorToast('error', t('vectorUi.renameFailed', { p0: error.message }));
             }
         }
         return; // 处理完重命名后退出，避免触发其他逻辑
@@ -1086,29 +1164,29 @@ async function handleKbAction(event) {
 
     // 删除操作
     if (target.classList.contains('hly-kb-delete-btn')) {
-        if (confirm(`您确定要永久删除知识库【${kbName}】吗？此操作无法恢复！`)) {
+        if (confirm(t('vectorUi.deletePrompt', { p0: kbName }))) {
             try {
                 await HanlinyuanCore.removeKnowledgeBase(kbId, scope);
                 log(`知识库 ${kbName} (ID: ${kbId}) 已被删除`, 'success');
-                toastr.success(`知识库【${kbName}】已删除。`);
+                vectorToast('success', t('vectorUi.deleted', { p0: kbName }));
                 await updatePanelStatus();
             } catch (error) {
                 log(`删除知识库 ${kbName} 失败: ${error.message}`, 'error');
-                toastr.error(`删除失败: ${error.message}`);
+                vectorToast('error', t('vectorUi.deleteFailed', { p0: error.message }));
             }
         }
     }
 
     // 移动操作
     if (target.closest('.hly-kb-move-btn')) {
-        const direction = scope === 'local' ? '全局' : '局部';
-        if (confirm(`您确定要将知识库【${kbName}】移动到【${direction}】吗？`)) {
+        const direction = scope === 'local' ? t('vectorUi.globalScope') : t('vectorUi.localScope');
+        if (confirm(t('vectorUi.movePrompt', { p0: kbName, p1: direction }))) {
             try {
                 await HanlinyuanCore.moveKnowledgeBase(kbId, scope);
                 await updatePanelStatus();
             } catch (error) {
                 log(`移动知识库 ${kbName} 失败: ${error.message}`, 'error');
-                toastr.error(`移动失败: ${error.message}`);
+                vectorToast('error', t('vectorUi.moveFailed', { p0: error.message }));
             }
         }
     }
@@ -1122,7 +1200,7 @@ async function handleKbAction(event) {
             // await updatePanelStatus(); 
         } catch (error) {
             log(`切换知识库 ${kbName} 状态失败: ${error.message}`, 'error');
-            toastr.error(`切换状态失败: ${error.message}`);
+            vectorToast('error', t('vectorUi.toggleFailed', { p0: error.message }));
             // 切换失败时，恢复UI状态
             target.checked = !target.checked;
         }
@@ -1182,7 +1260,7 @@ async function handleBulkAction(event, scope) {
     const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.dataset.kbId);
 
     if (selectedIds.length === 0) {
-        toastr.warning('请至少选择一个知识库进行操作。', '圣谕');
+        vectorToast('warning', t('vectorUi.selectKnowledgeFirst'), t('vectorUi.noticeInfo'));
         return;
     }
 
@@ -1192,20 +1270,20 @@ async function handleBulkAction(event, scope) {
 
     switch (action) {
         case 'delete':
-            confirmMessage = `您确定要永久删除选中的 ${selectedIds.length} 个知识库吗？此操作无法恢复！`;
+            confirmMessage = t('vectorUi.bulkDeletePrompt', { p0: selectedIds.length });
             actionFunction = (id) => HanlinyuanCore.removeKnowledgeBase(id, scope);
-            successMessage = `成功删除了 ${selectedIds.length} 个知识库。`;
+            successMessage = t('vectorUi.bulkDeleted', { p0: selectedIds.length });
             break;
         case 'move':
-            const direction = scope === 'local' ? '全局' : '局部';
-            confirmMessage = `您确定要将选中的 ${selectedIds.length} 个知识库移动到【${direction}】吗？`;
+            const direction = scope === 'local' ? t('vectorUi.globalScope') : t('vectorUi.localScope');
+            confirmMessage = t('vectorUi.bulkMovePrompt', { p0: selectedIds.length, p1: direction });
             actionFunction = (id) => HanlinyuanCore.moveKnowledgeBase(id, scope);
-            successMessage = `成功移动了 ${selectedIds.length} 个知识库。`;
+            successMessage = t('vectorUi.bulkMoved', { p0: selectedIds.length });
             break;
         case 'toggle':
-            confirmMessage = `您确定要切换选中的 ${selectedIds.length} 个知识库的启用状态吗？`;
+            confirmMessage = t('vectorUi.bulkTogglePrompt', { p0: selectedIds.length });
             actionFunction = (id) => HanlinyuanCore.toggleKnowledgeBase(id, scope);
-            successMessage = `成功切换了 ${selectedIds.length} 个知识库的状态。`;
+            successMessage = t('vectorUi.bulkToggled', { p0: selectedIds.length });
             break;
         default:
             return;
@@ -1215,16 +1293,16 @@ async function handleBulkAction(event, scope) {
         return;
     }
 
-    toastr.info(`正在对 ${selectedIds.length} 个知识库执行批量操作...`, '圣旨');
+    vectorToast('info', t('vectorUi.bulkWorking', { p0: selectedIds.length }), t('vectorUi.notice'));
     log(`开始对 ${selectedIds.length} 个知识库 (范围: ${scope}) 执行批量 ${action} 操作...`, 'info');
 
     try {
         const promises = selectedIds.map(id => actionFunction(id));
         await Promise.all(promises);
-        toastr.success(successMessage, '大功告成');
+        vectorToast('success', successMessage, t('vectorUi.success'));
         log(`批量 ${action} 操作成功。`, 'success');
     } catch (error) {
-        toastr.error(`批量操作失败: ${error.message}`, '警报');
+        vectorToast('error', t('vectorUi.bulkFailed', { p0: error.message }), t('vectorUi.alert'));
         log(`批量 ${action} 操作失败: ${error.message}`, 'error');
     } finally {
         await updatePanelStatus(); // 刷新整个面板以显示最新状态
@@ -1232,19 +1310,19 @@ async function handleBulkAction(event, scope) {
 }
 
 async function testApi() {
-    toastr.info('正在测试神力连接...', '圣旨');
+    vectorToast('info', t('vectorUi.testing'), t('vectorUi.notice'));
     try {
         await HanlinyuanCore.testApiConnection();
-        toastr.success('神力连接通畅！', '圣意');
+        vectorToast('success', t('vectorUi.connectionSuccess'), t('vectorUi.noticeSuccess'));
     } catch (error) {
-        toastr.error(`神力连接失败: ${error.message}`, '警报');
+        vectorToast('error', t('vectorUi.connectionFailed', { p0: error.message }), t('vectorUi.alert'));
     }
 }
 
 async function fetchHLYEmbeddingModels() {
     const modelSelect = document.getElementById('hly-embedding-model');
     const currentModel = modelSelect.value; // 保存当前选中的模型
-    modelSelect.innerHTML = '<option>正在获取...</option>';
+    modelSelect.innerHTML = vectorOption('vectorUi.fetchingModels', '正在获取...');
     modelSelect.disabled = true;
 
     try {
@@ -1253,8 +1331,8 @@ async function fetchHLYEmbeddingModels() {
         modelSelect.innerHTML = ''; // 清空
 
         if (models.length === 0) {
-            modelSelect.innerHTML = '<option>未找到模型</option>';
-            toastr.warn('未能获取到任何模型。', '翰林院启奏');
+            modelSelect.innerHTML = vectorOption('vectorUi.noModels', '未找到模型');
+            vectorToast('warn', t('vectorUi.noModelsNotice'), t('vectorUi.noticeModule'));
             log('未能获取到任何模型。', 'warn');
             return;
         }
@@ -1272,14 +1350,14 @@ async function fetchHLYEmbeddingModels() {
             modelSelect.selectedIndex = 0;
         }
 
-        toastr.success(`成功获取 ${models.length} 个模型。`, '圣意');
+        vectorToast('success', t('vectorUi.modelsFetched', { p0: models.length }), t('vectorUi.noticeSuccess'));
         log(`成功获取 ${models.length} 个模型。`, 'success');
 
     } catch (error) {
         console.error('[翰林院-枢纽] 获取模型列表失败:', error);
-        toastr.error(`获取模型失败: ${error.message}`, '严重错误');
+        vectorToast('error', t('vectorUi.modelsFailed', { p0: error.message }), t('vectorUi.seriousError'));
         log(`获取模型失败: ${error.message}`, 'error');
-        modelSelect.innerHTML = `<option>获取失败</option>`;
+        modelSelect.innerHTML = vectorOption('vectorUi.fetchFailed', '获取失败');
     } finally {
         modelSelect.disabled = false;
     }
@@ -1291,7 +1369,7 @@ async function fetchHLYEmbeddingModels() {
 async function fetchHLYRerankModels() {
     const modelSelect = document.getElementById('hly-rerank-model');
     const currentModel = modelSelect.value;
-    modelSelect.innerHTML = '<option>正在获取...</option>';
+    modelSelect.innerHTML = vectorOption('vectorUi.fetchingModels', '正在获取...');
     modelSelect.disabled = true;
 
     try {
@@ -1300,8 +1378,8 @@ async function fetchHLYRerankModels() {
         modelSelect.innerHTML = '';
 
         if (models.length === 0) {
-            modelSelect.innerHTML = '<option>未找到模型</option>';
-            toastr.warn('未能获取到任何Rerank模型。', '翰林院启奏');
+            modelSelect.innerHTML = vectorOption('vectorUi.noModels', '未找到模型');
+            vectorToast('warn', t('vectorUi.noRerankModels'), t('vectorUi.noticeModule'));
             log('未能获取到任何Rerank模型。', 'warn');
             return;
         }
@@ -1317,27 +1395,27 @@ async function fetchHLYRerankModels() {
             modelSelect.selectedIndex = 0;
         }
 
-        toastr.success(`成功获取 ${models.length} 个Rerank模型。`, '圣意');
+        vectorToast('success', t('vectorUi.rerankModelsFetched', { p0: models.length }), t('vectorUi.noticeSuccess'));
         log(`成功获取 ${models.length} 个Rerank模型。`, 'success');
 
     } catch (error) {
         console.error('[翰林院-枢纽] 获取Rerank模型列表失败:', error);
-        toastr.error(`获取Rerank模型失败: ${error.message}`, '严重错误');
+        vectorToast('error', t('vectorUi.rerankModelsFailed', { p0: error.message }), t('vectorUi.seriousError'));
         log(`获取Rerank模型失败: ${error.message}`, 'error');
-        modelSelect.innerHTML = `<option>获取失败</option>`;
+        modelSelect.innerHTML = vectorOption('vectorUi.fetchFailed', '获取失败');
     } finally {
         modelSelect.disabled = false;
     }
 }
 
 async function purgeStorage() {
-    if (confirm('此操作将彻底清空当前角色的所有忆识（向量），且无法恢复。您确定要继续吗？')) {
-        toastr.info('正在清空宝库...', '圣旨');
+    if (confirm(t('vectorUi.purgePrompt'))) {
+        vectorToast('info', t('vectorUi.purging'), t('vectorUi.notice'));
         const success = await HanlinyuanCore.purgeStorage();
         if (success) {
-            toastr.success('宝库已清空。', '圣意');
+            vectorToast('success', t('vectorUi.purged'), t('vectorUi.noticeSuccess'));
         } else {
-            toastr.error('清空宝库失败。', '警报');
+            vectorToast('error', t('vectorUi.purgeFailed'), t('vectorUi.alert'));
         }
         await updatePanelStatus();
     }
@@ -1357,39 +1435,39 @@ async function startCondensation() {
         // 【V6 重构】路径判断：是处理预览后的消息对象数组，还是重新采集
         if (preprocessedMessagesJSON) {
             log('检测到预览后待处理的消息对象，开始精确凝识...', 'info');
-            toastr.info('正在处理您确认后的文书...', '圣旨');
+            vectorToast('info', t('vectorUi.processingConfirmed'), t('vectorUi.notice'));
             messagesToProcess = JSON.parse(preprocessedMessagesJSON);
             delete resultsEl.dataset.finalMessages; // 清理暂存数据
         } else {
             log('未检测到预览文本，按标准流程采集消息...', 'info');
-            toastr.info('正在准备凝识...', '圣旨');
+            vectorToast('info', t('vectorUi.preparingCondensation'), t('vectorUi.notice'));
             messagesToProcess = HanlinyuanCore.getMessagesForCondensation();
         }
 
         if (!messagesToProcess || messagesToProcess.length === 0) {
-            toastr.warning('未找到符合条件的消息可供凝识。', '翰林院启奏');
-            resultsEl.textContent = '未找到符合条件的消息。';
+            vectorToast('warning', t('vectorUi.noCondensationMessages'), t('vectorUi.noticeModule'));
+            setVectorText(resultsEl, 'vectorUi.noMessages');
             return;
         }
 
-        resultsEl.textContent = `已采集 ${messagesToProcess.length} 条消息，开始凝识...`;
-        toastr.info(`已采集 ${messagesToProcess.length} 条消息，开始凝识...`, '翰林院启奏');
+        setVectorText(resultsEl, 'vectorUi.messagesCollected', { p0: messagesToProcess.length });
+        vectorToast('info', t('vectorUi.messagesCollected', { p0: messagesToProcess.length }), t('vectorUi.noticeModule'));
 
         // 统一调用 processCondensation，它现在能处理任何符合格式的消息数组
         const result = await HanlinyuanCore.processCondensation(messagesToProcess, log, range);
 
         if (result.success) {
-            toastr.success(`凝识完成！新增 ${result.count} 条忆识。`, '大功告成');
+            vectorToast('success', t('vectorUi.condensationComplete', { p0: result.count }), t('vectorUi.success'));
             const finalEnd = range.end === 0 ? getContext().chat.length : range.end;
-            resultsEl.textContent = `聊天记录从第 ${range.start} 楼到第 ${finalEnd} 楼已成功凝识，新增 ${result.count} 条忆识。`;
+            setVectorText(resultsEl, 'vectorUi.condensationResult', { p0: range.start, p1: finalEnd, p2: result.count });
         } else {
             throw new Error(result.error || '未知错误');
         }
 
     } catch (error) {
         console.error('[翰林院-枢纽] 凝识过程发生错误:', error);
-        toastr.error(`凝识失败: ${error.message}`, '严重错误');
-        resultsEl.textContent = `凝识失败: ${error.message}`;
+        vectorToast('error', t('vectorUi.condensationFailed', { p0: error.message }), t('vectorUi.seriousError'));
+        setVectorText(resultsEl, 'vectorUi.condensationFailed', { p0: error.message });
     } finally {
         await updatePanelStatus();
     }
@@ -1426,7 +1504,7 @@ async function loadWorldbookList() {
         console.error('[翰林院-枢纽] 加载书库列表失败:', error);
         log(`加载书库列表失败: ${error.message}`, 'error');
         if (selectEl) {
-            selectEl.innerHTML = '<option value="">加载失败</option>';
+            selectEl.innerHTML = vectorOption('vectorUi.loadFailed', '');
         }
     }
 }
@@ -1436,12 +1514,12 @@ function updateWorldbookOptions(selectElement, query, allBooks) {
     const currentValue = selectElement.value;
 
     // 清空并重新填充
-    selectElement.innerHTML = '<option value="">请选择一个书库...</option>';
+    selectElement.innerHTML = vectorOption('vectorUi.chooseLibrary', '');
 
     if (filteredBooks.length === 0) {
         selectElement.innerHTML = query.trim() ?
-            '<option value="">未找到匹配的书库</option>' :
-            '<option value="">未找到任何书库</option>';
+            vectorOption('vectorUi.noMatchingLibrary', '') :
+            vectorOption('vectorUi.noLibraries', '');
         return;
     }
 
@@ -1467,7 +1545,7 @@ async function handleWorldbookSelectionChange() {
 
     // 重置状态
     multiSelectBtn.disabled = true;
-    multiSelectBtn.querySelector('span').textContent = '正在加载条目...';
+    setVectorText(multiSelectBtn.querySelector('span'), 'vectorUi.loadingEntries');
     optionsContainer.innerHTML = '';
     optionsContainer.style.display = 'none';
 
@@ -1476,7 +1554,7 @@ async function handleWorldbookSelectionChange() {
     }
 
     if (!selectedBook) {
-        multiSelectBtn.querySelector('span').textContent = '请先选择书库';
+        setVectorText(multiSelectBtn.querySelector('span'), 'vectorUi.chooseLibraryFirst');
         return;
     }
 
@@ -1485,7 +1563,7 @@ async function handleWorldbookSelectionChange() {
         const entries = await Historiographer.getLoresForWorldbook(selectedBook);
 
         if (entries.length === 0) {
-            multiSelectBtn.querySelector('span').textContent = '此书库为空';
+            setVectorText(multiSelectBtn.querySelector('span'), 'vectorUi.emptyLibrary');
             return;
         }
 
@@ -1516,7 +1594,7 @@ async function handleWorldbookSelectionChange() {
     } catch (error) {
         console.error(`[翰林院-枢纽] 加载《${selectedBook}》的条目失败:`, error);
         log(`加载条目失败: ${error.message}`, 'error');
-        multiSelectBtn.querySelector('span').textContent = '加载失败';
+        setVectorText(multiSelectBtn.querySelector('span'), 'vectorUi.loadFailed');
     } finally {
         multiSelectBtn.disabled = false;
     }
@@ -1535,14 +1613,14 @@ function updateEntryOptions(query, allEntries) {
     const selectAllHtml = `
         <label class="hly-multiselect-option">
             <input type="checkbox" id="hly-hist-select-all-entries">
-            <strong>全选/全不选</strong>
+            <strong>${vectorHtml('vectorUi.selectAllEntries')}</strong>
         </label>`;
     optionsContainer.insertAdjacentHTML('beforeend', selectAllHtml);
 
     if (filteredEntries.length === 0) {
-        const noResultsHtml = `<div class="hly-no-results">未找到匹配的条目</div>`;
+        const noResultsHtml = `<div class="hly-no-results">${vectorHtml('vectorUi.noMatchingEntries')}</div>`;
         optionsContainer.insertAdjacentHTML('beforeend', noResultsHtml);
-        multiSelectBtn.querySelector('span').textContent = `未找到匹配的条目`;
+        setVectorText(multiSelectBtn.querySelector('span'), 'vectorUi.noMatchingEntries');
         return;
     }
 
@@ -1561,7 +1639,7 @@ function updateEntryOptions(query, allEntries) {
     });
 
     // 更新按钮文本
-    multiSelectBtn.querySelector('span').textContent = `已选择 0 / ${filteredEntries.length} 个条目`;
+    setVectorText(multiSelectBtn.querySelector('span'), 'vectorUi.noEntriesSelected', { p0: filteredEntries.length });
 }
 
 /**
@@ -1575,30 +1653,31 @@ async function startHistoriography() {
     const selectedEntries = Array.from(optionsContainer.querySelectorAll('.hly-hist-entry-checkbox:checked')).map(cb => cb.value);
 
     if (!library || selectedEntries.length === 0) {
-        toastr.warning('请先选择一个书库并至少选择一个要编纂的条目。', '圣谕不明');
+        vectorToast('warning', t('vectorUi.chooseEntriesFirst'), t('vectorUi.noticeWarning'));
         return;
     }
 
-    resultsEl.textContent = `准备对《${library}》中的 ${selectedEntries.length} 个条目进行批量编纂...`;
-    toastr.info('批量编纂任务已开始...', '圣旨');
+    setVectorText(resultsEl, 'vectorUi.compilationPreparing', { p0: library, p1: selectedEntries.length });
+    vectorToast('info', t('vectorUi.compilationStarted'), t('vectorUi.notice'));
     log(`开始对《${library}》中的 ${selectedEntries.length} 个条目进行编纂...`, 'info');
 
     try {
         const result = await Historiographer.executeCompilation(library, selectedEntries);
 
+        clearVectorBinding(resultsEl);
         resultsEl.textContent = result.content; // 显示来自后端的详细报告
 
         if (result.success) {
-            toastr.success('批量编纂任务已完成。', '大功告成');
+            vectorToast('success', t('vectorUi.compilationCompleted'), t('vectorUi.success'));
         } else {
-            toastr.warning('批量编纂任务已完成，但有部分错误。', '圣谕');
+            vectorToast('warning', t('vectorUi.compilationPartial'), t('vectorUi.noticeInfo'));
         }
         log(`对《${library}》的批量编纂任务已完成。成功: ${result.totalSuccess}, 向量: ${result.totalVectors}`, 'success');
 
     } catch (error) {
         console.error('[翰林院-枢纽] 编纂过程发生严重错误:', error);
-        toastr.error(`编纂失败: ${error.message}`, '严重错误');
-        resultsEl.textContent = `编纂失败: ${error.message}`;
+        vectorToast('error', t('vectorUi.compilationFailed', { p0: error.message }), t('vectorUi.seriousError'));
+        setVectorText(resultsEl, 'vectorUi.compilationFailed', { p0: error.message });
     } finally {
         await updatePanelStatus();
     }
@@ -1606,26 +1685,22 @@ async function startHistoriography() {
 async function showStats() {
     try {
         log('用户请求查看宝库状态。', 'info');
-        toastr.info('正在查询宝库状态...', '圣旨');
+        vectorToast('info', t('vectorUi.queryingStats'), t('vectorUi.notice'));
 
         const count = await HanlinyuanCore.getVectorCount();
         const collectionId = await HanlinyuanCore.getCollectionId();
         const settings = HanlinyuanCore.getSettings();
 
         // 使用 pre 标签来保持格式
-        const statsText = `
-<pre>
-翰林院宝库状态
---------------------
-集合ID: ${collectionId}
-忆识总数: ${count}
---------------------
-API端点: ${settings.retrieval.apiEndpoint}
-所用模型: ${settings.retrieval.embeddingModel}
-</pre>
-        `;
+        const statsText = `<pre>${vectorHtml('vectorUi.statsBody', {
+            collectionId,
+            count,
+            endpoint: settings.retrieval.apiEndpoint,
+            model: settings.retrieval.embeddingModel,
+        })}</pre>`;
 
-        toastr.info(statsText, '宝库状态', {
+        toastr.info(statsText, escapeTextareaContent(t('vectorUi.statsTitle')), {
+            escapeHtml: false,
             timeOut: 15000, // 延长显示时间
             extendedTimeOut: 5000,
             tapToDismiss: true,
@@ -1636,7 +1711,7 @@ API端点: ${settings.retrieval.apiEndpoint}
 
     } catch (error) {
         console.error('[翰林院-枢纽] 查询宝库状态失败:', error);
-        toastr.error(`查询宝库状态失败: ${error.message}`, '严重错误');
+        vectorToast('error', t('vectorUi.statsFailed', { p0: error.message }), t('vectorUi.seriousError'));
         log(`查询宝库状态失败: ${error.message}`, 'error');
     }
 }
@@ -1660,8 +1735,8 @@ function previewCondensation() {
         const messages = HanlinyuanCore.getMessagesForCondensation(overrideMessageTypes);
 
         if (!messages || messages.length === 0) {
-            resultsEl.textContent = '根据当前勾选条件，未找到符合的消息可供预览。';
-            toastr.warning('未找到符合条件的消息。', '翰林院启奏');
+            setVectorText(resultsEl, 'vectorUi.noPreviewMessages');
+            vectorToast('warning', t('vectorUi.noMessages'), t('vectorUi.noticeModule'));
             return;
         }
 
@@ -1705,8 +1780,8 @@ function previewCondensation() {
         }).filter(item => item.content); // 过滤掉处理后内容为空的条目
 
         if (processedMessages.length === 0) {
-            resultsEl.textContent = '根据标签提取或内容排除条件，未找到任何有效内容。';
-            toastr.warning('根据标签提取或内容排除条件，未找到任何有效内容。', '翰林院启奏');
+            setVectorText(resultsEl, 'vectorUi.noValidContent');
+            vectorToast('warning', t('vectorUi.noValidContent'), t('vectorUi.noticeModule'));
             return;
         }
 
@@ -1715,22 +1790,35 @@ function previewCondensation() {
             <div class="hly-preview-item-v2" id="${item.id}">
                 <details class="hly-preview-details">
                     <summary class="hly-preview-summary">
-                        第 ${item.floor} 楼: [${item.name}]
+                        ${vectorHtml('vectorUi.previewFloor', { floor: item.floor, name: item.name })}
                     </summary>
                     <div class="hly-preview-content">
                         <textarea class="hly-preview-textarea" 
                                   data-floor="${item.floor}" 
                                   data-is-user="${item.is_user}" 
-                                  data-send-date="${item.send_date}">${escapeTextareaContent(item.content)}</textarea>
+                                  data-send-date="${escapeAttribute(item.send_date)}">${escapeTextareaContent(item.content)}</textarea>
                     </div>
                 </details>
-                <button class="hly-preview-delete-btn-v2" data-target="${item.id}" title="删除此条">&times;</button>
+                <button class="hly-preview-delete-btn-v2" data-target="${item.id}" ${vectorTitle("vectorUi.deleteEntryTip")}>&times;</button>
             </div>
         `).join('');
 
         // 5. 显示模态窗口
-        showHtmlModal('预览并编辑凝识内容', `<div class="hly-preview-container-v2">${editorHtml}</div>`, {
-            okText: '确认并更新预览',
+        showHtmlModal(t('vectorUi.previewTitle'), `<div class="hly-preview-container-v2">${editorHtml}</div>`, {
+            okText: t('vectorUi.confirmPreview'),
+            onShow: (dialogElement) => {
+                const heading = dialogElement[0].querySelector('h3');
+                if (heading) {
+                    for (const child of [...heading.childNodes]) {
+                        if (child.nodeName !== 'I') child.remove();
+                    }
+                    const title = document.createElement('span');
+                    heading.appendChild(title);
+                    setVectorText(title, 'vectorUi.previewTitle');
+                }
+                const okButton = dialogElement[0].querySelector('.popup-button-ok');
+                if (okButton) setVectorText(okButton, 'vectorUi.confirmPreview');
+            },
             onOk: (dialogElement) => {
                 const finalMessages = [];
                 dialogElement.find('.hly-preview-item-v2').each(function () {
@@ -1753,9 +1841,9 @@ function previewCondensation() {
                 // 更新预览区UI
                 const layerStart = document.getElementById('hly-layer-start').value;
                 const layerEnd = document.getElementById('hly-layer-end').value;
-                resultsEl.textContent = `已选择 ${layerStart} 楼到 ${layerEnd} 楼的内容（共 ${finalMessages.length} 条有效条目），请点击“开始凝识”进入自动向量化流程。`;
+                setVectorText(resultsEl, 'vectorUi.previewSelected', { p0: layerStart, p1: layerEnd, p2: finalMessages.length });
 
-                toastr.success('预览内容已更新，可随时开始凝识。', '圣旨已达');
+                vectorToast('success', t('vectorUi.previewUpdated'), t('vectorUi.noticeDone'));
             }
         });
 
@@ -1768,8 +1856,8 @@ function previewCondensation() {
 
     } catch (error) {
         console.error('[翰林院-枢纽] 预览过程发生错误:', error);
-        resultsEl.textContent = `预览失败: ${error.message}`;
-        toastr.error(`预览失败: ${error.message}`, '严重错误');
+        setVectorText(resultsEl, 'vectorUi.previewFailed', { p0: error.message });
+        vectorToast('error', t('vectorUi.previewFailed', { p0: error.message }), t('vectorUi.seriousError'));
     }
 }
 
@@ -1816,18 +1904,18 @@ async function ingestManualText() {
     const text = textArea.value.trim();
 
     if (!text) {
-        toastr.warning('录入内容不能为空。', '翰林院启奏');
+        vectorToast('warning', t('vectorUi.emptyManual'), t('vectorUi.noticeModule'));
         log('用户尝试录入空文本。', 'warn');
         return;
     }
 
     log(`收到手动录入请求，文本长度: ${text.length}`, 'info');
-    toastr.info('正在处理您提交的文书...', '圣旨');
+    vectorToast('info', t('vectorUi.processingManual'), t('vectorUi.notice'));
 
     try {
         const result = await HanlinyuanCore.ingestTextToHanlinyuan(text, 'manual', { sourceName: '手动录入' });
         if (result.success) {
-            toastr.success(`文书已成功录入宝库，新增 ${result.count} 条忆识。`, '大功告成');
+            vectorToast('success', t('vectorUi.manualCompleted', { p0: result.count }), t('vectorUi.success'));
             log(`手动录入成功，新增 ${result.count} 条忆识。`, 'success');
             textArea.value = ''; // 清空文本域
         } else {
@@ -1835,7 +1923,7 @@ async function ingestManualText() {
         }
     } catch (error) {
         console.error('[翰林院-枢纽] 手动录入过程发生错误:', error);
-        toastr.error(`文书录入失败: ${error.message}`, '严重错误');
+        vectorToast('error', t('vectorUi.manualFailed', { p0: error.message }), t('vectorUi.seriousError'));
         log(`手动录入失败: ${error.message}`, 'error');
     } finally {
         await updatePanelStatus();

@@ -1,0 +1,20 @@
+const messages = [
+    ['title', '人物关系图', '人物关系图谱', 'Character relationships'],
+    ['loading', '正在加载关系图引擎...', '正在加载图谱可视化引擎...', 'Loading relationship graph...'],
+    ['help', '滚轮缩放 / 拖拽平移 / 点击节点查看详情', null, 'Scroll to zoom / Drag to pan / Click a node for details'],
+    ['layoutHint', '重新布局', null, 'Rearrange layout'],
+    ['layout', '重新布局', '抖动布局', 'Rearrange'],
+    ['refresh', '刷新数据', null, 'Refresh data'],
+    ['refreshed', '关系图数据已刷新', '图谱数据已刷新', 'Graph data refreshed.'],
+    ['failed', '关系图引擎加载或完整性校验失败。', '图谱引擎加载或完整性校验失败。', 'Graph engine loading or integrity verification failed.'],
+    ['empty', '暂无数据', null, 'No data'],
+    ['emptyHint', '请确保已启用“角色”相关表格，并且表格中有数据。', null, 'Enable character-related tables and add data to them.'],
+    ['noInfo', '暂无信息', null, 'No information'],
+    ['type', '类型:', null, 'Type:'],
+    ['relation', '关系:', null, 'Relationship:'],
+    ['confirm', '确认', null, 'Confirm'],
+    ['cancel', '取消', null, 'Cancel'],
+];
+export const PLAIN = Object.fromEntries(messages.map(([key, plain]) => [`graphUi.${key}`, plain]));
+export const TRADITIONAL = Object.fromEntries(messages.map(([key, plain, traditional]) => [`graphUi.${key}`, traditional ?? plain]));
+export const EN = Object.fromEntries(messages.map(([key, , , en]) => [`graphUi.${key}`, en]));

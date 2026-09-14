@@ -2,6 +2,7 @@ import { renderAllIframes, clearAllIframes, initializeRenderer } from './rendere
 import { extension_settings } from "/scripts/extensions.js";
 import { extensionName } from "../../utils/settings.js";
 import { saveSettingsDebounced } from "/script.js";
+import { applyTranslations, t } from '../../utils/i18n/index.js';
 
 let isRendererInitialized = false;
 
@@ -14,6 +15,7 @@ export function initializeRendererBindings() {
         console.warn("[Amily2-Renderer] Could not find the settings container.");
         return;
     }
+    applyTranslations(container.find('#amily2_renderer_panel')[0]);
     container.on('change', '#amily-render-enable-toggle', function() {
         const isChecked = this.checked;
 
@@ -44,7 +46,7 @@ export function initializeRendererBindings() {
         extension_settings[extensionName].render_depth = depth;
         saveSettingsDebounced();
 
-        toastr.success(`渲染深度已保存为: ${depth}`);
+        toastr.success(t('auxiliaryUi.renderer.depthSaved', { depth }));
     });
 
     console.log("[Amily2-Renderer] Renderer UI events have been successfully bound.");

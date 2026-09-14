@@ -15,7 +15,7 @@ import { pluginAuthStatus } from "../utils/auth.js";
 import { configManager } from '../utils/config/ConfigManager.js';
 import { SENSITIVE_KEYS } from '../utils/config/sensitive-keys.js';
 import { showHtmlModal } from './page-window.js';
-import { escapeHTML } from '../utils/utils.js';
+import { escapeHTML as escapeHtml } from '../utils/utils.js';
 import { SLOTS } from '../utils/config/ApiProfileManager.js';
 import { clearSecretInput, markSecretInputStored, readSecretInputUpdate } from './secret-input.js';
 import {
@@ -27,6 +27,61 @@ import {
     syncCustomBlocksFromSettings,
 } from '../core/memory-blocks/index.js';
 import { watchProfileSliderGuard } from './profile-slider-guard.js';
+import { prepareMemoryPromptPresetChoices } from '../utils/memory-prompt-presets.js';
+import { applyTranslations, subscribeLocaleChange, t } from '../utils/i18n/index.js';
+import { getMemoryBlockInjectionStatus } from '../core/memory-blocks/injection.js';
+
+// Keep translation metadata on text nodes, never on editable controls or their parents.
+function opt_memoryText(key, params) {
+    const metadata = params ? ` data-memory-ui-params="${escapeHtml(JSON.stringify(params))}"` : '';
+    return `<span data-amily-i18n="${key}"${metadata}>${escapeHtml(t(key, params))}</span>`;
+}
+
+function opt_setMemoryText(target, key, params) {
+    target.attr('data-amily-i18n', key);
+    if (params) target.attr('data-memory-ui-params', JSON.stringify(params));
+    else target.removeAttr('data-memory-ui-params');
+    target.text(t(key, params));
+}
+
+function opt_refreshMemoryText(root) {
+    applyTranslations(root);
+    for (const node of root.querySelectorAll('[data-memory-ui-params]')) {
+        node.textContent = t(node.getAttribute('data-amily-i18n'), JSON.parse(node.getAttribute('data-memory-ui-params')));
+    }
+    for (const attribute of ['title', 'placeholder']) {
+        for (const node of root.querySelectorAll(`[data-memory-ui-${attribute}-params]`)) {
+            node.setAttribute(attribute, t(node.getAttribute(`data-amily-i18n-${attribute}`), JSON.parse(node.getAttribute(`data-memory-ui-${attribute}-params`))));
+        }
+    }
+}
+
+function opt_renderMemoryBlockStatus(status = getMemoryBlockInjectionStatus()) {
+    const target = $('#amily2_opt_memory_block_runtime_status');
+    const key = status.state === 'installed' ? 'memoryUi.combatInstalled'
+        : status.state === 'building' ? 'memoryUi.combatBuilding'
+        : status.state === 'error' ? (status.reason === 'install-failed' ? 'memoryUi.combatInstallFailed' : 'memoryUi.combatClearFailed')
+        : status.reason === 'empty' ? 'memoryUi.combatEmpty' : 'memoryUi.combatIdle';
+    opt_setMemoryText(target, key, { count: status.contentLength });
+}
+
+function opt_handleMemoryBlockStatus(event) {
+    opt_renderMemoryBlockStatus(event.detail);
+}
+
+let unsubscribeMemoryLocale = () => {};
+function opt_bindMemoryLocale(panel) {
+    unsubscribeMemoryLocale();
+    opt_refreshMemoryText(panel[0]);
+    opt_renderMemoryBlockStatus();
+    unsubscribeMemoryLocale = subscribeLocaleChange(() => {
+        if (!panel[0].isConnected) return;
+        opt_refreshMemoryText(panel[0]);
+        opt_renderMemoryBlockStatus();
+    });
+    document.removeEventListener('amily2-memory-block-injection-status', opt_handleMemoryBlockStatus);
+    document.addEventListener('amily2-memory-block-injection-status', opt_handleMemoryBlockStatus);
+}
 
 // ========== Prompt Cache (module-level state) ==========
 
@@ -49,7 +104,7 @@ export function opt_saveAllSettings() {
 
     opt_saveEnabledEntries();
 
-    toastr.info('剧情优化设置已自动保存。');
+    toastr.info(t('memoryUi.settingsSaved'));
 }
 
 
@@ -106,7 +161,7 @@ async function opt_saveSetting(key, value) {
             console.log(`[${extensionName}] 角色卡设置已更新: ${key} ->`, value);
         } catch (error) {
             console.error(`[${extensionName}] 保存角色数据失败:`, error);
-            toastr.error('无法保存角色卡设置，请检查控制台。');
+            toastr.error(t('memoryUi.characterSaveFailed'));
         }
     } else if (SENSITIVE_KEYS.has(key)) {
         // 敏感字段（API Key）经 configManager 写入 localStorage
@@ -169,7 +224,7 @@ async function opt_loadWorldbooks(panel) {
 
     // 移除旧的搜索框以防重复
     panel.find('#amily2_opt_worldbook_search').remove();
-    const searchBox = $(`<input type="text" id="amily2_opt_worldbook_search" class="text_pole" placeholder="搜索世界书..." style="width: 100%; margin-bottom: 10px;">`);
+    const searchBox = $(`<input type="text" id="amily2_opt_worldbook_search" class="text_pole" data-amily-i18n-placeholder="memoryUi.searchBooks" placeholder="${escapeHtml(t('memoryUi.searchBooks'))}" style="width: 100%; margin-bottom: 10px;">`);
     container.before(searchBox);
 
     searchBox.on('input', function() {
@@ -187,7 +242,7 @@ async function opt_loadWorldbooks(panel) {
     try {
         const lorebooks = await safeLorebooks();
         if (!lorebooks || lorebooks.length === 0) {
-            container.html('<p class="notes">未找到世界书。</p>');
+            container.html(`<p class="notes">${opt_memoryText('memoryUi.noBooks')}</p>`);
             return;
         }
 
@@ -202,12 +257,12 @@ async function opt_loadWorldbooks(panel) {
             const item = $(`
                 <div class="amily2_opt_worldbook_list_item" style="display: flex; align-items: center; justify-content: space-between; padding-right: 5px;">
                     <div style="display: flex; align-items: center;">
-                        <input type="checkbox" id="${bookId}" value="${name}" ${isChecked ? 'checked' : ''} style="margin-right: 5px;">
-                        <label for="${bookId}" style="margin-bottom: 0;">${name}</label>
+                        <input type="checkbox" id="${escapeHtml(bookId)}" value="${escapeHtml(name)}" ${isChecked ? 'checked' : ''} style="margin-right: 5px;">
+                        <label for="${escapeHtml(bookId)}" style="margin-bottom: 0;">${escapeHtml(name)}</label>
                     </div>
-                     <div style="display: flex; align-items: center;" title="开启后自动加载该世界书所有条目（包括新增）">
-                        <input type="checkbox" class="amily2_opt_wb_auto_check" id="${autoId}" data-book="${name}" ${isAuto ? 'checked' : ''} style="margin-right: 5px;">
-                        <label for="${autoId}" style="margin-bottom: 0; font-size: 0.9em; opacity: 0.8; cursor: pointer;">全选</label>
+                     <div style="display: flex; align-items: center;" data-amily-i18n-title="memoryUi.autoSelectTip" title="${escapeHtml(t('memoryUi.autoSelectTip'))}">
+                        <input type="checkbox" class="amily2_opt_wb_auto_check" id="${escapeHtml(autoId)}" data-book="${escapeHtml(name)}" ${isAuto ? 'checked' : ''} style="margin-right: 5px;">
+                        <label for="${escapeHtml(autoId)}" style="margin-bottom: 0; font-size: 0.9em; opacity: 0.8; cursor: pointer;">${opt_memoryText('memoryUi.selectAll')}</label>
                     </div>
                 </div>
             `);
@@ -215,20 +270,20 @@ async function opt_loadWorldbooks(panel) {
         });
     } catch (error) {
         console.error(`[${extensionName}] 加载世界书失败:`, error);
-        container.html('<p class="notes" style="color:red;">加载世界书列表失败。</p>');
-        toastr.error('无法加载世界书列表，请查看控制台。');
+        container.html(`<p class="notes" style="color:red;">${opt_memoryText('memoryUi.booksFailed')}</p>`);
+        toastr.error(t('memoryUi.booksFailedToast'));
     }
 }
 
 async function opt_loadWorldbookEntries(panel) {
     const container = panel.find('#amily2_opt_worldbook_entry_list_container');
     const countDisplay = panel.find('#amily2_opt_worldbook_entry_count');
-    container.html('<p>加载条目中...</p>');
-    countDisplay.text('');
+    container.html(`<p>${opt_memoryText('memoryUi.loadingEntries')}</p>`);
+    countDisplay.removeAttr('data-amily-i18n data-memory-ui-params').text('');
 
     // 移除旧的搜索框以防重复
     panel.find('#amily2_opt_worldbook_entry_search').remove();
-    const searchBox = $(`<input type="text" id="amily2_opt_worldbook_entry_search" class="text_pole" placeholder="搜索条目..." style="width: 100%; margin-bottom: 10px;">`);
+    const searchBox = $(`<input type="text" id="amily2_opt_worldbook_entry_search" class="text_pole" data-amily-i18n-placeholder="memoryUi.searchEntries" placeholder="${escapeHtml(t('memoryUi.searchEntries'))}" style="width: 100%; margin-bottom: 10px;">`);
     container.before(searchBox);
 
     searchBox.on('input', function() {
@@ -244,7 +299,7 @@ async function opt_loadWorldbookEntries(panel) {
             }
         });
         const totalEntries = container.find('.amily2_opt_worldbook_entry_item').length;
-        countDisplay.text(`显示 ${visibleCount} / ${totalEntries} 条目.`);
+        opt_setMemoryText(countDisplay, 'memoryUi.entryCount', { visible: visibleCount, total: totalEntries });
     });
 
     const settings = opt_getMergedSettings();
@@ -256,8 +311,8 @@ async function opt_loadWorldbookEntries(panel) {
     } else {
 
         if (this_chid === -1 || !characters[this_chid]) {
-            container.html('<p class="notes">未选择角色。</p>');
-            countDisplay.text('');
+            container.html(`<p class="notes">${opt_memoryText('memoryUi.noCharacter')}</p>`);
+            countDisplay.removeAttr('data-amily-i18n data-memory-ui-params').text('');
             return;
         }
         try {
@@ -267,8 +322,8 @@ async function opt_loadWorldbookEntries(panel) {
         } catch (error) {
 
             console.error(`[${extensionName}] 获取角色世界书失败:`, error);
-            toastr.error('获取角色世界书失败。');
-            container.html('<p class="notes" style="color:red;">获取角色世界书失败。</p>');
+            toastr.error(t('memoryUi.characterBooksFailed'));
+            container.html(`<p class="notes" style="color:red;">${opt_memoryText('memoryUi.characterBooksFailed')}</p>`);
             return;
         }
     }
@@ -279,7 +334,7 @@ async function opt_loadWorldbookEntries(panel) {
     let visibleEntries = 0;
 
     if (selectedBooks.length === 0) {
-        container.html('<p class="notes">请选择一个或多个世界书以查看其条目。</p>');
+        container.html(`<p class="notes">${opt_memoryText('memoryUi.chooseBooksHelp')}</p>`);
         return;
     }
 
@@ -300,8 +355,8 @@ async function opt_loadWorldbookEntries(panel) {
         totalEntries = enabledOnlyEntries.length;
 
         if (totalEntries === 0) {
-            container.html('<p class="notes">所选世界书没有（已启用的）条目。</p>');
-            countDisplay.text('0 条目.');
+            container.html(`<p class="notes">${opt_memoryText('memoryUi.noEntries')}</p>`);
+            opt_setMemoryText(countDisplay, 'memoryUi.zeroEntries');
             return;
         }
 
@@ -315,19 +370,19 @@ async function opt_loadWorldbookEntries(panel) {
 
             const item = $(`
                 <div class="amily2_opt_worldbook_entry_item" style="display: flex; align-items: center;">
-                    <input type="checkbox" id="${entryId}" data-book="${entry.bookName}" data-uid="${entry.uid}" ${isChecked ? 'checked' : ''} ${isDisabled ? 'disabled' : ''} style="margin-right: 5px;">
-                    <label for="${entryId}" title="世界书: ${entry.bookName}\nUID: ${entry.uid}" style="margin-bottom: 0; ${isDisabled ? 'opacity:0.7;' : ''}">${entry.comment || '无标题条目'} ${isAuto ? '<span style="font-size:0.8em; opacity:0.6;">(全选生效中)</span>' : ''}</label>
+                    <input type="checkbox" id="${escapeHtml(entryId)}" data-book="${escapeHtml(entry.bookName)}" data-uid="${escapeHtml(String(entry.uid))}" ${isChecked ? 'checked' : ''} ${isDisabled ? 'disabled' : ''} style="margin-right: 5px;">
+                    <label for="${escapeHtml(entryId)}" data-amily-i18n-title="memoryUi.entryTip" data-memory-ui-title-params="${escapeHtml(JSON.stringify({ name: entry.bookName, uid: entry.uid }))}" title="${escapeHtml(t('memoryUi.entryTip', { name: entry.bookName, uid: entry.uid }))}" style="margin-bottom: 0; ${isDisabled ? 'opacity:0.7;' : ''}">${entry.comment ? escapeHtml(entry.comment) : opt_memoryText('memoryUi.untitledEntry')} ${isAuto ? `<span style="font-size:0.8em; opacity:0.6;">${opt_memoryText('memoryUi.autoSelected')}</span>` : ''}</label>
                 </div>
             `);
             container.append(item);
         });
 
         visibleEntries = container.children().length;
-        countDisplay.text(`显示 ${visibleEntries} / ${totalEntries} 条目.`);
+        opt_setMemoryText(countDisplay, 'memoryUi.entryCount', { visible: visibleEntries, total: totalEntries });
 
     } catch (error) {
         console.error(`[${extensionName}] 加载世界书条目失败:`, error);
-        container.html('<p class="notes" style="color:red;">加载条目失败。</p>');
+        container.html(`<p class="notes" style="color:red;">${opt_memoryText('memoryUi.entriesFailed')}</p>`);
     }
 }
 
@@ -370,7 +425,9 @@ function opt_loadPromptPresets(panel) {
     const settings = opt_getMergedSettings();
     const lastUsedPresetName = settings.plotOpt_lastUsedPresetName;
 
-    select.empty().append(new Option('-- 选择一个预设 --', ''));
+    const placeholder = new Option(t('memoryUi.choosePreset'), '');
+    placeholder.setAttribute('data-amily-i18n', 'memoryUi.choosePreset');
+    select.empty().append(placeholder);
 
     presets.forEach(preset => {
         const option = new Option(preset.name, preset.name);
@@ -388,17 +445,17 @@ function opt_saveCurrentPromptsAsPreset(panel) {
     let isOverwriting = false;
 
     if (selectedPresetName) {
-        if (confirm(`您确定要用当前编辑的提示词覆盖预设 "${selectedPresetName}" 吗？`)) {
+        if (confirm(t('memoryUi.overwriteConfirm', { name: selectedPresetName }))) {
             presetName = selectedPresetName;
             isOverwriting = true;
         } else {
-            toastr.info('保存操作已取消。');
+            toastr.info(t('memoryUi.saveCancelled'));
             return;
         }
     } else {
-        presetName = prompt("您正在创建一个新的预设，请输入预设名称：");
+        presetName = prompt(t('memoryUi.presetNamePrompt'));
         if (!presetName) {
-            toastr.info('保存操作已取消。');
+            toastr.info(t('memoryUi.saveCancelled'));
             return;
         }
     }
@@ -426,10 +483,10 @@ function opt_saveCurrentPromptsAsPreset(panel) {
 
     if (existingPresetIndex !== -1) {
         presets[existingPresetIndex] = newPresetData;
-        toastr.success(`预设 "${presetName}" 已成功覆盖。`);
+        toastr.success(t('memoryUi.presetOverwritten', { name: escapeHtml(presetName) }));
     } else {
         presets.push(newPresetData);
-        toastr.success(`新预设 "${presetName}" 已成功创建。`);
+        toastr.success(t('memoryUi.presetCreated', { name: escapeHtml(presetName) }));
     }
     opt_saveSetting('promptPresets', presets);
 
@@ -444,11 +501,11 @@ function opt_deleteSelectedPreset(panel) {
     const selectedName = select.val();
 
     if (!selectedName) {
-        toastr.warning('没有选择任何预设。');
+        toastr.warning(t('memoryUi.noPreset'));
         return;
     }
 
-    if (!confirm(`确定要删除预设 "${selectedName}" 吗？`)) {
+    if (!confirm(t('memoryUi.deletePresetConfirm', { name: selectedName }))) {
         return;
     }
 
@@ -458,9 +515,9 @@ function opt_deleteSelectedPreset(panel) {
     if (indexToDelete > -1) {
         presets.splice(indexToDelete, 1);
         opt_saveSetting('promptPresets', presets);
-        toastr.success(`预设 "${selectedName}" 已被删除。`);
+        toastr.success(t('memoryUi.presetDeleted', { name: escapeHtml(selectedName) }));
     } else {
-        toastr.error('找不到要删除的预设，操作可能已过期。');
+        toastr.error(t('memoryUi.presetDeleteMissing'));
     }
 
     opt_loadPromptPresets(panel);
@@ -472,7 +529,7 @@ function opt_exportPromptPresets() {
     const selectedName = select.val();
 
     if (!selectedName) {
-        toastr.info('请先从下拉菜单中选择一个要导出的预设。');
+        toastr.info(t('memoryUi.selectExportPreset'));
         return;
     }
 
@@ -480,7 +537,7 @@ function opt_exportPromptPresets() {
     const selectedPreset = presets.find(p => p.name === selectedName);
 
     if (!selectedPreset) {
-        toastr.error('找不到选中的预设，请刷新页面后重试。');
+        toastr.error(t('memoryUi.presetMissing'));
         return;
     }
 
@@ -497,7 +554,7 @@ function opt_exportPromptPresets() {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 
-    toastr.success(`预设 "${selectedName}" 已成功导出。`);
+    toastr.success(t('memoryUi.presetExported', { name: escapeHtml(selectedName) }));
 }
 
 
@@ -510,7 +567,7 @@ function opt_importPromptPresets(file, panel) {
             const importedPresets = JSON.parse(e.target.result);
 
             if (!Array.isArray(importedPresets)) {
-                throw new Error('JSON文件格式不正确，根节点必须是一个数组。');
+                throw new Error(t('memoryUi.presetFormat'));
             }
 
             let currentPresets = extension_settings[extensionName]?.promptPresets || [];
@@ -553,16 +610,16 @@ function opt_importPromptPresets(file, panel) {
                 panel.find('#amily2_opt_prompt_preset_select').trigger('change');
 
                 let messages = [];
-                if (importedCount > 0) messages.push(`成功导入 ${importedCount} 个新预设。`);
-                if (overwrittenCount > 0) messages.push(`成功覆盖 ${overwrittenCount} 个同名预设。`);
+                if (importedCount > 0) messages.push(t('memoryUi.presetsImported', { count: importedCount }));
+                if (overwrittenCount > 0) messages.push(t('memoryUi.presetsOverwritten', { count: overwrittenCount }));
                 toastr.success(messages.join(' '));
             } else {
-                toastr.warning('未找到可导入的有效预设。');
+                toastr.warning(t('memoryUi.noValidPresets'));
             }
 
         } catch (error) {
             console.error(`[${extensionName}] 导入预设失败:`, error);
-            toastr.error(`导入失败: ${error.message}`, '错误');
+            toastr.error(t('memoryUi.importFailed', { error: escapeHtml(error.message) }), t('memoryUi.error'));
         } finally {
             panel.find('#amily2_opt_preset_file_input').val('');
         }
@@ -672,11 +729,12 @@ function bindConcurrentApiEvents() {
         testButton.addEventListener('click', async () => {
             const button = $(testButton);
             const originalHtml = button.html();
-            button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 测试中');
+            button.prop('disabled', true).html(`<i class="fas fa-spinner fa-spin"></i> ${opt_memoryText('memoryUi.testing')}`);
             try {
                 await testConcurrentApiConnection();
             } finally {
                 button.prop('disabled', false).html(originalHtml);
+                opt_refreshMemoryText(button[0]);
             }
         });
     }
@@ -689,11 +747,11 @@ function bindConcurrentApiEvents() {
         fetchButton.addEventListener('click', async () => {
             const button = $(fetchButton);
             const originalHtml = button.html();
-            button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 获取中');
+            button.prop('disabled', true).html(`<i class="fas fa-spinner fa-spin"></i> ${opt_memoryText('memoryUi.fetching')}`);
             try {
                 const models = await fetchConcurrentModels();
                 if (models && models.length > 0) {
-                    modelSelect.innerHTML = '<option value="">-- 选择一个模型 --</option>';
+                    modelSelect.innerHTML = `<option value="" data-amily-i18n="memoryUi.chooseModel">${escapeHtml(t('memoryUi.chooseModel'))}</option>`;
                     models.forEach(model => {
                         const option = document.createElement('option');
                         option.value = model.id;
@@ -705,14 +763,15 @@ function bindConcurrentApiEvents() {
                     });
                     modelSelect.style.display = 'block';
                     modelInput.style.display = 'none';
-                    toastr.success(`成功获取 ${models.length} 个并发模型`, '获取模型成功');
+                    toastr.success(t('memoryUi.modelsFetched', { count: models.length }), t('memoryUi.modelsFetchedTitle'));
                 } else {
-                    toastr.warning('未获取到任何并发模型。', '获取模型');
+                    toastr.warning(t('memoryUi.noModels'), t('memoryUi.fetchModels'));
                 }
             } catch (error) {
-                toastr.error(`获取并发模型失败: ${error.message}`, '获取模型失败');
+                toastr.error(t('memoryUi.modelsFailed', { error: escapeHtml(error.message) }), t('memoryUi.modelsFailedTitle'));
             } finally {
                 button.prop('disabled', false).html(originalHtml);
+                opt_refreshMemoryText(button[0]);
             }
         });
 
@@ -827,12 +886,12 @@ function bindConcurrentPromptEvents() {
         const settingKey = promptMap[selectedKey];
         const defaultValue = defaultSettings[settingKey] || '';
 
-        if (confirm(`您确定要将 "${selector.find('option:selected').text()}" 恢复为默认值吗？`)) {
+        if (confirm(t('memoryUi.resetPromptConfirm', { name: selector.find('option:selected').text() }))) {
             editor.val(defaultValue);
             if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
             extension_settings[extensionName][settingKey] = defaultValue;
             saveSettingsDebounced();
-            toastr.success('并发提示词已成功恢复为默认值。');
+            toastr.success(t('memoryUi.concurrentReset'));
         }
     });
 }
@@ -881,12 +940,12 @@ function bindConcurrentWorldbookEvents() {
     }
 
     async function loadConcurrentWorldbooks() {
-        bookListContainer.html('<p class="notes">加载中...</p>');
+        bookListContainer.html(`<p class="notes">${opt_memoryText('memoryUi.loading')}</p>`);
         try {
             const lorebooks = await safeLorebooks();
             bookListContainer.empty();
             if (!lorebooks || lorebooks.length === 0) {
-                bookListContainer.html('<p class="notes">未找到世界书。</p>');
+                bookListContainer.html(`<p class="notes">${opt_memoryText('memoryUi.noBooks')}</p>`);
                 return;
             }
             const selectedBooks = settings.plotOpt_concurrentSelectedWorldbooks || [];
@@ -899,12 +958,12 @@ function bindConcurrentWorldbookEvents() {
                 const item = $(`
                     <div class="amily2_opt_worldbook_list_item" style="display: flex; align-items: center; justify-content: space-between; padding-right: 5px;">
                         <div style="display: flex; align-items: center;">
-                            <input type="checkbox" id="${bookId}" value="${name}" ${isChecked ? 'checked' : ''} style="margin-right: 5px;">
-                            <label for="${bookId}" style="margin-bottom: 0;">${name}</label>
+                            <input type="checkbox" id="${escapeHtml(bookId)}" value="${escapeHtml(name)}" ${isChecked ? 'checked' : ''} style="margin-right: 5px;">
+                            <label for="${escapeHtml(bookId)}" style="margin-bottom: 0;">${escapeHtml(name)}</label>
                         </div>
-                        <div style="display: flex; align-items: center;" title="开启后自动加载该世界书所有条目（包括新增）">
-                            <input type="checkbox" class="amily2_opt_concurrent_wb_auto_check" id="${autoId}" data-book="${name}" ${isAuto ? 'checked' : ''} style="margin-right: 5px;">
-                            <label for="${autoId}" style="margin-bottom: 0; font-size: 0.9em; opacity: 0.8; cursor: pointer;">全选</label>
+                        <div style="display: flex; align-items: center;" data-amily-i18n-title="memoryUi.autoSelectTip" title="${escapeHtml(t('memoryUi.autoSelectTip'))}">
+                            <input type="checkbox" class="amily2_opt_concurrent_wb_auto_check" id="${escapeHtml(autoId)}" data-book="${escapeHtml(name)}" ${isAuto ? 'checked' : ''} style="margin-right: 5px;">
+                            <label for="${escapeHtml(autoId)}" style="margin-bottom: 0; font-size: 0.9em; opacity: 0.8; cursor: pointer;">${opt_memoryText('memoryUi.selectAll')}</label>
                         </div>
                     </div>
                 `);
@@ -912,7 +971,7 @@ function bindConcurrentWorldbookEvents() {
             });
         } catch (error) {
             console.error(`[${extensionName}] 加载并发世界书失败:`, error);
-            bookListContainer.html('<p class="notes" style="color:red;">加载世界书列表失败。</p>');
+            bookListContainer.html(`<p class="notes" style="color:red;">${opt_memoryText('memoryUi.booksFailed')}</p>`);
         }
     }
 
@@ -1003,24 +1062,24 @@ function opt_renderCustomBlocks(panel) {
 
     const blocks = listCustomBlocks(MEMORY_BLOCK_CONTEXT);
     if (blocks.length === 0) {
-        list.html('<div style="opacity: 0.6; font-style: italic; padding: 4px 0;">尚无自定义块。</div>');
+        list.html(`<div style="opacity: 0.6; font-style: italic; padding: 4px 0;">${opt_memoryText('memoryUi.noBlocks')}</div>`);
         return;
     }
 
     const rows = blocks.map(b => {
         const typeBadge = b.generator?.type === 'ai_call'
-            ? '<span style="font-size: 0.8em; padding: 1px 6px; border-radius: 3px; background: rgba(88,166,255,0.25);">AI 调用</span>'
-            : '<span style="font-size: 0.8em; padding: 1px 6px; border-radius: 3px; background: rgba(120,200,120,0.25);">静态</span>';
+            ? `<span style="font-size: 0.8em; padding: 1px 6px; border-radius: 3px; background: rgba(88,166,255,0.25);">${opt_memoryText('memoryUi.aiCall')}</span>`
+            : `<span style="font-size: 0.8em; padding: 1px 6px; border-radius: 3px; background: rgba(120,200,120,0.25);">${opt_memoryText('memoryUi.static')}</span>`;
         return `
-        <div class="amily2-custom-block-row" data-id="${escapeHTML(b.id)}" style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin-bottom: 4px; background: rgba(0,0,0,0.15); border-radius: 4px;">
-            <input type="checkbox" class="mb-enabled" ${b.enabled !== false ? 'checked' : ''} title="启用/停用此块">
+        <div class="amily2-custom-block-row" data-id="${escapeHtml(b.id)}" style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; margin-bottom: 4px; background: rgba(0,0,0,0.15); border-radius: 4px;">
+            <input type="checkbox" class="mb-enabled" ${b.enabled !== false ? 'checked' : ''} data-amily-i18n-title="memoryUi.blockEnabledTip" title="${escapeHtml(t('memoryUi.blockEnabledTip'))}">
             <span style="flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-                <b>${escapeHTML(b.name || '(未命名)')}</b>
-                <code style="margin-left: 6px;">${escapeHTML(b.placeholder)}</code>
+                <b>${b.name ? escapeHtml(b.name) : opt_memoryText('memoryUi.unnamed')}</b>
+                <code style="margin-left: 6px;">${escapeHtml(b.placeholder)}</code>
             </span>
             ${typeBadge}
-            <button class="menu_button mb-edit" title="编辑" style="padding: 2px 8px;"><i class="fa-solid fa-pen"></i></button>
-            <button class="menu_button mb-delete" title="删除" style="padding: 2px 8px;"><i class="fa-solid fa-trash-alt"></i></button>
+            <button class="menu_button mb-edit" data-amily-i18n-title="memoryUi.edit" title="${escapeHtml(t('memoryUi.edit'))}" style="padding: 2px 8px;"><i class="fa-solid fa-pen"></i></button>
+            <button class="menu_button mb-delete" data-amily-i18n-title="memoryUi.delete" title="${escapeHtml(t('memoryUi.delete'))}" style="padding: 2px 8px;"><i class="fa-solid fa-trash-alt"></i></button>
         </div>`;
     });
     list.html(rows.join(''));
@@ -1034,47 +1093,54 @@ function opt_showCustomBlockModal(panel, blockId) {
     // API 槽下拉：仅列出 chat 类型功能槽
     const slotOptions = Object.entries(SLOTS)
         .filter(([, def]) => def.type === 'chat')
-        .map(([key, def]) => `<option value="${key}" ${key === (gen.apiSlot || 'main') ? 'selected' : ''}>${escapeHTML(def.label)} (${key})</option>`)
+        .map(([key, def]) => `<option value="${key}" ${key === (gen.apiSlot || 'main') ? 'selected' : ''}>${escapeHtml(def.label)} (${key})</option>`)
         .join('');
 
     const formHtml = `
     <div class="amily2-mb-form" style="display: flex; flex-direction: column; gap: 12px;">
-        <label>显示名称
-            <input id="mb_name" class="text_pole" type="text" value="${escapeHTML(existing?.name || '')}" placeholder="例如：战况摘要">
+        <label>${opt_memoryText('memoryUi.blockName')}
+            <input id="mb_name" class="text_pole" type="text" value="${escapeHtml(existing?.name || '')}" data-amily-i18n-placeholder="memoryUi.blockNameExample" placeholder="${escapeHtml(t('memoryUi.blockNameExample'))}">
         </label>
-        <label>占位符（在主/拦截提示词中按字面量匹配替换）
-            <input id="mb_placeholder" class="text_pole" type="text" value="${escapeHTML(existing?.placeholder || '')}" placeholder="例如：{{combat_state}} 或 myBlock1">
+        <label>${opt_memoryText('memoryUi.blockPlaceholder')}
+            <input id="mb_placeholder" class="text_pole" type="text" value="${escapeHtml(existing?.placeholder || '')}" data-amily-i18n-placeholder="memoryUi.placeholderExample" data-memory-ui-placeholder-params="${escapeHtml(JSON.stringify({ macro: '{{combat_state}}', name: 'myBlock1' }))}" placeholder="${escapeHtml(t('memoryUi.placeholderExample', { macro: '{{combat_state}}', name: 'myBlock1' }))}">
         </label>
-        <label>生成方式
+        <label>${opt_memoryText('memoryUi.generatorType')}
             <select id="mb_type" class="text_pole">
-                <option value="static" ${!isAiCall ? 'selected' : ''}>静态内容</option>
-                <option value="ai_call" ${isAiCall ? 'selected' : ''}>AI 调用</option>
+                <option value="static" ${!isAiCall ? 'selected' : ''} data-amily-i18n="memoryUi.staticContent">${escapeHtml(t('memoryUi.staticContent'))}</option>
+                <option value="ai_call" ${isAiCall ? 'selected' : ''} data-amily-i18n="memoryUi.aiCall">${escapeHtml(t('memoryUi.aiCall'))}</option>
             </select>
         </label>
         <div id="mb_static_fields" style="${isAiCall ? 'display: none;' : ''}">
-            <label>静态内容
-                <textarea id="mb_static_value" class="text_pole" rows="4">${escapeHTML(gen.value !== undefined ? String(gen.value) : '')}</textarea>
+            <label>${opt_memoryText('memoryUi.staticContent')}
+                <textarea id="mb_static_value" class="text_pole" rows="4">${escapeHtml(gen.value !== undefined ? String(gen.value) : '')}</textarea>
             </label>
         </div>
         <div id="mb_ai_fields" style="display: ${isAiCall ? 'flex' : 'none'}; flex-direction: column; gap: 12px;">
-            <label>API 槽（使用该功能槽的连接配置独立请求一次）
+            <label>${opt_memoryText('memoryUi.apiSlot')}
                 <select id="mb_api_slot" class="text_pole">${slotOptions}</select>
             </label>
-            <label>系统提示词（可选）
-                <textarea id="mb_system_prompt" class="text_pole" rows="3">${escapeHTML(gen.systemPrompt || '')}</textarea>
+            <label>${opt_memoryText('memoryUi.systemPromptOptional')}
+                <textarea id="mb_system_prompt" class="text_pole" rows="3">${escapeHtml(gen.systemPrompt || '')}</textarea>
             </label>
-            <label>用户提示词（必填）
-                <textarea id="mb_prompt_template" class="text_pole" rows="5">${escapeHTML(gen.promptTemplate || '')}</textarea>
+            <label>${opt_memoryText('memoryUi.userPromptRequired')}
+                <textarea id="mb_prompt_template" class="text_pole" rows="5">${escapeHtml(gen.promptTemplate || '')}</textarea>
             </label>
-            <label>提取标签（可选，只取回复中 &lt;标签&gt;...&lt;/标签&gt; 的内容；标签缺失时回退完整回复）
-                <input id="mb_extract_tag" class="text_pole" type="text" value="${escapeHTML(gen.extractTag || '')}" placeholder="例如：result">
+            <label>${opt_memoryText('memoryUi.extractTag', { example: '<标签>...</标签>' })}
+                <input id="mb_extract_tag" class="text_pole" type="text" value="${escapeHtml(gen.extractTag || '')}" data-amily-i18n-placeholder="memoryUi.tagExample" placeholder="${escapeHtml(t('memoryUi.tagExample'))}">
             </label>
         </div>
     </div>`;
 
-    showHtmlModal(existing ? '编辑记忆块' : '新增记忆块', formHtml, {
-        okText: '保存',
+    showHtmlModal(opt_memoryText(existing ? 'memoryUi.editBlock' : 'memoryUi.addBlock'), formHtml, {
+        okText: opt_memoryText('memoryUi.save'),
+        cancelText: opt_memoryText('actions.cancel'),
         onShow: (dialog) => {
+            opt_refreshMemoryText(dialog[0]);
+            const unsubscribe = subscribeLocaleChange(() => {
+                if (dialog[0].isConnected) opt_refreshMemoryText(dialog[0]);
+                else unsubscribe();
+            });
+            dialog[0].addEventListener('close', unsubscribe, { once: true });
             dialog.find('#mb_type').on('change', function () {
                 const aiMode = $(this).val() === 'ai_call';
                 dialog.find('#mb_static_fields').toggle(!aiMode);
@@ -1084,13 +1150,13 @@ function opt_showCustomBlockModal(panel, blockId) {
         onOk: (dialog) => {
             const placeholder = String(dialog.find('#mb_placeholder').val() || '').trim();
             if (!placeholder) {
-                toastr.warning('占位符不能为空。');
+                toastr.warning(t('memoryUi.emptyPlaceholder'));
                 return false;
             }
             const conflict = listCustomBlocks(MEMORY_BLOCK_CONTEXT)
                 .find(b => b.placeholder === placeholder && b.id !== blockId);
             if (conflict) {
-                toastr.warning(`占位符 "${placeholder}" 已被块 "${conflict.name || conflict.id}" 占用。`);
+                toastr.warning(t('memoryUi.placeholderConflict', { placeholder: escapeHtml(placeholder), name: escapeHtml(conflict.name || conflict.id) }));
                 return false;
             }
 
@@ -1099,7 +1165,7 @@ function opt_showCustomBlockModal(panel, blockId) {
             if (type === 'ai_call') {
                 const promptTemplate = String(dialog.find('#mb_prompt_template').val() || '');
                 if (!promptTemplate.trim()) {
-                    toastr.warning('AI 调用块的用户提示词不能为空。');
+                    toastr.warning(t('memoryUi.emptyAiPrompt'));
                     return false;
                 }
                 generator = {
@@ -1125,13 +1191,13 @@ function opt_showCustomBlockModal(panel, blockId) {
             try {
                 if (existing) {
                     updateCustomBlock(blockId, patch);
-                    toastr.success('记忆块已更新。');
+                    toastr.success(t('memoryUi.blockUpdated'));
                 } else {
                     addCustomBlock(patch);
-                    toastr.success('记忆块已创建。');
+                    toastr.success(t('memoryUi.blockCreated'));
                 }
             } catch (error) {
-                toastr.error(`保存失败: ${error.message}`);
+                toastr.error(t('memoryUi.saveFailed', { error: escapeHtml(error.message) }));
                 return false;
             }
             opt_renderCustomBlocks(panel);
@@ -1154,10 +1220,10 @@ function bindCustomBlockEvents(panel) {
         const row = $(this).closest('[data-id]');
         const id = row.attr('data-id');
         const block = getCustomBlock(id);
-        if (!confirm(`确定删除记忆块 "${block?.name || id}"？`)) return;
+        if (!confirm(t('memoryUi.deleteBlockConfirm', { name: block?.name || id }))) return;
         deleteCustomBlock(id);
         opt_renderCustomBlocks(panel);
-        toastr.success('记忆块已删除。');
+        toastr.success(t('memoryUi.blockDeleted'));
     });
 
     panel.on('change', '.amily2-custom-block-row .mb-enabled', function () {
@@ -1173,6 +1239,17 @@ export function initializePlotOptimizationBindings() {
     }
 
     opt_purgeGarbageKeys();
+    try {
+        const settings = extension_settings[extensionName];
+        const update = prepareMemoryPromptPresetChoices(settings, defaultSettings);
+        if (update) {
+            Object.assign(settings, update);
+            saveSettingsDebounced();
+            toastr.info(t('memoryUi.newPresetNotice'));
+        }
+    } catch (error) {
+        console.warn('[Amily2] Could not add the new memory prompt preset:', error);
+    }
 
     // Tab switching logic
     panel.find('.sinan-navigation-deck').on('click', '.sinan-nav-item', function() {
@@ -1256,7 +1333,7 @@ export function initializePlotOptimizationBindings() {
         promptCache.main = defaultValue;
         updateEditorFromCache();
         opt_saveSetting('plotOpt_mainPrompt', defaultValue);
-        toastr.info('主提示词已恢复为默认值。');
+        toastr.info(t('memoryUi.mainReset'));
     });
 
     panel.on('click', '#amily2_opt_reset_system_prompt', function() {
@@ -1264,7 +1341,7 @@ export function initializePlotOptimizationBindings() {
         promptCache.system = defaultValue;
         updateEditorFromCache();
         opt_saveSetting('plotOpt_systemPrompt', defaultValue);
-        toastr.info('拦截任务指令已恢复为默认值。');
+        toastr.info(t('memoryUi.taskReset'));
     });
 
     panel.on('click', '#amily2_opt_reset_final_system_directive', function() {
@@ -1272,7 +1349,7 @@ export function initializePlotOptimizationBindings() {
         promptCache.final_system = defaultValue;
         updateEditorFromCache();
         opt_saveSetting('plotOpt_finalSystemDirective', defaultValue);
-        toastr.info('最终注入指令已恢复为默认值。');
+        toastr.info(t('memoryUi.finalReset'));
     });
 
     opt_loadSettings(panel);
@@ -1416,7 +1493,7 @@ export function initializePlotOptimizationBindings() {
             panel.find('#amily2_opt_rate_cuckold').val(selectedPreset.rateCuckold ?? 1.0).trigger('change');
 
             if (!isAutomatic) {
-                toastr.success(`已加载预设 "${selectedName}"。`);
+                toastr.success(t('memoryUi.presetLoaded', { name: escapeHtml(selectedName) }));
             }
             deleteBtn.show();
         } else {
@@ -1424,6 +1501,7 @@ export function initializePlotOptimizationBindings() {
         }
     });
 
+    opt_bindMemoryLocale(panel);
     panel.data('events-bound', true);
     console.log(`[${extensionName}] 剧情优化UI事件已成功绑定，自动保存已激活。`);
 
@@ -1483,7 +1561,7 @@ $(document).on('change', 'input[name="amily2_icon_location"]', function() {
     extension_settings[extensionName]['iconLocation'] = newLocation;
     saveSettingsDebounced();
     console.log(`[Amily-禁卫军] 收到迁都指令 -> ${newLocation}。圣意已存档。`);
-    toastr.info(`正在将帝国徽记迁往 [${newLocation === 'topbar' ? '顶栏' : '扩展区'}]...`, "迁都令", { timeOut: 2000 });
+    toastr.info(t('memoryUi.movingIcon', { location: newLocation === 'topbar' ? t('memoryUi.topbar') : t('memoryUi.extensions') }), t('memoryUi.moveIconTitle'), { timeOut: 2000 });
     $('#amily2_main_drawer').remove();
     $(document).off("mousedown.amily2Drawer");
     $('#amily2_extension_frame').remove();

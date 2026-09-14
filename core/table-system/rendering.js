@@ -119,8 +119,8 @@ function _ordinaryTables(state) {
  * @param {TableState | null} state
  * @returns {string}
  */
-export function tablesToCsv(state) {
-    return renderTablesToCsv(state, () => true);
+export function tablesToCsv(state, options = {}) {
+    return renderTablesToCsv(state, table => isTableInRequestedGroup(table, options));
 }
 
 /**
@@ -130,8 +130,11 @@ export function tablesToCsv(state) {
  * @param {TableState | null} state
  * @returns {string}
  */
-export function tablesToCsvForAiFill(state) {
-    return renderTablesToCsv(state, isAiFillableTable);
+export function tablesToCsvForAiFill(state, options = {}) {
+    return renderTablesToCsv(
+        state,
+        table => isAiFillableTable(table) && isTableInRequestedGroup(table, options),
+    );
 }
 
 function renderTablesToCsv(state, includeTable) {
@@ -179,8 +182,12 @@ function renderTablesToCsv(state, includeTable) {
  * @param {number[]} selectedIndices
  * @returns {string}
  */
-export function tablesToCsvWithSelection(state, selectedIndices) {
-    return renderTablesToCsvWithSelection(state, selectedIndices, () => true);
+export function tablesToCsvWithSelection(state, selectedIndices, options = {}) {
+    return renderTablesToCsvWithSelection(
+        state,
+        selectedIndices,
+        table => isTableInRequestedGroup(table, options),
+    );
 }
 
 /**
@@ -191,8 +198,12 @@ export function tablesToCsvWithSelection(state, selectedIndices) {
  * @param {number[]} selectedIndices
  * @returns {string}
  */
-export function tablesToCsvWithSelectionForAiFill(state, selectedIndices) {
-    return renderTablesToCsvWithSelection(state, selectedIndices, isAiFillableTable);
+export function tablesToCsvWithSelectionForAiFill(state, selectedIndices, options = {}) {
+    return renderTablesToCsvWithSelection(
+        state,
+        selectedIndices,
+        table => isAiFillableTable(table) && isTableInRequestedGroup(table, options),
+    );
 }
 
 function renderTablesToCsvWithSelection(state, selectedIndices, includeTable) {
@@ -251,11 +262,13 @@ function renderTablesToCsvWithSelection(state, selectedIndices, includeTable) {
  * @param {TableState | null} state
  * @returns {string}
  */
-export function tablesToCsvContentOnly(state) {
+export function tablesToCsvContentOnly(state, options = {}) {
     if (!state || state.length === 0) return '';
 
     let outputString = '';
-    _ordinaryTables(state).forEach(({ table }) => {
+    _ordinaryTables(state)
+        .filter(({ table }) => isTableInRequestedGroup(table, options))
+        .forEach(({ table }) => {
         outputString += `\n<${table.name}>\n`;
 
         // Markdown 表头
@@ -279,4 +292,11 @@ export function tablesToCsvContentOnly(state) {
     });
 
     return outputString.trim();
+}
+
+function isTableInRequestedGroup(table, options) {
+    const tableGroupId = typeof options === 'string'
+        ? options
+        : options?.tableGroupId;
+    return !tableGroupId || table?.groupId === tableGroupId;
 }

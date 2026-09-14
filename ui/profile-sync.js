@@ -8,6 +8,7 @@
  */
 
 import { apiProfileManager, PROFILE_TYPES, SLOTS } from '../utils/config/ApiProfileManager.js';
+import { t, apiTableHtml, apiTableAttr, setApiTableText, clearApiTableText } from './api-table-i18n.js';
 import { getRequestHeaders } from '/script.js';
 import { testApiConnection } from '../core/api.js';
 import { testJqyhApiConnection } from '../core/api/JqyhApi.js';
@@ -286,7 +287,7 @@ function _injectCard(slot, profile, _config, container) {
     const providerLabel = _providerLabel(profile?.provider);
 
     const options = [
-        `<option value="">-- 未分配，请选择 API 连接 --</option>`,
+        `<option value="" data-amily-i18n="apiTableUi.widget.choose">${_esc(t('apiTableUi.widget.choose'))}</option>`,
         ...profiles.map(p =>
             `<option value="${_esc(p.id)}" ${p.id === assigned ? 'selected' : ''}>${_esc(p.name)}</option>`
         ),
@@ -297,20 +298,20 @@ function _injectCard(slot, profile, _config, container) {
     const needsKey = profile && !['sillytavern_preset', 'sillytavern_backend'].includes(profile.provider);
     const keyWarnHtml = (needsKey && !profile.apiKey) ? `
         <span style="color:var(--warning-color,#e6a23c); font-size:0.85em;"
-              title="API Key 仅保存在最初填写它的设备/浏览器上，不随云端设置同步。请点击「管理」编辑该配置并重新填写 Key。">
-            <i class="fas fa-key"></i> 本设备无 Key
+              ${apiTableAttr('apiTableUi.widget.keyHelp')}>
+            <i class="fas fa-key"></i> ${apiTableHtml('apiTableUi.widget.noKey')}
         </span>
     ` : '';
 
     const detailHtml = profile ? `
         <span style="color:var(--SmartThemeQuoteColor); font-size:0.85em;">
-            ${providerLabel ? `<i class="fas fa-cloud"></i> ${_esc(providerLabel)}` : ''}
+            ${providerLabel ? `<i class="fas fa-cloud"></i> ${providerLabel}` : ''}
             ${profile.model ? ` · <i class="fas fa-robot"></i> ${_esc(profile.model)}` : ''}
         </span>
         ${keyWarnHtml}
     ` : `
         <span style="color:var(--warning-color); font-size:0.85em;">
-            未分配时该模块不会继续展示/保存独立 API 输入项。
+            ${apiTableHtml('apiTableUi.widget.unassignedHelp')}
         </span>
     `;
 
@@ -329,11 +330,11 @@ function _injectCard(slot, profile, _config, container) {
     card.innerHTML = `
         <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
             <i class="fas ${_esc(typeInfo.icon || 'fa-link')}" style="color:var(--green,#4caf50);"></i>
-            <span style="font-weight:600;">${_esc(slotInfo.label)}</span>
+            <span style="font-weight:600;">${SLOTS[slot] ? apiTableHtml(`apiTableUi.slot.${slot}`) : _esc(slotInfo.label)}</span>
             ${detailHtml}
             <span class="amily2_psc_goto" style="margin-left:auto; opacity:0.7; font-size:0.85em; cursor:pointer;"
-                  title="前往统一 API 配置页">
-                <i class="fas fa-cog"></i> 管理
+                  ${apiTableAttr('apiTableUi.widget.manageHint')}>
+                <i class="fas fa-cog"></i> ${apiTableHtml('apiTableUi.widget.manage')}
             </span>
         </div>
         <select class="text_pole amily2_psc_select" data-slot="${_esc(slot)}" style="width:100%; margin-bottom:8px;">
@@ -341,10 +342,10 @@ function _injectCard(slot, profile, _config, container) {
         </select>
         <div style="display:flex; gap:6px; flex-wrap:wrap;">
             <button class="menu_button small_button interactable amily2_psc_test" type="button" ${profile ? '' : 'disabled'}>
-                <i class="fas fa-plug"></i> 测试连接
+                <i class="fas fa-plug"></i> ${apiTableHtml('apiTableUi.api.testConnection')}
             </button>
             <button class="menu_button small_button interactable amily2_psc_fetch" type="button" ${profile ? '' : 'disabled'}>
-                <i class="fas fa-list"></i> 获取模型
+                <i class="fas fa-list"></i> ${apiTableHtml('apiTableUi.api.fetchModels')}
             </button>
             <span class="amily2_psc_result" style="font-size:0.85em; display:flex; align-items:center; margin-left:4px;"></span>
         </div>`;
@@ -356,7 +357,7 @@ function _injectCard(slot, profile, _config, container) {
     card.querySelector('.amily2_psc_select').addEventListener('change', function () {
         const id = this.value || null;
         if (!apiProfileManager.setAssignment(slot, id)) {
-            toastr.error('配置类型不匹配，分配失败。');
+            toastr.error(t('apiTableUi.api.assignmentFailed'));
             syncSlot(slot);
             return;
         }
@@ -377,19 +378,19 @@ function _injectCard(slot, profile, _config, container) {
 async function _testSlot(slot, card) {
     const $btn = $(card.querySelector('.amily2_psc_test')).prop('disabled', true);
     const $result = $(card.querySelector('.amily2_psc_result'));
-    $btn.html('<i class="fas fa-spinner fa-spin"></i> 测试中...');
-    $result.text('').css('color', '');
+    $btn.html(`<i class="fas fa-spinner fa-spin"></i> ${apiTableHtml('apiTableUi.api.testing')}`);
+    clearApiTableText($result).text('').css('color', '');
 
     try {
         const profile = await apiProfileManager.getAssignedProfile(slot);
         if (!profile) {
-            $result.text('槽位未分配').css('color', 'var(--warning-color)');
+            setApiTableText($result, 'apiTableUi.api.slotUnassigned').css('color', 'var(--warning-color)');
             return;
         }
 
         const testFn = SLOT_CONFIGS[slot]?.testFn;
         if (!testFn) {
-            $result.text('该槽位暂不支持快捷测试').css('color', 'var(--warning-color)');
+            setApiTableText($result, 'apiTableUi.api.testUnsupported').css('color', 'var(--warning-color)');
             return;
         }
 
@@ -397,59 +398,61 @@ async function _testSlot(slot, card) {
         const success = typeof result === 'object' ? result?.success : result;
 
         if (success === true) {
-            $result.text('测试通过').css('color', 'var(--green)');
+            setApiTableText($result, 'apiTableUi.widget.testPassed').css('color', 'var(--green)');
         } else if (success === false) {
-            $result.text(result?.error || '测试失败，请查看弹窗/控制台').css('color', 'var(--warning-color)');
+            if (result?.error) clearApiTableText($result).text(result.error);
+            else setApiTableText($result, 'apiTableUi.widget.testFailed');
+            $result.css('color', 'var(--warning-color)');
         }
     } catch (e) {
-        $result.text(`错误：${e.message}`).css('color', 'var(--warning-color)');
+        setApiTableText($result, 'apiTableUi.widget.error', { error: e.message }).css('color', 'var(--warning-color)');
     } finally {
-        $btn.prop('disabled', false).html('<i class="fas fa-plug"></i> 测试连接');
+        $btn.prop('disabled', false).html(`<i class="fas fa-plug"></i> ${apiTableHtml('apiTableUi.api.testConnection')}`);
     }
 }
 
 async function _fetchSlotModels(slot, card) {
     const $btn = $(card.querySelector('.amily2_psc_fetch')).prop('disabled', true);
     const $result = $(card.querySelector('.amily2_psc_result'));
-    $btn.html('<i class="fas fa-spinner fa-spin"></i> 获取中...');
-    $result.text('').css('color', '');
+    $btn.html(`<i class="fas fa-spinner fa-spin"></i> ${apiTableHtml('apiTableUi.api.fetching')}`);
+    clearApiTableText($result).text('').css('color', '');
 
     try {
         const profile = await apiProfileManager.getAssignedProfile(slot);
         if (!profile) {
-            $result.text('槽位未分配').css('color', 'var(--warning-color)');
+            setApiTableText($result, 'apiTableUi.api.slotUnassigned').css('color', 'var(--warning-color)');
             return;
         }
 
         if (profile.provider === 'sillytavern_preset' || profile.provider === 'sillytavern_backend') {
-            $result.text('ST 预设/后端管理，无需获取').css('color', 'var(--SmartThemeQuoteColor)');
+            setApiTableText($result, 'apiTableUi.widget.stManaged').css('color', 'var(--SmartThemeQuoteColor)');
             return;
         }
 
         const customFetch = SLOT_CONFIGS[slot]?.fetchModelsFn;
         const models = customFetch ? await customFetch() : await _loadModels(profile);
         if (models.length === 0) {
-            $result.text('未获取到模型').css('color', 'var(--warning-color)');
+            setApiTableText($result, 'apiTableUi.widget.noModels').css('color', 'var(--warning-color)');
             return;
         }
 
         const current = profile.model;
         const inList = current && models.includes(current);
         $result.html(
-            `<span style="color:var(--green);">${models.length} 个模型</span>` +
-            (current ? ` · 当前: <b>${_esc(current)}</b> ${inList ? '✓' : '<span style="color:var(--warning-color);">（不在列表中）</span>'}` : '')
+            `<span style="color:var(--green);">${apiTableHtml('apiTableUi.widget.modelCount', { count: models.length })}</span>` +
+            (current ? ` · ${apiTableHtml('apiTableUi.widget.current')} <b>${_esc(current)}</b> ${inList ? '✓' : `<span style="color:var(--warning-color);">${apiTableHtml('apiTableUi.widget.notListed')}</span>`}` : '')
         );
-        toastr.success(`已获取 ${models.length} 个模型。`, `槽位：${slot}`);
+        toastr.success(t('apiTableUi.api.modelsFetched', { count: models.length }), t(`apiTableUi.slot.${slot}`));
     } catch (e) {
-        $result.text(`错误：${e.message}`).css('color', 'var(--warning-color)');
+        setApiTableText($result, 'apiTableUi.widget.error', { error: e.message }).css('color', 'var(--warning-color)');
     } finally {
-        $btn.prop('disabled', false).html('<i class="fas fa-list"></i> 获取模型');
+        $btn.prop('disabled', false).html(`<i class="fas fa-list"></i> ${apiTableHtml('apiTableUi.api.fetchModels')}`);
     }
 }
 
 async function _loadModels(profile) {
     if (profile.provider === 'google') {
-        if (!profile.apiKey) throw new Error('API Key 为空');
+        if (!profile.apiKey) throw new Error(t('apiTableUi.widget.keyEmpty'));
         const resp = await fetch(
             'https://generativelanguage.googleapis.com/v1beta/models',
             { headers: { 'x-goog-api-key': profile.apiKey } }
@@ -482,13 +485,13 @@ async function _loadModels(profile) {
 }
 
 function _providerLabel(provider) {
-    return {
-        openai: 'OpenAI 兼容',
-        openai_test: '全兼容',
-        google: 'Google Gemini',
-        sillytavern_backend: 'ST 后端',
-        sillytavern_preset: 'ST 预设',
-    }[provider] || provider || '';
+    const key = {
+        openai: 'apiTableUi.widget.openaiCompatible',
+        openai_test: 'apiTableUi.widget.fullCompatible',
+        sillytavern_backend: 'apiTableUi.widget.stBackend',
+        sillytavern_preset: 'apiTableUi.widget.stPreset',
+    }[provider];
+    return key ? apiTableHtml(key) : _esc(provider === 'google' ? 'Google Gemini' : provider || '');
 }
 
 function _esc(str) {

@@ -27,6 +27,47 @@ function cloneWorldInfoData(value) {
     return JSON.parse(JSON.stringify(value));
 }
 
+/** Read an authoritative draft; failed reads must never become empty books. */
+export async function loadWorldInfoStrict({
+    name,
+    fetchImpl,
+    headers,
+    cache,
+    logger = console,
+}) {
+    if (!String(name || '').trim()) {
+        throw new TypeError('World-info name is required.');
+    }
+    if (typeof fetchImpl !== 'function') {
+        throw new TypeError('Strict world-info loading requires fetch.');
+    }
+    const response = await fetchImpl('/api/worldinfo/get', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ name }),
+        cache: 'no-store',
+    });
+    if (!response?.ok) {
+        const detail = await readResponseError(response);
+        throw new Error(
+            `World-info loading failed with HTTP ${responseStatus(response)}`
+            + (detail ? `: ${detail}` : '.'),
+        );
+    }
+    const data = await response.json();
+    if (!data || typeof data !== 'object' || Array.isArray(data)
+        || !data.entries || typeof data.entries !== 'object'
+        || Array.isArray(data.entries)) {
+        throw new TypeError('World-info response must contain an entries object.');
+    }
+    try {
+        cache?.set?.(name, data);
+    } catch (error) {
+        logger?.warn?.('[LoreService] Could not refresh world-info cache:', error);
+    }
+    return data;
+}
+
 /**
  * Build an isolated world-info draft and persist it through a strict writer.
  *

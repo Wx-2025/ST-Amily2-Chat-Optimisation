@@ -1,6 +1,6 @@
 import { getContext } from '/scripts/extensions.js';
 import { state, SCRIPT_ID_PREFIX } from './cwb_state.js';
-import { logDebug, logError, showToastr, escapeHtml, cleanChatName, parseCustomFormat, buildCustomFormat, isCwbEnabled } from './cwb_utils.js';
+import { logDebug, logError, showToastr, cleanChatName, parseCustomFormat, buildCustomFormat, isCwbEnabled } from './cwb_utils.js';
 import { callCustomOpenAI, isCwbApiConfigured } from './cwb_apiService.js';
 import { saveDescriptionToLorebook, updateCharacterRosterLorebookEntry, manageAutoCardUpdateLorebookEntry, getTargetWorldBook } from './cwb_lorebookManager.js';
 import { extractBlocksByTags, applyExclusionRules } from '../../core/utils/rag-tag-extractor.js';
@@ -12,6 +12,8 @@ import { safeLorebookEntries } from '../../core/tavernhelper-compatibility.js';
 import { amilyHelper } from '../../core/tavern-helper/main.js';
 import { resolveHistoriographyRuleConfig } from '../../utils/config/RuleProfileManager.js';
 import { isActiveChatContext } from '../../core/utils/chat-context-state.js';
+
+import { t, cwbLabel, setCwbText, setCwbHtml, escapeCwbHtml as escapeHtml } from './cwb_i18n.js';
 
 const { SillyTavern, jQuery, characters } = window;
 
@@ -26,28 +28,36 @@ export async function updateCardUpdateStatusDisplay($panel, lorebookSnapshot = n
     if (!$panel || !$panel.length) return;
     const $statusDisplay = $panel.find(`#${SCRIPT_ID_PREFIX}-card-update-status-display`);
     const $totalMessagesDisplay = $panel.find(`#${SCRIPT_ID_PREFIX}-total-messages-display`);
+    const renderDisabledState = () => {
+        if (isCwbEnabled()) return false;
+        setCwbText($statusDisplay, 'characterWorldUi.status.off');
+        return true;
+    };
 
-    $totalMessagesDisplay.text(`上下文总层数: ${state.allChatMessages.length}`);
+    setCwbText($totalMessagesDisplay, 'characterWorldUi.status.total', { count: state.allChatMessages.length });
+    if (renderDisabledState()) return;
 
     if (!state.currentChatFileIdentifier || state.currentChatFileIdentifier.startsWith('unknown_chat')) {
-        $statusDisplay.text('当前聊天未知，无法获取更新状态。');
+        setCwbText($statusDisplay, 'characterWorldUi.status.unknownChat');
         return;
     }
 
     try {
         const context = SillyTavern.getContext();
         if (!context || !context.characterId) {
-            $statusDisplay.text('没有选择角色。');
+            setCwbText($statusDisplay, 'characterWorldUi.status.noCharacter');
             return;
         }
         const bookName = lorebookSnapshot?.bookName || await getTargetWorldBook();
+        if (renderDisabledState()) return;
         if (!bookName) {
-            $statusDisplay.text('当前角色未设置主世界书或自定义世界书。');
+            setCwbText($statusDisplay, 'characterWorldUi.world.missing');
             return;
         }
         const entries = lorebookSnapshot?.bookName === bookName && Array.isArray(lorebookSnapshot.entries)
             ? lorebookSnapshot.entries
             : await safeLorebookEntries(bookName);
+        if (renderDisabledState()) return;
         const entryPrefixForCurrentChat = `角色卡更新-${state.currentChatFileIdentifier}-`;
 
         let latestEntryToShow = null;
@@ -71,16 +81,17 @@ export async function updateCardUpdateStatusDisplay($panel, lorebookSnapshot = n
             const charNameInComment = commentParts.slice(2, -2).join('-');
             const startFloorStr = commentParts[commentParts.length - 2];
             const endFloorStr = commentParts[commentParts.length - 1];
-            $statusDisplay.html(
-                `最新更新: 角色 <b>${escapeHtml(charNameInComment)}</b> (基于楼层 <b>${startFloorStr}-${endFloorStr}</b>)`
+            setCwbHtml($statusDisplay,
+                `${cwbLabel('characterWorldUi.status.latestBefore')}<b>${escapeHtml(charNameInComment)}</b>${cwbLabel('characterWorldUi.status.latestRange')}<b>${escapeHtml(startFloorStr)}-${escapeHtml(endFloorStr)}</b>${cwbLabel('characterWorldUi.status.latestEnd')}`
             );
         } else {
-            $statusDisplay.text('当前聊天信息尚未在世界书中更新。');
+            setCwbText($statusDisplay, 'characterWorldUi.status.noUpdate');
         }
         return { bookName, entries };
     } catch (e) {
+        if (renderDisabledState()) return;
         logError('加载/解析世界书条目以更新UI状态时失败:', e);
-        $statusDisplay.text('获取世界书更新状态时出错。');
+        setCwbText($statusDisplay, 'characterWorldUi.status.failed');
     }
 }
 
@@ -112,7 +123,7 @@ async function loadAllChatMessages($panel) {
 
     } catch (error) {
         logError('使用 getContext() 获取聊天消息时发生严重错误:', error);
-        showToastr('error', '获取聊天记录时发生内部错误。');
+        showToastr('error', t('characterWorldUi.update.chatFailed'));
         state.allChatMessages = [];
     }
     return null;
@@ -173,12 +184,12 @@ function processChatMessages(messages) {
 
 
 async function proceedWithCardUpdate($panel, messagesToUse) {
-    const statusUpdater = text => {
+    const statusUpdater = (key, params) => {
         if ($panel && $panel.length) {
-            $panel.find(`#${SCRIPT_ID_PREFIX}-status-message`).text(text);
+            setCwbText($panel.find(`#${SCRIPT_ID_PREFIX}-status-message`), key, params);
         }
     };
-    statusUpdater('正在生成角色卡描述...');
+    statusUpdater('characterWorldUi.update.generating');
 
     try {
         const mode = state.isIncrementalUpdateEnabled ? 'cwb_summarizer_incremental' : 'cwb_summarizer';
@@ -192,7 +203,7 @@ async function proceedWithCardUpdate($panel, messagesToUse) {
         let existingData = {};
 
         if (state.isIncrementalUpdateEnabled) {
-            statusUpdater('增量更新模式：正在获取现有角色数据...');
+            statusUpdater('characterWorldUi.update.loadingExisting');
             try {
                 const bookName = await getTargetWorldBook();
                 if (bookName) {
@@ -238,7 +249,7 @@ async function proceedWithCardUpdate($panel, messagesToUse) {
                 }
             } catch (e) {
                 logError('在增量更新中获取现有角色数据时出错:', e);
-                showToastr('error', '获取旧档案失败，请检查控制台。');
+                showToastr('error', t('characterWorldUi.update.existingFailed'));
             }
         }
 
@@ -297,7 +308,7 @@ async function proceedWithCardUpdate($panel, messagesToUse) {
             }
         }
 
-        statusUpdater('正在调用AI生成角色卡...');
+        statusUpdater('characterWorldUi.update.calling');
         const aiResponse = await callCustomOpenAI(messages);
         if (!aiResponse) throw new Error('AI未能生成有效描述。');
 
@@ -332,7 +343,7 @@ async function proceedWithCardUpdate($panel, messagesToUse) {
 
         if (processedNames.length > 0) {
             await updateCharacterRosterLorebookEntry([...new Set(processedNames)], startFloor_0idx, endFloor_0idx);
-            statusUpdater(`已为 ${processedNames.length} 个角色更新描述！`);
+            statusUpdater('characterWorldUi.update.charactersDone', { count: processedNames.length });
         } else {
             throw new Error('AI生成了内容，但未能成功提取任何有效的角色卡。');
         }
@@ -341,8 +352,8 @@ async function proceedWithCardUpdate($panel, messagesToUse) {
         return allSucceeded;
     } catch (error) {
         logError('角色卡更新过程出错:', error);
-        showToastr('error', `更新失败: ${error.message}`);
-        statusUpdater('错误：更新失败。');
+        showToastr('error', t('characterWorldUi.update.failed', { error: error.message }), { escapeHtml: true });
+        statusUpdater('characterWorldUi.update.errorStatus');
         return false;
     }
 }
@@ -398,7 +409,7 @@ async function triggerAutomaticUpdate($panel, lorebookSnapshot = null) {
     logDebug(`未更新消息数: ${unupdatedCount} (阈值: ${state.autoUpdateThreshold}). 上次更新楼层: ${maxEndFloorInLorebook}.`);
 
     if (unupdatedCount >= state.autoUpdateThreshold) {
-        showToastr('info', `检测到 ${unupdatedCount} 条新消息，将自动更新角色卡。`);
+        showToastr('info', t('characterWorldUi.update.autoDetected', { count: unupdatedCount }), { escapeHtml: true });
         const messagesToUse = state.allChatMessages.slice(maxEndFloorInLorebook);
         isUpdatingCard = true;
         await proceedWithCardUpdate($panel, messagesToUse);
@@ -454,6 +465,11 @@ export async function resetScriptStateForNewChat($panel, newChatName) {
     state.allChatMessages = [];
     state.currentChatFileIdentifier = newChatName || 'unknown_chat_fallback';
 
+    if (!isCwbEnabled()) {
+        await updateCardUpdateStatusDisplay($panel);
+        return;
+    }
+
     await loadAllChatMessages($panel);
 
     logDebug('状态重置完成。');
@@ -469,32 +485,31 @@ function updateBatchButtonState($panel, state, batchNum = 0, attemptNum = 0) {
 
     switch (state) {
         case 'processing':
-            let attemptText = attemptNum > 0 ? ` (尝试 ${attemptNum + 1})` : '';
-            $button.text(`点击停止 (${batchNum}/${totalBatchesNum})${attemptText}`);
+            setCwbText($button, attemptNum > 0 ? 'characterWorldUi.batch.processingRetry' : 'characterWorldUi.batch.processing', { batch: batchNum, total: totalBatchesNum, attempt: attemptNum + 1 });
             $button.prop('disabled', false);
-            $progress.show().text(`正在处理批次 ${batchNum}/${totalBatchesNum}...`);
+            setCwbText($progress.show(), 'characterWorldUi.batch.progress', { batch: batchNum, total: totalBatchesNum });
             isBatchUpdating = true;
             break;
         case 'stopping':
-            $button.text('正在停止...');
+            setCwbText($button, 'characterWorldUi.batch.stopping');
             $button.prop('disabled', true);
-            $progress.text('正在停止批量更新...');
+            setCwbText($progress, 'characterWorldUi.batch.stoppingProgress');
             break;
         case 'paused':
-            $button.text('继续批量更新');
+            setCwbText($button, 'characterWorldUi.batch.resume');
             $button.prop('disabled', false);
-            $progress.text('批量更新已暂停，点击继续...');
+            setCwbText($progress, 'characterWorldUi.batch.paused');
             isBatchUpdating = true;
             break;
         case 'error':
-            $button.text('继续批量更新 (出错)');
+            setCwbText($button, 'characterWorldUi.batch.error');
             $button.prop('disabled', false);
-            $progress.text('批量更新出错，请检查后继续...');
+            setCwbText($progress, 'characterWorldUi.batch.errorProgress');
             isBatchUpdating = true;
             break;
         case 'idle':
         default:
-            $button.text('立即批量更新');
+            setCwbText($button, 'characterWorldUi.batch.idle');
             $button.prop('disabled', false);
             $progress.hide();
             isBatchUpdating = false;
@@ -556,7 +571,7 @@ async function runBatchUpdateAttempt($panel, batchNum, attemptNum) {
         logError(`批次 ${batchNum} 尝试 ${attemptNum + 1} 失败: ${error.message}`);
         if (attemptNum >= MAX_BATCH_RETRIES) {
             logError(`批次 ${batchNum} 已达到最大重试次数，任务暂停。`);
-            showToastr('error', `批次 ${batchNum} 多次失败，请检查网络或API设置后手动继续。`);
+            showToastr('error', t('characterWorldUi.batch.failed', { batch: batchNum }), { escapeHtml: true });
             currentBatchNum = batchNum - 1;
             updateBatchButtonState($panel, 'error');
         } else {
@@ -575,7 +590,7 @@ async function processNextBatch($panel) {
 
     if (currentBatchNum >= totalBatchesNum) {
         logDebug('所有批次处理完毕！');
-        showToastr('success', '批量更新完成！');
+        showToastr('success', t('characterWorldUi.batch.done'));
         updateBatchButtonState($panel, 'idle');
         return;
     }
@@ -585,22 +600,22 @@ async function processNextBatch($panel) {
 
 export async function startBatchUpdate($panel) {
     if (!isCwbEnabled()) {
-        showToastr('warning', 'CharacterWorldBook总开关已关闭，无法执行批量更新。');
+        showToastr('warning', t('characterWorldUi.batch.disabled'));
         return;
     }
     await loadAllChatMessages($panel);
     if (!isCwbApiConfigured()) {
-        showToastr('warning', '请先配置API信息。');
+        showToastr('warning', t('characterWorldUi.api.configure'));
         return;
     }
 
     if (isBatchUpdating) {
         const $button = $panel.find('#cwb-batch-update-card');
-        if ($button.text().startsWith('点击停止')) {
+        if ($button.text().startsWith(t('characterWorldUi.batch.stop'))) {
             manualBatchStopRequested = true;
             updateBatchButtonState($panel, 'stopping');
             logDebug('批量更新停止请求已发出！将在当前批次完成后暂停。');
-        } else if ($button.text().startsWith('继续批量更新')) {
+        } else if ($button.text().startsWith(t('characterWorldUi.batch.resume'))) {
             manualBatchStopRequested = false;
             logDebug('从上次暂停处继续批量更新...');
             await processNextBatch($panel);
@@ -611,7 +626,7 @@ export async function startBatchUpdate($panel) {
     manualBatchStopRequested = false;
     
     if (state.allChatMessages.length === 0) {
-        showToastr('info', '当前没有聊天记录，无需更新。');
+        showToastr('info', t('characterWorldUi.update.noChat'));
         return;
     }
 
@@ -619,24 +634,24 @@ export async function startBatchUpdate($panel) {
     currentBatchNum = 0;
 
     logDebug(`准备开始批量更新任务，共 ${totalBatchesNum} 个批次。`);
-    showToastr('info', `开始批量更新，共 ${totalBatchesNum} 个批次...`);
+    showToastr('info', t('characterWorldUi.batch.starting', { total: totalBatchesNum }), { escapeHtml: true });
     
     await processNextBatch($panel);
 }
 
 export async function handleFloorRangeUpdate($panel) {
     if (!isCwbEnabled()) {
-        showToastr('warning', 'CharacterWorldBook总开关已关闭，无法执行楼层范围更新。');
+        showToastr('warning', t('characterWorldUi.update.rangeDisabled'));
         return;
     }
     await loadAllChatMessages($panel);
     if (isUpdatingCard || isBatchUpdating) {
-        showToastr('info', '已有更新任务在进行中。');
+        showToastr('info', t('characterWorldUi.update.busy'));
         return;
     }
     
     if (!isCwbApiConfigured()) {
-        showToastr('warning', '请先配置API信息。');
+        showToastr('warning', t('characterWorldUi.api.configure'));
         return;
     }
 
@@ -644,45 +659,45 @@ export async function handleFloorRangeUpdate($panel) {
     const endFloor = parseInt($panel.find('#cwb-end-floor').val(), 10);
 
     if (!startFloor || !endFloor || startFloor <= 0 || endFloor <= 0) {
-        showToastr('warning', '请输入有效的楼层范围。');
+        showToastr('warning', t('characterWorldUi.update.invalidRange'));
         return;
     }
 
     if (startFloor > endFloor) {
-        showToastr('warning', '起始楼层不能大于结束楼层。');
+        showToastr('warning', t('characterWorldUi.update.reversedRange'));
         return;
     }
     
     if (state.allChatMessages.length === 0) {
-        showToastr('info', '当前没有聊天记录，无需更新。');
+        showToastr('info', t('characterWorldUi.update.noChat'));
         return;
     }
     
     if (endFloor > state.allChatMessages.length) {
-        showToastr('warning', `结束楼层 ${endFloor} 超出了当前聊天记录长度 ${state.allChatMessages.length}。`);
+        showToastr('warning', t('characterWorldUi.update.rangeOverflow', { end: endFloor, count: state.allChatMessages.length }), { escapeHtml: true });
         return;
     }
 
     const messagesToProcess = getMessagesForFloorRange(startFloor, endFloor);
     if (!messagesToProcess || messagesToProcess.length === 0) {
-        showToastr('warning', '指定楼层范围内没有有效内容可处理。');
+        showToastr('warning', t('characterWorldUi.update.emptyRange'));
         return;
     }
 
     isUpdatingCard = true;
     const $button = $panel.find('#cwb-floor-range-update');
-    $button.prop('disabled', true).text('更新中...');
+    setCwbText($button.prop('disabled', true), 'characterWorldUi.updating');
 
     try {
         logDebug(`开始处理楼层 ${startFloor}-${endFloor} 的内容...`);
         const success = await proceedWithCardUpdate($panel, messagesToProcess);
         
         if (success) {
-            showToastr('success', `楼层 ${startFloor}-${endFloor} 更新完成！`);
+            showToastr('success', t('characterWorldUi.update.rangeDone', { start: startFloor, end: endFloor }), { escapeHtml: true });
         }
     } finally {
         isUpdatingCard = false;
-        $button.prop('disabled', false).text('楼层范围更新');
+        setCwbText($button.prop('disabled', false), 'characterWorldUi.update.rangeReady');
     }
 }
 
@@ -692,11 +707,11 @@ export async function manualUpdateLogic($panel = null) {
         return;
     }
     if (isUpdatingCard) {
-        showToastr('info', '已有更新任务在进行中。');
+        showToastr('info', t('characterWorldUi.update.busy'));
         return;
     }
     if (!isCwbApiConfigured()) {
-        showToastr('warning', '请先配置API信息。');
+        showToastr('warning', t('characterWorldUi.api.configure'));
         return;
     }
 
@@ -712,24 +727,24 @@ export async function manualUpdateLogic($panel = null) {
 
 export async function handleManualUpdateCard($panel) {
     const $button = $panel.find(`#${SCRIPT_ID_PREFIX}-manual-update-card`);
-    $button.prop('disabled', true).text('更新中...');
+    setCwbText($button.prop('disabled', true), 'characterWorldUi.updating');
     await manualUpdateLogic($panel);
-    $button.prop('disabled', false).text('立即更新角色描述');
+    setCwbText($button.prop('disabled', false), 'characterWorldUi.update.quickReady');
 }
 
 export async function handleLegacyFormatConversion($panel) {
     if (!isCwbEnabled()) {
-        showToastr('warning', 'CharacterWorldBook总开关已关闭。');
+        showToastr('warning', t('characterWorldUi.update.disabled'));
         return;
     }
 
     const $button = $panel.find('#cwb-legacy-auto-update');
-    $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 转换中...');
+    setCwbHtml($button.prop('disabled', true), '<i class="fas fa-spinner fa-spin"></i> ' + cwbLabel('characterWorldUi.update.converting'));
 
     try {
         const bookName = await getTargetWorldBook();
         if (!bookName) {
-            showToastr('warning', '未找到目标世界书。');
+            showToastr('warning', t('characterWorldUi.world.notFound'));
             return;
         }
 
@@ -862,16 +877,16 @@ export async function handleLegacyFormatConversion($panel) {
 
         if (updatedCount > 0) {
             await amilyHelper.setLorebookEntries(bookName, entriesToUpdate);
-            showToastr('success', `成功转换了 ${updatedCount} 个旧版格式条目！`);
+            showToastr('success', t('characterWorldUi.update.converted', { count: updatedCount }), { escapeHtml: true });
         } else {
-            showToastr('info', '没有发现需要转换的旧版格式条目。');
+            showToastr('info', t('characterWorldUi.update.noLegacy'));
         }
 
     } catch (error) {
         logError('旧版格式转换失败:', error);
-        showToastr('error', `转换失败: ${error.message}`);
+        showToastr('error', t('characterWorldUi.update.convertFailed', { error: error.message }), { escapeHtml: true });
     } finally {
-        $button.prop('disabled', false).html('<i class="fa-solid fa-history"></i> 旧版格式转换');
+        setCwbHtml($button.prop('disabled', false), '<i class="fa-solid fa-history"></i> ' + cwbLabel('characterWorldUi.update.convert'));
     }
 }
 

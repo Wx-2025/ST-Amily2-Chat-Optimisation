@@ -5,6 +5,8 @@ import { registerSlashCommand } from '../../../../../slash-commands.js';
 import { extensionName } from '../../utils/settings.js';
 import { clearSecretInput, markSecretInputStored, readSecretInputUpdate } from '../../ui/secret-input.js';
 import { normalizePublicHttpsImageUrl, normalizeSfiGenTag, parsePublicHttpsImageUrlList } from '../../core/security/sfigen-input.js';
+import { applyTranslations, subscribeLocaleChange, t } from '../../utils/i18n/index.js';
+import { PLAIN as imageMessages } from '../../utils/i18n/messages/image-generation.js';
 const sfigenSettingsKey = 'sfigen_settings';
 
 const defaultSettings = {
@@ -28,6 +30,7 @@ export default class SfiGenModule extends Module {
     constructor() {
         super(builder);
         this.settings = {};
+        this.localizedControls = new Map();
     }
 
     async init(ctx = {}) {
@@ -69,6 +72,51 @@ export default class SfiGenModule extends Module {
         this._registerSlashCommand();
         this._bindEvents();
         this._bindButtonsGlobal();
+        this._refreshTranslations();
+        this.localeUnsubscribe?.();
+        this.localeUnsubscribe = subscribeLocaleChange(() => this._refreshTranslations());
+    }
+
+    _label(key) {
+        return `<span data-sfigen-label="${key}">${this._escapeHtml(t(`imageGenUi.${key}`))}</span>`;
+    }
+
+    dispose() {
+        this.localeUnsubscribe?.();
+        this.localeUnsubscribe = null;
+        this.localizedControls.clear();
+        super.dispose();
+    }
+
+    _trackControls(root) {
+        if (!root) return;
+        for (const node of this.localizedControls.keys()) {
+            if (!node.isConnected && !root.contains(node)) this.localizedControls.delete(node);
+        }
+        for (const node of root.querySelectorAll('[data-sfigen-label], [data-sfigen-title], [data-sfigen-aria]')) {
+            const attribute = node.hasAttribute('data-sfigen-title') ? 'title'
+                : node.hasAttribute('data-sfigen-aria') ? 'aria-label' : null;
+            const key = `imageGenUi.${node.getAttribute(attribute === 'title' ? 'data-sfigen-title'
+                : attribute ? 'data-sfigen-aria' : 'data-sfigen-label')}`;
+            if (!Object.hasOwn(imageMessages, key)) continue;
+            this.localizedControls.set(node, { key, attribute, last: attribute ? node.getAttribute(attribute) : node.textContent });
+        }
+    }
+
+    _refreshTranslations() {
+        applyTranslations(this.el);
+        // Only controls created by this module are tracked, never arbitrary chat markup.
+        for (const [node, record] of this.localizedControls) {
+            const current = record.attribute ? node.getAttribute(record.attribute) : node.textContent;
+            if (!node.isConnected || current !== record.last) {
+                this.localizedControls.delete(node);
+                continue;
+            }
+            const value = t(record.key);
+            if (record.attribute) node.setAttribute(record.attribute, value);
+            else node.textContent = value;
+            record.last = value;
+        }
     }
 
     _bindUI() {
@@ -157,7 +205,7 @@ export default class SfiGenModule extends Module {
         
         if (!this.settings.api_key) {
             console.warn(`[SfiGen] 未配置 API Key`);
-            toastr.error('请先在扩展设置中配置 SiliconFlow API Key');
+            toastr.error(t('imageGenUi.keyRequired'));
             return null;
         }
 
@@ -178,7 +226,7 @@ export default class SfiGenModule extends Module {
         };
 
         try {
-            toastr.info('正在生成图片，请稍候...');
+            toastr.info(t('imageGenUi.generatingNotice'));
             const response = await fetch(url, {
                 method: 'POST',
                 headers: headers,
@@ -193,14 +241,14 @@ export default class SfiGenModule extends Module {
             const imageUrl = normalizePublicHttpsImageUrl(data?.images?.[0]?.url);
 
             if (imageUrl) {
-                toastr.success('图片生成成功！');
+                toastr.success(t('imageGenUi.generated'));
                 return imageUrl;
             } else {
                 throw new Error('IMAGE_API_INVALID_URL');
             }
         } catch {
             console.warn('[SfiGen] 图片生成请求失败或返回了不安全的图片地址');
-            toastr.error('图片生成失败，请检查配置或稍后重试');
+            toastr.error(t('imageGenUi.failed'));
             return null;
         }
     }
@@ -228,15 +276,17 @@ export default class SfiGenModule extends Module {
         
         let newHtml = html;
         let hasMatch = false;
+        const createdButtonIds = [];
         
         // 1. 匹配 [tag: prompt]
         const regexPrompt = new RegExp(`\\[${tag}:\\s*([^\\]]+)\\]`, 'gi');
         newHtml = newHtml.replace(regexPrompt, (match, prompt) => {
             hasMatch = true;
             const buttonId = `sfigen-btn-${messageId}-${Math.random().toString(36).substr(2, 9)}`;
+            createdButtonIds.push(buttonId);
             const safePrompt = this._escapeHtml(prompt);
             const safeMatch = this._escapeHtml(match);
-            return `<div class="sfigen-image-container" data-message-id="${messageId}" data-prompt="${safePrompt}" data-original-tag="${safeMatch}" style="width: 96%; max-width: 600px; background: var(--SmartThemeBlurTintColor); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden; margin: 20px auto; padding: 15px; text-align: center; position: relative; z-index: 10;"><button id="${buttonId}" class="sfigen-generate-btn" style="background-color: var(--SmartThemeQuoteColor); color: var(--SmartThemeBodyColor); border: 1px solid var(--SmartThemeBorderColor); padding: 8px 20px; border-radius: 8px; cursor: pointer; pointer-events: auto; display: inline-block; font-weight: bold; transition: all 0.2s;"><i class="fa-solid fa-image"></i> 生成图片</button></div>`;
+            return `<div class="sfigen-image-container" data-message-id="${messageId}" data-prompt="${safePrompt}" data-original-tag="${safeMatch}" style="width: 96%; max-width: 600px; background: var(--SmartThemeBlurTintColor); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden; margin: 20px auto; padding: 15px; text-align: center; position: relative; z-index: 10;"><button id="${buttonId}" class="sfigen-generate-btn" style="background-color: var(--SmartThemeQuoteColor); color: var(--SmartThemeBodyColor); border: 1px solid var(--SmartThemeBorderColor); padding: 8px 20px; border-radius: 8px; cursor: pointer; pointer-events: auto; display: inline-block; font-weight: bold; transition: all 0.2s;"><i class="fa-solid fa-image"></i> ${this._label('generate')}</button></div>`;
         });
 
         // 2. 匹配 [tag_img: prompt | url1,url2]
@@ -260,6 +310,7 @@ export default class SfiGenModule extends Module {
             hasMatch = true;
             const displayUrl = imageList[imageList.length - 1];
             const buttonId = `sfigen-btn-${messageId}-${Math.random().toString(36).substr(2, 9)}`;
+            createdButtonIds.push(buttonId);
             const safePrompt = this._escapeHtml(prompt);
             const safeMatch = this._escapeHtml(match);
             
@@ -275,21 +326,22 @@ export default class SfiGenModule extends Module {
 
             return `<div class="sfigen-image-container" data-message-id="${messageId}" data-prompt="${safePrompt}" data-original-tag="${safeMatch}" data-urls="${this._escapeHtml(imageList.join(','))}" style="width: 96%; max-width: 600px; background: var(--SmartThemeBlurTintColor); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden; margin: 20px auto; padding: 15px; text-align: center; position: relative; z-index: 10;">
                 <div style="width: calc(100% - 4px); margin: 2px auto 15px auto; border: 2px solid rgba(0,0,0,0.15); border-radius: 8px; overflow: hidden; position: relative; cursor: pointer;" class="sfigen-img-wrapper">
-                    <img src="${this._escapeHtml(displayUrl)}" referrerpolicy="no-referrer" class="sfigen-display-img" style="width: 100%; display: block; transition: transform 0.3s;" alt="CG" title="点击放大">
+                    <img src="${this._escapeHtml(displayUrl)}" referrerpolicy="no-referrer" class="sfigen-display-img" style="width: 100%; display: block; transition: transform 0.3s;" alt="CG" data-sfigen-title="zoom" title="${this._escapeHtml(t('imageGenUi.zoom'))}">
                     <div class="sfigen-img-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3); display: flex; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.2s;">
                         <i class="fa-solid fa-magnifying-glass-plus" style="color: white; font-size: 2em;"></i>
                     </div>
                 </div>
                 ${navHtml}
                 <div style="display: flex; justify-content: center; gap: 10px; margin-top: 15px;">
-                    <button id="${buttonId}" class="sfigen-generate-btn" style="background-color: var(--SmartThemeQuoteColor); color: var(--SmartThemeBodyColor); border: 1px solid var(--SmartThemeBorderColor); padding: 8px 20px; border-radius: 8px; cursor: pointer; pointer-events: auto; display: inline-block; font-weight: bold; transition: all 0.2s;"><i class="fa-solid fa-rotate-right"></i> 再次生成</button>
-                    <button class="sfigen-save-btn" data-url="${this._escapeHtml(displayUrl)}" style="background-color: var(--SmartThemeQuoteColor); color: var(--SmartThemeBodyColor); border: 1px solid var(--SmartThemeBorderColor); padding: 8px 20px; border-radius: 8px; cursor: pointer; pointer-events: auto; display: inline-block; font-weight: bold; transition: all 0.2s;"><i class="fa-solid fa-download"></i> 保存图片</button>
+                    <button id="${buttonId}" class="sfigen-generate-btn" style="background-color: var(--SmartThemeQuoteColor); color: var(--SmartThemeBodyColor); border: 1px solid var(--SmartThemeBorderColor); padding: 8px 20px; border-radius: 8px; cursor: pointer; pointer-events: auto; display: inline-block; font-weight: bold; transition: all 0.2s;"><i class="fa-solid fa-rotate-right"></i> ${this._label('generateAgain')}</button>
+                    <button class="sfigen-save-btn" data-url="${this._escapeHtml(displayUrl)}" style="background-color: var(--SmartThemeQuoteColor); color: var(--SmartThemeBodyColor); border: 1px solid var(--SmartThemeBorderColor); padding: 8px 20px; border-radius: 8px; cursor: pointer; pointer-events: auto; display: inline-block; font-weight: bold; transition: all 0.2s;"><i class="fa-solid fa-download"></i> ${this._label('save')}</button>
                 </div>
             </div>`;
         });
 
         if (hasMatch) {
             messageElement.html(newHtml);
+            for (const id of createdButtonIds) this._trackControls(document.getElementById(id)?.closest('.sfigen-image-container'));
         }
     }
 
@@ -341,7 +393,8 @@ export default class SfiGenModule extends Module {
             const originalTag = container.data('original-tag');
             
             btn.prop('disabled', true);
-            btn.html('<i class="fa-solid fa-spinner fa-spin"></i> 生成中...');
+            btn.html(`<i class="fa-solid fa-spinner fa-spin"></i> ${this._label('generating')}`);
+            this._trackControls(btn[0]);
             
             const imageUrl = await this._generateImage(prompt);
             
@@ -417,33 +470,36 @@ export default class SfiGenModule extends Module {
 
                         const finalHtml = `<div class="sfigen-image-container" data-message-id="${messageId}" data-prompt="${safePrompt}" data-original-tag="${safeNewTag}" data-urls="${safeUrlsString}" style="width: 96%; max-width: 600px; background: var(--SmartThemeBlurTintColor); border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); overflow: hidden; margin: 20px auto; padding: 15px; text-align: center; position: relative; z-index: 10;">
                             <div style="width: calc(100% - 4px); margin: 2px auto 15px auto; border: 2px solid rgba(0,0,0,0.15); border-radius: 8px; overflow: hidden; position: relative; cursor: pointer;" class="sfigen-img-wrapper">
-                                <img src="${safeImageUrl}" referrerpolicy="no-referrer" class="sfigen-display-img" style="width: 100%; display: block; transition: transform 0.3s;" alt="CG" title="点击放大">
+                                <img src="${safeImageUrl}" referrerpolicy="no-referrer" class="sfigen-display-img" style="width: 100%; display: block; transition: transform 0.3s;" alt="CG" data-sfigen-title="zoom" title="${this._escapeHtml(t('imageGenUi.zoom'))}">
                                 <div class="sfigen-img-overlay" style="position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.3); display: flex; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.2s;">
                                     <i class="fa-solid fa-magnifying-glass-plus" style="color: white; font-size: 2em;"></i>
                                 </div>
                             </div>
                             ${navHtml}
                             <div style="display: flex; justify-content: center; gap: 10px; margin-top: 15px;">
-                                <button id="${newButtonId}" class="sfigen-generate-btn" style="background-color: var(--SmartThemeQuoteColor); color: var(--SmartThemeBodyColor); border: 1px solid var(--SmartThemeBorderColor); padding: 8px 20px; border-radius: 8px; cursor: pointer; pointer-events: auto; display: inline-block; font-weight: bold; transition: all 0.2s;"><i class="fa-solid fa-rotate-right"></i> 再次生成</button>
-                                <button class="sfigen-save-btn" data-url="${safeImageUrl}" style="background-color: var(--SmartThemeQuoteColor); color: var(--SmartThemeBodyColor); border: 1px solid var(--SmartThemeBorderColor); padding: 8px 20px; border-radius: 8px; cursor: pointer; pointer-events: auto; display: inline-block; font-weight: bold; transition: all 0.2s;"><i class="fa-solid fa-download"></i> 保存图片</button>
+                                <button id="${newButtonId}" class="sfigen-generate-btn" style="background-color: var(--SmartThemeQuoteColor); color: var(--SmartThemeBodyColor); border: 1px solid var(--SmartThemeBorderColor); padding: 8px 20px; border-radius: 8px; cursor: pointer; pointer-events: auto; display: inline-block; font-weight: bold; transition: all 0.2s;"><i class="fa-solid fa-rotate-right"></i> ${this._label('generateAgain')}</button>
+                                <button class="sfigen-save-btn" data-url="${safeImageUrl}" style="background-color: var(--SmartThemeQuoteColor); color: var(--SmartThemeBodyColor); border: 1px solid var(--SmartThemeBorderColor); padding: 8px 20px; border-radius: 8px; cursor: pointer; pointer-events: auto; display: inline-block; font-weight: bold; transition: all 0.2s;"><i class="fa-solid fa-download"></i> ${this._label('save')}</button>
                             </div>
                         </div>`;
                         
                         container.replaceWith(finalHtml);
+                        this._trackControls(document.getElementById(newButtonId)?.closest('.sfigen-image-container'));
                         
                     } else {
                         console.warn(`[SfiGen] Could not find tag to replace in message ${messageId}`);
-                        toastr.warning('图片已生成，但无法保存到聊天记录中。');
+                        toastr.warning(t('imageGenUi.notSaved'));
                     }
                 }
             } else {
                 btn.prop('disabled', false);
-                btn.html('<i class="fa-solid fa-image"></i> 重新生成');
+                btn.html(`<i class="fa-solid fa-image"></i> ${this._label('retry')}`);
+                this._trackControls(btn[0]);
             }
         });
 
         // Image hover and zoom
         const imageWrapperSelector = '#chat .sfigen-image-container .sfigen-img-wrapper';
+        const module = this;
         $(document)
             .off('mouseenter.sfigenZoom mouseleave.sfigenZoom click.sfigenZoom', imageWrapperSelector)
             .on('mouseenter.sfigenZoom', imageWrapperSelector, function() {
@@ -495,7 +551,8 @@ export default class SfiGenModule extends Module {
 
                 const closeButton = document.createElement('button');
                 closeButton.type = 'button';
-                closeButton.setAttribute('aria-label', '关闭图片预览');
+                closeButton.setAttribute('aria-label', t('imageGenUi.closePreview'));
+                closeButton.setAttribute('data-sfigen-aria', 'closePreview');
                 Object.assign(closeButton.style, {
                     position: 'absolute',
                     top: '20px',
@@ -512,6 +569,7 @@ export default class SfiGenModule extends Module {
 
                 overlayElement.append(zoomImage, closeButton);
                 document.body.append(overlayElement);
+                module._trackControls(overlayElement);
                 const overlay = $(overlayElement);
 
                 setTimeout(() => {
@@ -532,7 +590,7 @@ export default class SfiGenModule extends Module {
             e.stopPropagation();
             const url = normalizePublicHttpsImageUrl(String($(this).data('url') || ''));
             if (!url) {
-                toastr.error('图片地址不安全，已拒绝下载');
+                toastr.error(t('imageGenUi.unsafeUrl'));
                 return;
             }
             
@@ -558,10 +616,10 @@ export default class SfiGenModule extends Module {
                 window.URL.revokeObjectURL(downloadUrl);
                 document.body.removeChild(a);
                 
-                toastr.success('图片已保存到默认下载目录');
+                toastr.success(t('imageGenUi.saved'));
             } catch {
                 console.warn('[SfiGen] 图片下载失败');
-                toastr.error('保存图片失败');
+                toastr.error(t('imageGenUi.saveFailed'));
             }
         });
 
@@ -586,7 +644,7 @@ export default class SfiGenModule extends Module {
     _registerSlashCommand() {
         registerSlashCommand('sfigen', async (args, value) => {
             if (!value) {
-                toastr.warning('请提供提示词。例如: /sfigen 一个可爱的猫咪');
+                toastr.warning(t('imageGenUi.promptRequired'));
                 return;
             }
             const imageUrl = await this._generateImage(value);
@@ -611,6 +669,6 @@ export default class SfiGenModule extends Module {
                     await reloadCurrentChat();
                 }
             }
-        }, [], '使用 SiliconFlow 生成图片', true, true);
+        }, [], t('imageGenUi.commandDescription'), true, true);
     }
 }

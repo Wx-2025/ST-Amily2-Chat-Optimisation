@@ -739,6 +739,13 @@
     padding-left: 0 !important;
 }
 
+#amily2_security_audit_preflight,
+#amily2_security_audit_report,
+#amily2_security_audit_report li {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
 /* =========================================================
    8. Toggle / Segmented Control
    ========================================================= */
@@ -1187,6 +1194,10 @@
     color: #fff !important;
     font-size: 12px !important;
     white-space: nowrap !important;
+}
+
+#amily2_chat_optimiser #amily2_update_button_new[hidden] {
+    display: none !important;
 }
 
 #amily2_chat_optimiser #amily2_update_indicator.update-indicator {

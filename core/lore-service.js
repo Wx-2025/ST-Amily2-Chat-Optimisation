@@ -26,6 +26,7 @@ import {
 } from '/script.js';
 import {
     commitWorldInfoMutationStrict,
+    loadWorldInfoStrict,
     persistWorldInfoStrict,
 } from './strict-world-info-persistence.js';
 
@@ -58,8 +59,16 @@ async function resolveHostWorldInfoCache() {
  */
 export function withLoreLock(label, fn) {
     const result = _writeLock.then(() => {
-        console.log(`[LoreService] 写锁获取: ${label}`);
-        return fn();
+        const run = () => {
+            console.log(`[LoreService] 写锁获取: ${label}`);
+            return fn();
+        };
+        // Cooperating tabs must hold the same lock across fresh read and save.
+        // Other devices and the native editor still require host-side CAS.
+        const locks = globalThis.navigator?.locks;
+        return typeof locks?.request === 'function'
+            ? locks.request('amily2:lore-writes:v1', { mode: 'exclusive' }, run)
+            : run();
     });
     // 出错时不阻断后续排队操作，但让错误传播给调用方
     _writeLock = result.then(
@@ -78,6 +87,21 @@ export function withLoreLock(label, fn) {
  */
 export async function loadBook(bookName) {
     return loadWorldInfo(bookName);
+}
+
+/** Bypass the host's page-local cache for revision-sensitive operations. */
+export async function loadBookFresh(bookName, options = {}) {
+    const headersProvider = options.getHeaders ?? getRequestHeaders;
+    const cache = Object.prototype.hasOwnProperty.call(options, 'cache')
+        ? options.cache
+        : await resolveHostWorldInfoCache();
+    return loadWorldInfoStrict({
+        name: bookName,
+        fetchImpl: options.fetchImpl ?? globalThis.fetch,
+        headers: await Promise.resolve(headersProvider()),
+        cache,
+        logger: options.logger ?? console,
+    });
 }
 
 // ── 写操作（全部走写锁）──────────────────────────────────────────────────────
@@ -158,7 +182,8 @@ export async function saveBookStrict(bookName, bookData, options = {}) {
 
 /**
  * Clone, mutate and strictly persist a world-info book under the shared lore
- * write lock. The object returned by loadWorldInfo is never mutated directly.
+ * write lock. A fresh server read, not the page cache, is used by default.
+ * The source object is never mutated directly.
  *
  * @param {string} bookName
  * @param {(draft: object, source: object|null|undefined) => unknown} mutateDraft
@@ -175,7 +200,7 @@ export async function saveBookStrict(bookName, bookData, options = {}) {
  */
 export async function mutateBookStrict(bookName, mutateDraft, options = {}) {
     const {
-        loadData = () => loadWorldInfo(bookName),
+        loadData = () => loadBookFresh(bookName, options),
         createEmptyData,
         ...saveOptions
     } = options;

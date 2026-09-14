@@ -5,13 +5,15 @@ import { configManager } from '../../utils/config/ConfigManager.js';
 import { world_names } from '/scripts/world-info.js';
 import { state } from './cwb_state.js';
 import { cwbCompleteDefaultSettings } from './cwb_config.js';
-import { logError, showToastr, escapeHtml, compareVersions, isCwbEnabled } from './cwb_utils.js';
+import { logError, showToastr, compareVersions, isCwbEnabled } from './cwb_utils.js';
 import { fetchModelsAndConnect, updateApiStatusDisplay } from './cwb_apiService.js';
 import { checkForUpdates } from './cwb_updater.js';
 import { handleManualUpdateCard, startBatchUpdate, handleFloorRangeUpdate, handleLegacyFormatConversion } from './cwb_core.js';
 import { initializeCharCardViewer } from './cwb_uiManager.js';
 import { CHAR_CARD_VIEWER_BUTTON_ID } from './cwb_state.js';
 import { clearSecretInput, markSecretInputStored, readSecretInputUpdate } from '../../ui/secret-input.js';
+
+import { t, cwbLabel, setCwbText, initializeCwbI18n, refreshCwbSecretPlaceholder, escapeCwbHtml as escapeHtml } from './cwb_i18n.js';
 
 const { jQuery: $ } = window;
 
@@ -50,16 +52,16 @@ function saveApiConfig() {
 
     if (settings.cwb_api_mode === 'sillytavern_preset') {
         if (!settings.cwb_tavern_profile) {
-            showToastr('warning', '请选择SillyTavern预设。');
+            showToastr('warning', t('characterWorldUi.settings.presetRequired'));
             return;
         }
-        showToastr('success', 'API配置已保存！');
+        showToastr('success', t('characterWorldUi.settings.apiSaved'));
     } else {
         if (!settings.cwb_api_url) {
-            showToastr('warning', 'API URL 不能为空。');
+            showToastr('warning', t('characterWorldUi.settings.urlRequired'));
             return;
         }
-        showToastr('success', 'API配置已保存！');
+        showToastr('success', t('characterWorldUi.settings.apiSaved'));
     }
     
     saveSettingsDebounced();
@@ -77,19 +79,19 @@ function clearApiConfig() {
     state.customApiConfig.model = '';
     updateUiWithSettings();
     updateApiStatusDisplay($panel);
-    showToastr('info', 'API配置已清除！');
+    showToastr('info', t('characterWorldUi.settings.apiCleared'));
 }
 
 function saveBreakArmorPrompt() {
     const newPrompt = $panel.find('#cwb-break-armor-prompt-textarea').val().trim();
     if (!newPrompt) {
-        showToastr('warning', '破甲预设不能为空。');
+        showToastr('warning', t('characterWorldUi.settings.breakRequired'));
         return;
     }
     getSettings().cwb_break_armor_prompt = newPrompt;
     state.currentBreakArmorPrompt = newPrompt;
     saveSettingsDebounced();
-    showToastr('success', '破甲预设已保存！');
+    showToastr('success', t('characterWorldUi.settings.breakSaved'));
 }
 
 function autosaveBreakArmorPrompt() {
@@ -104,19 +106,19 @@ function resetBreakArmorPrompt() {
     state.currentBreakArmorPrompt = cwbCompleteDefaultSettings.cwb_break_armor_prompt;
     saveSettingsDebounced();
     updateUiWithSettings();
-    showToastr('info', '破甲预设已恢复为默认值！');
+    showToastr('info', t('characterWorldUi.settings.breakReset'));
 }
 
 function saveCharCardPrompt() {
     const newPrompt = $panel.find('#cwb-char-card-prompt-textarea').val().trim();
     if (!newPrompt) {
-        showToastr('warning', '角色卡预设不能为空。');
+        showToastr('warning', t('characterWorldUi.settings.cardRequired'));
         return;
     }
     getSettings().cwb_char_card_prompt = newPrompt;
     state.currentCharCardPrompt = newPrompt;
     saveSettingsDebounced();
-    showToastr('success', '角色卡预设已保存！');
+    showToastr('success', t('characterWorldUi.settings.cardSaved'));
 }
 
 function autosaveCharCardPrompt() {
@@ -131,7 +133,7 @@ function resetCharCardPrompt() {
     state.currentCharCardPrompt = cwbCompleteDefaultSettings.cwb_char_card_prompt;
     saveSettingsDebounced();
     updateUiWithSettings();
-    showToastr('info', '角色卡预设已恢复为默认值！');
+    showToastr('info', t('characterWorldUi.settings.cardReset'));
 }
 
 function saveAutoUpdateThreshold() {
@@ -141,9 +143,9 @@ function saveAutoUpdateThreshold() {
         getSettings().cwb_auto_update_threshold = newT;
         state.autoUpdateThreshold = newT;
         saveSettingsDebounced();
-        showToastr('success', '自动更新阈值已保存！');
+        showToastr('success', t('characterWorldUi.settings.thresholdSaved'));
     } else {
-        showToastr('warning', `阈值 "${valStr}" 无效。`);
+        showToastr('warning', t('characterWorldUi.settings.thresholdInvalid', { value: valStr }), { escapeHtml: true });
         $panel.find('#cwb-auto-update-threshold').val(getSettings().cwb_auto_update_threshold);
     }
 }
@@ -165,9 +167,9 @@ function saveScanDepth() {
         getSettings().cwb_scan_depth = newT;
         state.scanDepth = newT;
         saveSettingsDebounced();
-        showToastr('success', '扫描深度已保存！');
+        showToastr('success', t('characterWorldUi.settings.scanSaved'));
     } else {
-        showToastr('warning', `深度 "${valStr}" 无效。`);
+        showToastr('warning', t('characterWorldUi.settings.scanInvalid', { value: valStr }), { escapeHtml: true });
         $panel.find('#cwb-scan-depth').val(getSettings().cwb_scan_depth);
     }
 }
@@ -214,7 +216,7 @@ function bindWorldBookSettings() {
                         bookListContainer.append(div);
                     });
                 } else {
-                    bookListContainer.html('<p class="notes">没有找到世界书。</p>');
+                    bookListContainer.html('<p class="notes">' + cwbLabel('characterWorldUi.world.none') + '</p>');
                 }
             };
 
@@ -246,7 +248,7 @@ function bindWorldBookSettings() {
                     settings.cwb_custom_worldbook = radio.val();
                     state.customWorldBook = radio.val();
                     saveSettingsDebounced();
-                    showToastr('info', `已选择世界书: ${radio.next('label').text()}`);
+                    showToastr('info', t('characterWorldUi.world.selected', { name: radio.next('label').text() }), { escapeHtml: true });
                 }
             });
 
@@ -258,7 +260,7 @@ function bindWorldBookSettings() {
             setTimeout(tryBind, RETRY_DELAY);
         } else {
             console.error('[CWB] Failed to load world books after multiple retries.');
-            $panel.find('#cwb_worldbook_radio_list').html('<p class="notes error">加载世界书失败，请刷新页面重试。</p>');
+            $panel.find('#cwb_worldbook_radio_list').html('<p class="notes error">' + cwbLabel('characterWorldUi.world.loadFailed') + '</p>');
         }
     }
 
@@ -267,6 +269,7 @@ function bindWorldBookSettings() {
 
 export function bindSettingsEvents($settingsPanel) {
     $panel = $settingsPanel;
+    initializeCwbI18n($panel);
 
     bindWorldBookSettings();
     $panel.on('click', '.sinan-nav-item', function () {
@@ -290,7 +293,7 @@ export function bindSettingsEvents($settingsPanel) {
             loadSillyTavernPresets(true);
         }
         
-        showToastr('success', `API模式已切换为: ${selectedMode === 'sillytavern_preset' ? 'SillyTavern预设' : '全兼容'}`);
+        showToastr('success', t('characterWorldUi.settings.modeChanged', { mode: t(selectedMode === 'sillytavern_preset' ? 'characterWorldUi.api.preset' : 'characterWorldUi.api.compat') }), { escapeHtml: true });
     });
     $panel.on('change', '#cwb-tavern-profile', function() {
         const selectedProfile = $(this).val();
@@ -301,7 +304,7 @@ export function bindSettingsEvents($settingsPanel) {
         
         if (selectedProfile) {
             console.log(`[CWB] 选择了预设: ${selectedProfile}`);
-            showToastr('success', `SillyTavern预设已选择: ${selectedProfile}`);
+            showToastr('success', t('characterWorldUi.settings.presetSelected', { id: selectedProfile }), { escapeHtml: true });
         }
         
         updateApiStatusDisplay($panel);
@@ -330,6 +333,7 @@ export function bindSettingsEvents($settingsPanel) {
     });
     $panel.on('blur', '#cwb-api-key', function() {
         markSecretInputStored(this, configManager.has('cwb_api_key'));
+        refreshCwbSecretPlaceholder(this);
     });
     
     $panel.on('input change', '#cwb-api-model', function(event) {
@@ -345,7 +349,7 @@ export function bindSettingsEvents($settingsPanel) {
         console.log('[CWB] 模型已更新 - 设置:', getSettings().cwb_api_model, ', 状态:', state.customApiConfig.model);
         
         if (model && event.type === 'change') {
-            showToastr('success', `模型已选择: ${model}`);
+            showToastr('success', t('characterWorldUi.settings.modelSelected', { model }), { escapeHtml: true });
         }
     });
 
@@ -383,7 +387,7 @@ export function bindSettingsEvents($settingsPanel) {
 
         saveSettingsDebounced();
         state.autoUpdateEnabled = isChecked;
-        showToastr('info', `角色卡自动更新已 ${isChecked ? '启用' : '禁用'}`);
+        showToastr('info', t('characterWorldUi.settings.autoChanged', { state: t(isChecked ? 'characterWorldUi.enabled' : 'characterWorldUi.disabled') }), { escapeHtml: true });
     });
 
     $panel.on('click', '#cwb-viewer-enabled', function () {
@@ -408,7 +412,7 @@ export function bindSettingsEvents($settingsPanel) {
             $viewerButton.toggle(shouldShow);
         }
         
-        showToastr('info', `角色卡查看器已 ${isChecked ? '启用' : '禁用'}`);
+        showToastr('info', t('characterWorldUi.settings.viewerChanged', { state: t(isChecked ? 'characterWorldUi.enabled' : 'characterWorldUi.disabled') }), { escapeHtml: true });
     });
 
     $panel.on('click', '#cwb-incremental-update-enabled', function () {
@@ -425,7 +429,7 @@ export function bindSettingsEvents($settingsPanel) {
 
         saveSettingsDebounced();
         state.isIncrementalUpdateEnabled = isChecked;
-        showToastr('info', `增量更新模式已 ${isChecked ? '启用' : '禁用'}`);
+        showToastr('info', t('characterWorldUi.settings.incrementalChanged', { state: t(isChecked ? 'characterWorldUi.enabled' : 'characterWorldUi.disabled') }), { escapeHtml: true });
     });
 
     $panel.on('click', '#cwb_master_enabled', function () {
@@ -453,7 +457,7 @@ export function bindSettingsEvents($settingsPanel) {
             $viewerButton.toggle(shouldShow);
         }
         
-        showToastr('info', `CharacterWorldBook 已 ${isChecked ? '启用' : '禁用'}`);
+        showToastr('info', t('characterWorldUi.settings.masterChanged', { state: t(isChecked ? 'characterWorldUi.enabled' : 'characterWorldUi.disabled') }), { escapeHtml: true });
 
         $(document).trigger('cwb:master-switch-changed', { isEnabled: isChecked });
     });
@@ -478,7 +482,7 @@ export function bindSettingsEvents($settingsPanel) {
             $viewerButton.toggle(isChecked && state.viewerEnabled);
         }
 
-        showToastr('info', `CharacterWorldBook 已 ${isChecked ? '启用' : '禁用'}`);
+        showToastr('info', t('characterWorldUi.settings.masterChanged', { state: t(isChecked ? 'characterWorldUi.enabled' : 'characterWorldUi.disabled') }), { escapeHtml: true });
         $(document).trigger('cwb:master-switch-changed', { isEnabled: isChecked });
     });
 }
@@ -517,14 +521,14 @@ function loadSillyTavernPresets(showNotification = false) {
     try {
         const context = window.SillyTavern?.getContext?.();
         if (!context?.extensionSettings?.connectionManager?.profiles) {
-            showToastr('warning', '无法获取SillyTavern配置文件列表');
+            showToastr('warning', t('characterWorldUi.api.presetsUnavailable'));
             return;
         }
         
         const profiles = context.extensionSettings.connectionManager.profiles;
         
         $profileSelect.empty();
-        $profileSelect.append('<option value="">选择预设</option>');
+        $profileSelect.append(setCwbText(new Option('', ''), 'characterWorldUi.api.selectPreset'));
         
         profiles.forEach(profile => {
             $profileSelect.append(`<option value="${escapeHtml(profile.id)}">${escapeHtml(profile.name)}</option>`);
@@ -535,12 +539,12 @@ function loadSillyTavernPresets(showNotification = false) {
         }
         
         if (showNotification) {
-            showToastr('success', `已加载 ${profiles.length} 个SillyTavern预设`);
+            showToastr('success', t('characterWorldUi.api.presetsLoaded', { count: profiles.length }), { escapeHtml: true });
         }
         
     } catch (error) {
         logError('加载SillyTavern预设失败:', error);
-        showToastr('error', '加载SillyTavern预设失败');
+        showToastr('error', t('characterWorldUi.api.presetsFailed'));
     }
 }
 
@@ -559,13 +563,14 @@ function updateUiWithSettings() {
 
     $panel.find('#cwb-api-url').val(settings.cwb_api_url);
     clearSecretInput($panel.find('#cwb-api-key'), configManager.has('cwb_api_key'));
+    refreshCwbSecretPlaceholder($panel.find('#cwb-api-key'));
     $panel.find('#cwb-tavern-profile').val(settings.cwb_tavern_profile);
     
     const $modelSelect = $panel.find('#cwb-api-model');
     if (settings.cwb_api_model) {
-        $modelSelect.empty().append(`<option value="${escapeHtml(settings.cwb_api_model)}">${escapeHtml(settings.cwb_api_model)} (已保存)</option>`);
+        $modelSelect.empty().append(setCwbText(new Option('', settings.cwb_api_model), 'characterWorldUi.api.savedModel', { model: settings.cwb_api_model }));
     } else {
-        $modelSelect.empty().append('<option value="">请先加载并选择模型</option>');
+        $modelSelect.empty().append(setCwbText(new Option('', ''), 'characterWorldUi.api.loadSelectModel'));
     }
     updateApiStatusDisplay($panel);
 

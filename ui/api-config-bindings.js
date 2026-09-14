@@ -7,6 +7,7 @@
  */
 
 import { apiProfileManager, PROFILE_TYPES, SLOTS, clearLegacyConfig } from '../utils/config/ApiProfileManager.js';
+import { t, apiTableHtml, apiTableAttr, setApiTableText, clearApiTableText, refreshApiTableTranslations } from './api-table-i18n.js';
 import { apiKeyStore, CloudTransitionError } from '../utils/config/api-key-store/ApiKeyStore.js';
 import {
     clearVaultDeviceKey,
@@ -24,6 +25,8 @@ import { getRequestHeaders, saveSettingsDebounced } from '/script.js';
 import { extension_settings } from '/scripts/extensions.js';
 import { extensionName, extensionBasePath } from '../utils/settings.js';
 import { testApiConnection } from '../core/api.js';
+import { getEmbeddings } from '../core/rag-api.js';
+import { embeddingEndpointForProvider } from '../core/api/embedding-transport.js';
 import { testJqyhApiConnection } from '../core/api/JqyhApi.js';
 import { testConcurrentApiConnection } from '../core/api/ConcurrentApi.js';
 import { testNgmsApiConnection } from '../core/api/Ngms_api.js';
@@ -124,8 +127,8 @@ export function bindApiConfigPanel(container) {
     // 教程：连接类型 + 分配开关说明
     $c.off('click.amily2.apiTutorial', '#amily2_open_api_config_tutorial')
       .on('click.amily2.apiTutorial', '#amily2_open_api_config_tutorial', () => {
-          showContentModal('API 连接使用教程', `${extensionBasePath}/ApiConfig.md`, {
-              advancedTitle: 'API 连接 · 进阶操作',
+          showContentModal(t('apiTableUi.api.tutorial'), `${extensionBasePath}/ApiConfig.md`, {
+              advancedTitle: t('apiTableUi.api.advancedTutorial'),
               advancedUrl: `${extensionBasePath}/ApiConfig-Advanced.md`,
           });
       });
@@ -151,6 +154,10 @@ export function bindApiConfigPanel(container) {
 
     // 类型切换时显示/隐藏专有参数
     $c.find('#amily2_pf_type').on('change', function () {
+        _resetProfileTypeFields($c);
+        $c.find('#amily2_pf_model').val('').show();
+        $c.find('#amily2_pf_model_select').hide().empty();
+        $c.find('#amily2_pf_test_result').text('');
         _switchParamSections($c, $(this).val());
     });
 
@@ -201,27 +208,28 @@ export function bindApiConfigPanel(container) {
     closeModal($c);
     renderProfileList($c);
     renderSlotAssignments($c);
+    refreshApiTableTranslations($c[0]);
 }
 
 // ── 存储模式 ──────────────────────────────────────────────────────────────────
 
 const VAULT_STATUS_COPY = Object.freeze({
-    disabled: Object.freeze({ badge: '已关闭', message: '授权码云同步已关闭。' }),
-    unavailable: Object.freeze({ badge: '不可用', message: '当前授权不支持此功能，请使用有效的 Type2 或以上服务器授权。' }),
-    idle: Object.freeze({ badge: '待同步', message: '授权码云同步已启用，尚未检查云端密钥。' }),
-    checking: Object.freeze({ badge: '检查中', message: '正在安全检查本机与云端密钥，请稍候。' }),
-    'migration-pending': Object.freeze({ badge: '正在迁移', message: '正在准备本机密钥并启用授权码云同步，请稍候。' }),
-    'recovery-pending': Object.freeze({ badge: '恢复未完成', message: '云端密钥可用，但本机恢复未完成。请点击“立即同步”重试；现有密钥不会被覆盖。' }),
-    'cleanup-pending': Object.freeze({ badge: '正在切换', message: '正在安全结束授权码云同步并切换存储模式。' }),
-    'remote-empty': Object.freeze({ badge: '云端为空', message: '云端暂无密钥；立即同步可将本机密钥加密备份。' }),
-    synced: Object.freeze({ badge: '已同步', message: '本机与云端密钥已同步。' }),
-    restored: Object.freeze({ badge: '已恢复', message: '已从授权码云端恢复此设备的私钥。' }),
-    conflict: Object.freeze({ badge: '需要选择', message: '本机与云端指纹不同，已暂停同步。请明确选择要保留的一份。' }),
-    error: Object.freeze({ badge: '同步失败', message: '云密钥服务暂不可用，本机密钥未改动。' }),
+    disabled: Object.freeze({ badge: 'apiTableUi.vault.disabledBadge', message: 'apiTableUi.vault.disabledMessage' }),
+    unavailable: Object.freeze({ badge: 'apiTableUi.vault.unavailableBadge', message: 'apiTableUi.vault.unavailableMessage' }),
+    idle: Object.freeze({ badge: 'apiTableUi.vault.idleBadge', message: 'apiTableUi.vault.idleMessage' }),
+    checking: Object.freeze({ badge: 'apiTableUi.vault.checkingBadge', message: 'apiTableUi.vault.checkingMessage' }),
+    'migration-pending': Object.freeze({ badge: 'apiTableUi.vault.migrationBadge', message: 'apiTableUi.vault.migrationMessage' }),
+    'recovery-pending': Object.freeze({ badge: 'apiTableUi.vault.recoveryBadge', message: 'apiTableUi.vault.recoveryMessage' }),
+    'cleanup-pending': Object.freeze({ badge: 'apiTableUi.vault.cleanupBadge', message: 'apiTableUi.vault.cleanupMessage' }),
+    'remote-empty': Object.freeze({ badge: 'apiTableUi.vault.emptyBadge', message: 'apiTableUi.vault.emptyMessage' }),
+    synced: Object.freeze({ badge: 'apiTableUi.vault.syncedBadge', message: 'apiTableUi.vault.syncedMessage' }),
+    restored: Object.freeze({ badge: 'apiTableUi.vault.restoredBadge', message: 'apiTableUi.vault.restoredMessage' }),
+    conflict: Object.freeze({ badge: 'apiTableUi.vault.conflictBadge', message: 'apiTableUi.vault.conflictMessage' }),
+    error: Object.freeze({ badge: 'apiTableUi.vault.errorBadge', message: 'apiTableUi.vault.errorMessage' }),
 });
 const VAULT_SESSION_CREDENTIAL_COPY = Object.freeze({
-    badge: '需重新验证',
-    message: '服务器授权仍在，但当前浏览器会话缺少云密钥解封凭据。请重新输入原服务器授权码；本机密钥与云端备份均不会改动。',
+    badge: 'apiTableUi.vault.sessionBadge',
+    message: 'apiTableUi.vault.sessionMessage',
 });
 const VAULT_UNAVAILABLE_REASON_VALUES = new Set(Object.values(VAULT_UNAVAILABLE_REASONS));
 const API_KEY_STORAGE_EVENT_NAMESPACE = '.amily2.apiKeyStorage';
@@ -273,20 +281,21 @@ function _renderVaultSyncStatus($c, snapshot = getVaultSyncStatus()) {
     const $recoveryButton = $c.find('#amily2_vault_reauth_submit');
 
     $c.find('#amily2_keystore_mode').prop('disabled', busy);
-    $c.find('#amily2_vault_sync_badge')
-        .attr('data-state', state.status)
-        .text(copy.badge);
-    $c.find('#amily2_vault_sync_status').text(copy.message);
-    $c.find('#amily2_vault_sync_revision')
-        .prop('hidden', state.revision === 0 && !state.fingerprint)
-        .text([
-            state.revision > 0 ? `云端修订：${state.revision}` : '',
-            state.fingerprint ? `指纹：${state.fingerprint}` : '',
-        ].filter(Boolean).join(' · '));
+    setApiTableText($c.find('#amily2_vault_sync_badge').attr('data-state', state.status), copy.badge);
+    setApiTableText($c.find('#amily2_vault_sync_status'), copy.message);
+    const $revision = $c.find('#amily2_vault_sync_revision')
+        .prop('hidden', state.revision === 0 && !state.fingerprint);
+    if (state.revision > 0 || state.fingerprint) {
+        setApiTableText($revision, state.revision > 0
+            ? (state.fingerprint ? 'apiTableUi.vault.revisionFingerprint' : 'apiTableUi.vault.revision')
+            : 'apiTableUi.vault.fingerprint', { revision: state.revision, fingerprint: state.fingerprint });
+    } else {
+        clearApiTableText($revision).text('');
+    }
 
     $syncButton.prop('disabled', busy || !state.enabled || state.status === 'unavailable');
     $syncButton.find('.vbtn-icon i').toggleClass('fa-spin', busy);
-    $syncButton.find('.vbtn-label').text(busy ? '正在同步' : '立即同步');
+    setApiTableText($syncButton.find('.vbtn-label'), busy ? 'apiTableUi.vault.syncing' : 'apiTableUi.vault.syncNow');
     $c.find('#amily2_vault_use_remote')
         .prop('hidden', !state.canUseRemote)
         .prop('disabled', busy);
@@ -322,7 +331,7 @@ async function _runVaultSyncAction($c, action, options = {}) {
         const state = _normalizeVaultSyncStatus(snapshot);
         _renderVaultSyncStatus($c, state);
         if (options.successMessage && successStatuses.includes(state.status)) {
-            toastr.success(options.successMessage);
+            toastr.success(t(options.successMessage));
         }
         return state;
     } catch {
@@ -330,16 +339,16 @@ async function _runVaultSyncAction($c, action, options = {}) {
         // responses out of the DOM/toast and let the controller publish safe status.
         console.warn('[ApiConfig] 授权码云同步操作失败。');
         _renderVaultSyncStatus($c);
-        toastr.error('云密钥操作失败，本机数据未被清除。请稍后重试。');
+        toastr.error(t('apiTableUi.vault.operationFailed'));
         return null;
     }
 }
 
 const MANUAL_CLOUD_RECOVERY_COPY = Object.freeze({
-    'needs-import': '检测到已有共享加密配置，但本设备缺少匹配私钥。请先导入原私钥；共享备份与本机配置均未改动。',
-    ready: '原私钥已就绪。请重新选择“加密云同步”，插件会再次检查后再切换。',
-    conflict: '原私钥已就绪，但本机与共享云端配置不同。请重新选择“加密云同步”并明确采用哪一份。',
-    invalid: '检测到共享加密配置无法通过完整性检查。请尝试导入原私钥后重试；共享备份与本机配置均未改动。',
+    'needs-import': 'apiTableUi.vault.manualNeedsImport',
+    ready: 'apiTableUi.vault.manualReady',
+    conflict: 'apiTableUi.vault.manualConflict',
+    invalid: 'apiTableUi.vault.manualInvalid',
 });
 
 function _normalizeManualCloudState(raw) {
@@ -353,7 +362,7 @@ function _normalizeManualCloudState(raw) {
 
 function _showManualCloudRecovery($c, state) {
     const copy = MANUAL_CLOUD_RECOVERY_COPY[state] || MANUAL_CLOUD_RECOVERY_COPY.invalid;
-    $c.find('#amily2_manual_cloud_recovery_status').text(copy);
+    setApiTableText($c.find('#amily2_manual_cloud_recovery_status'), copy);
     $c.find('#amily2_manual_cloud_recovery').prop('hidden', false);
 }
 
@@ -362,18 +371,10 @@ function _hideManualCloudRecovery($c) {
 }
 
 function _chooseManualCloudConflictStrategy() {
-    const useRemote = confirm(
-        '检测到本机与共享云端的 API 密钥不同。\n\n'
-        + '“确定”：采用云端配置。\n'
-        + '“取消”：继续选择“用本机覆盖”或“取消切换”。',
-    );
+    const useRemote = confirm(t('apiTableUi.vault.chooseCloud'));
     if (useRemote) return 'use-cloud';
 
-    const overwriteRemote = confirm(
-        '是否用本机覆盖共享云端备份？这会影响其他使用该共享备份的设备。\n\n'
-        + '“确定”：用本机覆盖共享云端备份。\n'
-        + '“取消”：取消切换，不改动本机或共享备份。',
-    );
+    const overwriteRemote = confirm(t('apiTableUi.vault.chooseLocal'));
     return overwriteRemote ? 'overwrite-cloud' : null;
 }
 
@@ -391,16 +392,16 @@ function _bindStorageMode($c) {
     let manualCloudImportInspection = null;
 
     const MODE_NOTES = {
-        local: '本机存储：密钥只在当前浏览器，不会上传。换设备要重新填。',
-        cloud: '加密云同步：密钥随设置同步，私钥需手动导入或导出。',
-        vault: '授权码云同步：Type2 及以上可加密备份私钥，并在新设备恢复。',
+        local: 'apiTableUi.vault.localNote',
+        cloud: 'apiTableUi.vault.cloudNote',
+        vault: 'apiTableUi.vault.vaultNote',
     };
 
     const renderMode = mode => {
         $select.val(mode);
         $cloud.toggle(mode === 'cloud' || mode === 'vault');
         $vault.prop('hidden', mode !== 'vault');
-        $note.text(MODE_NOTES[mode] || MODE_NOTES.local);
+        setApiTableText($note, MODE_NOTES[mode] || MODE_NOTES.local);
         if (mode === 'cloud' || mode === 'vault') _refreshFingerprint($c);
         if (mode === 'vault') {
             _renderVaultSyncStatus($c);
@@ -433,12 +434,12 @@ function _bindStorageMode($c) {
         let manualCloudInspection = null;
         const confirmations = {
             local: previousMode === 'vault'
-                ? '切换回本机存储：\n已加密的 Key 将解密迁移至本机，并停止授权码云同步。服务器备份不会被删除。\n\n确认切换？'
-                : '仅本设备退出加密云同步：\n密钥会在本设备解密保存；共享加密备份及私钥不会删除，其他设备不受影响。\n\n确认切换？',
+                ? 'apiTableUi.vault.vaultToLocal'
+                : 'apiTableUi.vault.cloudToLocal',
             cloud: previousMode === 'vault'
-                ? '切换到手动私钥模式：\n将停止授权码云同步，服务器备份不会被删除。以后换设备需手动导入私钥。\n\n确认切换？'
-                : '切换到加密云同步模式：\n插件会先检查共享配置；仅在没有共享配置时生成密钥对。\n\n确认切换？',
-            vault: '切换到授权码云同步：\n仅 Type2 及以上服务器授权可用。插件会检查云端密钥；若指纹冲突，将等待你手动选择。\n\n确认切换？',
+                ? 'apiTableUi.vault.vaultToCloud'
+                : 'apiTableUi.vault.enableCloudConfirm',
+            vault: 'apiTableUi.vault.enableVaultConfirm',
         };
         if (newMode === 'cloud' && previousMode === 'local') {
             let manualCloudState;
@@ -451,7 +452,7 @@ function _bindStorageMode($c) {
             if (manualCloudState === 'needs-import' || manualCloudState === 'invalid') {
                 renderMode(previousMode);
                 _showManualCloudRecovery($c, manualCloudState);
-                toastr.warning(MANUAL_CLOUD_RECOVERY_COPY[manualCloudState]);
+                toastr.warning(t(MANUAL_CLOUD_RECOVERY_COPY[manualCloudState]));
                 return;
             }
             _hideManualCloudRecovery($c);
@@ -461,11 +462,11 @@ function _bindStorageMode($c) {
                     renderMode(previousMode);
                     return;
                 }
-            } else if (!confirm(confirmations.cloud)) {
+            } else if (!confirm(t(confirmations.cloud))) {
                 renderMode(previousMode);
                 return;
             }
-        } else if (!confirm(confirmations[newMode])) {
+        } else if (!confirm(t(confirmations[newMode]))) {
             renderMode(previousMode);
             return;
         }
@@ -485,16 +486,17 @@ function _bindStorageMode($c) {
                 () => enableVaultSync({ interactive: true }),
                 {
                     successStatuses: ['synced', 'restored'],
-                    successMessage: '授权码云同步已启用。',
+                    successMessage: 'apiTableUi.vault.enabled',
                 },
             );
             if (state && ['error', 'unavailable', 'remote-empty'].includes(state.status)) {
-                toastr.warning('授权码云同步尚未启用，请根据状态提示重试或检查授权。');
+                toastr.warning(t('apiTableUi.vault.notEnabled'));
             }
-            // A fingerprint conflict deliberately does not commit Vault mode.
-            // Keep the pending panel visible so the user can make the explicit
-            // choice; a reload safely returns to the previously committed mode.
-            const pendingState = state && !['synced', 'restored'].includes(state.status);
+            // A fingerprint conflict deliberately does not commit Vault mode,
+            // but its resolution controls live in the Vault panel. Other
+            // failures must render the actually committed storage mode instead
+            // of leaving a selected-but-disabled Vault option on screen.
+            const pendingState = state?.status === 'conflict';
             renderMode(pendingState ? 'vault' : apiKeyStore.getMode());
             if (pendingState) _renderVaultSyncStatus($c, state);
             return;
@@ -506,7 +508,7 @@ function _bindStorageMode($c) {
                 () => disableVaultSync({ targetMode: newMode, interactive: true }),
                 {
                     successStatuses: ['disabled'],
-                    successMessage: '授权码云同步已关闭。',
+                    successMessage: 'apiTableUi.vault.disabledMessage',
                 },
             );
             renderMode(apiKeyStore.getMode());
@@ -541,13 +543,13 @@ function _bindStorageMode($c) {
             }
             _hideManualCloudRecovery($c);
             renderMode(newMode);
-            const modeName = newMode === 'vault'
-                ? '授权码云同步'
-                : newMode === 'cloud' ? '加密云同步' : '本机存储';
-            toastr.success(`已切换为${modeName}模式。`);
+            const modeName = t(newMode === 'vault'
+                ? 'apiTableUi.vault.vaultMode'
+                : newMode === 'cloud' ? 'apiTableUi.vault.cloudMode' : 'apiTableUi.vault.localMode');
+            toastr.success(t('apiTableUi.vault.modeChanged', { mode: modeName }));
         } catch {
             console.warn('[ApiConfig] 密钥存储模式切换失败。');
-            toastr.error('模式切换失败，本机密钥与共享备份均未改动。');
+            toastr.error(t('apiTableUi.vault.modeFailed'));
             renderMode(apiKeyStore.getMode());
             return;
         }
@@ -560,7 +562,7 @@ function _bindStorageMode($c) {
             () => reconcileVaultSync({ strategy: 'auto', interactive: true }),
             {
                 successStatuses: ['synced', 'restored'],
-                successMessage: '云密钥同步完成。',
+                successMessage: 'apiTableUi.vault.syncComplete',
             },
         ));
 
@@ -577,7 +579,7 @@ function _bindStorageMode($c) {
         $input.val('');
         if (!credential || credential.length > 512) {
             credential = '';
-            toastr.warning('请输入原服务器授权码。');
+            toastr.warning(t('apiTableUi.vault.codeRequired'));
             return;
         }
 
@@ -588,7 +590,7 @@ function _bindStorageMode($c) {
             credential = '';
             if (!restored) {
                 _renderVaultSyncStatus($c);
-                toastr.error('恢复失败，授权状态、本机密钥和云端备份均未改动。');
+                toastr.error(t('apiTableUi.vault.restoreFailed'));
                 return;
             }
             await _runVaultSyncAction(
@@ -596,7 +598,7 @@ function _bindStorageMode($c) {
                 () => reconcileVaultSync({ strategy: 'auto', interactive: true }),
                 {
                     successStatuses: ['synced', 'restored'],
-                    successMessage: '服务器会话与云密钥已恢复。',
+                    successMessage: 'apiTableUi.vault.sessionRestored',
                 },
             );
         } finally {
@@ -619,7 +621,7 @@ function _bindStorageMode($c) {
     $c.find('#amily2_vault_use_remote')
         .off(API_KEY_STORAGE_EVENT_NAMESPACE)
         .on(`click${API_KEY_STORAGE_EVENT_NAMESPACE}`, () => {
-        if (!confirm('采用云端密钥将替换此设备当前私钥。确认继续？')) return;
+        if (!confirm(t('apiTableUi.vault.useRemoteConfirm'))) return;
         const expectedRemote = _normalizeVaultSyncStatus(getVaultSyncStatus());
         _runVaultSyncAction(
             $c,
@@ -633,7 +635,7 @@ function _bindStorageMode($c) {
             }),
             {
                 successStatuses: ['synced', 'restored'],
-                successMessage: '已采用云端密钥。',
+                successMessage: 'apiTableUi.vault.remoteAdopted',
             },
         );
     });
@@ -644,8 +646,8 @@ function _bindStorageMode($c) {
         const expectedRemote = _normalizeVaultSyncStatus(getVaultSyncStatus());
         const remoteIsEmpty = expectedRemote.revision === 0 && !expectedRemote.fingerprint;
         if (!confirm(remoteIsEmpty
-            ? '用当前设备密钥初始化此授权的云端备份？此操作只会在云端仍为空时执行。'
-            : '用本机覆盖云端会替换服务器上的密钥备份；与旧密钥对应的同步密文也可能无法再恢复，其他设备需要重新同步。确认继续？')) return;
+            ? t('apiTableUi.vault.initializeConfirm')
+            : t('apiTableUi.vault.overwriteConfirm'))) return;
         _runVaultSyncAction(
             $c,
             () => reconcileVaultSync({
@@ -658,7 +660,7 @@ function _bindStorageMode($c) {
             }),
             {
                 successStatuses: ['synced'],
-                successMessage: '已用本机密钥更新云端备份。',
+                successMessage: 'apiTableUi.vault.remoteUpdated',
             },
         );
     });
@@ -671,10 +673,10 @@ function _bindStorageMode($c) {
                 && state.canClearDeviceKey;
             if (!safeToClear) {
                 _renderVaultSyncStatus($c, state);
-                toastr.warning('仅当本机与云端密钥确认一致后，才能清除此设备密钥。');
+                toastr.warning(t('apiTableUi.vault.clearBlocked'));
                 return;
             }
-            if (!confirm('只清除此设备保存的私钥？已确认云端存在匹配备份；已加密的 API Key 不会删除，之后需再次恢复私钥才能使用。')) return;
+            if (!confirm(t('apiTableUi.vault.clearConfirm'))) return;
             _runVaultSyncAction($c, () => clearVaultDeviceKey());
         });
 
@@ -687,7 +689,7 @@ function _bindStorageMode($c) {
                 _renderVaultSyncStatus($c, state);
                 return;
             }
-            if (!confirm('确认放弃此设备当前无法恢复的全部加密 API Key？\n\n这会清除同步密文和本机回退，切换为空的本机存储；服务器上的密钥备份不会删除。此操作不可撤销。')) return;
+            if (!confirm(t('apiTableUi.vault.discardConfirm'))) return;
             try {
                 const result = await discardVaultEncryptedState();
                 if (!result || result.status !== 'disabled') {
@@ -695,9 +697,9 @@ function _bindStorageMode($c) {
                     return;
                 }
                 renderMode('local');
-                toastr.warning('已放弃无法恢复的密文并切换为空的本机存储。');
+                toastr.warning(t('apiTableUi.vault.discarded'));
             } catch {
-                toastr.error('清理失败，原加密配置已保留。');
+                toastr.error(t('apiTableUi.vault.discardFailed'));
             }
         });
 
@@ -706,37 +708,37 @@ function _bindStorageMode($c) {
         .off(API_KEY_STORAGE_EVENT_NAMESPACE)
         .on(`click${API_KEY_STORAGE_EVENT_NAMESPACE}`, async () => {
         if (apiKeyStore.getMode() === 'vault') {
-            toastr.info('请先切换到“加密云同步（手动私钥）”模式，再重新生成密钥对。');
+            toastr.info(t('apiTableUi.vault.manualBeforeGenerate'));
             return;
         }
         let keyRotationInspection;
         try {
             keyRotationInspection = await apiKeyStore.inspectManualCloudState();
         } catch {
-            toastr.error('无法确认共享加密备份状态，未重新生成密钥。');
+            toastr.error(t('apiTableUi.vault.generateInspectionFailed'));
             return;
         }
         const keyRotationState = _normalizeManualCloudState(keyRotationInspection);
         if (apiKeyStore.getMode() === 'local' && keyRotationState !== 'empty') {
             _showManualCloudRecovery($c, keyRotationState);
-            toastr.warning('检测到共享加密备份，已阻止重新生成密钥。请先恢复或明确切换存储模式。');
+            toastr.warning(t('apiTableUi.vault.generateBackupBlocked'));
             return;
         }
         if (apiKeyStore.getMode() === 'cloud'
             && (keyRotationState === 'needs-import' || keyRotationState === 'invalid')) {
-            toastr.warning('当前设备无法验证共享加密备份，已阻止重新生成密钥。');
+            toastr.warning(t('apiTableUi.vault.generateVerifyBlocked'));
             return;
         }
-        if (!confirm('重新生成密钥对后，所有已加密的 API Key 将失效，需要逐一重新输入。\n\n确认重新生成？')) return;
+        if (!confirm(t('apiTableUi.vault.generateConfirm'))) return;
         try {
             await apiKeyStore.generateKeyPair({
                 expectedRemoteToken: keyRotationInspection.remoteSnapshotToken,
                 expectedLocalMutationRevision: keyRotationInspection.localMutationRevision,
             });
             await _refreshFingerprint($c);
-            toastr.warning('新密钥对已生成，请重新输入各 Profile 的 API Key。');
+            toastr.warning(t('apiTableUi.vault.generated'));
         } catch {
-            toastr.error('共享加密备份已变化或密钥重置失败，现有配置未改动。');
+            toastr.error(t('apiTableUi.vault.generateFailed'));
         }
     });
 
@@ -749,10 +751,10 @@ function _bindStorageMode($c) {
                 `amily2-keystore-${_timestampForFilename()}.json`,
                 bundle
             );
-            toastr.success('私钥包已导出，请妥善保管。');
+            toastr.success(t('apiTableUi.vault.exported'));
         } catch {
             console.warn('[ApiConfig] 导出私钥包失败。');
-            toastr.error('导出私钥包失败，请确认本设备已有可用私钥。');
+            toastr.error(t('apiTableUi.vault.exportFailed'));
         }
     });
 
@@ -760,13 +762,13 @@ function _bindStorageMode($c) {
         .off(API_KEY_STORAGE_EVENT_NAMESPACE)
         .on(`click${API_KEY_STORAGE_EVENT_NAMESPACE}`, async () => {
         if (apiKeyStore.getMode() !== 'local') {
-            toastr.info('恢复入口仅用于本设备仍处于本机存储时导入原私钥。');
+            toastr.info(t('apiTableUi.vault.recoveryLocalOnly'));
             return;
         }
         try {
             manualCloudImportInspection = await apiKeyStore.inspectManualCloudState();
         } catch {
-            toastr.error('无法确认共享加密备份状态，未打开私钥文件。');
+            toastr.error(t('apiTableUi.vault.openImportFailed'));
             return;
         }
         renderMode('local');
@@ -778,13 +780,13 @@ function _bindStorageMode($c) {
         .off(API_KEY_STORAGE_EVENT_NAMESPACE)
         .on(`click${API_KEY_STORAGE_EVENT_NAMESPACE}`, async () => {
         if (apiKeyStore.getMode() === 'vault') {
-            toastr.info('请先切换到“加密云同步（手动私钥）”模式，再导入私钥。');
+            toastr.info(t('apiTableUi.vault.manualBeforeImport'));
             return;
         }
         try {
             manualCloudImportInspection = await apiKeyStore.inspectManualCloudState();
         } catch {
-            toastr.error('无法确认共享加密备份状态，未打开私钥文件。');
+            toastr.error(t('apiTableUi.vault.openImportFailed'));
             return;
         }
         $importInput.val('');
@@ -797,7 +799,7 @@ function _bindStorageMode($c) {
         if (!file) return;
         if (apiKeyStore.getMode() === 'vault') {
             $importInput.val('');
-            toastr.info('请先切换到“加密云同步（手动私钥）”模式，再导入私钥。');
+            toastr.info(t('apiTableUi.vault.manualBeforeImport'));
             return;
         }
 
@@ -806,7 +808,7 @@ function _bindStorageMode($c) {
                 manualCloudImportInspection = await apiKeyStore.inspectManualCloudState();
             } catch {
                 $importInput.val('');
-                toastr.error('无法确认共享加密备份状态，未导入私钥。');
+                toastr.error(t('apiTableUi.vault.importInspectionFailed'));
                 return;
             }
         }
@@ -828,18 +830,18 @@ function _bindStorageMode($c) {
                     manualCloudState = 'invalid';
                 }
                 _showManualCloudRecovery($c, manualCloudState);
-                toastr.success('原私钥已导入；本设备仍保持本机存储，请重新选择云同步完成检查。');
+                toastr.success(t('apiTableUi.vault.importedLocal'));
             } else {
                 await configManager.syncSensitiveCache({ force: true });
                 _hideManualCloudRecovery($c);
-                toastr.success('私钥包导入成功，已恢复本设备的加密密钥缓存。');
+                toastr.success(t('apiTableUi.vault.imported'));
             }
         } catch {
             console.warn('[ApiConfig] 导入私钥包失败。');
             if (apiKeyStore.getMode() === 'local') {
                 _showManualCloudRecovery($c, 'invalid');
             }
-            toastr.error('导入私钥失败；本机配置与共享备份均未改动，请选择匹配的原私钥包。');
+            toastr.error(t('apiTableUi.vault.importFailed'));
         } finally {
             manualCloudImportInspection = null;
             $importInput.val('');
@@ -849,7 +851,9 @@ function _bindStorageMode($c) {
 
 async function _refreshFingerprint($c) {
     const fp = await apiKeyStore.getPublicKeyInfo();
-    $c.find('#amily2_keypair_fingerprint').text(fp);
+    const $fingerprint = $c.find('#amily2_keypair_fingerprint');
+    if (fp === '（未生成）') setApiTableText($fingerprint, 'apiTableUi.vault.notGenerated');
+    else clearApiTableText($fingerprint).text(fp);
 }
 
 function _downloadJson(filename, data) {
@@ -881,8 +885,8 @@ export function renderProfileList($c) {
     if (profiles.length === 0) {
         $list.html(
             '<div class="amily2_profile_empty am2-ac-empty">' +
-            '<p>还没有连接</p>' +
-            '<small>点右上角「添加」开始</small>' +
+            `<p>${apiTableHtml('apiTableUi.api.empty')}</p>` +
+            `<small>${apiTableHtml('apiTableUi.api.emptyHelp')}</small>` +
             '</div>'
         );
         return;
@@ -895,22 +899,31 @@ export function renderProfileList($c) {
     };
 
     const html = profiles.map(p => {
-        const typeInfo = PROFILE_TYPES[p.type] || { icon: 'fa-server', label: p.type || '未知' };
         const typeClass = TYPE_CLASS[p.type] || '';
         const selected = p.id === _editingId ? ' is-selected' : '';
+        const connectionSource = p.connectionSourceId
+            ? apiProfileManager.getProfile(p.connectionSourceId) : null;
+        const connectionLabel = p.connectionSourceId
+            ? (connectionSource?.name
+                ? apiTableHtml('apiTableUi.api.inheritedFrom', { name: connectionSource.name })
+                : apiTableHtml('apiTableUi.api.inheritedUnavailable'))
+            : (p.apiUrl ? _escapeHtml(_truncateUrl(p.apiUrl)) : '');
         const sub = [
-            typeInfo.label,
-            p.model || '未设模型',
-            p.apiUrl ? _truncateUrl(p.apiUrl) : '',
+            apiTableHtml(PROFILE_TYPES[p.type] ? `apiTableUi.api.${p.type === 'chat' ? 'chatType' : p.type}` : 'apiTableUi.api.unknown'),
+            p.model ? _escapeHtml(p.model) : apiTableHtml('apiTableUi.api.noModel'),
+            connectionLabel,
         ].filter(Boolean).join(' · ');
         return `
-        <div class="amily2_profile_card am2-ac-row${selected}" data-id="${p.id}" role="button" tabindex="0">
+            <div class="amily2_profile_card am2-ac-row${selected}" data-id="${_escapeHtml(p.id)}" role="button" tabindex="0">
             <span class="am2-ac-dot ${typeClass}" aria-hidden="true"></span>
             <div class="am2-ac-row-body">
                 <div class="am2-ac-row-title">${_escapeHtml(p.name)}</div>
-                <div class="am2-ac-row-sub">${_escapeHtml(sub)}</div>
+                <div class="am2-ac-row-sub">${sub}</div>
             </div>
-            <button class="am2-ac-iconbtn amily2_delete_profile" data-id="${p.id}" title="删除" type="button">
+            <button class="am2-ac-iconbtn amily2_duplicate_profile" data-id="${_escapeHtml(p.id)}" ${apiTableAttr('apiTableUi.api.duplicateHint')} ${apiTableAttr('apiTableUi.api.duplicate', {}, 'aria-label')} type="button">
+                <i class="fas fa-copy"></i>
+            </button>
+            <button class="am2-ac-iconbtn amily2_delete_profile" data-id="${_escapeHtml(p.id)}" ${apiTableAttr('apiTableUi.common.delete')} type="button">
                 <i class="fas fa-trash-alt"></i>
             </button>
             <i class="fas fa-chevron-right am2-ac-chevron" aria-hidden="true"></i>
@@ -919,32 +932,56 @@ export function renderProfileList($c) {
 
     $list.html(html);
 
-    // 整行点击进入编辑（删除按钮除外）
+    // 整行点击进入编辑（操作按钮除外）
     $list.find('.am2-ac-row').on('click', function (e) {
-        if ($(e.target).closest('.amily2_delete_profile').length) return;
+        if ($(e.target).closest('.amily2_duplicate_profile, .amily2_delete_profile').length) return;
         openModal($c, $(this).data('id'));
     });
     $list.find('.am2-ac-row').on('keydown', function (e) {
+        if ($(e.target).closest('.amily2_duplicate_profile, .amily2_delete_profile').length) return;
         if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             openModal($c, $(this).data('id'));
         }
     });
+    $list.find('.amily2_duplicate_profile').on('click', async function (e) {
+        e.stopPropagation();
+        const $button = $(this);
+        if ($button.prop('disabled')) return;
+        const id = $button.data('id');
+        const originalHtml = $button.html();
+        $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+        try {
+            const duplicateId = await apiProfileManager.duplicateProfile(id);
+            const duplicate = apiProfileManager.getProfile(duplicateId);
+            renderProfileList($c);
+            renderSlotAssignments($c);
+            await openModal($c, duplicateId);
+            toastr.success(t('apiTableUi.api.duplicated', { name: duplicate?.name || t('apiTableUi.api.derived') }));
+        } catch (error) {
+            console.error('[ApiConfig] 创建派生配置失败。', error);
+            $button.prop('disabled', false).html(originalHtml);
+            toastr.error(t('apiTableUi.api.duplicateFailed'));
+        }
+    });
     $list.find('.amily2_delete_profile').on('click', async function (e) {
         e.stopPropagation();
         const id   = $(this).data('id');
-        const name = apiProfileManager.getProfile(id)?.name || id;
-        if (!confirm(`删除「${name}」？密钥会一并清除。`)) return;
+        const profile = apiProfileManager.getProfile(id);
+        const name = profile?.name || id;
+        const consequence = profile?.connectionSourceId
+            ? t('apiTableUi.api.sourceUnchanged') : t('apiTableUi.api.keyDeleted');
+        if (!confirm(t('apiTableUi.api.deleteConfirm', { name, consequence }))) return;
         try {
             await apiProfileManager.deleteProfile(id);
-        } catch {
-            toastr.error('密钥删除失败，Profile 未被移除。');
+        } catch (error) {
+            toastr.error(_profileDeleteErrorText(error));
             return;
         }
         if (_editingId === id) closeModal($c);
         renderProfileList($c);
         renderSlotAssignments($c);
-        toastr.success(`已删除「${name}」。`);
+        toastr.success(t('apiTableUi.api.deleted', { name }));
     });
 }
 
@@ -957,9 +994,9 @@ export function renderSlotAssignments($c) {
 
     // 按类型分组，减少一长串压迫感
     const groups = [
-        { key: 'chat', title: '对话能力' },
-        { key: 'embedding', title: '智能检索' },
-        { key: 'rerank', title: '结果重排' },
+        { key: 'chat', title: 'apiTableUi.api.chatGroup' },
+        { key: 'embedding', title: 'apiTableUi.api.retrievalGroup' },
+        { key: 'rerank', title: 'apiTableUi.api.rerankGroup' },
     ];
 
     const entries = Object.entries(SLOTS);
@@ -971,14 +1008,14 @@ export function renderSlotAssignments($c) {
             const assigned = apiProfileManager.getAssignment(slot) || '';
             const toggle   = SLOT_TOGGLES[slot];
             const options = [
-                `<option value="">未分配</option>`,
+                `<option value="" data-amily-i18n="apiTableUi.api.unassigned">${_escapeHtml(t('apiTableUi.api.unassigned'))}</option>`,
                 ...profiles.map(p =>
-                    `<option value="${p.id}" ${p.id === assigned ? 'selected' : ''}>${_escapeHtml(p.name)}</option>`
+                    `<option value="${_escapeHtml(p.id)}" ${p.id === assigned ? 'selected' : ''}>${_escapeHtml(p.name)}</option>`
                 ),
             ].join('');
 
             const toggleHtml = toggle
-                ? `<label class="toggle-switch am2-ac-switch" title="一键启用 / 关闭该功能">
+                ? `<label class="toggle-switch am2-ac-switch" ${apiTableAttr('apiTableUi.api.toggleHint')}>
                        <input type="checkbox" class="amily2_slot_toggle" data-slot="${slot}" ${_readSlotToggle(settings, toggle) ? 'checked' : ''} />
                        <span class="slider"></span>
                    </label>`
@@ -987,7 +1024,7 @@ export function renderSlotAssignments($c) {
             return `
             <div class="am2-ac-setting ${assigned ? 'is-on' : ''}">
                 <div class="am2-ac-setting-label">
-                    <strong>${_escapeHtml(slotInfo.label)}</strong>
+                    <strong>${apiTableHtml(`apiTableUi.slot.${slot}`)}</strong>
                 </div>
                 <div class="am2-ac-setting-controls">
                     ${toggleHtml}
@@ -995,13 +1032,13 @@ export function renderSlotAssignments($c) {
                         ${options}
                     </select>
                     <button class="am2-ac-iconbtn amily2_slot_test" data-slot="${slot}"
-                            title="测试" type="button" ${assigned ? '' : 'disabled'}>
+                            ${apiTableAttr('apiTableUi.api.test')} type="button" ${assigned ? '' : 'disabled'}>
                         <i class="fas fa-bolt"></i>
                     </button>
                 </div>
             </div>`;
         }).join('');
-        return `<div class="am2-ac-group"><h3 class="am2-ac-group-title">${g.title}</h3><div class="am2-ac-settings">${rows}</div></div>`;
+        return `<div class="am2-ac-group"><h3 class="am2-ac-group-title">${apiTableHtml(g.title)}</h3><div class="am2-ac-settings">${rows}</div></div>`;
     }).join('');
 
     $slots.html(html);
@@ -1010,7 +1047,7 @@ export function renderSlotAssignments($c) {
         const slot = $(this).data('slot');
         const id   = $(this).val() || null;
         if (!apiProfileManager.setAssignment(slot, id)) {
-            toastr.error('类型不匹配，分配失败。');
+            toastr.error(t('apiTableUi.api.assignmentFailed'));
             renderSlotAssignments($c);
             return;
         }
@@ -1028,18 +1065,18 @@ export function renderSlotAssignments($c) {
         try {
             const testFn = SLOT_TEST_FNS[slot];
             if (!testFn) {
-                toastr.warning('该槽位暂不支持快捷测试。', slot);
+                toastr.warning(t('apiTableUi.api.testUnsupported'), slot);
                 return;
             }
             const profile = await apiProfileManager.getAssignedProfile(slot);
             if (!profile) {
-                toastr.warning('该槽位未分配配置。', slot);
+                toastr.warning(t('apiTableUi.api.slotUnassigned'), slot);
                 return;
             }
             // 测试函数内部会显示 toastr 结果
             await testFn();
         } catch (e) {
-            toastr.error(`测试失败：${e.message}`, slot);
+            toastr.error(t('apiTableUi.api.testFailed', { error: _apiErrorText(e) }), slot);
         } finally {
             $btn.prop('disabled', false).html('<i class="fas fa-bolt"></i>');
         }
@@ -1111,24 +1148,55 @@ function _showFormPane($c, show) {
 function _hideFormOnly($c) {
     _showFormPane($c, false);
     $c.find('#amily2_pf_type').prop('disabled', false);
+    $c.find('#amily2_pf_provider, #amily2_pf_url, #amily2_pf_key').prop('disabled', false);
+    $c.find('#amily2_pf_connection_source_row').prop('hidden', true);
+}
+
+function _configureConnectionInheritance($c, profile) {
+    const sourceId = profile?.connectionSourceId || null;
+    const inherited = Boolean(sourceId);
+    const source = sourceId ? apiProfileManager.getProfile(sourceId) : null;
+    $c.find('#amily2_pf_connection_source_row').prop('hidden', !inherited);
+    const $source = $c.find('#amily2_pf_connection_source');
+    clearApiTableText($source, 'placeholder').val(inherited ? source?.name || '' : '').attr('placeholder', '');
+    if (inherited && !source?.name) setApiTableText($source, 'apiTableUi.api.invalidSource', {}, 'placeholder');
+    $c.find('#amily2_pf_provider, #amily2_pf_url, #amily2_pf_key').prop('disabled', inherited);
+    const $key = $c.find('#amily2_pf_key');
+    if (inherited) setApiTableText($key, source ? 'apiTableUi.api.keyInherited' : 'apiTableUi.api.sourceUnavailable', { name: source?.name }, 'placeholder');
+    else clearApiTableText($key, 'placeholder').attr('placeholder', 'sk-…');
+}
+
+function _resetProfileTypeFields($c) {
+    $c.find('#amily2_pf_max_tokens').val(65500);
+    $c.find('#amily2_pf_temperature').val(1.0);
+    $c.find('#amily2_pf_fake_stream').prop('checked', false);
+    $c.find('#amily2_pf_custom_params, #amily2_pf_dimensions').val('');
+    $c.find('#amily2_pf_encoding_format').val('float');
+    $c.find('#amily2_pf_top_n').val(5);
+    $c.find('#amily2_pf_return_documents').prop('checked', false);
 }
 
 async function openModal($c, id) {
     _switchAcTab($c, 'connections', { keepForm: true });
     _editingId = id;
+    _resetProfileTypeFields($c);
 
     if (id) {
         const p = apiProfileManager.getProfile(id);
         if (!p) return;
-        $c.find('#amily2_profile_modal_title').text(p.name || '编辑连接');
+        const $title = $c.find('#amily2_profile_modal_title');
+        if (p.name) clearApiTableText($title).text(p.name);
+        else setApiTableText($title, 'apiTableUi.api.editConnection');
         $c.find('#amily2_profile_form_icon').attr('class', 'fas fa-edit');
-        $c.find('#amily2_pf_type').val(p.type).prop('disabled', true);
+        const assigned = Object.keys(SLOTS).some(slot => apiProfileManager.getAssignment(slot) === id);
+        $c.find('#amily2_pf_type').val(p.type).prop('disabled', !p.connectionSourceId || assigned);
         $c.find('#amily2_pf_name').val(p.name);
         $c.find('#amily2_pf_provider').val(p.provider);
         $c.find('#amily2_pf_url').val(p.apiUrl);
         $c.find('#amily2_pf_key').val('');
         $c.find('#amily2_pf_model').val(p.model);
         $c.find('#amily2_pf_rpm').val(p.rpm ?? 0);
+        _configureConnectionInheritance($c, p);
 
         if (p.type === 'chat') {
             $c.find('#amily2_pf_max_tokens').val(p.maxTokens);
@@ -1148,22 +1216,15 @@ async function openModal($c, id) {
         _switchParamSections($c, p.type);
         _handleProviderChange($c, p.provider);
     } else {
-        $c.find('#amily2_profile_modal_title').text('添加连接');
+        setApiTableText($c.find('#amily2_profile_modal_title'), 'apiTableUi.api.addConnection');
         $c.find('#amily2_profile_form_icon').attr('class', 'fas fa-plus');
         $c.find('#amily2_pf_type').val('chat').prop('disabled', false);
         $c.find('#amily2_pf_name, #amily2_pf_url, #amily2_pf_key, #amily2_pf_model').val('');
         $c.find('#amily2_pf_provider').val('openai');
         _handleProviderChange($c, 'openai');
         _autofillVendorUrl($c, 'openai');
-        $c.find('#amily2_pf_max_tokens').val(65500);
-        $c.find('#amily2_pf_temperature').val(1.0);
         $c.find('#amily2_pf_rpm').val(0);
-        $c.find('#amily2_pf_fake_stream').prop('checked', false);
-        $c.find('#amily2_pf_custom_params').val('');
-        $c.find('#amily2_pf_dimensions').val('');
-        $c.find('#amily2_pf_encoding_format').val('float');
-        $c.find('#amily2_pf_top_n').val(5);
-        $c.find('#amily2_pf_return_documents').prop('checked', false);
+        _configureConnectionInheritance($c, null);
         _switchParamSections($c, 'chat');
     }
 
@@ -1185,24 +1246,28 @@ function closeModal($c) {
 }
 
 async function saveProfile($c) {
+    const existingProfile = _editingId ? apiProfileManager.getProfile(_editingId) : null;
+    const inheritsConnection = Boolean(existingProfile?.connectionSourceId);
     const type     = $c.find('#amily2_pf_type').val();
     const name     = $c.find('#amily2_pf_name').val().trim();
     const provider = $c.find('#amily2_pf_provider').val();
     const apiUrl   = $c.find('#amily2_pf_url').val().trim();
-    const apiKey   = $c.find('#amily2_pf_key').val();
+    const apiKey   = inheritsConnection ? '' : $c.find('#amily2_pf_key').val();
     const $sel = $c.find('#amily2_pf_model_select');
     const model = ($sel.is(':visible') ? $sel.val() : $c.find('#amily2_pf_model').val()).trim();
 
-    if (!name) { toastr.warning('请填写配置名称。'); return; }
+    if (!name) { toastr.warning(t('apiTableUi.api.nameRequired')); return; }
 
     const data = {
         type,
         name,
-        provider,
-        apiUrl,
         model,
         rpm: $c.find('#amily2_pf_rpm').val(),
     };
+    if (!inheritsConnection) {
+        data.provider = provider;
+        data.apiUrl = apiUrl;
+    }
 
     if (type === 'chat') {
         data.maxTokens   = parseInt($c.find('#amily2_pf_max_tokens').val(), 10) || 65500;
@@ -1212,7 +1277,7 @@ async function saveProfile($c) {
         // customParams：JSON 校验失败则中止保存
         const cp = _parseCustomParamsOrFail($c);
         if (cp === null) {
-            toastr.error('自定义参数 JSON 解析失败，请修正后再保存。', '保存中止');
+            toastr.error(t('apiTableUi.api.jsonSaveFailed'), t('apiTableUi.api.saveAborted'));
             return;
         }
         data.customParams = cp;
@@ -1244,10 +1309,10 @@ async function saveProfile($c) {
         closeModal($c);
         renderProfileList($c);
         renderSlotAssignments($c);
-        toastr.success(`配置「${name}」已保存。`);
+        toastr.success(t('apiTableUi.api.saved', { name }));
     } catch (e) {
         console.error('[ApiConfig] 保存 Profile 失败:', e);
-        toastr.error('保存失败，请查看控制台。');
+        toastr.error(t('apiTableUi.api.saveFailed'));
     } finally {
         $btn.prop('disabled', false);
     }
@@ -1265,26 +1330,26 @@ async function _fetchModels($c) {
         apiKey = await apiProfileManager.getKey(_editingId) ?? '';
     }
 
-    if (!apiUrl) { toastr.warning('请先填写 API 地址。'); return; }
+    if (!apiUrl) { toastr.warning(t('apiTableUi.api.addressRequired')); return; }
 
     const $btn = $c.find('#amily2_pf_fetch_models').prop('disabled', true);
-    $btn.html('<i class="fas fa-spinner fa-spin"></i> 获取中...');
+    $btn.html(`<i class="fas fa-spinner fa-spin"></i> ${apiTableHtml('apiTableUi.api.fetching')}`);
 
     try {
         let models;
 
         if (provider === 'google') {
             // Google 用原生 API，Key 通过 x-goog-api-key 头传递避免 URL 泄露
-            if (!apiKey) { toastr.warning('请先填写 Google API Key。'); return; }
+            if (!apiKey) { toastr.warning(t('apiTableUi.api.googleKeyRequired')); return; }
             const resp = await fetch(
                 'https://generativelanguage.googleapis.com/v1beta/models',
                 { headers: { 'x-goog-api-key': apiKey } }
             );
             if (!resp.ok) {
                 const status = resp.status;
-                toastr.error(status === 400 ? '获取失败：API Key 格式错误。'
-                           : status === 403 ? '获取失败：API Key 无效或无权限。'
-                           : `获取失败：HTTP ${status}`);
+                toastr.error(status === 400 ? t('apiTableUi.api.fetchFailed', { error: t('apiTableUi.api.keyInvalidFormat') })
+                           : status === 403 ? t('apiTableUi.api.fetchFailed', { error: t('apiTableUi.api.keyUnauthorized') })
+                           : t('apiTableUi.api.fetchFailed', { error: `HTTP ${status}` }));
                 return;
             }
             const data = await resp.json();
@@ -1308,11 +1373,11 @@ async function _fetchModels($c) {
             if (!resp.ok) {
                 const status = resp.status;
                 if (status === 401 || status === 403) {
-                    toastr.error('获取失败：API Key 无效或无权限。');
+                    toastr.error(t('apiTableUi.api.fetchFailed', { error: t('apiTableUi.api.keyUnauthorized') }));
                 } else if (status === 404) {
-                    toastr.warning('该接口不支持模型列表查询，请手动填写模型 ID。');
+                    toastr.warning(t('apiTableUi.api.modelsUnsupported'));
                 } else {
-                    toastr.error(`获取失败：HTTP ${status}`);
+                    toastr.error(t('apiTableUi.api.fetchFailed', { error: `HTTP ${status}` }));
                 }
                 return;
             }
@@ -1324,7 +1389,7 @@ async function _fetchModels($c) {
         }
 
         if (models.length === 0) {
-            toastr.warning('未获取到模型列表，请手动填写。');
+            toastr.warning(t('apiTableUi.api.modelsEmpty'));
             return;
         }
 
@@ -1337,11 +1402,11 @@ async function _fetchModels($c) {
         $c.find('#amily2_pf_model').hide();
         $sel.show();
 
-        toastr.success(`已获取 ${models.length} 个可用模型。`);
+        toastr.success(t('apiTableUi.api.modelsFetched', { count: models.length }));
     } catch (e) {
-        toastr.error(`获取失败：${e.message}`);
+        toastr.error(t('apiTableUi.api.fetchFailed', { error: _apiErrorText(e) }));
     } finally {
-        $btn.prop('disabled', false).html('<i class="fas fa-list"></i> 获取');
+        $btn.prop('disabled', false).html(`<i class="fas fa-list"></i> ${apiTableHtml('apiTableUi.api.fetch')}`);
     }
 }
 
@@ -1364,17 +1429,34 @@ async function _testConnection($c) {
         ? bindSlotProfileRateLimit({}, savedProfile)
         : null;
 
-    if (!apiUrl) { toastr.warning('请先填写 API 地址。'); return; }
+    if (!apiUrl) { toastr.warning(t('apiTableUi.api.addressRequired')); return; }
 
     const $btn    = $c.find('#amily2_pf_test_conn').prop('disabled', true);
-    const $result = $c.find('#amily2_pf_test_result').text('测试中…').css('color', 'var(--SmartThemeQuoteColor)');
-    $btn.html('<i class="fas fa-spinner fa-spin"></i> 测试中...');
+    const $result = setApiTableText($c.find('#amily2_pf_test_result'), 'apiTableUi.api.testing').css('color', 'var(--SmartThemeQuoteColor)');
+    $btn.html(`<i class="fas fa-spinner fa-spin"></i> ${apiTableHtml('apiTableUi.api.testing')}`);
 
     try {
+        if ($c.find('#amily2_pf_type').val() === 'embedding') {
+            const $modelSelect = $c.find('#amily2_pf_model_select');
+            const model = ($modelSelect.is(':visible') ? $modelSelect.val() : $c.find('#amily2_pf_model').val()).trim();
+            if (!model) throw new Error(t('apiTableUi.api.embeddingRequired'));
+            const settings = {
+                apiEndpoint: embeddingEndpointForProvider(provider),
+                customApiUrl: apiUrl, apiKey, embeddingModel: model, batchSize: 1,
+            };
+            const vectors = await getEmbeddings(['连接测试'], null,
+                savedProfile ? bindSlotProfileRateLimit(settings, savedProfile) : settings);
+            if (!Array.isArray(vectors[0]) || !vectors[0].length || !vectors[0].every(Number.isFinite)) {
+                throw new Error(t('apiTableUi.api.embeddingInvalid'));
+            }
+            setApiTableText($result, 'apiTableUi.api.embeddingSuccess', { count: vectors[0].length }).css('color', 'var(--green)');
+            toastr.success(t('apiTableUi.api.embeddingPassed'));
+            return;
+        }
         if (provider === 'google') {
             // Google 用原生 models 端点测试
             if (!apiKey) {
-                $result.text('请填写 API Key').css('color', 'var(--warning-color)');
+                setApiTableText($result, 'apiTableUi.api.keyRequired').css('color', 'var(--warning-color)');
                 return;
             }
             const resp = await fetch(
@@ -1384,15 +1466,15 @@ async function _testConnection($c) {
             if (resp.ok) {
                 const data  = await resp.json();
                 const count = (data.models ?? []).length;
-                $result.text(`连接成功${count ? `，${count} 个可用模型` : ''}`).css('color', 'var(--green)');
-                toastr.success('Google AI Studio 连接测试通过！');
+                setApiTableText($result, count ? 'apiTableUi.api.connectedModels' : 'apiTableUi.api.connected', { count }).css('color', 'var(--green)');
+                toastr.success(t('apiTableUi.api.googlePassed'));
             } else {
                 const status = resp.status;
-                const msg = status === 400 ? 'API Key 格式错误'
-                          : status === 403 ? 'API Key 无效或无权限'
+                const message = () => status === 400 ? t('apiTableUi.api.keyInvalidFormat')
+                          : status === 403 ? t('apiTableUi.api.keyUnauthorized')
                           : `HTTP ${status}`;
-                $result.text(`失败：${msg}`).css('color', 'var(--warning-color)');
-                toastr.error(`测试失败：${msg}`);
+                setApiTableText($result, 'apiTableUi.api.failed', () => ({ error: message() })).css('color', 'var(--warning-color)');
+                toastr.error(t('apiTableUi.api.testFailed', { error: message() }));
             }
             return;
         }
@@ -1420,7 +1502,7 @@ async function _testConnection($c) {
             const model = ($sel.is(':visible') ? $sel.val() : $c.find('#amily2_pf_model').val()).trim();
 
             if (type === 'chat' && model) {
-                $result.text('模型列表 ✓，正在验证补全端点…').css('color', 'var(--SmartThemeQuoteColor)');
+                setApiTableText($result, 'apiTableUi.api.verifyingCompletion').css('color', 'var(--SmartThemeQuoteColor)');
                 await acquireProfileRequestPermit(rateLimitSettings);
                 const officialDeepSeek = isOfficialDeepSeekEndpoint(apiUrl);
                 const useStream = $c.find('#amily2_pf_fake_stream').prop('checked') === true;
@@ -1446,31 +1528,34 @@ async function _testConnection($c) {
                 }).catch(() => ({}));
                 if (!genResp.ok || genData?.error) {
                     const genErr = genData;
-                    const genMsg = genErr?.error?.message || `补全端点返回 HTTP ${genResp.status}`;
-                    $result.text(`模型列表 ✓，补全失败：${genMsg}`).css('color', 'var(--warning-color)');
-                    toastr.warning(`补全端点测试失败：${genMsg}`);
+                    const errorKey = _knownApiErrorKey(genErr?.error);
+                    const message = () => errorKey ? t(errorKey) : t('apiTableUi.api.completionHttp', { status: genResp.status });
+                    setApiTableText($result, 'apiTableUi.api.completionFailed', () => ({ error: message() })).css('color', 'var(--warning-color)');
+                    toastr.warning(t('apiTableUi.api.completionTestFailed', { error: message() }));
                     return;
                 }
             }
 
-            $result.text(`连接成功${count ? `，${count} 个可用模型` : ''}`).css('color', 'var(--green)');
-            toastr.success('连接测试通过！');
+            setApiTableText($result, count ? 'apiTableUi.api.connectedModels' : 'apiTableUi.api.connected', { count }).css('color', 'var(--green)');
+            toastr.success(t('apiTableUi.api.passed'));
             return;
         }
 
         const status = modelsResp.status;
         const errBody = await modelsResp.json().catch(() => ({}));
-        const msg = errBody?.error?.message
-                 || (status === 401 || status === 403 ? 'API Key 无效或无权限'
-                   : status === 404 ? '接口地址不存在'
+        const errorKey = _knownApiErrorKey(errBody?.error);
+        const message = () => errorKey ? t(errorKey)
+                 : (status === 401 || status === 403 ? t('apiTableUi.api.keyUnauthorized')
+                   : status === 404 ? t('apiTableUi.api.endpointMissing')
                    : `HTTP ${status}`);
-        $result.text(`失败：${msg}`).css('color', 'var(--warning-color)');
-        toastr.error(`测试失败：${msg}`);
+        setApiTableText($result, 'apiTableUi.api.failed', () => ({ error: message() })).css('color', 'var(--warning-color)');
+        toastr.error(t('apiTableUi.api.testFailed', { error: message() }));
     } catch (e) {
-        $result.text(`无法连接：${e.message}`).css('color', 'var(--warning-color)');
-        toastr.error(`连接失败：${e.message}`);
+        const errorKey = _knownApiErrorKey(e) || 'apiTableUi.vault.unknownError';
+        setApiTableText($result, 'apiTableUi.api.cannotConnect', () => ({ error: t(errorKey) })).css('color', 'var(--warning-color)');
+        toastr.error(t('apiTableUi.api.connectionFailed', { error: t(errorKey) }));
     } finally {
-        $btn.prop('disabled', false).html('<i class="fas fa-plug"></i> 测试连接');
+        $btn.prop('disabled', false).html(`<i class="fas fa-plug"></i> ${apiTableHtml('apiTableUi.api.testConnection')}`);
     }
 }
 
@@ -1501,9 +1586,9 @@ async function _handleProviderChange($c, provider) {
         try {
             const entry = await getVendorEntry(provider);
             if (entry) {
-                $noteText.text(`${entry.displayName} — 默认接口地址已自动填写，如需走代理/镜像可在下方修改。`);
+                setApiTableText($noteText, 'apiTableUi.api.vendorNote', { name: entry.displayName });
                 if (entry.doc) {
-                    $link.attr('href', entry.doc).text('查看官方文档');
+                    setApiTableText($link.attr('href', entry.doc), 'apiTableUi.api.officialDocs');
                     $linkWrap.show();
                 } else {
                     $linkWrap.hide();
@@ -1545,6 +1630,55 @@ async function _autofillVendorUrl($c, provider) {
 }
 
 // ── 内部工具 ──────────────────────────────────────────────────────────────────
+
+// Exact UI-boundary matches only: never interpolate an exception or response body.
+const API_UI_ERROR_KEYS = new Map([
+    ['Google直连模式需要API Key。', 'apiTableUi.vault.embeddingGoogleKeyRequired'],
+    ['酒馆 Embedding 代理不可用（404）；请检查 enableCorsProxy 与反向代理路由。未回退前端直连。', 'apiTableUi.vault.embeddingProxyUnavailable'],
+    ['API返回的向量数据格式不正确。', 'apiTableUi.vault.embeddingInvalidData'],
+    ['获取到的向量数量与发送的文本数量不匹配。', 'apiTableUi.vault.embeddingCountMismatch'],
+    ['Google embedding response has an invalid shape.', 'apiTableUi.vault.embeddingGoogleInvalidShape'],
+    ['Embedding does not support chat preset forwarding.', 'apiTableUi.vault.embeddingPresetUnsupported'],
+    ['Invalid embedding proxy URL.', 'apiTableUi.vault.embeddingProxyInvalid'],
+]);
+
+function _knownApiErrorKey(error) {
+    const message = typeof error === 'string' ? error : error?.message;
+    if (typeof message !== 'string') return null;
+    const key = API_UI_ERROR_KEYS.get(message);
+    if (key) return key;
+    // These two errors originate in this UI and may predate a locale switch.
+    for (const localKey of ['apiTableUi.api.embeddingRequired', 'apiTableUi.api.embeddingInvalid']) {
+        if (['zh-CN-plain', 'zh-CN-amily', 'en-US'].some(locale => message === t(localKey, {}, locale))) return localKey;
+    }
+    return null;
+}
+
+function _apiErrorText(error) {
+    return t(_knownApiErrorKey(error) || 'apiTableUi.vault.unknownError');
+}
+
+function _profileDeleteErrorText(error) {
+    if (error?.code === 'PROFILE_CONNECTION_SOURCE_IN_USE'
+        && Array.isArray(error.dependentProfileIds) && error.dependentProfileIds.length > 0) {
+        return t('apiTableUi.vault.connectionInUse', { count: error.dependentProfileIds.length });
+    }
+    return t('apiTableUi.api.deleteFailed');
+}
+
+function _legacyCleanupErrorText(error) {
+    if (!error) return t('apiTableUi.vault.legacyUnknown');
+    if (error === 'extension_settings 不存在') return t('apiTableUi.vault.legacySettingsMissing');
+    for (const slot of ['main', 'plotOpt', 'plotOptConc', 'ngms', 'nccs', 'sybd', 'cwb']) {
+        if (error === `槽位 "${slot}" 仍有旧配置但未分配 profile，清除会导致该模块不可用。请先在 API 连接配置面板为它分配 profile。`) {
+            return t('apiTableUi.vault.legacySlotUnassigned', { slot });
+        }
+    }
+    if (error === '槽位 "autoCharCard" 仍有旧配置但未分配 profile，清除会导致一键生卡不可用。请先在 API 连接配置面板为它分配 profile。') {
+        return t('apiTableUi.vault.legacyAutoCardUnassigned');
+    }
+    return t('apiTableUi.vault.unknownError');
+}
 
 function _switchParamSections($c, type) {
     $c.find('#amily2_pf_chat_params').toggle(type === 'chat');
@@ -1632,8 +1766,8 @@ function _updateCustomParamsHint($c) {
         `).join('');
         const invalidNote = editorState.valid
             ? ''
-            : '<span style="margin-left:6px; color:var(--warning, #d9534f);">请先修复 JSON，再插入参数。</span>';
-        $hint.html(`${_escapeHtml(label)} 已知参数：${buttons}${invalidNote}`);
+            : `<span style="margin-left:6px; color:var(--warning, #d9534f);">${apiTableHtml('apiTableUi.api.fixJson')}</span>`;
+        $hint.html(`${apiTableHtml('apiTableUi.api.knownParams', { name: label })} ${buttons}${invalidNote}`);
     });
 }
 
@@ -1656,9 +1790,9 @@ function _validateCustomParamsLive($c) {
     }
     try {
         JSON.parse(($c.find('#amily2_pf_custom_params').val() || '').trim());
-        $err.show().text('需要是 JSON 对象（{} 形式），不能是数组或基本类型。');
-    } catch (e) {
-        $err.show().text(`JSON 解析失败：${e.message}`);
+        setApiTableText($err.show(), 'apiTableUi.api.jsonObjectRequired');
+    } catch {
+        setApiTableText($err.show(), 'apiTableUi.vault.invalidCustomJson');
     }
 }
 
@@ -1681,30 +1815,23 @@ function _insertParamToCustomParams($c, paramName, paramType) {
  * 清除旧配置残留 —— 二次确认 → 调 clearLegacyConfig → 反馈结果。
  */
 async function _handleClearLegacyConfig($c) {
-    const confirmed = window.confirm(
-        '【清除旧配置残留】\n\n' +
-        '即将删除以下数据：\n' +
-        '• extension_settings 中各模块的旧 URL / Model / 温度 / maxTokens / 模式等字段\n' +
-        '• localStorage 中各模块的旧 API Key\n\n' +
-        '⚠️ 操作不可恢复。如果某个槽位还没分配 profile，操作会被阻止。\n\n' +
-        '确定继续吗？'
-    );
+    const confirmed = window.confirm(t('apiTableUi.vault.legacyConfirm'));
     if (!confirmed) return;
 
     try {
         const result = await clearLegacyConfig();
         if (!result.ok) {
-            toastr.error(result.error || '清除失败，未知错误。', '清除被阻止');
+            toastr.error(_legacyCleanupErrorText(result.error), t('apiTableUi.vault.legacyBlocked'));
             return;
         }
         toastr.success(
-            `已清除 ${result.clearedFields} 个旧字段、${result.clearedKeys} 个旧 API Key。建议刷新页面验证。`,
-            '清除完成',
+            t('apiTableUi.vault.legacyCleared', { fields: result.clearedFields, keys: result.clearedKeys }),
+            t('apiTableUi.vault.legacyComplete'),
             { timeOut: 6000 }
         );
     } catch (e) {
         console.error('[ApiConfig] 清除旧配置失败:', e);
-        toastr.error(`清除失败: ${e.message}`, '错误');
+        toastr.error(t('apiTableUi.vault.legacyFailed', { error: _apiErrorText(e) }), t('apiTableUi.vault.errorTitle'));
     }
 }
 

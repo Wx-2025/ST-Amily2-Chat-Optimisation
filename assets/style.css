@@ -14,6 +14,40 @@
     width: auto;
 }
 
+#amily2-i18n-onboarding {
+    box-sizing: border-box;
+    width: min(32rem, calc(100vw - 2rem));
+    max-width: 100%;
+    max-height: calc(100vh - 2rem);
+    max-height: calc(100dvh - 2rem);
+    overflow: auto;
+    padding: 20px;
+    border-radius: 8px;
+    letter-spacing: 0;
+}
+
+#amily2-i18n-onboarding h3 {
+    font-size: 18px;
+    margin: 0 0 12px;
+}
+
+#amily2-i18n-onboarding .popup-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+}
+
+#amily2-i18n-onboarding .menu_button {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px !important;
+    padding: 10px 12px !important;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    line-height: 1.4 !important;
+    letter-spacing: 0 !important;
+}
+
 #amily2_drawer_content .flex-container {
     width: 100%; height: 100%; display: flex; flex-direction: column;
 }
@@ -66,6 +100,170 @@
     background: rgba(0,0,0,0.3); 
     color: var(--amily2-text-color); 
 }
+
+#amily2_api_config_panel .amily2-device-credential-card {
+    min-width: 0;
+}
+
+#amily2_api_config_panel .amily2-device-credential-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+#amily2_api_config_panel .amily2-device-credential-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+#amily2_api_config_panel .amily2-device-credential-settings[open] .amily2-device-credential-chevron {
+    transform: rotate(180deg);
+}
+
+#amily2_api_config_panel #amily2_device_credential_status {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    color: var(--am2-text, #c8d0ff);
+    font-size: 0.9em;
+}
+
+#amily2_api_config_panel .amily2-device-credential-copy {
+    margin: 0;
+    color: var(--am2-muted, #ddd);
+    line-height: 1.5;
+}
+
+#amily2_api_config_panel .amily2-device-credential-fields {
+    display: grid;
+    grid-template-columns: minmax(0, 0.7fr) minmax(0, 1.3fr);
+    gap: 10px;
+}
+
+#amily2_api_config_panel .amily2-device-credential-fields label,
+#amily2_api_config_panel .amily2-device-credential-code {
+    display: grid;
+    min-width: 0;
+    gap: 5px;
+}
+
+#amily2_api_config_panel .amily2-device-credential-permanent {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.45;
+}
+
+#amily2_api_config_panel .amily2-device-credential-card input {
+    box-sizing: border-box;
+    width: 100%;
+}
+
+#amily2_api_config_panel .amily2-device-credential-permanent input {
+    flex: 0 0 auto;
+    width: auto;
+    margin-top: 0.2em;
+}
+
+#amily2_api_config_panel .amily2-device-credential-card button {
+    width: auto;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+#amily2_api_config_panel .amily2-device-account-section {
+    min-width: 0;
+    padding-top: 10px;
+    border-top: 1px solid var(--am2-border, #666);
+}
+
+#amily2_api_config_panel .amily2-device-account-toolbar,
+#amily2_api_config_panel .amily2-device-account-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 10px;
+}
+
+#amily2_api_config_panel .amily2-device-account-toolbar {
+    justify-content: space-between;
+    margin: 8px 0;
+}
+
+#amily2_api_config_panel #amily2_device_credential_account_status {
+    flex: 1 1 220px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: 0.9em;
+}
+
+#amily2_api_config_panel .amily2-device-account-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 26rem;
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+}
+
+#amily2_api_config_panel .amily2-device-account-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 36px;
+    align-items: start;
+    gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--am2-border, #666);
+}
+
+#amily2_api_config_panel .amily2-device-account-body {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+#amily2_api_config_panel .amily2-device-account-meta,
+#amily2_api_config_panel .amily2-device-account-id {
+    display: block;
+    font-size: 0.8em;
+    color: var(--am2-muted, #ddd);
+    line-height: 1.5;
+}
+
+#amily2_api_config_panel .amily2-device-account-state,
+#amily2_api_config_panel .amily2-device-account-current {
+    font-size: 0.8em;
+}
+
+#amily2_api_config_panel .amily2-device-account-state[data-state="ACTIVE"] {
+    color: var(--am2-success, #7bd9ac);
+}
+
+#amily2_api_config_panel .amily2-device-account-state[data-state="EXPIRED"] {
+    color: var(--am2-warning, #e5c56a);
+}
+
+#amily2_api_config_panel .amily2-device-account-state[data-state="REVOKED"] {
+    color: var(--am2-muted, #ddd);
+}
+
+#amily2_api_config_panel .amily2-device-account-section .am2-ac-iconbtn {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+}
+
+#amily2_api_config_panel #amily2_device_credential_account_panel[hidden] {
+    display: none;
+}
+
+@media (max-width: 600px) {
+    #amily2_api_config_panel .amily2-device-credential-fields {
+        grid-template-columns: 1fr;
+    }
+}
 #auth_panel #auth_submit { 
     padding: 10px 15px; border: none; 
     background: var(--amily2-button-color); 
@@ -74,6 +272,20 @@
     cursor: pointer; 
 }
 #auth_panel .auth-footer { text-align: center; font-size: 0.8em; color: var(--amily2-text-color); }
+#auth_panel .auth-locale-picker {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 10px;
+    align-items: center;
+    margin: 12px 0;
+}
+#auth_panel .auth-locale-picker label {
+    white-space: nowrap;
+}
+#auth_panel .auth-locale-picker select {
+    width: 100%;
+    min-width: 0;
+}
 
 .auth-status { padding: 10px; border-radius: 8px; text-align: center; margin-top: 15px; }
 .auth-status.valid { background-color: rgba(76, 175, 80, 0.2); border: 1px solid #4CAF50; }

@@ -4,6 +4,7 @@ import { extensionName, defaultSettings } from "../utils/settings.js";
 import { pluginAuthStatus } from "../utils/auth-state.js";
 import { configManager } from '../utils/config/ConfigManager.js';
 import { clearSecretInput } from './secret-input.js';
+import { getLocale, t } from '../utils/i18n/index.js';
 
 
 
@@ -25,11 +26,11 @@ export function applyUpdateIndicator() {
         if (!$btn.data('amily2-upgrade-bound') && !$btn.find('i.fa-arrow-up').length) {
             $btn.empty().append($('<i>').addClass('fas fa-arrow-up'));
         }
-        $btn.css({ display: '', visibility: 'visible', pointerEvents: 'auto' });
+        $btn.prop('hidden', false).css({ display: '', visibility: 'visible', pointerEvents: 'auto' });
         $dot.show();
     } else {
         $dot.hide();
-        $btn.css({ display: 'none' });
+        $btn.prop('hidden', true).css({ display: 'none' });
     }
 }
 
@@ -50,14 +51,14 @@ export function populateModelDropdown() {
   const currentModel = extension_settings[extensionName]?.model || "";
 
   if (availableModels.length === 0) {
-    modelSelect.append('<option value="">无可用模型，请刷新</option>');
-    modelNotes.html(
-      '<span style="color: #ff9800;">请检查API配置后点击"刷新模型"</span>',
+    modelSelect.append($('<option>').val('').text(t('models.none')));
+    modelNotes.empty().append(
+      $('<span>').css('color', '#ff9800').text(t('models.refreshHint')),
     );
     return;
   }
 
-  const defaultOption = $("<option></option>").val("").text("-- 选择模型 --");
+  const defaultOption = $("<option></option>").val("").text(t('models.select'));
   modelSelect.append(defaultOption);
 
   availableModels.forEach((model) => {
@@ -71,15 +72,16 @@ export function populateModelDropdown() {
   if (currentModel && modelSelect.val() === currentModel) {
     modelNotes
       .empty()
-      .append(document.createTextNode('已选择: '))
+      .append(document.createTextNode(`${t('models.selectedLabel')} `))
       .append($('<strong>').text(currentModel));
   } else {
-    modelNotes.html(`已加载 ${availableModels.length} 个可用模型`);
+    modelNotes.text(t('models.loaded', { count: availableModels.length }));
   }
 }
 
 
 export function updateUI() {
+  document.dispatchEvent(new CustomEvent('amily2-ui-updated'));
   if (!pluginAuthStatus.authorized) {
     $("#auth_panel").show();
     $(".plugin-features").hide();
@@ -89,6 +91,8 @@ export function updateUI() {
 
     const settings = extension_settings[extensionName];
     if (!settings) return; 
+
+    $('.amily2-ui-locale-select').val(getLocale());
 
     $("#amily2_api_provider").val(settings.apiProvider || 'openai');
     $("#amily2_api_url").val(settings.apiUrl);
@@ -176,8 +180,19 @@ export function updateUI() {
         const legend = section.find('.collapsible-legend');
         const content = section.find('.collapsible-content');
         const icon = legend.find('.collapse-icon');
-        const sectionId = legend.text().trim(); 
-        const isCollapsed = extension_settings[extensionName][`collapsible_${sectionId}_collapsed`] ?? true;
+        const stableSectionId = section.attr('data-amily-collapse-key');
+        const legacySectionId = section.attr('data-amily-collapse-legacy-label') || legend.text().trim();
+        const stableSettingKey = stableSectionId ? `collapsible_${stableSectionId}_collapsed` : null;
+        const legacySettingKey = `collapsible_${legacySectionId}_collapsed`;
+        let isCollapsed = stableSettingKey
+            ? extension_settings[extensionName][stableSettingKey]
+            : undefined;
+        if (isCollapsed === undefined) {
+            isCollapsed = extension_settings[extensionName][legacySettingKey] ?? true;
+            if (stableSettingKey) {
+                extension_settings[extensionName][stableSettingKey] = isCollapsed;
+            }
+        }
 
         if (isCollapsed) {
             content.hide();

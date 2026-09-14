@@ -1,7 +1,7 @@
 import { eventSource, event_types, main_api, stopGeneration } from '/script.js';
 import { renderExtensionTemplateAsync } from '/scripts/extensions.js';
 import { POPUP_RESULT, POPUP_TYPE, Popup } from '/scripts/popup.js';
-import { t } from '/scripts/i18n.js';
+import { t, applyTranslations, subscribeLocaleChange } from '../utils/i18n/index.js';
 import { extensionName } from '../utils/settings.js';
 import { getTokenCountAsync } from '/scripts/tokenizers.js';
 
@@ -12,32 +12,55 @@ window.MiZheSi_Global = {
 const miZheSiPath = `third-party/${extensionName}/MiZheSi`;
 const STORAGE_KEY = 'amily2_miZheSiEnabled';
 
+function setInspectorText(bindings, node, key, params = {}, property = 'textContent') {
+    if (!node) return;
+    node.removeAttribute(property === 'textContent' ? 'data-amily-i18n' : `data-amily-i18n-${property}`);
+    const value = t(key, params);
+    node[property] = value;
+    if (!bindings.has(node)) bindings.set(node, new Map());
+    bindings.get(node).set(property, { key, params, value });
+}
+
+function refreshInspectorText(bindings, connectedOnly = true) {
+    for (const [node, properties] of bindings) {
+        if (connectedOnly && !node.isConnected) continue;
+        for (const [property, binding] of properties) {
+            if (node[property] !== binding.value) {
+                properties.delete(property);
+                continue;
+            }
+            // Use cached counts and keys, never reread or retokenize request drafts.
+            node[property] = t(binding.key, binding.params);
+            binding.value = node[property];
+        }
+    }
+}
+
 if (!('GENERATE_AFTER_COMBINE_PROMPTS' in event_types) || !('CHAT_COMPLETION_PROMPT_READY' in event_types)) {
-    toastr.error('【密折司】错误：您的SillyTavern版本过旧，缺少必要的事件支持。请更新至最新版本。');
+    toastr.error(t('inspectorUi.request.unsupportedHost'));
     throw new Error('【密折司】缺少必要的事件支持。');
 }
 
 let inspectEnabled = false;
 
 function addLaunchButton() {
-    const enabledText = '关闭Amliy2号密折司';
-    const disabledText = '开启Amliy2号密折司';
+    const bindings = new Map();
     const iconClass = 'fa-solid fa-scroll';
 
-    const getText = () => inspectEnabled ? enabledText : disabledText;
+    const getKey = () => inspectEnabled ? 'inspectorUi.request.disable' : 'inspectorUi.request.enable';
 
     const launchButton = document.createElement('div');
     launchButton.id = 'miZheSiLaunchButton';
     launchButton.classList.add('list-group-item', 'flex-container', 'flexGap5', 'interactable');
     launchButton.tabIndex = 0;
-    launchButton.title = '切换【密折司】状态';
+    setInspectorText(bindings, launchButton, 'inspectorUi.request.toggleTitle', {}, 'title');
     
     const icon = document.createElement('i');
     icon.className = iconClass;
     launchButton.appendChild(icon);
 
     const textSpan = document.createElement('span');
-    textSpan.textContent = getText();
+    setInspectorText(bindings, textSpan, getKey());
     launchButton.appendChild(textSpan);
 
     const extensionsMenu = document.getElementById('extensionsMenu');
@@ -53,22 +76,24 @@ function addLaunchButton() {
     extensionsMenu.appendChild(launchButton);
     launchButton.addEventListener('click', () => {
         toggleInspectNext();
-        textSpan.textContent = getText();
+        setInspectorText(bindings, textSpan, getKey());
         launchButton.classList.toggle('active', inspectEnabled);
     });
 
     launchButton.classList.toggle('active', inspectEnabled);
+    subscribeLocaleChange(() => refreshInspectorText(bindings));
 }
 
 function toggleInspectNext() {
     inspectEnabled = !inspectEnabled;
-    toastr.info(`【密折司】已${inspectEnabled ? '开启' : '关闭'}`);
+    toastr.info(t(inspectEnabled ? 'inspectorUi.request.enabled' : 'inspectorUi.request.disabled'));
     localStorage.setItem(STORAGE_KEY, String(inspectEnabled));
 }
 
 async function showPromptInspector(input) {
     const template = $(await renderExtensionTemplateAsync(miZheSiPath, 'template'));
     const container = template.find('#mizhesi-editor-container');
+    const bindings = new Map();
     let isJsonMode = false;
 
     const titleHeader = template.find('.mizhesi-header h3');
@@ -90,7 +115,7 @@ async function showPromptInspector(input) {
             totalTokens = await getTokenCountAsync(text);
             totalChars = text.length;
         }
-        charCountDisplay.text(`(总 ${totalTokens} Tokens / ${totalChars} 字)`);
+        setInspectorText(bindings, charCountDisplay[0], 'inspectorUi.request.totalCount', { tokens: totalTokens, chars: totalChars });
     };
 
     try {
@@ -119,32 +144,32 @@ async function showPromptInspector(input) {
                 const injectionMarkers = {
                     '%%HANLINYUAN_RAG_NOVEL%%': {
                         icon: 'fa-book-open',
-                        title: '翰林院注入 (小说)',
+                        titleKey: 'inspectorUi.request.injectionNovel',
                         color: '#66ccff'
                     },
                     '%%HANLINYUAN_RAG_CHAT%%': {
                         icon: 'fa-comments',
-                        title: '翰林院注入 (聊天记录)',
+                        titleKey: 'inspectorUi.request.injectionChat',
                         color: '#66ccff'
                     },
                     '%%HANLINYUAN_RAG_LOREBOOK%%': {
                         icon: 'fa-atlas',
-                        title: '翰林院注入 (世界书)',
+                        titleKey: 'inspectorUi.request.injectionWorldbook',
                         color: '#66ccff'
                     },
                     '%%HANLINYUAN_RAG_MANUAL%%': {
                         icon: 'fa-pencil-alt',
-                        title: '翰林院注入 (手动)',
+                        titleKey: 'inspectorUi.request.injectionManual',
                         color: '#66ccff'
                     },
                     '%%AMILY2_TABLE_INJECTION%%': {
                         icon: 'fa-table-cells',
-                        title: '表格系统注入',
+                        titleKey: 'inspectorUi.request.injectionTable',
                         color: '#99cc33'
                     },
                     '%%AMILY2_PROGRESSIVE_MEMORY%%': {
                         icon: 'fa-hourglass-half',
-                        title: '渐进记忆注入',
+                        titleKey: 'inspectorUi.request.injectionMemory',
                         color: '#cc99ff'
                     }
                 };
@@ -153,7 +178,11 @@ async function showPromptInspector(input) {
                     if (content.includes(marker)) {
                         content = content.replace(marker, '');
                         const details = injectionMarkers[marker];
-                        iconsContainer.append(`<i class="fa-solid ${details.icon}" title="${details.title}" style="color: ${details.color};"></i>`);
+                        const icon = document.createElement('i');
+                        icon.className = `fa-solid ${details.icon}`;
+                        icon.style.color = details.color;
+                        setInspectorText(bindings, icon, details.titleKey, {}, 'title');
+                        iconsContainer.append(icon);
                     }
                 }
 
@@ -166,7 +195,7 @@ async function showPromptInspector(input) {
                     const text = textarea.val();
                     const lineTokens = await getTokenCountAsync(text);
                     const lineChars = text.length;
-                    lineCharCountDisplay.text(`(${lineTokens} Tokens / ${lineChars} 字)`);
+                    setInspectorText(bindings, lineCharCountDisplay[0], 'inspectorUi.request.lineCount', { tokens: lineTokens, chars: lineChars });
                 };
 
                 await updateLineCharCount(); // 初始化行字数
@@ -234,7 +263,7 @@ async function showPromptInspector(input) {
         if (firstMatch) {
             firstMatch[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
         } else {
-            toastr.info('【密折司】未找到匹配项。');
+            toastr.info(t('inspectorUi.request.noMatch'));
         }
     };
 
@@ -252,7 +281,8 @@ async function showPromptInspector(input) {
 
 
     const customButton = {
-        text: '取消生成',
+        text: t('inspectorUi.request.cancelGeneration'),
+        classes: ['mizhesi-cancel-generation'],
         result: POPUP_RESULT.CANCELLED,
         appendAtEnd: true,
         action: async () => {
@@ -264,12 +294,29 @@ async function showPromptInspector(input) {
     const popup = new Popup(template, POPUP_TYPE.CONFIRM, '', { 
         wide: true, 
         large: true, 
-        okButton: '确认修改', 
-        cancelButton: '放弃修改', 
+        okButton: t('inspectorUi.request.confirmEdits'),
+        cancelButton: t('inspectorUi.request.discardEdits'),
         customButtons: [customButton] 
     });
 
-    const result = await popup.show();
+    for (const [button, key] of [
+        [popup.okButton, 'inspectorUi.request.confirmEdits'],
+        [popup.cancelButton, 'inspectorUi.request.discardEdits'],
+        [popup.dlg?.querySelector('.mizhesi-cancel-generation'), 'inspectorUi.request.cancelGeneration'],
+    ]) {
+        button?.removeAttribute('data-i18n');
+        setInspectorText(bindings, button, key);
+    }
+    template.each((_, node) => applyTranslations(node));
+    refreshInspectorText(bindings, false);
+    const unsubscribeLocale = subscribeLocaleChange(() => refreshInspectorText(bindings));
+    let result;
+    try {
+        result = await popup.show();
+    } finally {
+        unsubscribeLocale();
+        bindings.clear();
+    }
 
     if (!result) {
         return input; // 用户取消，返回原始输入
@@ -318,7 +365,7 @@ eventSource.on(event_types.CHAT_COMPLETION_PROMPT_READY, async (data) => {
         console.log('【密折司】奏章已按御笔修改 (Chat Completion)。');
     } catch (e) {
         console.error('【密折司】解析修改后的JSON奏章失败:', e);
-        toastr.error('【密折司】解析JSON失败，本次修改未生效。');
+        toastr.error(t('inspectorUi.request.jsonFailed'));
     }
 });
 

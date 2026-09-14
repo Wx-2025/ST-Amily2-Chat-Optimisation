@@ -1,5 +1,5 @@
     import { SCRIPT_ID_PREFIX, CHAR_CARD_VIEWER_BUTTON_ID, CHAR_CARD_VIEWER_POPUP_ID, state } from './cwb_state.js';
-    import { logDebug, logError, showToastr, escapeHtml, parseCustomFormat, buildCustomFormat, isCwbEnabled } from './cwb_utils.js';
+    import { logDebug, logError, showToastr, parseCustomFormat, buildCustomFormat, isCwbEnabled } from './cwb_utils.js';
     import { deleteLorebookEntries, getTargetWorldBook } from './cwb_lorebookManager.js';
     import { manualUpdateLogic } from './cwb_core.js';
     import { testCwbConnection, fetchCwbModels } from './cwb_apiService.js';
@@ -10,99 +10,101 @@
     import { configManager } from '../../utils/config/ConfigManager.js';
     import { watchProfileSliderGuard } from '../../ui/profile-slider-guard.js';
 
+    import { t, cwbLabel, setCwbText, setCwbHtml, initializeCwbI18n, escapeCwbHtml as escapeHtml } from './cwb_i18n.js';
+
     const { jQuery: $, SillyTavern } = window;
 
     function createCharCardViewerPopupHtml(displayItems) {
         const pathToLabelMap = {
-            'narrative_essence.core_traits.name': '特质名称',
-            'narrative_essence.key_relationships.name': '关系人姓名',
-            'NE.trait.name': '特质名称',
-            'NE.rel.name': '关系人姓名',
+            'narrative_essence.core_traits.name': 'characterWorldUi.field.traitName',
+            'narrative_essence.key_relationships.name': 'characterWorldUi.field.relationName',
+            'NE.trait.name': 'characterWorldUi.field.traitName',
+            'NE.rel.name': 'characterWorldUi.field.relationName',
         };
         const keyToLabelMap = {
-            'name': '姓名',
+            'name': 'characterWorldUi.field.name',
             // Old keys
-            'archetype': '身份原型',
-            'gender': '性别',
-            'age': '年龄',
-            'race': '种族',
-            'current_status': '当前状态',
-            'first_impression': '第一印象',
-            'key_features': '显著特征',
-            'attire': '衣着风格',
-            'mannerisms': '习惯举止',
-            'voice': '声音特征',
-            'tags': '性格标签',
-            'description': '性格详述',
-            'motivation': '内在驱动',
-            'values': '价值观',
-            'inner_conflict': '内心挣扎',
-            'interaction_style': '互动风格',
-            'skills': '技能能力',
-            'reputation': '他人声望',
-            'core_traits': '核心特质',
-            'verbal_patterns': '语言范式',
-            'key_relationships': '关键关系',
-            'definition': '特质定义',
-            'evidence': '具体事例',
-            'style_summary': '风格总结',
-            'quotes': '代表性引言',
-            'summary': '关系概述',
+            'archetype': 'characterWorldUi.field.archetype',
+            'gender': 'characterWorldUi.field.gender',
+            'age': 'characterWorldUi.field.age',
+            'race': 'characterWorldUi.field.race',
+            'current_status': 'characterWorldUi.field.status',
+            'first_impression': 'characterWorldUi.field.first',
+            'key_features': 'characterWorldUi.field.features',
+            'attire': 'characterWorldUi.field.attire',
+            'mannerisms': 'characterWorldUi.field.mannerisms',
+            'voice': 'characterWorldUi.field.voice',
+            'tags': 'characterWorldUi.field.tags',
+            'description': 'characterWorldUi.field.description',
+            'motivation': 'characterWorldUi.field.motivation',
+            'values': 'characterWorldUi.field.values',
+            'inner_conflict': 'characterWorldUi.field.conflict',
+            'interaction_style': 'characterWorldUi.field.interaction',
+            'skills': 'characterWorldUi.field.skills',
+            'reputation': 'characterWorldUi.field.reputation',
+            'core_traits': 'characterWorldUi.field.traits',
+            'verbal_patterns': 'characterWorldUi.field.verbal',
+            'key_relationships': 'characterWorldUi.field.relationships',
+            'definition': 'characterWorldUi.field.definition',
+            'evidence': 'characterWorldUi.field.evidence',
+            'style_summary': 'characterWorldUi.field.styleSummary',
+            'quotes': 'characterWorldUi.field.quotes',
+            'summary': 'characterWorldUi.field.summary',
 
             // New short keys
-            'CI': '核心认同',
-            'PI': '物理印记',
-            'PP': '心智侧写',
-            'SM': '社交矩阵',
-            'NE': '叙事精粹',
+            'CI': 'characterWorldUi.field.identity',
+            'PI': 'characterWorldUi.field.physical',
+            'PP': 'characterWorldUi.field.psyche',
+            'SM': 'characterWorldUi.field.social',
+            'NE': 'characterWorldUi.field.narrative',
             
-            'arch': '身份原型',
-            'gen': '性别',
+            'arch': 'characterWorldUi.field.archetype',
+            'gen': 'characterWorldUi.field.gender',
             // age is same
             // race is same
-            'status': '当前状态',
+            'status': 'characterWorldUi.field.status',
 
-            'first': '第一印象',
-            'feat': '显著特征',
+            'first': 'characterWorldUi.field.first',
+            'feat': 'characterWorldUi.field.features',
             // attire is same
-            'manner': '习惯举止',
+            'manner': 'characterWorldUi.field.mannerisms',
             // voice is same
 
             // tags is same
-            'desc': '性格详述',
-            'mot': '内在驱动',
-            'val': '价值观',
-            'conf': '内心挣扎',
+            'desc': 'characterWorldUi.field.description',
+            'mot': 'characterWorldUi.field.motivation',
+            'val': 'characterWorldUi.field.values',
+            'conf': 'characterWorldUi.field.conflict',
 
-            'style': '互动风格/风格总结', // Shared by SM.style and NE.verb.style
-            'skill': '技能能力',
-            'rep': '他人声望',
+            'style': 'characterWorldUi.field.style', // Shared by SM.style and NE.verb.style
+            'skill': 'characterWorldUi.field.skills',
+            'rep': 'characterWorldUi.field.reputation',
 
-            'trait': '核心特质',
-            'verb': '语言范式',
-            'rel': '关键关系',
+            'trait': 'characterWorldUi.field.traits',
+            'verb': 'characterWorldUi.field.verbal',
+            'rel': 'characterWorldUi.field.relationships',
 
-            'def': '特质定义',
-            'evid': '具体事例',
-            'quote': '代表性引言',
-            'sum': '关系概述',
+            'def': 'characterWorldUi.field.definition',
+            'evid': 'characterWorldUi.field.evidence',
+            'quote': 'characterWorldUi.field.quotes',
+            'sum': 'characterWorldUi.field.summary',
         };
         const getLabel = (key, path) => {
             const pathKey = path.replace(/\.\d+\./g, '.');
-            if (pathToLabelMap[pathKey]) {
-                return pathToLabelMap[pathKey];
+            if (Object.hasOwn(pathToLabelMap, pathKey)) {
+                return cwbLabel(pathToLabelMap[pathKey]);
             }
-            return keyToLabelMap[key] || key.replace(/_/g, ' ');
+            return Object.hasOwn(keyToLabelMap, key) ? cwbLabel(keyToLabelMap[key]) : escapeHtml(key.replace(/_/g, ' '));
         };
 
         const renderField = (label, path, value, isTextarea = false, isArray = false) => {
-            const escapedLabel = escapeHtml(label);
+            const escapedLabel = label;
             const escapedValue = escapeHtml(isArray ? value.join('\n') : value || '');
 
             const isLongContent = (value && String(value).length > 50) || (Array.isArray(value) && value.length > 1);
             const rows = isArray ? Math.max(3, value.length) : (isLongContent ? 4 : 2);
 
-            const inputElement = `<textarea class="cwb-cyber-field__input" data-path="${path}" data-is-array="${isArray}" rows="${rows}">${escapedValue}</textarea>`;
+            const inputElement = `<textarea class="cwb-cyber-field__input" data-path="${escapeHtml(path)}" data-is-array="${isArray}" rows="${rows}">${escapedValue}</textarea>`;
 
             return `<div class="cwb-cyber-field">
                         <label class="cwb-cyber-field__label">${escapedLabel}</label>
@@ -112,14 +114,14 @@
 
         const renderCard = (title, data, pathPrefix) => {
             if (!data || typeof data !== 'object' || Object.keys(data).length === 0) return '';
-            let cardHtml = `<div class="cwb-cyber-card"><h4 class="cwb-cyber-card__title">${escapeHtml(title)}</h4><div class="cwb-cyber-card__content">`;
+            let cardHtml = `<div class="cwb-cyber-card"><h4 class="cwb-cyber-card__title">${title}</h4><div class="cwb-cyber-card__content">`;
             for (const [key, value] of Object.entries(data)) {
                 const currentPath = pathPrefix ? `${pathPrefix}.${key}` : key;
                 const label = getLabel(key, currentPath);
                 if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
                     cardHtml += renderCard(label, value, currentPath); // Recursive call for nested objects
                 } else if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
-                    cardHtml += `<div class="cwb-cyber-card cwb-cyber-card--nested"><h5 class="cwb-cyber-card__title">${escapeHtml(label)}</h5><div class="cwb-cyber-card__content">`;
+                    cardHtml += `<div class="cwb-cyber-card cwb-cyber-card--nested"><h5 class="cwb-cyber-card__title">${label}</h5><div class="cwb-cyber-card__content">`;
                     value.forEach((item, itemIndex) => {
                         cardHtml += `<div class="cwb-cyber-list-item">`;
                         for (const [itemKey, itemValue] of Object.entries(item)) {
@@ -139,38 +141,38 @@
 
         let html = `<div id="${CHAR_CARD_VIEWER_POPUP_ID}" class="cwb-cyber-popup">`;
         html += `<div class="cwb-cyber-popup__header">
-                    <h3 class="cwb-cyber-popup__title"><i class="fa-solid fa-book-atlas"></i> 角色数据核心</h3>
+                    <h3 class="cwb-cyber-popup__title"><i class="fa-solid fa-book-atlas"></i> ${cwbLabel('characterWorldUi.viewer.title')}</h3>
                     <div class="cwb-cyber-popup__actions">
-                        <button id="cwb-manual-update-btn" class="cwb-cyber-button" title="手动更新当前角色的描述"><i class="fa-solid fa-wand-magic-sparkles"></i> 更新</button>
-                        <button id="cwb-viewer-refresh" class="cwb-cyber-button" title="从世界书重新加载所有角色卡"><i class="fa-solid fa-arrows-rotate"></i> 刷新</button>
-                        <button id="cwb-viewer-delete-all" class="cwb-cyber-button cwb-cyber-button--danger" title="删除当前聊天中的所有角色卡和总览"><i class="fa-solid fa-trash-can"></i> 清除</button>
+                        <button id="cwb-manual-update-btn" class="cwb-cyber-button" title="${escapeHtml(t('characterWorldUi.viewer.updateTitle'))}" data-cwb-i18n-title="characterWorldUi.viewer.updateTitle"><i class="fa-solid fa-wand-magic-sparkles"></i> ${cwbLabel('characterWorldUi.viewer.update')}</button>
+                        <button id="cwb-viewer-refresh" class="cwb-cyber-button" title="${escapeHtml(t('characterWorldUi.viewer.refreshTitle'))}" data-cwb-i18n-title="characterWorldUi.viewer.refreshTitle"><i class="fa-solid fa-arrows-rotate"></i> ${cwbLabel('characterWorldUi.refresh')}</button>
+                        <button id="cwb-viewer-delete-all" class="cwb-cyber-button cwb-cyber-button--danger" title="${escapeHtml(t('characterWorldUi.viewer.clearTitle'))}" data-cwb-i18n-title="characterWorldUi.viewer.clearTitle"><i class="fa-solid fa-trash-can"></i> ${cwbLabel('characterWorldUi.viewer.clear')}</button>
                         <button class="cwb-viewer-popup-close-button">&times;</button>
                     </div>
                 </div>`;
 
         if (!displayItems || displayItems.length === 0) {
-            html += `<div class="cwb-cyber-popup__body cwb-cyber-popup__body--empty"><p>看什么？没更新角色条目就等着我给你显示出来条目吗？想关悬浮窗就点角色世界，功能设置关掉。</p></div></div>`;
+            html += `<div class="cwb-cyber-popup__body cwb-cyber-popup__body--empty"><p>${cwbLabel('characterWorldUi.viewer.empty')}</p></div></div>`;
             return html;
         }
 
         html += `<div class="cwb-cyber-popup__main-content">`;
         html += `<div class="cwb-cyber-tabs">`;
         displayItems.forEach((item, index) => {
-            const itemName = item.isRoster ? '人物总览' : (item.parsed?.name || `未知实体 ${index + 1}`);
+            const itemName = item.isRoster ? cwbLabel('characterWorldUi.viewer.roster') : (item.parsed?.name ? escapeHtml(item.parsed.name) : cwbLabel('characterWorldUi.viewer.unknown', { index: index + 1 }));
             const wrapperClass = index === 0 ? 'cwb-cyber-tab active' : 'cwb-cyber-tab';
-            html += `<div class="${wrapperClass}" data-uid-wrapper="${item.uid}">
-                        <button class="cwb-cyber-tab__button" data-char-uid="${item.uid}">${escapeHtml(itemName)}</button>
-                        <button class="cwb-cyber-tab__delete" data-char-uid="${item.uid}" title="删除此条目"><i class="fa-solid fa-times"></i></button>
+            html += `<div class="${wrapperClass}" data-uid-wrapper="${escapeHtml(item.uid)}">
+                        <button class="cwb-cyber-tab__button" data-char-uid="${escapeHtml(item.uid)}">${itemName}</button>
+                        <button class="cwb-cyber-tab__delete" data-char-uid="${escapeHtml(item.uid)}" title="${escapeHtml(t('characterWorldUi.viewer.deleteTitle'))}" data-cwb-i18n-title="characterWorldUi.viewer.deleteTitle"><i class="fa-solid fa-times"></i></button>
                     </div>`;
         });
         html += `</div>`;
 
         html += `<div class="cwb-cyber-popup__body">`;
         displayItems.forEach((item, index) => {
-            html += `<div class="cwb-cyber-content-pane ${index === 0 ? 'active' : ''}" id="cwb-char-content-${item.uid}" data-uid="${item.uid}">`;
+            html += `<div class="cwb-cyber-content-pane ${index === 0 ? 'active' : ''}" id="cwb-char-content-${escapeHtml(item.uid)}" data-uid="${escapeHtml(item.uid)}">`;
             if (item.isRoster) {
                 html += `<div class="cwb-cyber-card">
-                            <h4 class="cwb-cyber-card__title">人物总览 (只读)</h4>
+                            <h4 class="cwb-cyber-card__title">${cwbLabel('characterWorldUi.viewer.rosterReadonly')}</h4>
                             <div class="cwb-cyber-card__content">
                                 <textarea readonly class="cwb-cyber-field__input" style="height: 400px;">${escapeHtml(item.content)}</textarea>
                             </div>
@@ -178,52 +180,52 @@
             } else {
                 const charData = item.parsed;
                 if (charData) {
-                    const charName = charData.name || `角色 ${index + 1}`;
-                    if (charData.name) html += renderCard('姓名', { name: charData.name }, '');
+                    const charName = charData.name ? escapeHtml(charData.name) : cwbLabel('characterWorldUi.viewer.character', { index: index + 1 });
+                    if (charData.name) html += renderCard(cwbLabel('characterWorldUi.field.name'), { name: charData.name }, '');
                     
                     // Support both old and new formats
-                    if (charData.core_identity) html += renderCard('核心认同', charData.core_identity, 'core_identity');
-                    if (charData.CI) html += renderCard('核心认同', charData.CI, 'CI');
+                    if (charData.core_identity) html += renderCard(cwbLabel('characterWorldUi.field.identity'), charData.core_identity, 'core_identity');
+                    if (charData.CI) html += renderCard(cwbLabel('characterWorldUi.field.identity'), charData.CI, 'CI');
 
-                    if (charData.physical_imprint) html += renderCard('物理印记', charData.physical_imprint, 'physical_imprint');
-                    if (charData.PI) html += renderCard('物理印记', charData.PI, 'PI');
+                    if (charData.physical_imprint) html += renderCard(cwbLabel('characterWorldUi.field.physical'), charData.physical_imprint, 'physical_imprint');
+                    if (charData.PI) html += renderCard(cwbLabel('characterWorldUi.field.physical'), charData.PI, 'PI');
 
-                    if (charData.psyche_profile) html += renderCard('心智侧写', charData.psyche_profile, 'psyche_profile');
-                    if (charData.PP) html += renderCard('心智侧写', charData.PP, 'PP');
+                    if (charData.psyche_profile) html += renderCard(cwbLabel('characterWorldUi.field.psyche'), charData.psyche_profile, 'psyche_profile');
+                    if (charData.PP) html += renderCard(cwbLabel('characterWorldUi.field.psyche'), charData.PP, 'PP');
 
-                    if (charData.social_matrix) html += renderCard('社交矩阵', charData.social_matrix, 'social_matrix');
-                    if (charData.SM) html += renderCard('社交矩阵', charData.SM, 'SM');
+                    if (charData.social_matrix) html += renderCard(cwbLabel('characterWorldUi.field.social'), charData.social_matrix, 'social_matrix');
+                    if (charData.SM) html += renderCard(cwbLabel('characterWorldUi.field.social'), charData.SM, 'SM');
 
-                    if (charData.narrative_essence) html += renderCard('叙事精粹', charData.narrative_essence, 'narrative_essence');
-                    if (charData.NE) html += renderCard('叙事精粹', charData.NE, 'NE');
+                    if (charData.narrative_essence) html += renderCard(cwbLabel('characterWorldUi.field.narrative'), charData.narrative_essence, 'narrative_essence');
+                    if (charData.NE) html += renderCard(cwbLabel('characterWorldUi.field.narrative'), charData.NE, 'NE');
                     
                     html += `<div class="cwb-cyber-card cwb-insertion-settings-card">
-                                <h4 class="cwb-cyber-card__title">注入设置</h4>
+                                <h4 class="cwb-cyber-card__title">${cwbLabel('characterWorldUi.viewer.insertion')}</h4>
                                 <div class="cwb-cyber-card__content cwb-insertion-settings-content">
                                     <div class="cwb-cyber-field">
-                                        <label class="cwb-cyber-field__label" for="cwb-insertion-position-${item.uid}">注入位置</label>
-                                        <select id="cwb-insertion-position-${item.uid}" class="cwb-cyber-field__input cwb-insertion-position" data-uid="${item.uid}">
-                                            <option value="before_char" ${item.insertionPosition === 'before_char' ? 'selected' : ''}>角色定义之前</option>
-                                            <option value="after_char" ${item.insertionPosition === 'after_char' ? 'selected' : ''}>角色定义之后</option>
-                                            <option value="before_an" ${item.insertionPosition === 'before_an' ? 'selected' : ''}>作者注释之前</option>
-                                            <option value="after_an" ${item.insertionPosition === 'after_an' ? 'selected' : ''}>作者注释之后</option>
-                                            <option value="at_depth" ${item.insertionPosition === 'at_depth' ? 'selected' : ''}>@D 注入指定深度</option>
+                                        <label class="cwb-cyber-field__label" for="cwb-insertion-position-${escapeHtml(item.uid)}">${cwbLabel('characterWorldUi.viewer.position')}</label>
+                                        <select id="cwb-insertion-position-${escapeHtml(item.uid)}" class="cwb-cyber-field__input cwb-insertion-position" data-uid="${escapeHtml(item.uid)}">
+                                            <option value="before_char" ${item.insertionPosition === 'before_char' ? 'selected' : ''} data-cwb-i18n="characterWorldUi.viewer.beforeChar">${escapeHtml(t('characterWorldUi.viewer.beforeChar'))}</option>
+                                            <option value="after_char" ${item.insertionPosition === 'after_char' ? 'selected' : ''} data-cwb-i18n="characterWorldUi.viewer.afterChar">${escapeHtml(t('characterWorldUi.viewer.afterChar'))}</option>
+                                            <option value="before_an" ${item.insertionPosition === 'before_an' ? 'selected' : ''} data-cwb-i18n="characterWorldUi.viewer.beforeNote">${escapeHtml(t('characterWorldUi.viewer.beforeNote'))}</option>
+                                            <option value="after_an" ${item.insertionPosition === 'after_an' ? 'selected' : ''} data-cwb-i18n="characterWorldUi.viewer.afterNote">${escapeHtml(t('characterWorldUi.viewer.afterNote'))}</option>
+                                            <option value="at_depth" ${item.insertionPosition === 'at_depth' ? 'selected' : ''} data-cwb-i18n="characterWorldUi.viewer.atDepth">${escapeHtml(t('characterWorldUi.viewer.atDepth'))}</option>
                                         </select>
                                     </div>
                                     <div class="cwb-cyber-field cwb-insertion-depth-container" style="${item.insertionPosition === 'at_depth' ? '' : 'display: none;'}">
-                                        <label class="cwb-cyber-field__label" for="cwb-insertion-depth-${item.uid}">注入深度</label>
-                                        <input id="cwb-insertion-depth-${item.uid}" type="number" class="cwb-cyber-field__input cwb-insertion-depth" value="${item.insertionDepth}" min="0" max="9999">
+                                        <label class="cwb-cyber-field__label" for="cwb-insertion-depth-${escapeHtml(item.uid)}">${cwbLabel('characterWorldUi.viewer.depth')}</label>
+                                        <input id="cwb-insertion-depth-${escapeHtml(item.uid)}" type="number" class="cwb-cyber-field__input cwb-insertion-depth" value="${escapeHtml(item.insertionDepth)}" min="0" max="9999">
                                     </div>
                                     <div class="cwb-cyber-field">
-                                        <label class="cwb-cyber-field__label" for="cwb-insertion-order-${item.uid}">注入顺序</label>
-                                        <input id="cwb-insertion-order-${item.uid}" type="number" class="cwb-cyber-field__input cwb-insertion-order" value="${item.insertionOrder}" min="0">
+                                        <label class="cwb-cyber-field__label" for="cwb-insertion-order-${escapeHtml(item.uid)}">${cwbLabel('characterWorldUi.viewer.order')}</label>
+                                        <input id="cwb-insertion-order-${escapeHtml(item.uid)}" type="number" class="cwb-cyber-field__input cwb-insertion-order" value="${escapeHtml(item.insertionOrder)}" min="0">
                                     </div>
                                 </div>
                             </div>`;
 
                     html += `<div class="cwb-cyber-content-pane__footer">
-                                <button class="cwb-cyber-button cwb-cyber-button--primary cwb-save-button" data-uid="${item.uid}">
-                                    <i class="fa-solid fa-save"></i> 保存对 ${escapeHtml(charName)} 的修改
+                                <button class="cwb-cyber-button cwb-cyber-button--primary cwb-save-button" data-uid="${escapeHtml(item.uid)}">
+                                    <i class="fa-solid fa-save"></i> ${cwbLabel('characterWorldUi.viewer.saveBefore')}${charName}${cwbLabel('characterWorldUi.viewer.saveAfter')}
                                 </button>
                             </div>`;
                 }
@@ -235,6 +237,7 @@
     }
 
     function bindCharCardViewerPopupEvents($popup) {
+        initializeCwbI18n($popup, 'viewer');
         $popup.on('change', '.cwb-insertion-position', function() {
             const $this = $(this);
             const $depthContainer = $this.closest('.cwb-insertion-settings-content').find('.cwb-insertion-depth-container');
@@ -247,15 +250,15 @@
 
         $popup.on('click', '.cwb-viewer-popup-close-button', closeCharCardViewerPopup);
         $popup.find('#cwb-viewer-refresh').on('click', () => {
-            showToastr('info', '正在刷新角色数据...');
+            showToastr('info', t('characterWorldUi.viewer.refreshing'));
             showCharCardViewerPopup();
         });
 
         $popup.find('#cwb-manual-update-btn').on('click', async function() {
             const $button = $(this);
-            $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 更新中...');
+            setCwbHtml($button.prop('disabled', true), '<i class="fas fa-spinner fa-spin"></i> ' + cwbLabel('characterWorldUi.updating'));
             await manualUpdateLogic();
-            showToastr('info', '更新完成，正在刷新查看器...');
+            showToastr('info', t('characterWorldUi.viewer.updated'));
             showCharCardViewerPopup();
         });
 
@@ -270,7 +273,7 @@
 
         $popup.find('.cwb-cyber-tab__delete').on('click', async function(e) {
             e.stopPropagation();
-            if (confirm('您确定要删除这个角色条目吗？此操作不可撤销。')) {
+            if (confirm(t('characterWorldUi.viewer.deleteConfirm'))) {
                 const uidToDelete = $(this).data('char-uid');
                 await deleteLorebookEntries([uidToDelete]);
                 const $wrapper = $(this).closest('.cwb-cyber-tab');
@@ -287,7 +290,7 @@
         });
 
         $popup.find('#cwb-viewer-delete-all').on('click', async function() {
-            if (confirm('您确定要清除当前聊天中的所有角色卡和总览吗？此操作将删除所有相关条目，且不可撤销。')) {
+            if (confirm(t('characterWorldUi.viewer.clearConfirm'))) {
                 const allUids = $popup.find('.cwb-cyber-tab__button').map(function() {
                     return $(this).data('char-uid');
                 }).get();
@@ -301,7 +304,7 @@
         $popup.find('.cwb-save-button').on('click', async function () {
             const $button = $(this);
             const targetUid = $button.data('uid');
-            $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 保存中...');
+            setCwbHtml($button.prop('disabled', true), '<i class="fas fa-spinner fa-spin"></i> ' + cwbLabel('characterWorldUi.saving'));
             try {
                 const book = await getTargetWorldBook();
                 if (!book) throw new Error('未找到目标世界书。');
@@ -374,12 +377,12 @@
                 });
 
                 await amilyHelper.setLorebookEntries(book, [finalEntryData]);
-                showToastr('success', '角色卡已成功保存！');
+                showToastr('success', t('characterWorldUi.viewer.saved'));
             } catch (error) {
                 logError('保存角色卡失败:', error);
-                showToastr('error', `保存失败: ${error.message}`);
+                showToastr('error', t('characterWorldUi.saveFailed', { error: error.message }), { escapeHtml: true });
             } finally {
-                $button.prop('disabled', false).text(`保存修改`);
+                setCwbText($button.prop('disabled', false), 'characterWorldUi.viewer.save');
             }
         });
     }
@@ -394,7 +397,7 @@
         try {
             const book = await getTargetWorldBook();
             if (!book) {
-                showToastr('warning', '当前角色未设置主世界书或自定义世界书。');
+                showToastr('warning', t('characterWorldUi.world.missing'));
                 $('body').append(createCharCardViewerPopupHtml([]));
                 bindCharCardViewerPopupEvents($(`#${CHAR_CARD_VIEWER_POPUP_ID}`));
                 return;
@@ -508,7 +511,7 @@
             bindCharCardViewerPopupEvents($popup);
         } catch (error) {
             logError('无法显示角色卡查看器:', error);
-            showToastr('error', '加载角色卡数据时出错。');
+            showToastr('error', t('characterWorldUi.viewer.loadFailed'));
         }
     }
 
@@ -606,6 +609,7 @@
         const $existingButton = $(`#${CHAR_CARD_VIEWER_BUTTON_ID}`);
         
         if ($existingButton.length > 0) {
+            initializeCwbI18n($existingButton, 'viewerButton');
             console.log('[CWB] Char card viewer button already exists');
             setTimeout(() => {
                 const shouldShow = isCwbEnabled() && state.viewerEnabled;
@@ -615,9 +619,10 @@
             return;
         }
         
-        const buttonHtml = `<div id="${CHAR_CARD_VIEWER_BUTTON_ID}" title="查看角色世界书" class="fa-solid fa-book-open"></div>`;
+        const buttonHtml = `<div id="${CHAR_CARD_VIEWER_BUTTON_ID}" title="${escapeHtml(t('characterWorldUi.viewer.open'))}" data-cwb-i18n-title="characterWorldUi.viewer.open" class="fa-solid fa-book-open"></div>`;
         $('body').append(buttonHtml);
         const $viewerButton = $(`#${CHAR_CARD_VIEWER_BUTTON_ID}`);
+        initializeCwbI18n($viewerButton, 'viewerButton');
         makeButtonDraggable($viewerButton);
         
         const savedPosition = JSON.parse(localStorage.getItem(state.STORAGE_KEY_VIEWER_BUTTON_POS) || 'null');
@@ -705,20 +710,20 @@
 
         $('#cwb-test-connection').off('click').on('click', async function() {
             const $button = $(this);
-            $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 测试中...');
+            setCwbHtml($button.prop('disabled', true), '<i class="fas fa-spinner fa-spin"></i> ' + cwbLabel('characterWorldUi.api.testing'));
             
             try {
                 await testCwbConnection();
             } catch (error) {
                 console.error('[CWB] 测试连接失败:', error);
             } finally {
-                $button.prop('disabled', false).html('<i class="fas fa-plug"></i> 测试连接');
+                setCwbHtml($button.prop('disabled', false), '<i class="fas fa-plug"></i> ' + cwbLabel('characterWorldUi.api.test'));
             }
         });
 
         $('#cwb-fetch-models').off('click').on('click', async function() {
             const $button = $(this);
-            $button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 获取中...');
+            setCwbHtml($button.prop('disabled', true), '<i class="fas fa-spinner fa-spin"></i> ' + cwbLabel('characterWorldUi.api.fetching'));
             
             try {
                 const models = await fetchCwbModels();
@@ -729,16 +734,16 @@
                     models.forEach(model => {
                         $modelSelect.append(new Option(model.name, model.id));
                     });
-                    showToastr('success', `已获取到 ${models.length} 个模型`);
+                    showToastr('success', t('characterWorldUi.api.modelsFetched', { count: models.length }));
                 } else {
-                    $modelSelect.append(new Option('无可用模型', ''));
-                    showToastr('warning', '未获取到可用模型');
+                    $modelSelect.append(setCwbText(new Option('', ''), 'characterWorldUi.api.noModels'));
+                    showToastr('warning', t('characterWorldUi.api.noModelsFound'));
                 }
             } catch (error) {
                 console.error('[CWB] 获取模型失败:', error);
-                $('#cwb-model').empty().append(new Option('获取失败', ''));
+                $('#cwb-model').empty().append(setCwbText(new Option('', ''), 'characterWorldUi.api.fetchFailed'));
             } finally {
-                $button.prop('disabled', false).html('<i class="fas fa-download"></i> 获取模型');
+                setCwbHtml($button.prop('disabled', false), '<i class="fas fa-download"></i> ' + cwbLabel('characterWorldUi.api.fetch'));
             }
         });
     }

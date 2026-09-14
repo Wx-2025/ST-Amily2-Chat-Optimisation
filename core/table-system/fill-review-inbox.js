@@ -4,7 +4,13 @@ import {
     getTableFillContentFingerprint,
     getTableFillContentHash,
     getTableFillMessageProgress,
+    getTableFillProgressExtra,
+    getTableFillProgressValue,
+    hasTableFillProgressValue,
+    setTableFillProgressValue,
+    deleteTableFillProgressValue,
 } from './infra/fill-progress.js';
+import { isValidTableGroupId, TABLE_GROUP_IDS } from './table-groups.js';
 
 export const TABLE_FILL_REVIEW_INBOX_KEY = 'amily2_table_fill_review_inbox_v1';
 export const TABLE_FILL_REVIEW_RECORD_VERSION = 1;
@@ -117,14 +123,16 @@ function createTableFillReviewLocation({
     hidden,
     branchIndex = null,
     contentVerified = true,
+    tableGroupId = TABLE_GROUP_IDS.AMILY,
 }) {
     const progress = contentVerified
         ? getTableFillMessageProgress({
             is_user: Boolean(message?.is_user),
             mes: content,
             extra: carrier?.extra,
-        })
+        }, tableGroupId)
         : { processed: false, reviewPending: false };
+    const progressExtra = getTableFillProgressExtra(carrier, tableGroupId);
     return Object.freeze({
         key: hidden ? `${index}:swipe:${branchIndex}` : `${index}:current`,
         index,
@@ -134,7 +142,9 @@ function createTableFillReviewLocation({
         hidden,
         branchIndex,
         contentVerified,
-        marker: carrier?.extra?.[SECONDARY_REVIEW_PENDING_KEY],
+        marker: progressExtra?.[SECONDARY_REVIEW_PENDING_KEY],
+        progressExtra,
+        tableGroupId,
         processed: progress.processed,
         reviewPending: progress.reviewPending,
     });
@@ -148,19 +158,28 @@ function createTableFillReviewLocation({
  * swipe_id. Deduplicate a branch only when both its content and marker are an
  * unambiguous byte-for-byte mirror of the current message.
  */
-function collectTableFillReviewLocations(context, index) {
+function collectTableFillReviewLocations(
+    context,
+    index,
+    tableGroupId = TABLE_GROUP_IDS.AMILY,
+) {
     const message = context?.chat?.[index];
     if (!Number.isSafeInteger(index) || index < 0 || !message || message.is_user) {
         return [];
     }
     const currentContent = String(message.mes ?? '');
-    const currentMarker = message.extra?.[SECONDARY_REVIEW_PENDING_KEY];
+    const currentMarker = getTableFillProgressValue(
+        message,
+        SECONDARY_REVIEW_PENDING_KEY,
+        tableGroupId,
+    );
     const locations = [createTableFillReviewLocation({
         index,
         message,
         carrier: message,
         content: currentContent,
         hidden: false,
+        tableGroupId,
     })];
     const swipes = Array.isArray(message.swipes) ? message.swipes : null;
     const swipeInfo = Array.isArray(message.swipe_info) ? message.swipe_info : null;
@@ -171,7 +190,11 @@ function collectTableFillReviewLocations(context, index) {
         for (let branchIndex = 0; branchIndex < swipeInfo.length; branchIndex += 1) {
             const carrier = swipeInfo[branchIndex];
             if (!carrier || typeof carrier !== 'object' || Array.isArray(carrier)
-                || !hasOwn(carrier.extra, SECONDARY_REVIEW_PENDING_KEY)) continue;
+                || !hasTableFillProgressValue(
+                    carrier,
+                    SECONDARY_REVIEW_PENDING_KEY,
+                    tableGroupId,
+                )) continue;
             locations.push(createTableFillReviewLocation({
                 index,
                 message,
@@ -180,6 +203,7 @@ function collectTableFillReviewLocations(context, index) {
                 hidden: true,
                 branchIndex,
                 contentVerified: false,
+                tableGroupId,
             }));
         }
         return locations;
@@ -190,7 +214,11 @@ function collectTableFillReviewLocations(context, index) {
         const info = swipeInfo[branchIndex];
         if (!info || typeof info !== 'object' || Array.isArray(info)) continue;
         const content = String(swipes[branchIndex] ?? '');
-        const marker = info.extra?.[SECONDARY_REVIEW_PENDING_KEY];
+        const marker = getTableFillProgressValue(
+            info,
+            SECONDARY_REVIEW_PENDING_KEY,
+            tableGroupId,
+        );
         if (content === currentContent && sameSerializedValue(marker, currentMarker)) {
             mirroredIndexes.push(branchIndex);
         }
@@ -213,14 +241,20 @@ function collectTableFillReviewLocations(context, index) {
             content: String(swipes[branchIndex] ?? ''),
             hidden: true,
             branchIndex,
+            tableGroupId,
         }));
     }
     return locations;
 }
 
-function resolveTableFillReviewTargetEvidence(context, target, reviewId) {
+function resolveTableFillReviewTargetEvidence(
+    context,
+    target,
+    reviewId,
+    tableGroupId = TABLE_GROUP_IDS.AMILY,
+) {
     const index = Number(target?.index);
-    const locations = collectTableFillReviewLocations(context, index);
+    const locations = collectTableFillReviewLocations(context, index, tableGroupId);
     const candidates = locations
         .filter(location => location.contentVerified
             && !location.processed
@@ -285,6 +319,7 @@ export function createTableFillReviewSwipeMarkerCleanupPlan(
     context,
     reviewIds,
     resolvedMessages,
+    tableGroupId = TABLE_GROUP_IDS.AMILY,
 ) {
     const ids = new Set(
         [...(reviewIds || [])].map(value => String(value ?? '')).filter(Boolean),
@@ -296,12 +331,16 @@ export function createTableFillReviewSwipeMarkerCleanupPlan(
 
     const claimsByCarrier = new Map();
     for (const record of readTableFillReviewRecords(context)) {
-        if (!ids.has(record.id)) continue;
+        if (!ids.has(record.id) || record.tableGroupId !== tableGroupId) continue;
         for (const target of record.targets || []) {
             const index = Number(target?.index);
             const message = context?.chat?.[index];
             const currentContent = String(message?.mes ?? '');
-            const currentMarker = message?.extra?.[SECONDARY_REVIEW_PENDING_KEY];
+            const currentMarker = getTableFillProgressValue(
+                message,
+                SECONDARY_REVIEW_PENDING_KEY,
+                tableGroupId,
+            );
             if (!resolved.has(message)
                 || message?.is_user
                 || !tableFillReviewTargetMatchesContent(target, currentContent)
@@ -316,7 +355,11 @@ export function createTableFillReviewSwipeMarkerCleanupPlan(
             for (let branchIndex = 0; branchIndex < swipes.length; branchIndex += 1) {
                 const carrier = swipeInfo[branchIndex];
                 const content = String(swipes[branchIndex] ?? '');
-                const marker = carrier?.extra?.[SECONDARY_REVIEW_PENDING_KEY];
+                const marker = getTableFillProgressValue(
+                    carrier,
+                    SECONDARY_REVIEW_PENDING_KEY,
+                    tableGroupId,
+                );
                 if (!carrier || typeof carrier !== 'object' || Array.isArray(carrier)
                     || !tableFillReviewTargetMatchesContent(target, content)
                     || !tableFillReviewMarkerMatchesTarget(marker, record.id, target)) {
@@ -340,6 +383,8 @@ export function createTableFillReviewSwipeMarkerCleanupPlan(
                 branchIndex: candidate.branchIndex,
                 carrier: candidate.carrier,
                 carrierExtra: candidate.carrier.extra,
+                progressExtra: getTableFillProgressExtra(candidate.carrier, tableGroupId),
+                tableGroupId,
                 branchContent: candidate.content,
                 marker: clone(candidate.marker),
                 hadExtra: hasOwn(candidate.carrier, 'extra'),
@@ -364,7 +409,11 @@ export function tableFillReviewSwipeMarkerCleanupMatches(context, plan) {
             && String(message?.mes ?? '') === mutation.currentContent
             && tableFillReviewTargetMatchesContent(mutation.target, message?.mes)
             && sameSerializedValue(
-                message?.extra?.[SECONDARY_REVIEW_PENDING_KEY],
+                getTableFillProgressValue(
+                    message,
+                    SECONDARY_REVIEW_PENDING_KEY,
+                    mutation.tableGroupId,
+                ),
                 mutation.currentMarker,
             )
             && message.swipes === mutation.swipes
@@ -375,12 +424,18 @@ export function tableFillReviewSwipeMarkerCleanupMatches(context, plan) {
                 === mutation.branchContent
             && mutation.swipeInfo[mutation.branchIndex] === mutation.carrier
             && mutation.carrier.extra === mutation.carrierExtra
+            && getTableFillProgressExtra(mutation.carrier, mutation.tableGroupId)
+                === mutation.progressExtra
             && tableFillReviewTargetMatchesContent(
                 mutation.target,
                 mutation.swipes[mutation.branchIndex],
             )
             && sameSerializedValue(
-                mutation.carrier?.extra?.[SECONDARY_REVIEW_PENDING_KEY],
+                getTableFillProgressValue(
+                    mutation.carrier,
+                    SECONDARY_REVIEW_PENDING_KEY,
+                    mutation.tableGroupId,
+                ),
                 mutation.marker,
             );
     });
@@ -388,13 +443,17 @@ export function tableFillReviewSwipeMarkerCleanupMatches(context, plan) {
 
 export function applyTableFillReviewSwipeMarkerCleanup(plan) {
     for (const mutation of plan?.mutations || []) {
-        delete mutation.carrier.extra?.[SECONDARY_REVIEW_PENDING_KEY];
+        deleteTableFillProgressValue(
+            mutation.carrier,
+            SECONDARY_REVIEW_PENDING_KEY,
+            mutation.tableGroupId,
+        );
     }
 }
 
 function tableFillReviewSwipeMarkerCleanupMutationIsStaged(context, mutation) {
     const message = context?.chat?.[mutation.index];
-    const extra = mutation.carrier?.extra;
+    const extra = getTableFillProgressExtra(mutation.carrier, mutation.tableGroupId);
     return message === mutation.message
         && String(message?.mes ?? '') === mutation.currentContent
         && message.swipes === mutation.swipes
@@ -404,7 +463,8 @@ function tableFillReviewSwipeMarkerCleanupMutationIsStaged(context, mutation) {
         && String(mutation.swipes[mutation.branchIndex] ?? '')
             === mutation.branchContent
         && mutation.swipeInfo[mutation.branchIndex] === mutation.carrier
-        && extra === mutation.carrierExtra
+        && mutation.carrier?.extra === mutation.carrierExtra
+        && extra === mutation.progressExtra
         && Boolean(extra)
         && !hasOwn(extra, SECONDARY_REVIEW_PENDING_KEY);
 }
@@ -418,7 +478,12 @@ export function tableFillReviewSwipeMarkerCleanupIsStaged(context, plan) {
 export function restoreTableFillReviewSwipeMarkerCleanup(context, plan) {
     for (const mutation of plan?.mutations || []) {
         if (!tableFillReviewSwipeMarkerCleanupMutationIsStaged(context, mutation)) continue;
-        mutation.carrierExtra[SECONDARY_REVIEW_PENDING_KEY] = clone(mutation.marker);
+        setTableFillProgressValue(
+            mutation.carrier,
+            SECONDARY_REVIEW_PENDING_KEY,
+            clone(mutation.marker),
+            mutation.tableGroupId,
+        );
     }
 }
 
@@ -441,12 +506,16 @@ export function planTableFillReviewReconciliation(
     {
         tableState = undefined,
         now = Date.now(),
+        tableGroupId = TABLE_GROUP_IDS.AMILY,
     } = {},
 ) {
     const chat = Array.isArray(context?.chat) ? context.chat : [];
-    const originalRecords = readTableFillReviewRecords(context);
+    const allOriginalRecords = readTableFillReviewRecords(context);
+    const originalRecords = allOriginalRecords.filter(record => (
+        record.tableGroupId === tableGroupId
+    ));
     const recordsById = new Map();
-    for (const record of originalRecords) {
+    for (const record of allOriginalRecords) {
         const group = recordsById.get(record.id) || [];
         group.push(record);
         recordsById.set(record.id, group);
@@ -456,14 +525,17 @@ export function planTableFillReviewReconciliation(
     const locationsByIndex = new Map();
     const getLocations = index => {
         if (!locationsByIndex.has(index)) {
-            locationsByIndex.set(index, collectTableFillReviewLocations(context, index));
+            locationsByIndex.set(
+                index,
+                collectTableFillReviewLocations(context, index, tableGroupId),
+            );
         }
         return locationsByIndex.get(index);
     };
     for (let index = 0; index < chat.length; index += 1) {
         const locations = getLocations(index);
         if (locations.some(location => hasOwn(
-            location.carrier?.extra,
+            location.progressExtra,
             SECONDARY_REVIEW_PENDING_KEY,
         ))) {
             evidenceIndexes.add(index);
@@ -483,6 +555,7 @@ export function planTableFillReviewReconciliation(
                 context,
                 target,
                 record.id,
+                tableGroupId,
             );
             const state = { record, target, resolution, kind: resolution.kind };
             targetStates.push(state);
@@ -520,7 +593,9 @@ export function planTableFillReviewReconciliation(
         }
     }
 
-    const nextRecords = [];
+    const nextRecords = allOriginalRecords.filter(record => (
+        record.tableGroupId !== tableGroupId
+    ));
     let trimmedRecordCount = 0;
     let removedRecordCount = 0;
     for (const record of originalRecords) {
@@ -621,6 +696,7 @@ export function planTableFillReviewReconciliation(
                         msg: currentLocation.message,
                     })],
                     tableState,
+                    tableGroupId,
                     createdAt: group.createdAt,
                     updatedAt: now,
                 });
@@ -648,6 +724,7 @@ export function planTableFillReviewReconciliation(
             attempts: 1,
             targetMessages,
             tableState,
+            tableGroupId,
             createdAt: group.createdAt,
             updatedAt: now,
         });
@@ -659,6 +736,7 @@ export function planTableFillReviewReconciliation(
                 attempts: 1,
                 targetMessages,
                 tableState,
+                tableGroupId,
                 createdAt: group.createdAt,
                 updatedAt: now,
             });
@@ -687,8 +765,15 @@ export function planTableFillReviewReconciliation(
             .find(location => !location.hidden);
         if (!currentLocation
             || protectedMarkerLocations.has(currentLocation.key)) continue;
-        const existingMarker = message.extra?.[SECONDARY_REVIEW_PENDING_KEY];
-        const wasReviewPending = getTableFillMessageProgress(message).reviewPending;
+        const existingMarker = getTableFillProgressValue(
+            message,
+            SECONDARY_REVIEW_PENDING_KEY,
+            tableGroupId,
+        );
+        const wasReviewPending = getTableFillMessageProgress(
+            message,
+            tableGroupId,
+        ).reviewPending;
         const owner = ownerByLocation.get(currentLocation.key);
         const desiredMarker = owner?.record && owner?.target
             ? createSecondaryReviewPendingMarker(
@@ -705,13 +790,18 @@ export function planTableFillReviewReconciliation(
                 owner.record.id,
                 owner.target,
             )
-            : !hasOwn(message.extra, SECONDARY_REVIEW_PENDING_KEY);
+            : !hasTableFillProgressValue(
+                message,
+                SECONDARY_REVIEW_PENDING_KEY,
+                tableGroupId,
+            );
         if (markerAlreadyMatches) continue;
         markerMutations.push(Object.freeze({
             index,
             message,
             before: clone(existingMarker),
             after: clone(desiredMarker),
+            tableGroupId,
         }));
         if (desiredMarker) restoredMarkerCount += 1;
         else {
@@ -721,7 +811,7 @@ export function planTableFillReviewReconciliation(
     }
 
     const sortedNextRecords = sortTableFillReviewRecords(nextRecords);
-    const recordsChanged = !sameSerializedValue(originalRecords, sortedNextRecords);
+    const recordsChanged = !sameSerializedValue(allOriginalRecords, sortedNextRecords);
     const messageEvidence = [...evidenceIndexes]
         .sort((left, right) => left - right)
         .map(index => {
@@ -736,7 +826,7 @@ export function planTableFillReviewReconciliation(
     return Object.freeze({
         changed: recordsChanged || markerMutations.length > 0,
         recordsChanged,
-        originalRecords: Object.freeze(originalRecords),
+        originalRecords: Object.freeze(allOriginalRecords),
         nextRecords: Object.freeze(sortedNextRecords),
         markerMutations: Object.freeze(markerMutations),
         messageEvidence: Object.freeze(messageEvidence),
@@ -746,6 +836,7 @@ export function planTableFillReviewReconciliation(
         releasedPendingCount,
         trimmedRecordCount,
         removedRecordCount,
+        tableGroupId,
     });
 }
 export function createTableFillReviewRecord({
@@ -757,6 +848,7 @@ export function createTableFillReviewRecord({
     attempts = 1,
     targetMessages = [],
     tableState = undefined,
+    tableGroupId = undefined,
     createdAt = Date.now(),
     updatedAt = Date.now(),
     volatile = false,
@@ -772,11 +864,17 @@ export function createTableFillReviewRecord({
         ? (previousRecord?.baseline?.tableStateFingerprint
             ?? createTableStateReviewFingerprint(null))
         : createTableStateReviewFingerprint(tableState);
+    const resolvedTableGroupId = isValidTableGroupId(tableGroupId)
+        ? tableGroupId
+        : (isValidTableGroupId(previousRecord?.tableGroupId)
+            ? previousRecord.tableGroupId
+            : TABLE_GROUP_IDS.AMILY);
     return Object.freeze({
         version: TABLE_FILL_REVIEW_RECORD_VERSION,
         id: reviewId,
         status: 'pending',
         source: boundedText(source, 80) || 'secondary-text',
+        tableGroupId: resolvedTableGroupId,
         createdAt: Number.isFinite(previousRecord?.createdAt)
             ? previousRecord.createdAt
             : createdAt,
@@ -921,13 +1019,17 @@ export function applyTableFillReviewMarkers(context, record) {
             error.code = 'TABLE_FILL_REVIEW_STALE_TARGET';
             throw error;
         }
-        if (!message.extra) message.extra = {};
-        message.extra[SECONDARY_REVIEW_PENDING_KEY] = createSecondaryReviewPendingMarker(
-            record.id,
-            target.contentHash,
-            target.contentLength,
-            target.contentFingerprint,
-            record.createdAt,
+        setTableFillProgressValue(
+            message,
+            SECONDARY_REVIEW_PENDING_KEY,
+            createSecondaryReviewPendingMarker(
+                record.id,
+                target.contentHash,
+                target.contentLength,
+                target.contentFingerprint,
+                record.createdAt,
+            ),
+            record.tableGroupId,
         );
     }
 }
@@ -942,6 +1044,7 @@ export function resolveTableFillReviewTargets(context, record) {
             context,
             target,
             record.id,
+            record.tableGroupId,
         );
         const location = evidence.kind === 'exact' ? evidence.location : null;
         const resolved = Object.freeze({
@@ -975,10 +1078,17 @@ export function resolveTableFillReviewTargets(context, record) {
     });
 }
 
-export function getReviewIdsFromMessages(messages) {
+export function getReviewIdsFromMessages(
+    messages,
+    tableGroupId = TABLE_GROUP_IDS.AMILY,
+) {
     const ids = new Set();
     for (const message of messages || []) {
-        const reviewId = message?.extra?.[SECONDARY_REVIEW_PENDING_KEY]?.reviewId;
+        const reviewId = getTableFillProgressValue(
+            message,
+            SECONDARY_REVIEW_PENDING_KEY,
+            tableGroupId,
+        )?.reviewId;
         if (typeof reviewId === 'string' && reviewId) ids.add(reviewId);
     }
     return ids;

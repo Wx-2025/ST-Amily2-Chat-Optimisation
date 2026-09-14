@@ -1,15 +1,21 @@
+import { t, autoCardLabel, autoCardOption, setAutoCardText, setAutoCardAttribute,
+    initializeAutoCardI18n, refreshAutoCardSecretPlaceholder, autoCardOptionsSignature } from './ui-i18n.js';
 import { extensionName } from "../../utils/settings.js";
 import { AgentManager } from "./agent-manager.js";
-import { characters, this_chid, saveSettingsDebounced, getCharacters } from "/script.js";
+import { characters, this_chid, saveSettingsDebounced } from "/script.js";
 import { extension_settings } from "/scripts/extensions.js";
 import { world_names } from "/scripts/world-info.js";
 import { getResolvedApiConfig, setApiConfig, testConnection, fetchModels } from "./api.js";
-import { tools } from "./tools.js";
+import * as toolModule from "./tools.js";
+import { ToolApprovalGate, runWithToolPermit } from "./tool-policy.js";
 import { syncSlot } from "../../ui/profile-sync.js";
 import { clearSecretInput, markSecretInputStored, readSecretInputUpdate } from "../../ui/secret-input.js";
 import { pluginAuthStatus, subscribePluginAuthStatus } from "../../utils/auth-state.js";
+import { apiProfileManager } from "../../utils/config/ApiProfileManager.js";
 
 const extensionFolderPath = `scripts/extensions/third-party/${extensionName}`;
+const { tools } = toolModule;
+const pendingFileSaves = new WeakSet();
 
 let isInitialized = false;
 let agentManager = null;
@@ -17,6 +23,7 @@ let previousCharData = {};
 let previousWorldData = {};
 let isWaitingForApproval = false;
 let activeApprovalRequest = null;
+let sendSequence = 0;
 let openedFiles = new Map(); 
 let activeFileId = null;
 let promptLogContent = "=== Prompt Log ===\n\n";
@@ -26,12 +33,12 @@ subscribePluginAuthStatus(transition => {
     agentManager?.revokeToolApprovals('PLUGIN_AUTH_REVOKED');
     resetApprovalUi();
     $('#acc-stop-btn').hide();
-    $('#acc-status-indicator').removeClass('status-working').addClass('status-idle').text('授权已撤销');
+    setAutoCardText($('#acc-status-indicator').removeClass('status-working').addClass('status-idle'), 'autoCardUi.status.revoked');
 });
 
 export async function openAutoCharCardWindow() {
     if (pluginAuthStatus.authorized !== true) {
-        toastr.warning('插件授权当前无效，自动构建器不会启动。');
+        toastr.warning(t('autoCardUi.auth.noStart'));
         return;
     }
     if ($('#acc-window').length > 0) {
@@ -65,14 +72,14 @@ export async function openAutoCharCardWindow() {
             restoreChatHistory();
         } catch (dataError) {
             console.error('[Amily2 AutoCharCard] Failed to load data:', dataError);
-            toastr.warning('数据加载部分失败，请检查控制台。');
+            toastr.warning(t('autoCardUi.load.partial'));
         }
         
         isInitialized = true;
         console.log('[Amily2 AutoCharCard] Window initialized.');
     } catch (error) {
         console.error('[Amily2 AutoCharCard] Failed to initialize window:', error);
-        toastr.error(`无法加载自动构建器界面: ${error.message}`);
+        toastr.error(t('autoCardUi.load.failed', { error: error.message }), '', { escapeHtml: true });
         $('#acc-window').remove();
     }
 }
@@ -80,9 +87,10 @@ export async function openAutoCharCardWindow() {
 function populateDropdowns() {
     const charSelect = $('#acc-target-char');
     const prevCharId = charSelect.val();
+    const stableAvatar = agentManager?.currentCharacterAvatar;
 
-    charSelect.empty().append('<option value="">-- 请选择 --</option>');
-    charSelect.append('<option value="new">新建角色卡</option>');
+    charSelect.empty().append(autoCardOption('', 'autoCardUi.choose'));
+    charSelect.append(autoCardOption('new', 'autoCardUi.newCharacter'));
 
     let isPrevCharStillPresent = false;
     characters.forEach((char, index) => {
@@ -94,7 +102,12 @@ function populateDropdowns() {
         }
     });
 
-    if (isPrevCharStillPresent) {
+    const stableCharId = stableAvatar
+        ? characters.findIndex(char => char?.avatar === stableAvatar)
+        : -1;
+    if (stableCharId >= 0) {
+        charSelect.val(String(stableCharId));
+    } else if (isPrevCharStillPresent) {
         charSelect.val(prevCharId);
     } else if (this_chid !== undefined) {
         charSelect.val(this_chid);
@@ -103,8 +116,8 @@ function populateDropdowns() {
     const worldSelect = $('#acc-target-world');
     const prevWorldName = worldSelect.val();
 
-    worldSelect.empty().append('<option value="">-- 请选择 --</option>');
-    worldSelect.append('<option value="new">新建世界书</option>');
+    worldSelect.empty().append(autoCardOption('', 'autoCardUi.choose'));
+    worldSelect.append(autoCardOption('new', 'autoCardUi.newWorld'));
 
     let isPrevWorldStillPresent = false;
     world_names.forEach(name => {
@@ -119,19 +132,24 @@ function populateDropdowns() {
     }
 }
 
-async function handleContextUpdate(type, value) {
+function handleContextUpdate(type, value) {
     console.log(`[Amily2 AutoCharCard] Context Update: ${type} -> ${value}`);
     
-    if (type === 'char') {
-        await getCharacters(); 
-    }
-    
+    const previousCharacter = $('#acc-target-char').val();
+    const previousBook = $('#acc-target-world').val();
+    // The write adapter already published the verified character. Do not reload
+    // every host character or allow a late fetch to change a newer selection.
     populateDropdowns(); 
     
     if (type === 'char') {
-        $('#acc-target-char').val(value);
+        const stableCharId = agentManager?.currentCharacterAvatar
+            ? characters.findIndex(char => char?.avatar === agentManager.currentCharacterAvatar)
+            : -1;
+        $('#acc-target-char').val(stableCharId >= 0 ? String(stableCharId) : value);
+        $('#acc-target-world').val(previousBook);
     } else if (type === 'world') {
         $('#acc-target-world').val(value);
+        $('#acc-target-char').val(previousCharacter);
     }
 }
 
@@ -165,15 +183,21 @@ function getSelectedApprovalContext() {
     };
 }
 
+function characterEditorMetadata(chid, field, expectedAvatar) {
+    const target = toolModule.resolveCharacterToolTarget(chid, expectedAvatar);
+    return { type: 'char', chid: target.chid, avatar: target.avatar, field };
+}
+
 function resetApprovalUi() {
+    sendSequence += 1;
     isWaitingForApproval = false;
     activeApprovalRequest = null;
     const btn = $('#acc-send-btn');
     btn.html('<i class="fas fa-paper-plane"></i>');
-    btn.prop('title', '发送');
+    setAutoCardAttribute(btn, 'title', 'autoCardUi.send');
     btn.removeClass('acc-btn-success');
     $('#acc-reject-btn').remove();
-    $('#acc-user-input').attr('placeholder', '描述您的需求...');
+    setAutoCardAttribute($('#acc-user-input'), 'placeholder', 'autoCardUi.input.request');
 }
 
 function syncActiveApprovalRequest(nextApproval) {
@@ -192,9 +216,9 @@ function restoreChatHistory() {
         stream.append(`
             <div class="acc-message system">
                 <div class="acc-message-content">
-                    欢迎使用 Amily2 自动构建器。<br>
-                    请在左侧配置工作区，然后在下方输入您的需求。<br>
-                    当使用时，最好不要进入所选的角色卡中，以便后台执行即时生效。
+                    ${autoCardLabel('autoCardUi.welcome.title')}<br>
+                    ${autoCardLabel('autoCardUi.welcome.workspace')}<br>
+                    ${autoCardLabel('autoCardUi.welcome.character')}
                 </div>
             </div>
         `);
@@ -209,7 +233,7 @@ function renderSessionsList() {
 
     const sessions = agentManager.getSessionsList();
     if (sessions.length === 0) {
-        list.append('<div class="acc-empty-state" style="padding: 10px;">暂无历史会话</div>');
+        list.append(`<div class="acc-empty-state" style="padding: 10px;">${autoCardLabel('autoCardUi.sessions.empty')}</div>`);
         return;
     }
 
@@ -262,16 +286,16 @@ function renderSessionsList() {
                     restoreChatHistory();
                     renderSessionsList();
                     populateDropdowns();
-                    toastr.success('已切换会话');
+                    toastr.success(t('autoCardUi.sessions.switched'));
                 } else {
-                    toastr.error('加载会话失败');
+                    toastr.error(t('autoCardUi.sessions.failed'));
                 }
             }
         });
 
         delBtn.on('click', (e) => {
             e.stopPropagation();
-            if (confirm('确定要删除这个会话吗？')) {
+            if (confirm(t('autoCardUi.sessions.deleteConfirm'))) {
                 agentManager.deleteSession(session.id);
                 resetApprovalUi();
                 renderSessionsList();
@@ -295,7 +319,7 @@ function renderRulesList() {
 
     const rules = agentManager.contextManager.rules;
     if (rules.length === 0) {
-        list.append('<div class="acc-empty-state" style="padding: 10px;">暂无规则</div>');
+        list.append(`<div class="acc-empty-state" style="padding: 10px;">${autoCardLabel('autoCardUi.rules.empty')}</div>`);
         return;
     }
 
@@ -331,11 +355,12 @@ async function loadApiSettings() {
     const executorKeyInput = $('#acc-executor-key');
     $('#acc-executor-url').val(executorConfig.apiUrl);
     clearSecretInput(executorKeyInput, Boolean(executorConfig.apiKey));
+    refreshAutoCardSecretPlaceholder(executorKeyInput);
     $('#acc-executor-max-tokens').val(executorConfig.maxTokens || 4000);
     
     const executorModelSelect = $('#acc-executor-model');
     if (executorConfig.model) {
-        if (executorModelSelect.find(`option[value="${executorConfig.model}"]`).length === 0) {
+        if (!Array.from(executorModelSelect[0].options).some(option => option.value === executorConfig.model)) {
             executorModelSelect.append(new Option(executorConfig.model, executorConfig.model));
         }
         executorModelSelect.val(executorConfig.model);
@@ -345,6 +370,8 @@ async function loadApiSettings() {
 function bindEvents() {
     const windowEl = $('#acc-window');
     const minIcon = $('#acc-minimized-icon');
+    initializeAutoCardI18n(windowEl);
+    initializeAutoCardI18n(minIcon, 'minimized');
 
     // 一键生卡总开关（与 API 分配页 SLOT_TOGGLES.autoCharCard 双向同步）
     const masterToggle = document.getElementById('acc_master_enabled');
@@ -371,7 +398,7 @@ function bindEvents() {
         if (type === 'debug' && id === 'log') {
             const userType = localStorage.getItem("plugin_user_type");
             if (userType !== "3") {
-                toastr.warning('权限不足：仅开发者可查看调试日志。');
+                toastr.warning(t('autoCardUi.debug.denied'));
                 $(this).val('');
                 return;
             }
@@ -390,7 +417,8 @@ function bindEvents() {
         }
 
         if (type === 'char') {
-            const chid = id;
+            const target = toolModule.resolveCharacterToolTarget(id);
+            const chid = target.chid;
             const field = subId;
             
             
@@ -410,7 +438,7 @@ function bindEvents() {
             
             try {
                 console.log(`[AutoCharCard] Reading char ${chid}, field ${field}`);
-                const charData = await tools.read_character_card({ chid });
+                const charData = await tools.read_character_card({ chid }, { expectedAvatar: target.avatar });
                 const response = JSON.parse(charData);
                 
                 if (response.status !== 'success' || !response.data) {
@@ -430,7 +458,7 @@ function bindEvents() {
                 console.log(`[AutoCharCard] Content for ${field}:`, content);
             } catch (e) {
                 console.error(e);
-                toastr.error('无法读取角色卡内容');
+                toastr.error(t('autoCardUi.file.characterFailed'));
                 return;
             }
 
@@ -438,7 +466,7 @@ function bindEvents() {
                 title: field.startsWith('greeting_') ? `Greeting #${field.split('_')[1]}` : field,
                 content: content || '',
                 type: 'normal',
-                metadata: { type: 'char', chid, field }
+                metadata: characterEditorMetadata(chid, field, target.avatar)
             });
             activeFileId = fileId;
             renderEditor();
@@ -477,7 +505,7 @@ function bindEvents() {
                 renderEditor();
             } catch (e) {
                 console.error(e);
-                toastr.error('无法读取世界书条目');
+                toastr.error(t('autoCardUi.file.worldFailed'));
             }
         }
         
@@ -486,7 +514,7 @@ function bindEvents() {
     });
 
     $('#acc-close-btn').on('click', () => {
-        if (confirm('确定要关闭自动构建器吗？当前任务可能会丢失。')) {
+        if (confirm(t('autoCardUi.closeConfirm'))) {
             agentManager?.stop();
             resetApprovalUi();
             windowEl.remove();
@@ -519,9 +547,9 @@ function bindEvents() {
         if (agentManager) {
             agentManager.stop();
             resetApprovalUi();
-            toastr.info('已请求停止生成');
+            toastr.info(t('autoCardUi.stopRequested'));
             $('#acc-stop-btn').hide();
-            $('#acc-status-indicator').removeClass('status-working').addClass('status-idle').text('已停止');
+            setAutoCardText($('#acc-status-indicator').removeClass('status-working').addClass('status-idle'), 'autoCardUi.status.stopped');
             $('#acc-send-btn').prop('disabled', false);
         }
     });
@@ -534,10 +562,13 @@ function bindEvents() {
     });
 
     $('#acc-target-char, #acc-target-world').on('change', () => {
-        if (!agentManager || !agentManager.pendingToolCall) return;
+        if (!agentManager) return;
+        const wasActive = agentManager.status !== 'idle' || agentManager.pendingToolCall;
         agentManager.revokeToolApprovals('TARGET_SELECTION_CHANGED');
         resetApprovalUi();
-        toastr.warning('目标角色或世界书已切换，待批准写入已撤销。');
+        $('#acc-send-btn').prop('disabled', false);
+        $('#acc-stop-btn').hide();
+        if (wasActive) toastr.warning(t('autoCardUi.targetChanged'));
     });
 
     
@@ -548,7 +579,8 @@ function bindEvents() {
         const refreshBtn = $('<button>')
             .attr('id', 'acc-refresh-preview')
             .addClass('acc-control-btn')
-            .attr('title', '加载当前所有文件')
+            .attr('data-acc-i18n-title', 'autoCardUi.file.loadAll')
+            .attr('title', t('autoCardUi.file.loadAll'))
             .html('<i class="fas fa-sync-alt"></i>')
             .css({ 'margin-left': 'auto', 'font-size': '12px' });
         
@@ -556,7 +588,7 @@ function bindEvents() {
         
         refreshBtn.on('click', () => {
             loadContextToEditor();
-            toastr.info('已加载当前角色和世界书内容');
+            toastr.info(t('autoCardUi.file.loaded'));
         });
     }
     
@@ -579,7 +611,7 @@ function bindEvents() {
             restoreChatHistory();
             renderSessionsList();
             populateDropdowns();
-            toastr.success('已创建新会话');
+            toastr.success(t('autoCardUi.sessions.created'));
         }
     });
 
@@ -613,7 +645,7 @@ function bindEvents() {
             agentManager.contextManager.addRule({ keyword, content });
             renderRulesList();
             input.val('');
-            toastr.success('规则已添加');
+            toastr.success(t('autoCardUi.rules.added'));
         }
     });
 
@@ -644,8 +676,9 @@ function bindEvents() {
         await setApiConfig('executor', executorConfig);
         const savedConfig = await getResolvedApiConfig('executor');
         markSecretInputStored(executorKeyInput, Boolean(savedConfig.apiKey));
+        refreshAutoCardSecretPlaceholder(executorKeyInput);
         saveSettingsDebounced();
-        toastr.success('API 配置已保存');
+        toastr.success(t('autoCardUi.api.saved'));
     });
 
     const handleRefreshModels = async (role) => {
@@ -653,40 +686,91 @@ function bindEvents() {
         const keyInput = $(`#acc-${role}-key`);
         const select = $(`#acc-${role}-model`);
         const btn = $(`#acc-${role}-refresh-models`);
+        const inputs = [urlInput, keyInput, select];
+        const controls = [...inputs, btn];
+        const isAttached = control => control[0]?.isConnected && $(`#${control[0].id}`)[0] === control[0];
+        if (!controls.every(isAttached) || btn.prop('disabled')) return;
 
-        const apiUrl = urlInput.val().trim();
-        let apiKey = keyInput.val().trim();
-        if (!apiKey) {
-            apiKey = (await getResolvedApiConfig(role)).apiKey || '';
-        }
-
-        if (!apiUrl) {
-            toastr.warning('请先输入 API URL');
-            return;
-        }
-
+        const rawUrl = urlInput.val();
+        const rawKey = keyInput.val();
+        const previousModel = select.val();
+        const previousOptions = autoCardOptionsSignature(select);
+        const hasCachedModels = Boolean(previousModel) || Array.from(select[0].options).some(option => option.value);
+        const keyUpdate = readSecretInputUpdate(keyInput);
+        const { secretStored, secretDirty } = keyInput[0].dataset;
         const originalIcon = btn.html();
+        let stale = false;
+        let unsubscribeProfile;
+        const invalidate = () => { stale = true; };
+        // Capture both values and edits, including an edit that restores the original value.
+        const isCurrent = () => !stale && controls.every(isAttached)
+            && urlInput.val() === rawUrl && keyInput.val() === rawKey
+            && keyInput[0].dataset.secretStored === secretStored
+            && keyInput[0].dataset.secretDirty === secretDirty
+            && autoCardOptionsSignature(select) === previousOptions && select.val() === previousModel;
         btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
-        select.empty().append('<option value="">加载中...</option>');
 
         try {
+            const assignmentId = apiProfileManager.getAssignment('autoCharCard');
+            const hasProfile = Boolean(assignmentId && apiProfileManager.getProfile(assignmentId));
+            let apiUrl = rawUrl.trim();
+            let apiKey = keyUpdate.value;
+            if (!hasProfile && !apiUrl) {
+                toastr.warning(t('autoCardUi.api.enterUrl'));
+                return;
+            }
+
+            inputs.forEach(input => input.on('input change', invalidate));
+            unsubscribeProfile = apiProfileManager.subscribeLifecycle(change => {
+                if (change.slot === 'autoCharCard'
+                    || (change.type !== 'assignment-changed' && assignmentId && change.profileId === assignmentId)) {
+                    invalidate();
+                }
+            });
+            // Keep the last list usable while refreshing; saving must not lose the selected model.
+
+            if (hasProfile) {
+                // A real assignment owns the whole connection; credential failures must not fall back.
+                const profile = await apiProfileManager.getAssignedProfile('autoCharCard');
+                if (!profile || profile.id !== assignmentId) {
+                    throw new Error('当前 API Profile 不可用，请重新选择。');
+                }
+                apiUrl = profile.apiUrl;
+                apiKey = profile.apiKey ?? '';
+            } else if (!keyUpdate.changed) {
+                const resolved = await getResolvedApiConfig(role);
+                apiKey = typeof resolved.apiUrl === 'string' && resolved.apiUrl.trim() === apiUrl
+                    ? (resolved.apiKey ?? '') : '';
+            }
+            stale ||= apiProfileManager.getAssignment('autoCharCard') !== assignmentId;
+            if (!isCurrent()) return;
+
             const models = await fetchModels(apiUrl, apiKey);
-            select.empty().append('<option value="">-- 请选择模型 --</option>');
+            stale ||= apiProfileManager.getAssignment('autoCharCard') !== assignmentId;
+            if (!isCurrent()) return;
+            select.empty().append(autoCardOption('', 'autoCardUi.api.chooseModel'));
             
             if (models.length === 0) {
-                select.append('<option value="" disabled>未找到模型</option>');
+                select.append(autoCardOption('', 'autoCardUi.api.noModels', {}, true));
             } else {
                 models.forEach(model => {
                     select.append(new Option(model, model));
                 });
-                toastr.success(`成功获取 ${models.length} 个模型`);
+                toastr.success(t('autoCardUi.api.modelsLoaded', { count: models.length }));
             }
+            if (previousModel && !models.includes(previousModel)) {
+                select.append(new Option(previousModel, previousModel));
+            }
+            select.val(previousModel || '');
         } catch (error) {
+            if (!isCurrent()) return;
             console.error(`[AutoCharCard] Failed to fetch models for ${role}:`, error);
-            toastr.error(`获取模型失败: ${error.message}`);
-            select.empty().append('<option value="">获取失败</option>');
+            toastr.error(t('autoCardUi.api.modelsFailed', { error: error?.message ?? String(error) }), '', { escapeHtml: true });
+            if (!hasCachedModels) select.empty().append(autoCardOption('', 'autoCardUi.api.failed'));
         } finally {
-            btn.prop('disabled', false).html(originalIcon);
+            inputs.forEach(input => input.off('input change', invalidate));
+            unsubscribeProfile?.();
+            if (isAttached(btn)) btn.prop('disabled', false).html(originalIcon);
         }
     };
 
@@ -694,13 +778,13 @@ function bindEvents() {
 
     $('#acc-executor-test').on('click', async function() {
         const btn = $(this);
-        btn.prop('disabled', true).text('测试中...');
+        setAutoCardText(btn.prop('disabled', true), 'autoCardUi.api.testing');
         const result = await testConnection('executor');
-        btn.prop('disabled', false).text('测试连接');
+        setAutoCardText(btn.prop('disabled', false), 'autoCardUi.api.test');
         if (result.success) {
-            toastr.success('连接成功');
+            toastr.success(t('autoCardUi.api.connected'));
         } else {
-            toastr.error(`连接失败: ${result.error || '未知错误'}`);
+            toastr.error(t('autoCardUi.api.connectFailed', { error: result.error || t('autoCardUi.api.unknownError') }), '', { escapeHtml: true });
         }
     });
 
@@ -723,99 +807,84 @@ function bindEvents() {
     }
 }
 
-async function handleSendMessage() {
+async function handleSendMessage(rejectApproval = false) {
     const input = $('#acc-user-input');
     const message = input.val().trim();
 
     if (pluginAuthStatus.authorized !== true) {
         agentManager?.revokeToolApprovals('PLUGIN_AUTH_REVOKED');
         resetApprovalUi();
-        toastr.warning('插件授权当前无效，未执行任何工具。');
+        toastr.warning(t('autoCardUi.auth.noTools'));
         return;
     }
     
-    if (isWaitingForApproval) {
-        if (!agentManager) return;
-
-        const approvalRequest = activeApprovalRequest;
-        const selectedContext = getSelectedApprovalContext();
-        resetApprovalUi();
-        input.val('');
-        
-        if (message) {
-            
-            addMessage('user', message); 
-            await agentManager.resumeWithApproval(
-                false, 
-                message, 
-                (content, role) => addMessage(role, content),
-                updatePreview,
-                showApprovalRequest,
-                handleContextUpdate,
-                handlePromptLog,
-                approvalRequest?.approvalId,
-                selectedContext
-            );
-        } else {
-            
-            await agentManager.resumeWithApproval(
-                true, 
-                null, 
-                (content, role) => addMessage(role, content),
-                updatePreview,
-                showApprovalRequest,
-                handleContextUpdate,
-                handlePromptLog,
-                approvalRequest?.approvalId,
-                selectedContext
-            );
-        }
-        return;
-    }
-
-    if (!message) return;
+    if (!isWaitingForApproval && !message) return;
 
     if (!agentManager) {
-        toastr.error('Agent 未初始化');
+        toastr.error(t('autoCardUi.agent.missing'));
         return;
     }
+    if (['running', 'validating'].includes(agentManager.status)) return;
 
+    const approvalRequest = isWaitingForApproval ? activeApprovalRequest : null;
+    const waitingForApproval = isWaitingForApproval;
+    const selectedContext = getSelectedApprovalContext();
     const selectedCharId = $('#acc-target-char').val();
     const selectedWorld = $('#acc-target-world').val();
 
-    if (!selectedCharId && selectedCharId !== '0') { 
-        toastr.warning('请先选择一个目标角色（或选择新建）');
+    if (!waitingForApproval && !selectedCharId && selectedCharId !== '0') {
+        toastr.warning(t('autoCardUi.targetRequired'));
         return;
     }
 
-    addMessage('user', message);
+    if (waitingForApproval) resetApprovalUi();
+    const manager = agentManager;
+    const panel = $('#acc-window')[0];
+    const sequence = ++sendSequence;
+    let generation = manager.approvalGeneration;
+    const ownsUi = () => sequence === sendSequence && manager === agentManager
+        && panel?.isConnected && $('#acc-window')[0] === panel;
+    const isCurrent = () => ownsUi() && generation === manager.approvalGeneration;
+    const guard = callback => (...args) => { if (ownsUi()) return callback(...args); };
+    const onStream = guard((content, role) => addMessage(role, content));
+    const onPreview = guard(updatePreview);
+    const onApproval = guard(showApprovalRequest);
+    const onContext = guard(handleContextUpdate);
+    const onPrompt = guard(handlePromptLog);
+    const feedback = message || (rejectApproval === true ? '用户拒绝了操作。' : null);
+    if (feedback) addMessage('user', feedback);
     input.val('');
     
     $('#acc-send-btn').prop('disabled', true);
-    $('#acc-status-indicator').removeClass('status-idle').addClass('status-working').text('工作中...');
+    setAutoCardText($('#acc-status-indicator').removeClass('status-idle').addClass('status-working'), 'autoCardUi.status.working');
+    $('#acc-stop-btn').show();
 
     try {
-        await agentManager.setContext(selectedCharId, selectedWorld);
-        agentManager.setApprovalRequired($('#acc-require-approval').is(':checked'));
-        $('#acc-stop-btn').show();
-        
-        await agentManager.handleUserMessage(
-            message, 
-            (content, role) => {
-                addMessage(role, content);
-            },
-            updatePreview,
-            showApprovalRequest,
-            handleContextUpdate,
-            handlePromptLog
-        );
+        if (waitingForApproval) {
+            await manager.resumeWithApproval(!feedback, feedback, onStream, onPreview, onApproval, onContext, onPrompt,
+                approvalRequest?.approvalId, selectedContext);
+        } else {
+            const contextReady = manager.setContext(selectedCharId, selectedWorld);
+            generation = manager.approvalGeneration;
+            await contextReady;
+            if (!isCurrent()) return;
+            manager.setApprovalRequired($('#acc-require-approval').is(':checked'));
+            if (!isCurrent()) return;
+            const running = manager.handleUserMessage(message, onStream, onPreview, onApproval, onContext, onPrompt);
+            generation = manager.approvalGeneration;
+            await running;
+        }
     } catch (error) {
+        if (!ownsUi()) return;
         console.error('Agent Error:', error);
-        addMessage('system', `[Error] 发生错误: ${error.message}`);
+        addMessage('system', autoCardLabel('autoCardUi.agent.error', { error: error.message }), { trustedHtml: true });
     } finally {
-        $('#acc-send-btn').prop('disabled', false);
-        $('#acc-stop-btn').hide();
-        $('#acc-status-indicator').removeClass('status-working').addClass('status-idle').text('空闲');
+        if (ownsUi()) {
+            $('#acc-send-btn').prop('disabled', false);
+            $('#acc-stop-btn').hide();
+            setAutoCardText($('#acc-status-indicator').removeClass('status-working').addClass('status-idle'),
+                manager.status === 'paused' ? 'autoCardUi.status.approval' : 'autoCardUi.status.idle');
+        }
     }
 }
 
@@ -829,9 +898,9 @@ function showApprovalRequest(toolName, args, approvalRequest) {
     
     const btn = $('#acc-send-btn');
     btn.html('<i class="fas fa-check"></i>');
-    btn.prop('title', '批准执行');
+    setAutoCardAttribute(btn, 'title', 'autoCardUi.approval.approve');
     btn.addClass('acc-btn-success');
-    $('#acc-user-input').attr('placeholder', '输入反馈以修改，或点击 √ 批准，点击 X 拒绝...');
+    setAutoCardAttribute($('#acc-user-input'), 'placeholder', 'autoCardUi.approval.feedback');
 
     
     if ($('#acc-reject-btn').length === 0) {
@@ -839,7 +908,8 @@ function showApprovalRequest(toolName, args, approvalRequest) {
             .attr('id', 'acc-reject-btn')
             .addClass('acc-btn-danger')
             .html('<i class="fas fa-times"></i>')
-            .attr('title', '拒绝执行')
+            .attr('data-acc-i18n-title', 'autoCardUi.approval.reject')
+            .attr('title', t('autoCardUi.approval.reject'))
             .css({
                 'margin-right': '5px',
                 'width': '40px',
@@ -856,42 +926,28 @@ function showApprovalRequest(toolName, args, approvalRequest) {
         
         rejectBtn.on('click', async () => {
             if (!isWaitingForApproval) return;
-            const approvalRequest = activeApprovalRequest;
-            const input = $('#acc-user-input');
-            const message = input.val().trim();
-
-            resetApprovalUi();
-            input.val('');
-
-            
-            updatePreview(toolName, args, false, true);
-
-            const feedback = message || "用户拒绝了操作。";
-            addMessage('user', `[拒绝] ${feedback}`);
-
-            await agentManager.resumeWithApproval(
-                false, 
-                feedback, 
-                (content, role) => addMessage(role, content),
-                updatePreview,
-                showApprovalRequest,
-                handleContextUpdate,
-                handlePromptLog,
-                approvalRequest?.approvalId,
-                getSelectedApprovalContext()
-            );
+            await handleSendMessage(true);
         });
     }
 
     
+    const riskKeys = {
+        'read-only': 'autoCardUi.approval.readOnly',
+        'reversible-write': 'autoCardUi.approval.reversible',
+        'destructive-write': 'autoCardUi.approval.destructive',
+    };
+    const risk = approvalRequest?.risk;
+    const riskLabel = Object.hasOwn(riskKeys, risk) ? autoCardLabel(riskKeys[risk])
+        : approvalRequest?.riskLabel ? escapeHtmlText(approvalRequest.riskLabel) : autoCardLabel('autoCardUi.approval.required');
     const toolDisplay = `
         <div class="acc-tool-request">
             <details>
                 <summary class="acc-tool-header" style="cursor: pointer;">
-                    <i class="fas fa-code"></i> 请求执行: ${escapeHtmlText(toolName)}
-                    <span style="float: right; font-size: 10px; color: #888;">${escapeHtmlText(approvalRequest?.riskLabel || '需批准')} · 单次批次</span>
+                    <i class="fas fa-code"></i> ${autoCardLabel('autoCardUi.approval.request')}${escapeHtmlText(toolName)}
+                    <span style="float: right; font-size: 10px; color: #888;">${riskLabel} · ${autoCardLabel('autoCardUi.approval.batch')}</span>
                 </summary>
                 <pre class="acc-tool-content">${escapeHtmlText(JSON.stringify(args, null, 2))}</pre>
+                ${approvalRequest?.scope?.sourceFingerprint ? `<p class="acc-tool-content">${autoCardLabel('autoCardUi.approval.target')}${escapeHtmlText(approvalRequest.scope.writeTarget)}<br>${autoCardLabel('autoCardUi.approval.fingerprint')}${escapeHtmlText(approvalRequest.scope.sourceFingerprint)}</p>` : ''}
             </details>
         </div>
     `;
@@ -934,6 +990,7 @@ function addMessage(role, content, options = {}) {
     }
 
     let displayContent = content;
+    let authoredPlaceholder = false;
     if (role === 'executor' || role === 'assistant') {
         
         
@@ -948,7 +1005,8 @@ function addMessage(role, content, options = {}) {
         displayContent = displayContent.replace(regex, '').trim();
         
         if (!displayContent && role === 'executor') {
-            displayContent = "*(正在执行操作...)*";
+            displayContent = `<em>${autoCardLabel('autoCardUi.executing')}</em>`;
+            authoredPlaceholder = true;
         }
 
         
@@ -960,7 +1018,7 @@ function addMessage(role, content, options = {}) {
     let formattedContent;
     
     
-    if (options.trustedHtml === true) {
+    if (options.trustedHtml === true || authoredPlaceholder) {
         formattedContent = displayContent;
     } else {
         formattedContent = parseMarkdown(displayContent);
@@ -1065,7 +1123,7 @@ function renderEditor() {
     tabsContainer.empty();
 
     if (openedFiles.size === 0) {
-        container.html('<div class="acc-empty-state"><i class="fas fa-file-alt"></i><p>暂无内容</p></div>');
+        container.html(`<div class="acc-empty-state"><i class="fas fa-file-alt"></i><p>${autoCardLabel('autoCardUi.file.empty')}</p></div>`);
         return;
     }
 
@@ -1120,7 +1178,7 @@ function renderEditor() {
 
             const saveBtn = $('<button>')
                 .addClass('acc-btn-primary')
-                .html('<i class="fas fa-save"></i> 保存')
+                .html(`<i class="fas fa-save"></i> ${autoCardLabel('autoCardUi.save')}`)
                 .on('click', () => saveFile(id));
             
             toolbar.append(saveBtn);
@@ -1168,7 +1226,8 @@ function renderEditor() {
                                             'white-space': 'pre-wrap',
                                             'color': '#d4d4d4'
                                         })
-                                        .attr('title', '点击恢复 (Click to restore)');
+                                        .attr('data-acc-i18n-title', 'autoCardUi.diff.restore')
+                                        .attr('title', t('autoCardUi.diff.restore'));
                                     
                                     const added = $('<div>')
                                         .text(segment.new)
@@ -1181,7 +1240,8 @@ function renderEditor() {
                                             'color': '#d4d4d4',
                                             'outline': 'none'
                                         })
-                                        .attr('title', '点击编辑');
+                                        .attr('data-acc-i18n-title', 'autoCardUi.diff.edit')
+                                        .attr('title', t('autoCardUi.diff.edit'));
                                     
                                     const toggle = () => {
                                         segment.active = false;
@@ -1214,7 +1274,8 @@ function renderEditor() {
                                             'white-space': 'pre-wrap',
                                             'opacity': '0.7'
                                         })
-                                        .attr('title', '点击重新应用修改 (Click to re-apply change)');
+                                        .attr('data-acc-i18n-title', 'autoCardUi.diff.reapply')
+                                        .attr('title', t('autoCardUi.diff.reapply'));
                                     
                                     restored.on('click', () => {
                                         segment.active = true;
@@ -1234,7 +1295,7 @@ function renderEditor() {
                         }
                     });
                 } else {
-                    editorDiv.text('Error: No segments found for diff view.');
+                    setAutoCardText(editorDiv, 'autoCardUi.diff.noSegments');
                 }
                 
                 contentDiv.append(editorDiv);
@@ -1268,11 +1329,19 @@ function renderEditor() {
 
 async function saveFile(id) {
     const file = openedFiles.get(id);
-    if (!file) return;
+    if (!file || pendingFileSaves.has(file)) return;
+    if (pluginAuthStatus.authorized !== true || extension_settings[extensionName]?.autoCharCardEnabled === false) {
+        toastr.warning(t('autoCardUi.save.denied'));
+        return;
+    }
+    if (!agentManager || agentManager.status !== 'idle') {
+        toastr.warning(t('autoCardUi.save.busy'));
+        return;
+    }
 
     const meta = file.metadata;
     if (!meta) {
-        toastr.warning('该文件无法保存（缺少元数据）');
+        toastr.warning(t('autoCardUi.save.noMetadata'));
         return;
     }
 
@@ -1287,73 +1356,106 @@ async function saveFile(id) {
         }).join('');
     }
 
+    let characterTarget = null;
+    if (meta.type === 'char') {
+        if (typeof meta.avatar !== 'string') {
+            toastr.error(t('autoCardUi.save.targetMissing'), '', { escapeHtml: true });
+            return;
+        }
+        try {
+            characterTarget = toolModule.resolveCharacterToolTarget(meta.chid, meta.avatar);
+        } catch (error) {
+            toastr.error(error.message, '', { escapeHtml: true });
+            return;
+        }
+    }
+
+    const manager = agentManager;
+    const generation = manager.approvalGeneration;
+    const panel = $('#acc-window')[0];
+    const fileKey = JSON.stringify(file);
+    const selectionKey = JSON.stringify(getSelectedApprovalContext());
+    const isCurrent = () => agentManager === manager && generation === manager.approvalGeneration
+        && manager.status === 'idle' && pluginAuthStatus.authorized === true
+        && extension_settings[extensionName]?.autoCharCardEnabled !== false
+        && panel?.isConnected && $('#acc-window')[0] === panel
+        && openedFiles.get(id) === file && JSON.stringify(file) === fileKey
+        && JSON.stringify(getSelectedApprovalContext()) === selectionKey;
+    const gate = new ToolApprovalGate();
+    pendingFileSaves.add(file);
     try {
-        let result;
+        let toolCall;
         if (meta.type === 'char') {
             if (meta.field.startsWith('greeting_')) {
                 const index = parseInt(meta.field.split('_')[1]);
-                
-                
-                result = await tools.manage_first_message({
+                toolCall = { name: 'manage_first_message', arguments: {
                     action: 'update',
-                    chid: meta.chid,
+                    chid: characterTarget.chid,
                     index: index + 1,
                     message: contentToSave
-                });
+                } };
             } else {
-                result = await tools.update_character_card({
-                    chid: meta.chid,
+                toolCall = { name: 'update_character_card', arguments: {
+                    chid: characterTarget.chid,
                     [meta.field]: contentToSave
-                });
+                } };
             }
         } else if (meta.type === 'wi') {
-            
-            
-            
-            
-            
-            
-            
-            if (meta.uid !== undefined) {
-                result = await tools.write_world_info_entry({
-                    book_name: meta.bookName,
-                    entries: [{ uid: meta.uid, content: contentToSave }]
-                });
-            } else {
-                
-                
-                try {
-                    const entry = JSON.parse(contentToSave);
-                    result = await tools.write_world_info_entry({
-                        book_name: meta.bookName,
-                        entries: [entry]
-                    });
-                } catch (e) {
-                    
-                    
-                    toastr.error('保存失败: 内容必须是有效的 JSON (针对新建条目) 或包含 UID');
-                    return;
-                }
-            }
-        }
-
-        if (result && !result.startsWith('Error') && !result.includes('失败')) {
-            toastr.success('保存成功');
-
-            
-            if (file.type === 'diff-view') {
-                file.type = 'normal';
-                delete file.segments;
-                
-                file.content = contentToSave;
-                renderEditor();
-            }
+            const entry = meta.uid !== undefined ? { uid: meta.uid, content: contentToSave } : JSON.parse(contentToSave);
+            toolCall = { name: 'write_world_info_entry', arguments: { book_name: meta.bookName, entries: [entry] } };
         } else {
-            toastr.error(result || '保存失败');
+            throw new Error('不支持保存该文件类型。');
         }
+
+        const preview = await toolModule.prepareToolWritePreview(toolCall, {
+            isCurrent,
+            expectedAvatar: characterTarget?.avatar,
+        });
+        if (!isCurrent()) return;
+        const scope = { sessionId: manager.sessionId, ...manager.getToolApprovalScope(getSelectedApprovalContext()),
+            writeTarget: preview.target, sourceFingerprint: preview.fingerprint };
+        const plan = gate.plan(toolCall, scope);
+        if (!confirm(t('autoCardUi.save.confirm', { target: preview.target, fingerprint: preview.fingerprint }))) {
+            gate.reject(plan.approval.approvalId);
+            return;
+        }
+        if (!isCurrent()) return;
+        await toolModule.validateToolWritePreview(toolCall, preview, isCurrent);
+        if (!isCurrent()) return;
+        const permit = gate.approve(plan.approval.approvalId, toolCall, scope);
+        const result = JSON.parse(await runWithToolPermit({ gate, permit, toolCall, scope,
+            execute: () => tools[toolCall.name](toolCall.arguments, { preview, isCurrent }) }));
+        if (!isCurrent()) return;
+        const receipt = result.receipt;
+        const targetMatches = meta.type === 'char'
+            ? receipt?.target?.avatar === characterTarget.avatar && receipt?.target?.avatar === preview.target
+                && receipt?.target?.chid === String(toolCall.arguments.chid)
+            : receipt?.target?.book === preview.target;
+        if (result.status !== 'success' || result.success !== true || result.committed !== true
+            || receipt?.version !== 1 || receipt.verification !== 'readback'
+            || receipt.sourceFingerprint !== preview.fingerprint || !targetMatches) {
+            toastr[result.committed === true ? 'warning' : 'error'](result.message || t('autoCardUi.save.unconfirmed'), '', { escapeHtml: true });
+            return;
+        }
+        toastr.success(t('autoCardUi.save.success'));
+        if (meta.type === 'char') {
+            meta.chid = characterTarget.chid;
+            meta.avatar = characterTarget.avatar;
+        }
+        file.type = 'normal';
+        delete file.segments;
+        file.content = contentToSave;
+        if (meta.type === 'wi' && meta.uid === undefined && result.data?.created_uids?.length === 1) {
+            meta.uid = result.data.created_uids[0];
+            file.content = toolCall.arguments.entries[0].content ?? '';
+        }
+        renderEditor();
     } catch (e) {
+        if (!isCurrent()) return;
         console.error('Save failed:', e);
-        toastr.error(`保存异常: ${e.message}`);
+        toastr.error(t('autoCardUi.save.error', { error: e.message }), '', { escapeHtml: true });
+    } finally {
+        pendingFileSaves.delete(file);
     }
 }
 
@@ -1362,11 +1464,12 @@ async function loadContextToEditor() {
     const bookName = $('#acc-target-world').val();
     const selector = $('#acc-file-selector');
     
-    selector.empty().append('<option value="">-- 选择文件 --</option>');
+    selector.empty().append(autoCardOption('', 'autoCardUi.file.choose'));
 
     if (chid && chid !== 'new') {
         try {
-            const charData = await tools.read_character_card({ chid });
+            const target = toolModule.resolveCharacterToolTarget(chid);
+            const charData = await tools.read_character_card({ chid: target.chid }, { expectedAvatar: target.avatar });
             const response = JSON.parse(charData);
             
             if (response.status !== 'success' || !response.data) {
@@ -1377,15 +1480,15 @@ async function loadContextToEditor() {
             const char = response.data;
             previousCharData = char; 
 
-            const charGroup = $('<optgroup label="角色卡字段">');
+            const charGroup = setAutoCardAttribute($('<optgroup>'), 'label', 'autoCardUi.file.characterFields');
             const fields = ['description', 'personality', 'first_mes', 'scenario', 'mes_example'];
             fields.forEach(field => {
-                charGroup.append($('<option>').val(`char|${chid}|${field}`).text(field));
+                charGroup.append($('<option>').val(`char|${target.chid}|${field}`).text(field));
             });
             
             if (char.alternate_greetings && char.alternate_greetings.length > 0) {
                 char.alternate_greetings.forEach((_, index) => {
-                    charGroup.append($('<option>').val(`char|${chid}|greeting_${index}`).text(`开场白 #${index + 1}`));
+                    charGroup.append(autoCardOption(`char|${target.chid}|greeting_${index}`, 'autoCardUi.file.greeting', { index: index + 1 }));
                 });
             }
             selector.append(charGroup);
@@ -1398,12 +1501,12 @@ async function loadContextToEditor() {
 
             
             if (openedFiles.size === 0 && char.description) {
-                const id = `char-${chid}-description`;
+                const id = `char-${target.chid}-description`;
                 openedFiles.set(id, {
                     title: 'description',
                     content: char.description,
                     type: 'normal',
-                    metadata: { type: 'char', chid, field: 'description' }
+                    metadata: characterEditorMetadata(target.chid, 'description', target.avatar)
                 });
                 activeFileId = id;
             }
@@ -1419,7 +1522,7 @@ async function loadContextToEditor() {
             const indexData = await tools.read_world_info({ book_name: bookName, return_full: false });
             const index = JSON.parse(indexData);
             
-            const wiGroup = $('<optgroup label="世界书条目">');
+            const wiGroup = setAutoCardAttribute($('<optgroup>'), 'label', 'autoCardUi.file.worldEntries');
             if (index.entries) {
                 index.entries.forEach(entry => {
                     const name = entry.comment || entry.keys || `Entry ${entry.uid}`;
@@ -1437,6 +1540,13 @@ async function loadContextToEditor() {
 }
 
 async function updatePreview(toolName, args, isPartial = false, isExecuted = false) {
+    const manager = agentManager;
+    const generation = manager?.approvalGeneration;
+    const panel = $('#acc-window')[0];
+    const sequence = sendSequence;
+    const isCurrent = () => agentManager === manager && manager?.approvalGeneration === generation
+        && panel?.isConnected && $('#acc-window')[0] === panel && sequence === sendSequence;
+    if (!isCurrent()) return;
     let chid = args.chid;
     if (chid === undefined || chid === null || chid === '') {
         const uiVal = $('#acc-target-char').val();
@@ -1445,6 +1555,16 @@ async function updatePreview(toolName, args, isPartial = false, isExecuted = fal
         }
     }
     chid = String(chid);
+
+    let characterTarget = null;
+    if (['update_character_card', 'edit_character_text'].includes(toolName)) {
+        const expectedAvatar = manager?.currentCharacterAvatar;
+        const targetChid = expectedAvatar && manager?.currentChid !== undefined ? manager.currentChid : chid;
+        if (expectedAvatar || /^(0|[1-9][0-9]*)$/.test(String(targetChid))) {
+            characterTarget = toolModule.resolveCharacterToolTarget(targetChid, expectedAvatar);
+            chid = characterTarget.chid;
+        }
+    }
 
     let bookName = args.book_name;
     if (bookName === undefined || bookName === null || bookName === '') {
@@ -1456,6 +1576,7 @@ async function updatePreview(toolName, args, isPartial = false, isExecuted = fal
     bookName = String(bookName);
 
     if (toolName === 'update_character_card') {
+        if (!characterTarget) return;
         const fields = ['description', 'personality', 'first_mes', 'scenario', 'mes_example'];
         fields.forEach(field => {
             let content = args[field];
@@ -1467,7 +1588,7 @@ async function updatePreview(toolName, args, isPartial = false, isExecuted = fal
                     title: field,
                     content: content,
                     type: 'normal',
-                    metadata: { type: 'char', chid, field }
+                    metadata: characterEditorMetadata(chid, field, characterTarget.avatar)
                 });
                 activeFileId = id;
             }
@@ -1476,7 +1597,9 @@ async function updatePreview(toolName, args, isPartial = false, isExecuted = fal
     } else if (toolName === 'edit_character_text') {
         const field = args.field || 'Unknown Field';
         const diff = args.diff || '';
-        const id = `char-${chid}-${field}`;
+        let id = `char-${chid}-${field}`;
+
+        if (!characterTarget && !isPartial) return;
 
         // Clean up any tabs with undefined chid or Unknown Field
         openedFiles.forEach((file, fileId) => {
@@ -1495,6 +1618,7 @@ async function updatePreview(toolName, args, isPartial = false, isExecuted = fal
                         fileToRename.title = field;
                         if (fileToRename.metadata) {
                             fileToRename.metadata.chid = chid;
+                            fileToRename.metadata.avatar = characterTarget?.avatar;
                             fileToRename.metadata.field = field;
                         }
                         openedFiles.set(id, fileToRename);
@@ -1519,7 +1643,8 @@ async function updatePreview(toolName, args, isPartial = false, isExecuted = fal
             let content = '';
 
             try {
-                const charData = await tools.read_character_card({ chid });
+                const charData = await tools.read_character_card({ chid }, { expectedAvatar: characterTarget.avatar });
+                if (!isCurrent()) return;
                 const response = JSON.parse(charData);
                 if (response.status === 'success' && response.data) {
                     const char = response.data;
@@ -1534,6 +1659,7 @@ async function updatePreview(toolName, args, isPartial = false, isExecuted = fal
             } catch (e) {
                 console.error("Failed to refresh content after edit", e);
             }
+            if (!isCurrent()) return;
 
             openedFiles.delete(`diff-${chid}-${field}`);
 
@@ -1581,7 +1707,7 @@ async function updatePreview(toolName, args, isPartial = false, isExecuted = fal
                     title: field,
                     content: content,
                     type: 'normal',
-                    metadata: { type: 'char', chid, field }
+                    metadata: characterEditorMetadata(chid, field, characterTarget.avatar)
                 });
                 activeFileId = id;
             } else if (!foundAndFixed) {
@@ -1609,7 +1735,8 @@ async function updatePreview(toolName, args, isPartial = false, isExecuted = fal
                 originalContent = openedFiles.get(id).content || '';
             } else {
                 try {
-                    const charData = await tools.read_character_card({ chid });
+                    const charData = await tools.read_character_card({ chid }, { expectedAvatar: characterTarget.avatar });
+                    if (!isCurrent()) return;
                     const response = JSON.parse(charData);
                     if (response.status === 'success' && response.data) {
                         const char = response.data;
@@ -1625,6 +1752,7 @@ async function updatePreview(toolName, args, isPartial = false, isExecuted = fal
                 }
             }
 
+            if (!isCurrent()) return;
             if (originalContent !== null) {
                 const segments = parseDiff(originalContent, diff);
                 openedFiles.set(id, {
@@ -1632,7 +1760,7 @@ async function updatePreview(toolName, args, isPartial = false, isExecuted = fal
                     content: originalContent, 
                     segments: segments,
                     type: 'diff-view',
-                    metadata: { type: 'char', chid, field }
+                    metadata: characterEditorMetadata(chid, field, characterTarget.avatar)
                 });
                 activeFileId = id;
             } else {
@@ -1683,6 +1811,7 @@ async function updatePreview(toolName, args, isPartial = false, isExecuted = fal
             
             try {
                 const entryData = await tools.read_world_entry({ book_name: bookName, uid: uid });
+                if (!isCurrent()) return;
                 const response = JSON.parse(entryData);
                 if (response.status === 'success' && response.data) {
                     openedFiles.delete(`diff-wi-${bookName}-${uid}`);
@@ -1718,6 +1847,7 @@ async function updatePreview(toolName, args, isPartial = false, isExecuted = fal
             } else {
                 try {
                     const entryData = await tools.read_world_entry({ book_name: bookName, uid: uid });
+                    if (!isCurrent()) return;
                     const response = JSON.parse(entryData);
                     if (response.status === 'success' && response.data) {
                         originalContent = response.data.content || '';
@@ -1727,6 +1857,7 @@ async function updatePreview(toolName, args, isPartial = false, isExecuted = fal
                 }
             }
             
+            if (!isCurrent()) return;
             if (originalContent !== null) {
                 const segments = parseDiff(originalContent, diff);
                 openedFiles.set(id, {
@@ -1767,9 +1898,11 @@ async function updatePreview(toolName, args, isPartial = false, isExecuted = fal
             }
             if (!Array.isArray(entries)) entries = [entries];
 
-            entries.forEach(entry => {
+            entries
+                .filter(entry => entry && typeof entry === 'object' && !Array.isArray(entry))
+                .forEach(entry => {
                 const keys = Array.isArray(entry.key) ? entry.key.join(', ') : (entry.key || 'New Entry');
-                const uid = entry.uid || 'new';
+                const uid = entry.uid ?? 'new';
                 const id = `wi-${bookName}-${uid}`;
                 
                 openedFiles.set(id, {
@@ -1785,7 +1918,7 @@ async function updatePreview(toolName, args, isPartial = false, isExecuted = fal
         }
     }
 
-    renderEditor();
+    if (isCurrent()) renderEditor();
 }
 
 function parseDiff(originalContent, diff) {

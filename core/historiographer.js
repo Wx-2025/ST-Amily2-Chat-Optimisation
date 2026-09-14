@@ -14,6 +14,7 @@ import {
   withLoreLock,
 } from "./lore-service.js";
 import { extensionName } from "../utils/settings.js";
+import { t } from '../utils/i18n/index.js';
 import { pluginAuthStatus } from "../utils/auth-state.js";
 import {
   getChatIdentifier,
@@ -57,16 +58,19 @@ import {
 } from './historiography/segmented-ledger.js';
 import {
   buildHistoriographyProtocolDirective,
+  resolveHistoriographyPromptProtocol,
   resolveHistoriographyPrompts,
 } from './historiography/prompt-profiles.js';
 import {
   appendSegmentedSummary,
   beginSegmentVectorIngestion,
+  commitSegmentedLedgerSafeEdit,
   commitSegmentedCompaction,
   completeSegmentVectorIngestion,
   failSegmentVectorIngestion,
   inspectHistoriographyBook,
   migrateLegacyLedger,
+  prepareSegmentedLedgerSafeEdit,
   previewLegacyMigration,
   repairSegmentedLedgerSafeStates,
   rollbackSegmentedLedger,
@@ -105,6 +109,12 @@ function getPreferredHistoriographyProtocol() {
     === HISTORIOGRAPHY_PROTOCOL_LEGACY
     ? HISTORIOGRAPHY_PROTOCOL_LEGACY
     : HISTORIOGRAPHY_PROTOCOL_SEGMENTED;
+}
+
+function getPreferredHistoriographyPromptProtocol() {
+  return resolveHistoriographyPromptProtocol(
+    extension_settings[extensionName],
+  );
 }
 
 function getHistoriographyResidentMaxTokens() {
@@ -363,6 +373,94 @@ export async function getHistoriographyLedgerStatus() {
     migrationAvailable: true,
     migrationBlockedReason: parsed.reason || '',
   };
+}
+
+export async function getActiveLedgerSafeEditSnapshot() {
+  const targetLorebookName = await getTargetLorebookName();
+  if (!targetLorebookName) {
+    throw new Error('当前聊天没有可用的目标世界书。');
+  }
+  const operationLease = await captureHistoriographyExecutionLease({
+    targetLorebookName,
+    requireCurrentTarget: true,
+  });
+  const snapshot = await prepareSegmentedLedgerSafeEdit({
+    bookName: targetLorebookName,
+  });
+  await assertHistoriographyTargetLease(
+    targetLorebookName,
+    operationLease,
+  );
+  return {
+    ...snapshot,
+    targetLorebookName,
+  };
+}
+
+export async function applyActiveLedgerSafeEdit(
+  snapshot,
+  editId,
+  replacementText,
+) {
+  const targetLorebookName = await getTargetLorebookName();
+  if (!targetLorebookName
+    || targetLorebookName !== snapshot?.targetLorebookName
+    || targetLorebookName !== snapshot?.bookName) {
+    const error = new Error('保存前当前聊天的目标世界书已经变化。');
+    error.code = 'HISTORIOGRAPHY_STALE_LEDGER';
+    throw error;
+  }
+  const document = snapshot.documents?.find(candidate =>
+    candidate.editId === String(editId ?? ''));
+  if (!document) {
+    const error = new Error('安全修改窗口中的目标已经失效。');
+    error.code = 'HISTORIOGRAPHY_SAFE_EDIT_TARGET_INVALID';
+    throw error;
+  }
+  const operationLease = await captureHistoriographyExecutionLease({
+    targetLorebookName,
+    requireCurrentTarget: true,
+  });
+  await assertHistoriographyTargetLease(
+    targetLorebookName,
+    operationLease,
+  );
+  const settings = extension_settings[extensionName] || {};
+  const limits = normalizeRefinementLimits(settings);
+  const persistence = await commitSegmentedLedgerSafeEdit({
+    bookName: targetLorebookName,
+    manifestKey: snapshot.manifestKey,
+    expectedRevision: snapshot.revision,
+    targetKind: document.kind,
+    targetId: document.targetId,
+    expectedContentHash: document.expectedContentHash,
+    replacementText,
+    maxTailTokens: limits.inputMaxTokens,
+    maxResidentTokens: getHistoriographyResidentMaxTokens(),
+  });
+  if (!persistence.committed && !persistence.mutation?.idempotent) {
+    const reason = persistence.mutation?.reason;
+    const error = new Error(
+      reason === 'tail-budget'
+        ? `修改后的活动微言录约 ${persistence.mutation.estimatedTokens} Token，超过 ${persistence.mutation.maxTokens} Token 上限。`
+        : reason === 'resident-budget'
+          ? `修改后的常驻史册约 ${persistence.mutation.estimatedTokens} Token，超过 ${persistence.mutation.maxTokens} Token 上限。`
+          : '安全修订事务未确认持久化。',
+    );
+    error.code = reason === 'tail-budget'
+      ? 'HISTORIOGRAPHY_TAIL_BUDGET_EXCEEDED'
+      : reason === 'resident-budget'
+        ? 'HISTORIOGRAPHY_RESIDENT_BUDGET_EXCEEDED'
+        : 'HISTORIOGRAPHY_SAFE_EDIT_NOT_COMMITTED';
+    throw error;
+  }
+  if (persistence.committed) {
+    await runHistoriographyPostCommitEffect(
+      '刷新安全修订后的世界书编辑器',
+      () => reloadEditor(targetLorebookName),
+    );
+  }
+  return persistence.mutation;
 }
 
 /**
@@ -691,10 +789,8 @@ async function maybeNotifyRefinementThreshold() {
     refinementReminderKeys.add(reminderKey);
 
     toastr.warning(
-      `当前活动史册已有 ${pendingBlocks} 个尚未合并的微言录块。`
-      + `建议打开“总结模块 → 大总结（合并精炼）”，点击“合并当前活动史册”。`
-      + `这里只提醒，不会在后台自动调用模型。`,
-      "宏史卷待重铸",
+      t('summaryWorkflow.mergeReminder', { count: pendingBlocks }),
+      t('summaryWorkflow.mergePending'),
       { timeOut: 10000 },
     );
   } catch (error) {
@@ -761,9 +857,7 @@ export async function getLoresForWorldbook(bookName) {
       return [{
         key: inspected.manifestRecord.key,
         comment:
-          `【敕史局】分段史册 r${manifest.revision} · `
-          + `${manifest.segments.length} 段 · `
-          + `${manifest.tail.batches.length} 块待编纂`,
+          t('summaryWorkflow.segmentedOption', { revision: manifest.revision, segments: manifest.segments.length, pending: manifest.tail.batches.length }),
       }];
     }
     const bookData = inspected.bookData;
@@ -772,7 +866,7 @@ export async function getLoresForWorldbook(bookName) {
       .filter(([, entry]) => !entry.disable)
       .map(([key, entry]) => ({
         key: key,
-        comment: entry.comment || "无标题条目",
+        comment: entry.comment || t('summaryWorkflow.untitledEntry'),
       }));
   } catch (error) {
     console.error(`[大史官] 检阅《${bookName}》时出错:`, error);
@@ -782,7 +876,7 @@ export async function getLoresForWorldbook(bookName) {
 
 function escapeHtml(text) {
     if (!text) return '';
-    return text
+    return String(text)
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
@@ -792,7 +886,7 @@ function escapeHtml(text) {
 
 export async function executeManualSummary(startFloor, endFloor, isAuto = false) {
     return new Promise(async (resolve) => {
-        const toastTitle = isAuto ? "微言录 (自动)" : "微言录 (手动)";
+        const toastTitle = t(isAuto ? 'summaryWorkflow.smallAuto' : 'summaryWorkflow.smallManual');
         const context = getContext();
         let operationLease;
         try {
@@ -801,24 +895,32 @@ export async function executeManualSummary(startFloor, endFloor, isAuto = false)
             });
         } catch (error) {
             toastr.error(
-                `无法开始微言录任务：${error.message}`,
+                escapeHtml(t('summaryWorkflow.smallStartFailed', { error: error.message })),
                 toastTitle,
             );
             resolve(false);
             return;
         }
         let summaryProtocol = getPreferredHistoriographyProtocol();
+        const promptProtocol = getPreferredHistoriographyPromptProtocol();
         try {
             const inspected = await inspectTargetHistoriography();
             if (inspected?.protocol) summaryProtocol = inspected.protocol;
         } catch (error) {
-            console.warn('[大史官] 读取史册协议失败，使用新建史册默认值:', error);
+            console.error('[大史官] 微言录任务启动前史册校验失败:', error);
+            toastr.error(
+                escapeHtml(t('summaryWorkflow.smallBlocked', { error: error.message })),
+                toastTitle,
+                { timeOut: 14000 },
+            );
+            resolve(false);
+            return;
         }
         
         if (isAuto) {
             const messages = getRawMessagesForSummary(startFloor, endFloor);
             if (!messages || messages.length === 0) {
-                toastr.warning("自动巡录：未找到符合条件的消息。", toastTitle);
+                toastr.warning(t('summaryWorkflow.noEligibleMessages'), toastTitle);
                 return resolve(false);
             }
             const textToSummarize = messages.map(m => `【第 ${m.floor} 楼】 ${m.author}: ${m.content}`).join('\n');
@@ -829,6 +931,7 @@ export async function executeManualSummary(startFloor, endFloor, isAuto = false)
                 summaryProtocol,
                 startFloor,
                 endFloor,
+                promptProtocol,
             );
             
             if (summary) {
@@ -845,7 +948,7 @@ export async function executeManualSummary(startFloor, endFloor, isAuto = false)
                         resolve(success);
                     },
                     onRegenerate: async (summaryDialog) => {
-                        summaryDialog.find('textarea').prop('disabled', true).val('正在重新生成，请稍候...');
+                        summaryDialog.find('textarea').prop('disabled', true).val(t('summaryWorkflow.regenerating'));
                         const newSummary = await getSummary(
                             textToSummarize,
                             toastTitle,
@@ -853,15 +956,16 @@ export async function executeManualSummary(startFloor, endFloor, isAuto = false)
                             summaryProtocol,
                             startFloor,
                             endFloor,
+                            promptProtocol,
                         );
                         summaryDialog.find('textarea').prop('disabled', false).val(newSummary || summary);
                         summaryDialog[0].showModal(); // 重新显示弹窗
                         if (!newSummary) {
-                            toastr.error("重新生成失败，已恢复原始内容。", "模型召唤失败");
+                            toastr.error(t('summaryWorkflow.regenerationFailed'), t('summaryWorkflow.modelFailed'));
                         }
                     },
                     onCancel: () => {
-                        toastr.info("本批次总结已取消。", toastTitle);
+                        toastr.info(t('summaryWorkflow.batchCancelled'), toastTitle);
                         resolve(false);
                     },
                 });
@@ -873,7 +977,7 @@ export async function executeManualSummary(startFloor, endFloor, isAuto = false)
 
         const messages = getRawMessagesForSummary(startFloor, endFloor);
         if (!messages || messages.length === 0) {
-            toastr.warning("选定的楼层范围内无有效对话或内容被规则排除。", "圣谕有误");
+            toastr.warning(t('summaryWorkflow.noValidMessages'), t('summaryWorkflow.invalidRequest'));
             return resolve(false);
         }
 
@@ -889,8 +993,8 @@ export async function executeManualSummary(startFloor, endFloor, isAuto = false)
 
             return `
                 <div id="historiography-preview-controls">
-                    <label><input type="checkbox" id="hist-include-user" checked> ${context.name1 || '用户'}</label>
-                    <label><input type="checkbox" id="hist-include-char" checked> ${context.name2 || '角色'}</label>
+                    <label><input type="checkbox" id="hist-include-user" checked> ${escapeHtml(context.name1 || t('summaryWorkflow.user'))}</label>
+                    <label><input type="checkbox" id="hist-include-char" checked> ${escapeHtml(context.name2 || t('summaryWorkflow.character'))}</label>
                 </div>
                 <div id="historiography-preview-container">${messageHtml}</div>
                 <style>
@@ -907,9 +1011,9 @@ export async function executeManualSummary(startFloor, endFloor, isAuto = false)
 
         const modalHtml = generateModalHtml(messages);
 
-        showHtmlModal('原文预览与编辑', modalHtml, {
-            okText: '确认原文并总结',
-            cancelText: '取消',
+        showHtmlModal(t('summaryWorkflow.sourcePreview'), modalHtml, {
+            okText: t('summaryWorkflow.confirmSource'),
+            cancelText: t('actions.cancel'),
             onOpen: (dialog) => {
                 const userCheckbox = dialog.find('#hist-include-user');
                 const charCheckbox = dialog.find('#hist-include-char');
@@ -948,7 +1052,7 @@ export async function executeManualSummary(startFloor, endFloor, isAuto = false)
                     }).get().join('\n');
 
                 if (!textToSummarize.trim()) {
-                    toastr.error("请至少选择一条消息进行总结！", "圣谕有误");
+                    toastr.error(t('summaryWorkflow.selectMessage'), t('summaryWorkflow.invalidRequest'));
                     return;
                 }
                 
@@ -965,6 +1069,7 @@ export async function executeManualSummary(startFloor, endFloor, isAuto = false)
                     summaryProtocol,
                     startFloor,
                     endFloor,
+                    promptProtocol,
                 );
                 if (summary) {
                     showSummaryModal(summary, {
@@ -980,7 +1085,7 @@ export async function executeManualSummary(startFloor, endFloor, isAuto = false)
                             resolve(success);
                         },
                         onRegenerate: async (summaryDialog) => {
-                            summaryDialog.find('textarea').prop('disabled', true).val('正在重新生成，请稍候...');
+                            summaryDialog.find('textarea').prop('disabled', true).val(t('summaryWorkflow.regenerating'));
                             const newSummary = await getSummary(
                                 textToSummarize,
                                 toastTitle,
@@ -988,15 +1093,16 @@ export async function executeManualSummary(startFloor, endFloor, isAuto = false)
                                 summaryProtocol,
                                 startFloor,
                                 endFloor,
+                                promptProtocol,
                             );
                             summaryDialog.find('textarea').prop('disabled', false).val(newSummary || summary);
                             summaryDialog[0].showModal(); // 重新显示弹窗
                             if (!newSummary) {
-                                toastr.error("重新生成失败，已恢复原始内容。", "模型召唤失败");
+                                toastr.error(t('summaryWorkflow.regenerationFailed'), t('summaryWorkflow.modelFailed'));
                             }
                         },
                         onCancel: () => {
-                            toastr.info("本批次总结已取消。", "操作已取消");
+                            toastr.info(t('summaryWorkflow.batchCancelled'), t('summaryWorkflow.cancelled'));
                             resolve(false);
                         },
                     });
@@ -1005,7 +1111,7 @@ export async function executeManualSummary(startFloor, endFloor, isAuto = false)
                 }
             },
             onCancel: () => {
-                toastr.info("操作已取消。", toastTitle);
+                toastr.info(t('summaryWorkflow.operationCancelled'), toastTitle);
                 resolve(false);
             }
         });
@@ -1063,14 +1169,15 @@ async function getSummary(
     protocol = getPreferredHistoriographyProtocol(),
     startFloor = 0,
     endFloor = 0,
+    promptProtocol = getPreferredHistoriographyPromptProtocol(),
 ) {
-    toastr.info(`正在为您熔铸对话历史...`, toastTitle);
+    toastr.info(t('summaryWorkflow.generating'), toastTitle);
     const settings = extension_settings[extensionName];
     const presetPrompts = await getPresetPrompts('small_summary');
     const protocolPrompts = resolveHistoriographyPrompts(
         settings,
         'small',
-        protocol,
+        promptProtocol,
     );
     
     // 获取混合排序
@@ -1144,7 +1251,7 @@ async function getSummary(
         const maxRetries = settings.historiographyMaxRetries ?? 2;
         if (retryCount < maxRetries) {
             console.warn(`[大史官-微言录] AI返回空内容，正在进行第 ${retryCount + 1}/${maxRetries} 次重试...`);
-            toastr.warning(`AI返回空内容，正在进行第 ${retryCount + 1}/${maxRetries} 次重试...`, toastTitle);
+            toastr.warning(t('summaryWorkflow.emptyRetry', { retry: retryCount + 1, max: maxRetries }), toastTitle);
             await new Promise(resolve => setTimeout(resolve, 3000)); // 等待3秒后重试
             return await getSummary(
                 formattedHistory,
@@ -1153,10 +1260,11 @@ async function getSummary(
                 protocol,
                 startFloor,
                 endFloor,
+                promptProtocol,
             );
         } else {
             console.error(`[大史官-微言录] 达到最大重试次数 (${maxRetries})，总结失败。`);
-            toastr.error(`达到最大重试次数 (${maxRetries})，总结失败。`, toastTitle);
+            toastr.error(t('summaryWorkflow.summaryRetriesExhausted', { max: maxRetries }), toastTitle);
             return null;
         }
     }
@@ -1178,7 +1286,7 @@ async function writeSummary(
     const shouldIngestToRag = settings.historiographyIngestToRag ?? false;
     const refinementLimits = normalizeRefinementLimits(settings);
     if (!shouldWriteToLorebook && !shouldIngestToRag) {
-        toastr.warning("“写入史册”和“存入翰林院”均未启用，总结任务已完成但未保存。", toastTitle);
+        toastr.warning(t('summaryWorkflow.notSaved'), toastTitle);
         return true;
     }
 
@@ -1201,7 +1309,7 @@ async function writeSummary(
                 throw new Error("未知的史册写入指令。");
         }
     } catch (error) {
-        toastr.error(`无法确定史册目标：${error.message}`, "国史馆");
+        toastr.error(escapeHtml(t('summaryWorkflow.targetFailed', { error: error.message })), t('summaryWorkflow.records'));
         return false;
     }
 
@@ -1215,9 +1323,9 @@ async function writeSummary(
     } catch (error) {
         toastr.error(
             error?.code === 'HISTORIOGRAPHY_AUTHORIZATION_CHANGED'
-                ? '生成期间授权状态已经变化，旧总结没有写入。'
-                : '生成期间聊天或目标世界书已经变化，旧总结没有写入。',
-            '微言录已失效',
+                ? t('summaryWorkflow.authChanged')
+                : t('summaryWorkflow.targetChanged'),
+            t('summaryWorkflow.smallStale'),
             { timeOut: 12000 },
         );
         return false;
@@ -1228,9 +1336,8 @@ async function writeSummary(
             summary = assertModelSummaryBody(summary);
         } catch (error) {
             toastr.error(
-                '总结正文包含史册保留结构标记，本批次没有写入。'
-                + '请在预览中删除楼层总结标题、流水金印或宏史卷分段标记。',
-                '微言录结构冲突',
+                t('summaryWorkflow.smallStructureConflict'),
+                t('summaryWorkflow.smallConflict'),
                 { timeOut: 12000 },
             );
             return false;
@@ -1245,7 +1352,7 @@ async function writeSummary(
                     requireCurrentTarget: true,
                 });
             }
-            toastr.info('正在将此份“微言录”送往翰林院...', '翰林院');
+            toastr.info(t('summaryWorkflow.vectorSending'), t('summaryWorkflow.vectors'));
             const metadata = {
                 bookName: targetLorebookName,
                 entryName: `微言录总结: ${startFloor}-${endFloor}楼`
@@ -1258,11 +1365,11 @@ async function writeSummary(
                 });
             }
             if (!result.success) throw new Error(result.error);
-            toastr.success(`翰林院已成功接收记忆碎片！`, '翰林院');
+            toastr.success(t('summaryWorkflow.vectorReceived'), t('summaryWorkflow.vectors'));
             return true;
         } catch (ragError) {
             console.error('[翰林院] 向量化处理失败:', ragError);
-            toastr.error(`送往翰林院的文书处理失败: ${ragError.message}`, '翰林院');
+            toastr.error(escapeHtml(t('summaryWorkflow.vectorFailed', { error: ragError.message })), t('summaryWorkflow.vectors'));
             return false;
         }
     };
@@ -1323,27 +1430,23 @@ async function writeSummary(
                 if (!persistence.committed) {
                     if (persistence.mutation?.idempotent) {
                         toastr.info(
-                            `${startFloor}-${endFloor} 楼微言录已存在，已跳过重复写入。`,
-                            `${toastTitle} - 国史馆`,
+                            t('summaryWorkflow.duplicateSmall', { start: startFloor, end: endFloor }),
+                            t('summaryWorkflow.recordToastTitle', { title: toastTitle }),
                         );
                         return true;
                     }
                     if (persistence.mutation?.reason === 'tail-budget') {
                         toastr.error(
-                            `追加后活动微言录尾部约 ${persistence.mutation.estimatedTokens} Token，`
-                            + `超过上限 ${persistence.mutation.maxTokens}。本批次没有写入；`
-                            + '请先编纂下一段或提高输入上限。',
-                            '活动尾部已达上限',
+                            t('summaryWorkflow.tailBudget', persistence.mutation),
+                            t('summaryWorkflow.tailLimitReached'),
                             { timeOut: 14000 },
                         );
                         return false;
                     }
                     if (persistence.mutation?.reason === 'resident-budget') {
                         toastr.error(
-                            `追加后常驻史册约 ${persistence.mutation.estimatedTokens} Token，`
-                            + `超过总上限 ${persistence.mutation.maxTokens}。本批次没有写入；`
-                            + '请先完成向量回读降载、编纂尾部或提高常驻上限。',
-                            '常驻史册已达上限',
+                            t('summaryWorkflow.residentBudget', persistence.mutation),
+                            t('summaryWorkflow.residentLimitReached'),
                             { timeOut: 14000 },
                         );
                         return false;
@@ -1370,8 +1473,8 @@ async function writeSummary(
                 await runHistoriographyPostCommitEffect(
                     '显示写入成功提示',
                     () => toastr.success(
-                        '微言录已追加到分段史册。',
-                        `${toastTitle} - 国史馆`,
+                        t('summaryWorkflow.smallAppended'),
+                        t('summaryWorkflow.recordToastTitle', { title: toastTitle }),
                     ),
                 );
                 await runHistoriographyPostCommitEffect(
@@ -1388,8 +1491,8 @@ async function writeSummary(
         } catch (error) {
             console.error('[大史官] 分段史册写入前校验失败:', error);
             toastr.error(
-                `写入史册时发生错误：${error.message}`,
-                '国史馆',
+                escapeHtml(t('summaryWorkflow.writeFailed', { error: error.message })),
+                t('summaryWorkflow.records'),
                 { timeOut: 12000 },
             );
             return false;
@@ -1404,10 +1507,8 @@ async function writeSummary(
         );
         if (!firstLedgerAppend.fits) {
             toastr.error(
-                `单批微言录写入后约 ${firstLedgerAppend.estimatedTokens} Token，已经超过活动史册硬上限 `
-                + `${firstLedgerAppend.maxTokens}。本批次未写入史册，进度未前移；`
-                + `请缩小每次总结层数或提高上限。`,
-                "微言录过长",
+                t('summaryWorkflow.firstBudget', firstLedgerAppend),
+                t('summaryWorkflow.smallTooLong'),
                 { timeOut: 12000 },
             );
             return false;
@@ -1517,10 +1618,8 @@ async function writeSummary(
 
             if (ledgerBudgetExceeded) {
                 toastr.error(
-                    `追加后活动史册约 ${ledgerBudgetExceeded.estimatedTokens} Token，`
-                    + `将超过硬上限 ${ledgerBudgetExceeded.maxTokens}，因此本批次尚未写入、总结进度也没有前移。`
-                    + `请先在“大总结”中合并当前活动史册，再继续补全；原聊天与原史册均保持不变。`,
-                    "活动史册已达上限",
+                    t('summaryWorkflow.ledgerBudget', ledgerBudgetExceeded),
+                    t('summaryWorkflow.ledgerLimitReached'),
                     { timeOut: 14000 },
                 );
                 return false;
@@ -1550,8 +1649,8 @@ async function writeSummary(
                 await runHistoriographyPostCommitEffect(
                     "显示写入成功提示",
                     () => toastr.success(
-                        `编年史已成功更新！`,
-                        `${toastTitle} - 国史馆`,
+                        t('summaryWorkflow.ledgerUpdated'),
+                        t('summaryWorkflow.recordToastTitle', { title: toastTitle }),
                     ),
                 );
                 await runHistoriographyPostCommitEffect(
@@ -1576,7 +1675,7 @@ async function writeSummary(
 
         } catch (error) {
             console.error(`[大史官] ${toastTitle}写入国史馆失败:`, error);
-            toastr.error(`写入国史馆时发生错误: ${error.message}`, "国史馆");
+            toastr.error(escapeHtml(t('summaryWorkflow.recordWriteFailed', { error: error.message })), t('summaryWorkflow.records'));
             return false;
         }
     }
@@ -1590,8 +1689,8 @@ async function executeSegmentedRefinement(
     options = {},
 ) {
     toastr.info(
-        `正在编纂《${worldbook}》活动尾部的下一段宏史卷...`,
-        '宏史卷分段编纂',
+        escapeHtml(t('summaryWorkflow.segmentStarting', { worldbook })),
+        t('summaryWorkflow.segmentCompilation'),
     );
     try {
         const operationLease = options.operationLease
@@ -1618,7 +1717,7 @@ async function executeSegmentedRefinement(
         }
         const validated = inspected.validated;
         if (validated.batches.length === 0) {
-            toastr.info('活动微言录尾部没有待编纂批次。', '宏史卷分段编纂');
+            toastr.info(t('summaryWorkflow.noPendingBatches'), t('summaryWorkflow.segmentCompilation'));
             return false;
         }
 
@@ -1636,7 +1735,7 @@ async function executeSegmentedRefinement(
         const protocolPrompts = resolveHistoriographyPrompts(
             settings,
             'large',
-            HISTORIOGRAPHY_PROTOCOL_SEGMENTED,
+            getPreferredHistoriographyPromptProtocol(),
         );
         const order = getMixedOrder('large_summary') || [];
         const requestSeed = generateRandomSeed();
@@ -1725,9 +1824,8 @@ async function executeSegmentedRefinement(
         if (!selectedCandidate) {
             const oneBlock = buildCandidate(1);
             toastr.error(
-                `固定提示与最旧一块微言录约 ${oneBlock.estimatedTokens} Token，`
-                + `超过输入上限 ${limits.inputMaxTokens}。本次没有调用模型。`,
-                '单块仍无法编纂',
+                t('summaryWorkflow.segmentInputBudget', { tokens: oneBlock.estimatedTokens, max: limits.inputMaxTokens }),
+                t('summaryWorkflow.singleBlockBlocked'),
                 { timeOut: 14000 },
             );
             return false;
@@ -1737,31 +1835,26 @@ async function executeSegmentedRefinement(
             validated.batches.length - selectedCandidate.count;
         if (unselectedCount > 0) {
             toastr.info(
-                `本轮编纂最旧的 ${selectedCandidate.count} 块（`
-                + `${selectedCandidate.startFloor}-${selectedCandidate.endFloor} 楼）；`
-                + `其余 ${unselectedCount} 块原样保留。`,
-                '分段编纂',
+                t('summaryWorkflow.segmentSelection', { count: selectedCandidate.count, start: selectedCandidate.startFloor, end: selectedCandidate.endFloor, remaining: unselectedCount }),
+                t('summaryWorkflow.segmentMerge'),
                 { timeOut: 10000 },
             );
         }
 
         const getRefinedContent = async (retryCount = 0) => {
-            const content = await callNgmsAI(
-                selectedCandidate.messages,
-                { maxTokens: limits.activeMaxTokens },
-            );
+            const content = await callNgmsAI(selectedCandidate.messages);
             if (content?.trim()) return content;
             const maxRetries = settings.historiographyMaxRetries ?? 2;
             if (retryCount >= maxRetries) {
                 toastr.error(
-                    `模型连续 ${maxRetries + 1} 次返回空内容。`,
-                    '宏史卷分段编纂失败',
+                    t('summaryWorkflow.emptyAttempts', { count: maxRetries + 1 }),
+                    t('summaryWorkflow.segmentFailed'),
                 );
                 return null;
             }
             toastr.warning(
-                `模型返回空内容，正在重试 ${retryCount + 1}/${maxRetries}。`,
-                '宏史卷分段编纂',
+                t('summaryWorkflow.segmentRetry', { retry: retryCount + 1, max: maxRetries }),
+                t('summaryWorkflow.segmentCompilation'),
             );
             await new Promise(resolve => setTimeout(resolve, 3000));
             return getRefinedContent(retryCount + 1);
@@ -1784,9 +1877,8 @@ async function executeSegmentedRefinement(
                         cleanBody = assertModelSummaryBody(editedText);
                     } catch {
                         toastr.error(
-                            '输出包含史册保留结构标记，本次没有写入。'
-                            + '请删除标题、封印、Manifest 或分段起止标记。',
-                            '宏史卷结构冲突',
+                            t('summaryWorkflow.segmentStructureConflict'),
+                            t('summaryWorkflow.largeConflict'),
                             { timeOut: 12000 },
                         );
                         setTimeout(() => processLoop(editedText), 0);
@@ -1798,9 +1890,8 @@ async function executeSegmentedRefinement(
                     );
                     if (!budget.fits) {
                         toastr.error(
-                            `当前分段正文约 ${budget.estimatedTokens} Token，`
-                            + `超过上限 ${budget.maxTokens}。请继续缩减。`,
-                            '宏史卷分段过长',
+                            t('summaryWorkflow.segmentOutputBudget', budget),
+                            t('summaryWorkflow.segmentTooLong'),
                             { timeOut: 12000 },
                         );
                         setTimeout(() => processLoop(cleanBody), 0);
@@ -1843,12 +1934,11 @@ async function executeSegmentedRefinement(
                             () => reloadEditor(worldbook),
                         );
                         toastr.success(
-                            `${selectedCandidate.startFloor}-${selectedCandidate.endFloor} 楼已保存为不可变宏史卷分段；`
-                            + '对应微言录源文已在同次事务中禁用归档。'
+                            t('summaryWorkflow.segmentSaved', { start: selectedCandidate.startFloor, end: selectedCandidate.endFloor })
                             + (unselectedCount > 0
-                                ? ` 尾部仍有 ${unselectedCount} 块待编纂。`
-                                : ' 活动尾部已清空。'),
-                            '宏史卷分段编纂完成',
+                                ? t('summaryWorkflow.tailRemaining', { count: unselectedCount })
+                                : t('summaryWorkflow.tailCleared')),
+                            t('summaryWorkflow.segmentComplete'),
                             { timeOut: 12000 },
                         );
                         const shouldVectorize =
@@ -1930,9 +2020,8 @@ async function executeSegmentedRefinement(
                                     () => reloadEditor(worldbook),
                                 );
                                 toastr.success(
-                                    `宏史卷分段已回读验证 ${receipt.count} 条向量；`
-                                    + `当前加载 ${completed.mutation?.retention?.loadedCount ?? '?'} 段。`,
-                                    '翰林院向量收讫',
+                                    t('summaryWorkflow.segmentVerified', { count: receipt.count, loaded: completed.mutation?.retention?.loadedCount ?? '?' }),
+                                    t('summaryWorkflow.vectorReceipt'),
                                 );
                             } catch (error) {
                                 console.warn(
@@ -1964,8 +2053,8 @@ async function executeSegmentedRefinement(
                                         stateError,
                                     )) {
                                         toastr.warning(
-                                            '史册已保存；聊天或授权已变化，后续向量任务已停止且分段保持加载。',
-                                            '宏史卷任务已失效',
+                                            t('summaryWorkflow.vectorLeaseChanged'),
+                                            t('summaryWorkflow.largeStale'),
                                             { timeOut: 12000 },
                                         );
                                         return;
@@ -1976,8 +2065,8 @@ async function executeSegmentedRefinement(
                                     );
                                 }
                                 toastr.warning(
-                                    '史册分段已安全保存并保持加载；向量降载未完成，可稍后重试。',
-                                    '翰林院向量待重试',
+                                    t('summaryWorkflow.vectorRetained'),
+                                    t('summaryWorkflow.vectorRetryPending'),
                                     { timeOut: 12000 },
                                 );
                             }
@@ -1988,9 +2077,9 @@ async function executeSegmentedRefinement(
                             === 'HISTORIOGRAPHY_STALE_LEDGER';
                         toastr.error(
                             stale
-                                ? '预览期间史册或聊天目标已变化；旧结果没有写入，请重新编纂。'
-                                : `保存宏史卷分段失败：${error.message}`,
-                            stale ? '史册已变化' : '分段编纂失败',
+                                ? t('summaryWorkflow.segmentStale')
+                                : escapeHtml(t('summaryWorkflow.segmentSaveFailed', { error: error.message })),
+                            t(stale ? 'summaryWorkflow.recordChanged' : 'summaryWorkflow.segmentMergeFailed'),
                             { timeOut: 14000 },
                         );
                     }
@@ -1998,7 +2087,7 @@ async function executeSegmentedRefinement(
                 onRegenerate: async dialog => {
                     dialog.find('textarea')
                         .prop('disabled', true)
-                        .val('正在重新生成，请稍候...');
+                        .val(t('summaryWorkflow.regenerating'));
                     try {
                         await assertHistoriographyExecutionLease(
                             operationLease,
@@ -2012,7 +2101,7 @@ async function executeSegmentedRefinement(
                         dialog.find('textarea')
                             .prop('disabled', false)
                             .val(currentContent);
-                        toastr.error(error.message, '宏史卷任务已失效');
+                        toastr.error(escapeHtml(error.message), t('summaryWorkflow.largeStale'));
                         return;
                     }
                     const regenerated = await getRefinedContent();
@@ -2030,7 +2119,7 @@ async function executeSegmentedRefinement(
                             dialog.find('textarea')
                                 .prop('disabled', false)
                                 .val(currentContent);
-                            toastr.error(error.message, '宏史卷任务已失效');
+                            toastr.error(escapeHtml(error.message), t('summaryWorkflow.largeStale'));
                             return;
                         }
                     }
@@ -2040,14 +2129,14 @@ async function executeSegmentedRefinement(
                     dialog[0].showModal();
                     if (!regenerated) {
                         toastr.error(
-                            '重新生成失败，已恢复原始内容。',
-                            '模型召唤失败',
+                            t('summaryWorkflow.regenerationFailed'),
+                            t('summaryWorkflow.modelFailed'),
                         );
                     }
                 },
                 onCancel: () => toastr.info(
-                    '宏史卷分段编纂已取消。',
-                    '操作已取消',
+                    t('summaryWorkflow.segmentCancelled'),
+                    t('summaryWorkflow.cancelled'),
                 ),
             });
         };
@@ -2056,8 +2145,8 @@ async function executeSegmentedRefinement(
     } catch (error) {
         console.error('[大史官] 分段编纂任务失败:', error);
         toastr.error(
-            `读取或编纂分段史册失败：${error.message}`,
-            '国史馆',
+            escapeHtml(t('summaryWorkflow.segmentReadFailed', { error: error.message })),
+            t('summaryWorkflow.records'),
             { timeOut: 12000 },
         );
         return false;
@@ -2090,16 +2179,16 @@ export async function executeRefinement(worldbook, loreKey, options = {}) {
         }
     } catch (error) {
         console.error('[大史官] 识别史册协议失败:', error);
-        toastr.error(`无法识别史册协议：${error.message}`, '国史馆');
+        toastr.error(escapeHtml(t('summaryWorkflow.protocolFailed', { error: error.message })), t('summaryWorkflow.records'));
         return false;
     }
-    toastr.info(`遵旨！正在为您重铸《${worldbook}》中的【微言录合集】...`, "宏史卷重铸");
+    toastr.info(escapeHtml(t('summaryWorkflow.rollingStarting', { worldbook })), t('summaryWorkflow.rollingMerge'));
 
     try {
         const bookData = await loadWorldInfo(worldbook);
         const entry = bookData?.entries[loreKey];
         if (!entry) {
-            toastr.error("找不到指定的史册条目，重铸任务中止。", "圣谕有误");
+            toastr.error(t('summaryWorkflow.entryMissing'), t('summaryWorkflow.invalidRequest'));
             return;
         }
 
@@ -2117,26 +2206,24 @@ export async function executeRefinement(worldbook, loreKey, options = {}) {
         const protocolPrompts = resolveHistoriographyPrompts(
             settings,
             'large',
-            HISTORIOGRAPHY_PROTOCOL_LEGACY,
+            getPreferredHistoriographyPromptProtocol(),
         );
         const parsedLedger = parseLedgerForRefinement(originalContent);
         if (parsedLedger.reason === 'legacy-vector-placeholder') {
             toastr.error(
-                "该史册仍使用“旧宏史卷已由翰林院向量化注入”的占位格式，"
-                + "当前条目并不包含早期剧情正文。请先从禁用的旧宏史卷正本恢复，"
-                + "或从翰林院导出并恢复早期正文；在正文恢复前不会生成虚假的 1-N 楼滚动宏史卷。",
-                "需要先恢复早期正文",
+                t('summaryWorkflow.legacyPlaceholder'),
+                t('summaryWorkflow.restoreTextFirst'),
                 { timeOut: 16000 },
             );
             return;
         }
         if (!parsedLedger.valid) {
-            toastr.error("史册缺少【流水金印】，无法执行重铸。", "结构异常");
+            toastr.error(t('summaryWorkflow.missingSeal'), t('summaryWorkflow.structureInvalid'));
             return;
         }
         if (!parsedLedger.pendingMicroContent.trim()
             || parsedLedger.pendingBlockCount <= 0) {
-            toastr.warning("史册条目中没有新的内容可供重铸。", "国库无新事");
+            toastr.warning(t('summaryWorkflow.noNewContent'), t('summaryWorkflow.nothingNew'));
             return;
         }
 
@@ -2233,10 +2320,8 @@ export async function executeRefinement(worldbook, loreKey, options = {}) {
         const fixedCandidate = buildCandidate(0);
         if (fixedCandidate.estimatedTokens > limits.inputMaxTokens) {
             toastr.error(
-                `既有宏史卷与完整固定提示约 ${fixedCandidate.estimatedTokens} Token，`
-                + `已经超过输入上限 ${limits.inputMaxTokens}。本次没有调用模型；`
-                + `请先手动缩短宏史卷或提高输入上限。`,
-                "宏史卷固定输入超限",
+                t('summaryWorkflow.fixedInputBudget', { tokens: fixedCandidate.estimatedTokens, max: limits.inputMaxTokens }),
+                t('summaryWorkflow.fixedInputTooLong'),
                 { timeOut: 14000 },
             );
             return;
@@ -2261,10 +2346,8 @@ export async function executeRefinement(worldbook, loreKey, options = {}) {
         if (!selectedCandidate) {
             const oneBlockCandidate = buildCandidate(1);
             toastr.error(
-                `完整固定提示、既有宏史卷与最旧一块微言录约 `
-                + `${oneBlockCandidate.estimatedTokens} Token，超过输入上限 `
-                + `${limits.inputMaxTokens}。本次没有调用模型；请提高输入上限或手动缩短既有宏史卷。`,
-                "单块仍无法安全重铸",
+                t('summaryWorkflow.rollingInputBudget', { tokens: oneBlockCandidate.estimatedTokens, max: limits.inputMaxTokens }),
+                t('summaryWorkflow.singleRollingBlocked'),
                 { timeOut: 14000 },
             );
             return;
@@ -2276,30 +2359,27 @@ export async function executeRefinement(worldbook, loreKey, options = {}) {
         const messages = selectedCandidate.messages;
         if (remainingBlockCount > 0) {
             toastr.info(
-                `本轮将在输入上限内合并最旧的 ${selectedBlockCount} 块；`
-                + `其余 ${remainingBlockCount} 块会原样保留。完成后可由您手动继续下一轮。`,
-                "分段重铸",
+                t('summaryWorkflow.rollingSelection', { count: selectedBlockCount, remaining: remainingBlockCount }),
+                t('summaryWorkflow.rollingPartial'),
                 { timeOut: 10000 },
             );
         }
 
         const getRefinedContent = async (retryCount = 0) => {
-            toastr.info("正在召唤模型进行内容精炼...", "宏史卷重铸");
+            toastr.info(t('summaryWorkflow.refining'), t('summaryWorkflow.rollingMerge'));
             // 历史总结统一走 NGMS slot；ngms 未配置时 callNgmsAI 自带错误提示。
-            const content = await callNgmsAI(messages, {
-                maxTokens: limits.activeMaxTokens,
-            });
+            const content = await callNgmsAI(messages);
             
             if (!content || !content.trim()) {
                 const maxRetries = settings.historiographyMaxRetries ?? 2;
                 if (retryCount < maxRetries) {
                     console.warn(`[大史官-宏史卷重铸] AI返回空内容，正在进行第 ${retryCount + 1}/${maxRetries} 次重试...`);
-                    toastr.warning(`AI返回空内容，正在进行第 ${retryCount + 1}/${maxRetries} 次重试...`, "宏史卷重铸");
+                    toastr.warning(t('summaryWorkflow.emptyRetry', { retry: retryCount + 1, max: maxRetries }), t('summaryWorkflow.rollingMerge'));
                     await new Promise(resolve => setTimeout(resolve, 3000));
                     return await getRefinedContent(retryCount + 1);
                 } else {
                     console.error(`[大史官-宏史卷重铸] 达到最大重试次数 (${maxRetries})，重铸失败。`);
-                    toastr.error(`达到最大重试次数 (${maxRetries})，重铸失败。`, "宏史卷重铸失败");
+                    toastr.error(t('summaryWorkflow.mergeRetriesExhausted', { max: maxRetries }), t('summaryWorkflow.rollingMergeFailed'));
                     return null;
                 }
             }
@@ -2320,9 +2400,8 @@ export async function executeRefinement(worldbook, loreKey, options = {}) {
                 onConfirm: async (editedText) => {
                     if (containsReservedLedgerStructure(editedText)) {
                         toastr.error(
-                            "输出中包含史册保留结构标记（流水金印、篇章封印或微言录标题）。"
-                            + "为避免破坏后续解析，本次没有写入；请在重新打开的预览中删除这些标记。",
-                            "宏史卷结构冲突",
+                            t('summaryWorkflow.rollingStructureConflict'),
+                            t('summaryWorkflow.largeConflict'),
                             { timeOut: 12000 },
                         );
                         setTimeout(() => processLoop(editedText), 0);
@@ -2336,10 +2415,8 @@ export async function executeRefinement(worldbook, loreKey, options = {}) {
                     );
                     if (!budgetResult.fits) {
                         toastr.error(
-                            `当前滚动宏史卷约 ${budgetResult.estimatedTokens} Token，`
-                            + `超过宏史卷上限 ${budgetResult.maxTokens}。`
-                            + `为避免不可控上下文膨胀，本次没有写入；请在重新打开的预览中继续缩减。`,
-                            "宏史卷仍过长",
+                            t('summaryWorkflow.rollingOutputBudget', budgetResult),
+                            t('summaryWorkflow.largeTooLong'),
                             { timeOut: 12000 },
                         );
                         // showSummaryModal closes the current dialog after
@@ -2351,7 +2428,7 @@ export async function executeRefinement(worldbook, loreKey, options = {}) {
 
                     const finalContent = budgetResult.content;
                     if (!finalContent) {
-                        toastr.error("无法构建滚动宏史卷，原始史册保持不变。", "重铸失败");
+                        toastr.error(t('summaryWorkflow.rollingBuildFailed'), t('summaryWorkflow.mergeFailed'));
                         return;
                     }
 
@@ -2463,11 +2540,11 @@ export async function executeRefinement(worldbook, loreKey, options = {}) {
                         );
                         reloadEditor(worldbook);
                         toastr.success(
-                            `史册已重铸为一份滚动宏史卷；重铸前完整正本已禁用归档于《${worldbook}》。`
+                            escapeHtml(t('summaryWorkflow.rollingSaved', { worldbook }))
                             + (remainingBlockCount > 0
-                                ? ` 尚余 ${remainingBlockCount} 块微言录，请按需手动继续合并。`
-                                : " 本轮已合并全部待处理微言录。"),
-                            "宏史卷重铸完毕",
+                                ? t('summaryWorkflow.rollingRemaining', { count: remainingBlockCount })
+                                : t('summaryWorkflow.rollingAllMerged')),
+                            t('summaryWorkflow.rollingComplete'),
                             { timeOut: 10000 },
                         );
 
@@ -2492,14 +2569,14 @@ export async function executeRefinement(worldbook, loreKey, options = {}) {
                                     fingerprint,
                                 )) {
                                     toastr.info(
-                                        "同一旧宏史卷本次会话已向量化，已跳过重复入库。",
-                                        "翰林院",
+                                        t('summaryWorkflow.vectorDuplicate'),
+                                        t('summaryWorkflow.vectors'),
                                     );
                                     return;
                                 }
                                 toastr.info(
-                                    `正在将前 ${parsedLedger.compiledFloor} 楼的旧宏史卷副本送往翰林院...`,
-                                    "翰林院",
+                                    t('summaryWorkflow.vectorOldSending', { floor: parsedLedger.compiledFloor }),
+                                    t('summaryWorkflow.vectors'),
                                 );
                                 const ingestResult = await ingestTextToHanlinyuan(
                                     parsedLedger.existingRollingContent,
@@ -2529,8 +2606,8 @@ export async function executeRefinement(worldbook, loreKey, options = {}) {
                                     fingerprint,
                                 );
                                 toastr.success(
-                                    `旧宏史卷副本已进入翰林院，共 ${ingestResult.count} 条。`,
-                                    "翰林院",
+                                    t('summaryWorkflow.vectorOldReceived', { count: ingestResult.count }),
+                                    t('summaryWorkflow.vectors'),
                                 );
                             } catch (error) {
                                 // Active rolling summary and disabled source
@@ -2539,8 +2616,8 @@ export async function executeRefinement(worldbook, loreKey, options = {}) {
                                 // back or deletes either source.
                                 console.error("[大史官-宏史卷向量化] 失败:", error);
                                 toastr.warning(
-                                    `滚动宏史卷已安全保存，但可选向量化失败：${error.message}`,
-                                    "翰林院",
+                                    escapeHtml(t('summaryWorkflow.optionalVectorFailed', { error: error.message })),
+                                    t('summaryWorkflow.vectors'),
                                     { timeOut: 10000 },
                                 );
                             }
@@ -2550,23 +2627,23 @@ export async function executeRefinement(worldbook, loreKey, options = {}) {
                             toastr.warning(
                                 error?.code
                                     === 'HISTORIOGRAPHY_AUTHORIZATION_CHANGED'
-                                    ? '预览期间授权状态已经变化，本次旧结果已安全丢弃。'
-                                    : '预览期间活动史册或聊天已经变化，本次旧结果已安全丢弃。请重新开始合并。',
-                                "宏史卷任务已失效",
+                                    ? t('summaryWorkflow.previewAuthChanged')
+                                    : t('summaryWorkflow.previewTargetChanged'),
+                                t('summaryWorkflow.largeStale'),
                                 { timeOut: 10000 },
                             );
                             return;
                         }
                         console.error("[大史官-宏史卷存档] 写入失败:", error);
                         toastr.error(
-                            `无法同时保存滚动宏史卷与重铸前正本：${error.message}。原活动史册保持不变。`,
-                            "宏史卷保存失败",
+                            escapeHtml(t('summaryWorkflow.rollingSaveFailed', { error: error.message })),
+                            t('summaryWorkflow.largeSaveFailed'),
                             { timeOut: 12000 },
                         );
                     }
                 },
                 onRegenerate: async (dialog) => {
-                    dialog.find('textarea').prop('disabled', true).val('正在重新生成，请稍候...');
+                    dialog.find('textarea').prop('disabled', true).val(t('summaryWorkflow.regenerating'));
                     try {
                         await assertHistoriographyExecutionLease(
                             operationLease,
@@ -2580,7 +2657,7 @@ export async function executeRefinement(worldbook, loreKey, options = {}) {
                         dialog.find('textarea')
                             .prop('disabled', false)
                             .val(currentRefinedContent);
-                        toastr.error(error.message, '宏史卷任务已失效');
+                        toastr.error(escapeHtml(error.message), t('summaryWorkflow.largeStale'));
                         return;
                     }
                     const newContent = await getRefinedContent();
@@ -2598,18 +2675,18 @@ export async function executeRefinement(worldbook, loreKey, options = {}) {
                             dialog.find('textarea')
                                 .prop('disabled', false)
                                 .val(currentRefinedContent);
-                            toastr.error(error.message, '宏史卷任务已失效');
+                            toastr.error(escapeHtml(error.message), t('summaryWorkflow.largeStale'));
                             return;
                         }
                     }
                     dialog.find('textarea').prop('disabled', false).val(newContent || currentRefinedContent);
                     dialog[0].showModal(); // 重新显示弹窗
                     if (!newContent) {
-                        toastr.error("重新生成失败，已恢复原始内容。", "模型召唤失败");
+                        toastr.error(t('summaryWorkflow.regenerationFailed'), t('summaryWorkflow.modelFailed'));
                     }
                 },
                 onCancel: () => {
-                    toastr.info("宏史卷重铸操作已取消。", "操作已取消");
+                    toastr.info(t('summaryWorkflow.rollingCancelled'), t('summaryWorkflow.cancelled'));
                 },
             });
         };
@@ -2618,7 +2695,7 @@ export async function executeRefinement(worldbook, loreKey, options = {}) {
 
     } catch (error) {
         console.error("[大史官] 重铸任务失败:", error);
-        toastr.error(`重铸史册时发生严重错误: ${error.message}`, "国史馆");
+        toastr.error(escapeHtml(t('summaryWorkflow.rollingFailed', { error: error.message })), t('summaryWorkflow.records'));
     }
 }
 
@@ -2627,26 +2704,25 @@ export async function executeActiveLedgerRefinement() {
         const status = await getActiveLedgerRefinementStatus();
         if (!status.available || !status.targetLorebookName || !status.loreKey) {
             toastr.warning(
-                "当前聊天没有可重铸的活动【对话流水总帐】。",
-                "宏史卷重铸",
+                t('summaryWorkflow.noActiveLedger'),
+                t('summaryWorkflow.rollingMerge'),
             );
             return false;
         }
         if (status.parsed?.reason === 'legacy-vector-placeholder') {
             toastr.error(
-                "该活动史册仍使用“旧宏史卷已由翰林院向量化注入”的占位格式，"
-                + "条目内没有可供重铸的早期剧情正文。请先恢复旧宏史卷正文再重铸。",
-                "需要先恢复早期正文",
+                t('summaryWorkflow.activePlaceholder'),
+                t('summaryWorkflow.restoreTextFirst'),
                 { timeOut: 16000 },
             );
             return false;
         }
         if (!status.parsed?.valid) {
-            toastr.error("活动史册缺少流水金印，无法安全重铸。", "结构异常");
+            toastr.error(t('summaryWorkflow.activeMissingSeal'), t('summaryWorkflow.structureInvalid'));
             return false;
         }
         if (!status.parsed.pendingMicroContent.trim()) {
-            toastr.info("活动史册没有新的微言录块需要合并。", "宏史卷重铸");
+            toastr.info(t('summaryWorkflow.noNewBlocks'), t('summaryWorkflow.rollingMerge'));
             return false;
         }
         await executeRefinement(
@@ -2657,14 +2733,14 @@ export async function executeActiveLedgerRefinement() {
         return true;
     } catch (error) {
         console.error("[大史官] 无法打开当前活动史册重铸:", error);
-        toastr.error(`无法读取当前活动史册：${error.message}`, "宏史卷重铸");
+        toastr.error(escapeHtml(t('summaryWorkflow.activeReadFailed', { error: error.message })), t('summaryWorkflow.rollingMerge'));
         return false;
     }
 }
 
 export async function executeExpedition() {
     if (isExpeditionRunning) {
-        toastr.info("补全总结正在进行中，请稍候。", "总结");
+        toastr.info(t('summaryWorkflow.catchupRunning'), t('summaryWorkflow.summary'));
         return;
     }
 
@@ -2681,7 +2757,7 @@ export async function executeExpedition() {
             case "character_main":
                 targetLorebookName = characters[context.characterId]?.data?.extensions?.world;
                 if (!targetLorebookName) {
-                    toastr.error("当前角色未绑定主世界书，无法写入总结。", "总结");
+                    toastr.error(t('summaryWorkflow.noMainWorldbook'), t('summaryWorkflow.summary'));
                     isExpeditionRunning = false;
                     document.dispatchEvent(new CustomEvent('amily2-expedition-state-change', { detail: { isRunning: false, manualStop: false } }));
                     return;
@@ -2692,7 +2768,7 @@ export async function executeExpedition() {
                 targetLorebookName = `Amily2-Lore-${chatIdentifier}`;
                 break;
             default:
-                toastr.error("写入目标无效，请检查世界书设置。", "总结");
+                toastr.error(t('summaryWorkflow.invalidTarget'), t('summaryWorkflow.summary'));
                 isExpeditionRunning = false;
                 document.dispatchEvent(new CustomEvent('amily2-expedition-state-change', { detail: { isRunning: false, manualStop: false } }));
                 return;
@@ -2705,7 +2781,7 @@ export async function executeExpedition() {
         const remainingHistory = summarizableLength - summarizedCount;
 
         if (remainingHistory <= 0) {
-            toastr.info("没有需要补全的历史，已经是最新。", "总结");
+            toastr.info(t('summaryWorkflow.upToDate'), t('summaryWorkflow.summary'));
             isExpeditionRunning = false;
             document.dispatchEvent(new CustomEvent('amily2-expedition-state-change', { detail: { isRunning: false, manualStop: false } }));
             return;
@@ -2713,27 +2789,27 @@ export async function executeExpedition() {
 
         const batchSize = settings.historiographySmallTriggerThreshold;
         const totalBatches = Math.ceil(remainingHistory / batchSize);
-        toastr.info(`开始补全：还有 ${remainingHistory} 层，分 ${totalBatches} 批处理。`, "开始总结");
+        toastr.info(t('summaryWorkflow.catchupStarting', { floors: remainingHistory, batches: totalBatches }), t('summaryWorkflow.start'));
         let currentProgress = summarizedCount;
 
         for (let i = 0; i < totalBatches; i++) {
             if (manualStopRequested) {
-                toastr.warning("已暂停。点「继续补全」可接着做。", "总结");
+                toastr.warning(t('summaryWorkflow.catchupPaused'), t('summaryWorkflow.summary'));
                 break;
             }
 
             const startFloor = currentProgress + 1;
             const endFloor = Math.min(currentProgress + batchSize, summarizableLength);
-            const toastTitle = `补全进度 (${i + 1}/${totalBatches})`;
+            const toastTitle = t('summaryWorkflow.catchupProgress', { index: i + 1, total: totalBatches });
 
             const delay = 2000;
             if (i > 0) {
-                toastr.info(`准备第 ${i + 1} 批…（${delay / 1000} 秒后开始）`, toastTitle);
+                toastr.info(t('summaryWorkflow.preparingBatch', { index: i + 1, seconds: delay / 1000 }), toastTitle);
                 await new Promise(resolve => setTimeout(resolve, delay));
             }
 
             if (manualStopRequested) {
-                toastr.warning("已在准备阶段暂停。", "总结");
+                toastr.warning(t('summaryWorkflow.preparationPaused'), t('summaryWorkflow.summary'));
                 break;
             }
 
@@ -2741,19 +2817,19 @@ export async function executeExpedition() {
             if (success) {
                 currentProgress = endFloor;
             } else {
-                toastr.warning(`第 ${i + 1} 批失败，补全已中止。`, "总结");
+                toastr.warning(t('summaryWorkflow.batchFailed', { index: i + 1 }), t('summaryWorkflow.summary'));
                 manualStopRequested = true;
                 break;
             }
         }
 
         if(!manualStopRequested) {
-             toastr.success("补全完成，未总结的历史已全部处理。", "开始总结");
+             toastr.success(t('summaryWorkflow.catchupComplete'), t('summaryWorkflow.start'));
         }
 
     } catch (error) {
         console.error("[大史官-补全失败]", error);
-        toastr.error("补全过程出错已中止，可点「继续补全」重试。", "总结");
+        toastr.error(t('summaryWorkflow.catchupFailed'), t('summaryWorkflow.summary'));
     } finally {
         isExpeditionRunning = false;
         document.dispatchEvent(new CustomEvent('amily2-expedition-state-change', { detail: { isRunning: false, manualStop: manualStopRequested } }));
@@ -2763,19 +2839,19 @@ export async function executeExpedition() {
 export function stopExpedition() {
     if (isExpeditionRunning) {
         manualStopRequested = true;
-        toastr.info("已请求停止，当前这一批结束后会停下。", "总结");
+        toastr.info(t('summaryWorkflow.stopRequested'), t('summaryWorkflow.summary'));
     } else {
-        toastr.warning("当前没有正在进行的补全。", "总结");
+        toastr.warning(t('summaryWorkflow.noCatchup'), t('summaryWorkflow.summary'));
     }
 }
 
 export async function executeCompilation(worldbook, loreKeys) {
     if (!Array.isArray(loreKeys) || loreKeys.length === 0) {
-        toastr.warning("未选择任何条目进行编纂。", "圣谕不明");
+        toastr.warning(t('summaryWorkflow.noCompilationEntries'), t('summaryWorkflow.requestUnclear'));
         return { success: false, error: "No lore keys provided." };
     }
 
-    toastr.info(`遵旨！开始对《${worldbook}》中的 ${loreKeys.length} 个条目进行批量编纂...`, "翰林院入库");
+    toastr.info(escapeHtml(t('summaryWorkflow.compilationStarting', { worldbook, count: loreKeys.length })), t('summaryWorkflow.vectorIngestion'));
     let totalSuccessCount = 0;
     let totalVectorCount = 0;
     let errors = [];
@@ -2817,13 +2893,13 @@ export async function executeCompilation(worldbook, loreKeys) {
             }
         }
 
-        let finalMessage = `批量编纂完成！\n成功处理 ${totalSuccessCount} / ${loreKeys.length} 个条目，共新增 ${totalVectorCount} 条忆识。`;
+        let finalMessage = t('summaryWorkflow.compilationReport', { success: totalSuccessCount, total: loreKeys.length, vectors: totalVectorCount });
         if (errors.length > 0) {
-            finalMessage += `\n\n发生以下错误:\n- ${errors.join('\n- ')}`;
-            toastr.warning("批量编纂期间发生部分错误，详情请查看控制台。", "翰林院");
+            finalMessage += t('summaryWorkflow.compilationErrors', { errors: errors.join('\n- ') });
+            toastr.warning(t('summaryWorkflow.compilationPartial'), t('summaryWorkflow.vectors'));
             console.warn("[翰林院] 批量编纂错误详情:", errors);
         } else {
-            toastr.success(`批量编纂大功告成！新增 ${totalVectorCount} 条忆识。`, '翰林院');
+            toastr.success(t('summaryWorkflow.compilationComplete', { count: totalVectorCount }), t('summaryWorkflow.vectors'));
         }
 
         return { 
@@ -2836,7 +2912,7 @@ export async function executeCompilation(worldbook, loreKeys) {
 
     } catch (error) {
         console.error("[翰林院] 批量条目入库失败:", error);
-        toastr.error(`批量入库失败: ${error.message}`, "翰林院");
+        toastr.error(escapeHtml(t('summaryWorkflow.compilationFailed', { error: error.message })), t('summaryWorkflow.vectors'));
         return { success: false, error: error.message };
     }
 }
@@ -2864,7 +2940,7 @@ export async function archiveCurrentLedger() {
     try {
         const targetLorebookName = await getTargetLorebookName();
         if (!targetLorebookName) {
-            toastr.error("无法确定目标世界书，归档失败。", "圣谕不明");
+            toastr.error(t('summaryWorkflow.archiveNoTarget'), t('summaryWorkflow.requestUnclear'));
             return false;
         }
         const inspected = await inspectTargetHistoriography(
@@ -2873,8 +2949,8 @@ export async function archiveCurrentLedger() {
         if (inspected?.exists
             && inspected.protocol === HISTORIOGRAPHY_PROTOCOL_SEGMENTED) {
             toastr.warning(
-                '当前使用分段史册；请使用“回滚为旧格式”，不能用旧版归档按钮拆散 Manifest 与活动尾部。',
-                '分段史册',
+                t('summaryWorkflow.archiveSegmentedBlocked'),
+                t('summaryWorkflow.segmentedTitle'),
                 { timeOut: 12000 },
             );
             return false;
@@ -2882,7 +2958,7 @@ export async function archiveCurrentLedger() {
 
         const bookData = await loadWorldInfo(targetLorebookName);
         if (!bookData || !bookData.entries) {
-            toastr.error(`无法读取世界书《${targetLorebookName}》。`, "国史馆");
+            toastr.error(escapeHtml(t('summaryWorkflow.worldbookReadFailed', { worldbook: targetLorebookName })), t('summaryWorkflow.records'));
             return false;
         }
 
@@ -2891,7 +2967,7 @@ export async function archiveCurrentLedger() {
         );
 
         if (!ledgerEntryKey) {
-            toastr.info("当前没有活跃的【对话流水总帐】，无需归档。", "国史馆");
+            toastr.info(t('summaryWorkflow.noArchiveNeeded'), t('summaryWorkflow.records'));
             return false;
         }
 
@@ -2904,12 +2980,12 @@ export async function archiveCurrentLedger() {
 
         await loreSaveBook(targetLorebookName, bookData);
         reloadEditor(targetLorebookName);
-        toastr.success(`已将当前流水总帐归档为：\n${newComment}`, "归档成功");
+        toastr.success(escapeHtml(t('summaryWorkflow.archived', { name: newComment })), t('summaryWorkflow.archiveSuccess'));
         return true;
 
     } catch (error) {
         console.error("[大史官] 归档失败:", error);
-        toastr.error(`归档失败: ${error.message}`, "国史馆");
+        toastr.error(escapeHtml(t('summaryWorkflow.archiveFailed', { error: error.message })), t('summaryWorkflow.records'));
         return false;
     }
 }
@@ -2942,7 +3018,7 @@ export async function restoreArchivedLedger(targetLoreKey) {
     try {
         const targetLorebookName = await getTargetLorebookName();
         if (!targetLorebookName) {
-            toastr.error("无法确定目标世界书，回溯失败。", "圣谕不明");
+            toastr.error(t('summaryWorkflow.restoreNoTarget'), t('summaryWorkflow.requestUnclear'));
             return false;
         }
         const inspected = await inspectTargetHistoriography(
@@ -2951,8 +3027,8 @@ export async function restoreArchivedLedger(targetLoreKey) {
         if (inspected?.exists
             && inspected.protocol === HISTORIOGRAPHY_PROTOCOL_SEGMENTED) {
             toastr.error(
-                '当前已有活动分段史册。请先无损回滚为旧格式，再恢复其他旧版归档；本次没有修改世界书。',
-                '不能同时激活两套史册',
+                t('summaryWorkflow.restoreSegmentedBlocked'),
+                t('summaryWorkflow.twoActiveBlocked'),
                 { timeOut: 12000 },
             );
             return false;
@@ -2960,13 +3036,13 @@ export async function restoreArchivedLedger(targetLoreKey) {
 
         const bookData = await loadWorldInfo(targetLorebookName);
         if (!bookData || !bookData.entries) {
-            toastr.error(`无法读取世界书《${targetLorebookName}》。`, "国史馆");
+            toastr.error(escapeHtml(t('summaryWorkflow.worldbookReadFailed', { worldbook: targetLorebookName })), t('summaryWorkflow.records'));
             return false;
         }
 
         const targetEntry = bookData.entries[targetLoreKey];
         if (!targetEntry) {
-            toastr.error("找不到指定的归档史册。", "圣谕有误");
+            toastr.error(t('summaryWorkflow.archiveMissing'), t('summaryWorkflow.invalidRequest'));
             return false;
         }
 
@@ -2980,7 +3056,7 @@ export async function restoreArchivedLedger(targetLoreKey) {
                 const timestamp = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
                 activeEntry.comment = `${RUNNING_LOG_COMMENT}_归档_${timestamp}`;
                 activeEntry.disable = true;
-                toastr.info(`已自动归档原有的活跃史册为: ${activeEntry.comment}`, "自动归档");
+                toastr.info(escapeHtml(t('summaryWorkflow.autoArchived', { name: activeEntry.comment })), t('summaryWorkflow.autoArchive'));
             }
         }
         targetEntry.comment = RUNNING_LOG_COMMENT;
@@ -2988,12 +3064,12 @@ export async function restoreArchivedLedger(targetLoreKey) {
 
         await loreSaveBook(targetLorebookName, bookData);
         reloadEditor(targetLorebookName);
-        toastr.success("史册回溯成功！时光已倒流，旧史重现。", "回溯成功");
+        toastr.success(t('summaryWorkflow.restored'), t('summaryWorkflow.restoreSuccess'));
         return true;
 
     } catch (error) {
         console.error("[大史官] 回溯失败:", error);
-        toastr.error(`回溯失败: ${error.message}`, "国史馆");
+        toastr.error(escapeHtml(t('summaryWorkflow.restoreFailed', { error: error.message })), t('summaryWorkflow.records'));
         return false;
     }
 }

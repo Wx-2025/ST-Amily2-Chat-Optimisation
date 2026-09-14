@@ -1,3 +1,4 @@
+import { t, cwbLabel, setCwbHtml } from './cwb_i18n.js';
 import { showToastr } from './cwb_utils.js';
 
 const { SillyTavern } = window;
@@ -61,7 +62,7 @@ function openUpdateReviewPage() {
     link.target = '_blank';
     link.rel = 'noopener noreferrer';
     link.click();
-    showToastr('info', '已打开提交记录；请核对发布内容后通过 SillyTavern 扩展管理器手动更新。');
+    showToastr('info', t('characterWorldUi.updater.opened'));
 }
 
 async function showUpdateConfirmDialog() {
@@ -69,12 +70,12 @@ async function showUpdateConfirmDialog() {
     try {
         changelogContent = await fetchRawFileFromGitHub('CHANGELOG.md');
     } catch (error) {
-        changelogContent = `发现新版本 ${latestVersion}！请先核对提交记录，再通过 SillyTavern 扩展管理器手动更新。`;
+        changelogContent = t('characterWorldUi.updater.fallback', { version: latestVersion });
     }
     if (
         await callGenericPopup(asPlainTextPopupContent(changelogContent), POPUP_TYPE.CONFIRM, {
-            okButton: '查看提交记录',
-            cancelButton: '稍后',
+            okButton: t('characterWorldUi.updater.review'),
+            cancelButton: t('characterWorldUi.updater.later'),
             wide: true,
             large: true,
         })
@@ -89,7 +90,7 @@ export async function checkForUpdates(isManual = false, $panel) {
     const $updateIndicator = $panel.find('.cwb-update-indicator');
 
     if (isManual) {
-        $updateButton.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 检查中...');
+        setCwbHtml($updateButton.prop('disabled', true), '<i class="fas fa-spinner fa-spin"></i> ' + cwbLabel('characterWorldUi.updater.checking'));
     }
     try {
         const localManifestText = await (await fetch(`/${EXTENSION_FOLDER_PATH}/manifest.json?t=${Date.now()}`)).text();
@@ -101,22 +102,19 @@ export async function checkForUpdates(isManual = false, $panel) {
 
         if (compareVersions(latestVersion, currentVersion) > 0) {
             $updateIndicator.show();
-            $updateButton
-                .empty()
-                .append($('<i>').addClass('fa-solid fa-gift'))
-                .append(document.createTextNode(` 发现新版 ${latestVersion}!`))
+            setCwbHtml($updateButton, '<i class="fa-solid fa-gift"></i> ' + cwbLabel('characterWorldUi.updater.available', { version: latestVersion }))
                 .off('click')
                 .on('click', () => showUpdateConfirmDialog());
-            if (isManual) showToastr('success', `发现新版本 ${latestVersion}！请先查看提交记录，再手动更新。`);
+            if (isManual) showToastr('success', t('characterWorldUi.updater.found', { version: latestVersion }));
         } else {
             $updateIndicator.hide();
-            if (isManual) showToastr('info', '您当前已是最新版本。');
+            if (isManual) showToastr('info', t('characterWorldUi.updater.current'));
         }
     } catch (error) {
-        if (isManual) showToastr('error', `检查更新失败: ${error.message}`);
+        if (isManual) showToastr('error', t('characterWorldUi.updater.failed', { error: error.message }), { escapeHtml: true });
     } finally {
         if (isManual && compareVersions(latestVersion, currentVersion) <= 0) {
-            $updateButton.prop('disabled', false).html('<i class="fa-solid fa-cloud-arrow-down"></i> 检查更新');
+            setCwbHtml($updateButton.prop('disabled', false), '<i class="fa-solid fa-cloud-arrow-down"></i> ' + cwbLabel('characterWorldUi.updater.check'));
         }
     }
 }

@@ -18,7 +18,7 @@
  */
 
 import { apiProfileManager } from '../utils/config/ApiProfileManager.js';
-import { escapeHTML } from '../utils/utils.js';
+import { apiTableHtml } from './api-table-i18n.js';
 
 const HINT_CLASS = 'amily2-profile-guard-hint';
 
@@ -43,7 +43,7 @@ export function applyProfileSliderGuard(slot, selectors) {
         $anchor.after(
             `<div class="${HINT_CLASS}" style="font-size: 0.85em; opacity: 0.75; margin: 4px 0;">` +
             `<i class="fa-solid fa-lock" style="margin-right: 4px;"></i>` +
-            `以上参数当前由连接配置「${escapeHTML(profile.name || profileId)}」控制，请在 API 连接配置面板修改。` +
+            apiTableHtml('apiTableUi.widget.guard', { name: profile.name || profileId }) +
             `</div>`
         );
     } else {

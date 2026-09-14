@@ -2,6 +2,7 @@ import { renderExtensionTemplateAsync, extension_settings } from '/scripts/exten
 import { POPUP_TYPE, Popup } from '/scripts/popup.js';
 import { extensionName } from '../utils/settings.js';
 import { applyExclusionRules } from '../core/utils/rag-tag-extractor.js';
+import { t, applyTranslations } from '../utils/i18n/index.js';
 
 const preOptimizationViewerPath = `third-party/${extensionName}/PreOptimizationViewer`;
 let viewerOrb = null;
@@ -20,8 +21,9 @@ function addViewerButton() {
     const button = document.createElement('div');
     button.id = 'pre-optimization-viewer-btn';
     button.classList.add('list-group-item', 'flex-container', 'flexGap5', 'interactable');
-    button.innerHTML = `<i class="fa-solid fa-file-alt"></i><span>查看优化前文</span>`;
-    button.title = '打开/关闭优化前文查看器';
+    button.innerHTML = `<i class="fa-solid fa-file-alt"></i><span data-amily-i18n="inspectorUi.viewer.launch">查看优化前文</span>`;
+    button.setAttribute('data-amily-i18n-title', 'inspectorUi.viewer.toggleTitle');
+    applyTranslations(button);
 
     const extensionsMenu = document.getElementById('extensionsMenu');
     if (extensionsMenu) {
@@ -35,9 +37,10 @@ function toggleViewerOrb() {
     if (viewerOrb && viewerOrb.length > 0) {
         viewerOrb.remove();
         viewerOrb = null;
-        toastr.info('优化前文查看器已关闭。');
+        toastr.info(t('inspectorUi.viewer.disabled'));
     } else {
-        viewerOrb = $(`<div id="viewer-orb" title="点击查看优化前文 (可拖拽)"></div>`);
+        viewerOrb = $(`<div id="viewer-orb" data-amily-i18n-title="inspectorUi.viewer.openTitle"></div>`);
+        applyTranslations(viewerOrb[0]);
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
         viewerOrb.css({
@@ -70,7 +73,7 @@ function toggleViewerOrb() {
 
         makeDraggable(viewerOrb, showViewerPopup);
 
-        toastr.info('优化前文查看器已开启。');
+        toastr.info(t('inspectorUi.viewer.enabled'));
     }
 }
 
@@ -78,7 +81,8 @@ async function renderDiffContent($contentContainer) {
     const snapshot = window.Amily2PreOptimizationSnapshot;
 
     if (!snapshot || !snapshot.original) {
-        $contentContainer.html('<p style="color: grey;">尚未捕获到优化前文。</p>');
+        $contentContainer.html('<p style="color: grey;" data-amily-i18n="inspectorUi.viewer.empty">尚未捕获到优化前文。</p>');
+        applyTranslations($contentContainer[0]);
         return;
     }
 
@@ -99,12 +103,13 @@ async function renderDiffContent($contentContainer) {
     if (snapshot.optimized === null) {
         const fallbackHtml = `
             <div class="diff-fallback">
-                <h4>正在等待优化结果...</h4>
-                <p>这通常需要几秒钟的时间。以下是优化前的原始文本（已应用排除和规范化规则）：</p>
+                <h4 data-amily-i18n="inspectorUi.viewer.waiting">正在等待优化结果...</h4>
+                <p data-amily-i18n="inspectorUi.viewer.waitingDetail">这通常需要几秒钟的时间。以下是优化前的原始文本（已应用排除和规范化规则）：</p>
                 <hr>
                 <pre style="white-space: pre-wrap; word-wrap: break-word;">${escapeHtmlText(originalText)}</pre>
             </div>`;
         $contentContainer.html(fallbackHtml);
+        applyTranslations($contentContainer[0]);
         return;
     }
 
@@ -140,25 +145,26 @@ async function renderDiffContent($contentContainer) {
         $contentContainer.html(diffHtml);
 
     } catch (error) {
-        toastr.warning('差异对比组件不可用，将分别显示原文。');
+        toastr.warning(t('inspectorUi.viewer.diffUnavailable'));
         const fallbackHtml = `<div class="diff-fallback">
-                                <h4>未能加载差异对比视图</h4>
-                                <p>当前 SillyTavern 环境未提供差异对比组件。以下是优化前后的文本：</p>
+                                <h4 data-amily-i18n="inspectorUi.viewer.diffFailed">未能加载差异对比视图</h4>
+                                <p data-amily-i18n="inspectorUi.viewer.diffFailedDetail">当前 SillyTavern 环境未提供差异对比组件。以下是优化前后的文本：</p>
                                 <hr>
-                                <h5>优化前（已应用排除和规范化规则）</h5>
+                                <h5 data-amily-i18n="inspectorUi.viewer.before">优化前（已应用排除和规范化规则）</h5>
                                 <pre style="white-space: pre-wrap; word-wrap: break-word;">${escapeHtmlText(originalText)}</pre>
                                 <hr>
-                                <h5>优化后</h5>
+                                <h5 data-amily-i18n="inspectorUi.viewer.after">优化后</h5>
                                 <pre style="white-space: pre-wrap; word-wrap: break-word;">${escapeHtmlText(normalizeWhitespace(snapshot.optimized.replace(/<!--[\s\S]*?-->/g, '')))}</pre>
                               </div>`;
         $contentContainer.html(fallbackHtml);
+        applyTranslations($contentContainer[0]);
     }
 }
 
 async function showViewerPopup() {
     const snapshot = window.Amily2PreOptimizationSnapshot;
     if (!snapshot || !snapshot.original) {
-        toastr.info('目前没有可供查看的优化前文。');
+        toastr.info(t('inspectorUi.viewer.noSnapshot'));
         return;
     }
 
@@ -168,11 +174,20 @@ async function showViewerPopup() {
 
     await renderDiffContent(contentDiv);
 
-    new Popup(template, POPUP_TYPE.OK, '优化前后对比', {
+    const popup = new Popup(template, POPUP_TYPE.OK, t('inspectorUi.viewer.title'), {
         wide: true,
         large: true,
         allowVerticalScrolling: true 
-    }).show();
+    });
+    for (const [button, key] of [
+        [popup.okButton, 'inspectorUi.viewer.close'],
+        [popup.cancelButton, 'inspectorUi.viewer.cancel'],
+    ]) {
+        button?.removeAttribute('data-i18n');
+        button?.setAttribute('data-amily-i18n', key);
+    }
+    applyTranslations(popup.dlg);
+    popup.show();
 }
 
 
@@ -331,13 +346,13 @@ function makeDraggable($element, onClick) {
 
 function handleTextUpdate() {
     const $popup = $('.popup:visible').filter(function() {
-        return $(this).find('.popup-header h4').text().trim() === '优化前后对比';
+        return $(this).find('#pre-optimization-content').length > 0;
     });
 
     if ($popup.length > 0) {
         const $contentDiv = $popup.find('#pre-optimization-content');
         renderDiffContent($contentDiv);
-        toastr.success('优化对比已实时更新。', '【查看器】', { timeOut: 2000 });
+        toastr.success(t('inspectorUi.viewer.updated'), t('inspectorUi.viewer.toastTitle'), { timeOut: 2000 });
     }
 }
 

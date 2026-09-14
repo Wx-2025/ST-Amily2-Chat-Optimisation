@@ -210,7 +210,7 @@ async function callNgmsOpenAITest(messages, options) {
             group_names: [],
             include_reasoning: false,
             presence_penalty: 0.12,
-            reasoning_effort: 'medium',
+            reasoning_effort: options.customParams?.reasoning_effort ?? 'medium',
             request_images: false,
         });
     }

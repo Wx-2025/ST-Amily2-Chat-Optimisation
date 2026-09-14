@@ -8,6 +8,12 @@ import {
     refreshUserInfo,
     resetPluginAuthorizationState,
 } from "../utils/auth.js";
+import {
+    enrollDeviceCredential,
+    getDeviceCredentialStatus,
+    revokeAndForgetDeviceCredential,
+} from "../utils/device-credential.js";
+import { bindDeviceCredentialManagement, confirmDeviceCredentialAction } from './device-credential-management.js';
 import { fetchModels, testApiConnection } from "../core/api.js";
 import { safeLorebooks, safeCharLorebooks, safeLorebookEntries } from "../core/tavernhelper-compatibility.js";
 import { configManager } from '../utils/config/ConfigManager.js';
@@ -28,6 +34,10 @@ import { refreshTimeRiverPanel } from '../core/time-river/bindings.js';
 import { getTimeRiverAccess } from '../core/time-river/auth.js';
 import { hasCombatType3Access } from '../core/combat/access-policy.js';
 import { refreshCombatPanel } from './combat-bindings.js';
+import { getSecurityAuditAccess } from '../core/security-audit/access-policy.js';
+import { escapeHTML } from '../utils/utils.js';
+import { applyTranslations, getLocale, setLocale, subscribeLocaleChange, t } from '../utils/i18n/index.js';
+import { applyLocalePreference } from '../utils/i18n/onboarding.js';
 
 function displayDailyAuthCode() {
     const displayEl = document.getElementById('amily2_daily_code_display');
@@ -41,12 +51,58 @@ function displayDailyAuthCode() {
 
         copyBtn.onclick = () => {
             navigator.clipboard.writeText(todayCode).then(() => {
-                toastr.success('授权码已复制到剪贴板！');
+                toastr.success(t('auth.copySuccess'));
             }, () => {
-                toastr.error('复制失败，请手动复制。');
+                toastr.error(t('auth.copyFailure'));
             });
         };
     }
+}
+
+let unsubscribeLocaleControls = () => {};
+let unsubscribeDeviceLocale = () => {};
+
+function deviceCredentialStatusText(status) {
+    if (status.state === 'active') {
+        const device = status.deviceLabel || t('shell.device.current');
+        return status.permanent ? t('shell.device.permanent', { device })
+            : t('shell.device.active', { device, expiry: new Date(status.expiresAt).toLocaleString() });
+    }
+    if (status.state === 'expired') return t('shell.device.expired');
+    if (status.state === 'unavailable') return t('shell.device.unavailable');
+    return t('shell.device.none');
+}
+
+function bindLocaleControls(container) {
+    if (!container?.length) return;
+    const settings = extension_settings[extensionName];
+    if (!settings || typeof settings !== 'object' || Array.isArray(settings)) return;
+    setLocale(settings.uiLocale ?? defaultSettings.uiLocale, {
+        notify: false,
+    });
+    const syncControls = () => $('.amily2-ui-locale-select').val(getLocale());
+    unsubscribeLocaleControls();
+    unsubscribeLocaleControls = subscribeLocaleChange(() => {
+        syncControls();
+        populateModelDropdown();
+    });
+    syncControls();
+
+    container
+        .off('change.amily2.locale', '.amily2-ui-locale-select')
+        .on('change.amily2.locale', '.amily2-ui-locale-select', function () {
+            try {
+                const nextLocale = applyLocalePreference(extension_settings[extensionName], this.value, {
+                    save: saveSettingsDebounced,
+                });
+                syncControls();
+                if (nextLocale) toastr.success(t('settings.language.changed'), t('app.toastTitle'));
+            } catch (error) {
+                syncControls();
+                toastr.error(t('settings.language.saveFailed'), t('app.toastTitle'));
+                console.error('[Amily2 i18n] Unable to save locale preference:', error);
+            }
+        });
 }
 
 
@@ -57,14 +113,14 @@ async function loadSillyTavernPresets() {
     const settings = extension_settings[extensionName] || {};
     const currentProfileId = settings.tavernProfile || settings.selectedPreset;
 
-    select.empty().append(new Option('-- 请选择一个酒馆预设 --', ''));
+    select.empty().append(new Option(t('shell.presets.choose'), ''));
 
     try {
         const context = getContext();
         const tavernProfiles = context.extensionSettings?.connectionManager?.profiles || [];
         
         if (!tavernProfiles || tavernProfiles.length === 0) {
-            select.append($('<option>', { value: '', text: '未找到酒馆预设', disabled: true }));
+            select.append($('<option>', { value: '', text: t('shell.presets.empty'), disabled: true }));
             console.warn('[Amily2号-UI] 未找到SillyTavern预设');
             return;
         }
@@ -82,7 +138,7 @@ async function loadSillyTavernPresets() {
         });
 
         if (currentProfileId && !foundCurrentProfile) {
-            toastr.warning(`之前选择的酒馆预设 "${currentProfileId}" 已不存在，请重新选择。`, "Amily2号");
+            toastr.warning(t('shell.presets.missing', { profile: currentProfileId }), t('app.toastTitle'));
             const updateAndSaveSetting = (key, value) => {
                 if (!extension_settings[extensionName]) {
                     extension_settings[extensionName] = {};
@@ -101,8 +157,8 @@ async function loadSillyTavernPresets() {
         
     } catch (error) {
         console.error(`[Amily2号-UI] 加载酒馆API预设失败:`, error);
-        select.append($('<option>', { value: '', text: '加载预设失败', disabled: true }));
-        toastr.error('无法加载酒馆API预设列表，请查看控制台。', 'Amily2号');
+        select.append($('<option>', { value: '', text: t('shell.presets.failed'), disabled: true }));
+        toastr.error(t('shell.presets.failureDetail'), t('app.toastTitle'));
     }
 }
 
@@ -145,7 +201,7 @@ function bindAmily2ModalWorldBookSettings() {
 
     const renderWorldBookEntries = async () => {
 
-        entryListContainer.innerHTML = '<p class="notes">Loading entries...</p>';
+        entryListContainer.innerHTML = `<p class="notes" data-amily-i18n="shell.world.entriesLoading">${escapeHTML(t('shell.world.entriesLoading'))}</p>`;
         const source = settings.modal_wbSource || 'character';
         let bookNames = [];
 
@@ -159,17 +215,17 @@ function bindAmily2ModalWorldBookSettings() {
                     if (charLorebooks.additional?.length) bookNames.push(...charLorebooks.additional);
                 } catch (error) {
                     console.error(`[Amily2 Modal] Failed to get character world books:`, error);
-                    entryListContainer.innerHTML = '<p class="notes" style="color:red;">Failed to get character world books.</p>';
+                    entryListContainer.innerHTML = `<p class="notes" style="color:red;" data-amily-i18n="shell.world.characterFailed">${escapeHTML(t('shell.world.characterFailed'))}</p>`;
                     return;
                 }
             } else {
-                entryListContainer.innerHTML = '<p class="notes">Please load a character first.</p>';
+                entryListContainer.innerHTML = `<p class="notes" data-amily-i18n="shell.world.characterRequired">${escapeHTML(t('shell.world.characterRequired'))}</p>`;
                 return;
             }
         }
 
         if (bookNames.length === 0) {
-            entryListContainer.innerHTML = '<p class="notes">No world book selected or linked.</p>';
+            entryListContainer.innerHTML = `<p class="notes" data-amily-i18n="shell.world.unselected">${escapeHTML(t('shell.world.unselected'))}</p>`;
             return;
         }
 
@@ -182,14 +238,14 @@ function bindAmily2ModalWorldBookSettings() {
 
             entryListContainer.innerHTML = '';
             if (allEntries.length === 0) {
-                entryListContainer.innerHTML = '<p class="notes">No entries in the selected world book(s).</p>';
+                entryListContainer.innerHTML = `<p class="notes" data-amily-i18n="shell.world.entriesEmpty">${escapeHTML(t('shell.world.entriesEmpty'))}</p>`;
                 return;
             }
 
             allEntries.forEach(entry => {
                 const div = document.createElement('div');
                 div.className = 'checkbox-item';
-                div.title = `World Book: ${entry.bookName}\nUID: ${entry.uid}`;
+                div.title = t('shell.world.entryTitle', { book: entry.bookName, uid: entry.uid });
                 div.style.display = 'flex';
                 div.style.alignItems = 'center';
 
@@ -205,7 +261,8 @@ function bindAmily2ModalWorldBookSettings() {
 
                 const label = document.createElement('label');
                 label.htmlFor = checkbox.id;
-                label.textContent = entry.comment || 'Untitled Entry';
+                label.textContent = entry.comment || t('shell.world.untitled');
+                if (!entry.comment) label.setAttribute('data-amily-i18n', 'shell.world.untitled');
 
                 div.appendChild(checkbox);
                 div.appendChild(label);
@@ -213,12 +270,12 @@ function bindAmily2ModalWorldBookSettings() {
             });
         } catch (error) {
             console.error(`[Amily2 Modal] Failed to load world book entries:`, error);
-            entryListContainer.innerHTML = '<p class="notes" style="color:red;">Failed to load entries.</p>';
+            entryListContainer.innerHTML = `<p class="notes" style="color:red;" data-amily-i18n="shell.world.entriesFailed">${escapeHTML(t('shell.world.entriesFailed'))}</p>`;
         }
     };
 
     const renderWorldBookList = async () => {
-        bookListContainer.innerHTML = '<p class="notes">Loading world books...</p>';
+        bookListContainer.innerHTML = `<p class="notes" data-amily-i18n="shell.world.booksLoading">${escapeHTML(t('shell.world.booksLoading'))}</p>`;
         try {
             const worldBooks = await safeLorebooks();
             bookListContainer.innerHTML = '';
@@ -246,11 +303,11 @@ function bindAmily2ModalWorldBookSettings() {
                     bookListContainer.appendChild(div);
                 });
             } else {
-                bookListContainer.innerHTML = '<p class="notes">No world books found.</p>';
+                bookListContainer.innerHTML = `<p class="notes" data-amily-i18n="shell.world.booksEmpty">${escapeHTML(t('shell.world.booksEmpty'))}</p>`;
             }
         } catch (error) {
             console.error(`[Amily2 Modal] Failed to load world book list:`, error);
-            bookListContainer.innerHTML = '<p class="notes" style="color:red;">Failed to load world book list.</p>';
+            bookListContainer.innerHTML = `<p class="notes" style="color:red;" data-amily-i18n="shell.world.booksFailed">${escapeHTML(t('shell.world.booksFailed'))}</p>`;
         }
         renderWorldBookEntries();
     };
@@ -444,19 +501,75 @@ export function bindModalEvents() {
         const testButton = document.createElement('button');
         testButton.id = 'amily2_test_api_connection';
         testButton.className = 'menu_button interactable';
-        testButton.innerHTML = '<i class="fas fa-plug"></i> 测试连接';
+        testButton.innerHTML = '<i class="fas fa-plug"></i> <span data-amily-i18n="actions.testConnection">测试连接</span>';
         refreshButton.insertAdjacentElement('afterend', testButton);
     }
 
     bindAmily2ModalWorldBookSettings();
 
     const container = $("#amily2_drawer_content").length ? $("#amily2_drawer_content") : $("#amily2_chat_optimiser");
+    let deviceCredentialStatusRevision = 0;
+    let deviceCredentialDisplay = null;
+    unsubscribeDeviceLocale();
+    unsubscribeDeviceLocale = subscribeLocaleChange(() => {
+        const cached = deviceCredentialDisplay;
+        if (!cached || !container[0]?.isConnected || cached.authRevision !== pluginAuthStatus.revision
+            || cached.authorizationCode !== sessionStorage.getItem('plugin_auth_code')) return;
+        const target = container.find('#amily2_device_credential_status');
+        if (target.text() !== cached.text) return;
+        cached.text = deviceCredentialStatusText(cached.status);
+        target.text(cached.text);
+    });
+    const renderDeviceCredentialStatus = async ({ isCurrent = () => true } = {}) => {
+        const revision = ++deviceCredentialStatusRevision;
+        const authRevision = pluginAuthStatus.revision;
+        const authorizationCode = sessionStorage.getItem('plugin_auth_code');
+        const status = await getDeviceCredentialStatus();
+        if (!container[0]?.isConnected || revision !== deviceCredentialStatusRevision
+            || authRevision !== pluginAuthStatus.revision
+            || authorizationCode !== sessionStorage.getItem('plugin_auth_code') || !isCurrent()) return status;
+        const statusElement = container.find('#amily2_device_credential_status');
+        const forgetButton = container.find('#amily2_device_credential_forget');
+        const text = deviceCredentialStatusText(status);
+        deviceCredentialDisplay = { status, text, authRevision, authorizationCode };
+        statusElement.text(text);
+        if (status.state === 'active') {
+            deviceCredentialPermanentInput.prop('checked', status.permanent === true);
+            syncDeviceCredentialDuration();
+            forgetButton.prop('disabled', false);
+        } else if (status.state === 'expired') {
+            forgetButton.prop('disabled', false);
+        } else if (status.state === 'unavailable') {
+            forgetButton.prop('disabled', true);
+        } else {
+            forgetButton.prop('disabled', true);
+        }
+        return status;
+    };
+    const deviceLabelInput = container.find('#amily2_device_credential_label');
+    if (deviceLabelInput.length && !deviceLabelInput.val()) {
+        deviceLabelInput.val(navigator.userAgentData?.platform || navigator.platform || t('shell.device.browser'));
+    }
+    const deviceCredentialDaysInput = container.find('#amily2_device_credential_days');
+    const deviceCredentialPermanentInput = container.find('#amily2_device_credential_permanent');
+    const syncDeviceCredentialDuration = () => {
+        const permanent = deviceCredentialPermanentInput.prop('checked') === true;
+        deviceCredentialDaysInput
+            .prop('disabled', permanent)
+            .attr('aria-disabled', permanent ? 'true' : 'false');
+    };
+    syncDeviceCredentialDuration();
+    void renderDeviceCredentialStatus();
+    bindDeviceCredentialManagement(container[0], {
+        confirmRef: message => confirmDeviceCredentialAction(message, container[0].ownerDocument),
+        onLocalChange: renderDeviceCredentialStatus,
+    });
     const apiConfigButton = container.find('#amily2_open_api_config');
     if (apiConfigButton.length && !container.find('#amily2_open_rule_config').length) {
         // 经典首页：系统配置区与 API 同排插入「规则配置」
         const ruleConfigBtn =
             '<button id="amily2_open_rule_config" class="menu_button wide_button" type="button">' +
-            '<i class="fas fa-list-check"></i> 规则配置' +
+            '<i class="fas fa-list-check"></i> <span data-amily-i18n="nav.ruleConfig">规则配置</span>' +
             '</button>';
         const group = apiConfigButton.closest('.button-group');
         if (group.length) {
@@ -465,6 +578,8 @@ export function bindModalEvents() {
             apiConfigButton.after(ruleConfigBtn);
         }
     }
+
+    bindLocaleControls(container);
 
     // Collapsible sections logic
     container.find('.collapsible-legend').each(function() {
@@ -487,7 +602,8 @@ export function bindModalEvents() {
                 icon.removeClass('fa-chevron-down').addClass('fa-chevron-up');
             }
             
-            const sectionId = legend.text().trim();
+            const sectionId = legend.closest('.collapsible').attr('data-amily-collapse-key')
+                || legend.text().trim();
             if (!extension_settings[extensionName]) {
                 extension_settings[extensionName] = {};
             }
@@ -522,6 +638,12 @@ export function bindModalEvents() {
 
     if (!container.length || container.data("events-bound")) return;
 
+    container
+        .off("change.amily2.device_credential_permanent")
+        .on("change.amily2.device_credential_permanent", "#amily2_device_credential_permanent", () => {
+            syncDeviceCredentialDuration();
+        });
+
     const snakeToCamel = (s) => s.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
     const updateAndSaveSetting = (key, value) => {
         console.log(`[Amily-谕令确认] 收到指令: 将 [${key}] 设置为 ->`, value);
@@ -547,7 +669,7 @@ export function bindModalEvents() {
         .on("change.amily2.manual_model", '#amily2_manual_model_input', function() {
             if (!pluginAuthStatus.authorized) return;
             updateAndSaveSetting('model', this.value);
-            toastr.success(`模型ID [${this.value}] 已自动保存!`, "Amily2号");
+            toastr.success(t('shell.model.saved', { model: this.value }), t('app.toastTitle'));
         });
 
 
@@ -558,7 +680,84 @@ export function bindModalEvents() {
             if (authCode) {
                 await activatePluginAuthorization(authCode);
             } else {
-                toastr.warning("请输入授权码", "Amily2号");
+                toastr.warning(t('auth.codeRequired'), t('app.toastTitle'));
+            }
+        });
+
+    container
+        .off("click.amily2.device_credential_enroll")
+        .on("click.amily2.device_credential_enroll", "#amily2_device_credential_enroll", async function () {
+            const button = $(this);
+            if (button.prop('disabled')) return;
+            button.prop('disabled', true);
+            try {
+                const suppliedCode = container.find('#amily2_device_credential_code').val().trim();
+                if (suppliedCode) {
+                    const activated = await activatePluginAuthorization(suppliedCode);
+                    if (!activated) return;
+                }
+                const authorizationCode = sessionStorage.getItem('plugin_auth_code');
+                if (!authorizationCode || localStorage.getItem('plugin_auth_source') !== 'server') {
+                    toastr.warning(t('shell.device.authRequired'), t('shell.device.title'));
+                    return;
+                }
+                const permanent = container.find('#amily2_device_credential_permanent').prop('checked') === true;
+                const ttlDays = Number(container.find('#amily2_device_credential_days').val());
+                const deviceLabel = container.find('#amily2_device_credential_label').val().trim();
+                if (!permanent && (!Number.isInteger(ttlDays) || ttlDays < 1 || ttlDays > 90)) {
+                    toastr.warning(t('shell.device.invalidDays'), t('shell.device.title'));
+                    return;
+                }
+                const result = await enrollDeviceCredential({
+                    authorizationCode,
+                    ttlDays,
+                    permanent,
+                    deviceLabel,
+                });
+                container.find('#amily2_device_credential_code').val('');
+                await renderDeviceCredentialStatus();
+                toastr.success(
+                    result.permanent
+                        ? t('shell.device.savedPermanent')
+                        : t('shell.device.savedUntil', { expiry: new Date(result.expiresAt).toLocaleString() }),
+                    t('shell.device.title'),
+                );
+            } catch {
+                toastr.error(t('shell.device.saveFailed'), t('shell.device.title'));
+            } finally {
+                button.prop('disabled', false);
+            }
+        });
+
+    container
+        .off("click.amily2.device_credential_forget")
+        .on("click.amily2.device_credential_forget", "#amily2_device_credential_forget", async function () {
+            const button = $(this);
+            if (button.prop('disabled')) return;
+            button.prop('disabled', true);
+            try {
+                const authRevision = pluginAuthStatus.revision;
+                const authorizationCode = sessionStorage.getItem('plugin_auth_code');
+                const authSource = localStorage.getItem('plugin_auth_source');
+                const isCurrent = () => this.isConnected && container[0]?.contains(this)
+                    && authRevision === pluginAuthStatus.revision
+                    && authorizationCode === sessionStorage.getItem('plugin_auth_code')
+                    && authSource === localStorage.getItem('plugin_auth_source');
+                if (!await confirmDeviceCredentialAction(t('shell.device.forgetConfirm'), this.ownerDocument, t('shell.device.forget'))
+                    || !isCurrent()) return;
+                const result = await revokeAndForgetDeviceCredential({ isCurrent });
+                if (!isCurrent()) return;
+                if (result.remoteRevoked) {
+                    toastr.success(t('shell.device.revoked'), t('shell.device.title'));
+                } else {
+                    toastr.warning(t('shell.device.localOnly'), t('shell.device.title'));
+                }
+            } catch (error) {
+                if (error?.code !== 'STALE_DEVICE_CREDENTIAL_REQUEST') {
+                    toastr.error(t('shell.device.forgetFailed'), t('shell.device.title'));
+                }
+            } finally {
+                await renderDeviceCredentialStatus();
             }
         });
 
@@ -573,7 +772,7 @@ export function bindModalEvents() {
                 const originalHtml = button.html();
                 button
                     .prop("disabled", true)
-                    .html('<i class="fas fa-spinner fa-spin"></i> 处理中');
+                    .html(`<i class="fas fa-spinner fa-spin"></i> ${escapeHTML(t('shell.processing'))}`);
                 try {
                     switch (this.id) {
                         case "amily2_refresh_models":
@@ -599,7 +798,7 @@ export function bindModalEvents() {
                     }
                 } catch (error) {
                     console.error(`[Amily2-工部] 操作按钮 ${this.id} 执行失败:`, error);
-                    toastr.error(`操作失败: ${error.message}`, "Amily2号");
+                    toastr.error(t('shell.operationFailed', { error: error.message }), t('app.toastTitle'));
                 } finally {
                     button.prop("disabled", false).html(originalHtml);
                 }
@@ -611,7 +810,7 @@ export function bindModalEvents() {
         .on("click.amily2.jump", "#amily2_jump_to_message_btn", function() {
             const targetId = parseInt($("#amily2_jump_to_message_id").val());
             if (isNaN(targetId)) {
-                toastr.warning("请输入有效的楼层号");
+                toastr.warning(t('shell.history.invalidFloor'));
                 return;
             }
             
@@ -638,48 +837,48 @@ export function bindModalEvents() {
                         }
                     }
                     if (unhiddenCount > 0) {
-                        toastr.info(`已临时展开 ${unhiddenCount} 条被隐藏的消息以显示上下文。`);
+                        toastr.info(t('shell.history.revealed', { count: unhiddenCount }));
                     }
                 }
 
                 targetElement.scrollIntoView({ behavior: "smooth", block: "center" });
                 targetElement.classList.add('highlight_message'); 
                 setTimeout(() => targetElement.classList.remove('highlight_message'), 2000);
-                toastr.success(`已跳转到楼层 ${targetId}`);
+                toastr.success(t('shell.history.jumped', { floor: targetId }));
             } else {
                 // 2. DOM 中未找到，尝试从内存中获取并弹窗显示
                 const context = getContext();
                 if (context && context.chat && context.chat[targetId]) {
                     const msg = context.chat[targetId];
-                    const sender = msg.name;
+                    const sender = String(msg.name ?? '');
                     let formattedContent = msg.mes;
                     
                     // 尝试使用 SillyTavern 的格式化函数
                     if (typeof messageFormatting === 'function') {
                         formattedContent = messageFormatting(msg.mes, sender, false, false);
                     } else {
-                        formattedContent = msg.mes.replace(/\n/g, '<br>');
+                        formattedContent = escapeHTML(String(msg.mes ?? '')).replace(/\n/g, '<br>');
                     }
                     
                     const html = `
                         <div style="padding: 10px;">
                             <div style="margin-bottom: 10px; font-size: 1.1em; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 5px;">
-                                <strong style="color: var(--smart-theme-color, #ffcc00);">${sender}</strong> 
-                                <span style="opacity: 0.6; font-size: 0.8em;">(楼层 #${targetId})</span>
+                                <strong style="color: var(--smart-theme-color, #ffcc00);">${escapeHTML(sender)}</strong>
+                                <span style="opacity: 0.6; font-size: 0.8em;">(${escapeHTML(t('shell.history.floor', { floor: targetId }))})</span>
                             </div>
                             <div class="mes_text" style="max-height: 60vh; overflow-y: auto;">
                                 ${formattedContent}
                             </div>
                             <div style="margin-top: 15px; font-size: 0.9em; opacity: 0.7; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 5px;">
-                                <i class="fas fa-info-circle"></i> 该楼层未在当前页面渲染（可能已被清理以节省内存），无法直接跳转，已为您在弹窗中显示。
+                                <i class="fas fa-info-circle"></i> ${escapeHTML(t('shell.history.notRendered'))}
                             </div>
                         </div>
                     `;
                     
-                    showHtmlModal(`查看历史记录`, html);
-                    toastr.info(`楼层 ${targetId} 未渲染，已在弹窗中显示内容。`);
+                    showHtmlModal(t('shell.history.title'), html);
+                    toastr.info(t('shell.history.shown', { floor: targetId }));
                 } else {
-                    toastr.error(`未找到楼层 ${targetId}，聊天记录中不存在该索引。`);
+                    toastr.error(t('shell.history.missing', { floor: targetId }));
                 }
             }
         });
@@ -694,9 +893,9 @@ export function bindModalEvents() {
             const dialogHtml = `
                 <dialog class="popup wide_dialogue_popup large_dialogue_popup">
                   <div class="popup-body">
-                    <h4 style="margin-top:0; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">正在编辑: ${selectedKey}</h4>
+                    <h4 style="margin-top:0; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">${escapeHTML(t('shell.prompt.editing', { key: selectedKey }))}</h4>
                     <div class="popup-content" style="height: 70vh;"><div class="height100p wide100p flex-container"><textarea id="amily2_dialog_editor" class="height100p wide100p maximized_textarea text_pole"></textarea></div></div>
-                    <div class="popup-controls"><div class="popup-button-ok menu_button menu_button_primary interactable">保存并关闭</div><div class="popup-button-cancel menu_button interactable" style="margin-left: 10px;">取消</div></div>
+                    <div class="popup-controls"><div class="popup-button-ok menu_button menu_button_primary interactable">${escapeHTML(t('actions.saveAndClose'))}</div><div class="popup-button-cancel menu_button interactable" style="margin-left: 10px;">${escapeHTML(t('actions.cancel'))}</div></div>
                   </div>
                 </dialog>`;
             const dialogElement = $(dialogHtml).appendTo('body');
@@ -707,7 +906,7 @@ export function bindModalEvents() {
                 const newContent = dialogTextarea.val();
                 $("#amily2_unified_editor").val(newContent);
                 updateAndSaveSetting(selectedKey, newContent);
-                toastr.success(`谕令 [${selectedKey}] 已镌刻！`, "Amily2号");
+                toastr.success(t('shell.prompt.saved', { key: selectedKey }), t('app.toastTitle'));
                 closeDialog();
             });
             dialogElement.find('.popup-button-cancel').on('click', closeDialog);
@@ -721,55 +920,55 @@ export function bindModalEvents() {
 
             const tutorials = {
                 "amily2_open_tutorial": {
-                    title: "主殿使用教程",
+                    title: t('shell.tutorial.beginnerTitle', { module: t('shell.tutorial.home') }),
                     url: `${extensionBasePath}/ZhuDian.md`,
-                    advancedTitle: "主殿 · 进阶操作",
+                    advancedTitle: t('shell.tutorial.advancedTitle', { module: t('shell.tutorial.home') }),
                     advancedUrl: `${extensionBasePath}/ZhuDian-Advanced.md`,
                 },
                 "amily2_open_neige_tutorial": {
-                    title: "总结模块 · 小白教程",
+                    title: t('shell.tutorial.beginnerTitle', { module: t('nav.summary') }),
                     url: `${extensionBasePath}/NeiGe.md`,
-                    advancedTitle: "总结模块 · 进阶操作",
+                    advancedTitle: t('shell.tutorial.advancedTitle', { module: t('nav.summary') }),
                     advancedUrl: `${extensionBasePath}/NeiGe-Advanced.md`,
                 },
                 "amily2_open_table_tutorial": {
-                    title: "表格模块 · 小白教程",
+                    title: t('shell.tutorial.beginnerTitle', { module: t('nav.tables') }),
                     url: `${extensionBasePath}/TableModule.md`,
-                    advancedTitle: "表格模块 · 进阶操作",
+                    advancedTitle: t('shell.tutorial.advancedTitle', { module: t('nav.tables') }),
                     advancedUrl: `${extensionBasePath}/TableModule-Advanced.md`,
                 },
                 "amily2_open_plot_opt_tutorial": {
-                    title: "记忆管理 · 小白教程",
+                    title: t('shell.tutorial.beginnerTitle', { module: t('nav.memoryManager') }),
                     url: `${extensionBasePath}/PlotOpt.md`,
-                    advancedTitle: "记忆管理 · 进阶操作",
+                    advancedTitle: t('shell.tutorial.advancedTitle', { module: t('nav.memoryManager') }),
                     advancedUrl: `${extensionBasePath}/PlotOpt-Advanced.md`,
                 },
                 "amily2_open_super_memory_tutorial": {
-                    title: "长期记忆 · 小白教程",
+                    title: t('shell.tutorial.beginnerTitle', { module: t('nav.superMemory') }),
                     url: `${extensionBasePath}/SuperMemory.md`,
-                    advancedTitle: "长期记忆 · 进阶操作",
+                    advancedTitle: t('shell.tutorial.advancedTitle', { module: t('nav.superMemory') }),
                     advancedUrl: `${extensionBasePath}/SuperMemory-Advanced.md`,
                 },
                 "amily2_open_rule_config_tutorial": {
-                    title: "规则配置 · 小白教程",
+                    title: t('shell.tutorial.beginnerTitle', { module: t('nav.ruleConfig') }),
                     url: `${extensionBasePath}/RuleConfig.md`,
-                    advancedTitle: "规则配置 · 进阶操作",
+                    advancedTitle: t('shell.tutorial.advancedTitle', { module: t('nav.ruleConfig') }),
                     advancedUrl: `${extensionBasePath}/RuleConfig-Advanced.md`,
                 },
                 "amily2_open_time_river_tutorial": {
-                    title: "时间河 · 使用教程",
+                    title: t('shell.tutorial.beginnerTitle', { module: t('nav.timeRiver') }),
                     url: `${extensionBasePath}/TimeRiver.md`,
                 },
                 "amily2_open_shujuku_tutorial": {
-                    title: "数据库兼容 · 小白教程",
+                    title: t('shell.tutorial.beginnerTitle', { module: t('shell.tutorial.shujuku') }),
                     url: `${extensionBasePath}/TDBCompatibility.md`,
-                    advancedTitle: "数据库与 Agent 兼容 · 进阶操作",
+                    advancedTitle: t('shell.tutorial.advancedTitle', { module: t('shell.tutorial.shujuku') }),
                     advancedUrl: `${extensionBasePath}/TDBCompatibility-Advanced.md`,
                 },
                 "amily2_open_shujuku_agent_tutorial": {
-                    title: "数据库兼容 · 小白教程",
+                    title: t('shell.tutorial.beginnerTitle', { module: t('shell.tutorial.shujuku') }),
                     url: `${extensionBasePath}/TDBCompatibility.md`,
-                    advancedTitle: "数据库与 Agent 兼容 · 进阶操作",
+                    advancedTitle: t('shell.tutorial.advancedTitle', { module: t('shell.tutorial.shujuku') }),
                     advancedUrl: `${extensionBasePath}/TDBCompatibility-Advanced.md`,
                 }
             };
@@ -797,7 +996,7 @@ export function bindModalEvents() {
                 await refreshUserInfo({ interactive: true });
             } catch (error) {
                 console.warn('[Amily2] 手动刷新权限信息失败:', error);
-                toastr.error('权限刷新失败，请稍后重试。', '权限刷新失败');
+                toastr.error(t('shell.auth.refreshFailed'), t('shell.auth.refreshFailedTitle'));
             } finally {
                 icon.removeClass('fa-spin');
                 button.prop('disabled', false);
@@ -809,14 +1008,14 @@ export function bindModalEvents() {
         .on("click.amily2.reset_auth", "#amily2_reset_auth", function() {
             if (!pluginAuthStatus.authorized) return;
             
-            if (confirm("确定要清除本机授权信息吗？\n这将使当前授权失效，需要重新输入授权码。\n\n权限升级请优先使用“刷新权限信息”。\n仅在授权码失效、切换授权或本地状态异常时使用此操作。")) {
+            if (confirm(t('shell.auth.resetConfirm'))) {
                 const resetResult = resetPluginAuthorizationState('manual-reset');
                 if (!resetResult.ok) {
-                    toastr.error("部分历史授权记录无法清除，请在浏览器站点设置中手动清除本站数据后重试。", "授权清理失败");
+                    toastr.error(t('shell.auth.resetFailed'), t('shell.auth.resetFailedTitle'));
                     return;
                 }
 
-                toastr.success("授权已清除，即将重新加载以生效...", "Amily2号");
+                toastr.success(t('shell.auth.resetDone'), t('app.toastTitle'));
                 
                 setTimeout(() => {
                     location.reload();
@@ -836,18 +1035,18 @@ export function bindModalEvents() {
                 const dialogHtml = `
                 <dialog class="popup wide_dialogue_popup">
                   <div class="popup-body">
-                    <h3 style="margin-top:0; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;"><i class="fas fa-bell" style="color: #ff9800;"></i> 帝国最新情报</h3>
+                    <h3 style="margin-top:0; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;"><i class="fas fa-bell" style="color: #ff9800;"></i> ${escapeHTML(t('shell.news.title'))}</h3>
                     <div class="popup-content" style="height: 60vh; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 15px; border-radius: 5px;">
                         <div class="mes_text">${formattedChangelog}</div>
                     </div>
-                    <div class="popup-controls"><div class="popup-button-ok menu_button menu_button_primary interactable">朕已阅</div></div>
+                    <div class="popup-controls"><div class="popup-button-ok menu_button menu_button_primary interactable">${escapeHTML(t('shell.read'))}</div></div>
                   </dialog>`;
                 const dialogElement = $(dialogHtml).appendTo('body');
                 const closeDialog = () => { dialogElement[0].close(); dialogElement.remove(); };
                 dialogElement.find('.popup-button-ok').on('click', closeDialog);
                 dialogElement[0].showModal();
             } else {
-                toastr.info("未能获取到云端情报，请稍后再试。", "情报部回报");
+                toastr.info(t('shell.news.missing'), t('shell.news.statusTitle'));
             }
         });
 
@@ -905,7 +1104,7 @@ export function bindModalEvents() {
     container
         .off("click.amily2.chamber_nav")
         .on("click.amily2.chamber_nav",
-             "#amily2_open_text_optimization, #amily2_open_plot_optimization, #amily2_open_additional_features, #amily2_open_rag_palace, #amily2_open_memorisation_forms, #amily2_open_character_world_book, #amily2_open_world_editor, #amily2_open_glossary, #amily2_open_renderer, #amily2_open_super_memory, #amily2_open_progressive_memory, #amily2_open_time_river, #amily2_open_combat, #amily2_open_auto_char_card, #amily2_open_api_config, #amily2_open_rule_config, #amily2_open_sfigen, #amily2_open_preset_editor, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan, #amily2_back_to_main_from_forms, #amily2_back_to_main_from_optimization, #amily2_back_to_main_from_text_optimization, #amily2_back_to_main_from_cwb, #amily2_back_to_main_from_world_editor, #amily2_back_to_main_from_glossary, #amily2_renderer_back_button, #amily2_back_to_main_from_super_memory, #amily2_back_to_main_from_progressive_memory, #amily2_back_to_main_from_time_river, #amily2_back_to_main_from_combat, #amily2_back_to_main_from_api_config, #amily2_back_to_main_from_rule_config, #amily2_sfigen_back_to_main", function () {
+             "#amily2_open_text_optimization, #amily2_open_plot_optimization, #amily2_open_additional_features, #amily2_open_rag_palace, #amily2_open_memorisation_forms, #amily2_open_character_world_book, #amily2_open_world_editor, #amily2_open_glossary, #amily2_open_renderer, #amily2_open_super_memory, #amily2_open_progressive_memory, #amily2_open_time_river, #amily2_open_combat, #amily2_open_auto_char_card, #amily2_open_api_config, #amily2_open_security_audit, #amily2_open_rule_config, #amily2_open_sfigen, #amily2_open_preset_editor, #amily2_back_to_main_settings, #amily2_back_to_main_from_hanlinyuan, #amily2_back_to_main_from_forms, #amily2_back_to_main_from_optimization, #amily2_back_to_main_from_text_optimization, #amily2_back_to_main_from_cwb, #amily2_back_to_main_from_world_editor, #amily2_back_to_main_from_glossary, #amily2_renderer_back_button, #amily2_back_to_main_from_super_memory, #amily2_back_to_main_from_progressive_memory, #amily2_back_to_main_from_time_river, #amily2_back_to_main_from_combat, #amily2_back_to_main_from_api_config, #amily2_back_to_main_from_security_audit, #amily2_back_to_main_from_rule_config, #amily2_sfigen_back_to_main", function () {
         if (!pluginAuthStatus.authorized) return;
 
         const mainPanel = container.find('.plugin-features');
@@ -923,6 +1122,7 @@ export function bindModalEvents() {
         const timeRiverPanel = container.find('#amily2_time_river_panel');
         const combatPanel = container.find('#amily2_combat_panel');
         const apiConfigPanel = container.find('#amily2_api_config_panel');
+        const securityAuditPanel = container.find('#amily2_security_audit_panel');
         const ruleConfigPanel = container.find('#amily2_rule_config_panel');
         const sfigenPanel = container.find('#amily2_sfigen_panel');
 
@@ -941,6 +1141,7 @@ export function bindModalEvents() {
         timeRiverPanel.hide();
         combatPanel.hide();
         apiConfigPanel.hide();
+        securityAuditPanel.hide();
         ruleConfigPanel.hide();
         sfigenPanel.hide();
 
@@ -950,7 +1151,7 @@ export function bindModalEvents() {
                 break;
             case 'amily2_open_super_memory':
                 if (!hasSuperMemoryAccess()) {
-                    toastr.warning("超级记忆需要有效的正式 Type1 及以上授权，临时每日码不可用。", "权限不足");
+                    toastr.warning(t('shell.access.superMemory'), t('shell.access.denied'));
                     mainPanel.show();
                     return;
                 }
@@ -961,7 +1162,7 @@ export function bindModalEvents() {
             case 'amily2_open_progressive_memory': {
                 const pmUserType = parseInt(localStorage.getItem("plugin_user_type") || "0");
                 if (pmUserType < 3) {
-                    toastr.info("该功能正在开发中，将于未来版本开放，敬请期待。", "开发中功能");
+                    toastr.info(t('shell.access.developing'), t('shell.access.developingTitle'));
                     mainPanel.show();
                     return;
                 }
@@ -972,7 +1173,7 @@ export function bindModalEvents() {
             case 'amily2_open_time_river': {
                 const hasTimeRiverAccess = getTimeRiverAccess().allowed;
                 if (!hasTimeRiverAccess) {
-                    toastr.info("时间河正在重构，当前仅向具有有效授权的 Type2 及以上用户开放。", "权限不足");
+                    toastr.info(t('shell.access.timeRiver'), t('shell.access.denied'));
                     mainPanel.show();
                     return;
                 }
@@ -982,7 +1183,7 @@ export function bindModalEvents() {
             }
             case 'amily2_open_combat': {
                 if (!hasCombatType3Access()) {
-                    toastr.info("战斗演算当前仅向具有有效授权的 Type3 用户开放。", "权限不足");
+                    toastr.info(t('shell.access.combat'), t('shell.access.denied'));
                     mainPanel.show();
                     return;
                 }
@@ -1026,6 +1227,14 @@ export function bindModalEvents() {
             case 'amily2_open_api_config':
                 apiConfigPanel.show();
                 break;
+            case 'amily2_open_security_audit':
+                if (!getSecurityAuditAccess().allowed) {
+                    toastr.info(t('shell.access.cardAudit'), t('shell.access.denied'));
+                    mainPanel.show();
+                    return;
+                }
+                securityAuditPanel.show();
+                break;
             case 'amily2_open_rule_config':
                 ruleConfigPanel.show();
                 break;
@@ -1050,6 +1259,7 @@ export function bindModalEvents() {
             case 'amily2_back_to_main_from_time_river':
             case 'amily2_back_to_main_from_combat':
             case 'amily2_back_to_main_from_api_config':
+            case 'amily2_back_to_main_from_security_audit':
             case 'amily2_back_to_main_from_rule_config':
             case 'amily2_sfigen_back_to_main':
                 mainPanel.show();
@@ -1077,25 +1287,25 @@ export function bindModalEvents() {
 
                     const createRuleRowHtml = (rule = { start: '', end: '' }, index) => `
                         <div class="opt-exclusion-rule-row" data-index="${index}">
-                            <input type="text" class="text_pole" value="${rule.start}" placeholder="开始字符, 如 <!--">
-                            <span>到</span>
-                            <input type="text" class="text_pole" value="${rule.end}" placeholder="结束字符, 如 -->">
-                            <button class="delete-rule-btn menu_button danger_button" title="删除此规则">&times;</button>
+                            <input type="text" class="text_pole" value="${escapeHTML(rule.start)}" placeholder="${escapeHTML(t('shell.rules.start', { marker: '<!--' }))}">
+                            <span>${escapeHTML(t('shell.rules.to'))}</span>
+                            <input type="text" class="text_pole" value="${escapeHTML(rule.end)}" placeholder="${escapeHTML(t('shell.rules.end', { marker: '-->' }))}">
+                            <button class="delete-rule-btn menu_button danger_button" title="${escapeHTML(t('shell.rules.delete'))}">&times;</button>
                         </div>`;
 
                     const rulesHtml = rules.map(createRuleRowHtml).join('');
                     const modalHtml = `
                         <div id="optimization-exclusion-rules-container">
-                             <p class="notes">在这里定义需要从优化内容中排除的文本片段。例如，排除HTML注释，可以设置开始字符为 \`<!--\`，结束字符为 \`-->\`。</p>
+                             <p class="notes">${escapeHTML(t('shell.rules.help', { start: '<!--', end: '-->' }))}</p>
                              <div id="optimization-rules-list" style="max-height: 45vh; overflow-y: auto; padding: 10px; border: 1px solid rgba(255,255,255,0.1); border-radius: 5px; margin-bottom:10px;">${rulesHtml}</div>
                              <div style="text-align: center; margin-top: 10px;">
-                                <button id="optimization-add-rule-btn" class="menu_button amily2-add-rule-btn"><i class="fas fa-plus"></i> 添加新规则</button>
+                                <button id="optimization-add-rule-btn" class="menu_button amily2-add-rule-btn"><i class="fas fa-plus"></i> ${escapeHTML(t('shell.rules.add'))}</button>
                              </div>
                         </div>`;
 
-                    showHtmlModal('编辑内容排除规则', modalHtml, {
-                        okText: '确认',
-                        cancelText: '取消',
+                    showHtmlModal(t('shell.rules.title'), modalHtml, {
+                        okText: t('shell.confirm'),
+                        cancelText: t('actions.cancel'),
                         onOk: (dialog) => {
                             const newRules = [];
                             dialog.find('.opt-exclusion-rule-row').each(function() {
@@ -1104,7 +1314,7 @@ export function bindModalEvents() {
                                 if (start && end) newRules.push({ start, end });
                             });
                             updateAndSaveSetting('optimizationExclusionRules', newRules);
-                            toastr.success('排除规则已更新。', 'Amily2号');
+                            toastr.success(t('shell.rules.saved'), t('app.toastTitle'));
                         },
                         onCancel: () => {
                         }
@@ -1189,7 +1399,7 @@ export function bindModalEvents() {
                     break;
             }
 
-            $('#amily2_model').empty().append('<option value="">请刷新模型列表</option>');
+            $('#amily2_model').empty().append($('<option>', { value: '', text: t('shell.model.refresh') }));
         });
 
     container
@@ -1203,7 +1413,7 @@ export function bindModalEvents() {
             } else {
                 updateAndSaveSetting(key, this.value);
             }
-            toastr.success(`配置 [${key}] 已自动保存!`, "Amily2号");
+            toastr.success(t('shell.config.saved', { key }), t('app.toastTitle'));
         });
     container
         .off('blur.amily2.api_key')
@@ -1303,7 +1513,7 @@ export function bindModalEvents() {
             if (!selectedKey) return;
             const newContent = $(editor).val();
             updateAndSaveSetting(selectedKey, newContent);
-            toastr.success(`谕令 [${selectedKey}] 已镌刻!`, "Amily2号");
+            toastr.success(t('shell.prompt.saved', { key: selectedKey }), t('app.toastTitle'));
         });
 
     container
@@ -1314,7 +1524,7 @@ export function bindModalEvents() {
             const defaultValue = defaultSettings[selectedKey];
             $(editor).val(defaultValue);
             updateAndSaveSetting(selectedKey, defaultValue);
-            toastr.success(`谕令 [${selectedKey}] 已成功恢复为帝国初始蓝图。`, "Amily2号");
+            toastr.success(t('shell.prompt.restored', { key: selectedKey }), t('app.toastTitle'));
         });
 
     container
@@ -1355,11 +1565,11 @@ export function bindModalEvents() {
             const button = $(this);
             const statusElement = $('#amily2_lore_save_status');
 
-            button.prop('disabled', true).html('<i class="fas fa-check"></i> 已确认');
-            statusElement.text('圣意已在您每次更改时自动镌刻。').stop().fadeIn();
+            button.prop('disabled', true).html(`<i class="fas fa-check"></i> ${escapeHTML(t('shell.config.confirmed'))}`);
+            statusElement.text(t('shell.config.autoSaved')).stop().fadeIn();
 
             setTimeout(() => {
-                button.prop('disabled', false).html('<i class="fas fa-save"></i> 确认敕令');
+                button.prop('disabled', false).html(`<i class="fas fa-save"></i> ${escapeHTML(t('shell.config.confirm'))}`);
                 statusElement.fadeOut();
             }, 2500);
         });
@@ -1414,7 +1624,7 @@ export function bindModalEvents() {
                 saveSettingsDebounced();
             }
 
-            toastr.success('界面颜色与透明度已恢复为默认设置。');
+            toastr.success(t('settings.colorsRestored'));
         });
 
         // 新增：自定义背景图事件绑定
@@ -1426,7 +1636,7 @@ export function bindModalEvents() {
                     const imageDataUrl = e.target.result;
                     // 检查大小
                     if (imageDataUrl.length > 5 * 1024 * 1024) { // 5MB 限制
-                        toastr.error('图片文件过大，请选择小于5MB的图片。');
+                        toastr.error(t('settings.imageTooLarge'));
                         return;
                     }
                     document.documentElement.style.setProperty('--amily2-bg-image', `url("${imageDataUrl}")`);
@@ -1436,7 +1646,7 @@ export function bindModalEvents() {
                     }
                     extension_settings[extensionName]['customBgImage'] = imageDataUrl;
                     saveSettingsDebounced();
-                    toastr.success('自定义背景图已应用。');
+                    toastr.success(t('settings.imageApplied'));
                 };
                 reader.readAsDataURL(file);
             }
@@ -1449,7 +1659,7 @@ export function bindModalEvents() {
                 saveSettingsDebounced();
             }
             $('#amily2_custom_bg_image').val(''); // 清空文件选择框
-            toastr.success('背景图已恢复为默认。');
+            toastr.success(t('settings.imageRestored'));
         });
 
         colorContainer.data("color-events-bound", true);

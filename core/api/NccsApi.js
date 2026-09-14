@@ -116,6 +116,9 @@ export async function callNccsAI(messages, options = {}) {
 
     const settings = await getNccsApiSettings();
     const finalOptions = mergeSafeModelCallOptions(settings, options);
+    finalOptions.onUsage = typeof options.onUsage === 'function'
+        ? options.onUsage
+        : null;
 
     // 确保 stream 标志位存在
     finalOptions.stream = finalOptions.useFakeStream ?? false;
@@ -178,6 +181,21 @@ function normalizeApiResponse(responseData) {
     return typeof data === 'object' ? JSON.stringify(data) : data;
 }
 
+function reportNccsUsage(options, responseData) {
+    if (typeof options?.onUsage !== 'function'
+        || !responseData
+        || typeof responseData !== 'object') {
+        return;
+    }
+    const usage = responseData.usage ?? responseData.usageMetadata;
+    if (!usage || typeof usage !== 'object') return;
+    try {
+        options.onUsage(usage);
+    } catch (error) {
+        console.warn('[Amily2-Nccs] Token 用量统计回调失败，已忽略。', error);
+    }
+}
+
 async function callNccsOpenAITest(messages, options) {
     const isGoogleApi = (await detectVendor(options.apiUrl)) === 'google';
     const body = {
@@ -214,6 +232,7 @@ async function callNccsOpenAITest(messages, options) {
     const responseData = await readOpenAICompatibleResponse(response, {
         stream: options.stream === true,
     });
+    reportNccsUsage(options, responseData);
     return normalizeApiResponse(responseData);
 }
 
@@ -247,6 +266,7 @@ async function callNccsSillyTavernPreset(messages, options) {
             ),
             { stream: useStream },
         );
+        reportNccsUsage(options, result);
         return normalizeApiResponse(result);
 
     } finally {

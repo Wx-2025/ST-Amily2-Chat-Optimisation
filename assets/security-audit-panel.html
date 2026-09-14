@@ -1,0 +1,47 @@
+<div class="amily2-settings-panel">
+    <div class="amily2-panel-header">
+        <button id="amily2_back_to_main_from_security_audit" class="menu_button" type="button" title="返回" data-amily-i18n-title="actions.back" data-amily-i18n-aria-label="actions.back" aria-label="返回">
+            <i class="fas fa-arrow-left"></i>
+        </button>
+        <h3><i class="fas fa-shield-halved"></i> <span data-amily-i18n="auxiliaryUi.audit.title">角色卡安检</span></h3>
+    </div>
+
+    <fieldset class="settings-group">
+        <legend data-amily-i18n="auxiliaryUi.audit.local">本地预检</legend>
+        <label class="menu_button wide_button" for="amily2_security_audit_file">
+            <i class="fas fa-file-shield"></i> <span data-amily-i18n="auxiliaryUi.audit.chooseCard">选择角色卡</span>
+        </label>
+        <input id="amily2_security_audit_file" type="file" accept=".png,.json,image/png,application/json" hidden>
+        <div id="amily2_security_audit_preflight" class="amily2_settings_block" aria-live="polite"></div>
+    </fieldset>
+
+    <fieldset class="settings-group">
+        <legend data-amily-i18n="auxiliaryUi.audit.cloud">云审计</legend>
+        <div class="button-group" style="display:flex; align-items:center; gap:8px;">
+            <span id="amily2_security_audit_service_status" class="notes" role="status" data-amily-i18n="auxiliaryUi.audit.serviceChecking">服务状态：检查中</span>
+            <button id="amily2_security_audit_refresh_service" class="menu_button" type="button"
+                title="刷新服务状态" aria-label="刷新服务状态" data-amily-i18n-title="auxiliaryUi.audit.refreshService" data-amily-i18n-aria-label="auxiliaryUi.audit.refreshService">
+                <i class="fas fa-rotate"></i>
+            </button>
+        </div>
+        <div class="button-group" style="display:flex; gap:8px;">
+            <button id="amily2_security_audit_submit" class="menu_button wide_button" type="button" disabled>
+                <i class="fas fa-cloud-arrow-up"></i> <span data-amily-i18n="auxiliaryUi.audit.submit">提交审计</span>
+            </button>
+            <button id="amily2_security_audit_cancel" class="menu_button" type="button" title="停止等待" aria-label="停止等待" data-amily-i18n-title="auxiliaryUi.audit.stopWaiting" data-amily-i18n-aria-label="auxiliaryUi.audit.stopWaiting" disabled>
+                <i class="fas fa-stop"></i>
+            </button>
+        </div>
+        <div id="amily2_security_audit_status" class="notes" role="status" aria-live="polite" data-amily-i18n="auxiliaryUi.audit.chooseFile">请选择 PNG 或 JSON 角色卡。</div>
+        <label for="amily2_security_audit_recent_job" data-amily-i18n="auxiliaryUi.audit.recentJobs">最近提交的任务（本浏览器，最近 14 天）</label>
+        <select id="amily2_security_audit_recent_job" class="text_pole" aria-label="最近的云审计任务" data-amily-i18n-aria-label="auxiliaryUi.audit.recentJobsLabel">
+            <option value="" data-amily-i18n="auxiliaryUi.audit.noJobs">暂无任务</option>
+        </select>
+        <button id="amily2_security_audit_resume" class="menu_button wide_button" type="button" disabled>
+            <i class="fas fa-rotate"></i> <span data-amily-i18n="auxiliaryUi.audit.resume">继续查询所选任务</span>
+        </button>
+        <div class="notes" data-amily-i18n="auxiliaryUi.audit.historyHint">这里只保存任务编号、摘要与状态，不保存原卡或授权码；停止等待不会取消服务器任务。刷新页面后可从这里继续查询。</div>
+    </fieldset>
+
+    <section id="amily2_security_audit_report" aria-live="polite"></section>
+</div>

@@ -11,6 +11,14 @@ import { SETTINGS_KEY as PRESET_SETTINGS_KEY } from '../PresetSettings/config.js
 import { escapeHTML } from '../utils/utils.js';
 import { watchProfileSliderGuard } from '../ui/profile-slider-guard.js';
 import { clearSecretInput, markSecretInputStored, readSecretInputUpdate } from '../ui/secret-input.js';
+import {
+    bindGlossaryTranslations, glossaryHtml, glossaryMessage, reportGlossaryStatus,
+    releaseGlossaryTranslations, setGlossaryButton, setGlossaryRawText, setGlossaryText,
+} from './i18n.js';
+import {
+    splitTextByUnicodeBoundary,
+    truncateTextAtUnicodeBoundary,
+} from '../core/utils/unicode-boundary.js';
 
 const moduleState = {
     selectedWorldBook: '',
@@ -35,6 +43,7 @@ function loadSettingsToUI() {
         const key = target.dataset.settingKey;
         if (SENSITIVE_KEYS.has(key)) {
             clearSecretInput(target, configManager.has(key));
+            if (target.dataset.secretStored === 'true') setGlossaryText(target, 'api.storedSecret', {}, 'placeholder');
             return;
         }
         const value = settings[key];
@@ -113,6 +122,7 @@ function bindAutoSaveEvents() {
             if (!update.changed) return;
             configManager.set(key, update.value);
             markSecretInputStored(target, Boolean(update.value));
+            if (target.dataset.secretStored === 'true') setGlossaryText(target, 'api.storedSecret', {}, 'placeholder');
         } else {
             updateAndSaveSetting(key, value);
         }
@@ -150,13 +160,16 @@ async function loadTavernPresets() {
     if (!select) return;
 
     const currentValue = extension_settings[extensionName]?.sybdTavernProfile || '';
-    select.innerHTML = '<option value="">-- 加载中 --</option>';
+    releaseGlossaryTranslations(select, { includeRoot: false });
+    select.innerHTML = glossaryHtml('api.loading', {}, 'option');
+    bindGlossaryTranslations(select);
 
     try {
         const context = getContext();
         const tavernProfiles = context.extensionSettings?.connectionManager?.profiles || [];
         
-        select.innerHTML = '<option value="">-- 请选择预设 --</option>';
+        releaseGlossaryTranslations(select, { includeRoot: false });
+        select.innerHTML = glossaryHtml('api.choosePreset', {}, 'option');
         
         if (tavernProfiles.length > 0) {
             tavernProfiles.forEach(profile => {
@@ -167,24 +180,25 @@ async function loadTavernPresets() {
             });
             select.value = currentValue;
         } else {
-            select.innerHTML = '<option value="">未找到可用预设</option>';
+            select.innerHTML = glossaryHtml('api.noPresets', {}, 'option');
         }
     } catch (error) {
         console.error('[Amily2-术语表] 加载SillyTavern预设失败:', error);
-        select.innerHTML = '<option value="">加载失败</option>';
+        releaseGlossaryTranslations(select, { includeRoot: false });
+        select.innerHTML = glossaryHtml('api.loadFailed', {}, 'option');
     }
+    bindGlossaryTranslations(select);
 }
 
 function bindManualActionEvents() {
     const testBtn = document.getElementById('amily2_sybd_test_connection');
     if (testBtn) {
         testBtn.addEventListener('click', async () => {
-            const originalHtml = testBtn.innerHTML;
             testBtn.disabled = true;
-            testBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 测试中';
+            setGlossaryButton(testBtn, 'api.testing', {}, 'fas fa-spinner fa-spin');
             await testSybdApiConnection();
             testBtn.disabled = false;
-            testBtn.innerHTML = originalHtml;
+            setGlossaryButton(testBtn, 'api.test', {}, 'fas fa-plug');
         });
     }
 
@@ -194,30 +208,31 @@ function bindManualActionEvents() {
 
     if (fetchBtn && modelSelect && modelInput) {
         fetchBtn.addEventListener('click', async () => {
-            const originalHtml = fetchBtn.innerHTML;
             fetchBtn.disabled = true;
-            fetchBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 获取中';
+            setGlossaryButton(fetchBtn, 'api.fetching', {}, 'fas fa-spinner fa-spin');
             
             try {
                 const models = await fetchSybdModels();
                 if (models && models.length > 0) {
-                    modelSelect.innerHTML = '<option value="">-- 请选择模型 --</option>';
+                    releaseGlossaryTranslations(modelSelect, { includeRoot: false });
+                    modelSelect.innerHTML = glossaryHtml('api.chooseModel', {}, 'option');
                     models.forEach(model => {
                         const option = new Option(model.name || model.id, model.id);
                         modelSelect.add(option);
                     });
+                    bindGlossaryTranslations(modelSelect);
                     
                     modelSelect.style.display = 'block';
                     modelInput.style.display = 'none';
-                    toastr.success(`成功获取 ${models.length} 个模型`);
+                    toastr.success(escapeHTML(glossaryMessage('api.modelsFetched', { count: models.length })));
                 } else {
-                    toastr.warning('未获取到任何模型');
+                    toastr.warning(glossaryMessage('api.noModels'));
                 }
             } catch (error) {
-                toastr.error(`获取模型失败: ${error.message}`);
+                toastr.error(escapeHTML(glossaryMessage('api.fetchFailed', { error: error.message })));
             } finally {
                 fetchBtn.disabled = false;
-                fetchBtn.innerHTML = originalHtml;
+                setGlossaryButton(fetchBtn, 'api.fetch', {}, 'fas fa-download');
             }
         });
 
@@ -237,21 +252,28 @@ async function renderWorldBookEntries() {
 
     const selectedBook = moduleState.selectedWorldBook;
     if (!selectedBook) {
-        container.innerHTML = '<p style="text-align:center;">请先在“小说处理”标签页中选择一个世界书。</p>';
+        releaseGlossaryTranslations(container, { includeRoot: false });
+        container.innerHTML = `<p style="text-align:center;">${glossaryHtml('entries.chooseBook')}</p>`;
+        bindGlossaryTranslations(container);
         return;
     }
 
-    container.innerHTML = '<p style="text-align:center;"><i class="fas fa-spinner fa-spin"></i> 正在加载条目...</p>';
+    releaseGlossaryTranslations(container, { includeRoot: false });
+    container.innerHTML = `<p style="text-align:center;"><i class="fas fa-spinner fa-spin"></i> ${glossaryHtml('entries.loading')}</p>`;
+    bindGlossaryTranslations(container);
 
     try {
         const allEntries = await safeLorebookEntries(selectedBook);
         let managedEntries = allEntries.filter(e => e.comment?.startsWith('[Amily2小说处理]'));
 
         if (managedEntries.length === 0) {
-            container.innerHTML = '<p style="text-align:center;">未找到由小说处理功能生成的条目。</p>';
+            releaseGlossaryTranslations(container, { includeRoot: false });
+            container.innerHTML = `<p style="text-align:center;">${glossaryHtml('entries.empty')}</p>`;
+            bindGlossaryTranslations(container);
             return;
         }
 
+        releaseGlossaryTranslations(container, { includeRoot: false });
         container.innerHTML = ''; 
 
         const summaryEntries = managedEntries.filter(e => e.comment.replace('[Amily2小说处理]', '').trim().startsWith('章节内容概述'));
@@ -274,6 +296,7 @@ async function renderWorldBookEntries() {
                         lines.forEach(line => {
                             if (line.startsWith('flowchart')) return;
                             let source = '', rel = '', target = '';
+                            let directRelation = false;
 
                             let match = line.match(/(.+?)\s*--\s*"(.*?)"\s*-->(.+)/);
                             if (match) {
@@ -286,16 +309,16 @@ async function renderWorldBookEntries() {
                                     match = line.match(/(.+?)\s*-->(.+)/);
                                     if (match) {
                                         [source, target] = [match[1], match[2]];
-                                        rel = '<i>(直接关联)</i>';
+                                        directRelation = true;
                                     }
                                 }
                             }
 
                             if (source && target) {
-                                body += `<tr><td>${escapeHTML(source.trim())}</td><td>${escapeHTML(rel.trim())}</td><td>${escapeHTML(target.trim().replace(';',''))}</td></tr>`;
+                                body += `<tr><td>${escapeHTML(source.trim())}</td><td>${directRelation ? `<i>${glossaryHtml('entries.direct')}</i>` : escapeHTML(rel.trim())}</td><td>${escapeHTML(target.trim().replace(';',''))}</td></tr>`;
                             }
                         });
-                        return `<table class="table-render"><thead><tr><th>源头</th><th>关系</th><th>目标</th></tr></thead><tbody>${body}</tbody></table>`;
+                        return `<table class="table-render"><thead><tr><th>${glossaryHtml('entries.source')}</th><th>${glossaryHtml('entries.relation')}</th><th>${glossaryHtml('entries.target')}</th></tr></thead><tbody>${body}</tbody></table>`;
                     } catch {
                         return `<pre>${escapeHTML(content)}</pre>`;
                     }
@@ -328,9 +351,9 @@ async function renderWorldBookEntries() {
                 <div class="entry-header">
                     <strong class="entry-title">${escapeHTML(title)}</strong>
                     <div class="entry-actions">
-                        <button class="menu_button primary small_button save-entry-btn" style="display: none;"><i class="fas fa-save"></i> 保存</button>
-                        <button class="menu_button danger small_button cancel-entry-btn" style="display: none;"><i class="fas fa-times"></i> 取消</button>
-                        <button class="menu_button secondary small_button edit-entry-btn"><i class="fas fa-edit"></i> 编辑</button>
+                        <button class="menu_button primary small_button save-entry-btn" style="display: none;"><i class="fas fa-save"></i> ${glossaryHtml('entries.save')}</button>
+                        <button class="menu_button danger small_button cancel-entry-btn" style="display: none;"><i class="fas fa-times"></i> ${glossaryHtml('entries.cancel')}</button>
+                        <button class="menu_button secondary small_button edit-entry-btn"><i class="fas fa-edit"></i> ${glossaryHtml('entries.edit')}</button>
                     </div>
                 </div>
                 <div class="entry-content-display">${renderContent(entry.content)}</div>
@@ -371,22 +394,27 @@ async function renderWorldBookEntries() {
             saveBtn.addEventListener('click', async () => {
                 const newContent = textarea.value;
                 
+                releaseGlossaryTranslations(displayDiv, { includeRoot: false });
                 displayDiv.innerHTML = renderContent(newContent);
+                bindGlossaryTranslations(displayDiv);
                 hideEditor();
                 
                 try {
                     const entryToUpdate = { uid: entry.uid, content: newContent };
                     await safeUpdateLorebookEntries(selectedBook, [entryToUpdate]);
-                    toastr.success(`条目 "${title}" 已保存。`);
+                    toastr.success(escapeHTML(glossaryMessage('entries.saved', { title })));
                     entry.content = newContent;
                 } catch (error) {
+                    releaseGlossaryTranslations(displayDiv, { includeRoot: false });
                     displayDiv.innerHTML = renderContent(originalContent);
+                    bindGlossaryTranslations(displayDiv);
                     console.error('保存世界书条目失败:', error);
-                    toastr.error(`保存失败: ${error.message}`);
+                    toastr.error(escapeHTML(glossaryMessage('entries.saveFailed', { error: error.message })));
                 }
             });
 
             container.appendChild(entryElement);
+            bindGlossaryTranslations(entryElement);
         });
         
     } catch (error) {
@@ -394,9 +422,10 @@ async function renderWorldBookEntries() {
         const p = document.createElement('p');
         p.style.textAlign = 'center';
         p.style.color = '#ff8a8a';
-        p.textContent = `加载失败: ${error?.message ?? '未知错误'}`;
+        releaseGlossaryTranslations(container, { includeRoot: false });
         container.innerHTML = '';
         container.appendChild(p);
+        setGlossaryText(p, error?.message == null ? 'entries.unknownLoadFailed' : 'entries.loadFailed', { error: error?.message });
     }
 }
 
@@ -426,10 +455,10 @@ function bindTabEvents() {
                 const statusEl = document.getElementById('reorganize-status');
                 if (statusEl) {
                     if (moduleState.selectedWorldBook) {
-                        statusEl.textContent = `当前已选择世界书: "${moduleState.selectedWorldBook}"。可以开始重组。`;
+                        setGlossaryText(statusEl, 'tools.selected', { book: moduleState.selectedWorldBook });
                         statusEl.style.color = '';
                     } else {
-                        statusEl.textContent = '请先在“小说处理”标签页中选择一个世界书。';
+                        setGlossaryText(statusEl, 'entries.chooseBook');
                         statusEl.style.color = '#ffdb58'; // Warning color
                     }
                 }
@@ -445,27 +474,27 @@ function bindReorganizeEvents() {
 
     if (!reorganizeBtn || !statusEl || !headingsListEl) return;
 
-    const updateStatusCallback = (message, type = 'info') => {
-        statusEl.textContent = message;
+    const updateStatusCallback = (message, type = 'info', display = null) => {
+        if (display) setGlossaryText(statusEl, display.key, display.params);
+        else setGlossaryRawText(statusEl, message);
         statusEl.style.color = type === 'error' ? '#ff8a8a' : (type === 'success' ? '#8aff8a' : '');
     };
 
     reorganizeBtn.addEventListener('click', async () => {
         const headingsToProcess = headingsListEl.value.split('\n').map(h => h.trim()).filter(Boolean);
         if (headingsToProcess.length === 0) {
-            updateStatusCallback('错误：请在文本框中输入至少一个要重组的标题。', 'error');
+            reportGlossaryStatus(updateStatusCallback, 'tools.needHeadings', {}, 'error');
             return;
         }
 
         const bookName = moduleState.selectedWorldBook;
         if (!bookName) {
-            updateStatusCallback('错误：请先在“小说处理”标签页中选择一个世界书。', 'error');
+            reportGlossaryStatus(updateStatusCallback, 'tools.needBook', {}, 'error');
             return;
         }
 
-        const originalHtml = reorganizeBtn.innerHTML;
         reorganizeBtn.disabled = true;
-        reorganizeBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在重组...';
+        setGlossaryButton(reorganizeBtn, 'tools.running', {}, 'fas fa-spinner fa-spin');
 
         try {
             await reorganizeEntriesByHeadings(bookName, headingsToProcess, updateStatusCallback);
@@ -477,7 +506,7 @@ function bindReorganizeEvents() {
             console.error('An error occurred during reorganization:', error);
         } finally {
             reorganizeBtn.disabled = false;
-            reorganizeBtn.innerHTML = originalHtml;
+            setGlossaryButton(reorganizeBtn, 'tools.start', {}, 'fas fa-play-circle');
         }
     });
 }
@@ -506,16 +535,20 @@ function bindNovelProcessEvents() {
     function updateChunks() {
         if (!fileContent) return;
         const chunkSize = parseInt(chunkSizeInput.value, 10) || 5000;
-        const newChunks = [];
-        for (let i = 0; i < fileContent.length; i += chunkSize) {
-            newChunks.push({ title: `Part ${i/chunkSize + 1}`, content: fileContent.substring(i, i + chunkSize) });
-        }
+        const newChunks = splitTextByUnicodeBoundary(fileContent, {
+            maxCodeUnits: chunkSize,
+        }).map((content, index) => ({
+            title: `Part ${index + 1}`,
+            content,
+        }));
         processingState.chunks = newChunks;
 
         chunkCountEl.textContent = newChunks.length;
+        releaseGlossaryTranslations(chunkPreviewEl, { includeRoot: false });
         chunkPreviewEl.innerHTML = newChunks.map((chunk, index) =>
-            `<div class="chunk-preview-item"><b>块 ${index + 1}:</b> ${escapeHTML(chunk.content.substring(0, 100))}...</div>`
+            `<div class="chunk-preview-item"><b>${glossaryHtml('novel.chunk', { index: index + 1 })}</b> ${escapeHTML(truncateTextAtUnicodeBoundary(chunk.content, 100))}...</div>`
         ).join('');
+        bindGlossaryTranslations(chunkPreviewEl);
         
         resetProcessing();
     }
@@ -531,26 +564,26 @@ function bindNovelProcessEvents() {
     function updateButtonUI() {
         if (processingState.isRunning) {
             processBtn.disabled = false;
-            processBtn.innerHTML = '<i class="fas fa-stop-circle"></i> 请求中止';
+            setGlossaryButton(processBtn, 'novel.stop', {}, 'fas fa-stop-circle');
             processBtn.classList.add('danger');
         } else {
             processBtn.classList.remove('danger');
             switch (processingState.lastStatus) {
                 case 'paused':
-                    processBtn.innerHTML = '<i class="fas fa-play"></i> 继续处理';
+                    setGlossaryButton(processBtn, 'novel.resume', {}, 'fas fa-play');
                     processBtn.disabled = false;
                     break;
                 case 'failed':
-                    processBtn.innerHTML = '<i class="fas fa-redo"></i> 重试处理';
+                    setGlossaryButton(processBtn, 'novel.retry', {}, 'fas fa-redo');
                     processBtn.disabled = false;
                     break;
                 case 'success':
-                    processBtn.innerHTML = '<i class="fas fa-check"></i> 处理完成';
+                    setGlossaryButton(processBtn, 'novel.done', {}, 'fas fa-check');
                     processBtn.disabled = true;
                     break;
                 case 'idle':
                 default:
-                    processBtn.innerHTML = '确认并开始处理';
+                    setGlossaryButton(processBtn, 'novel.confirm', {}, 'fas fa-play-circle');
                     processBtn.disabled = processingState.chunks.length === 0;
                     break;
             }
@@ -593,7 +626,7 @@ function bindNovelProcessEvents() {
         fileInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (!file) return;
-            fileLabel.innerHTML = `<i class="fas fa-check"></i> 已选择: ${escapeHTML(file.name)}`;
+            setGlossaryButton(fileLabel, 'novel.selectedFile', { file: file.name }, 'fas fa-check');
             handleFileUpload(file, (content) => {
                 fileContent = content;
                 updateChunks();
@@ -612,7 +645,7 @@ function bindNovelProcessEvents() {
         fileContent = content;
         updateChunks();
         if (fileLabel) {
-            fileLabel.innerHTML = `<i class="fas fa-upload"></i> 2a. 上传本地文件 (.txt)`;
+            setGlossaryButton(fileLabel, 'novel.upload', {}, 'fas fa-upload');
         }
     });
 
@@ -625,7 +658,7 @@ function bindNovelProcessEvents() {
         processBtn.addEventListener('click', async () => {
             if (processingState.isRunning) {
                 processingState.isAborted = true;
-                processBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 正在中止...';
+                setGlossaryButton(processBtn, 'novel.stopping', {}, 'fas fa-spinner fa-spin');
                 processBtn.disabled = true;
             } else {
                 if (processingState.lastStatus !== 'paused') {
@@ -653,7 +686,8 @@ async function loadWorldBooks() {
 
     try {
         const allBooks = await safeLorebooks();
-        select.innerHTML = '<option value="">-- 请选择世界书 --</option>';
+        releaseGlossaryTranslations(select, { includeRoot: false });
+        select.innerHTML = glossaryHtml('novel.chooseBook', {}, 'option');
 
         if (allBooks && allBooks.length > 0) {
             allBooks.forEach(bookName => {
@@ -665,16 +699,19 @@ async function loadWorldBooks() {
                 select.value = savedBook;
             }
         } else {
-            select.innerHTML = '<option value="">未找到世界书</option>';
+            select.innerHTML = glossaryHtml('novel.noBooks', {}, 'option');
         }
     } catch (error) {
         console.error('[Amily2-术语表] 加载世界书失败:', error);
-        select.innerHTML = '<option value="">加载失败</option>';
+        releaseGlossaryTranslations(select, { includeRoot: false });
+        select.innerHTML = glossaryHtml('api.loadFailed', {}, 'option');
     }
+    bindGlossaryTranslations(select);
 }
 
 export function bindGlossaryEvents() {
     const panel = document.getElementById('amily2_glossary_panel');
+    if (panel) bindGlossaryTranslations(panel);
     if (!panel || panel.dataset.eventsBound) {
         return;
     }
@@ -713,10 +750,10 @@ export function bindGlossaryEvents() {
                 const statusEl = document.getElementById('reorganize-status');
                 if (statusEl) {
                     if (selectedValue) {
-                        statusEl.textContent = `当前已选择世界书: "${selectedValue}"。可以开始重组。`;
+                        setGlossaryText(statusEl, 'tools.selected', { book: selectedValue });
                         statusEl.style.color = '';
                     } else {
-                        statusEl.textContent = '请先在“小说处理”标签页中选择一个世界书。';
+                        setGlossaryText(statusEl, 'entries.chooseBook');
                         statusEl.style.color = '#ffdb58';
                     }
                 }

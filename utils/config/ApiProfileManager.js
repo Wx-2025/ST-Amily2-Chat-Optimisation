@@ -113,6 +113,23 @@ function createReadonlyProfileSnapshot(value, seen = new WeakMap()) {
     return Object.freeze(snapshot);
 }
 
+function cloneProfileMetadata(value, seen = new WeakMap()) {
+    if (value === null || typeof value !== 'object') return value;
+    const existing = seen.get(value);
+    if (existing) return existing;
+    const clone = Array.isArray(value) ? [] : {};
+    seen.set(value, clone);
+    for (const key of Object.keys(value)) {
+        Object.defineProperty(clone, key, {
+            value: cloneProfileMetadata(value[key], seen),
+            enumerable: true,
+            configurable: true,
+            writable: true,
+        });
+    }
+    return clone;
+}
+
 // ── ApiProfileManager ─────────────────────────────────────────────────────────
 
 class ApiProfileManager {
@@ -170,7 +187,7 @@ class ApiProfileManager {
     getProfiles(type) {
         const all = this._profiles();
         const selected = type ? all.filter(p => p.type === type) : all;
-        return createReadonlyProfileSnapshot(selected);
+        return createReadonlyProfileSnapshot(selected.map(profile => this._profileView(profile)));
     }
 
     /**
@@ -178,7 +195,7 @@ class ApiProfileManager {
      */
     getProfile(id) {
         const profile = this._profiles().find(p => p.id === id);
-        return profile ? createReadonlyProfileSnapshot(profile) : null;
+        return profile ? createReadonlyProfileSnapshot(this._profileView(profile)) : null;
     }
 
     /**
@@ -188,10 +205,25 @@ class ApiProfileManager {
      */
     createProfile(data) {
         const id = this._newId();
-        const profile = this._buildProfile(id, data);
+        const connectionSourceId = this._normalizeConnectionSource(id, data?.connectionSourceId);
+        const profile = this._buildProfile(id, { ...data, connectionSourceId });
         this._profiles().push(profile);
         this._save();
         return id;
+    }
+
+    /** 派生项只复制模型参数，连接与密钥引用来源，不复制功能槽分配。 */
+    async duplicateProfile(id) {
+        const source = this.getProfile(id);
+        if (!source) throw new Error(`API Profile "${id}" 不存在。`);
+        const connectionSource = this._resolveConnectionSourceProfile(id);
+        if (!connectionSource) throw new Error('连接继承链无效，无法创建派生配置。');
+        const data = cloneProfileMetadata(source);
+        delete data.id;
+        data.name = this._nextDuplicateName(source.name);
+        data.connectionSourceId = connectionSource.id;
+        data.apiUrl = '';
+        return this.createProfile(data);
     }
 
     /**
@@ -201,7 +233,23 @@ class ApiProfileManager {
         const list = this._profiles();
         const idx  = list.findIndex(p => p.id === id);
         if (idx === -1) return false;
-        list[idx] = this._buildProfile(id, { ...list[idx], ...data });
+        const merged = { ...list[idx], ...data };
+        const nextType = merged.type || 'chat';
+        const originalSourceId = list[idx].connectionSourceId || null;
+        const requestedSourceId = typeof merged.connectionSourceId === 'string'
+            ? merged.connectionSourceId.trim() || null : null;
+        if (requestedSourceId !== originalSourceId) {
+            throw new Error('连接来源不能改绑，请新建连接或从其他连接创建派生配置。');
+        }
+        if (nextType !== list[idx].type) {
+            if (Object.values(this._assignments()).includes(id)) {
+                throw new Error('该配置已分配给功能，请先解除分配再修改用途类型。');
+            }
+            if (!Object.hasOwn(data, 'model')) merged.model = '';
+        }
+        this._normalizeConnectionSource(id, originalSourceId);
+        merged.connectionSourceId = originalSourceId;
+        list[idx] = this._buildProfile(id, merged);
         refreshApiRequestRateLimit(id);
         this._save();
         this._emitLifecycle({
@@ -216,6 +264,13 @@ class ApiProfileManager {
      * 删除 Profile（同时清理存储的 Key 和功能槽引用）。
      */
     async deleteProfile(id) {
+        const dependents = this._connectionDependents(id);
+        if (dependents.length > 0) {
+            const error = new Error(`该连接仍被 ${dependents.length} 个派生配置引用，请先删除派生配置。`);
+            error.code = 'PROFILE_CONNECTION_SOURCE_IN_USE';
+            error.dependentProfileIds = Object.freeze(dependents.map(profile => profile.id));
+            throw error;
+        }
         const assignedSlots = this._assignedSlots(id);
         clearApiRequestRateLimit(id, 'API 连接配置已删除，取消等待中的请求。');
         // 先持久删除异步 Key；失败时不触碰 Profile/槽位元数据。
@@ -245,11 +300,19 @@ class ApiProfileManager {
 
     /** 读取 Profile 的 API Key（异步，自动解密） */
     async getKey(id) {
-        return apiKeyStore.retrieveById(id);
+        const profile = this._profiles().find(item => item.id === id);
+        if (!profile?.connectionSourceId) return apiKeyStore.retrieveById(id);
+        const source = this._resolveConnectionSourceProfile(id);
+        if (!source) throw new Error('连接继承来源不存在或已损坏。');
+        return apiKeyStore.retrieveById(source.id);
     }
 
     /** 写入 Profile 的 API Key（异步，自动加密） */
     async setKey(id, value) {
+        const profile = this._profiles().find(item => item.id === id);
+        if (profile?.connectionSourceId) {
+            throw new Error('派生配置的密钥由连接来源管理，不能单独写入。');
+        }
         const result = await apiKeyStore.storeById(id, value);
         this._emitLifecycle({
             type: 'profile-key-updated',
@@ -316,8 +379,12 @@ class ApiProfileManager {
     }
 
     _assignedSlots(profileId) {
+        const relatedProfileIds = new Set([
+            profileId,
+            ...this._connectionDependents(profileId).map(profile => profile.id),
+        ]);
         return Object.freeze(Object.entries(this._assignments())
-            .filter(([, assignedId]) => assignedId === profileId)
+            .filter(([, assignedId]) => relatedProfileIds.has(assignedId))
             .map(([slot]) => slot)
             .sort());
     }
@@ -331,6 +398,75 @@ class ApiProfileManager {
                 console.error('[ApiProfiles] 生命周期监听器执行失败。', error);
             }
         }
+    }
+
+    _nextDuplicateName(sourceName) {
+        const normalized = String(sourceName ?? '').trim() || '未命名配置';
+        const matched = normalized.match(/^(.*?)(?:（副本(?:\s+\d+)?）)$/u);
+        const base = matched?.[1]?.trim() || normalized;
+        const existingNames = new Set(this._profiles().map(profile => profile.name));
+        let ordinal = 1;
+        let candidate = `${base}（副本）`;
+        while (existingNames.has(candidate)) {
+            ordinal += 1;
+            candidate = `${base}（副本 ${ordinal}）`;
+        }
+        return candidate;
+    }
+
+    _connectionDependents(profileId) {
+        const profiles = this._profiles();
+        return profiles.filter(profile => {
+            let current = profile;
+            const visited = new Set();
+            while (current?.connectionSourceId && !visited.has(current.id)) {
+                visited.add(current.id);
+                if (current.connectionSourceId === profileId) return true;
+                current = profiles.find(item => item.id === current.connectionSourceId);
+            }
+            return false;
+        });
+    }
+
+    _resolveConnectionSourceProfile(profileId) {
+        const profiles = this._profiles();
+        let current = profiles.find(profile => profile.id === profileId);
+        if (!current) return null;
+        const visited = new Set();
+        while (current?.connectionSourceId) {
+            if (visited.has(current.id)) return null;
+            visited.add(current.id);
+            const source = profiles.find(profile => profile.id === current.connectionSourceId);
+            if (!source) return null;
+            current = source;
+        }
+        return current || null;
+    }
+
+    _normalizeConnectionSource(profileId, requestedSourceId) {
+        if (typeof requestedSourceId !== 'string' || !requestedSourceId.trim()) return null;
+        const sourceId = requestedSourceId.trim();
+        if (sourceId === profileId) throw new Error('配置不能继承自身连接。');
+        const source = this._profiles().find(profile => profile.id === sourceId);
+        if (!source) throw new Error('连接继承来源不存在。');
+        const root = this._resolveConnectionSourceProfile(sourceId);
+        if (!root || root.id === profileId) throw new Error('连接继承链无效或形成循环。');
+        return root.id;
+    }
+
+    _profileView(profile) {
+        const view = cloneProfileMetadata(profile);
+        if (!profile.connectionSourceId) return view;
+        const source = this._resolveConnectionSourceProfile(profile.id);
+        if (!source || source.id === profile.id) {
+            view.apiUrl = '';
+            view.connectionSourceMissing = true;
+            return view;
+        }
+        view.provider = source.provider;
+        view.apiUrl = source.apiUrl;
+        view.connectionSourceMissing = false;
+        return view;
     }
 
     /**
@@ -350,14 +486,17 @@ class ApiProfileManager {
 
     _buildProfile(id, data) {
         const type = data.type || 'chat';
+        const connectionSourceId = typeof data.connectionSourceId === 'string'
+            && data.connectionSourceId.trim() ? data.connectionSourceId.trim() : null;
         const base = {
             id,
             name:     data.name     || '未命名配置',
             type,
             provider: data.provider || 'openai',
-            apiUrl:   data.apiUrl   || '',
+            apiUrl:   connectionSourceId ? '' : (data.apiUrl || ''),
             model:    data.model    || '',
             rpm:      normalizeApiProfileRpm(data.rpm),
+            connectionSourceId,
         };
 
         if (type === 'chat') {
@@ -535,12 +674,112 @@ const LEGACY_PROFILE_MIGRATION_MAP = [
     },
 ];
 
+const LEGACY_PLOT_OPT_CUSTOM_PARAM_FIELDS = Object.freeze([
+    Object.freeze({ source: 'plotOpt_top_p', target: 'top_p', min: 0, max: 1 }),
+    Object.freeze({ source: 'plotOpt_presence_penalty', target: 'presence_penalty', min: -2, max: 2 }),
+    Object.freeze({ source: 'plotOpt_frequency_penalty', target: 'frequency_penalty', min: -2, max: 2 }),
+]);
+
+/**
+ * Merge valid legacy plot-optimization sampling fields into profile customParams.
+ * Existing profile values are authoritative and are never overwritten.
+ */
+export function mergeLegacyPlotOptCustomParams(settings, existingCustomParams = {}) {
+    const source = settings && typeof settings === 'object' ? settings : {};
+    const existing = existingCustomParams
+        && typeof existingCustomParams === 'object'
+        && !Array.isArray(existingCustomParams)
+        ? existingCustomParams
+        : {};
+    const customParams = { ...existing };
+    const migratedKeys = [];
+
+    for (const field of LEGACY_PLOT_OPT_CUSTOM_PARAM_FIELDS) {
+        if (Object.prototype.hasOwnProperty.call(customParams, field.target)) continue;
+        const raw = source[field.source];
+        if (raw === '' || raw === null || raw === undefined) continue;
+        const value = Number(raw);
+        if (!Number.isFinite(value) || value < field.min || value > field.max) continue;
+        customParams[field.target] = value;
+        migratedKeys.push(field.target);
+    }
+
+    return Object.freeze({
+        customParams,
+        migratedKeys: Object.freeze(migratedKeys),
+    });
+}
+
+/**
+ * Apply plot-optimization-only legacy parameters without changing another slot
+ * that happens to share the same profile.
+ */
+export async function migrateLegacyPlotOptCustomParams(settings, manager = apiProfileManager) {
+    const profileId = manager.getAssignment('plotOpt');
+    if (!profileId) return Object.freeze({ migrated: false, reason: 'unassigned' });
+
+    const profile = manager.getProfile(profileId);
+    if (!profile || profile.type !== 'chat') {
+        return Object.freeze({ migrated: false, reason: 'invalid-profile' });
+    }
+
+    const merged = mergeLegacyPlotOptCustomParams(settings, profile.customParams);
+    if (merged.migratedKeys.length === 0) {
+        return Object.freeze({ migrated: false, reason: 'no-valid-fields' });
+    }
+
+    const assignedSlots = Object.keys(SLOTS)
+        .filter(slot => manager.getAssignment(slot) === profileId);
+
+    if (assignedSlots.length <= 1) {
+        if (!manager.updateProfile(profileId, { customParams: merged.customParams })) {
+            throw new Error('剧情优化旧参数迁移失败：无法更新已分配的 API profile。');
+        }
+        return Object.freeze({
+            migrated: true,
+            profileId,
+            cloned: false,
+            migratedKeys: merged.migratedKeys,
+        });
+    }
+
+    // customParams 属于整个 profile。共享配置必须先复制，否则剧情优化的
+    // 历史参数会改变正文、填表等其他槽位的请求行为。
+    const storedKey = profile.connectionSourceId ? null : await manager.getKey(profileId);
+    const clonedProfileId = manager.createProfile({
+        ...profile,
+        name: `${profile.name || '剧情优化'}（旧参数迁移）`,
+        customParams: merged.customParams,
+    });
+
+    try {
+        if (storedKey) await manager.setKey(clonedProfileId, storedKey);
+        if (!manager.setAssignment('plotOpt', clonedProfileId)) {
+            throw new Error('无法将剧情优化槽位切换到迁移后的 API profile。');
+        }
+    } catch (error) {
+        try {
+            await manager.deleteProfile(clonedProfileId);
+        } catch (cleanupError) {
+            console.warn('[ApiProfiles] 清理迁移失败后创建的剧情优化 profile 失败。', cleanupError);
+        }
+        throw error;
+    }
+
+    return Object.freeze({
+        migrated: true,
+        profileId: clonedProfileId,
+        cloned: true,
+        migratedKeys: merged.migratedKeys,
+    });
+}
+
 /**
  * 迁移版本号：首次发布的 6 槽迁移为 v1（旧布尔标记 _legacyProfileMigrationDone），
- * v2 新增 cwb + autoCharCard。版本号小于当前值时重跑迁移循环——循环本身按
+ * v2 新增 cwb + autoCharCard，v4 补迁剧情优化高级采样参数。版本号小于当前值时重跑迁移循环——循环本身按
  * "已分配 profile 的 slot 跳过"幂等，老用户只会补迁新增槽位，不会产生重复 profile。
  */
-const LEGACY_MIGRATION_VERSION = 3;
+const LEGACY_MIGRATION_VERSION = 4;
 
 ;(async () => {
     try {
@@ -583,6 +822,14 @@ const LEGACY_MIGRATION_VERSION = 3;
 
             apiProfileManager.setAssignment(m.slot, profileId);
             migrated.push(`${m.slot} → ${profileId}`);
+        }
+
+        const plotOptCustomParamsMigration = await migrateLegacyPlotOptCustomParams(s);
+        if (plotOptCustomParamsMigration.migrated) {
+            migrated.push(
+                `plotOpt 自定义参数 (${plotOptCustomParamsMigration.migratedKeys.join(', ')})`
+                + (plotOptCustomParamsMigration.cloned ? ' → 专用 profile' : ''),
+            );
         }
 
         // autoCharCard 特殊处理：legacy 配置是两份嵌套对象（executor=模型A / planner=模型B），

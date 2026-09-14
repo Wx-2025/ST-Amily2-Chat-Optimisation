@@ -2,6 +2,7 @@ import * as state from './prese_state.js';
 import * as ui from './prese_ui.js';
 import { bindDragEvents } from './prese_dragdrop.js';
 import { sectionTitles } from './config.js';
+import { presetText, presetToast, presetSectionTitle, presetError, presetErrorParams } from './i18n.js';
 
 function updatePresetsFromUI(context) {
     const currentPresets = state.getCurrentPresets();
@@ -41,7 +42,7 @@ function exportSectionPreset(sectionKey) {
     a.click();
     URL.revokeObjectURL(url);
     
-    toastr.success(`${sectionTitles[sectionKey]} 已导出！`);
+    presetToast('success', 'toast.sectionExport', () => ({ section: presetSectionTitle(sectionKey) }));
 }
 
 function importSectionPreset(sectionKey, context) {
@@ -62,23 +63,23 @@ function importSectionPreset(sectionKey, context) {
                         if (imported.presets[sectionKey] && imported.mixedOrder[sectionKey]) {
                             currentPresets[sectionKey] = imported.presets[sectionKey];
                             currentMixedOrder[sectionKey] = imported.mixedOrder[sectionKey];
-                            toastr.success(`${sectionTitles[sectionKey]} 已成功导入！`);
+                            presetToast('success', 'toast.sectionImport', () => ({ section: presetSectionTitle(sectionKey) }));
                         } else {
-                            throw new Error("文件中不包含对应的section数据");
+                            throw presetError('error.sectionMissing');
                         }
                     } else if (imported.version === 'v2.1' && imported.presets && imported.mixedOrder) {
                         if (imported.presets[sectionKey] && imported.mixedOrder[sectionKey]) {
                             currentPresets[sectionKey] = imported.presets[sectionKey];
                             currentMixedOrder[sectionKey] = imported.mixedOrder[sectionKey];
-                            toastr.success(`${sectionTitles[sectionKey]} 已成功导入！`);
+                            presetToast('success', 'toast.sectionImport', () => ({ section: presetSectionTitle(sectionKey) }));
                         } else {
-                            throw new Error("文件中不包含对应的section数据");
+                            throw presetError('error.sectionMissing');
                         }
                     } else if (imported[sectionKey]) {
                         currentPresets[sectionKey] = imported[sectionKey];
-                        toastr.success(`${sectionTitles[sectionKey]} 已成功导入（使用默认条件块顺序）！`);
+                        presetToast('success', 'toast.sectionImportLegacy', () => ({ section: presetSectionTitle(sectionKey) }));
                     } else {
-                        throw new Error("无法识别的文件格式或不包含对应section数据");
+                        throw presetError('error.sectionFormat');
                     }
                     
                     state.setCurrentPresets(currentPresets);
@@ -89,7 +90,7 @@ function importSectionPreset(sectionKey, context) {
                     }
                 } catch (error) {
                     console.error("Import section error:", error);
-                    toastr.error(`导入失败：${error.message}`);
+                    presetToast('error', 'error.import', presetErrorParams(error));
                 }
             };
             reader.readAsText(file);
@@ -116,7 +117,7 @@ function exportAllPresets() {
     a.click();
     URL.revokeObjectURL(url);
     
-    toastr.success(`预设 "${activePresetName}" 的所有配置已导出！`);
+    presetToast('success', 'toast.allExport', { name: activePresetName });
 }
 
 function importAllPresets(context) {
@@ -135,16 +136,16 @@ function importAllPresets(context) {
                         state.setCurrentPresets(imported.presets);
                         state.setCurrentMixedOrder(imported.mixedOrder);
                         state.savePresets();
-                        toastr.success(`所有配置已成功导入！`);
+                        presetToast('success', 'toast.allImport');
                         if (context && context.length) {
                             ui.renderEditor(context);
                         }
                     } else {
-                        throw new Error("无法识别的文件格式或不是完整的预设配置");
+                        throw presetError('error.fullFormat');
                     }
                 } catch (error) {
                     console.error("Import all presets error:", error);
-                    toastr.error(`导入失败：${error.message}`);
+                    presetToast('error', 'error.import', presetErrorParams(error));
                 }
             };
             reader.readAsText(file);
@@ -166,7 +167,7 @@ export function bindEvents(context) {
         state.setCurrentMixedOrder(currentMixedOrder);
         
         ui.renderEditor(context);
-        toastr.info('新提示词已添加，点击保存按钮完成操作');
+        presetToast('info', 'toast.added');
     });
 
     context.find('.delete-mixed-item').off('click.amily2').on('click.amily2', function() {
@@ -194,7 +195,7 @@ export function bindEvents(context) {
         state.setCurrentMixedOrder(currentMixedOrder);
         
         ui.renderEditor(context);
-        toastr.info('项目已删除，点击保存按钮完成操作');
+        presetToast('info', 'toast.removed');
     });
 
     context.off('change.amily2', '.role-select').on('change.amily2', '.role-select', function() {
@@ -237,7 +238,8 @@ export function bindEvents(context) {
         const sectionKey = $(this).closest('.prompt-section').data('section');
         updatePresetsFromUI(context);
         state.savePresets();
-        toastr.success(`${sectionTitles[sectionKey]} in preset "${state.getPresetManager().activePreset}" has been saved!`);
+        const name = state.getPresetManager().activePreset;
+        presetToast('success', 'toast.sectionSaved', () => ({ section: presetSectionTitle(sectionKey), name }));
     });
 
     context.find('.import-section-preset').off('click.amily2').on('click.amily2', function() {
@@ -252,7 +254,7 @@ export function bindEvents(context) {
 
     context.find('.reset-section-preset').off('click.amily2').on('click.amily2', function() {
         const sectionKey = $(this).closest('.prompt-section').data('section');
-        if (confirm(`您确定要将 ${sectionTitles[sectionKey]} 恢复为默认设置吗？`)) {
+        if (confirm(presetText('confirm.resetSection', { section: presetSectionTitle(sectionKey) }))) {
             state.resetSectionPreset(sectionKey);
             ui.renderEditor(context);
         }
@@ -262,7 +264,7 @@ export function bindEvents(context) {
     context.find('#save-all-presets').off('click.amily2').on('click.amily2', function() {
         updatePresetsFromUI(context);
         state.savePresets();
-        toastr.success(`预设 "${state.getPresetManager().activePreset}" 的所有配置已保存！`);
+        presetToast('success', 'toast.allSaved', { name: state.getPresetManager().activePreset });
     });
 
     context.find('#export-all-presets').off('click.amily2').on('click.amily2', function() {
@@ -274,7 +276,7 @@ export function bindEvents(context) {
     });
 
     context.find('#reset-all-presets').off('click.amily2').on('click.amily2', function() {
-        if (confirm("您确定要将当前预设的所有配置恢复为默认状态吗？此操作无法撤销。")) {
+        if (confirm(presetText('confirm.resetAll'))) {
             state.resetPresets();
             ui.renderEditor(context);
         }

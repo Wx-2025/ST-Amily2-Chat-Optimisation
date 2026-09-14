@@ -10,8 +10,9 @@ import {
     captureTableFillRequestLease,
     isTableFillRequestLeaseError,
 } from './infra/persistence-scope.js';
+import { TABLE_GROUP_IDS } from './table-groups.js';
 
-export async function reorganizeTableContent(selectedTableIndices) {
+export async function reorganizeTableContent(selectedTableIndices, options = {}) {
     const settings = extension_settings[extensionName] || {};
 
     if (settings.table_system_enabled === false) {
@@ -29,14 +30,21 @@ export async function reorganizeTableContent(selectedTableIndices) {
         // Reorganization emits numeric legacy commands derived from the
         // current table snapshot. It has no message-floor target, so bind the
         // exact chat source and table lease without inventing target evidence.
-        const requestLease = captureTableFillRequestLease(context);
+        const requestLease = captureTableFillRequestLease(context, {
+            tableGroupId: options.tableGroupId || TABLE_GROUP_IDS.AMILY,
+        });
         toastr.info('正在重新整理表格内容...', 'Amily2-重新整理');
         
         let currentTableDataString;
         if (selectedTableIndices && Array.isArray(selectedTableIndices) && selectedTableIndices.length > 0) {
-            currentTableDataString = convertSelectedAiFillableTablesToCsvString(selectedTableIndices);
+            currentTableDataString = convertSelectedAiFillableTablesToCsvString(
+                selectedTableIndices,
+                requestLease.tableGroupId,
+            );
         } else {
-            currentTableDataString = convertAiFillableTablesToCsvString();
+            currentTableDataString = convertAiFillableTablesToCsvString(
+                requestLease.tableGroupId,
+            );
         }
 
         if (!currentTableDataString.trim()) {

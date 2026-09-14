@@ -60,9 +60,13 @@ import {
 } from './table-fill-batching.js';
 import { collectTableFillOperationBatches } from './table-fill-batch-runner.js';
 import { commitToLastMessageAsync } from './infra/persistence.js';
-import { createManualFillHandoffTransaction } from './manual-fill-handoff.js';
+import {
+    createManualFillHandoffTransaction,
+    notifyTableFillProgressChanged,
+} from './manual-fill-handoff.js';
 import { parseToOperationsDetailed } from './executor.js';
 import { dispatchTableFillStart } from '../internal/table-fill-lifecycle-channel.js';
+import { TABLE_GROUP_IDS } from './table-groups.js';
 
 const CONTINUE_PROMPT = '上一条回复不完整或缺少 <Amily2Edit> 指令块。请直接从中断处继续生成剩余内容，不要重复已输出的文本，也不要添加任何解释或寒暄，确保最终输出中包含完整的 <Amily2Edit>...</Amily2Edit> 指令块。';
 
@@ -94,14 +98,35 @@ function tableCommitTransaction(expectedScope) {
     };
 }
 
-function createManualFillPersistCandidate(fillEvidence, expectedScope) {
+function notifyManualFillCursorAdvanced(tableGroupId, advanceThroughIndex) {
+    notifyTableFillProgressChanged({
+        reason: 'manual-fill-cursor-advanced',
+        tableGroupId,
+        floor: advanceThroughIndex + 1,
+    });
+}
+
+function createManualFillPersistCandidate(
+    fillEvidence,
+    expectedScope,
+    tableGroupId,
+    advanceThroughIndex,
+) {
     const transaction = createManualFillHandoffTransaction({
         sourceMessages: fillEvidence.sourceMessages,
         targetMessages: fillEvidence.targetMessages,
         expectedScope,
+        tableGroupId,
+        advanceThroughIndex,
         transaction: tableCommitTransaction(expectedScope),
     });
-    return state => commitToLastMessageAsync(state, undefined, transaction);
+    return async state => {
+        const committed = await commitToLastMessageAsync(state, undefined, transaction);
+        if (committed) {
+            notifyManualFillCursorAdvanced(tableGroupId, advanceThroughIndex);
+        }
+        return committed;
+    };
 }
 
 async function commitExplicitManualTextNoop(
@@ -144,6 +169,7 @@ let totalBatches = 0;
 let chatHistoryLength = 0;
 let threshold = 30;
 let activeBatchChatScope = null;
+let activeBatchTableGroupId = TABLE_GROUP_IDS.AMILY;
 let activeImmediateFillRequestBudget = null;
 const MAX_RETRIES = 2; 
 
@@ -417,15 +443,25 @@ async function runBatchAttempt(batchNum, attemptNum, runControl) {
         const startFloor = (batchNum - 1) * threshold + 1;
         const endFloor = Math.min(startFloor + threshold - 1, chatHistoryLength);
         const fillContext = getContext();
-        const fillLease = captureTableFillRequestLease(fillContext);
+        const fillLease = captureTableFillRequestLease(fillContext, {
+            tableGroupId: activeBatchTableGroupId,
+        });
+        if (fillLease.targetTableIds.length === 0) {
+            throw createBatchFillerError(
+                'EMPTY_TABLE_GROUP',
+                `当前 Group "${fillLease.tableGroupId}" 没有可由 AI 填写的表格。`,
+            );
+        }
         const fillEvidence = getFillEvidence(fillContext, startFloor, endFloor);
         const persistManualCandidate = createManualFillPersistCandidate(
             fillEvidence,
             activeBatchChatScope,
+            fillLease.tableGroupId,
+            endFloor - 1,
         );
         const batchSettings = extension_settings[extensionName] || {};
         const tableBatches = planTableFillBatches(
-            fillLease.state,
+            fillLease.scopedState,
             batchSettings.table_fill_tables_per_request,
         );
         const splitTablesAcrossRequests = tableBatches.length > 1;
@@ -446,7 +482,9 @@ async function runBatchAttempt(batchNum, attemptNum, runControl) {
         const batchContent = purifiedMessages.map(m => `【第 ${m.floor} 楼】 ${m.author}: ${m.content}`).join('\n');
         const ruleTemplate = getBatchFillerRuleTemplate();
         const flowTemplate = getBatchFillerFlowTemplate();
-        const currentTableDataString = convertAiFillableTablesToCsvString();
+        const currentTableDataString = convertAiFillableTablesToCsvString(
+            fillLease.tableGroupId,
+        );
         const finalFlowPrompt = splitTablesAcrossRequests
             ? buildCacheStableFlowPrompt(flowTemplate)
             : buildFillerFlowPrompt(flowTemplate, currentTableDataString);
@@ -524,7 +562,8 @@ async function runBatchAttempt(batchNum, attemptNum, runControl) {
 
         const tableBatchResult = splitTablesAcrossRequests
             ? await collectTableFillOperationBatches({
-                tableState: fillLease.state,
+                tableState: fillLease.scopedState,
+                fullTableState: fillLease.state,
                 tableBatches,
                 stableToolMessages: toolMessages,
                 stableTextMessages: textMessages,
@@ -613,7 +652,7 @@ async function runBatchAttempt(batchNum, attemptNum, runControl) {
         assertBatchFillerScope(activeBatchChatScope);
         const toolResult = batchSettings.tableFillFunctionCall
             ? await requestTableFillOperationsV2(toolMessages, {
-                tableState: fillLease.state,
+                tableState: fillLease.scopedState,
                 settings: batchSettings,
                 slot: 'tableFilling',
                 requestBudget: immediateRequestBudget,
@@ -949,7 +988,7 @@ async function processNextBatch() {
     }));
 }
 
-export function startBatchFilling() {
+export function startBatchFilling(options = {}) {
     const button = fillButton();
     if (!button) return;
 
@@ -978,6 +1017,7 @@ export function startBatchFilling() {
     }
 
     manualStopRequested = false;
+    activeBatchTableGroupId = options.tableGroupId || TABLE_GROUP_IDS.AMILY;
     activeImmediateFillRequestBudget = createImmediateFillActionRequestBudget(
         'immediate-table-fill-action',
     );
@@ -1075,15 +1115,23 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
     }
 
     try {
-        const fillLease = captureTableFillRequestLease(context);
+        const fillLease = captureTableFillRequestLease(context, {
+            tableGroupId: options.tableGroupId || TABLE_GROUP_IDS.AMILY,
+        });
+        if (fillLease.targetTableIds.length === 0) {
+            toastr.warning('当前 Group 没有可由 AI 填写的表格。');
+            return false;
+        }
         const fillEvidence = getFillEvidence(context, startFloor, endFloor);
         const persistManualCandidate = createManualFillPersistCandidate(
             fillEvidence,
             requestScope,
+            fillLease.tableGroupId,
+            endFloor - 1,
         );
         const floorSettings = extension_settings[extensionName] || {};
         const tableBatches = planTableFillBatches(
-            fillLease.state,
+            fillLease.scopedState,
             floorSettings.table_fill_tables_per_request,
         );
         const splitTablesAcrossRequests = tableBatches.length > 1;
@@ -1103,7 +1151,9 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
         });
 
         const batchContent = purifiedMessages.map(m => `【第 ${m.floor} 楼】 ${m.author}: ${m.content}`).join('\n');
-        const currentTableDataString = convertAiFillableTablesToCsvString();
+        const currentTableDataString = convertAiFillableTablesToCsvString(
+            fillLease.tableGroupId,
+        );
         const finalFlowPrompt = splitTablesAcrossRequests
             ? buildCacheStableFlowPrompt(flowTemplate)
             : buildFillerFlowPrompt(flowTemplate, currentTableDataString);
@@ -1181,7 +1231,8 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
 
         const tableBatchResult = splitTablesAcrossRequests
             ? await collectTableFillOperationBatches({
-                tableState: fillLease.state,
+                tableState: fillLease.scopedState,
+                fullTableState: fillLease.state,
                 tableBatches,
                 stableToolMessages: toolMessages,
                 stableTextMessages: textMessages,
@@ -1277,7 +1328,7 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
         assertBatchFillerScope(requestScope);
         const toolResult = floorSettings.tableFillFunctionCall
             ? await requestTableFillOperationsV2(toolMessages, {
-                tableState: fillLease.state,
+                tableState: fillLease.scopedState,
                 settings: floorSettings,
                 slot: 'tableFilling',
                 ...(signal ? { signal } : {}),
@@ -1461,6 +1512,7 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
                         }
                         log(`用户请求重新填写楼层 ${startFloor}-${endFloor}。`, 'warn');
                         setTimeout(() => startFloorRangeFilling(startFloor, endFloor, {
+                            tableGroupId: fillLease.tableGroupId,
                             runControl: createTableFillRunControl({
                                 scope: `floor-range-${startFloor}-${endFloor}-manual-retry`,
                             }),

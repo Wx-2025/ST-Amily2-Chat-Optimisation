@@ -9,6 +9,8 @@ import { extensionName } from '../../utils/settings.js';
 import { log } from './logger.js';
 import { renderTables } from '../../ui/table-bindings.js';
 import { updateOrInsertTableInChat } from '../../ui/message-table-renderer.js';
+import { getChatContextEpoch } from './infra/chat-scope.js';
+import { getActiveTableGroupId } from './table-group-selection.js';
 
 const INJECTION_KEY = 'AMILY2_TABLE_SYSTEM';
 
@@ -21,25 +23,26 @@ export function generateTableContent() {
     }
 
     try {
+        const tableGroupId = getActiveTableGroupId(getChatContextEpoch());
 
         const fillingMode = settings.filling_mode || 'main-api'; 
 
         if (fillingMode === 'secondary-api') {
             const contentOnlyTemplate = "##以下内容是故事发生的剧情中提取出的内容，已经转化为表格形式呈现给你，请将以下内容作为后续剧情的一部分参考：\n{{{Amily2TableDataContent}}}";
-            const dataString = convertTablesToCsvStringForContentOnly();
+            const dataString = convertTablesToCsvStringForContentOnly(tableGroupId);
             if (dataString.trim()) {
                 injectionContent = contentOnlyTemplate.replace('{{{Amily2TableDataContent}}}', dataString);
             }
         } else if (fillingMode === 'optimized') {
             const contentOnlyTemplate = "##以下内容是故事发生的剧情中提取出的内容，已经转化为表格形式呈现给你，请将以下内容作为后续剧情的一部分参考：\n{{{Amily2TableDataContent}}}";
-            const dataString = convertTablesToCsvStringForContentOnly();
+            const dataString = convertTablesToCsvStringForContentOnly(tableGroupId);
             if (dataString.trim()) {
                 injectionContent = contentOnlyTemplate.replace('{{{Amily2TableDataContent}}}', dataString);
             }
         }
         else { 
             const flowTemplate = getBatchFillerFlowTemplate();
-            const dataString = convertTablesToCsvString();
+            const dataString = convertTablesToCsvString(tableGroupId);
             if (flowTemplate && dataString.trim()) {
                 injectionContent = flowTemplate.replace('{{{Amily2TableData}}}', dataString);
             }

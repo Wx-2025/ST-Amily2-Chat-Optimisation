@@ -19,6 +19,7 @@
  * @property {string} name                      表格名（唯一标识 + UI 显示名）
  * @property {string} [id]                       稳定表 ID，模块/API 引用使用它而非 name
  * @property {string} [owner]                    表拥有者；旧表默认 user
+ * @property {string} [groupId]                  持久表格 Group ID；不得与宿主群聊 groupId 混用
  * @property {number} [schemaVersion]            表结构版本
  * @property {1|2} [fillProtocolVersion]          AI 填表协议世代；缺失视为旧索引 Tool
  * @property {string[]} headers                 列头数组，长度 = 列数

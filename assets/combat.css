@@ -24,6 +24,16 @@
 
 #amily2_combat_panel .am2-combat-header {
     justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+#amily2_combat_panel .am2-combat-header > div {
+    flex: 1 1 240px;
+    min-width: 0;
+}
+
+#amily2_combat_panel .am2-combat-title-line {
+    flex-wrap: wrap;
 }
 
 #amily2_combat_panel .am2-combat-header h3,
@@ -101,8 +111,17 @@
 }
 
 #amily2_combat_panel button {
-    white-space: nowrap;
+    max-width: 100%;
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
     writing-mode: horizontal-tb;
+}
+
+#amily2_combat_panel legend,
+#amily2_combat_panel summary,
+#amily2_combat_panel .am2-combat-field > span {
+    overflow-wrap: anywhere;
 }
 
 #amily2_combat_panel textarea {

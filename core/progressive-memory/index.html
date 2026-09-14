@@ -1,134 +1,144 @@
 <div class="amily2-header">
-    <div class="additional-features-title interactable" title="渐进记忆（内测）">
-        <i class="fas fa-layer-group"></i> 渐进记忆 <span style="font-size: 0.6em; color: #ffc107; vertical-align: super;">内测</span>
+    <div class="additional-features-title interactable" data-amily-i18n-title="memoryUi.progressiveTitleTip" title="渐进记忆（内测）">
+        <i class="fas fa-layer-group"></i> <span data-amily-i18n="memoryUi.progressiveTitle">渐进记忆</span> <span style="font-size: 0.6em; color: #ffc107; vertical-align: super;"><span data-amily-i18n="memoryUi.beta">内测</span></span>
     </div>
-    <button id="amily2_back_to_main_from_progressive_memory" class="menu_button secondary small_button interactable"><i class="fas fa-arrow-left"></i> 返回
+    <button id="amily2_back_to_main_from_progressive_memory" class="menu_button secondary small_button interactable"><i class="fas fa-arrow-left"></i> <span data-amily-i18n="memoryUi.back">返回</span>
     </button>
 </div>
 <hr class="header-divider">
 
 <div id="pm-modal-container">
     <div class="sm-intro-box">
-        <h3><i class="fas fa-layer-group"></i> 渐进记忆</h3>
-        <p>按「最近的完整保留、更早的只抽部分」的方式，从指定表格取历史摘要，临时塞进当前对话上下文，让 AI 既记得近事，也能扫一眼更久以前。</p>
-        <p style="color: #ffc107; font-size: 0.9em;"><i class="fas fa-flask"></i> 内测功能：内容只在本轮对话里临时使用，不写进世界书，也不随聊天导出。</p>
+        <h3><i class="fas fa-layer-group"></i> <span data-amily-i18n="memoryUi.progressiveTitle">渐进记忆</span></h3>
+        <p><span data-amily-i18n="memoryUi.progressiveIntro">按「最近的完整保留、更早的只抽部分」的方式，从指定表格取历史摘要，临时塞进当前对话上下文，让 AI 既记得近事，也能扫一眼更久以前。</span></p>
+        <p style="color: #ffc107; font-size: 0.9em;"><i class="fas fa-flask"></i> <span data-amily-i18n="memoryUi.betaHelp">内测功能：内容只在本轮对话里临时使用，不写进世界书，也不随聊天导出。</span></p>
     </div>
 
     <fieldset class="sm-settings-group">
-        <legend><i class="fas fa-cogs"></i> 基础设置</legend>
+        <legend><i class="fas fa-cogs"></i> <span data-amily-i18n="memoryUi.basic">基础设置</span></legend>
         <div class="sm-control-block">
-            <label>启用渐进记忆:</label>
+            <label><span data-amily-i18n="memoryUi.enableProgressive">启用渐进记忆:</span></label>
             <label class="sm-toggle-switch">
                 <input type="checkbox" id="pm-enabled">
                 <span class="sm-slider"></span>
             </label>
         </div>
         <div class="sm-control-block" style="display: block;">
-            <label for="pm-target-table" title="仅允许选择当前聊天中由用户拥有、且具有稳定表格 ID 的表格">数据来源表格:</label>
+            <label for="pm-target-table" data-amily-i18n-title="memoryUi.sourceTip" title="仅允许选择当前聊天中由用户拥有、且具有稳定表格 ID 的表格"><span data-amily-i18n="memoryUi.source">数据来源表格:</span></label>
             <select id="pm-target-table" class="text_pole" style="width: 100%; margin-top: 5px;"></select>
             <small id="pm-source-status" style="color: #888; font-size: 0.8em; display: block; margin-top: 3px;"></small>
         </div>
         <div class="sm-control-block" style="display: block;">
-            <label for="pm-allowed-columns" title="只会把选中的列送入模型上下文；凭证、密钥、令牌等敏感列默认不选">允许注入的列:</label>
+            <label for="pm-allowed-columns" data-amily-i18n-title="memoryUi.columnsTip" title="只会把选中的列送入模型上下文；凭证、密钥、令牌等敏感列默认不选"><span data-amily-i18n="memoryUi.columns">允许注入的列:</span></label>
             <select id="pm-allowed-columns" class="text_pole" multiple size="6" style="width: 100%; margin-top: 5px;"></select>
-            <small style="color: #888; font-size: 0.8em; display: block; margin-top: 3px;">按住 Ctrl 可多选；选项值为稳定列 ID。凭证类列默认排除，请仅选择确实需要进入模型上下文的列。</small>
+            <small style="color: #888; font-size: 0.8em; display: block; margin-top: 3px;"><span data-amily-i18n="memoryUi.columnsHelp">按住 Ctrl 可多选；选项值为稳定列 ID。凭证类列默认排除，请仅选择确实需要进入模型上下文的列。</span></small>
         </div>
         <div class="sm-control-block" style="display: block;">
             <label style="display: flex; align-items: flex-start; gap: 8px;">
                 <input type="checkbox" id="pm-data-egress-ack" style="margin-top: 3px;">
-                <span>我确认：所选表格与列的数据会进入模型上下文；启用远带时，史官宏史卷也会进入模型上下文。这些内容可能发送给当前配置的外部模型服务商。</span>
+                <span data-amily-i18n="progressive.egressAcknowledgement">我确认：所选表格与列的数据会进入模型上下文；启用远期摘要时，大总结也会进入模型上下文。这些内容可能发送给当前配置的外部模型服务商。</span>
             </label>
         </div>
     </fieldset>
 
     <fieldset class="sm-settings-group">
-        <legend><i class="fas fa-heartbeat"></i> 运行状态</legend>
+        <legend><i class="fas fa-heartbeat"></i> <span data-amily-i18n="memoryUi.runtime">运行状态</span></legend>
         <div class="sm-control-block" style="display: block;">
-            <strong id="pm-runtime-state" aria-live="polite">等待当前聊天的表格状态就绪</strong>
-            <small id="pm-runtime-detail" style="color: #888; font-size: 0.8em; display: block; margin-top: 4px;">尚无本轮取样数据</small>
+            <strong id="pm-runtime-state" aria-live="polite"><span data-amily-i18n="memoryUi.status.context-not-ready">等待当前聊天的表格状态就绪</span></strong>
+            <small id="pm-runtime-detail" style="color: #888; font-size: 0.8em; display: block; margin-top: 4px;"><span data-amily-i18n="memoryUi.noSample">尚无本轮取样数据</span></small>
         </div>
-        <button type="button" id="pm-disable-clear" class="menu_button secondary interactable" title="立即关闭渐进记忆、使在途取样失效并清除当前宿主提示词注入">
-            <i class="fas fa-power-off"></i> 停用并清除
+        <button type="button" id="pm-disable-clear" class="menu_button secondary interactable" data-amily-i18n-title="memoryUi.disableTip" title="立即关闭渐进记忆、使在途取样失效并清除当前宿主提示词注入">
+            <i class="fas fa-power-off"></i> <span data-amily-i18n="memoryUi.disableClear">停用并清除</span>
         </button>
     </fieldset>
 
     <fieldset class="sm-settings-group">
-        <legend><i class="fas fa-sliders-h"></i> 取样设置</legend>
+        <legend><i class="fas fa-sliders-h"></i> <span data-amily-i18n="memoryUi.sampling">取样设置</span></legend>
         <div class="sm-control-block">
-            <label title="最近 N 行全部保留（最近发生的事，完整保留）">最近完整保留行数:</label>
+            <label data-amily-i18n-title="memoryUi.recentTip" title="最近 N 行全部保留（最近发生的事，完整保留）"><span data-amily-i18n="memoryUi.recent">最近完整保留行数:</span></label>
             <input type="number" id="pm-recent" min="0" step="1" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 80px;" value="5">
         </div>
         <div class="sm-control-block">
-            <label title="除最近部分外，较近一半历史里均匀抽取的行数">中期抽取行数:</label>
+            <label data-amily-i18n-title="memoryUi.midTip" title="除最近部分外，较近一半历史里均匀抽取的行数"><span data-amily-i18n="memoryUi.mid">中期抽取行数:</span></label>
             <input type="number" id="pm-mid" min="0" step="1" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 80px;" value="5">
         </div>
         <div class="sm-control-block">
-            <label title="更早一半历史里均匀抽取的行数">远期抽取行数:</label>
+            <label data-amily-i18n-title="memoryUi.farTip" title="更早一半历史里均匀抽取的行数"><span data-amily-i18n="memoryUi.far">远期抽取行数:</span></label>
             <input type="number" id="pm-far" min="0" step="1" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 80px;" value="3">
         </div>
         <small style="color: #888; font-size: 0.8em; display: block; margin-top: -5px; margin-bottom: 10px; padding-left: 5px;">
-            表格按时间从旧到新：最新几行完整保留；其余历史对半拆开，较近一半均匀抽若干行、更远一半再均匀抽若干行（固定间距取样，不随机）。
+            <span data-amily-i18n="memoryUi.samplingHelp">表格按时间从旧到新：最新几行完整保留；其余历史对半拆开，较近一半均匀抽若干行、更远一半再均匀抽若干行（固定间距取样，不随机）。</span>
         </small>
         <div class="sm-control-block">
-            <label title="取样内容的用户 Token 上限；0 = 不设置更低的用户上限，仍受系统硬上限。超出时从最旧的行开始丢弃，优先保住最新行">内容 Token 上限:</label>
+            <label data-amily-i18n-title="memoryUi.tokensTip" title="取样内容的用户 Token 上限；0 = 不设置更低的用户上限，仍受系统硬上限。超出时从最旧的行开始丢弃，优先保住最新行"><span data-amily-i18n="memoryUi.tokens">内容 Token 上限:</span></label>
             <input type="number" id="pm-max-tokens" min="0" step="100" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 100px;" value="0">
         </div>
         <small style="color: #888; font-size: 0.8em; display: block; margin-top: -5px; margin-bottom: 10px; padding-left: 5px;">
-            Token 为粗略估算（CJK 约 1/字，其余按 ~4 字符/token）。0 = 不设置更低的用户上限，仍受系统硬上限。
+            <span data-amily-i18n="memoryUi.tokensHelp">Token 为粗略估算（CJK 约 1/字，其余按 ~4 字符/token）。0 = 不设置更低的用户上限，仍受系统硬上限。</span>
         </small>
         <div class="sm-control-block">
-            <label title="取样前先跳过最新 N 行——它们对应还在聊天窗口里的消息，原文已经在上下文里，再塞摘要等于重复。0 = 不跳过。">跳过最新可见行数:</label>
+            <label data-amily-i18n-title="memoryUi.skipTip" title="取样前先跳过最新 N 行——它们对应还在聊天窗口里的消息，原文已经在上下文里，再塞摘要等于重复。0 = 不跳过。"><span data-amily-i18n="memoryUi.skip">跳过最新可见行数:</span></label>
             <input type="number" id="pm-reserve-recent" min="0" step="1" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 80px;" value="0">
         </div>
         <small style="color: #888; font-size: 0.8em; display: block; margin-top: -5px; margin-bottom: 10px; padding-left: 5px;">
-            可与「自动隐藏」配合：取样只针对已经滚出视野的旧摘要。注意这里按<strong>表格行</strong>算，不是聊天消息层——一行总结往往覆盖很多层消息。
+            <span data-amily-i18n="memoryUi.skipHelpBefore">可与「自动隐藏」配合：取样只针对已经滚出视野的旧摘要。注意这里按</span><strong><span data-amily-i18n="memoryUi.tableRows">表格行</span></strong><span data-amily-i18n="memoryUi.skipHelpAfter">算，不是聊天消息层——一行总结往往覆盖很多层消息。</span>
         </small>
     </fieldset>
     <div class="sm-intro-box" style="border-left: 3px solid #ffc107;">
-        <small style="color: #bbb; font-size: 0.85em;"><i class="fas fa-info-circle"></i> 什么时候会生效：来源表有效行数低于总结模块的「自动隐藏保留数」时不会塞进上下文——内容太少时近期对话本身就够用。该门槛跟总结模块的自动隐藏设置走，不用单独再配。</small>
+        <small style="color: #bbb; font-size: 0.85em;"><i class="fas fa-info-circle"></i> <span data-amily-i18n="memoryUi.triggerHelp">什么时候会生效：来源表有效行数低于总结模块的「自动隐藏保留数」时不会塞进上下文——内容太少时近期对话本身就够用。该门槛跟总结模块的自动隐藏设置走，不用单独再配。</span></small>
     </div>
 
     <fieldset class="sm-settings-group">
-        <legend><i class="fas fa-archive"></i> 远期浓缩摘要（读取宏史卷）</legend>
+        <legend><i class="fas fa-archive"></i> <span data-amily-i18n="progressive.farHeading">远期浓缩摘要（读取大总结）</span></legend>
         <div class="sm-control-block">
-            <label title="关闭=不用；自动=智能检索开着时让位给检索库，关掉检索时才用；始终=每次都用">远期摘要模式:</label>
+            <label data-amily-i18n-title="memoryUi.farModeTip" title="关闭=不用；自动=智能检索开着时让位给检索库，关掉检索时才用；始终=每次都用"><span data-amily-i18n="memoryUi.farMode">远期摘要模式:</span></label>
             <select id="pm-far-mode" class="text_pole" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 160px;">
-                <option value="off">关闭</option>
-                <option value="auto">自动（检索开着时让位）</option>
-                <option value="always">始终使用</option>
+                <option value="off" data-amily-i18n="memoryUi.off">关闭</option>
+                <option value="auto" data-amily-i18n="memoryUi.farAuto">自动（检索开着时让位）</option>
+                <option value="always" data-amily-i18n="memoryUi.always">始终使用</option>
             </select>
         </div>
         <div class="sm-control-block">
-            <label title="远期摘要的用户 Token 上限；0 = 不设置更低的用户上限，仍受系统硬上限。超限时保留更接近现在的部分">远期摘要 Token 上限:</label>
+            <label data-amily-i18n-title="memoryUi.farTokensTip" title="远期摘要的用户 Token 上限；0 = 不设置更低的用户上限，仍受系统硬上限。超限时保留更接近现在的部分"><span data-amily-i18n="memoryUi.farTokens">远期摘要 Token 上限:</span></label>
             <input type="number" id="pm-far-max-tokens" min="0" step="500" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 100px;" value="4000">
         </div>
         <small style="color: #888; font-size: 0.8em; display: block; margin-top: -5px; margin-bottom: 10px; padding-left: 5px;">
-            0 = 不设置更低的用户上限，仍受系统硬上限。
-            不另做压缩：直接读取总结模块史官金账中已经重铸的<strong>宏史卷</strong>文本，放在记忆块最前面（并标明是早期存档，避免被当成当前剧情）。没用过总结模块或还没生成宏史卷时自动为空，不会额外调用 AI。
+            <span data-amily-i18n="memoryUi.hardLimitHelp">0 = 不设置更低的用户上限，仍受系统硬上限。</span>
+            <span data-amily-i18n="progressive.farHelp">不另做压缩：直接读取总结模块中已经合并的大总结文本，放在记忆块最前面（并标明是早期存档，避免被当成当前剧情）。没用过总结模块或还没生成大总结时自动为空，不会额外调用 AI。</span>
         </small>
     </fieldset>
 
     <fieldset class="sm-settings-group">
-        <legend><i class="fas fa-syringe"></i> 如何塞进对话</legend>
+        <legend><i class="fas fa-syringe"></i> <span data-amily-i18n="memoryUi.injection">如何塞进对话</span></legend>
         <div class="sm-control-block">
-            <label title="0=系统提示词前面，1=系统提示词后面（再配合下方深度）">插入位置:</label>
-            <input type="number" id="pm-inj-position" min="0" max="1" step="1" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 80px;" value="1">
+            <label for="pm-inj-anchor"><span data-amily-i18n="memoryUi.anchor">历史位置:</span></label>
+            <select id="pm-inj-anchor" class="text_pole" style="width: 200px; max-width: 100%;">
+                <option value="before_history" data-amily-i18n="memoryUi.beforeHistory">可见聊天之前（自动）</option>
+                <option value="custom" data-amily-i18n="memoryUi.customPosition">自定义位置</option>
+            </select>
         </div>
         <div class="sm-control-block">
-            <label title="插入深度（按消息层），0 = 最靠近当前对话底部">插入深度:</label>
-            <input type="number" id="pm-inj-depth" min="0" step="1" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 80px;" value="0">
+            <label for="pm-inj-position"><span data-amily-i18n="memoryUi.position">自定义位置:</span></label>
+            <select id="pm-inj-position" class="text_pole" style="width: 160px; max-width: 100%;" disabled>
+                <option value="0" data-amily-i18n="memoryUi.characterPrompt">角色提示区</option>
+                <option value="1" selected data-amily-i18n="memoryUi.inChat">聊天内</option>
+            </select>
         </div>
         <div class="sm-control-block">
-            <label title="以谁的身份插入：只允许用户或 AI；安全边界不允许系统身份注入">插入身份:</label>
+            <label data-amily-i18n-title="memoryUi.depthTip" title="插入深度（按消息层），0 = 最靠近当前对话底部"><span data-amily-i18n="memoryUi.depth">插入深度:</span></label>
+            <input type="number" id="pm-inj-depth" min="0" step="1" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 80px;" value="0" disabled>
+        </div>
+        <div class="sm-control-block">
+            <label data-amily-i18n-title="memoryUi.roleTip" title="以谁的身份插入：只允许用户或 AI；安全边界不允许系统身份注入"><span data-amily-i18n="memoryUi.role">插入身份:</span></label>
             <select id="pm-inj-role" class="text_pole" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 100px;">
-                <option value="1">用户</option>
-                <option value="2">AI</option>
+                <option value="1" data-amily-i18n="memoryUi.user">用户</option>
+                <option value="2" data-amily-i18n="memoryUi.ai">AI</option>
             </select>
         </div>
         <div class="sm-control-block" style="display: block;">
-            <label title="模板里的 {{progressive_memory}} 会被替换成取样后的文字">插入模板:</label>
+            <label data-amily-i18n-title="memoryUi.templateTip" title="模板里的 {{progressive_memory}} 会被替换成取样后的文字"><span data-amily-i18n="memoryUi.template">插入模板:</span></label>
             <textarea id="pm-template" rows="4" style="width: 100%; margin-top: 5px; background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; box-sizing: border-box;"></textarea>
-            <small style="color: #888; font-size: 0.8em; display: block; margin-top: 3px;">模板里请包含 <code>{{progressive_memory}}</code>；如果没有，取样内容会直接接在模板后面。</small>
+            <small style="color: #888; font-size: 0.8em; display: block; margin-top: 3px;"><span data-amily-i18n="memoryUi.templateBefore">模板里请包含</span> <code>{{progressive_memory}}</code><span data-amily-i18n="memoryUi.templateAfter">；如果没有，取样内容会直接接在模板后面。</span></small>
         </div>
     </fieldset>
 </div>

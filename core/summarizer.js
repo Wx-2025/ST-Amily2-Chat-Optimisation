@@ -21,6 +21,10 @@ import {
     captureTableFillRequestLease,
     isTableFillRequestLeaseError,
 } from './table-system/infra/persistence-scope.js';
+import { getChatContextEpoch } from './table-system/infra/chat-scope.js';
+import { getActiveTableGroupId } from './table-system/table-group-selection.js';
+import { readChatTableState } from './table-system/infra/database-state.js';
+import { isTableGroupAutomaticFillEnabled } from './table-system/table-group-fill-settings.js';
 
 export async function processOptimization(latestMessage, previousMessages) {
     if (window.AMILY2_SYSTEM_PARALYZED === true) {
@@ -76,11 +80,18 @@ export async function processOptimization(latestMessage, previousMessages) {
 
         const context = getContext();
         const fillingMode = settings.filling_mode || 'main-api';
+        const tableGroupId = getActiveTableGroupId(getChatContextEpoch());
+        const registry = readChatTableState(context)?.tableGroups;
+        const automaticTableFillEnabled = fillingMode === 'optimized'
+            && Boolean(registry)
+            && isTableGroupAutomaticFillEnabled(context, registry, tableGroupId);
         // Only the combined optimization + table-writing mode needs a table
         // lease. Plain正文优化 must not become dependent on table lifecycle
         // readiness or be discarded because an unrelated table refresh ran.
-        const requestLease = fillingMode === 'optimized'
-            ? captureTableFillRequestLease(context)
+        const requestLease = automaticTableFillEnabled
+            ? captureTableFillRequestLease(context, {
+                tableGroupId,
+            })
             : null;
         const sourceMessages = context.chat;
         const userName = context.name1 || '用户';
@@ -129,9 +140,11 @@ export async function processOptimization(latestMessage, previousMessages) {
                         }
                         break;
                     case 'fillingMode':
-                        if (isOptimizationEnabled && fillingMode === 'optimized') {
+                        if (isOptimizationEnabled && automaticTableFillEnabled) {
                             const flowTemplate = getBatchFillerFlowTemplate();
-                            const tableData = convertAiFillableTablesToCsvString();
+                            const tableData = convertAiFillableTablesToCsvString(
+                                requestLease.tableGroupId,
+                            );
                             const filledFlowTemplate = flowTemplate.replace('{{{Amily2TableData}}}', tableData);
                             
                             messages.push({ role: "user", content: currentInteractionContent });
@@ -172,7 +185,7 @@ export async function processOptimization(latestMessage, previousMessages) {
         }
         document.dispatchEvent(new CustomEvent('preOptimizationStateUpdated'));
 
-        if (isOptimizationEnabled && fillingMode === 'optimized') {
+        if (isOptimizationEnabled && automaticTableFillEnabled) {
             const applied = await updateTableFromText(rawContent, {
                 requestLease,
                 sourceMessages,

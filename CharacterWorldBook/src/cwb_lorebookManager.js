@@ -1,3 +1,4 @@
+import { t } from './cwb_i18n.js';
 import { state } from './cwb_state.js';
 import { logError, logDebug, showToastr, parseCustomFormat } from './cwb_utils.js';
 import { amilyHelper } from '../../core/tavern-helper/main.js';
@@ -17,7 +18,7 @@ export async function getTargetWorldBook() {
         const charLorebooks = await amilyHelper.getCharLorebooks();
         const primaryBook = charLorebooks.primary;
         if (!primaryBook) {
-            showToastr('error', '当前角色未设置主世界书。');
+            showToastr('error', t('characterWorldUi.world.noPrimary'));
             return null;
         }
         return primaryBook;
@@ -46,7 +47,7 @@ export async function deleteLorebookEntries(uids) {
         await saveWorldInfo(book, bookData, true);
     } catch (error) {
         logError('删除世界书条目失败:', error);
-        showToastr('error', `删除失败: ${error.message}`);
+        showToastr('error', t('characterWorldUi.world.deleteFailed', { error: error.message }), { escapeHtml: true });
     }
 }
 
@@ -56,7 +57,7 @@ export async function saveDescriptionToLorebook(characterName, newDescription, s
     try {
         const context = SillyTavern.getContext();
         if (!context || !context.characterId) {
-            showToastr('error', '没有选择角色，无法保存到世界书。');
+            showToastr('error', t('characterWorldUi.world.noCharacterSave'));
             return false;
         }
         let chatIdentifier = state.currentChatFileIdentifier || '未知聊天';
@@ -70,7 +71,7 @@ export async function saveDescriptionToLorebook(characterName, newDescription, s
         let bookName = await getTargetWorldBook();
 
         if (!bookName) {
-            showToastr('error', '未能确定要写入的世界书。请检查主世界书或自定义世界书设置。');
+            showToastr('error', t('characterWorldUi.world.noTarget'));
             return false;
         }
 
@@ -132,11 +133,11 @@ export async function saveDescriptionToLorebook(characterName, newDescription, s
             
             await amilyHelper.createLorebookEntries(bookName, [newEntryData]);
         }
-        showToastr('success', `角色 ${safeCharName} 的描述已保存到世界书。`);
+        showToastr('success', t('characterWorldUi.world.saved', { name: safeCharName }), { escapeHtml: true });
         return true;
     } catch (error) {
         logError(`保存世界书失败 for ${characterName}:`, error);
-        showToastr('error', `保存角色 ${safeCharName} 到世界书失败。`);
+        showToastr('error', t('characterWorldUi.world.saveFailed', { name: characterName }), { escapeHtml: true });
         return false;
     }
 }
@@ -171,7 +172,7 @@ export async function updateCharacterRosterLorebookEntry(processedCharacterNames
         let bookName = await getTargetWorldBook();
 
         if (!bookName) {
-            showToastr('error', '未能确定要写入的世界书。请检查主世界书或自定义世界书设置。');
+            showToastr('error', t('characterWorldUi.world.noTarget'));
             return false;
         }
 

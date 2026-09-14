@@ -1,37 +1,37 @@
 <div class="am2-ac">
     <header class="am2-ac-top">
-        <button id="amily2_back_to_main_from_api_config" class="am2-ac-iconbtn" type="button" title="返回">
+        <button id="amily2_back_to_main_from_api_config" class="am2-ac-iconbtn" type="button" title="返回" data-amily-i18n-title="apiTableUi.common.back">
             <i class="fas fa-arrow-left"></i>
         </button>
         <div class="am2-ac-top-text">
             <div class="am2-ac-title-row">
-                <h2 class="am2-ac-title">API 连接</h2>
-                <button id="amily2_open_api_config_tutorial" class="menu_button small_button secondary interactable am2-panel-tutorial-btn" type="button" title="小白教程：连接类型与功能分配">
-                    <i class="fas fa-book-open"></i> 教程
+                <h2 class="am2-ac-title" data-amily-i18n="apiTableUi.api.title">API 连接</h2>
+                <button id="amily2_open_api_config_tutorial" class="menu_button small_button secondary interactable am2-panel-tutorial-btn" type="button" title="小白教程：连接类型与功能分配" data-amily-i18n-title="apiTableUi.api.tutorialHint">
+                    <i class="fas fa-book-open"></i> <span data-amily-i18n="apiTableUi.common.tutorial">教程</span>
                 </button>
             </div>
-            <p class="am2-ac-sub">管理模型接口，并分配给各功能</p>
+            <p class="am2-ac-sub" data-amily-i18n="apiTableUi.api.subtitle">管理模型接口，并分配给各功能</p>
         </div>
     </header>
 
     <nav class="am2-ac-tabs" role="tablist">
-        <button type="button" class="am2-ac-tab is-active" data-ac-tab="connections" role="tab" aria-selected="true">连接</button>
-        <button type="button" class="am2-ac-tab" data-ac-tab="routing" role="tab" aria-selected="false">分配</button>
-        <button type="button" class="am2-ac-tab" data-ac-tab="more" role="tab" aria-selected="false">更多</button>
+        <button type="button" class="am2-ac-tab is-active" data-ac-tab="connections" role="tab" aria-selected="true" data-amily-i18n="apiTableUi.api.connections">连接</button>
+        <button type="button" class="am2-ac-tab" data-ac-tab="routing" role="tab" aria-selected="false" data-amily-i18n="apiTableUi.api.routing">分配</button>
+        <button type="button" class="am2-ac-tab" data-ac-tab="more" role="tab" aria-selected="false" data-amily-i18n="apiTableUi.api.more">更多</button>
     </nav>
 
     <!-- ── 连接 ── -->
     <section class="am2-ac-view is-active" data-ac-view="connections" role="tabpanel">
         <div class="am2-ac-list-pane" id="amily2_profile_list_pane">
             <div class="am2-ac-toolbar">
-                <div class="am2-ac-filters" role="tablist" aria-label="类型">
-                    <button type="button" class="am2-ac-pill amily2_profile_type_filter active" data-type="all">全部</button>
-                    <button type="button" class="am2-ac-pill amily2_profile_type_filter" data-type="chat">对话</button>
-                    <button type="button" class="am2-ac-pill amily2_profile_type_filter" data-type="embedding">向量</button>
-                    <button type="button" class="am2-ac-pill amily2_profile_type_filter" data-type="rerank">重排</button>
+                <div class="am2-ac-filters" role="tablist" aria-label="类型" data-amily-i18n-aria-label="apiTableUi.api.type">
+                    <button type="button" class="am2-ac-pill amily2_profile_type_filter active" data-type="all" data-amily-i18n="apiTableUi.api.all">全部</button>
+                    <button type="button" class="am2-ac-pill amily2_profile_type_filter" data-type="chat" data-amily-i18n="apiTableUi.api.chat">对话</button>
+                    <button type="button" class="am2-ac-pill amily2_profile_type_filter" data-type="embedding" data-amily-i18n="apiTableUi.api.embedding">向量</button>
+                    <button type="button" class="am2-ac-pill amily2_profile_type_filter" data-type="rerank" data-amily-i18n="apiTableUi.api.rerank">重排</button>
                 </div>
                 <button id="amily2_add_profile" class="am2-ac-primary" type="button">
-                    <i class="fas fa-plus"></i> 添加
+                    <i class="fas fa-plus"></i> <span data-amily-i18n="apiTableUi.api.add">添加</span>
                 </button>
             </div>
             <div id="amily2_profile_list" class="am2-ac-list"></div>
@@ -40,35 +40,40 @@
         <!-- 编辑/新建：从列表切到表单，化整为零 -->
         <div class="am2-ac-form-pane" id="amily2_profile_form_details" hidden>
             <div class="am2-ac-form-bar">
-                <button id="amily2_profile_modal_cancel" class="am2-ac-iconbtn" type="button" title="返回列表">
+                <button id="amily2_profile_modal_cancel" class="am2-ac-iconbtn" type="button" title="返回列表" data-amily-i18n-title="apiTableUi.api.backList">
                     <i class="fas fa-arrow-left"></i>
                 </button>
                 <div class="am2-ac-form-bar-text">
                     <i id="amily2_profile_form_icon" class="fas fa-plus" hidden></i>
-                    <strong id="amily2_profile_modal_title">添加连接</strong>
+                    <strong id="amily2_profile_modal_title" data-amily-i18n="apiTableUi.api.addConnection">添加连接</strong>
                 </div>
-                <button id="amily2_profile_modal_save" class="am2-ac-primary" type="button">保存</button>
+                <button id="amily2_profile_modal_save" class="am2-ac-primary" type="button" data-amily-i18n="apiTableUi.common.save">保存</button>
             </div>
 
             <div class="am2-ac-form">
                 <div class="am2-ac-field">
-                    <label for="amily2_pf_name">名称</label>
-                    <input id="amily2_pf_name" type="text" class="text_pole am2-ac-input" placeholder="例如：DeepSeek 主用" />
+                    <label for="amily2_pf_name" data-amily-i18n="apiTableUi.api.name">名称</label>
+                    <input id="amily2_pf_name" type="text" class="text_pole am2-ac-input" placeholder="例如：DeepSeek 主用" data-amily-i18n-placeholder="apiTableUi.api.nameExample" />
+                </div>
+
+                <div class="am2-ac-field" id="amily2_pf_connection_source_row" hidden>
+                    <label for="amily2_pf_connection_source" data-amily-i18n="apiTableUi.api.inherits">连接继承自</label>
+                    <input id="amily2_pf_connection_source" class="text_pole am2-ac-input" type="text" readonly />
                 </div>
 
                 <div class="am2-ac-field-row">
                     <div class="am2-ac-field">
-                        <label for="amily2_pf_type">用途</label>
+                        <label for="amily2_pf_type" data-amily-i18n="apiTableUi.api.purpose">用途</label>
                         <select id="amily2_pf_type" class="text_pole am2-ac-input">
-                            <option value="chat">对话</option>
-                            <option value="embedding">向量</option>
-                            <option value="rerank">重排</option>
+                            <option value="chat" data-amily-i18n="apiTableUi.api.chat">对话</option>
+                            <option value="embedding" data-amily-i18n="apiTableUi.api.embedding">向量</option>
+                            <option value="rerank" data-amily-i18n="apiTableUi.api.rerank">重排</option>
                         </select>
                     </div>
                     <div class="am2-ac-field">
-                        <label for="amily2_pf_provider">厂商</label>
+                        <label for="amily2_pf_provider" data-amily-i18n="apiTableUi.api.provider">厂商</label>
                         <select id="amily2_pf_provider" class="text_pole am2-ac-input">
-                            <optgroup label="常用">
+                            <optgroup label="常用" data-api-table-label="apiTableUi.api.commonProviders">
                                 <option value="openai">OpenAI</option>
                                 <option value="anthropic">Anthropic</option>
                                 <option value="google">Google</option>
@@ -76,17 +81,17 @@
                                 <option value="deepseek">DeepSeek</option>
                                 <option value="xai">xAI</option>
                             </optgroup>
-                            <optgroup label="其它">
-                                <option value="custom_oai">自定义兼容</option>
-                                <option value="sillytavern_backend">ST 后端代理</option>
-                                <option value="sillytavern_preset">ST 预设转发</option>
+                            <optgroup label="其它" data-api-table-label="apiTableUi.api.otherProviders">
+                                <option value="custom_oai" data-amily-i18n="apiTableUi.api.customProvider">自定义兼容</option>
+                                <option value="sillytavern_backend" data-amily-i18n="apiTableUi.api.stBackend">ST 后端代理</option>
+                                <option value="sillytavern_preset" data-amily-i18n="apiTableUi.api.stPreset">ST 预设转发</option>
                             </optgroup>
                         </select>
                     </div>
                 </div>
 
                 <div class="am2-ac-field" id="amily2_pf_url_row">
-                    <label for="amily2_pf_url">地址</label>
+                    <label for="amily2_pf_url" data-amily-i18n="apiTableUi.api.address">地址</label>
                     <input id="amily2_pf_url" type="text" class="text_pole am2-ac-input" placeholder="https://api.example.com/v1" />
                 </div>
 
@@ -99,62 +104,62 @@
                 </div>
 
                 <div class="am2-ac-field">
-                    <label for="amily2_pf_key">密钥 <span class="am2-ac-hint">加密保存 · 留空不改</span></label>
+                    <label for="amily2_pf_key"><span data-amily-i18n="apiTableUi.api.key">密钥</span> <span class="am2-ac-hint" data-amily-i18n="apiTableUi.api.keyHint">加密保存 · 留空不改</span></label>
                     <input id="amily2_pf_key" type="password" class="text_pole am2-ac-input" placeholder="sk-…" autocomplete="off" />
                 </div>
 
                 <div class="am2-ac-field">
-                    <label for="amily2_pf_model">模型</label>
+                    <label for="amily2_pf_model" data-amily-i18n="apiTableUi.api.model">模型</label>
                     <div class="am2-ac-combo">
-                        <input id="amily2_pf_model" type="text" class="text_pole am2-ac-input" placeholder="模型名" />
+                        <input id="amily2_pf_model" type="text" class="text_pole am2-ac-input" placeholder="模型名" data-amily-i18n-placeholder="apiTableUi.api.modelName" />
                         <select id="amily2_pf_model_select" class="text_pole am2-ac-input" style="display:none;"></select>
-                        <button id="amily2_pf_fetch_models" class="am2-ac-ghost amily2-vbtn" type="button" title="拉取模型列表">
-                            <span class="vbtn-icon"><i class="fas fa-sync-alt"></i></span><span class="vbtn-label">拉取</span>
+                        <button id="amily2_pf_fetch_models" class="am2-ac-ghost amily2-vbtn" type="button" title="拉取模型列表" data-amily-i18n-title="apiTableUi.api.fetchModels">
+                            <span class="vbtn-icon"><i class="fas fa-sync-alt"></i></span><span class="vbtn-label" data-amily-i18n="apiTableUi.api.fetch">拉取</span>
                         </button>
                     </div>
                 </div>
 
                 <div class="am2-ac-testline">
                     <button id="amily2_pf_test_conn" class="am2-ac-ghost amily2-vbtn" type="button">
-                        <span class="vbtn-icon"><i class="fas fa-bolt"></i></span><span class="vbtn-label">测试</span>
+                        <span class="vbtn-icon"><i class="fas fa-bolt"></i></span><span class="vbtn-label" data-amily-i18n="apiTableUi.api.test">测试</span>
                     </button>
                     <span id="amily2_pf_test_result" class="am2-ac-test-result"></span>
                 </div>
 
                 <details class="am2-ac-more amily2_advanced_section">
-                    <summary>通用限制</summary>
+                    <summary data-amily-i18n="apiTableUi.api.limits">通用限制</summary>
                     <div class="am2-ac-more-body am2-advanced-body">
                         <div class="am2-ac-field">
-                            <label for="amily2_pf_rpm">每分钟请求数（RPM）</label>
+                            <label for="amily2_pf_rpm" data-amily-i18n="apiTableUi.api.rpm">每分钟请求数（RPM）</label>
                             <input id="amily2_pf_rpm" type="number" class="text_pole am2-ac-input" min="0" step="1" value="0" inputmode="numeric" />
-                            <small class="notes">限制该连接每分钟发出的模型请求；重试、向量分批与重排分别计数。设为 0 表示不限制。</small>
+                            <small class="notes" data-amily-i18n="apiTableUi.api.rpmHelp">限制该连接每分钟发出的模型请求；重试、向量分批与重排分别计数。设为 0 表示不限制。</small>
                         </div>
                     </div>
                 </details>
 
                 <div id="amily2_pf_chat_params">
                     <details class="am2-ac-more amily2_advanced_section">
-                        <summary>高级</summary>
+                        <summary data-amily-i18n="apiTableUi.api.advanced">高级</summary>
                         <div class="am2-ac-more-body am2-advanced-body">
                             <div class="am2-ac-field-row">
                                 <div class="am2-ac-field">
-                                    <label for="amily2_pf_max_tokens">最大输出</label>
+                                    <label for="amily2_pf_max_tokens" data-amily-i18n="apiTableUi.api.maxOutput">最大输出</label>
                                     <input id="amily2_pf_max_tokens" type="number" class="text_pole am2-ac-input" min="100" max="200000" value="65500" />
                                 </div>
                                 <div class="am2-ac-field">
-                                    <label for="amily2_pf_temperature">温度</label>
+                                    <label for="amily2_pf_temperature" data-amily-i18n="apiTableUi.api.temperature">温度</label>
                                     <input id="amily2_pf_temperature" type="number" class="text_pole am2-ac-input" min="0" max="2" step="0.1" value="1.0" />
                                 </div>
                             </div>
                             <label class="am2-ac-check">
                                 <input id="amily2_pf_fake_stream" type="checkbox" />
                                 <span>
-                                    <strong>防超时</strong>
-                                    <small>本连接的文本生成与 Tool Call 均流式收完再拼，适合慢反代</small>
+                                    <strong data-amily-i18n="apiTableUi.api.streaming">防超时</strong>
+                                    <small data-amily-i18n="apiTableUi.api.streamingHelp">本连接的文本生成与 Tool Call 均流式收完再拼，适合慢反代</small>
                                 </span>
                             </label>
                             <div class="am2-ac-field">
-                                <label for="amily2_pf_custom_params">自定义 JSON</label>
+                                <label for="amily2_pf_custom_params" data-amily-i18n="apiTableUi.api.customJson">自定义 JSON</label>
                                 <textarea id="amily2_pf_custom_params" class="text_pole am2-ac-input am2-ac-code" rows="4" spellcheck="false" placeholder='{"top_p": 0.9}'></textarea>
                                 <small id="amily2_pf_custom_params_hint" class="am2-ac-hint-line notes"></small>
                                 <small id="amily2_pf_custom_params_error" class="am2-ac-error-line notes" style="display:none;"></small>
@@ -165,15 +170,15 @@
 
                 <div id="amily2_pf_embedding_params" style="display:none;">
                     <details class="am2-ac-more amily2_advanced_section">
-                        <summary>高级</summary>
+                        <summary data-amily-i18n="apiTableUi.api.advanced">高级</summary>
                         <div class="am2-ac-more-body am2-advanced-body">
                             <div class="am2-ac-field-row">
                                 <div class="am2-ac-field">
-                                    <label for="amily2_pf_dimensions">维度 <span class="am2-ac-hint">可空</span></label>
+                                    <label for="amily2_pf_dimensions"><span data-amily-i18n="apiTableUi.api.dimensions">维度</span> <span class="am2-ac-hint" data-amily-i18n="apiTableUi.api.optional">可空</span></label>
                                     <input id="amily2_pf_dimensions" type="number" class="text_pole am2-ac-input" min="1" placeholder="1536" />
                                 </div>
                                 <div class="am2-ac-field">
-                                    <label for="amily2_pf_encoding_format">编码</label>
+                                    <label for="amily2_pf_encoding_format" data-amily-i18n="apiTableUi.api.encoding">编码</label>
                                     <select id="amily2_pf_encoding_format" class="text_pole am2-ac-input">
                                         <option value="float">float</option>
                                         <option value="base64">base64</option>
@@ -186,15 +191,15 @@
 
                 <div id="amily2_pf_rerank_params" style="display:none;">
                     <div class="am2-ac-field">
-                        <label for="amily2_pf_top_n">返回条数</label>
+                        <label for="amily2_pf_top_n" data-amily-i18n="apiTableUi.api.topN">返回条数</label>
                         <input id="amily2_pf_top_n" type="number" class="text_pole am2-ac-input" min="1" max="100" value="5" />
                     </div>
                     <details class="am2-ac-more amily2_advanced_section">
-                        <summary>高级</summary>
+                        <summary data-amily-i18n="apiTableUi.api.advanced">高级</summary>
                         <div class="am2-ac-more-body am2-advanced-body">
                             <label class="am2-ac-check">
                                 <input id="amily2_pf_return_documents" type="checkbox" />
-                                <span><strong>返回原文</strong></span>
+                                <span><strong data-amily-i18n="apiTableUi.api.returnDocuments">返回原文</strong></span>
                             </label>
                         </div>
                     </details>
@@ -205,102 +210,159 @@
 
     <!-- ── 分配 ── -->
     <section class="am2-ac-view" data-ac-view="routing" role="tabpanel" hidden>
-        <p class="am2-ac-view-hint">为每个功能指定一套连接。未分配的功能不会调用模型。</p>
+        <p class="am2-ac-view-hint" data-amily-i18n="apiTableUi.api.routingHelp">为每个功能指定一套连接。未分配的功能不会调用模型。</p>
         <div id="amily2_slot_assignments" class="am2-ac-routing"></div>
     </section>
 
     <!-- ── 更多 ── -->
     <section class="am2-ac-view" data-ac-view="more" role="tabpanel" hidden>
         <div class="am2-ac-group">
-            <h3 class="am2-ac-group-title">密钥存储</h3>
+            <h3 class="am2-ac-group-title" data-amily-i18n="apiTableUi.vault.storageTitle">密钥存储</h3>
             <div class="am2-ac-settings">
                 <div class="am2-ac-setting">
                     <div class="am2-ac-setting-label">
-                        <strong>存储方式</strong>
-                        <small id="amily2_keystore_mode_note">密钥只保存在本机浏览器</small>
+                        <strong data-amily-i18n="apiTableUi.vault.storageMethod">存储方式</strong>
+                        <small id="amily2_keystore_mode_note" data-amily-i18n="apiTableUi.vault.initialLocalNote">密钥只保存在本机浏览器</small>
                     </div>
                     <select id="amily2_keystore_mode" class="text_pole am2-ac-input am2-ac-input-sm">
-                        <option value="local">本机</option>
-                        <option value="cloud">加密云同步（手动私钥）</option>
-                        <option value="vault">授权码云同步（Type2+）</option>
+                        <option value="local" data-amily-i18n="apiTableUi.vault.localOption">本机</option>
+                        <option value="cloud" data-amily-i18n="apiTableUi.vault.cloudOption">加密云同步（手动私钥）</option>
+                        <option value="vault" data-amily-i18n="apiTableUi.vault.vaultOption">授权码云同步（Type2+）</option>
                     </select>
                 </div>
             </div>
 
 
             <div id="amily2_manual_cloud_recovery" class="am2-ac-cloud" hidden>
-                <p id="amily2_manual_cloud_recovery_status" class="am2-ac-warn" role="status" aria-live="polite">
-                    检测到已有共享加密配置，请先导入原私钥。
-                </p>
+                <p id="amily2_manual_cloud_recovery_status" class="am2-ac-warn" role="status" aria-live="polite" data-amily-i18n="apiTableUi.vault.initialRecovery">检测到已有共享加密配置，请先导入原私钥。</p>
                 <div class="am2-ac-inline-actions">
-                    <button id="amily2_manual_cloud_recovery_import" class="am2-ac-ghost" type="button">导入原私钥</button>
+                    <button id="amily2_manual_cloud_recovery_import" class="am2-ac-ghost" type="button" data-amily-i18n="apiTableUi.vault.importOriginal">导入原私钥</button>
                 </div>
             </div>
 
             <div id="amily2_cloud_key_section" class="am2-ac-cloud" style="display:none;">
                 <div class="am2-ac-setting">
                     <div class="am2-ac-setting-label">
-                        <strong>本机指纹</strong>
-                        <code id="amily2_keypair_fingerprint" class="am2-ac-fp">（未生成）</code>
+                        <strong data-amily-i18n="apiTableUi.vault.localFingerprint">本机指纹</strong>
+                        <code id="amily2_keypair_fingerprint" class="am2-ac-fp" data-amily-i18n="apiTableUi.vault.notGenerated">（未生成）</code>
                     </div>
-                    <button id="amily2_generate_keypair" class="am2-ac-ghost" type="button" title="重新生成会清空已加密密钥">
-                        重新生成
-                    </button>
+                    <button id="amily2_generate_keypair" class="am2-ac-ghost" type="button" title="重新生成会清空已加密密钥" data-amily-i18n-title="apiTableUi.vault.generateHint" data-amily-i18n="apiTableUi.vault.generate">重新生成</button>
                 </div>
                 <div class="am2-ac-inline-actions">
-                    <button id="amily2_export_key_bundle" class="am2-ac-ghost" type="button">导出私钥</button>
-                    <button id="amily2_import_key_bundle" class="am2-ac-ghost" type="button">导入私钥</button>
+                    <button id="amily2_export_key_bundle" class="am2-ac-ghost" type="button" data-amily-i18n="apiTableUi.vault.export">导出私钥</button>
+                    <button id="amily2_import_key_bundle" class="am2-ac-ghost" type="button" data-amily-i18n="apiTableUi.vault.import">导入私钥</button>
                     <input id="amily2_import_key_bundle_input" type="file" accept=".json,application/json" style="display:none;" />
                 </div>
-                <p class="am2-ac-warn">重新生成后，已加密的密钥全部失效，需重新输入。</p>
+                <p class="am2-ac-warn" data-amily-i18n="apiTableUi.vault.generateWarning">重新生成后，已加密的密钥全部失效，需重新输入。</p>
 
                 <section id="amily2_vault_sync_section" class="am2-ac-vault" hidden aria-labelledby="amily2_vault_sync_title">
                     <div class="am2-ac-vault-head">
                         <div class="am2-ac-setting-label">
-                            <strong id="amily2_vault_sync_title">授权码云密钥库</strong>
-                            <small>私钥使用当前服务器授权码加密后备份；授权码不会写入酒馆设置。</small>
+                            <strong id="amily2_vault_sync_title" data-amily-i18n="apiTableUi.vault.title">授权码云密钥库</strong>
+                            <small data-amily-i18n="apiTableUi.vault.encryptionNote">私钥使用当前服务器授权码加密后备份；授权码不会写入酒馆设置。</small>
                         </div>
-                        <span id="amily2_vault_sync_badge" class="am2-ac-vault-badge" data-state="idle">未检查</span>
+                        <span id="amily2_vault_sync_badge" class="am2-ac-vault-badge" data-state="idle" data-amily-i18n="apiTableUi.vault.unchecked">未检查</span>
                     </div>
-                    <p id="amily2_vault_sync_status" class="am2-ac-vault-status" role="status" aria-live="polite">
-                        选择此模式后，将检查当前授权与云端密钥。
-                    </p>
+                    <p id="amily2_vault_sync_status" class="am2-ac-vault-status" role="status" aria-live="polite" data-amily-i18n="apiTableUi.vault.initialStatus">选择此模式后，将检查当前授权与云端密钥。</p>
                     <div id="amily2_vault_session_recovery" class="am2-ac-setting am2-ac-setting-stack" hidden>
                         <div class="am2-ac-setting-label">
-                            <strong>恢复本设备服务器会话</strong>
-                            <small>更新或重新打开浏览器后，服务器授权码不会自动保留。重新验证只恢复当前会话，不会重置本机密钥、覆盖云端或保存授权码。</small>
+                            <strong data-amily-i18n="apiTableUi.vault.restoreSession">恢复本设备服务器会话</strong>
+                            <small data-amily-i18n="apiTableUi.vault.restoreSessionNote">更新或重新打开浏览器后，服务器授权码不会自动保留。重新验证只恢复当前会话，不会重置本机密钥、覆盖云端或保存授权码。</small>
                         </div>
                         <div class="am2-ac-inline-actions">
                             <input id="amily2_vault_reauth_code" type="password" autocomplete="off" maxlength="512"
-                                class="text_pole am2-ac-input" placeholder="重新输入原服务器授权码" />
-                            <button id="amily2_vault_reauth_submit" class="am2-ac-ghost" type="button">验证并恢复</button>
+                                class="text_pole am2-ac-input" placeholder="重新输入原服务器授权码" data-amily-i18n-placeholder="apiTableUi.vault.codePlaceholder" />
+                            <button id="amily2_vault_reauth_submit" class="am2-ac-ghost" type="button" data-amily-i18n="apiTableUi.vault.verifyRestore">验证并恢复</button>
                         </div>
                     </div>
                     <small id="amily2_vault_sync_revision" class="am2-ac-vault-revision" hidden></small>
                     <div class="am2-ac-inline-actions">
                         <button id="amily2_vault_sync_now" class="am2-ac-ghost amily2-vbtn" type="button">
                             <span class="vbtn-icon"><i class="fas fa-cloud-arrow-up"></i></span>
-                            <span class="vbtn-label">立即同步</span>
+                            <span class="vbtn-label" data-amily-i18n="apiTableUi.vault.syncNow">立即同步</span>
                         </button>
-                        <button id="amily2_vault_use_remote" class="am2-ac-ghost" type="button" hidden>采用云端</button>
-                        <button id="amily2_vault_use_local" class="am2-ac-danger" type="button" hidden>用本机覆盖云端</button>
-                        <button id="amily2_vault_clear_device_key" class="am2-ac-ghost" type="button" disabled>清除此设备密钥</button>
-                        <button id="amily2_vault_discard_encrypted" class="am2-ac-danger" type="button" hidden disabled>放弃无法恢复的密文</button>
+                        <button id="amily2_vault_use_remote" class="am2-ac-ghost" type="button" hidden data-amily-i18n="apiTableUi.vault.useRemote">采用云端</button>
+                        <button id="amily2_vault_use_local" class="am2-ac-danger" type="button" hidden data-amily-i18n="apiTableUi.vault.useLocal">用本机覆盖云端</button>
+                        <button id="amily2_vault_clear_device_key" class="am2-ac-ghost" type="button" disabled data-amily-i18n="apiTableUi.vault.clearDeviceKey">清除此设备密钥</button>
+                        <button id="amily2_vault_discard_encrypted" class="am2-ac-danger" type="button" hidden disabled data-amily-i18n="apiTableUi.vault.discard">放弃无法恢复的密文</button>
                     </div>
-                    <p class="am2-ac-vault-note">若本机与云端指纹不同，插件会暂停同步并要求手动选择，不会静默覆盖。</p>
+                    <p class="am2-ac-vault-note" data-amily-i18n="apiTableUi.vault.conflictNote">若本机与云端指纹不同，插件会暂停同步并要求手动选择，不会静默覆盖。</p>
                 </section>
             </div>
         </div>
 
         <div class="am2-ac-group">
-            <h3 class="am2-ac-group-title">维护</h3>
+            <h3 class="am2-ac-group-title" data-amily-i18n="apiTableUi.vault.deviceTitle">设备授权</h3>
+            <details class="am2-ac-more amily2-device-credential-settings">
+                <summary class="amily2-device-credential-heading">
+                    <span class="amily2-device-credential-title">
+                        <i class="fas fa-laptop-shield" aria-hidden="true"></i> <span data-amily-i18n="apiTableUi.vault.deviceCredential">本设备持久凭证</span>
+                        <i class="fas fa-chevron-down amily2-device-credential-chevron" aria-hidden="true"></i>
+                    </span>
+                    <span id="amily2_device_credential_status" role="status" aria-live="polite" data-api-table-i18n="apiTableUi.vault.deviceChecking">正在检查…</span>
+                </summary>
+                <div class="am2-ac-more-body amily2-device-credential-card">
+                    <p class="amily2-device-credential-copy" data-amily-i18n="apiTableUi.vault.deviceNote">用于在本浏览器恢复 Amily 平台授权，不是模型 API 密钥的存储方式，也不会自动开启云同步。</p>
+                    <div class="amily2-device-credential-fields">
+                        <label>
+                            <span data-amily-i18n="apiTableUi.vault.deviceDays">记住天数（1–90）</span>
+                            <input id="amily2_device_credential_days" type="number" min="1" max="90" step="1" value="30" inputmode="numeric" class="text_pole am2-ac-input">
+                        </label>
+                        <label>
+                            <span data-amily-i18n="apiTableUi.vault.deviceName">设备名称</span>
+                            <input id="amily2_device_credential_label" type="text" maxlength="80" placeholder="例如：手机浏览器" data-amily-i18n-placeholder="apiTableUi.vault.deviceNamePlaceholder" class="text_pole am2-ac-input">
+                        </label>
+                    </div>
+                    <label class="amily2-device-credential-permanent">
+                        <input id="amily2_device_credential_permanent" type="checkbox">
+                        <span data-amily-i18n="apiTableUi.vault.devicePermanent">永久记住本设备，直到主动撤销（授权码本身失效时仍会立即停止）</span>
+                    </label>
+                    <label class="amily2-device-credential-code">
+                        <span data-amily-i18n="apiTableUi.vault.deviceCodeNote">当前会话已失效时，可在此重新输入一次授权码</span>
+                        <input id="amily2_device_credential_code" type="password" maxlength="512" autocomplete="off" placeholder="当前会话有效时无需填写" data-amily-i18n-placeholder="apiTableUi.vault.deviceCodePlaceholder" class="text_pole am2-ac-input">
+                    </label>
+                    <div class="am2-ac-inline-actions">
+                        <button id="amily2_device_credential_enroll" class="am2-ac-primary" type="button">
+                            <i class="fas fa-shield-alt"></i> <span data-amily-i18n="apiTableUi.vault.deviceEnroll">记住本设备</span>
+                        </button>
+                        <button id="amily2_device_credential_forget" class="am2-ac-danger" type="button" disabled>
+                            <i class="fas fa-unlink"></i> <span data-amily-i18n="apiTableUi.vault.deviceForget">忘记本设备</span>
+                        </button>
+                    </div>
+                    <small class="amily2-device-credential-copy" data-amily-i18n="apiTableUi.vault.deviceSecurityNote">授权码只恢复到当前会话；设备私钥不可导出。复制凭证 ID 或 localStorage 无法在其他设备复用。这是浏览器配置级绑定，并非硬件 TPM 绑定；清除站点数据会同时删除设备私钥。</small>
+                    <section class="amily2-device-account-section" aria-label="账户设备凭据" data-amily-i18n-aria-label="apiTableUi.vault.accountCredentials">
+                        <button id="amily2_device_credential_account_toggle" class="am2-ac-secondary" type="button" aria-expanded="false" aria-controls="amily2_device_credential_account_panel">
+                            <i class="fas fa-list" aria-hidden="true"></i> <span data-amily-i18n="apiTableUi.vault.accountDevices">账户设备</span>
+                        </button>
+                        <div id="amily2_device_credential_account_panel" hidden>
+                            <div class="amily2-device-account-toolbar">
+                                <span id="amily2_device_credential_account_status" role="status" aria-live="polite" data-api-table-i18n="apiTableUi.vault.accountUnchecked">尚未查询账户设备。</span>
+                                <div class="am2-ac-inline-actions">
+                                    <button id="amily2_device_credential_account_refresh" class="am2-ac-iconbtn" type="button" title="刷新账户设备" data-amily-i18n-title="apiTableUi.vault.accountRefresh" aria-label="刷新账户设备" data-amily-i18n-aria-label="apiTableUi.vault.accountRefresh">
+                                        <i class="fas fa-sync-alt" aria-hidden="true"></i>
+                                    </button>
+                                    <button id="amily2_device_credential_account_revoke_all" class="am2-ac-danger" type="button" disabled>
+                                        <i class="fas fa-ban" aria-hidden="true"></i> <span data-amily-i18n="apiTableUi.vault.accountRevokeAll">撤销全部有效设备凭据</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <ul id="amily2_device_credential_account_list" class="amily2-device-account-list" aria-label="账户设备列表" data-amily-i18n-aria-label="apiTableUi.vault.accountList"></ul>
+                            <small class="amily2-device-credential-copy" data-amily-i18n="apiTableUi.vault.accountRevokeNote">撤销仅停止持久凭证自动恢复授权，不会立即退出已授权会话。</small>
+                        </div>
+                    </section>
+                </div>
+            </details>
+        </div>
+
+        <div class="am2-ac-group">
+            <h3 class="am2-ac-group-title" data-amily-i18n="apiTableUi.vault.maintenance">维护</h3>
             <div class="am2-ac-settings">
                 <div class="am2-ac-setting am2-ac-setting-stack">
                     <div class="am2-ac-setting-label">
-                        <strong>清理旧版残留</strong>
-                        <small>旧模块各自存的地址/密钥。分配正常后再清。</small>
+                        <strong data-amily-i18n="apiTableUi.vault.legacyTitle">清理旧版残留</strong>
+                        <small data-amily-i18n="apiTableUi.vault.legacyNote">旧模块各自存的地址/密钥。分配正常后再清。</small>
                     </div>
-                    <button id="amily2_clear_legacy_config" class="am2-ac-danger" type="button">清除残留</button>
+                    <button id="amily2_clear_legacy_config" class="am2-ac-danger" type="button" data-amily-i18n="apiTableUi.vault.legacyAction">清除残留</button>
                 </div>
             </div>
         </div>

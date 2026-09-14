@@ -25,6 +25,8 @@ import {
   retryActiveSegmentVectors,
   diagnoseActiveHistoriographyLedger,
   repairActiveHistoriographyLedger,
+  getActiveLedgerSafeEditSnapshot,
+  applyActiveLedgerSafeEdit,
 } from "../core/historiographer.js";
 import {
   HISTORIOGRAPHY_PROTOCOL_LEGACY,
@@ -33,11 +35,13 @@ import {
   MIN_SEGMENT_MAX_BLOCKS,
 } from '../core/historiography/constants.js';
 import {
+  resolveHistoriographyPromptProtocol,
   resolveHistoriographyPromptKeys,
 } from '../core/historiography/prompt-profiles.js';
 import {
   initializeHistoriographyEditorProtection,
 } from '../core/historiography/editor-protection.js';
+import { subscribeLocaleChange, t } from '../utils/i18n/index.js';
 
 import { testNgmsApiConnection, fetchNgmsModels } from "../core/api/Ngms_api.js";
 
@@ -47,6 +51,46 @@ function getHistoriographyRuleConfig() {
 
 function _escapeHtml(text) {
   return String(text ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+let unsubscribeLedgerLocale = () => {};
+let unsubscribeLedgerStatus = () => {};
+
+function buildLedgerStatusHtml(status) {
+  if (!status.available) {
+    const message = status.reason === 'no-target'
+      ? t('summaryWorkflow.noTarget')
+      : t('summaryWorkflow.noLedger', { protocol: t(status.protocol === HISTORIOGRAPHY_PROTOCOL_LEGACY
+          ? 'summaryWorkflow.legacy' : 'summaryWorkflow.segmented') });
+    return `<small class="notes">${_escapeHtml(message)}</small>`;
+  }
+  if (status.protocol !== HISTORIOGRAPHY_PROTOCOL_SEGMENTED) {
+    return `<small class="notes"><strong>${_escapeHtml(t('summaryWorkflow.legacy'))}</strong><br>${_escapeHtml(t('summary.legacyProgress', {
+      floor: status.lastSummarizedFloor,
+      compiled: status.compiledFloor,
+      pending: status.pendingBlockCount,
+    }))}</small>`;
+  }
+  const vectorStates = status.vectorStates || {};
+  const residency = status.residency || {};
+  const residentWarning = residency.fits === false
+    ? `<br><span style="color: var(--SmartThemeQuoteColor);">${_escapeHtml(t('summaryWorkflow.residentWarning', { over: residency.overBy, retained: residency.safetyLoadedTokens || 0 }))}</span>`
+    : '';
+  return `<small class="notes">
+    <strong>${_escapeHtml(t('summaryWorkflow.segmented'))}</strong> · revision ${_escapeHtml(status.revision)}<br>
+    ${_escapeHtml(t('summary.segmentedProgress', {
+      floor: status.lastSummarizedFloor,
+      segments: status.segmentCount,
+      pending: status.pendingBlockCount,
+    }))}<br>
+    ${_escapeHtml(t('summaryWorkflow.vectorStatus', { verified: vectorStates.verified || 0, retryable: vectorStates.retryable || 0, pending: vectorStates.pending || 0, unrequested: vectorStates['not-requested'] || 0, loaded: status.vectorLoadedCount }))}<br>
+    ${_escapeHtml(t('summary.residentTokens', {
+      total: residency.totalTokens ?? 0,
+      max: residency.maxTokens ?? '?',
+      tail: residency.tailTokens ?? 0,
+      segments: residency.segmentTokens ?? 0,
+    }))}${residentWarning}
+  </small>`;
 }
 
 function _downloadHistoriographyDiagnostic(report) {
@@ -67,7 +111,7 @@ function _populateHistRuleProfileSelect(select, detail) {
   const profiles = detail?.profiles ?? ruleProfileManager.listProfiles();
   const assigned = detail?.assignments?.historiography ?? ruleProfileManager.getAssignment('historiography') ?? '';
   select.innerHTML = [
-    '<option value="">— 未分配 —</option>',
+    `<option value="" data-amily-i18n="summaryWorkflow.unassigned">${_escapeHtml(t('summaryWorkflow.unassigned'))}</option>`,
     ...profiles.map(p =>
       `<option value="${p.id}" ${p.id === assigned ? 'selected' : ''}>${_escapeHtml(p.name || p.id)}</option>`
     ),
@@ -112,7 +156,10 @@ function setupPromptEditor(type) {
     extension_settings[extensionName][key] = editor.value;
     if (saveSettings()) {
       toastr.success(
-        `${type === "small" ? "微言录" : "宏史卷"}的${selected === "jailbreak" ? "破限谕旨" : "纲要"}已保存！`,
+        t('summary.promptSaved', {
+          summary: t(type === 'small' ? 'summary.small' : 'summary.large'),
+          prompt: t(selected === 'jailbreak' ? 'summary.primaryPrompt' : 'summary.taskPrompt'),
+        }),
       );
     }
   });
@@ -122,7 +169,7 @@ function setupPromptEditor(type) {
     const keys = getKeys();
     const key = selected === 'jailbreak' ? keys.jailbreak : keys.task;
     editor.value = defaultSettings[key];
-    toastr.info("已恢复为默认谕旨，请点击“保存当前”以确认。");
+    toastr.info(t('summary.promptRestored'));
   });
 
       updateEditorView();
@@ -139,9 +186,9 @@ function setupPromptEditor(type) {
         const dialogHtml = `
             <dialog class="popup wide_dialogue_popup large_dialogue_popup">
               <div class="popup-body">
-                <h4 style="margin-top:0; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">正在编辑: ${selectedText}</h4>
+                <h4 style="margin-top:0; color: #eee; border-bottom: 1px solid rgba(255,255,255,0.2); padding-bottom: 10px;">${_escapeHtml(t('summary.editing', { item: selectedText }))}</h4>
                 <div class="popup-content" style="height: 70vh;"><div class="height100p wide100p flex-container"><textarea class="height100p wide100p maximized_textarea text_pole"></textarea></div></div>
-                <div class="popup-controls"><div class="popup-button-ok menu_button menu_button_primary interactable">保存并关闭</div><div class="popup-button-cancel menu_button interactable" style="margin-left: 10px;">取消</div></div>
+                <div class="popup-controls"><div class="popup-button-ok menu_button menu_button_primary interactable">${_escapeHtml(t('actions.saveAndClose'))}</div><div class="popup-button-cancel menu_button interactable" style="margin-left: 10px;">${_escapeHtml(t('actions.cancel'))}</div></div>
               </div>
             </dialog>`;
 
@@ -159,7 +206,10 @@ function setupPromptEditor(type) {
               : selectedKeys.task;
             extension_settings[extensionName][key] = newContent;
             if (saveSettings()) {
-                toastr.success(`${type === 'small' ? '微言录' : '宏史卷'}的${selectedText}已镌刻！`);
+                toastr.success(t('summary.promptSavedFromDialog', {
+                  summary: t(type === 'small' ? 'summary.small' : 'summary.large'),
+                  prompt: t(selectedValue === 'jailbreak' ? 'summary.primaryPrompt' : 'summary.taskPrompt'),
+                }));
             }
             closeDialog();
         });
@@ -168,6 +218,32 @@ function setupPromptEditor(type) {
         dialogElement[0].showModal();
     });
 
+}
+
+function createLedgerStatusRefresh({ load, scope, connected, loading, render, failed }) {
+    let revision = 0;
+    let disposed = false;
+    return {
+        async refresh() {
+            if (disposed || !connected()) return;
+            const ticket = ++revision;
+            const identity = scope();
+            const current = () => {
+                if (disposed || ticket !== revision || !connected()) return false;
+                const active = scope();
+                return identity.length === active.length
+                    && identity.every((value, index) => value === active[index]);
+            };
+            loading();
+            try {
+                const status = await load();
+                if (current()) render(status);
+            } catch (error) {
+                if (current()) failed(error);
+            }
+        },
+        dispose() { disposed = true; revision++; },
+    };
 }
 
 export function bindHistoriographyEvents() {
@@ -199,13 +275,34 @@ export function bindHistoriographyEvents() {
         };
       },
       onBlocked: () => toastr.warning(
-        '该条目属于宏史卷内部结构。请使用 Amily 的诊断、迁移或回滚功能处理。',
-        '史册只读保护',
+        t('summary.structureProtected'),
+        t('summaryWorkflow.readOnly'),
       ),
       onError: error => console.warn(
         '[大史官] 原生世界书只读保护刷新失败:',
         error,
       ),
+    });
+
+    const promptProtocolSelector = document.getElementById(
+      'historiography_prompt_protocol_selector',
+    );
+    promptProtocolSelector.value = resolveHistoriographyPromptProtocol(
+      extension_settings[extensionName],
+    );
+    promptProtocolSelector.addEventListener('change', () => {
+      extension_settings[extensionName].historiographyPromptProtocol =
+        promptProtocolSelector.value === HISTORIOGRAPHY_PROTOCOL_LEGACY
+          ? HISTORIOGRAPHY_PROTOCOL_LEGACY
+          : HISTORIOGRAPHY_PROTOCOL_SEGMENTED;
+      if (saveSettings()) {
+        toastr.success(
+          promptProtocolSelector.value === HISTORIOGRAPHY_PROTOCOL_LEGACY
+            ? t('summaryWorkflow.useLegacyPrompt')
+            : t('summaryWorkflow.useV1Prompt'),
+          t('summaryWorkflow.promptSwitched'),
+        );
+      }
     });
 
     setupPromptEditor("small");
@@ -227,7 +324,7 @@ export function bindHistoriographyEvents() {
         const start = parseInt(smallStartFloor.value, 10);
         const end = parseInt(smallEndFloor.value, 10);
         if (isNaN(start) || isNaN(end) || start <= 0 || end <= 0 || start > end) {
-            toastr.error("请输入有效的起始和结束楼层。", "总结");
+            toastr.error(t('summaryWorkflow.invalidRange'), t('summaryWorkflow.summary'));
             return;
         }
         executeManualSummary(start, end);
@@ -243,7 +340,7 @@ export function bindHistoriographyEvents() {
         if (isNaN(value) || value < 1) {
 
             event.target.value = defaultSettings.historiographySmallTriggerThreshold;
-            toastr.warning("每次总结层数必须是大于 0 的数字，已重置。", "总结");
+            toastr.warning(t('summaryWorkflow.invalidBatchSize'), t('summaryWorkflow.summary'));
             return; 
         }
         extension_settings[extensionName].historiographySmallTriggerThreshold = value;
@@ -256,7 +353,7 @@ export function bindHistoriographyEvents() {
         const value = parseInt(event.target.value, 10);
         if (isNaN(value) || value < 0) {
             event.target.value = defaultSettings.historiographyRetentionCount;
-            toastr.warning("保留层数必须是大于或等于 0 的数字，已重置。", "总结");
+            toastr.warning(t('summaryWorkflow.invalidRetention'), t('summaryWorkflow.summary'));
             return;
         }
         extension_settings[extensionName].historiographyRetentionCount = value;
@@ -294,7 +391,7 @@ export function bindHistoriographyEvents() {
         histRuleSelect.addEventListener("change", () => {
             ruleProfileManager.setAssignment('historiography', histRuleSelect.value || null);
             const name = histRuleSelect.selectedOptions[0]?.textContent || '';
-            toastr.info(histRuleSelect.value ? `史官提取规则已切换为「${name}」` : '史官提取规则已取消分配');
+            toastr.info(histRuleSelect.value ? _escapeHtml(t('summaryWorkflow.ruleChanged', { name })) : t('summaryWorkflow.ruleCleared'));
         });
         document.addEventListener('amily2:ruleProfilesChanged', (e) => {
             _populateHistRuleProfileSelect(histRuleSelect, e.detail);
@@ -308,16 +405,16 @@ export function bindHistoriographyEvents() {
         expeditionExecuteBtn.dataset.state = state;
         switch (state) {
             case 'running':
-                expeditionExecuteBtn.innerHTML = '<i class="fas fa-stop-circle"></i> 停止补全';
+                expeditionExecuteBtn.innerHTML = `<i class="fas fa-stop-circle"></i> <span data-amily-i18n="summaryWorkflow.stop">${_escapeHtml(t('summaryWorkflow.stop'))}</span>`;
                 expeditionExecuteBtn.className = 'menu_button small_button interactable danger';
                 break;
             case 'paused':
-                expeditionExecuteBtn.innerHTML = '<i class="fas fa-play-circle"></i> 继续补全';
+                expeditionExecuteBtn.innerHTML = `<i class="fas fa-play-circle"></i> <span data-amily-i18n="summaryWorkflow.resume">${_escapeHtml(t('summaryWorkflow.resume'))}</span>`;
                 expeditionExecuteBtn.className = 'menu_button small_button interactable success';
                 break;
             case 'idle':
             default:
-                expeditionExecuteBtn.innerHTML = '<i class="fas fa-flag-checkered"></i> 开始总结';
+                expeditionExecuteBtn.innerHTML = `<i class="fas fa-flag-checkered"></i> <span data-amily-i18n="summaryWorkflow.start">${_escapeHtml(t('summaryWorkflow.start'))}</span>`;
                 expeditionExecuteBtn.className = 'menu_button small_button interactable';
                 break;
         }
@@ -352,7 +449,7 @@ export function bindHistoriographyEvents() {
     const restoreArchiveBtn = document.getElementById("amily2_mhb_restore_archive");
 
     const updateArchiveList = async () => {
-        archiveSelector.innerHTML = '<option value="">正在翻阅旧档...</option>';
+        archiveSelector.innerHTML = `<option value="" data-amily-i18n="summaryWorkflow.loadingArchives">${_escapeHtml(t('summaryWorkflow.loadingArchives'))}</option>`;
         const archives = await getArchivedLedgers();
         archiveSelector.innerHTML = ""; // 清空
         if (archives && archives.length > 0) {
@@ -363,12 +460,12 @@ export function bindHistoriographyEvents() {
                 archiveSelector.appendChild(option);
             });
         } else {
-            archiveSelector.innerHTML = '<option value="">未发现归档史册</option>';
+            archiveSelector.innerHTML = `<option value="" data-amily-i18n="summaryWorkflow.noArchives">${_escapeHtml(t('summaryWorkflow.noArchives'))}</option>`;
         }
     };
 
     archiveCurrentBtn.addEventListener("click", async () => {
-        if (confirm("确定要归档当前的【对话流水总帐】并停用它吗？\n这将允许您开始一段全新的历史记录。")) {
+        if (confirm(t('summaryWorkflow.confirmArchive'))) {
             const success = await archiveCurrentLedger();
             if (success) {
                 updateArchiveList(); // 归档成功后刷新列表
@@ -381,10 +478,10 @@ export function bindHistoriographyEvents() {
     restoreArchiveBtn.addEventListener("click", async () => {
         const selectedKey = archiveSelector.value;
         if (!selectedKey) {
-            toastr.warning("请先选择一个要回溯的条目。", "总结");
+            toastr.warning(t('summaryWorkflow.selectArchive'), t('summaryWorkflow.summary'));
             return;
         }
-        if (confirm("确定要回溯选中的史册吗？\n当前的活跃史册（如果有）将被自动归档。")) {
+        if (confirm(t('summaryWorkflow.confirmRestore'))) {
             await restoreArchivedLedger(selectedKey);
             updateArchiveList(); // 回溯后刷新列表
         }
@@ -418,9 +515,16 @@ export function bindHistoriographyEvents() {
     const repairLedgerBtn = document.getElementById(
       'historiography_repair_safe_states',
     );
+    const safeEditBtn = document.getElementById(
+      'historiography_safe_edit',
+    );
     let migrationPreviewSnapshot = null;
     let ledgerStatusSnapshot = null;
     let diagnosticSnapshot = null;
+    const canSafelyEditLedger = status => status?.protocol
+      === HISTORIOGRAPHY_PROTOCOL_SEGMENTED
+      && (Number(status.segmentCount || 0)
+        + Number(status.pendingBlockCount || 0)) > 0;
 
     preferredProtocolSelect.value =
       extension_settings[extensionName].historiographyPreferredProtocol
@@ -437,77 +541,105 @@ export function bindHistoriographyEvents() {
       diagnosticSnapshot = null;
       executeMigrationBtn.disabled = true;
       repairLedgerBtn.disabled = true;
+      safeEditBtn.disabled = true;
     });
 
     const renderLedgerStatus = status => {
+      ledgerStatusBox.innerHTML = buildLedgerStatusHtml(status);
       if (!status.available) {
-        const message = status.reason === 'no-target'
-          ? '当前聊天没有可用的目标世界书。'
-          : `当前没有活动史册；下一次写入将创建 ${
-              status.protocol === HISTORIOGRAPHY_PROTOCOL_LEGACY
-                ? '滚动史册 v0.1'
-                : '分段史册 v1'
-            }。`;
-        ledgerStatusBox.innerHTML = `<small class="notes">${_escapeHtml(message)}</small>`;
         previewMigrationBtn.disabled = true;
         rollbackSegmentedBtn.disabled = true;
         retrySegmentVectorsBtn.disabled = true;
+        safeEditBtn.disabled = true;
         archiveCurrentBtn.disabled = false;
         restoreArchiveBtn.disabled = false;
         return;
       }
       if (status.protocol === HISTORIOGRAPHY_PROTOCOL_SEGMENTED) {
-        const vectorStates = status.vectorStates || {};
-        const verified = vectorStates.verified || 0;
-        const retryable = vectorStates.retryable || 0;
-        const pending = vectorStates.pending || 0;
-        const notRequested = vectorStates['not-requested'] || 0;
-        const residency = status.residency || {};
-        const residentWarning = residency.fits === false
-          ? `<br><span style="color: var(--SmartThemeQuoteColor);">常驻预算超出 ${residency.overBy} Token；其中 ${residency.safetyLoadedTokens || 0} Token 因向量尚未验证而安全保留。</span>`
-          : '';
-        ledgerStatusBox.innerHTML = `
-          <small class="notes">
-            <strong>分段史册 v1</strong> · revision ${status.revision}<br>
-            已总结至 ${status.lastSummarizedFloor} 楼 · ${status.segmentCount} 个宏史卷分段 · ${status.pendingBlockCount} 个待编纂批次<br>
-            向量：${verified} 段已验证 · ${retryable} 段待重试 · ${pending} 段待收讫 · ${notRequested} 段未请求；当前加载 ${status.vectorLoadedCount} 段<br>
-            常驻 Token：${residency.totalTokens ?? 0}/${residency.maxTokens ?? '?'}（活动尾部 ${residency.tailTokens ?? 0}，宏史卷 ${residency.segmentTokens ?? 0}）${residentWarning}
-          </small>`;
         previewMigrationBtn.disabled = true;
         rollbackSegmentedBtn.disabled = !status.canRollback;
         archiveCurrentBtn.disabled = true;
         restoreArchiveBtn.disabled = true;
         retrySegmentVectorsBtn.disabled = !status.canRetryVectors;
+        safeEditBtn.disabled = !canSafelyEditLedger(status);
         return;
       }
-      ledgerStatusBox.innerHTML = `
-        <small class="notes">
-          <strong>滚动史册 v0.1</strong><br>
-          已总结至 ${status.lastSummarizedFloor} 楼 · 宏史卷至 ${status.compiledFloor} 楼 · ${status.pendingBlockCount} 个待合并批次
-        </small>`;
       previewMigrationBtn.disabled = false;
       rollbackSegmentedBtn.disabled = true;
       retrySegmentVectorsBtn.disabled = true;
+      safeEditBtn.disabled = true;
       archiveCurrentBtn.disabled = false;
       restoreArchiveBtn.disabled = false;
     };
 
-    const refreshLedgerStatus = async () => {
-      ledgerStatusBox.innerHTML = '<small class="notes">正在校验活动史册...</small>';
-      migrationPreviewSnapshot = null;
-      diagnosticSnapshot = null;
-      executeMigrationBtn.disabled = true;
-      repairLedgerBtn.disabled = true;
-      try {
-        ledgerStatusSnapshot = await getHistoriographyLedgerStatus();
-        renderLedgerStatus(ledgerStatusSnapshot);
-      } catch (error) {
+    unsubscribeLedgerLocale();
+    unsubscribeLedgerLocale = subscribeLocaleChange(() => {
+      // A language switch must not change in-flight operation controls.
+      if (ledgerStatusSnapshot && ledgerStatusBox.isConnected) {
+        ledgerStatusBox.innerHTML = buildLedgerStatusHtml(ledgerStatusSnapshot);
+      }
+    });
+
+    unsubscribeLedgerStatus();
+    const statusRefresh = createLedgerStatusRefresh({
+      load: getHistoriographyLedgerStatus,
+      scope: () => {
+        const context = getContext();
+        return [context.chat, context.characterId, context.groupId,
+          context.getCurrentChatId?.(),
+          extension_settings[extensionName]?.lorebookTarget];
+      },
+      connected: () => ledgerStatusBox.isConnected,
+      loading: () => {
         ledgerStatusSnapshot = null;
-        ledgerStatusBox.innerHTML = `<small class="notes" style="color: var(--SmartThemeQuoteColor);">校验失败：${_escapeHtml(error.message)}</small>`;
+        ledgerStatusBox.innerHTML = `<small class="notes" data-amily-i18n="summaryWorkflow.validating">${_escapeHtml(t('summaryWorkflow.validating'))}</small>`;
+        migrationPreviewSnapshot = null;
+        diagnosticSnapshot = null;
         previewMigrationBtn.disabled = true;
         rollbackSegmentedBtn.disabled = true;
         retrySegmentVectorsBtn.disabled = true;
+        executeMigrationBtn.disabled = true;
+        repairLedgerBtn.disabled = true;
+        safeEditBtn.disabled = true;
+      },
+      render: status => {
+        ledgerStatusSnapshot = status;
+        renderLedgerStatus(ledgerStatusSnapshot);
+      },
+      failed: error => {
+        ledgerStatusSnapshot = null;
+        ledgerStatusBox.innerHTML = `<small class="notes" style="color: var(--SmartThemeQuoteColor);">${_escapeHtml(t('summaryWorkflow.validationFailed', { error: error.message }))}<br>${_escapeHtml(t('summaryWorkflow.validationAdvice'))}</small>`;
+        previewMigrationBtn.disabled = true;
+        rollbackSegmentedBtn.disabled = true;
+        retrySegmentVectorsBtn.disabled = true;
+        safeEditBtn.disabled = true;
+      },
+    });
+    const refreshLedgerStatus = () => statusRefresh.refresh();
+    const refreshOnEvent = () => { void refreshLedgerStatus(); };
+    const hostEvents = [event_types.CHAT_CHANGED, event_types.WORLDINFO_UPDATED]
+      .filter(Boolean);
+    hostEvents.forEach(type => eventSource.on(type, refreshOnEvent));
+    const refreshOnOpen = event => {
+      if (event.target?.closest?.('#amily2_open_text_optimization, #amily2_open_additional_features')) {
+        refreshOnEvent();
       }
+    };
+    const refreshOnTarget = event => {
+      if (event.target?.name === 'amily2_lorebook_target') refreshOnEvent();
+    };
+    document.addEventListener('amily-lorebook-created', refreshOnEvent);
+    document.addEventListener('click', refreshOnOpen);
+    document.addEventListener('change', refreshOnTarget);
+    unsubscribeLedgerStatus = () => {
+      statusRefresh.dispose();
+      for (const type of hostEvents) {
+        if (typeof eventSource.off === 'function') eventSource.off(type, refreshOnEvent);
+        else eventSource.removeListener?.(type, refreshOnEvent);
+      }
+      document.removeEventListener('amily-lorebook-created', refreshOnEvent);
+      document.removeEventListener('click', refreshOnOpen);
+      document.removeEventListener('change', refreshOnTarget);
     };
 
     refreshLedgerStatusBtn.addEventListener('click', refreshLedgerStatus);
@@ -521,23 +653,23 @@ export function bindHistoriographyEvents() {
           ? preview.diagnostics.map(item =>
               `<li><strong>${_escapeHtml(item.severity)}</strong> · ${_escapeHtml(item.code)}：${_escapeHtml(item.message)}</li>`
             ).join('')
-          : '<li>未发现结构问题。</li>';
-        showHtmlModal('旧账迁移预览', `
+          : `<li>${_escapeHtml(t('summaryWorkflow.noStructureIssues'))}</li>`;
+        showHtmlModal(t('summaryWorkflow.migrationPreview'), `
           <div class="historiography-migration-preview">
-            <p><strong>${preview.migratable ? '可以迁移' : '已阻止迁移'}</strong></p>
-            <p>总进度：${preview.totalFloors} 楼<br>旧宏史卷：1-${preview.compiledFloor} 楼<br>待迁移微言录：${preview.pendingBlockCount} 块</p>
+            <p><strong>${_escapeHtml(t(preview.migratable ? 'summaryWorkflow.migrationAllowed' : 'summaryWorkflow.migrationBlocked'))}</strong></p>
+            <p>${_escapeHtml(t('summary.migrationTotal', { floor: preview.totalFloors }))}<br>${_escapeHtml(t('summary.migrationLarge', { floor: preview.compiledFloor }))}<br>${_escapeHtml(t('summary.migrationSmall', { count: preview.pendingBlockCount }))}</p>
             <ul>${diagnostics}</ul>
             ${preview.macroPreview
-              ? `<details><summary>旧宏史卷正文预览</summary><pre style="white-space: pre-wrap; overflow-wrap: anywhere;">${_escapeHtml(preview.macroPreview)}</pre></details>`
+              ? `<details><summary>${_escapeHtml(t('summary.migrationPreview'))}</summary><pre style="white-space: pre-wrap; overflow-wrap: anywhere;">${_escapeHtml(preview.macroPreview)}</pre></details>`
               : ''}
           </div>`, {
-          okText: '关闭预览',
+          okText: t('summaryWorkflow.closePreview'),
           showCancel: false,
         });
       } catch (error) {
         migrationPreviewSnapshot = null;
         executeMigrationBtn.disabled = true;
-        toastr.error(`迁移预览失败：${error.message}`, '史册迁移');
+        toastr.error(_escapeHtml(t('summaryWorkflow.previewFailed', { error: error.message })), t('summaryWorkflow.migration'));
       } finally {
         previewMigrationBtn.disabled =
           ledgerStatusSnapshot?.protocol
@@ -547,21 +679,20 @@ export function bindHistoriographyEvents() {
 
     executeMigrationBtn.addEventListener('click', async () => {
       if (!migrationPreviewSnapshot) {
-        toastr.warning('请先生成一份通过校验的迁移预览。', '史册迁移');
+        toastr.warning(t('summaryWorkflow.previewRequired'), t('summaryWorkflow.migration'));
         return;
       }
       if (!confirm(
-        '确定将当前旧版史册迁移为分段史册吗？\n'
-        + '旧条目会在同一次保存中变成字节级禁用归档，不会删除。',
+        t('summaryWorkflow.confirmMigration'),
       )) return;
       executeMigrationBtn.disabled = true;
       try {
         await executeActiveLedgerMigration(migrationPreviewSnapshot);
-        toastr.success('旧版史册已迁移为分段史册。', '史册迁移');
+        toastr.success(t('summaryWorkflow.migrated'), t('summaryWorkflow.migration'));
         migrationPreviewSnapshot = null;
         await refreshLedgerStatus();
       } catch (error) {
-        toastr.error(`迁移失败：${error.message}`, '史册迁移', {
+        toastr.error(_escapeHtml(t('summaryWorkflow.migrationFailed', { error: error.message })), t('summaryWorkflow.migration'), {
           timeOut: 12000,
         });
       }
@@ -574,8 +705,7 @@ export function bindHistoriographyEvents() {
         return;
       }
       if (!confirm(
-        '确定回滚为旧版滚动史册吗？\n'
-        + '分段条目只会被禁用，不会删除；若迁移后已有新内容，将由程序确定性投影为旧格式。',
+        t('summaryWorkflow.confirmRollback'),
       )) return;
       rollbackSegmentedBtn.disabled = true;
       try {
@@ -584,13 +714,13 @@ export function bindHistoriographyEvents() {
         );
         toastr.success(
           result.rollbackMode === 'exact-source'
-            ? '已恢复迁移前的字节级旧史册正本。'
-            : '已将当前分段史册确定性投影为旧格式。',
-          '史册回滚',
+            ? t('summaryWorkflow.rollbackExact')
+            : t('summaryWorkflow.rollbackProjected'),
+          t('summaryWorkflow.rollback'),
         );
         await refreshLedgerStatus();
       } catch (error) {
-        toastr.error(`回滚失败：${error.message}`, '史册回滚', {
+        toastr.error(_escapeHtml(t('summaryWorkflow.rollbackFailed', { error: error.message })), t('summaryWorkflow.rollback'), {
           timeOut: 12000,
         });
         await refreshLedgerStatus();
@@ -605,23 +735,23 @@ export function bindHistoriographyEvents() {
           onProgress: progress => {
             if (progress.phase === 'preparing') {
               retrySegmentVectorsBtn.textContent =
-                `检查 ${progress.index}/${progress.total}`;
+                t('summaryWorkflow.checkProgress', { index: progress.index, total: progress.total });
             } else if (progress.phase === 'delivering') {
               retrySegmentVectorsBtn.textContent =
-                `回读 ${progress.index}/${progress.total}`;
+                t('summaryWorkflow.readbackProgress', { index: progress.index, total: progress.total });
             }
           },
         });
         const message = result.failed > 0
-          ? `检查完成：${result.verified} 段已重建，${result.skipped} 段无需变更，${result.failed} 段保持加载并待重试。`
-          : `检查完成：${result.verified} 段已重建，${result.skipped} 段无需变更。`;
+          ? t('summaryWorkflow.vectorPartial', result)
+          : t('summaryWorkflow.vectorComplete', result);
         toastr[result.failed > 0 ? 'warning' : 'success'](
           message,
-          '宏史卷向量索引',
+          t('summary.vectorIndex'),
           { timeOut: 12000 },
         );
       } catch (error) {
-        toastr.error(`向量检查已停止：${error.message}`, '宏史卷向量索引', {
+        toastr.error(_escapeHtml(t('summaryWorkflow.vectorStopped', { error: error.message })), t('summary.vectorIndex'), {
           timeOut: 12000,
         });
       } finally {
@@ -640,25 +770,44 @@ export function bindHistoriographyEvents() {
           ? diagnosticSnapshot.diagnostics.map(item =>
               `<li><strong>${_escapeHtml(item.severity)}</strong> · ${_escapeHtml(item.code)}：${_escapeHtml(item.message)}${item.details?.suggestion ? `<br><small>${_escapeHtml(item.details.suggestion)}</small>` : ''}</li>`
             ).join('')
-          : '<li>未发现结构或加载状态问题。</li>';
+          : `<li>${_escapeHtml(t('summaryWorkflow.noStateIssues'))}</li>`;
         const orphanItems = diagnosticSnapshot.orphanEntries?.length
           ? diagnosticSnapshot.orphanEntries.map(item =>
-              `<li>${_escapeHtml(item.kind)} · UID ${_escapeHtml(item.entryUid)} · 键 ${_escapeHtml(item.key)}</li>`
+              `<li>${_escapeHtml(t('summaryWorkflow.orphanEntry', { kind: item.kind, uid: item.entryUid, key: item.key }))}</li>`
             ).join('')
-          : '<li>没有检测到孤儿内部条目。</li>';
-        showHtmlModal('分段史册诊断', `
-          <p><strong>${diagnosticSnapshot.valid ? '校验通过' : '需要处理'}</strong> · ${diagnosticSnapshot.summary.errors} 个错误 · ${diagnosticSnapshot.summary.warnings} 个警告 · ${diagnosticSnapshot.summary.orphans} 个孤儿候选</p>
-          <p><small>完整的脱敏 JSON 报告已下载。孤儿条目不会自动删除；只有 disable 加载位可以通过安全修复按钮恢复。</small></p>
-          <h4>诊断</h4><ul>${diagnosticItems}</ul>
-          <h4>孤儿候选</h4><ul>${orphanItems}</ul>
+          : `<li>${_escapeHtml(t('summaryWorkflow.noOrphans'))}</li>`;
+        const tailIntegrity = diagnosticSnapshot.tailIntegrity;
+        let tailIntegrityHtml = `<p><small>${_escapeHtml(t('summary.noTail'))}</small></p>`;
+        if (tailIntegrity?.available) {
+          const conclusion = tailIntegrity.contentHashMatches
+            ? t('summaryWorkflow.hashMatches')
+            : tailIntegrity.hashOnlyMismatchCandidate
+              ? t('summaryWorkflow.hashCandidate')
+              : tailIntegrity.structureValid
+                ? t('summaryWorkflow.tailExtraBytes')
+                : t('summaryWorkflow.tailInvalid', { code: tailIntegrity.failureCode || 'unknown' });
+          tailIntegrityHtml = `
+            <p><small>${_escapeHtml(conclusion)}</small></p>
+            <ul>
+              <li>${_escapeHtml(t('summaryWorkflow.tailMarker', { result: t(tailIntegrity.markerMatches ? 'summaryWorkflow.matches' : 'summaryWorkflow.mismatch') }))}</li>
+              <li>${_escapeHtml(t('summaryWorkflow.batchesVerified', { verified: tailIntegrity.verifiedBatchCount, total: tailIntegrity.batchCount }))}</li>
+              <li>${_escapeHtml(t('summaryWorkflow.canonicalBytes', { result: t(tailIntegrity.canonicalContentMatches ? 'summaryWorkflow.matches' : 'summaryWorkflow.mismatch') }))}</li>
+            </ul>`;
+        }
+        showHtmlModal(t('summaryWorkflow.diagnosticTitle'), `
+          <p><strong>${_escapeHtml(t(diagnosticSnapshot.valid ? 'summaryWorkflow.valid' : 'summaryWorkflow.needsAttention'))}</strong> · ${_escapeHtml(t('summaryWorkflow.diagnosticCounts', diagnosticSnapshot.summary))}</p>
+          <p><small>${_escapeHtml(t('summaryWorkflow.diagnosticDownloaded'))}</small></p>
+          <h4>${_escapeHtml(t('summaryWorkflow.diagnostics'))}</h4><ul>${diagnosticItems}</ul>
+          <h4>${_escapeHtml(t('summaryWorkflow.tailIntegrity'))}</h4>${tailIntegrityHtml}
+          <h4>${_escapeHtml(t('summaryWorkflow.orphans'))}</h4><ul>${orphanItems}</ul>
         `, {
-          okText: '关闭',
+          okText: t('summaryWorkflow.close'),
           showCancel: false,
         });
       } catch (error) {
         diagnosticSnapshot = null;
         repairLedgerBtn.disabled = true;
-        toastr.error(`诊断失败：${error.message}`, '分段史册诊断', {
+        toastr.error(_escapeHtml(t('summaryWorkflow.diagnosticFailed', { error: error.message })), t('summaryWorkflow.diagnosticTitle'), {
           timeOut: 12000,
         });
       } finally {
@@ -668,8 +817,7 @@ export function bindHistoriographyEvents() {
     repairLedgerBtn.addEventListener('click', async () => {
       if (!diagnosticSnapshot?.safeRepairs?.length) return;
       if (!confirm(
-        `将按刚才的诊断修复 ${diagnosticSnapshot.safeRepairs.length} 个条目的启用/禁用状态。\n`
-        + '不会改正文、hash、Manifest 引用或删除孤儿条目。继续吗？',
+        t('summaryWorkflow.confirmRepair', { count: diagnosticSnapshot.safeRepairs.length }),
       )) return;
       repairLedgerBtn.disabled = true;
       try {
@@ -677,15 +825,148 @@ export function bindHistoriographyEvents() {
           diagnosticSnapshot,
         );
         toastr.success(
-          `已修复 ${result?.repaired || 0} 个条目的安全加载状态。`,
-          '分段史册恢复',
+          t('summaryWorkflow.repaired', { count: result?.repaired || 0 }),
+          t('summaryWorkflow.repairTitle'),
         );
         diagnosticSnapshot = null;
         await refreshLedgerStatus();
       } catch (error) {
-        toastr.error(`安全修复失败：${error.message}`, '分段史册恢复', {
+        toastr.error(_escapeHtml(t('summaryWorkflow.repairFailed', { error: error.message })), t('summaryWorkflow.repairTitle'), {
           timeOut: 12000,
         });
+      }
+    });
+    safeEditBtn.addEventListener('click', async () => {
+      safeEditBtn.disabled = true;
+      try {
+        const snapshot = await getActiveLedgerSafeEditSnapshot();
+        if (!snapshot.documents?.length) {
+          toastr.info(t('summaryWorkflow.nothingToEdit'), t('summaryWorkflow.safeEdit'));
+          return;
+        }
+        const options = snapshot.documents.map(document => {
+          const type = t(document.kind === 'micro-batch'
+            ? 'summary.small'
+            : 'summary.large');
+          return `<option value="${_escapeHtml(document.editId)}">${_escapeHtml(t('summaryWorkflow.editOption', { type, start: document.startFloor, end: document.endFloor }))}</option>`;
+        }).join('');
+        const dialog = showHtmlModal(t('summaryWorkflow.safeEdit'), `
+          <div class="amily2-historiography-safe-edit">
+            <label for="amily2_historiography_safe_edit_target" data-amily-i18n="summaryWorkflow.editRange">${_escapeHtml(t('summaryWorkflow.editRange'))}</label>
+            <select id="amily2_historiography_safe_edit_target" class="text_pole">${options}</select>
+            <div class="amily2-historiography-safe-edit-meta notes" aria-live="polite"></div>
+            <label for="amily2_historiography_safe_edit_text" data-amily-i18n="summaryWorkflow.summaryBody">${_escapeHtml(t('summaryWorkflow.summaryBody'))}</label>
+            <textarea id="amily2_historiography_safe_edit_text" class="text_pole" spellcheck="false"></textarea>
+            <div class="amily2-historiography-safe-edit-notice notes" data-amily-i18n="summary.safeEditNotice">
+              ${_escapeHtml(t('summary.safeEditNotice'))}
+            </div>
+            <div class="amily2-historiography-safe-edit-error notes" role="alert" hidden></div>
+          </div>
+        `, {
+          okText: t('summaryWorkflow.saveRevision'),
+          cancelText: t('actions.cancel'),
+          onShow: dialogElement => {
+            const select = dialogElement.find(
+              '#amily2_historiography_safe_edit_target',
+            );
+            const textarea = dialogElement.find(
+              '#amily2_historiography_safe_edit_text',
+            );
+            const meta = dialogElement.find(
+              '.amily2-historiography-safe-edit-meta',
+            );
+            const renderDocument = () => {
+              const selected = snapshot.documents.find(document =>
+                document.editId === String(select.val() || ''));
+              textarea.val(selected?.text || '');
+              if (!selected) {
+                meta.text(t('summaryWorkflow.editTargetStale'));
+                return;
+              }
+              const vector = selected.kind === 'macro-segment'
+                ? t('summaryWorkflow.editVectorState', { state: selected.vectorState })
+                : '';
+              meta.text(
+                t('summaryWorkflow.editMeta', { start: selected.startFloor, end: selected.endFloor, revision: snapshot.revision, vector }),
+              );
+            };
+            select.on('change', renderDocument);
+            renderDocument();
+          },
+          onOk: dialogElement => {
+            const editId = String(dialogElement.find(
+              '#amily2_historiography_safe_edit_target',
+            ).val() || '');
+            const replacementText = String(dialogElement.find(
+              '#amily2_historiography_safe_edit_text',
+            ).val() || '');
+            const okButton = dialogElement.find('.popup-button-ok');
+            const cancelButton = dialogElement.find('.popup-button-cancel');
+            const inputs = dialogElement.find('select, textarea');
+            const inlineError = dialogElement.find('.amily2-historiography-safe-edit-error');
+            inlineError.text('').prop('hidden', true);
+            okButton.prop('disabled', true).text(t('summaryWorkflow.saving'));
+            cancelButton.prop('disabled', true);
+            inputs.prop('disabled', true);
+            void (async () => {
+              try {
+                const result = await applyActiveLedgerSafeEdit(
+                  snapshot,
+                  editId,
+                  replacementText,
+                );
+                if (result?.idempotent) {
+                  toastr.info(t('summaryWorkflow.unchanged'), t('summaryWorkflow.safeEdit'));
+                } else if (result?.vectorInvalidated) {
+                  toastr.warning(
+                    t('summary.largeSafelyEdited'),
+                    t('summaryWorkflow.safeEdit'),
+                    { timeOut: 12000 },
+                  );
+                } else {
+                  toastr.success(
+                    t('summary.smallSafelyEdited'),
+                    t('summaryWorkflow.safeEdit'),
+                  );
+                }
+                dialogElement[0].close();
+                dialogElement.remove();
+                await refreshLedgerStatus();
+              } catch (error) {
+                const message = t('summaryWorkflow.editFailed', { error: error.message });
+                inlineError.text(message).prop('hidden', false);
+                inlineError[0]?.scrollIntoView?.({ block: 'nearest' });
+                toastr.error(_escapeHtml(t('summaryWorkflow.editFailed', { error: error.message })), t('summaryWorkflow.safeEdit'), {
+                  timeOut: 12000,
+                });
+                okButton.prop('disabled', false).text(t('summaryWorkflow.saveRevision'));
+                cancelButton.prop('disabled', false);
+                inputs.prop('disabled', false);
+              }
+            })();
+            return false;
+          },
+          onCancel: () => {
+            safeEditBtn.disabled = !canSafelyEditLedger(
+              ledgerStatusSnapshot,
+            );
+          },
+        });
+        dialog.on('close', () => {
+          safeEditBtn.disabled = !canSafelyEditLedger(
+            ledgerStatusSnapshot,
+          );
+        });
+      } catch (error) {
+        toastr.error(_escapeHtml(t('summaryWorkflow.openEditFailed', { error: error.message })), t('summaryWorkflow.safeEdit'), {
+          timeOut: 12000,
+        });
+      } finally {
+        if (!document.querySelector('.amily2-historiography-safe-edit')) {
+          safeEditBtn.disabled = !canSafelyEditLedger(
+            ledgerStatusSnapshot,
+          );
+        }
       }
     });
     refreshLedgerStatus();
@@ -721,8 +1002,8 @@ export function bindHistoriographyEvents() {
         extension_settings[extensionName][key] = defaultSettings[key];
         saveSettings();
         toastr.warning(
-          `数值需在 ${min}-${max} 之间，已恢复默认值 ${defaultSettings[key]}。`,
-          "宏史卷设置",
+          t('summaryWorkflow.invalidNumber', { min, max, value: defaultSettings[key] }),
+          t('summary.largeSettings'),
         );
         return;
       }
@@ -785,7 +1066,7 @@ export function bindHistoriographyEvents() {
       activeLimit.value = activeTokens;
       saveSettings();
       if (warning) {
-        toastr.warning(warning, "宏史卷设置");
+        toastr.warning(warning, t('summary.largeSettings'));
       }
     };
 
@@ -799,7 +1080,7 @@ export function bindHistoriographyEvents() {
         persistLimits(
           normalized.inputMaxTokens,
           normalized.activeMaxTokens,
-          "输入上限需在 5000-128000 之间，已恢复到安全值。",
+          t('summaryWorkflow.invalidInputLimit'),
         );
         return;
       }
@@ -818,9 +1099,10 @@ export function bindHistoriographyEvents() {
         persistLimits(
           inputTokens,
           activeTokens,
-          `输入上限必须比活动宏史卷至少多 `
-            + `${REFINEMENT_INPUT_RESERVE_TOKENS} Token，`
-            + `已同步调整活动宏史卷上限为 ${activeTokens}。`,
+          t('summary.inputReserveAdjusted', {
+            reserve: REFINEMENT_INPUT_RESERVE_TOKENS,
+            active: activeTokens,
+          }),
         );
         return;
       }
@@ -837,7 +1119,7 @@ export function bindHistoriographyEvents() {
         persistLimits(
           normalized.inputMaxTokens,
           normalized.activeMaxTokens,
-          "活动宏史卷上限需在 1000-32000 之间，已恢复到安全值。",
+          t('summary.activeLimitInvalid'),
         );
         return;
       }
@@ -850,9 +1132,10 @@ export function bindHistoriographyEvents() {
         persistLimits(
           inputTokens,
           activeTokens,
-          `为给固定提示和微言录保留 `
-            + `${REFINEMENT_INPUT_RESERVE_TOKENS} Token，`
-            + `已同步提高输入上限为 ${inputTokens}。`,
+          t('summary.inputLimitAdjusted', {
+            reserve: REFINEMENT_INPUT_RESERVE_TOKENS,
+            input: inputTokens,
+          }),
         );
         return;
       }
@@ -865,7 +1148,7 @@ export function bindHistoriographyEvents() {
   });
 
   const updateWorldbookList = async () => {
-    largeWbSelector.innerHTML = '<option value="">正在遍览帝国疆域...</option>';
+    largeWbSelector.innerHTML = `<option value="" data-amily-i18n="summary.loadingWorldbooks">${_escapeHtml(t('summary.loadingWorldbooks'))}</option>`;
     const worldbooks = await getAvailableWorldbooks();
     largeWbSelector.innerHTML = ""; // 清空
     if (worldbooks && worldbooks.length > 0) {
@@ -878,17 +1161,17 @@ export function bindHistoriographyEvents() {
 
       largeWbSelector.dispatchEvent(new Event("change"));
     } else {
-      largeWbSelector.innerHTML = '<option value="">未发现任何国史馆</option>';
+      largeWbSelector.innerHTML = `<option value="" data-amily-i18n="summary.noWorldbooks">${_escapeHtml(t('summary.noWorldbooks'))}</option>`;
     }
   };
 
   const updateLoreList = async () => {
     const selectedWb = largeWbSelector.value;
     if (!selectedWb) {
-      largeLoreSelector.innerHTML = '<option value="">请先选择国史馆</option>';
+      largeLoreSelector.innerHTML = `<option value="" data-amily-i18n="summary.selectWorldbook">${_escapeHtml(t('summary.selectWorldbook'))}</option>`;
       return;
     }
-    largeLoreSelector.innerHTML = '<option value="">正在检阅史册...</option>';
+    largeLoreSelector.innerHTML = `<option value="" data-amily-i18n="summary.loadingEntries">${_escapeHtml(t('summary.loadingEntries'))}</option>`;
     const lores = await getLoresForWorldbook(selectedWb);
     largeLoreSelector.innerHTML = ""; // 清空
     if (lores && lores.length > 0) {
@@ -899,7 +1182,7 @@ export function bindHistoriographyEvents() {
         largeLoreSelector.appendChild(option);
       });
     } else {
-      largeLoreSelector.innerHTML = '<option value="">此国史馆为空</option>';
+      largeLoreSelector.innerHTML = `<option value="" data-amily-i18n="summary.emptyWorldbook">${_escapeHtml(t('summary.emptyWorldbook'))}</option>`;
     }
   };
 
@@ -911,7 +1194,7 @@ export function bindHistoriographyEvents() {
     const worldbook = largeWbSelector.value;
     const loreKey = largeLoreSelector.value;
     if (!worldbook || !loreKey) {
-      toastr.error("请先选择世界书和其中的条目。", "总结");
+      toastr.error(t('summaryWorkflow.selectEntry'), t('summaryWorkflow.summary'));
       return;
     }
 
@@ -1035,7 +1318,7 @@ function bindNgmsApiEvents() {
         testButton.addEventListener('click', async function() {
             const button = $(this);
             const originalHtml = button.html();
-            button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 测试中');
+            button.prop('disabled', true).html(`<i class="fas fa-spinner fa-spin"></i> ${_escapeHtml(t('summaryWorkflow.testing'))}`);
             
             try {
                 await testNgmsApiConnection();
@@ -1056,14 +1339,14 @@ function bindNgmsApiEvents() {
         fetchModelsButton.addEventListener('click', async function() {
             const button = $(this);
             const originalHtml = button.html();
-            button.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 获取中');
+            button.prop('disabled', true).html(`<i class="fas fa-spinner fa-spin"></i> ${_escapeHtml(t('summaryWorkflow.fetching'))}`);
             
             try {
                 const models = await fetchNgmsModels();
                 
                 if (models && models.length > 0) {
                     // 清空并填充模型下拉框
-                    modelSelect.innerHTML = '<option value="">-- 请选择模型 --</option>';
+                    modelSelect.innerHTML = `<option value="" data-amily-i18n="summaryWorkflow.selectModel">${_escapeHtml(t('summaryWorkflow.selectModel'))}</option>`;
                     models.forEach(model => {
                         const option = document.createElement('option');
                         option.value = model.id || model.name || model;
@@ -1083,14 +1366,14 @@ function bindNgmsApiEvents() {
                         console.log(`[Amily2-Ngms] 已选择模型: ${selectedModel}`);
                     });
                     
-                    toastr.success(`成功获取 ${models.length} 个模型`, 'Ngms 模型获取');
+                    toastr.success(t('summaryWorkflow.modelsFetched', { count: models.length }), t('summaryWorkflow.modelsTitle'));
                 } else {
-                    toastr.warning('未获取到任何模型', 'Ngms 模型获取');
+                    toastr.warning(t('summaryWorkflow.noModels'), t('summaryWorkflow.modelsTitle'));
                 }
                 
             } catch (error) {
                 console.error('[Amily2号-Ngms] 获取模型列表失败:', error);
-                toastr.error(`获取模型失败: ${error.message}`, 'Ngms 模型获取');
+                toastr.error(_escapeHtml(t('summaryWorkflow.modelsFailed', { error: error.message })), t('summaryWorkflow.modelsTitle'));
             } finally {
                 button.prop('disabled', false).html(originalHtml);
             }
@@ -1104,13 +1387,13 @@ async function loadNgmsTavernPresets() {
     if (!select) return;
 
     const currentValue = select.value;
-    select.innerHTML = '<option value="">-- 加载中 --</option>';
+    select.innerHTML = `<option value="" data-amily-i18n="summaryWorkflow.loading">${_escapeHtml(t('summaryWorkflow.loading'))}</option>`;
 
     try {
         const context = getContext();
         const tavernProfiles = context.extensionSettings?.connectionManager?.profiles || [];
         
-        select.innerHTML = '<option value="">-- 请选择预设 --</option>';
+        select.innerHTML = `<option value="" data-amily-i18n="summaryWorkflow.selectPreset">${_escapeHtml(t('summaryWorkflow.selectPreset'))}</option>`;
         
         if (tavernProfiles.length > 0) {
             tavernProfiles.forEach(profile => {
@@ -1125,11 +1408,11 @@ async function loadNgmsTavernPresets() {
                 }
             });
         } else {
-            select.innerHTML = '<option value="">未找到可用预设</option>';
+            select.innerHTML = `<option value="" data-amily-i18n="summaryWorkflow.noPresets">${_escapeHtml(t('summaryWorkflow.noPresets'))}</option>`;
         }
     } catch (error) {
         console.error('[Amily2号-Ngms] 加载SillyTavern预设失败:', error);
-        select.innerHTML = '<option value="">加载失败</option>';
+        select.innerHTML = `<option value="" data-amily-i18n="summaryWorkflow.loadFailed">${_escapeHtml(t('summaryWorkflow.loadFailed'))}</option>`;
     }
 }
 

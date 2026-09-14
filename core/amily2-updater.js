@@ -1,6 +1,7 @@
 const GIT_REPO_OWNER = 'Wx-2025';
 const GIT_REPO_NAME = 'ST-Amily2-Chat-Optimisation';
 import { extensionName } from '../utils/settings.js';
+import { subscribeLocaleChange, t } from '../utils/i18n/index.js';
 const EXTENSION_NAME = extensionName;
 const EXTENSION_FOLDER_PATH = `scripts/extensions/third-party/${EXTENSION_NAME}`;
 const UPDATE_REVIEW_URL = `https://github.com/${GIT_REPO_OWNER}/${GIT_REPO_NAME}/commits/main`;
@@ -22,6 +23,7 @@ class Amily2Updater {
         this.latestVersion = '0.0.0';
         this.changelogContent = '';
         this.isChecking = false;
+        this.unsubscribeLocaleChange = null;
     }
 
     async fetchRawFileFromGitHub(filePath) {
@@ -171,17 +173,20 @@ class Amily2Updater {
         const $updateIndicator = $('#amily2_update_indicator');
 
         if (this.compareVersions(this.latestVersion, this.currentVersion) > 0) {
-            const safeVersion = /^[\w.+\-]{1,40}$/.test(String(this.latestVersion ?? '')) ? this.latestVersion : '未知';
+            const safeVersion = /^[\w.+\-]{1,40}$/.test(String(this.latestVersion ?? ''))
+                ? this.latestVersion
+                : t('main.unknownVersion');
             $updateIndicator.show();
-            $updateButton.attr('title', `发现新版本 ${safeVersion}！点击查看详情`);
+            $updateButton.attr('title', t('main.updateAvailableTitle', { version: safeVersion }));
             // 经典首页：中间「更新」按钮显示礼物 + 新版号
             $updateButtonNew
-                .attr('title', `升级到 ${safeVersion}`)
+                .attr('title', t('main.upgradeToVersion', { version: safeVersion }))
                 .attr('data-amily2-upgrade-bound', '1')
                 .data('amily2-upgrade-bound', 1)
                 .empty()
                 .append($('<i>').addClass('fas fa-gift'))
-                .append(document.createTextNode(` 新版 ${safeVersion}`))
+                .append(document.createTextNode(` ${t('main.newVersionLabel', { version: safeVersion })}`))
+                .prop('hidden', false)
                 .show()
                 .off('click.amily2Upgrade')
                 .on('click.amily2Upgrade', (e) => {
@@ -191,11 +196,12 @@ class Amily2Updater {
                 });
         } else {
             $updateIndicator.hide();
-            $updateButton.attr('title', `当前版本 ${this.currentVersion}（已是最新）`);
+            $updateButton.attr('title', t('main.currentIsLatestTitle', { version: this.currentVersion }));
             $updateButtonNew
-                .attr('title', '已是最新版本')
+                .attr('title', t('main.alreadyLatest'))
                 .removeAttr('data-amily2-upgrade-bound')
                 .removeData('amily2-upgrade-bound')
+                .prop('hidden', true)
                 .hide()
                 .off('click.amily2Upgrade');
         }
@@ -205,14 +211,14 @@ class Amily2Updater {
 
         const $currentVersion = $('#amily2_current_version');
         if ($currentVersion.length) {
-            $currentVersion.text(this.currentVersion || '未知');
+            $currentVersion.text(this.currentVersion || t('main.unknownVersion'));
         }
 
         const $latestVersion = $('#amily2_latest_version');
         const $latestContainer = $latestVersion.closest('.version-latest');
         
         if ($latestVersion.length) {
-            $latestVersion.text(this.latestVersion || '获取失败');
+            $latestVersion.text(this.latestVersion || t('main.fetchFailed'));
 
             if (this.compareVersions(this.latestVersion, this.currentVersion) > 0) {
                 $latestContainer.addClass('has-update');
@@ -230,7 +236,7 @@ class Amily2Updater {
         const $latestVersion = $('#amily2_latest_version');
 
         if ($latestVersion.length) {
-            $latestVersion.text('检查中...');
+            $latestVersion.text(t('main.checking'));
         }
         
         if (isManual) {
@@ -245,7 +251,7 @@ class Amily2Updater {
 
             const $currentVersion = $('#amily2_current_version');
             if ($currentVersion.length) {
-                $currentVersion.text(this.currentVersion || '未知');
+                $currentVersion.text(this.currentVersion || t('main.unknownVersion'));
             }
 
             const remoteManifestText = await this.fetchRawFileFromGitHub('manifest.json');
@@ -266,7 +272,7 @@ class Amily2Updater {
             console.error('[Amily2Updater] 检查更新失败:', error);
 
             if ($latestVersion.length) {
-                $latestVersion.text('获取失败');
+                $latestVersion.text(t('main.fetchFailed'));
             }
             
             if (isManual) {
@@ -282,10 +288,13 @@ class Amily2Updater {
 
     initialize() {
         const $updateButton = $('#amily2_update_button');
-        const $updateButtonNew = $('#amily2_update_button_new');
         $updateButton.off('click').on('click', () => {
             this.showUpdateLogDialog();
         });
+
+        if (!this.unsubscribeLocaleChange) {
+            this.unsubscribeLocaleChange = subscribeLocaleChange(() => this.updateUI());
+        }
 
         this.checkForUpdates(false);
 

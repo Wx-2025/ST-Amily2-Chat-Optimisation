@@ -1,15 +1,17 @@
 import { messageFormatting } from '/script.js';
+import { t } from '../utils/i18n/index.js';
 
 /**
  * 打开 Markdown 教程弹窗。
  * @param {string} title
  * @param {string} contentUrl
- * @param {{ advancedTitle?: string, advancedUrl?: string }} [options]
+ * @param {{ titleKey?: string, advancedTitle?: string, advancedTitleKey?: string, advancedUrl?: string }} [options]
  *   传入 advancedUrl 时，在正文下方显示「补充进阶教程」按钮。
  */
 export async function showContentModal(title, contentUrl, options = {}) {
     try {
-        const { advancedTitle, advancedUrl } = options || {};
+        const { titleKey, advancedTitle, advancedTitleKey, advancedUrl } = options || {};
+        if (titleKey) title = t(titleKey);
 
         const markdownContent = await $.get(contentUrl);
         const htmlContent = messageFormatting(String(markdownContent), '', false, false);
@@ -17,11 +19,11 @@ export async function showContentModal(title, contentUrl, options = {}) {
         // 仅入门教程显示「补充进阶」按钮；进阶正文已自带「仍解决不了」，不再二次追加
         const advancedBlock = advancedUrl
             ? `<div class="am2-tut-advanced">
-                    <p class="am2-tut-advanced-note">上面是入门。需要全部操作说明时，打开下方进阶教程。</p>
+                    <p class="am2-tut-advanced-note">${escapeHtml(t('shell.tutorial.introNote'))}</p>
                     <button type="button" class="menu_button secondary interactable am2-tut-advanced-btn">
-                        <i class="fas fa-layer-group"></i> 补充进阶教程
+                        <i class="fas fa-layer-group"></i> ${escapeHtml(t('shell.tutorial.advanced'))}
                     </button>
-                    <p class="am2-tut-help-note">仍解决不了：回首页公告板，点 <b>【01】群</b> 或 <b>【02】群</b> 加群求助。</p>
+                    <p class="am2-tut-help-note">${escapeHtml(t('shell.tutorial.help', { first: '【01】', second: '【02】' }))}</p>
                </div>`
             : '';
 
@@ -35,7 +37,7 @@ export async function showContentModal(title, contentUrl, options = {}) {
                     <div class="mes_text amily2-tutorial-md">${htmlContent}</div>
                     ${advancedBlock}
                 </div>
-                <div class="popup-controls"><div class="popup-button-ok menu_button menu_button_primary interactable">朕已阅</div></div>
+                <div class="popup-controls"><div class="popup-button-ok menu_button menu_button_primary interactable">${escapeHtml(t('shell.read'))}</div></div>
               </div>
             </dialog>`;
 
@@ -53,22 +55,22 @@ export async function showContentModal(title, contentUrl, options = {}) {
         if (advancedUrl) {
             dialogElement.find('.am2-tut-advanced-btn').on('click', () => {
                 closeDialog();
-                showContentModal(advancedTitle || `${title} · 进阶`, advancedUrl);
+                showContentModal(advancedTitle || t('shell.tutorial.advancedTitle', { module: title }), advancedUrl, { titleKey: advancedTitleKey });
             });
         }
         dialogElement[0].showModal();
 
     } catch (error) {
         console.error(`[Amily-翰林院] 紧急报告：加载教程内容 [${title}] 时发生意外:`, error);
-        toastr.error(`无法加载教程: ${error.message}`, "翰林院回报");
+        toastr.error(t('shell.tutorial.failed', { error: error.message }), t('shell.tutorial.title'));
     }
 }
 
 
 export function showHtmlModal(title, htmlContent, options = {}) {
     const {
-        okText = '确认',
-        cancelText = '取消',
+        okText = t('shell.confirm'),
+        cancelText = t('actions.cancel'),
         onOk,
         onCancel,
         onShow,
@@ -147,9 +149,9 @@ export function showSummaryModal(summaryText, callbacks) {
         </div>
     `;
 
-    const dialogElement = showHtmlModal('预览与修订', modalHtml, {
-        okText: '确认写入',
-        cancelText: '取消写入',
+    const dialogElement = showHtmlModal(t('shell.summary.preview'), modalHtml, {
+        okText: t('shell.summary.write'),
+        cancelText: t('shell.summary.cancel'),
         showCancel: true,
         onOk: (dialog) => {
             const editedText = dialog.find('textarea').val();
@@ -165,7 +167,7 @@ export function showSummaryModal(summaryText, callbacks) {
         }
     });
 
-    const regenerateButton = $('<button class="menu_button secondary interactable" style="margin-right: auto;">重新生成</button>');
+    const regenerateButton = $('<button class="menu_button secondary interactable" style="margin-right: auto;"></button>').text(t('shell.summary.regenerate'));
     regenerateButton.on('click', () => {
         if (onRegenerate) {
             dialogElement[0].close();
@@ -179,8 +181,8 @@ export function showSummaryModal(summaryText, callbacks) {
 
 export function showTableFillReviewModal(rawResponse, callbacks = {}) {
     const {
-        title = '填表响应检查',
-        subtitle = 'AI未返回有效的 <Amily2Edit> 指令块。您可以在下方查看/编辑原始响应，并选择后续处理方式。',
+        title = t('shell.fill.title'),
+        subtitle = t('shell.fill.subtitle', { marker: '<Amily2Edit>' }),
         reviewId = null,
         onOpenReview,
         onApply,
@@ -201,19 +203,18 @@ export function showTableFillReviewModal(rawResponse, callbacks = {}) {
             >${escapeHtml(rawResponse || '')}</textarea>
             <div class="notes" style="margin-top: 8px; font-size: 0.85em; opacity: 0.8; line-height: 1.6;">
                 ${inboxMode
-                    ? `<div>这不是唯一副本：记录已进入当前聊天的插件面板 <b>错误审查</b>。
-                        关闭本窗口不会删除记录，也不会让对应楼层永久失联。</div>`
-                    : `<div><b>继续补全</b>：让 AI 基于当前文本继续生成剩余内容，结果会追加到文本框后。</div>
-                        <div><b>重新填表</b>：舍弃当前响应并重新向 AI 请求同一批次的填表。</div>
-                        <div><b>手动应用</b>：严格校验文本后写入表格；校验失败时不会写表。</div>
-                        <div><b>取消</b>：放弃本次填表，任务暂停。</div>`}
+                    ? `<div>${escapeHtml(t('shell.fill.inboxNotice'))}</div>`
+                    : `<div>${escapeHtml(t('shell.fill.continueHelp'))}</div>
+                        <div>${escapeHtml(t('shell.fill.retryHelp'))}</div>
+                        <div>${escapeHtml(t('shell.fill.applyHelp'))}</div>
+                        <div>${escapeHtml(t('shell.fill.cancelHelp'))}</div>`}
             </div>
         </div>
     `;
 
     const dialogElement = showHtmlModal(title, modalHtml, {
-        okText: inboxMode ? '打开错误审查' : '手动应用',
-        cancelText: inboxMode ? '稍后处理' : '取消',
+        okText: inboxMode ? t('shell.fill.openReview') : t('shell.fill.apply'),
+        cancelText: inboxMode ? t('shell.fill.later') : t('actions.cancel'),
         showCancel: true,
         onOk: (dialog) => {
             if (inboxMode) {
@@ -235,11 +236,11 @@ export function showTableFillReviewModal(rawResponse, callbacks = {}) {
     const textarea = dialogElement.find('.amily2-fill-review-text');
 
     if (!inboxMode && typeof onContinue === 'function') {
-        const continueButton = $('<button class="menu_button interactable" style="margin-right: auto;"><i class="fas fa-forward"></i> 继续补全</button>');
+        const continueButton = $(`<button class="menu_button interactable" style="margin-right: auto;"><i class="fas fa-forward"></i> ${escapeHtml(t('shell.fill.continue'))}</button>`);
         continueButton.on('click', async () => {
             const currentText = textarea.val();
             textarea.prop('disabled', true);
-            continueButton.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 正在请求补全...');
+            continueButton.prop('disabled', true).html(`<i class="fas fa-spinner fa-spin"></i> ${escapeHtml(t('shell.fill.continuing'))}`);
             try {
                 const continued = await onContinue(currentText);
                 if (typeof continued === 'string' && continued.length > 0) {
@@ -247,17 +248,17 @@ export function showTableFillReviewModal(rawResponse, callbacks = {}) {
                 }
             } catch (err) {
                 console.error('[Amily2 填表检查] 补全请求失败:', err);
-                if (window.toastr) toastr.error(`补全失败: ${err.message || err}`, '继续补全');
+                if (window.toastr) toastr.error(t('shell.fill.continueFailed', { error: err.message || err }), t('shell.fill.continue'));
             } finally {
                 textarea.prop('disabled', false);
-                continueButton.prop('disabled', false).html('<i class="fas fa-forward"></i> 继续补全');
+                continueButton.prop('disabled', false).html(`<i class="fas fa-forward"></i> ${escapeHtml(t('shell.fill.continue'))}`);
             }
         });
         dialogElement.find('.popup-controls').prepend(continueButton);
     }
 
     if (!inboxMode && typeof onRetry === 'function') {
-        const retryButton = $('<button class="menu_button secondary interactable"><i class="fas fa-redo"></i> 重新填表</button>');
+        const retryButton = $(`<button class="menu_button secondary interactable"><i class="fas fa-redo"></i> ${escapeHtml(t('shell.fill.retry'))}</button>`);
         retryButton.on('click', () => {
             dialogElement[0].close();
             dialogElement.remove();
@@ -286,15 +287,15 @@ export function showCwbWarningModal(onProceed, onClose) {
         <dialog class="popup wide_dialogue_popup amily2-modal">
           <div class="popup-body">
             <h3 style="margin-top:0; color:#e8a838; border-bottom:1px solid rgba(255,255,255,0.2); padding-bottom:10px;">
-                <i class="fas fa-exclamation-triangle" style="color:#e8a838;"></i> 注意 — 角色世界书功能维护状态
+                <i class="fas fa-exclamation-triangle" style="color:#e8a838;"></i> ${escapeHtml(t('shell.cwb.warningTitle'))}
             </h3>
             <div style="line-height:1.8; padding:12px 4px; color:var(--SmartThemeBodyColor);">
-                该功能长期未进行维护且其实现可被表格及其他功能替代，若非必须一般不建议使用，如确认希望使用，请明确该功能无法获得有效技术支持。
+                ${escapeHtml(t('shell.cwb.warning'))}
             </div>
             <div class="popup-controls" style="gap:8px;">
-                <button class="cwb-warning-close menu_button secondary interactable">关闭退出</button>
+                <button class="cwb-warning-close menu_button secondary interactable">${escapeHtml(t('shell.cwb.close'))}</button>
                 <button class="cwb-warning-proceed menu_button menu_button_primary interactable" disabled>
-                    继续使用（<span class="cwb-countdown">${CWB_WARNING_COUNTDOWN}</span>）
+                    ${escapeHtml(t('shell.cwb.proceed'))} (<span class="cwb-countdown">${CWB_WARNING_COUNTDOWN}</span>)
                 </button>
             </div>
           </div>
@@ -322,7 +323,7 @@ export function showCwbWarningModal(onProceed, onClose) {
         if (remaining <= 0) {
             clearInterval(timer);
             const $btn = $dialog.find('.cwb-warning-proceed');
-            $btn.prop('disabled', false).html('继续使用');
+            $btn.prop('disabled', false).text(t('shell.cwb.proceed'));
         }
     }, 1000);
 

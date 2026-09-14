@@ -1,6 +1,7 @@
 import { SETTINGS_KEY, defaultPrompts, defaultMixedOrder } from './config.js';
 import { compatibleTriggerSlash } from '../core/tavernhelper-compatibility.js';
 import { showHtmlModal } from '../ui/page-window.js';
+import { presetText, presetHtml, presetEscape, presetToast, presetSectionTitle, bindPresetTranslations, bindPresetModalTitle, setPresetText } from './i18n.js';
 
 let presetManager = {
     activePreset: '默认预设',
@@ -53,24 +54,30 @@ function checkPromptVersion() {
 function showUpdateDialog() {
     const htmlContent = `
         <div style="text-align: left; line-height: 1.6; font-size: 15px; padding: 10px;">
-            <p>检测到当前提示词版本为旧版本。</p>
-            <p>为更好的体验，请点击 <strong>一键更新</strong>，会将提示词恢复成最新版本提示词链默认状态。</p>
-            <p>或者点击 <strong>保留自定义</strong> 按钮，则保留您之前的提示词。</p>
+            <p>${presetHtml('update.old')}</p>
+            <p>${presetHtml('update.replace')}</p>
+            <p>${presetHtml('update.keep')}</p>
         </div>
     `;
 
-    showHtmlModal('Amily2 提示词更新', htmlContent, {
-        okText: '一键更新',
-        cancelText: '保留自定义',
+    showHtmlModal(presetEscape(presetText('update.title')), htmlContent, {
+        okText: presetEscape(presetText('update.apply')),
+        cancelText: presetEscape(presetText('update.retain')),
         showCancel: true,
+        onShow: dialog => {
+            bindPresetTranslations(dialog);
+            bindPresetModalTitle(dialog, 'update.title');
+            setPresetText(dialog.find('.popup-button-ok'), 'update.apply');
+            setPresetText(dialog.find('.popup-button-cancel'), 'update.retain');
+        },
         onOk: () => {
             resetPresets();
             localStorage.setItem('amily2_prompt_version', CURRENT_PROMPT_VERSION);
-            toastr.success("已更新为最新版本提示词！");
+            presetToast('success', 'update.updated');
         },
         onCancel: () => {
             localStorage.setItem('amily2_prompt_version', CURRENT_PROMPT_VERSION);
-            toastr.info("已保留您的自定义提示词。");
+            presetToast('info', 'update.kept');
         }
     });
 }
@@ -85,7 +92,7 @@ export function loadPresets() {
             }
         } catch (e) {
             console.error("Failed to load Amily2 presets, resetting to default.", e);
-            toastr.error("加载预设失败，已重置为默认设置。");
+            presetToast('error', 'error.load');
             resetToDefaultManager();
         }
     } else {
@@ -111,7 +118,7 @@ function migrateFromOldVersion() {
                 mixedOrder: oldMixedOrder
             };
             
-            toastr.info("旧版本设置已成功迁移！");
+            presetToast('info', 'toast.migrated');
             
             localStorage.removeItem(oldSettingsKey);
             localStorage.removeItem(oldSettingsKey + '_mixed_order');
@@ -120,7 +127,7 @@ function migrateFromOldVersion() {
             resetToDefaultManager();
         }
     } else {
-        toastr.success("未检测到 Amily2 预设，已为您初始化默认设置。");
+        presetToast('success', 'toast.initialized');
         resetToDefaultManager();
         loadActivePreset();
         savePresets();
@@ -238,7 +245,7 @@ export function loadActivePreset() {
             presetManager.presets[activePresetName].prompts = JSON.parse(JSON.stringify(currentPresets));
             presetManager.presets[activePresetName].mixedOrder = JSON.parse(JSON.stringify(currentMixedOrder));
             localStorage.setItem(SETTINGS_KEY, JSON.stringify(presetManager));
-            toastr.info("Amily2 提示词预设已自动更新以支持最新功能。");
+            presetToast('info', 'toast.autoUpdated');
         }
         const novelProcessorOrder = currentMixedOrder.novel_processor || [];
         const hasChapterContent = novelProcessorOrder.some(item => item.type === 'conditional' && item.id === 'chapterContent');
@@ -269,7 +276,7 @@ export function savePresets() {
     }
     
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(presetManager));
-    toastr.success(`预设 "${presetManager.activePreset}" 已保存！`);
+    presetToast('success', 'toast.saved', { name: presetManager.activePreset });
 }
 
 export async function getPresetPrompts(sectionKey) {
@@ -330,7 +337,7 @@ export function getMixedOrder(sectionKey) {
 }
 
 export function createNewPreset() {
-    const newName = prompt("请输入新预设的名称：");
+    const newName = prompt(presetText('prompt.new'));
 
     if (newName === null) {
         return false;
@@ -339,12 +346,12 @@ export function createNewPreset() {
     const trimmedNewName = newName.trim();
 
     if (trimmedNewName === "") {
-        toastr.warning("预设名称不能为空！");
+        presetToast('warning', 'error.nameRequired');
         return false;
     }
 
     if (presetManager.presets[trimmedNewName]) {
-        toastr.error("该名称的预设已存在！");
+        presetToast('error', 'error.nameExists');
         return false;
     }
 
@@ -354,13 +361,13 @@ export function createNewPreset() {
 
     savePresets();
     loadActivePreset();
-    toastr.success(`新预设 "${trimmedNewName}" 已创建并激活！`);
+    presetToast('success', 'toast.created', { name: trimmedNewName });
     return true;
 }
 
 export function renamePreset() {
     const oldName = presetManager.activePreset;
-    const newName = prompt(`请输入 "${oldName}" 的新名称：`, oldName);
+    const newName = prompt(presetText('prompt.rename', { name: oldName }), oldName);
 
     if (newName === null) {
         return false;
@@ -373,12 +380,12 @@ export function renamePreset() {
     }
 
     if (trimmedNewName === "") {
-        toastr.warning("预设名称不能为空！");
+        presetToast('warning', 'error.nameRequired');
         return false;
     }
 
     if (presetManager.presets[trimmedNewName]) {
-        toastr.error("该名称的预设已存在！");
+        presetToast('error', 'error.nameExists');
         return false;
     }
 
@@ -387,18 +394,18 @@ export function renamePreset() {
     presetManager.activePreset = trimmedNewName;
 
     savePresets();
-    toastr.success(`预设已重命名为 "${trimmedNewName}"！`);
+    presetToast('success', 'toast.renamed', { name: trimmedNewName });
     return true;
 }
 
 export function deletePreset() {
     const nameToDelete = presetManager.activePreset;
     if (Object.keys(presetManager.presets).length <= 1) {
-        toastr.error("不能删除唯一的预设！");
+        presetToast('error', 'error.onlyPreset');
         return false;
     }
     
-    if (confirm(`您确定要删除预设 "${nameToDelete}" 吗？此操作无法撤销。`)) {
+    if (confirm(presetText('confirm.delete', { name: nameToDelete }))) {
         delete presetManager.presets[nameToDelete];
         
         presetManager.activePreset = Object.keys(presetManager.presets)[0];
@@ -406,7 +413,7 @@ export function deletePreset() {
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(presetManager));
         
         loadActivePreset();
-        toastr.success(`预设 "${nameToDelete}" 已删除！`);
+        presetToast('success', 'toast.deleted', { name: nameToDelete });
         return true;
     }
     return false;
@@ -418,7 +425,7 @@ export function switchPreset(presetName) {
         localStorage.setItem(SETTINGS_KEY, JSON.stringify(presetManager));
         loadActivePreset();
         toastr.clear();
-        toastr.info(`已切换到预设 "${presetName}"`);
+        presetToast('info', 'toast.switched', { name: presetName });
         return true;
     }
     return false;
@@ -428,7 +435,7 @@ export function resetSectionPreset(sectionKey) {
     currentPresets[sectionKey] = JSON.parse(JSON.stringify(defaultPrompts[sectionKey]));
     currentMixedOrder[sectionKey] = JSON.parse(JSON.stringify(defaultMixedOrder[sectionKey]));
     savePresets();
-    toastr.success(`${sectionKey} 已恢复为默认设置！`);
+    presetToast('success', 'toast.sectionReset', () => ({ section: presetSectionTitle(sectionKey) }));
 }
 
 export function resetPresets() {
@@ -440,5 +447,5 @@ export function resetPresets() {
     
     loadActivePreset();
     savePresets();
-    toastr.success(`预设 "${activePresetName}" 已恢复为默认设置！`);
+    presetToast('success', 'toast.reset', { name: activePresetName });
 }

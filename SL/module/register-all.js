@@ -25,6 +25,7 @@ import CombatModule from './CombatModule.js';
 import ApiConfigModule from './ApiConfigModule.js';
 import RuleConfigModule from './RuleConfigModule.js';
 import SfiGenModule from './SfiGenModule.js';
+import SecurityAuditModule from './SecurityAuditModule.js';
 
 export function registerAllModules() {
     registry.register('AdditionalFeatures', () => new AdditionalFeaturesModule());
@@ -43,4 +44,5 @@ export function registerAllModules() {
     registry.register('ApiConfig',           () => new ApiConfigModule());
     registry.register('RuleConfig',          () => new RuleConfigModule());
     registry.register('SfiGen',              () => new SfiGenModule());
+    registry.register('SecurityAudit',       () => new SecurityAuditModule());
 }

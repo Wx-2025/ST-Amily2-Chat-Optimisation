@@ -160,15 +160,23 @@ export async function testConnection(role, config = {}) {
     }
 }
 
+/** Omitted arguments resolve one saved connection; an explicit URL never borrows a saved key. */
 export async function fetchModels(apiUrl, apiKey) {
-    // 若未传参，尝试从 Profile 或旧配置读取
-    if (!apiUrl || !apiKey) {
-        const resolved = await _resolveConfig('executor');
-        apiUrl  = apiUrl  || resolved.apiUrl;
-        apiKey  = apiKey  || resolved.apiKey;
-    }
-
     try {
+        if (apiUrl === undefined && apiKey === undefined) {
+            const resolved = await getResolvedApiConfig('executor');
+            apiUrl = resolved.apiUrl;
+            apiKey = resolved.apiKey;
+        }
+        if (typeof apiUrl !== 'string' || !apiUrl.trim()) {
+            throw new Error('获取模型列表需要有效的 API URL。');
+        }
+        apiUrl = apiUrl.trim();
+        if (apiKey === undefined) apiKey = '';
+        if (typeof apiKey !== 'string') {
+            throw new TypeError('API Key 必须为字符串，无鉴权时可为空。');
+        }
+
         const response = await fetch('/api/backends/chat-completions/status', {
             method: 'POST',
             headers: { ...getRequestHeaders(), 'Content-Type': 'application/json' },
@@ -182,12 +190,17 @@ export async function fetchModels(apiUrl, apiKey) {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const data = await response.json();
-        const models = Array.isArray(data) ? data : (data.data || data.models || []);
-
-        return models.map(m => {
-            const id = m.id || m.model || m.name || m;
-            return typeof id === 'string' ? id : JSON.stringify(id);
-        }).sort();
+        if (!data || typeof data !== 'object' || data.error) {
+            throw new Error('模型接口返回错误或无效数据。');
+        }
+        const models = Array.isArray(data) ? data : (Object.hasOwn(data, 'data') ? data.data : (data.models ?? []));
+        if (!Array.isArray(models)) throw new Error('模型列表必须为数组。');
+        const ids = models.map(model => {
+            const id = typeof model === 'string' ? model : (model?.id ?? model?.model ?? model?.name);
+            if (typeof id !== 'string' || !id.trim()) throw new Error('模型列表包含无效的模型 ID。');
+            return id;
+        });
+        return [...new Set(ids)].sort();
 
     } catch (error) {
         console.error('[自动构建器] 获取模型列表失败:', error);

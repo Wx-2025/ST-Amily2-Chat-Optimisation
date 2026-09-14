@@ -10,6 +10,8 @@ import {
 } from './utils/googleAdapter.js';
 import { acquireProfileRequestPermit, bindSlotProfileRateLimit, getSlotProfile } from './api/api-resolver.js';
 import { extensionName } from '../utils/settings.js';
+import { getRequestHeaders } from '/script.js';
+import { embeddingEndpointForProvider, embeddingRequestUrl } from './api/embedding-transport.js';
 
 const MODULE_NAME = 'hanlinyuan-rag-core';
 const GOOGLE_API_BASE_URL = 'https://generativelanguage.googleapis.com';
@@ -42,7 +44,7 @@ export async function getEmbedRetrievalSettings() {
     if (profile) {
         const apiKey = sanitizeMaskedKey(profile.apiKey ?? '');
         return bindSlotProfileRateLimit({
-            apiEndpoint:    profile.provider === 'google' ? 'google_direct' : 'custom',
+            apiEndpoint:    embeddingEndpointForProvider(profile.provider),
             customApiUrl:   profile.apiUrl,
             apiKey,
             embeddingModel: profile.model,
@@ -73,14 +75,18 @@ export function describeMissingKey(resolved, plainMessage) {
 export async function getRerankSettings() {
     const profile = await getSlotProfile('ragRerank');
     if (profile) {
+        if (profile.provider === 'sillytavern_preset') {
+            throw new Error('Rerank 不支持聊天预设转发，请使用后端代理或兼容接口连接。');
+        }
         const manualSettings = getSettings().rerank || {};
         const apiKey = sanitizeMaskedKey(profile.apiKey ?? '');
         return bindSlotProfileRateLimit({
             url:     profile.apiUrl,
             apiKey,
             model:   profile.model,
-            top_n:   manualSettings.top_n ?? 10,
-            apiMode: manualSettings.apiMode ?? 'custom',
+            top_n:   profile.topN ?? manualSettings.top_n ?? 10,
+            return_documents: profile.returnDocuments ?? false,
+            apiMode: profile.provider === 'sillytavern_backend' ? 'st_backend' : 'custom',
             _keyMissingFromProfile: !apiKey,
             _profileName: profile.name || profile.id,
         }, profile);
@@ -225,14 +231,31 @@ export function getRerankBaseUrl(rawApiUrl) {
     if (baseUrl.endsWith('/')) {
         baseUrl = baseUrl.slice(0, -1);
     }
-    if (baseUrl.endsWith('/v1')) {
-        baseUrl = baseUrl.slice(0, -3);
-    }
     // 兼容处理 /rerank
     if (baseUrl.endsWith('/rerank')) {
         baseUrl = baseUrl.slice(0, -7);
     }
+    if (baseUrl.endsWith('/v1')) {
+        baseUrl = baseUrl.slice(0, -3);
+    }
     return baseUrl;
+}
+
+function rerankRequestUrl(apiMode, url) {
+    if (apiMode !== 'st_backend') return url;
+    const target = new URL(url);
+    if (!['http:', 'https:'].includes(target.protocol) || target.username || target.password) {
+        throw new Error('无效的 Rerank 后端代理地址。');
+    }
+    return `/proxy/${target.href}`;
+}
+
+function rerankRequestHeaders(apiMode, apiKey) {
+    const headers = { ...(apiMode === 'st_backend' ? getRequestHeaders() : {}), 'Content-Type': 'application/json' };
+    if (apiMode === 'custom' || (apiMode === 'st_backend' && apiKey)) {
+        headers.Authorization = `Bearer ${apiKey}`;
+    }
+    return headers;
 }
 
 export async function fetchRerankModels() {
@@ -247,12 +270,8 @@ export async function fetchRerankModels() {
     }
 
     const baseUrl = getRerankBaseUrl(url);
-    const modelsUrl = `${baseUrl}/v1/models`;
-    const headers = { 'Content-Type': 'application/json' };
-
-    if (apiMode === 'custom') {
-        headers['Authorization'] = `Bearer ${apiKey}`;
-    }
+    const modelsUrl = rerankRequestUrl(apiMode, `${baseUrl}/v1/models`);
+    const headers = rerankRequestHeaders(apiMode, apiKey);
 
     console.log(`[翰林院-Rerank] 正在从 ${modelsUrl} 获取模型列表 (模式: ${apiMode})...`);
 
@@ -285,18 +304,15 @@ export async function executeRerank(query, documents, rerankSettings = null) {
     if (apiMode === 'custom' && !apiKey) throw new Error(describeMissingKey(resolved, "自定义模式下，Rerank API Key 未提供。"));
 
     const baseUrl = getRerankBaseUrl(url);
-    const rerankUrl = `${baseUrl}/v1/rerank`;
-    const headers = { 'Content-Type': 'application/json' };
-
-    if (apiMode === 'custom') {
-        headers['Authorization'] = `Bearer ${apiKey}`;
-    }
+    const rerankUrl = rerankRequestUrl(apiMode, `${baseUrl}/v1/rerank`);
+    const headers = rerankRequestHeaders(apiMode, apiKey);
 
     const body = JSON.stringify({
         query: query,
         documents: documents,
         model: model,
         top_n: top_n,
+        ...(resolved.return_documents !== undefined ? { return_documents: resolved.return_documents } : {}),
     });
 
     console.log(`[翰林院-Rerank] 正在向 ${rerankUrl} 发送请求 (模式: ${apiMode})...`);
@@ -309,10 +325,23 @@ export async function executeRerank(query, documents, rerankSettings = null) {
     });
 
     if (!response.ok) {
+        if (apiMode === 'st_backend' && response.status === 404) {
+            throw new Error('酒馆 Rerank 代理不可用（404）；请检查 enableCorsProxy 与反向代理路由。未回退前端直连。');
+        }
         throw new Error(`Rerank API 请求失败 (${response.status}): ${await response.text()}`);
     }
-    
-    return await response.json();
+
+    const data = await response.json();
+    const indices = new Set();
+    if (!Array.isArray(data?.results) || data.results.some(result => {
+        if (!Number.isInteger(result?.index) || result.index < 0 || result.index >= documents.length
+            || !Number.isFinite(result.relevance_score) || indices.has(result.index)) return true;
+        indices.add(result.index);
+        return false;
+    })) {
+        throw new Error('Rerank 返回了无效的排序结果。');
+    }
+    return data;
 }
 
 
@@ -354,6 +383,7 @@ export function getApiHeaders(overrideRetrieval = null) {
     switch (apiEndpoint) {
         case 'openai':
         case 'custom':
+        case 'st_backend':
             headers['Authorization'] = `Bearer ${apiKey}`;
             break;
         case 'azure':
@@ -408,13 +438,15 @@ export async function getEmbeddings(texts, signal = null, overrideSettings = nul
             case 'custom':
             case 'local_proxy':
             default:
-                console.log(`[翰林院-API] 使用前端直连模式 (${apiEndpoint}) 获取向量。`);
+                const backend = apiEndpoint === 'st_backend';
+                console.log(`[翰林院-API] 使用${backend ? '酒馆后端代理' : '前端直连'}模式 (${apiEndpoint}) 获取向量。`);
                 if (!apiKey && apiEndpoint === 'custom') {
                     // 本地代理可以没有key，但自定义通常需要
                     // throw new Error('自定义模式需要API Key。');
                 }
-                const url = getApiEndpointUrl(false, settings); // 使用已解析的 settings
-                const headers = getApiHeaders(settings); // 使用已解析的 settings
+                const url = embeddingRequestUrl(apiEndpoint, getApiEndpointUrl(false,
+                    backend ? { ...settings, apiEndpoint: 'custom' } : settings));
+                const headers = { ...(backend ? getRequestHeaders() : {}), ...getApiHeaders(settings) };
                 
                 await acquireProfileRequestPermit(settings, signal);
                 const response = await fetch(url, {
@@ -428,6 +460,9 @@ export async function getEmbeddings(texts, signal = null, overrideSettings = nul
                 });
 
                 if (!response.ok) {
+                    if (backend && response.status === 404) {
+                        throw new Error('酒馆 Embedding 代理不可用（404）；请检查 enableCorsProxy 与反向代理路由。未回退前端直连。');
+                    }
                     throw new Error(`Embedding request failed (${response.status}).`);
                 }
                 const result = await response.json();

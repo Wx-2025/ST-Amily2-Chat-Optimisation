@@ -35,6 +35,9 @@ import {
 import { superSort } from './super-sorter.js';
 import { executeGraphRetrieval } from './relationship-graph/executor.js';
 import { initializeArchiveManager } from './archive-manager.js';
+import {
+    createUnicodeBoundaryNavigator,
+} from './utils/unicode-boundary.js';
 
 const MODULE_NAME = 'hanlinyuan-rag-core';
 const OFFICIAL_REARRANGE_CHAT_FUNCTION_NAME = 'vectors_rearrangeChat';
@@ -581,12 +584,16 @@ function getTagForSource(source) {
  * @param {number} overlap   - 相邻块重叠字符数（语义衔接），从上一块尾部回看
  * @returns {string[]}
  */
-function splitBySemanticBoundary(content, chunkSize, overlap) {
+export function splitBySemanticBoundary(content, chunkSize, overlap) {
     const pieces = [];
     if (!content || chunkSize <= 0) return pieces;
 
     const minCut = Math.floor(chunkSize * 0.4);
     const sentenceEndRegex = /[。！？!?…][”"』」)）】]?/g;
+    const boundaries = createUnicodeBoundaryNavigator(content);
+    const safeOverlap = Number.isFinite(Number(overlap))
+        ? Math.max(0, Math.trunc(Number(overlap)))
+        : 0;
 
     let pos = 0;
     while (pos < content.length) {
@@ -613,12 +620,21 @@ function splitBySemanticBoundary(content, chunkSize, overlap) {
             if (cut > minCut) end = pos + cut;
         }
 
+        let safeEnd = boundaries.atOrBefore(end, pos);
+        if (safeEnd === pos && end < content.length) {
+            // A single grapheme may be longer than the configured budget. Keep
+            // it whole rather than creating malformed or misleading fragments.
+            safeEnd = boundaries.atOrAfter(end, content.length);
+        }
+        end = safeEnd;
+
         const piece = content.substring(pos, end);
         if (piece.trim().length > 0) pieces.push(piece);
 
         if (end >= content.length) break;
         // overlap 回看；Math.max 防止 overlap >= 块长时死循环
-        pos = Math.max(end - overlap, pos + 1);
+        const desiredStart = Math.max(end - safeOverlap, pos + 1);
+        pos = boundaries.atOrAfter(desiredStart, end);
     }
     return pieces;
 }
@@ -1160,6 +1176,9 @@ async function _executeQueryForBase(base, queryText, queryEmbedding = null) {
         topK: settings.advanced.maxResults,
         threshold: settings.advanced.matchThreshold,
         source: 'webllm',
+        // The host scopes webllm storage by model as well as collection ID.
+        ...(isHistoriographyVectorBase(base)
+            ? { model: base.historiographyVector.fingerprint } : {}),
         embeddings: { [queryText]: finalQueryEmbedding }
     };
 
@@ -1331,7 +1350,7 @@ async function getVectorCount(taskId = null, scope = 'local') {
             return 0;
         }
         // 聊天级库按 ${chatId}_${taskId} 命名空间计数（getKbCollectionId 统一处理）
-        return await countVectorsInCollection(getKbCollectionId(base, scope));
+        return await countVectorsInCollection(getKbCollectionId(base, scope), base);
 
     } else {
         // 总数统计与查询侧保持同一可见性规则：
@@ -1348,11 +1367,11 @@ async function getVectorCount(taskId = null, scope = 'local') {
         const countPromises = [];
 
         localBases.forEach(base => {
-            countPromises.push(countVectorsInCollection(getKbCollectionId(base, 'local')));
+            countPromises.push(countVectorsInCollection(getKbCollectionId(base, 'local'), base));
         });
 
         globalBases.forEach(base => {
-            countPromises.push(countVectorsInCollection(getKbCollectionId(base, 'global')));
+            countPromises.push(countVectorsInCollection(getKbCollectionId(base, 'global'), base));
         });
 
         if (!independent) {
@@ -1368,10 +1387,14 @@ async function getVectorCount(taskId = null, scope = 'local') {
     }
 }
 
-async function countVectorsInCollection(collectionId) {
+async function countVectorsInCollection(collectionId, base = null) {
     if (!collectionId) return 0;
     console.log(`[翰林院-日志] 统计目标集合ID: ${collectionId}`);
-    const requestBody = { collectionId, source: 'webllm', embeddings: {} };
+    const requestBody = {
+        collectionId, source: 'webllm', embeddings: {},
+        ...(isHistoriographyVectorBase(base)
+            ? { model: base.historiographyVector.fingerprint } : {}),
+    };
     
     try {
         const response = await fetch('/api/vector/list', {

@@ -3,8 +3,12 @@ import { getContext, extension_settings } from "/scripts/extensions.js";
 import { eventSource, event_types } from "/script.js";
 import { extensionName } from "../utils/settings.js";
 
+function createArchiveBuffer() {
+    return Object.create(null);
+}
+
 function collectDataToBuffer(buffer, tableName, rowObj) {
-    if (!buffer[tableName]) {
+    if (!Object.prototype.hasOwnProperty.call(buffer, tableName)) {
         buffer[tableName] = {
             headers: Object.keys(rowObj),
             rows: []
@@ -27,7 +31,8 @@ function flushBufferToMarkdown(buffer) {
     if (tableNames.length === 0) return "";
 
     for (const tableName of tableNames) {
-        const { headers, rows } = buffer[tableName];
+        const { headers, rows: bufferedRows } = buffer[tableName];
+        const rows = [...bufferedRows];
         if (rows.length === 0) continue;
 
         const firstColKey = headers[0];
@@ -64,16 +69,15 @@ function flushBufferToMarkdown(buffer) {
     return output;
 }
 
-function processText(text) {
+function collectArchiveBlocks(text, buffer) {
     const blockRegex = /【(.*?)档案[:：]\s*.*?】\s*((?:-\s*.*?[:：].*?(?:\r?\n|$))+)/g;
     const itemRegex = /-\s*(.*?)[:：]\s*(.*?)(?:\r?\n|$)/g;
-    
-    const buffer = {};
-    let found = false;
+    let blockCount = 0;
 
     const cleanText = text.replace(blockRegex, (match, tableName, content) => {
-        found = true;
-        const rowObj = {};
+        const normalizedTableName = tableName.trim();
+        if (!normalizedTableName) return match;
+        const rowObj = Object.create(null);
         
         let itemMatch;
         itemRegex.lastIndex = 0;
@@ -87,13 +91,110 @@ function processText(text) {
         }
 
         if (Object.keys(rowObj).length > 0) {
-            collectDataToBuffer(buffer, tableName, rowObj);
+            collectDataToBuffer(buffer, normalizedTableName, rowObj);
+            blockCount += 1;
+            return '';
         }
-        
-        return ""; // 移除原始文本
+
+        // 无有效键值时保留原文，避免解析失败造成请求内容丢失。
+        return match;
     });
 
-    return { cleanText, buffer, found };
+    return { cleanText, blockCount };
+}
+
+function appendMergedArchive(content, markdown) {
+    if (!content) return markdown.trimStart();
+    return content + (content.endsWith('\n') ? '' : '\n') + markdown.trimStart();
+}
+
+function archiveRoleAuthority(role) {
+    switch (String(role || '').toLowerCase()) {
+        case 'assistant':
+        case 'tool':
+        case 'function':
+            return 0;
+        case 'user':
+            return 1;
+        case 'developer':
+            return 2;
+        case 'system':
+            return 3;
+        default:
+            return 0;
+    }
+}
+
+function pickArchiveTargetIndex(sources) {
+    let selected = sources[0];
+    for (const source of sources.slice(1)) {
+        const selectedAuthority = archiveRoleAuthority(selected.role);
+        const sourceAuthority = archiveRoleAuthority(source.role);
+        if (sourceAuthority < selectedAuthority
+            || (sourceAuthority === selectedAuthority && source.index > selected.index)) {
+            selected = source;
+        }
+    }
+    return selected.index;
+}
+
+/** Merge every archive block in a text prompt exactly once. */
+export function optimizeArchivePrompt(prompt) {
+    if (typeof prompt !== 'string') {
+        return Object.freeze({ prompt, modified: false, blockCount: 0 });
+    }
+    const buffer = createArchiveBuffer();
+    const { cleanText, blockCount } = collectArchiveBlocks(prompt, buffer);
+    const markdown = flushBufferToMarkdown(buffer);
+    if (blockCount === 0 || !markdown) {
+        return Object.freeze({ prompt, modified: false, blockCount: 0 });
+    }
+    return Object.freeze({
+        prompt: appendMergedArchive(cleanText, markdown),
+        modified: true,
+        blockCount,
+    });
+}
+
+/**
+ * Merge archive blocks across one complete chat-completion request. The merged
+ * representation is attached to the least-authoritative source message so
+ * content is never promoted into a stronger prompt role.
+ */
+export function optimizeArchiveChat(chat) {
+    if (!Array.isArray(chat)) {
+        return Object.freeze({ chat, modified: false, blockCount: 0, modifiedMessageCount: 0 });
+    }
+
+    const buffer = createArchiveBuffer();
+    const nextChat = chat.map(message => ({ ...message }));
+    const sources = [];
+    let blockCount = 0;
+
+    for (let index = 0; index < nextChat.length; index += 1) {
+        const message = nextChat[index];
+        if (typeof message.content !== 'string') continue;
+        const result = collectArchiveBlocks(message.content, buffer);
+        if (result.blockCount === 0) continue;
+        message.content = result.cleanText;
+        blockCount += result.blockCount;
+        sources.push({ index, role: message.role });
+    }
+
+    const markdown = flushBufferToMarkdown(buffer);
+    if (blockCount === 0 || !markdown) {
+        return Object.freeze({ chat, modified: false, blockCount: 0, modifiedMessageCount: 0 });
+    }
+
+    const targetIndex = pickArchiveTargetIndex(sources);
+    nextChat[targetIndex].content = appendMergedArchive(nextChat[targetIndex].content, markdown);
+    return Object.freeze({
+        chat: nextChat,
+        modified: true,
+        blockCount,
+        modifiedMessageCount: sources.length,
+        targetIndex,
+    });
 }
 
 function handlePromptProcessing(data) {
@@ -107,44 +208,20 @@ function handlePromptProcessing(data) {
     if (!data) return;
 
     if (typeof data.prompt === 'string') {
-        const { cleanText, buffer, found } = processText(data.prompt);
-        if (found) {
-            const mergedTable = flushBufferToMarkdown(buffer);
-            if (mergedTable) {
-                data.prompt = cleanText + "\n" + mergedTable;
-                log('[ContextOptimizer] 已优化上下文：合并了分散的世界书条目 (Text Mode)。', 'success');
-            }
+        const result = optimizeArchivePrompt(data.prompt);
+        if (result.modified) {
+            data.prompt = result.prompt;
+            log(`[ContextOptimizer] 已合并 ${result.blockCount} 个世界书档案块 (Text Mode)。`, 'success');
         }
 
     } else if (Array.isArray(data.chat)) {
         console.log('[ContextOptimizer] 检测到 Chat Completion 格式...');
-        
-        const newChat = [];
-        let modifiedCount = 0;
-
-        for (const msg of data.chat) {
-            const newMsg = { ...msg };
-            
-            if (typeof newMsg.content === 'string') {
-                const { cleanText, buffer, found } = processText(newMsg.content);
-                
-                if (found) {
-                    const mergedTable = flushBufferToMarkdown(buffer);
-                    if (mergedTable) {
-                        newMsg.content = cleanText + "\n" + mergedTable;
-                        modifiedCount++;
-                    }
-                }
-            }
-            newChat.push(newMsg);
-        }
-
-        if (modifiedCount > 0) {
-            console.log(`[ContextOptimizer] 已原地优化 ${modifiedCount} 条消息中的表格数据。`);
-            
+        const result = optimizeArchiveChat(data.chat);
+        if (result.modified) {
+            console.log(`[ContextOptimizer] 已从 ${result.modifiedMessageCount} 条消息合并 ${result.blockCount} 个档案块。`);
             // 全量替换，确保生效
-            data.chat.splice(0, data.chat.length, ...newChat);
-            log('[ContextOptimizer] 已优化上下文：合并了分散的世界书条目 (Chat Mode - In Place)。', 'success');
+            data.chat.splice(0, data.chat.length, ...result.chat);
+            log('[ContextOptimizer] 已优化上下文：同次请求的分散世界书条目已统一合并 (Chat Mode - In Place)。', 'success');
         }
 
     }

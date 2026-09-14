@@ -16,7 +16,7 @@ import { getContext } from '/scripts/extensions.js';
 import { log } from '../logger.js';
 import { updateRenderedTableRowStatus } from '../../../ui/table-bindings.js';
 import { dispatchTableUpdate, dispatchAllTablesUpdate } from '../events-dispatch.js';
-import { loadTables, setMemoryState } from '../manager.js';
+import { getMemoryStateForScope, loadTables, setMemoryState } from '../manager.js';
 
 import {
     getState,
@@ -27,8 +27,11 @@ import {
 } from '../infra/store.js';
 
 import {
+    commitAuxiliaryChatMutationAsync,
+    commitChatTableStateAsync,
     commitToLastMessage,
     commitToLastMessageAsync,
+    TABLE_DATA_KEY,
 } from '../infra/persistence.js';
 import {
     createRecordMetadata,
@@ -39,7 +42,19 @@ import {
 import { applyPendingRecordDeletions, validateTableState } from '../module-tables.js';
 import { captureChatScope, chatScopesMatch } from '../infra/chat-scope.js';
 import { CURRENT_TABLE_FILL_PROTOCOL_VERSION } from '../table-fill-protocol.js';
+import {
+    isUserTableCreationGroupId,
+    TABLE_GROUP_IDS,
+} from '../table-groups.js';
 import { createRowStatusCandidate } from './row-status-candidate.js';
+import { acquireSecondaryFillerProgressMutationLock } from '../secondary-filler.js';
+import {
+    createTableClearRecoveryPlan,
+    createTableClearRestorePlan,
+    notifyTableClearRecoveryChanged,
+    readPendingTableClearRecovery,
+    summarizePendingTableClearRecovery,
+} from '../table-clear-recovery.js';
 
 const ROW_STATUS_PERSIST_DELAY_MS = 75;
 let rowStatusPersistenceTimer = null;
@@ -431,7 +446,7 @@ export function deleteTable(tableIndex) {
     }
 }
 
-export function addTable(tableName) {
+export function addTable(tableName, options = {}) {
     if (!tableName || !tableName.trim()) {
         log('无法创建表格：名称不能为空。', 'error');
         toastr.error('表格名称不能为空。', '创建失败');
@@ -449,8 +464,16 @@ export function addTable(tableName) {
         return;
     }
 
+    const targetGroupId = options?.targetGroupId ?? TABLE_GROUP_IDS.AMILY;
+    if (!isUserTableCreationGroupId(targetGroupId)) {
+        log(`无法创建表格：Group "${String(targetGroupId)}" 不允许由用户新建表格。`, 'error');
+        toastr.error('当前表格 Group 不允许新建用户表。', '创建失败');
+        return false;
+    }
+
     const newTable = {
         fillProtocolVersion: CURRENT_TABLE_FILL_PROTOCOL_VERSION,
+        groupId: targetGroupId,
         name: tableName.trim(),
         headers: ['新列 1'],
         rows: [],
@@ -473,6 +496,7 @@ export function addTable(tableName) {
     } else {
         log('无法找到可锚定的消息或保存失败，新表格可能不会被持久化！', 'error');
     }
+    return success;
 }
 
 export function renameTable(tableIndex, newName) {
@@ -512,7 +536,14 @@ export function moveTable(tableIndex, direction) {
     const tables = createMutationDraft();
     if (!tables || !tables[tableIndex]) return;
 
-    const newIndex = direction === 'up' ? tableIndex - 1 : tableIndex + 1;
+    const currentGroupId = normalizeTableIdentity(tables[tableIndex], tableIndex).groupId;
+    const step = direction === 'up' ? -1 : 1;
+    let newIndex = tableIndex + step;
+    while (newIndex >= 0
+        && newIndex < tables.length
+        && normalizeTableIdentity(tables[newIndex], newIndex).groupId !== currentGroupId) {
+        newIndex += step;
+    }
     if (newIndex < 0 || newIndex >= tables.length) {
         log(`无法移动表格：索引 ${tableIndex} 已在边界。`, 'warn');
         return;
@@ -587,25 +618,144 @@ export function updateRow(tableIndex, rowIndex, data) {
     log(`AI 指令更新了表格 [${table.name}] 的第 ${rowIndex + 1} 行。`, 'info');
 }
 
-export function clearAllTables() {
-    const tables = createMutationDraft();
-    if (!tables) {
-        log('无法清空：当前表格状态为空。', 'error');
-        return;
+async function runTableClearMutation(action, operation) {
+    const release = acquireSecondaryFillerProgressMutationLock();
+    if (!release) {
+        toastr.warning('填表或其他进度操作仍在运行，请等待空闲后再操作。', action);
+        return false;
+    }
+    try {
+        return await operation();
+    } catch (error) {
+        log(`${action}失败: ${error.code || 'TABLE_PERSIST_FAILED'} ${error.message}`, 'error');
+        toastr.error(`未能完成${action}：${error.message}`, `${action}失败`);
+        return false;
+    } finally {
+        release();
+    }
+}
+
+export async function clearAllTables() {
+    return runTableClearMutation('清空', clearAllTablesUnlocked);
+}
+
+async function clearAllTablesUnlocked() {
+    const context = getContext();
+    const scope = captureChatScope(context);
+    const expectedStateRevision = getStateRevision();
+    const tables = scope?.chatId ? deepClone(getMemoryStateForScope(scope)) : null;
+    if (!scope?.chatId || !tables) {
+        log('无法清空：当前聊天或表格状态为空。', 'error');
+        return false;
     }
 
-    tables.forEach((table, tableIndex) => {
-        if (table.rows.length > 0) markTableUpdated(tableIndex);
-        table.rows = [];
-        table.rowStatuses = [];
+    let plan;
+    try {
+        plan = await createTableClearRecoveryPlan(context, tables, { tableDataKey: TABLE_DATA_KEY });
+    } catch (error) {
+        toastr.warning(error.message, '无法清空');
+        return false;
+    }
+    const cleared = validateTableState(plan.emptyTables);
+    const committed = await commitChatTableStateAsync(cleared, undefined, {
+        expectedStateRevision,
+        expectedChatId: scope.chatId,
+        expectedChatScope: scope,
+        strictExpectedChatScope: true,
+        preservePendingTableClearRecovery: true,
+        beforeSave: plan.beforeSave,
+        rollback: plan.rollback,
     });
-    if (!acceptMutation(tables, '清空表格')) return;
-    log('所有表格的行数据已在内存中清空。', 'warn');
+    if (!committed || !chatScopesMatch(scope, captureChatScope(getContext()))) {
+        toastr.error('清空结果未能确认，请回到原聊天检查；仍存在的待删除记录可先导出备份。', '清空失败');
+        return false;
+    }
 
+    setMemoryState(cleared, scope);
+    cancelScheduledRowStatusPersistence();
     dispatchAllTablesUpdate();
+    notifyTableClearRecoveryChanged({ action: 'created' });
+    log('表格内容、当前聊天历史快照和填表游标已移入待删除恢复区。', 'success');
+    toastr.warning(
+        '表格内容已清空。下一次成功修改表格、模板或游标前仍可从填表记录恢复或导出备份。',
+        '清空待确认',
+        { timeOut: 12000 },
+    );
+    return true;
+}
 
-    log('清空行数据后的状态已强制写入最新消息并立即保存。', 'success');
-    toastr.success('所有表格的剧情内容已清空。', '操作完成');
+export function getPendingTableClearRecoverySummary() {
+    return summarizePendingTableClearRecovery(getContext());
+}
+
+export function exportPendingTableClearRecovery() {
+    return readPendingTableClearRecovery(getContext());
+}
+
+export async function restorePendingTableClearRecovery() {
+    return runTableClearMutation('恢复', restorePendingTableClearRecoveryUnlocked);
+}
+
+async function restorePendingTableClearRecoveryUnlocked() {
+    const context = getContext();
+    const scope = captureChatScope(context);
+    const expectedStateRevision = getStateRevision();
+    if (!scope?.chatId) return false;
+    const currentTables = getMemoryStateForScope(scope);
+    if (!Array.isArray(currentTables)) {
+        toastr.warning('当前聊天的表格尚未加载完成，请稍后重试。', '无法恢复');
+        return false;
+    }
+    let plan;
+    try {
+        plan = await createTableClearRestorePlan(context, { tableDataKey: TABLE_DATA_KEY, currentTables });
+    } catch (error) {
+        toastr.error(error.message, '恢复失败');
+        return false;
+    }
+    const restored = validateTableState(plan.tables, { requireRegisteredModuleSchemas: false });
+    const committed = await commitChatTableStateAsync(restored, undefined, {
+        expectedStateRevision,
+        expectedChatId: scope.chatId,
+        expectedChatScope: scope,
+        strictExpectedChatScope: true,
+        preservePendingTableClearRecovery: true,
+        beforeSave: plan.beforeSave,
+        rollback: plan.rollback,
+    });
+    if (!committed || !chatScopesMatch(scope, captureChatScope(getContext()))) {
+        toastr.error('恢复结果未能确认，请回到原聊天检查；仍存在的待删除记录可先导出备份。', '恢复失败');
+        return false;
+    }
+    setMemoryState(restored, scope);
+    cancelScheduledRowStatusPersistence();
+    dispatchAllTablesUpdate();
+    notifyTableClearRecoveryChanged({ action: 'restored' });
+    toastr.success('已恢复清空前的表格、历史快照和填表游标。', '恢复完成');
+    return true;
+}
+
+export async function discardPendingTableClearRecovery() {
+    return runTableClearMutation('永久删除', discardPendingTableClearRecoveryUnlocked);
+}
+
+async function discardPendingTableClearRecoveryUnlocked() {
+    const context = getContext();
+    const scope = captureChatScope(context);
+    if (!scope?.chatId || !readPendingTableClearRecovery(context)) return false;
+    const committed = await commitAuxiliaryChatMutationAsync({
+        expectedChatId: scope.chatId,
+        expectedChatScope: scope,
+        strictExpectedChatScope: true,
+        finalizePendingTableClearRecovery: true,
+    });
+    if (committed) {
+        notifyTableClearRecoveryChanged({ action: 'discarded' });
+        toastr.success('待删除恢复包已永久移除。', '清理完成');
+    } else {
+        toastr.error('永久删除未能保存，待删除恢复包仍然保留。', '删除失败');
+    }
+    return committed;
 }
 
 export function updateColumnWidth(tableIndex, colIndex, width) {

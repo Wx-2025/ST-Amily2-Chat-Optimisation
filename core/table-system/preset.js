@@ -9,15 +9,15 @@
  *
  * 设计要点：
  *   - 不内含 SuperMemory dispatch 逻辑（避免与 manager.js 循环依赖）
- *   - importPreset 接受 hooks: { onAfterApply, onImported }，调用方注入需要的副作用
+ *   - importPreset 接受 hooks: { targetGroupId, onAfterApply, onImported }，调用方注入目标 Group 与副作用
  *   - 所有持久化走 infra/persistence.js，不再复制 saveStateToMessage 样板
  */
 
-import { extension_settings } from '/scripts/extensions.js';
+import { extension_settings, getContext } from '/scripts/extensions.js';
 import { saveSettingsDebounced } from '/script.js';
 import { extensionName } from '../../utils/settings.js';
 import { log } from './logger.js';
-import { getState, setState } from './infra/store.js';
+import { getState, getStateRevision, setState } from './infra/store.js';
 import { commitToLastMessageAsync } from './infra/persistence.js';
 import { isSafeCharacterProfileEnvelope } from './character-profile.js';
 import { isTableDefinitionRegistered, validateTableState } from './module-tables.js';
@@ -28,6 +28,11 @@ import {
     materializeTableProfile,
     normalizeTableProfile,
 } from './profile.js';
+import {
+    isTableGroupUserEditable,
+    normalizeTableGroupRegistry,
+    TABLE_GROUP_IDS,
+} from './table-groups.js';
 import {
     getBatchFillerRuleTemplate,
     getBatchFillerFlowTemplate,
@@ -50,6 +55,7 @@ const SUPPORTED_LEGACY_PRESET_VERSIONS = new Set([
 ]);
 const LEGACY_PRESET_VERSION_PREFIX = 'Amily2-Table-Preset-';
 const MAX_LEGACY_PRESET_VERSION_LENGTH = 128;
+const TABLE_STATE_METADATA_KEY = 'amily2_table_state';
 
 /**
  * Historical builds accepted third-party Amily2 table presets which retained
@@ -72,6 +78,7 @@ export function isSupportedLegacyTablePresetVersion(version) {
 
 /**
  * @typedef {{
+ *   targetGroupId?: string,
  *   onAfterApply?: () => void,
  *   onImported?: () => void
  * }} ImportPresetHooks
@@ -241,6 +248,78 @@ function _assertUserOwnedPortableProfile(profile) {
     }
 }
 
+/**
+ * Replace only user tables in one explicit persistent Group.
+ *
+ * The returned candidate is detached. Stable IDs that collide with another
+ * Group and every cross-Group reference are rejected before persistence.
+ */
+export function planTableGroupPresetImport(
+    currentTables,
+    importedTables,
+    rawRegistry,
+    targetGroupId = TABLE_GROUP_IDS.AMILY,
+) {
+    const registry = normalizeTableGroupRegistry(rawRegistry);
+    const targetGroup = registry.groups.find(group => group.id === targetGroupId);
+    if (!targetGroup || !isTableGroupUserEditable(targetGroup)) {
+        throw new Error(`目标 Group「${targetGroupId}」不允许导入用户表格预设。`);
+    }
+
+    const current = validateTableState(cloneJson(currentTables || []));
+    const imported = validateTableState(cloneJson(importedTables || [])).map(table => {
+        if (table.owner !== 'user' || isTableDefinitionRegistered(table.id)) {
+            throw new Error('普通预设不得声明或覆盖模块所有的表格。');
+        }
+        return {
+            ...table,
+            groupId: targetGroupId,
+        };
+    });
+    const replaceable = table => table.owner === 'user'
+        && !isTableDefinitionRegistered(table.id)
+        && table.groupId === targetGroupId;
+    const firstTargetIndex = current.findIndex(replaceable);
+    const preserved = current.filter(table => !replaceable(table));
+    const insertAt = firstTargetIndex < 0
+        ? preserved.length
+        : current.slice(0, firstTargetIndex).filter(table => !replaceable(table)).length;
+    const nextState = [
+        ...preserved.slice(0, insertAt),
+        ...imported,
+        ...preserved.slice(insertAt),
+    ];
+
+    const tableById = new Map();
+    for (const table of nextState) {
+        if (tableById.has(table.id)) {
+            throw new Error(`导入表 ID「${table.id}」与其他 Group 的既有表冲突。`);
+        }
+        tableById.set(table.id, table);
+    }
+    for (const table of nextState) {
+        for (const column of table.columns || []) {
+            const referencedTableId = column?.references?.tableId;
+            if (!referencedTableId) continue;
+            const referencedTable = tableById.get(referencedTableId);
+            if (referencedTable && referencedTable.groupId !== table.groupId) {
+                throw new Error(
+                    `导入会形成跨 Group 引用：${table.name || table.id} → ${referencedTable.name || referencedTable.id}。`,
+                );
+            }
+        }
+    }
+
+    return Object.freeze({
+        nextState: validateTableState(nextState),
+        targetGroup: Object.freeze({ ...targetGroup }),
+        importedCount: imported.length,
+        replacedCount: current.filter(replaceable).length,
+        preservedCount: preserved.length,
+        registry,
+    });
+}
+
 function _resolveImportedProfile(preset, options = {}) {
     const fallbackTemplates = options.fallbackTemplates || getCurrentTableTemplateSnapshot();
     const source = options.source || 'import';
@@ -324,8 +403,25 @@ export function importPreset(hooksOrCallback) {
                     source: 'import',
                 });
 
+                const context = getContext();
+                const rawRegistry = context?.chatMetadata?.[TABLE_STATE_METADATA_KEY]?.tableGroups;
+                const targetGroupId = hooks.targetGroupId || TABLE_GROUP_IDS.AMILY;
+                const stateRevision = getStateRevision();
+                const importPlan = planTableGroupPresetImport(
+                    getState() || [],
+                    imported.tables,
+                    rawRegistry,
+                    targetGroupId,
+                );
+                const groupRevision = importPlan.registry.revision;
+                const expectedChatId = String(
+                    context?.getCurrentChatId?.() ?? context?.chatId ?? '',
+                );
                 const confirmation = window.confirm(
-                    '【警告】\n\n导入操作将覆盖当前 AI 指令模板和所有用户表（包括结构和内容），模块独立维护的表不会被覆盖。\n\n此操作不可逆，是否确定要继续？'
+                    `【表格预设导入】\n\n目标 Group：${importPlan.targetGroup.label}\n`
+                    + `将导入 ${importPlan.importedCount} 张表，并替换本组现有的 ${importPlan.replacedCount} 张用户表。\n`
+                    + `其他 Group 与模块表共 ${importPlan.preservedCount} 张，将保持不变。\n\n`
+                    + '当前 AI 指令模板也会更新。此操作不可逆，是否确定继续？'
                 );
                 if (!confirmation) {
                     log('用户取消了导入操作。', 'info');
@@ -333,13 +429,36 @@ export function importPreset(hooksOrCallback) {
                     return;
                 }
 
-                const moduleTables = (getState() || [])
-                    .filter(table => (table?.owner && table.owner !== 'user')
-                        || isTableDefinitionRegistered(table?.id))
-                    .map(table => JSON.parse(JSON.stringify(table)));
-                const nextState = validateTableState([...imported.tables, ...moduleTables]);
+                const nextState = importPlan.nextState;
+                const nextProfile = createTableProfile(
+                    nextState.filter(table => table.owner === 'user'),
+                    {
+                        id: imported.profile.id,
+                        name: imported.profile.name,
+                        description: imported.profile.description,
+                        views: imported.profile.views,
+                        templates: imported.profile.templates,
+                        meta: {
+                            ...imported.profile.meta,
+                            targetTableGroupId: targetGroupId,
+                        },
+                    },
+                );
 
-                if (!await commitToLastMessageAsync(nextState, imported.profile)) {
+                if (!await commitToLastMessageAsync(nextState, nextProfile, {
+                    expectedStateRevision: stateRevision,
+                    ...(expectedChatId ? { expectedChatId } : {}),
+                    tableGroups: importPlan.registry,
+                    beforeSave({ context: liveContext }) {
+                        const liveRegistry = liveContext?.chatMetadata
+                            ?.[TABLE_STATE_METADATA_KEY]?.tableGroups;
+                        if (!liveRegistry || liveRegistry.revision !== groupRevision) {
+                            const error = new Error('目标 Group 在确认期间发生变化，请重新导入。');
+                            error.code = 'TABLE_GROUP_REGISTRY_CHANGED';
+                            throw error;
+                        }
+                    },
+                })) {
                     throw new Error('当前聊天无法原子持久化导入的表格档案。');
                 }
                 setState(nextState);
@@ -380,6 +499,10 @@ export function importPreset(hooksOrCallback) {
     };
 
     input.click();
+}
+
+function cloneJson(value) {
+    return JSON.parse(JSON.stringify(value));
 }
 
 // ── 全局预设 ──────────────────────────────────────────────────────────────

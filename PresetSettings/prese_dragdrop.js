@@ -1,4 +1,5 @@
 import * as state from './prese_state.js';
+import { presetToast } from './i18n.js';
 
 let draggedItem = null;
 let draggedSection = null;
@@ -129,7 +130,7 @@ function completeDrag() {
     allOrders[draggedSection] = newOrder;
     state.setCurrentMixedOrder(allOrders);
     
-    toastr.info('顺序已调整，请点击保存按钮以生效。', '', { timeOut: 3000 });
+    presetToast('info', 'toast.reordered', {}, { timeOut: 3000 });
 }
 
 function resetDragState() {

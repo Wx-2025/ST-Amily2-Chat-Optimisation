@@ -1,3 +1,4 @@
+import { t } from './cwb_i18n.js';
 const DEBUG_MODE = true;
 const SCRIPT_ID_PREFIX = 'CWB';
 
@@ -12,12 +13,18 @@ export function logError(...args) {
     console.error(`[${SCRIPT_ID_PREFIX}]`, ...args);
 }
 
-import { extensionName } from '../../utils/settings.js';
+import { extensionName, getExtensionSettings } from '../../utils/settings.js';
 
 export function isCwbEnabled() {
     try {
+        // The panel uses current extension settings; legacy caches are fallback only.
+        const currentSettings = getExtensionSettings();
+        if (currentSettings?.cwb_master_enabled !== undefined) {
+            return currentSettings.cwb_master_enabled === true;
+        }
+
         const overrides = JSON.parse(localStorage.getItem('cwb_boolean_settings_override') || '{}');
-        if (overrides.cwb_master_enabled !== undefined) {
+        if (overrides?.cwb_master_enabled !== undefined) {
             return overrides.cwb_master_enabled === true;
         }
 
@@ -29,10 +36,10 @@ export function isCwbEnabled() {
             }
         }
         
-        return true;
+        return false;
     } catch (error) {
         console.error('[CWB] Error reading master switch state:', error);
-        return true;
+        return false;
     }
 }
 
@@ -50,7 +57,7 @@ export function showToastr(type, message, options = {}) {
     }
     if (window.toastr) {
         window.toastr.clear();
-        window.toastr[type](message, `角色世界书`, options);
+        window.toastr[type](message, t('characterWorldUi.title'), options);
     } else {
         logDebug(`Toastr (${type}): ${message}`);
     }

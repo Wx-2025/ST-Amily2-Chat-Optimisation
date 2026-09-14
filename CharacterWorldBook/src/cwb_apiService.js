@@ -1,5 +1,6 @@
+import { t, cwbLabel, setCwbText, setCwbHtml, escapeCwbHtml as escapeHtml } from './cwb_i18n.js';
 import { state } from './cwb_state.js';
-import { logError, showToastr, escapeHtml } from './cwb_utils.js';
+import { logError, showToastr } from './cwb_utils.js';
 import { getRequestHeaders } from '/script.js';
 import { extensionName } from '../../utils/settings.js';
 import { extension_settings, getContext } from "/scripts/extensions.js";
@@ -401,8 +402,8 @@ export async function loadModels($panel) {
     const $modelSelect = $panel.find('#cwb-api-model');
     const $apiStatus = $panel.find('#cwb-api-status');
 
-    $apiStatus.text('状态: 正在加载模型列表...').css('color', '#61afef');
-    showToastr('info', '正在加载模型列表...');
+    setCwbText($apiStatus, 'characterWorldUi.api.loadingStatus').css('color', '#61afef');
+    showToastr('info', t('characterWorldUi.api.loading'));
 
     try {
         let models = [];
@@ -475,14 +476,14 @@ export async function loadModels($panel) {
             models.forEach(model => {
                 $modelSelect.append(jQuery('<option>', { value: model.id, text: model.name }));
             });
-            showToastr('success', `成功加载 ${models.length} 个模型！`);
+            showToastr('success', t('characterWorldUi.api.modelsLoaded', { count: models.length }));
         } else {
-            showToastr('warning', 'API未返回任何可用模型。');
+            showToastr('warning', t('characterWorldUi.api.noModelsReturned'));
         }
 
     } catch (error) {
         logError('加载模型列表时出错:', error);
-        showToastr('error', `加载模型列表失败: ${error.message}`);
+        showToastr('error', t('characterWorldUi.api.modelsFailed', { error: error.message }), { escapeHtml: true });
     } finally {
         await updateApiStatusDisplay($panel);
     }
@@ -575,16 +576,16 @@ export async function testCwbConnection() {
     const apiSettings = await getCwbApiSettings();
     
     if (apiSettings.apiMode !== 'sillytavern_preset' && (!apiSettings.apiUrl || !apiSettings.apiKey || !apiSettings.model)) {
-        showToastr('error', 'API配置不完整，请检查URL、Key和模型', 'CWB API连接测试失败');
+        showToastr('error', t('characterWorldUi.api.incomplete'), t('characterWorldUi.api.testFailedTitle'));
         return false;
     }
     if (apiSettings.apiMode === 'sillytavern_preset' && !apiSettings.tavernProfile) {
-        showToastr('error', 'SillyTavern预设ID未配置', 'CWB API连接测试失败');
+        showToastr('error', t('characterWorldUi.api.presetIdMissing'), t('characterWorldUi.api.testFailedTitle'));
         return false;
     }
 
     try {
-        showToastr('info', '正在发送测试消息"你好！"...', 'CWB API连接测试');
+        showToastr('info', t('characterWorldUi.api.sendingTest', { message: '你好！' }), t('characterWorldUi.api.testTitle'));
         
         const userName = window.SillyTavern.getContext?.()?.name1 || '用户';
         const systemPrompt = `接下来用户会使用测试按钮测试api连接是否正常，请回复ta连接是正常的，称呼用户为：“${userName}大人”，并复述群号1060183271，告知ta，本扩展开发者：“诗与酒.”正静待ta的入驻。`;
@@ -594,7 +595,7 @@ export async function testCwbConnection() {
             console.log('[CWB] 测试消息响应:', response);
             showToastr(
                 'success',
-                `连接测试成功！AI回复: "${response}"`,
+                t('characterWorldUi.api.testSucceeded', { response }),
                 { escapeHtml: true },
             );
             return true;
@@ -606,7 +607,7 @@ export async function testCwbConnection() {
         console.error('[CWB] 连接测试失败:', error);
         showToastr(
             'error',
-            `连接测试失败: ${error.message}`,
+            t('characterWorldUi.api.testFailed', { error: error.message }),
             { escapeHtml: true },
         );
         return false;
@@ -620,21 +621,21 @@ export async function fetchModelsAndConnect($panel) {
 
     if (apiSettings.apiMode === 'sillytavern_preset') {
         if (!apiSettings.tavernProfile) {
-            showToastr('warning', '请先选择SillyTavern预设。');
-            $apiStatus.text('状态: 请先选择SillyTavern预设').css('color', 'orange');
+            showToastr('warning', t('characterWorldUi.settings.presetRequired'));
+            setCwbText($apiStatus, 'characterWorldUi.api.presetRequiredStatus').css('color', 'orange');
             return;
         }
     } else {
         const apiUrl = $panel.find('#cwb-api-url').val().trim();
         if (!apiUrl) {
-            showToastr('warning', '请输入API基础URL。');
-            $apiStatus.text('状态:请输入API基础URL').css('color', 'orange');
+            showToastr('warning', t('characterWorldUi.api.enterUrl'));
+            setCwbText($apiStatus, 'characterWorldUi.api.urlRequiredStatus').css('color', 'orange');
             return;
         }
     }
 
-    $apiStatus.text('状态: 正在加载模型列表...').css('color', '#61afef');
-    showToastr('info', '正在加载模型列表...');
+    setCwbText($apiStatus, 'characterWorldUi.api.loadingStatus').css('color', '#61afef');
+    showToastr('info', t('characterWorldUi.api.loading'));
 
     try {
         const models = await fetchCwbModels();
@@ -644,14 +645,14 @@ export async function fetchModelsAndConnect($panel) {
             models.forEach(model => {
                 $modelSelect.append(jQuery('<option>', { value: model.id, text: model.name }));
             });
-            showToastr('success', `成功加载 ${models.length} 个模型！`);
+            showToastr('success', t('characterWorldUi.api.modelsLoaded', { count: models.length }));
         } else {
-            showToastr('warning', 'API未返回任何可用模型。');
+            showToastr('warning', t('characterWorldUi.api.noModelsReturned'));
         }
 
     } catch (error) {
         logError('加载模型列表时出错:', error);
-        showToastr('error', `加载模型列表失败: ${error.message}`);
+        showToastr('error', t('characterWorldUi.api.modelsFailed', { error: error.message }), { escapeHtml: true });
     } finally {
         await updateApiStatusDisplay($panel);
     }
@@ -665,26 +666,26 @@ export async function updateApiStatusDisplay($panel) {
 
     if (apiSettings.apiMode === 'sillytavern_preset') {
         if (apiSettings.tavernProfile) {
-            $apiStatus.html(
-                `模式: <span style="color:lightgreen;">SillyTavern预设</span><br>预设ID: <span style="color:lightgreen;">${escapeHtml(apiSettings.tavernProfile)}</span>`
+            setCwbHtml($apiStatus,
+                `${cwbLabel('characterWorldUi.api.modeLabel')}<span style="color:lightgreen;">${cwbLabel('characterWorldUi.api.preset')}</span><br>${cwbLabel('characterWorldUi.api.presetIdLabel')}<span style="color:lightgreen;">${escapeHtml(apiSettings.tavernProfile)}</span>`
             );
         } else {
-            $apiStatus.html(
-                `模式: SillyTavern预设 - <span style="color:orange;">请选择预设</span>`
+            setCwbHtml($apiStatus,
+                `${cwbLabel('characterWorldUi.api.modeLabel')}${cwbLabel('characterWorldUi.api.preset')} - <span style="color:orange;">${cwbLabel('characterWorldUi.api.selectPreset')}</span>`
             );
         }
     } else {
         if (apiSettings.apiUrl && apiSettings.model) {
-            $apiStatus.html(
-                `模式: <span style="color:lightgreen;">全兼容</span><br>URL: <span style="color:lightgreen;word-break:break-all;">${escapeHtml(apiSettings.apiUrl)}</span><br>模型: <span style="color:lightgreen;">${escapeHtml(apiSettings.model)}</span>`
+            setCwbHtml($apiStatus,
+                `${cwbLabel('characterWorldUi.api.modeLabel')}<span style="color:lightgreen;">${cwbLabel('characterWorldUi.api.compat')}</span><br>URL: <span style="color:lightgreen;word-break:break-all;">${escapeHtml(apiSettings.apiUrl)}</span><br>${cwbLabel('characterWorldUi.api.modelLabel')}<span style="color:lightgreen;">${escapeHtml(apiSettings.model)}</span>`
             );
         } else if (apiSettings.apiUrl) {
-            $apiStatus.html(
-                `模式: 全兼容<br>URL: ${escapeHtml(apiSettings.apiUrl)} - <span style="color:orange;">请加载并选择模型</span>`
+            setCwbHtml($apiStatus,
+                `${cwbLabel('characterWorldUi.api.modeLabel')}${cwbLabel('characterWorldUi.api.compat')}<br>URL: ${escapeHtml(apiSettings.apiUrl)} - <span style="color:orange;">${cwbLabel('characterWorldUi.api.selectModel')}</span>`
             );
         } else {
-            $apiStatus.html(
-                `模式: 全兼容 - <span style="color:#ffcc80;">请配置API URL</span>`
+            setCwbHtml($apiStatus,
+                `${cwbLabel('characterWorldUi.api.modeLabel')}${cwbLabel('characterWorldUi.api.compat')} - <span style="color:#ffcc80;">${cwbLabel('characterWorldUi.api.configureUrl')}</span>`
             );
         }
     }

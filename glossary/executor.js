@@ -6,6 +6,7 @@ import { generateRandomSeed } from '../core/api.js';
 import { safeLorebookEntries, safeUpdateLorebookEntries, compatibleWriteToLorebook } from '../core/tavernhelper-compatibility.js';
 import { loadWorldInfo, saveWorldInfo, createWorldInfoEntry } from "/scripts/world-info.js";
 import { escapeHTML } from '../utils/utils.js';
+import { bindGlossaryTranslations, glossaryHtml, glossaryMessage, reportGlossaryStatus, releaseGlossaryTranslations, setGlossaryButton } from './i18n.js';
 
 function buildContextFromEntries(entries) {
     if (!entries || entries.length === 0) {
@@ -44,11 +45,11 @@ export async function executeNovelProcessing(processingState, updateStatusCallba
     const { chunks: recognizedChapters, batchSize, selectedWorldBook } = processingState;
 
     if (recognizedChapters.length === 0) {
-        updateStatusCallback('没有可处理的章节。', 'error');
+        reportGlossaryStatus(updateStatusCallback, 'novel.noChapters', {}, 'error');
         throw new Error('没有可处理的章节。');
     }
 
-    updateStatusCallback('开始处理小说...', 'info');
+    reportGlossaryStatus(updateStatusCallback, 'novel.starting');
 
     try {
         const bookName = selectedWorldBook;
@@ -64,7 +65,7 @@ export async function executeNovelProcessing(processingState, updateStatusCallba
 
             if (previousEntry) {
                 previousBatchAIResponse = previousEntry.content;
-                updateStatusCallback(`已加载批次 ${previousBatchIndex} 的内容作为上下文。`, 'info');
+                reportGlossaryStatus(updateStatusCallback, 'novel.contextLoaded', { batch: previousBatchIndex });
             } else {
                 throw new Error(`无法找到衔接批次 ${previousBatchIndex} 的世界书条目，请从 1 开始处理。`);
             }
@@ -72,7 +73,7 @@ export async function executeNovelProcessing(processingState, updateStatusCallba
 
         for (let i = processingState.currentIndex; i < recognizedChapters.length; i += batchSize) {
             if (processingState.isAborted) {
-                updateStatusCallback(`处理已中止。当前进度: ${i}/${recognizedChapters.length}`, 'info');
+                reportGlossaryStatus(updateStatusCallback, 'novel.paused', { current: i, total: recognizedChapters.length });
                 return 'paused';
             }
             processingState.currentIndex = i;
@@ -80,7 +81,7 @@ export async function executeNovelProcessing(processingState, updateStatusCallba
             const currentBatchNumber = i + 1;
             const batch = recognizedChapters.slice(i, i + batchSize);
             const progress = `(${currentBatchNumber}/${recognizedChapters.length})`;
-            updateStatusCallback(`正在处理批次 ${currentBatchNumber}... ${progress}`, 'info');
+            reportGlossaryStatus(updateStatusCallback, 'novel.processing', { batch: currentBatchNumber, progress });
 
             const chapterContent = batch.map(c => `## ${c.title}\n${c.content}`).join('\n\n---\n\n');
             const order = getMixedOrder('novel_processor') || [];
@@ -133,28 +134,28 @@ export async function executeNovelProcessing(processingState, updateStatusCallba
                 order: newEntryData.order,
             });
             
-            updateStatusCallback(`批次 ${currentBatchNumber} 处理完成，已创建新条目。`, 'success');
+            reportGlossaryStatus(updateStatusCallback, 'novel.batchCompleted', { batch: currentBatchNumber }, 'success');
             previousBatchAIResponse = aiContent;
         }
 
-        updateStatusCallback('小说处理完成！', 'success');
+        reportGlossaryStatus(updateStatusCallback, 'novel.completed', {}, 'success');
         return 'success';
     } catch (error) {
         console.error('处理小说时发生严重错误:', error);
-        updateStatusCallback(`处理失败: ${error.message}`, 'error');
+        reportGlossaryStatus(updateStatusCallback, 'novel.failed', { error: error.message }, 'error');
         throw error;
     }
 }
 
 export async function reorganizeEntriesByHeadings(bookName, headingsToProcess, updateStatusCallback) {
     try {
-        updateStatusCallback('开始重组...', 'info');
+        reportGlossaryStatus(updateStatusCallback, 'tools.starting');
         const bookData = await loadWorldInfo(bookName);
         if (!bookData || !bookData.entries) {
             throw new Error(`无法加载世界书 "${bookName}" 的数据。`);
         }
         const allEntries = Object.values(bookData.entries);
-        updateStatusCallback(`已获取 ${allEntries.length} 个条目，正在根据您提供的 ${headingsToProcess.length} 个标题进行解析...`, 'info');
+        reportGlossaryStatus(updateStatusCallback, 'tools.parsing', { entries: allEntries.length, headings: headingsToProcess.length });
 
         const headingsMap = new Map();
         headingsToProcess.forEach(h => headingsMap.set(h, []));
@@ -222,11 +223,11 @@ export async function reorganizeEntriesByHeadings(bookName, headingsToProcess, u
         }
 
         if (foundHeadingsCount === 0) {
-            updateStatusCallback('在任何条目中都未找到您指定的标题，无需操作。', 'info');
+            reportGlossaryStatus(updateStatusCallback, 'tools.noMatches');
             return;
         }
 
-        updateStatusCallback(`解析完成，找到 ${foundHeadingsCount} 个匹配的标题类别。正在合并内容并创建新条目...`, 'info');
+        reportGlossaryStatus(updateStatusCallback, 'tools.merging', { count: foundHeadingsCount });
 
         for (const [title, contentBlocks] of headingsMap.entries()) {
             if (contentBlocks.length > 0) {
@@ -251,12 +252,12 @@ export async function reorganizeEntriesByHeadings(bookName, headingsToProcess, u
         bookData.entries = finalEntries;
         await saveWorldInfo(bookName, bookData, true);
 
-        updateStatusCallback(`成功！已重组 ${foundHeadingsCount} 个标题。`, 'success');
-        toastr.success(`世界书 "${bookName}" 已成功按标题重组。`);
+        reportGlossaryStatus(updateStatusCallback, 'tools.completed', { count: foundHeadingsCount }, 'success');
+        toastr.success(escapeHTML(glossaryMessage('tools.saved', { book: bookName })));
 
     } catch (error) {
         console.error('重组世界书条目时发生错误:', error);
-        updateStatusCallback(`错误: ${error.message}`, 'error');
+        reportGlossaryStatus(updateStatusCallback, 'tools.failed', { error: error.message }, 'error');
         throw error;
     }
 }
@@ -278,14 +279,16 @@ export async function loadDatabaseFiles() {
         });
     } catch (error) {
         console.error('Error getting database files:', error);
-        toastr.error('读取数据库文件失败。');
+        toastr.error(glossaryMessage('database.readFailed'));
         return;
     }
 
     const container = document.getElementById('database-file-list-container');
+    releaseGlossaryTranslations(container, { includeRoot: false });
     container.innerHTML = ''; 
     if (fileMap.size === 0) {
-        container.innerHTML = '<small>未找到数据库文件。</small>';
+        container.innerHTML = `<small>${glossaryHtml('database.empty')}</small>`;
+        bindGlossaryTranslations(container);
         container.style.display = 'block';
         return;
     }
@@ -311,11 +314,11 @@ export async function loadDatabaseFiles() {
                 document.dispatchEvent(event);
 
                 container.style.display = 'none';
-                document.getElementById('select-from-database-button').innerHTML = `<i class="fas fa-check"></i> 已选择: ${escapeHTML(file.name)}`;
+                setGlossaryButton(document.getElementById('select-from-database-button'), 'novel.selectedFile', { file: file.name }, 'fas fa-check');
 
             } catch (error) {
                 console.error(`Error processing file ${file.name}:`, error);
-                toastr.error(`处理文件 ${file.name} 失败。`);
+                toastr.error(escapeHTML(glossaryMessage('database.fileFailed', { file: file.name })));
             }
         });
         container.appendChild(fileElement);
