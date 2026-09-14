@@ -1,97 +1,97 @@
 <div class="cwb-settings-container">
     <div class="cwb-header">
         <div class="cwb-title">
-            <i class="fa-solid fa-book-atlas"></i> 角色世界书
+            <i class="fa-solid fa-book-atlas"></i> <span data-cwb-i18n="characterWorldUi.title">角色世界书</span>
         </div>
-        <button id="amily2_back_to_main_from_cwb" class="menu_button secondary small_button interactable"><i class="fas fa-arrow-left"></i> 返回
+        <button id="amily2_back_to_main_from_cwb" class="menu_button secondary small_button interactable"><i class="fas fa-arrow-left"></i> <span data-cwb-i18n="characterWorldUi.back">返回</span>
         </button>
     </div>
     <hr class="header-divider">
 
     <fieldset class="settings-group master-control-group">
-        <legend><i class="fas fa-power-off"></i> 总开关</legend>
+        <legend><i class="fas fa-power-off"></i> <span data-cwb-i18n="characterWorldUi.master">总开关</span></legend>
         <div class="control-block-with-switch" id="cwb_master_enabled">
-            <label for="cwb_master_enabled-checkbox">角色世界书总开关</label>
+            <label for="cwb_master_enabled-checkbox"><span data-cwb-i18n="characterWorldUi.masterLabel">角色世界书总开关</span></label>
             <label class="toggle-switch">
                 <input id="cwb_master_enabled-checkbox" type="checkbox">
                 <span class="slider"></span>
             </label>
         </div>
         <p class="notes" style="text-align: left; margin-top: 5px;">
-            这是最高优先级总开关。关闭后，角色世界书相关功能（自动更新、查看器等）都会停用。
+            <span data-cwb-i18n="characterWorldUi.masterHint">这是最高优先级总开关。关闭后，角色世界书相关功能（自动更新、查看器等）都会停用。</span>
         </p>
     </fieldset>
 
     <fieldset class="settings-group">
-        <legend><i class="fas fa-brain"></i> 功能设置</legend>
+        <legend><i class="fas fa-brain"></i> <span data-cwb-i18n="characterWorldUi.settings">功能设置</span></legend>
         
         <div class="sinan-navigation-deck">
-            <button class="sinan-nav-item active" data-tab="api-settings"><i class="fas fa-cogs"></i> API 设置</button>
-            <button class="sinan-nav-item" data-tab="prompt-settings"><i class="fas fa-robot"></i> 提示词模板</button>
-            <button class="sinan-nav-item" data-tab="feature-settings"><i class="fas fa-toolbox"></i> 功能选项</button>
+            <button class="sinan-nav-item active" data-tab="api-settings"><i class="fas fa-cogs"></i> <span data-cwb-i18n="characterWorldUi.apiTab">API 设置</span></button>
+            <button class="sinan-nav-item" data-tab="prompt-settings"><i class="fas fa-robot"></i> <span data-cwb-i18n="characterWorldUi.promptsTab">提示词模板</span></button>
+            <button class="sinan-nav-item" data-tab="feature-settings"><i class="fas fa-toolbox"></i> <span data-cwb-i18n="characterWorldUi.featuresTab">功能选项</span></button>
         </div>
 
         <div class="sinan-content-wrapper">
             <!-- API Settings Tab -->
             <div id="cwb-api-settings-tab" class="sinan-tab-pane active">
                 <div class="inline-settings-grid">
-                    <label for="cwb-api-mode">API模式</label>
+                    <label for="cwb-api-mode"><span data-cwb-i18n="characterWorldUi.api.mode">API模式</span></label>
                     <select id="cwb-api-mode" class="text_pole">
-                        <option value="openai_test">全兼容模式</option>
-                        <option value="sillytavern_preset">预设模式</option>
+                        <option value="openai_test" data-cwb-i18n="characterWorldUi.api.compatMode">全兼容模式</option>
+                        <option value="sillytavern_preset" data-cwb-i18n="characterWorldUi.api.presetMode">预设模式</option>
                     </select>
                     
-                    <label for="cwb-api-url">API基础URL</label>
-                    <input type="text" id="cwb-api-url" class="text_pole" placeholder="例如: http://127.0.0.1:8080">
+                    <label for="cwb-api-url"><span data-cwb-i18n="characterWorldUi.api.url">API基础URL</span></label>
+                    <input type="text" id="cwb-api-url" class="text_pole" placeholder="例如: http://127.0.0.1:8080" data-cwb-i18n-placeholder="characterWorldUi.api.urlPlaceholder">
                     
-                    <label for="cwb-api-key">API密钥</label>
-                    <input type="password" id="cwb-api-key" class="text_pole" placeholder="可选">
+                    <label for="cwb-api-key"><span data-cwb-i18n="characterWorldUi.api.key">API密钥</span></label>
+                    <input type="password" id="cwb-api-key" class="text_pole" placeholder="可选" data-cwb-i18n-placeholder="characterWorldUi.api.optional">
                     
-                    <label for="cwb-api-model">选择模型</label>
+                    <label for="cwb-api-model"><span data-cwb-i18n="characterWorldUi.api.model">选择模型</span></label>
                     <select id="cwb-api-model" class="text_pole"></select>
                     
-                    <label for="cwb-tavern-profile">SillyTavern预设</label>
+                    <label for="cwb-tavern-profile"><span data-cwb-i18n="characterWorldUi.api.preset">SillyTavern预设</span></label>
                     <select id="cwb-tavern-profile" class="text_pole" style="display: none;">
-                        <option value="">选择预设</option>
+                        <option value="" data-cwb-i18n="characterWorldUi.api.selectPreset">选择预设</option>
                     </select>
                     
-                    <label for="cwb-temperature">温度</label>
+                    <label for="cwb-temperature"><span data-cwb-i18n="characterWorldUi.api.temperature">温度</span></label>
                     <div class="cwb-input-with-button">
                         <input type="range" id="cwb-temperature" class="slider_pole" min="0" max="2" step="0.1" value="0.7">
                         <span id="cwb-temperature-value" class="range-value">0.7</span>
                     </div>
                     
-                    <label for="cwb-max-tokens">单次最大输出长度</label>
+                    <label for="cwb-max-tokens"><span data-cwb-i18n="characterWorldUi.api.maxTokens">单次最大输出长度</span></label>
                     <div class="cwb-input-with-button">
                         <input type="range" id="cwb-max-tokens" class="slider_pole" min="1000" max="100000" step="1000" value="65000">
                         <span id="cwb-max-tokens-value" class="range-value">65000</span>
                     </div>
                 </div>
                 <div class="jqyh-button-row" style="grid-column: 1 / -1;">
-                    <button id="cwb-load-models" class="menu_button secondary" title="获取模型列表"><i class="fas fa-sync-alt"></i> 获取模型</button>
-                    <button id="cwb-test-connection" class="menu_button primary"><i class="fas fa-plug"></i> 测试连接</button>
+                    <button id="cwb-load-models" class="menu_button secondary" title="获取模型列表" data-cwb-i18n-title="characterWorldUi.api.fetchTitle"><i class="fas fa-sync-alt"></i> <span data-cwb-i18n="characterWorldUi.api.fetch">获取模型</span></button>
+                    <button id="cwb-test-connection" class="menu_button primary"><i class="fas fa-plug"></i> <span data-cwb-i18n="characterWorldUi.api.test">测试连接</span></button>
                 </div>
                 <div id="cwb-api-status" class="notes" style="text-align: left; margin-top: 10px;"></div>
             </div>
 
             <div id="cwb-prompt-settings-tab" class="sinan-tab-pane">
                 <fieldset class="settings-group" style="border-style: dashed; padding: 8px; margin-bottom: 10px;">
-                    <legend><i class="fas fa-scroll"></i> 破限提示词</legend>
+                    <legend><i class="fas fa-scroll"></i> <span data-cwb-i18n="characterWorldUi.prompt.break">破限提示词</span></legend>
                     <div class="prompt-editor-area">
                         <textarea id="cwb-break-armor-prompt-textarea" class="text_pole" rows="5"></textarea>
                         <div class="editor-buttons-panel">
-                            <button id="cwb-reset-break-armor-prompt" class="menu_button secondary small_button"><i class="fas fa-undo"></i> 默认</button>
-                            <button id="cwb-save-break-armor-prompt" class="menu_button accent small_button"><i class="fas fa-save"></i> 保存</button>
+                            <button id="cwb-reset-break-armor-prompt" class="menu_button secondary small_button"><i class="fas fa-undo"></i> <span data-cwb-i18n="characterWorldUi.defaults">默认</span></button>
+                            <button id="cwb-save-break-armor-prompt" class="menu_button accent small_button"><i class="fas fa-save"></i> <span data-cwb-i18n="characterWorldUi.save">保存</span></button>
                         </div>
                     </div>
                 </fieldset>
                 <fieldset class="settings-group" style="border-style: dashed; padding: 8px;">
-                    <legend><i class="fas fa-tasks"></i> 更新用提示词</legend>
+                    <legend><i class="fas fa-tasks"></i> <span data-cwb-i18n="characterWorldUi.prompt.update">更新用提示词</span></legend>
                     <div class="prompt-editor-area">
                         <textarea id="cwb-char-card-prompt-textarea" class="text_pole" rows="8"></textarea>
                         <div class="editor-buttons-panel">
-                            <button id="cwb-reset-char-card-prompt" class="menu_button secondary small_button"><i class="fas fa-undo"></i> 默认</button>
-                            <button id="cwb-save-char-card-prompt" class="menu_button accent small_button"><i class="fas fa-save"></i> 保存</button>
+                            <button id="cwb-reset-char-card-prompt" class="menu_button secondary small_button"><i class="fas fa-undo"></i> <span data-cwb-i18n="characterWorldUi.defaults">默认</span></button>
+                            <button id="cwb-save-char-card-prompt" class="menu_button accent small_button"><i class="fas fa-save"></i> <span data-cwb-i18n="characterWorldUi.save">保存</span></button>
                         </div>
                     </div>
                 </fieldset>
@@ -99,59 +99,59 @@
 
             <div id="cwb-feature-settings-tab" class="sinan-tab-pane">
                 <fieldset class="settings-group" style="border-style: solid; padding: 15px; margin-bottom: 15px;">
-                    <legend><i class="fas fa-toggle-on"></i> 基础功能开关</legend>
+                    <legend><i class="fas fa-toggle-on"></i> <span data-cwb-i18n="characterWorldUi.features.basic">基础功能开关</span></legend>
                     
                     <div class="control-block-with-switch" id="cwb-incremental-update-enabled">
-                        <label for="cwb-incremental-update-enabled-checkbox">增量更新模式</label>
+                        <label for="cwb-incremental-update-enabled-checkbox"><span data-cwb-i18n="characterWorldUi.features.incremental">增量更新模式</span></label>
                         <label class="toggle-switch">
                             <input id="cwb-incremental-update-enabled-checkbox" type="checkbox">
                             <span class="slider"></span>
                         </label>
                     </div>
-                    <p class="notes" style="text-align: left; margin-top: 5px; margin-bottom: 15px;">基于已有世界书内容进行增量更新，而非完全覆盖</p>
+                    <p class="notes" style="text-align: left; margin-top: 5px; margin-bottom: 15px;"><span data-cwb-i18n="characterWorldUi.features.incrementalHint">基于已有世界书内容进行增量更新，而非完全覆盖</span></p>
 
                     <div class="control-block-with-switch" id="cwb-auto-update-enabled">
-                        <label for="cwb-auto-update-enabled-checkbox">自动更新</label>
+                        <label for="cwb-auto-update-enabled-checkbox"><span data-cwb-i18n="characterWorldUi.features.auto">自动更新</span></label>
                         <label class="toggle-switch">
                             <input id="cwb-auto-update-enabled-checkbox" type="checkbox">
                             <span class="slider"></span>
                         </label>
                     </div>
-                    <p class="notes" style="text-align: left; margin-top: 5px; margin-bottom: 15px;">达到消息阈值时自动触发AI更新角色卡</p>
+                    <p class="notes" style="text-align: left; margin-top: 5px; margin-bottom: 15px;"><span data-cwb-i18n="characterWorldUi.features.autoHint">达到消息阈值时自动触发AI更新角色卡</span></p>
 
                     <div class="inline-settings-grid" style="margin-bottom: 15px;">
-                        <label for="cwb-auto-update-threshold">更新触发消息数</label>
+                        <label for="cwb-auto-update-threshold"><span data-cwb-i18n="characterWorldUi.features.threshold">更新触发消息数</span></label>
                         <div class="cwb-input-with-button">
-                            <input type="number" id="cwb-auto-update-threshold" class="text_pole" min="1" max="100" placeholder="消息数">
-                            <button id="cwb-save-auto-update-threshold" class="menu_button accent small_button">保存</button>
+                            <input type="number" id="cwb-auto-update-threshold" class="text_pole" min="1" max="100" placeholder="消息数" data-cwb-i18n-placeholder="characterWorldUi.features.messages">
+                            <button id="cwb-save-auto-update-threshold" class="menu_button accent small_button"><span data-cwb-i18n="characterWorldUi.save">保存</span></button>
                         </div>
                         
-                        <label for="cwb-scan-depth">扫描最近消息数</label>
+                        <label for="cwb-scan-depth"><span data-cwb-i18n="characterWorldUi.features.scan">扫描最近消息数</span></label>
                         <div class="cwb-input-with-button">
-                            <input type="number" id="cwb-scan-depth" class="text_pole" min="1" max="100" placeholder="消息数">
-                            <button id="cwb-save-scan-depth" class="menu_button accent small_button">保存</button>
+                            <input type="number" id="cwb-scan-depth" class="text_pole" min="1" max="100" placeholder="消息数" data-cwb-i18n-placeholder="characterWorldUi.features.messages">
+                            <button id="cwb-save-scan-depth" class="menu_button accent small_button"><span data-cwb-i18n="characterWorldUi.save">保存</span></button>
                         </div>
                     </div>
 
                     <div class="control-block-with-switch" id="cwb-viewer-enabled">
-                        <label for="cwb-viewer-enabled-checkbox">查看器浮窗</label>
+                        <label for="cwb-viewer-enabled-checkbox"><span data-cwb-i18n="characterWorldUi.features.viewer">查看器浮窗</span></label>
                         <label class="toggle-switch">
                             <input id="cwb-viewer-enabled-checkbox" type="checkbox">
                             <span class="slider"></span>
                         </label>
                     </div>
-                    <p class="notes" style="text-align: left; margin-top: 5px;">在主界面显示可拖动的角色卡查看按钮</p>
+                    <p class="notes" style="text-align: left; margin-top: 5px;"><span data-cwb-i18n="characterWorldUi.features.viewerHint">在主界面显示可拖动的角色卡查看按钮</span></p>
                 </fieldset>
 
                 <fieldset class="settings-group" style="border-style: solid; padding: 15px; margin-bottom: 15px;">
-                    <legend><i class="fas fa-database"></i> 存储目标</legend>
+                    <legend><i class="fas fa-database"></i> <span data-cwb-i18n="characterWorldUi.world.target">存储目标</span></legend>
                     
                     <div class="amily2_opt_settings_block_radio">
                         <div class="amily2_opt_radio_group">
                             <input type="radio" id="cwb_worldbook_target_primary" name="cwb_worldbook_target" value="primary" checked>
-                            <label for="cwb_worldbook_target_primary">写入主世界书</label>
+                            <label for="cwb_worldbook_target_primary"><span data-cwb-i18n="characterWorldUi.world.primary">写入主世界书</span></label>
                             <input type="radio" id="cwb_worldbook_target_custom" name="cwb_worldbook_target" value="custom">
-                            <label for="cwb_worldbook_target_custom">自定义世界书</label>
+                            <label for="cwb_worldbook_target_custom"><span data-cwb-i18n="characterWorldUi.world.custom">自定义世界书</span></label>
                         </div>
                     </div>
 
@@ -159,46 +159,46 @@
                         <div class="cwb-worldbook-selection-container">
                             <div class="cwb-worldbook-column">
                                 <div class="amily2_opt_label_with_button_wrapper">
-                                    <label>选择世界书</label>
-                                    <button id="cwb_refresh_worldbooks" class="menu_button small_button" title="刷新世界书列表">
-                                        <i class="fa-solid fa-sync"></i> 刷新
+                                    <label><span data-cwb-i18n="characterWorldUi.world.select">选择世界书</span></label>
+                                    <button id="cwb_refresh_worldbooks" class="menu_button small_button" title="刷新世界书列表" data-cwb-i18n-title="characterWorldUi.world.refreshTitle">
+                                        <i class="fa-solid fa-sync"></i> <span data-cwb-i18n="characterWorldUi.refresh">刷新</span>
                                     </button>
                                 </div>
                                 <div id="cwb_worldbook_radio_list" class="cwb-scrollable-container">
                                 </div>
-                                <small class="notes">选择一个世界书作为角色卡写入目标</small>
+                                <small class="notes"><span data-cwb-i18n="characterWorldUi.world.hint">选择一个世界书作为角色卡写入目标</span></small>
                             </div>
                         </div>
                     </div>
                 </fieldset>
 
                 <fieldset class="settings-group" style="border-style: solid; padding: 15px; margin-bottom: 15px;">
-                    <legend><i class="fas fa-sync-alt"></i> 更新操作</legend>
+                    <legend><i class="fas fa-sync-alt"></i> <span data-cwb-i18n="characterWorldUi.update.actions">更新操作</span></legend>
 
                     <div class="inline-settings-grid" style="margin-bottom: 15px;">
-                        <label for="cwb-start-floor">起始消息层</label>
+                        <label for="cwb-start-floor"><span data-cwb-i18n="characterWorldUi.update.start">起始消息层</span></label>
                         <input type="number" id="cwb-start-floor" class="text_pole" min="1" value="1">
                         
-                        <label for="cwb-end-floor">结束消息层</label>
+                        <label for="cwb-end-floor"><span data-cwb-i18n="characterWorldUi.update.end">结束消息层</span></label>
                         <input type="number" id="cwb-end-floor" class="text_pole" min="1" value="1">
                     </div>
 
                     <div class="update-buttons-panel" style="margin-bottom: 15px;">
                         <button id="cwb-floor-range-update" class="menu_button">
-                            <i class="fa-solid fa-layer-group"></i> 按消息范围更新
+                            <i class="fa-solid fa-layer-group"></i> <span data-cwb-i18n="characterWorldUi.update.range">按消息范围更新</span>
                         </button>
                         <button id="cwb-batch-update-card" class="menu_button accent">
-                            <i class="fa-solid fa-bolt"></i> 全量批量更新
+                            <i class="fa-solid fa-bolt"></i> <span data-cwb-i18n="characterWorldUi.update.batch">全量批量更新</span>
                         </button>
                         <button id="cwb-manual-update-card" class="menu_button secondary">
-                            <i class="fa-solid fa-pencil"></i> 快速更新（最近阈值条）
+                            <i class="fa-solid fa-pencil"></i> <span data-cwb-i18n="characterWorldUi.update.quick">快速更新（最近阈值条）</span>
                         </button>
-                        <button id="cwb-legacy-auto-update" class="menu_button secondary" title="自动将旧版格式的角色卡转换为新版格式">
-                            <i class="fa-solid fa-history"></i> 旧版格式转换
+                        <button id="cwb-legacy-auto-update" class="menu_button secondary" title="自动将旧版格式的角色卡转换为新版格式" data-cwb-i18n-title="characterWorldUi.update.convertTitle">
+                            <i class="fa-solid fa-history"></i> <span data-cwb-i18n="characterWorldUi.update.convert">旧版格式转换</span>
                         </button>
                     </div>
                     <small class="notes" style="text-align: center; display: block; margin-top: 10px;">
-                        <b>重要提示:</b> 上下文处理会复用总结模块「手动总结」里的<b>标签提取</b>和<b>内容排除</b>规则。如果发现上下文不完整，请检查相关设置。
+                        <b><span data-cwb-i18n="characterWorldUi.update.important">重要提示:</span></b> <span data-cwb-i18n="characterWorldUi.update.rulesBefore">上下文处理会复用总结模块「手动总结」里的</span><b><span data-cwb-i18n="characterWorldUi.update.rulesTags">标签提取</span></b><span data-cwb-i18n="characterWorldUi.update.rulesBetween">和</span><b><span data-cwb-i18n="characterWorldUi.update.rulesExclusions">内容排除</span></b><span data-cwb-i18n="characterWorldUi.update.rulesAfter">规则。如果发现上下文不完整，请检查相关设置。</span>
                     </small>
                     <div style="margin-top: 15px;">
                         <div id="cwb-status-message" class="notes"></div>

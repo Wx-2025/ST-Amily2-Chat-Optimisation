@@ -1,29 +1,29 @@
 <div class="amily2-header">
     <div class="am2-panel-title-row">
         <div class="additional-features-title">
-            <i class="fas fa-feather-alt"></i> 记忆管理
+            <i class="fas fa-feather-alt"></i> <span data-amily-i18n="memoryUi.management">记忆管理</span>
         </div>
-        <button id="amily2_open_plot_opt_tutorial" class="menu_button small_button secondary interactable am2-panel-tutorial-btn" type="button" title="小白教程：记忆管理要配什么模型">
-            <i class="fas fa-book-open"></i> 教程
+        <button id="amily2_open_plot_opt_tutorial" class="menu_button small_button secondary interactable am2-panel-tutorial-btn" type="button" data-amily-i18n-title="memoryUi.tutorialTip" title="小白教程：记忆管理要配什么模型">
+            <i class="fas fa-book-open"></i> <span data-amily-i18n="memoryUi.tutorial">教程</span>
         </button>
     </div>
     <button id="amily2_back_to_main_from_optimization" class="menu_button secondary small_button interactable" type="button">
-        <i class="fas fa-arrow-left"></i> 返回
+        <i class="fas fa-arrow-left"></i> <span data-amily-i18n="memoryUi.back">返回</span>
     </button>
 </div>
 <hr class="header-divider" style="margin-top: 5px; margin-bottom: 10px;">
 
 <fieldset class="settings-group">
-    <legend><i class="fas fa-cogs"></i> 通用设置</legend>
+    <legend><i class="fas fa-cogs"></i> <span data-amily-i18n="memoryUi.general">通用设置</span></legend>
     <div class="control-block-with-switch">
-        <label for="amily2_opt_enabled"><strong>记忆管理开关</strong></label>
+        <label for="amily2_opt_enabled"><strong><span data-amily-i18n="memoryUi.managementEnabled">记忆管理开关</span></strong></label>
         <label class="toggle-switch">
             <input id="amily2_opt_enabled" type="checkbox" />
             <span class="slider"></span>
         </label>
     </div>
     <div class="control-block-with-switch">
-        <label for="amily2_opt_ejs_enabled">EJS 预处理 <small style="color: #ffc107;">功能友情提供：Ducker</small></label>
+        <label for="amily2_opt_ejs_enabled"><span data-amily-i18n="memoryUi.ejs">EJS 预处理</span> <small style="color: #ffc107;"><span data-amily-i18n="memoryUi.ejsCredit">功能友情提供：Ducker</span></small></label>
         <label class="toggle-switch">
             <input id="amily2_opt_ejs_enabled" type="checkbox" />
             <span class="slider"></span>
@@ -32,60 +32,60 @@
 </fieldset>
 
 <div class="sinan-navigation-deck">
-    <button class="sinan-nav-item active" data-tab="api-settings"><i class="fas fa-bolt"></i> API 设置</button>
-    <button class="sinan-nav-item" data-tab="prompt-settings"><i class="fas fa-edit"></i> 提示词指令</button>
-    <button class="sinan-nav-item" data-tab="context-settings"><i class="fas fa-book-open"></i> 上下文设置</button>
+    <button class="sinan-nav-item active" data-tab="api-settings"><i class="fas fa-bolt"></i> <span data-amily-i18n="memoryUi.apiTab">API 设置</span></button>
+    <button class="sinan-nav-item" data-tab="prompt-settings"><i class="fas fa-edit"></i> <span data-amily-i18n="memoryUi.promptTab">提示词指令</span></button>
+    <button class="sinan-nav-item" data-tab="context-settings"><i class="fas fa-book-open"></i> <span data-amily-i18n="memoryUi.contextTab">上下文设置</span></button>
 </div>
 
 <div class="sinan-content-wrapper">
     <!-- API Settings Tab -->
     <div id="sinan-api-settings-tab" class="sinan-tab-pane active">
         <fieldset class="settings-group">
-            <legend>剧情优化 API</legend>
+            <legend><span data-amily-i18n="memoryUi.mainApi">剧情优化 API</span></legend>
             <p class="notes" style="margin: 0;">
-                剧情优化所用的连接配置统一在
-                <strong>API 连接配置 → 功能分配 → 剧情优化 / JQYH</strong>
-                中指定，无需在此单独填写。
+                <span data-amily-i18n="memoryUi.apiHelpBefore">剧情优化所用的连接配置统一在</span>
+                <strong><span data-amily-i18n="memoryUi.apiHelpPath">API 连接配置 → 功能分配 → 剧情优化 / JQYH</span></strong>
+                <span data-amily-i18n="memoryUi.apiHelpAfter">中指定，无需在此单独填写。</span>
             </p>
         </fieldset>
 
         <fieldset class="settings-group">
-            <legend>并发 API（第二个模型）</legend>
+            <legend><span data-amily-i18n="memoryUi.concurrentApi">并发 API（第二个模型）</span></legend>
             <div class="control-block-with-switch">
-                <label for="amily2_plotOpt_concurrentEnabled"><strong>启用并发调用</strong></label>
+                <label for="amily2_plotOpt_concurrentEnabled"><strong><span data-amily-i18n="memoryUi.concurrentEnabled">启用并发调用</span></strong></label>
                 <label class="toggle-switch">
                     <input id="amily2_plotOpt_concurrentEnabled" type="checkbox" />
                     <span class="slider"></span>
                 </label>
             </div>
             <div id="amily2_concurrent_content" style="display: none;" class="inline-settings-grid">
-                <label for="amily2_plotOpt_concurrentApiProvider">API 模式</label>
+                <label for="amily2_plotOpt_concurrentApiProvider"><span data-amily-i18n="memoryUi.apiMode">API 模式</span></label>
                 <select id="amily2_plotOpt_concurrentApiProvider" class="text_pole">
-                    <option value="openai_test">全兼容模式</option>
-                    <option value="openai">OpenAI 兼容</option>
+                    <option value="openai_test" data-amily-i18n="memoryUi.compatible">全兼容模式</option>
+                    <option value="openai" data-amily-i18n="memoryUi.openai">OpenAI 兼容</option>
                 </select>
-                <label for="amily2_plotOpt_concurrentApiUrl">API URL</label>
-                <input type="text" id="amily2_plotOpt_concurrentApiUrl" class="text_pole" placeholder="例如: https://api.openai.com/v1">
-                <label for="amily2_plotOpt_concurrentApiKey">API Key</label>
-                <input type="password" id="amily2_plotOpt_concurrentApiKey" class="text_pole" placeholder="请输入您的 API Key">
-                <label for="amily2_plotOpt_concurrentModel">模型</label>
+                <label for="amily2_plotOpt_concurrentApiUrl"><span data-amily-i18n="memoryUi.apiUrl">API URL</span></label>
+                <input type="text" id="amily2_plotOpt_concurrentApiUrl" class="text_pole" data-amily-i18n-placeholder="memoryUi.urlExample" placeholder="例如: https://api.openai.com/v1">
+                <label for="amily2_plotOpt_concurrentApiKey"><span data-amily-i18n="memoryUi.apiKey">API Key</span></label>
+                <input type="password" id="amily2_plotOpt_concurrentApiKey" class="text_pole" data-amily-i18n-placeholder="memoryUi.keyPlaceholder" placeholder="请输入您的 API Key">
+                <label for="amily2_plotOpt_concurrentModel"><span data-amily-i18n="memoryUi.model">模型</span></label>
                 <div class="amily2_opt_preset_selector_wrapper">
-                    <input type="text" id="amily2_plotOpt_concurrentModel" class="text_pole" placeholder="请先获取模型列表或手动输入">
+                    <input type="text" id="amily2_plotOpt_concurrentModel" class="text_pole" data-amily-i18n-placeholder="memoryUi.modelPlaceholder" placeholder="请先获取模型列表或手动输入">
                     <select id="amily2_plotOpt_concurrentModel_select" class="text_pole" style="display: none;"></select>
                 </div>
-                <label for="amily2_plotOpt_concurrentMaxTokens">最大输出长度: <span id="amily2_plotOpt_concurrentMaxTokens_value">8100</span></label>
+                <label for="amily2_plotOpt_concurrentMaxTokens"><span data-amily-i18n="memoryUi.maxOutput">最大输出长度:</span> <span id="amily2_plotOpt_concurrentMaxTokens_value">8100</span></label>
                 <input type="number" class="text_pole" id="amily2_plotOpt_concurrentMaxTokens" min="100" max="100000" value="8100">
                 <div class="jqyh-button-row" style="grid-column: 1 / -1;">
-                    <button id="amily2_plotOpt_concurrent_fetch_models" class="menu_button secondary" title="获取模型列表"><i class="fas fa-sync-alt"></i> 获取模型</button>
-                    <button id="amily2_plotOpt_concurrent_test_connection" class="menu_button primary"><i class="fas fa-plug"></i> 测试连接</button>
+                    <button id="amily2_plotOpt_concurrent_fetch_models" class="menu_button secondary" data-amily-i18n-title="memoryUi.fetchModelsTip" title="获取模型列表"><i class="fas fa-sync-alt"></i> <span data-amily-i18n="memoryUi.fetchModels">获取模型</span></button>
+                    <button id="amily2_plotOpt_concurrent_test_connection" class="menu_button primary"><i class="fas fa-plug"></i> <span data-amily-i18n="memoryUi.testConnection">测试连接</span></button>
                 </div>
             </div>
         </fieldset>
 
         <fieldset class="settings-group">
-            <legend>并发模型用的世界书</legend>
+            <legend><span data-amily-i18n="memoryUi.concurrentBooks">并发模型用的世界书</span></legend>
             <div class="control-block-with-switch">
-                <label for="amily2_plotOpt_concurrentWorldbookEnabled">启用世界书</label>
+                <label for="amily2_plotOpt_concurrentWorldbookEnabled"><span data-amily-i18n="memoryUi.enableBooks">启用世界书</span></label>
                 <label class="toggle-switch">
                     <input id="amily2_plotOpt_concurrentWorldbookEnabled" type="checkbox" />
                     <span class="slider"></span>
@@ -93,25 +93,25 @@
             </div>
             <div id="amily2_concurrent_worldbook_content" style="display: none;">
                 <div class="control-block-with-switch">
-                    <label>世界书来源</label>
+                    <label><span data-amily-i18n="memoryUi.bookSource">世界书来源</span></label>
                     <div class="radio-group">
                         <input type="radio" id="amily2_plotOpt_concurrentWorldbook_source_character" name="amily2_plotOpt_concurrentWorldbook_source" value="character" checked>
-                        <label for="amily2_plotOpt_concurrentWorldbook_source_character">角色</label>
+                        <label for="amily2_plotOpt_concurrentWorldbook_source_character"><span data-amily-i18n="memoryUi.character">角色</span></label>
                         <input type="radio" id="amily2_plotOpt_concurrentWorldbook_source_manual" name="amily2_plotOpt_concurrentWorldbook_source" value="manual">
-                        <label for="amily2_plotOpt_concurrentWorldbook_source_manual">自定</label>
+                        <label for="amily2_plotOpt_concurrentWorldbook_source_manual"><span data-amily-i18n="memoryUi.manual">自定</span></label>
                     </div>
                 </div>
                 <div id="amily2_plotOpt_concurrent_worldbook_select_wrapper" style="display: none;">
                     <div class="worldbook-column">
                         <div class="amily2_opt_label_with_button_wrapper">
-                            <label>选择世界书</label>
-                            <button id="amily2_plotOpt_concurrent_refresh_worldbooks" class="menu_button" title="刷新世界书列表"><i class="fa-solid fa-sync"></i></button>
+                            <label><span data-amily-i18n="memoryUi.selectBooks">选择世界书</span></label>
+                            <button id="amily2_plotOpt_concurrent_refresh_worldbooks" class="menu_button" data-amily-i18n-title="memoryUi.refreshBooks" title="刷新世界书列表"><i class="fa-solid fa-sync"></i></button>
                         </div>
                         <div id="amily2_plotOpt_concurrent_worldbook_checkbox_list" class="scrollable-container"></div>
                     </div>
                 </div>
                 <div class="inline-settings-grid">
-                    <label for="amily2_plotOpt_concurrentWorldbookCharLimit">世界书最大字符数: <span id="amily2_plotOpt_concurrentWorldbookCharLimit_value">60000</span></label>
+                    <label for="amily2_plotOpt_concurrentWorldbookCharLimit"><span data-amily-i18n="memoryUi.bookLimit">世界书最大字符数:</span> <span id="amily2_plotOpt_concurrentWorldbookCharLimit_value">60000</span></label>
                     <input type="number" class="text_pole" id="amily2_plotOpt_concurrentWorldbookCharLimit" min="1000" max="200000" value="60000">
                 </div>
             </div>
@@ -121,72 +121,72 @@
     <!-- Prompt Settings Tab -->
     <div id="sinan-prompt-settings-tab" class="sinan-tab-pane">
         <fieldset class="settings-group">
-            <legend>并发模型提示词</legend>
+            <legend><span data-amily-i18n="memoryUi.concurrentPrompts">并发模型提示词</span></legend>
             <div class="unified-prompt-editor">
-                <label for="amily2_concurrent_prompt_selector">选择要编辑的提示词:</label>
+                <label for="amily2_concurrent_prompt_selector"><span data-amily-i18n="memoryUi.choosePrompt">选择要编辑的提示词:</span></label>
                 <select id="amily2_concurrent_prompt_selector" class="text_pole">
-                    <option value="main">主系统提示词（并发）</option>
-                    <option value="system">拦截任务详细指令（并发）</option>
+                    <option value="main" data-amily-i18n="memoryUi.concurrentMainPrompt">主系统提示词（并发）</option>
+                    <option value="system" data-amily-i18n="memoryUi.concurrentTaskPrompt">拦截任务详细指令（并发）</option>
                 </select>
                 <textarea id="amily2_concurrent_prompt_editor" class="text_pole" rows="6"></textarea>
                 <div class="prompt-editor-buttons">
-                    <button id="amily2_opt_reset_concurrent_prompt" class="menu_button secondary">恢复当前并发提示词为默认</button>
+                    <button id="amily2_opt_reset_concurrent_prompt" class="menu_button secondary"><span data-amily-i18n="memoryUi.resetConcurrent">恢复当前并发提示词为默认</span></button>
                 </div>
             </div>
         </fieldset>
         <fieldset class="settings-group">
-            <legend>提示词管理</legend>
+            <legend><span data-amily-i18n="memoryUi.promptManagement">提示词管理</span></legend>
             <div class="inline-settings-grid">
-                <label for="amily2_opt_prompt_preset_select">加载预设</label>
+                <label for="amily2_opt_prompt_preset_select"><span data-amily-i18n="memoryUi.loadPreset">加载预设</span></label>
                 <div class="amily2_opt_preset_selector_wrapper">
                     <select id="amily2_opt_prompt_preset_select" class="text_pole">
-                        <option value="">-- 选择一个预设 --</option>
+                        <option value="" data-amily-i18n="memoryUi.choosePreset">-- 选择一个预设 --</option>
                     </select>
-            <button id="amily2_opt_import_prompt_presets" class="menu_button" title="导入预设"><i class="fa-solid fa-download"></i></button>
-            <button id="amily2_opt_export_prompt_presets" class="menu_button" title="导出预设"><i class="fa-solid fa-upload"></i></button>
-                    <button id="amily2_opt_save_prompt_preset" class="menu_button" title="保存当前提示词为预设"><i class="fa-solid fa-save"></i></button>
-                    <button id="amily2_opt_delete_prompt_preset" class="menu_button" title="删除当前选中的预设" style="display: none;"><i class="fa-solid fa-trash-alt"></i></button>
+            <button id="amily2_opt_import_prompt_presets" class="menu_button" data-amily-i18n-title="memoryUi.importPreset" title="导入预设"><i class="fa-solid fa-download"></i></button>
+            <button id="amily2_opt_export_prompt_presets" class="menu_button" data-amily-i18n-title="memoryUi.exportPreset" title="导出预设"><i class="fa-solid fa-upload"></i></button>
+                    <button id="amily2_opt_save_prompt_preset" class="menu_button" data-amily-i18n-title="memoryUi.savePreset" title="保存当前提示词为预设"><i class="fa-solid fa-save"></i></button>
+                    <button id="amily2_opt_delete_prompt_preset" class="menu_button" data-amily-i18n-title="memoryUi.deletePresetTip" title="删除当前选中的预设" style="display: none;"><i class="fa-solid fa-trash-alt"></i></button>
                     <input type="file" id="amily2_opt_preset_file_input" style="display: none;" accept=".json">
                 </div>
             </div>
         </fieldset>
         <fieldset class="settings-group">
-            <legend>指令编辑</legend>
+            <legend><span data-amily-i18n="memoryUi.editPrompts">指令编辑</span></legend>
             <div class="unified-prompt-editor">
-                <label for="amily2_opt_prompt_selector">选择编辑的提示词:</label>
+                <label for="amily2_opt_prompt_selector"><span data-amily-i18n="memoryUi.chooseEditPrompt">选择编辑的提示词:</span></label>
                 <select id="amily2_opt_prompt_selector" class="text_pole">
-                    <option value="main">主系统提示词 (主LLM)</option>
-                    <option value="system">拦截任务详细指令 (主LLM)</option>
-                    <option value="final_system">最终注入指令</option>
+                    <option value="main" data-amily-i18n="memoryUi.mainPrompt">主系统提示词 (主LLM)</option>
+                    <option value="system" data-amily-i18n="memoryUi.taskPrompt">拦截任务详细指令 (主LLM)</option>
+                    <option value="final_system" data-amily-i18n="memoryUi.finalPrompt">最终注入指令</option>
                 </select>
                 <textarea id="amily2_opt_prompt_editor" class="text_pole" rows="8"></textarea>
                 <div class="prompt-editor-buttons">
-                    <button id="amily2_opt_reset_main_prompt" class="menu_button secondary">恢复主提示词</button>
-                    <button id="amily2_opt_reset_system_prompt" class="menu_button secondary">恢复拦截任务</button>
-                    <button id="amily2_opt_reset_final_system_directive" class="menu_button secondary">恢复注入指令</button>
+                    <button id="amily2_opt_reset_main_prompt" class="menu_button secondary"><span data-amily-i18n="memoryUi.resetMain">恢复主提示词</span></button>
+                    <button id="amily2_opt_reset_system_prompt" class="menu_button secondary"><span data-amily-i18n="memoryUi.resetTask">恢复拦截任务</span></button>
+                    <button id="amily2_opt_reset_final_system_directive" class="menu_button secondary"><span data-amily-i18n="memoryUi.resetFinal">恢复注入指令</span></button>
                 </div>
             </div>
         </fieldset>
         <fieldset class="settings-group">
-            <legend>匹配替换 (sulv)</legend>
+            <legend><span data-amily-i18n="memoryUi.replacement">匹配替换 (sulv)</span></legend>
             <div class="inline-settings-grid">
-                <label for="amily2_opt_rate_main">主线剧情 (sulv1)</label>
+                <label for="amily2_opt_rate_main"><span data-amily-i18n="memoryUi.mainRate">主线剧情 (sulv1)</span></label>
                 <input id="amily2_opt_rate_main" type="number" class="text_pole" step="0.05" value="1.0">
-                <label for="amily2_opt_rate_personal">个人线 (sulv2)</label>
+                <label for="amily2_opt_rate_personal"><span data-amily-i18n="memoryUi.personalRate">个人线 (sulv2)</span></label>
                 <input id="amily2_opt_rate_personal" type="number" class="text_pole" step="0.05" value="1.0">
-                <label for="amily2_opt_rate_erotic">留空 (sulv3)</label>
+                <label for="amily2_opt_rate_erotic"><span data-amily-i18n="memoryUi.emptyRate3">留空 (sulv3)</span></label>
                 <input id="amily2_opt_rate_erotic" type="number" class="text_pole" step="0.05" value="1.0">
-                <label for="amily2_opt_rate_cuckold">留空 (sulv4)</label>
+                <label for="amily2_opt_rate_cuckold"><span data-amily-i18n="memoryUi.emptyRate4">留空 (sulv4)</span></label>
                 <input id="amily2_opt_rate_cuckold" type="number" class="text_pole" step="0.05" value="1.0">
             </div>
         </fieldset>
         <fieldset class="settings-group">
-            <legend>自定义记忆块</legend>
+            <legend><span data-amily-i18n="memoryUi.customBlocks">自定义记忆块</span></legend>
             <div class="control-block-with-switch" style="margin-bottom: 8px;">
                 <div>
-                    <label for="amily2_opt_combat_report_enabled">战斗战报（内置可选块）</label>
+                    <label for="amily2_opt_combat_report_enabled"><span data-amily-i18n="memoryUi.combatBlock">战斗战报（内置可选块）</span></label>
                     <div style="font-size: 0.82em; opacity: 0.72;">
-                        有活动战斗时，把引擎既定结算追加到本次记忆注入底部，由正常 RP 主模型完成场景描写；不会额外调用模型。
+                        <span data-amily-i18n="memoryUi.combatHelp">有活动战斗时，把引擎既定结算追加到本次记忆注入底部，由正常 RP 主模型完成场景描写；不会额外调用模型。</span>
                     </div>
                 </div>
                 <label class="toggle-switch">
@@ -200,15 +200,15 @@
                 data-state="idle"
                 role="status"
                 aria-live="polite">
-                当前没有已安装的战报注入。
+                <span data-amily-i18n="memoryUi.combatIdle">当前没有已安装的战报注入。</span>
             </div>
             <div style="font-size: 0.85em; opacity: 0.75; margin-bottom: 8px;">
-                每个块定义一个占位符：执行剧情优化时，主/拦截提示词中出现的占位符会被块的产出替换。
-                静态块直接输出固定内容；AI 调用块会用所选 API 槽独立请求一次，把回复作为替换值。
+                <span data-amily-i18n="memoryUi.blocksHelp">每个块定义一个占位符：执行剧情优化时，主/拦截提示词中出现的占位符会被块的产出替换。
+                静态块直接输出固定内容；AI 调用块会用所选 API 槽独立请求一次，把回复作为替换值。</span>
             </div>
             <div id="amily2_opt_custom_blocks_list"></div>
             <button id="amily2_opt_add_custom_block" class="menu_button" style="margin-top: 8px;">
-                <i class="fa-solid fa-plus"></i> 新增记忆块
+                <i class="fa-solid fa-plus"></i> <span data-amily-i18n="memoryUi.addBlock">新增记忆块</span>
             </button>
         </fieldset>
     </div>
@@ -216,66 +216,66 @@
     <!-- Context Settings Tab -->
     <div id="sinan-context-settings-tab" class="sinan-tab-pane">
         <fieldset class="settings-group">
-            <legend>内容源</legend>
+            <legend><span data-amily-i18n="memoryUi.contentSources">内容源</span></legend>
             <div class="control-block-with-switch">
-                <label for="amily2_opt_worldbook_enabled">启用世界书</label>
+                <label for="amily2_opt_worldbook_enabled"><span data-amily-i18n="memoryUi.enableBooks">启用世界书</span></label>
                 <label class="toggle-switch">
                     <input id="amily2_opt_worldbook_enabled" type="checkbox" />
                     <span class="slider"></span>
                 </label>
             </div>
             <div class="control-block-with-switch">
-                <label for="amily2_opt_table_enabled">表格发送目标</label>
+                <label for="amily2_opt_table_enabled"><span data-amily-i18n="memoryUi.tableTarget">表格发送目标</span></label>
                 <select id="amily2_opt_table_enabled" class="text_pole">
-                    <option value="disabled">不发送</option>
-                    <option value="main">发送给主API</option>
-                    <option value="concurrent">发送给并发API</option>
+                    <option value="disabled" data-amily-i18n="memoryUi.noSend">不发送</option>
+                    <option value="main" data-amily-i18n="memoryUi.sendMain">发送给主API</option>
+                    <option value="concurrent" data-amily-i18n="memoryUi.sendConcurrent">发送给并发API</option>
                 </select>
             </div>
         </fieldset>
         <fieldset class="settings-group">
-            <legend>上下文参数</legend>
+            <legend><span data-amily-i18n="memoryUi.contextParams">上下文参数</span></legend>
             <div class="inline-settings-grid">
-                <label for="amily2_opt_context_limit">上下文条数: <span id="amily2_opt_context_limit_value">10</span></label>
+                <label for="amily2_opt_context_limit"><span data-amily-i18n="memoryUi.contextCount">上下文条数:</span> <span id="amily2_opt_context_limit_value">10</span></label>
                 <input type="number" class="text_pole" id="amily2_opt_context_limit" min="1" max="50" value="10">
-                <label for="amily2_opt_worldbook_char_limit">世界书最大字符数: <span id="amily2_opt_worldbook_char_limit_value">60000</span></label>
+                <label for="amily2_opt_worldbook_char_limit"><span data-amily-i18n="memoryUi.bookLimit">世界书最大字符数:</span> <span id="amily2_opt_worldbook_char_limit_value">60000</span></label>
                 <input type="number" class="text_pole" id="amily2_opt_worldbook_char_limit" min="1000" max="200000" value="60000">
             </div>
         </fieldset>
         <fieldset class="settings-group">
-            <legend>世界书管理</legend>
+            <legend><span data-amily-i18n="memoryUi.bookManagement">世界书管理</span></legend>
             <div class="control-block-with-switch">
-                <label for="amily2_opt_new_memory_logic_enabled">启用新记忆逻辑</label>
+                <label for="amily2_opt_new_memory_logic_enabled"><span data-amily-i18n="memoryUi.newMemory">启用新记忆逻辑</span></label>
                 <label class="toggle-switch">
                     <input id="amily2_opt_new_memory_logic_enabled" type="checkbox" />
                     <span class="slider"></span>
                 </label>
             </div>
             <div class="control-block-with-switch">
-                <label>世界书来源</label>
+                <label><span data-amily-i18n="memoryUi.bookSource">世界书来源</span></label>
                 <div class="radio-group">
                     <input type="radio" id="amily2_opt_worldbook_source_character" name="amily2_opt_worldbook_source" value="character" checked>
-                    <label for="amily2_opt_worldbook_source_character">角色</label>
+                    <label for="amily2_opt_worldbook_source_character"><span data-amily-i18n="memoryUi.character">角色</span></label>
                     <input type="radio" id="amily2_opt_worldbook_source_manual" name="amily2_opt_worldbook_source" value="manual">
-                    <label for="amily2_opt_worldbook_source_manual">自定</label>
+                    <label for="amily2_opt_worldbook_source_manual"><span data-amily-i18n="memoryUi.manual">自定</span></label>
                 </div>
             </div>
             <div id="amily2_opt_worldbook_select_wrapper" style="display: none;">
                 <div class="worldbook-column">
                     <div class="amily2_opt_label_with_button_wrapper">
-                        <label>选择世界书</label>
-                        <button id="amily2_opt_refresh_worldbooks" class="menu_button" title="刷新世界书列表"><i class="fa-solid fa-sync"></i></button>
+                        <label><span data-amily-i18n="memoryUi.selectBooks">选择世界书</span></label>
+                        <button id="amily2_opt_refresh_worldbooks" class="menu_button" data-amily-i18n-title="memoryUi.refreshBooks" title="刷新世界书列表"><i class="fa-solid fa-sync"></i></button>
                     </div>
                     <div id="amily2_opt_worldbook_checkbox_list" class="scrollable-container"></div>
                 </div>
             </div>
             <div class="worldbook-column">
                 <div class="amily2_opt_label_with_controls_wrapper">
-                    <label>启用的世界书条目</label>
+                    <label><span data-amily-i18n="memoryUi.enabledEntries">启用的世界书条目</span></label>
                     <div id="amily2_opt_worldbook_entry_controls">
                         <span id="amily2_opt_worldbook_entry_count"></span>
-                        <button id="amily2_opt_worldbook_entry_select_all" class="menu_button">全选</button>
-                        <button id="amily2_opt_worldbook_entry_deselect_all" class="menu_button">不选</button>
+                        <button id="amily2_opt_worldbook_entry_select_all" class="menu_button"><span data-amily-i18n="memoryUi.selectAll">全选</span></button>
+                        <button id="amily2_opt_worldbook_entry_deselect_all" class="menu_button"><span data-amily-i18n="memoryUi.selectNone">不选</span></button>
                     </div>
                 </div>
                 <div id="amily2_opt_worldbook_entry_list_container" class="scrollable-container"></div>

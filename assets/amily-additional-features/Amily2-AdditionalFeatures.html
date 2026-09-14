@@ -2,24 +2,24 @@
 <div class="amily2-header">
     <div class="am2-panel-title-row">
         <div class="additional-features-title">
-            <i class="fas fa-landmark-dome"></i> 总结模块
+            <i class="fas fa-landmark-dome"></i> <span data-amily-i18n="summary.panelTitle">总结模块</span>
         </div>
-        <button id="amily2_open_neige_tutorial" class="menu_button small_button secondary interactable am2-panel-tutorial-btn" type="button" title="小白教程：总结模块要配什么模型">
-            <i class="fas fa-book-open"></i> 教程
+        <button id="amily2_open_neige_tutorial" class="menu_button small_button secondary interactable am2-panel-tutorial-btn" type="button" data-amily-i18n-title="summaryWorkflow.tutorialTip" title="小白教程：总结模块要配什么模型">
+            <i class="fas fa-book-open"></i> <span data-amily-i18n="actions.tutorial">教程</span>
         </button>
     </div>
     <button id="amily2_back_to_main_settings" class="menu_button secondary small_button interactable" type="button">
-        <i class="fas fa-arrow-left"></i> 返回
+        <i class="fas fa-arrow-left"></i> <span data-amily-i18n="actions.back">返回</span>
     </button>
 </div>
 
 
 <fieldset class="settings-group">
-    <legend><i class="fas fa-scroll"></i> 消息显示管理</legend>
+    <legend><i class="fas fa-scroll"></i> <span data-amily-i18n="summaryWorkflow.messageDisplay">消息显示管理</span></legend>
 
     <div class="control-pair-container am2-msg-display-row">
         <div class="amily2_settings_block am2-hide-toggle">
-            <label for="amily2_auto_hide_enabled">按条数自动隐藏</label>
+            <label for="amily2_auto_hide_enabled" data-amily-i18n="summaryWorkflow.autoHideCount">按条数自动隐藏</label>
             <label class="toggle-switch">
                 <input id="amily2_auto_hide_enabled" type="checkbox" />
                 <span class="slider"></span>
@@ -27,7 +27,7 @@
         </div>
 
         <div class="amily2_settings_block am2-hide-toggle">
-            <label for="amily2_auto_hide_summarized_enabled">隐藏已总结的消息</label>
+            <label for="amily2_auto_hide_summarized_enabled" data-amily-i18n="summaryWorkflow.hideSummarized">隐藏已总结的消息</label>
             <label class="toggle-switch">
                 <input id="amily2_auto_hide_summarized_enabled" type="checkbox" />
                 <span class="slider"></span>
@@ -35,9 +35,9 @@
         </div>
 
         <div class="amily2_settings_block am2-unhide-wrap">
-            <button id="amily2_unhide_all_button" class="menu_button secondary small_button interactable" title="一键取消所有已隐藏的消息" type="button">
+            <button id="amily2_unhide_all_button" class="menu_button secondary small_button interactable" data-amily-i18n-title="summaryWorkflow.unhideAllTip" title="一键取消所有已隐藏的消息" type="button">
                 <i class="fas fa-folder-open"></i>
-                <span>全部可见</span>
+                <span data-amily-i18n="summaryWorkflow.unhideAll">全部可见</span>
             </button>
         </div>
     </div>
@@ -46,80 +46,80 @@
 
 
     <div class="amily2_settings_block">
-        <label for="amily2_auto_hide_threshold">始终保留最近消息数: <span id="amily2_auto_hide_threshold_value">30</span></label>
+        <label for="amily2_auto_hide_threshold"><span data-amily-i18n="summaryWorkflow.keepMessages">始终保留最近消息数:</span> <span id="amily2_auto_hide_threshold_value">30</span></label>
         <input id="amily2_auto_hide_threshold" type="range" min="5" max="100" step="1" value="30" />
-        <small class="notes">始终在上下文里保留的最新消息条数。</small>
+        <small class="notes" data-amily-i18n="summaryWorkflow.keepMessagesHelp">始终在上下文里保留的最新消息条数。</small>
     </div>
 </fieldset>
 <fieldset class="settings-group">
-    <legend><i class="fas fa-pen-ruler"></i> 手动隐藏消息</legend>
+    <legend><i class="fas fa-pen-ruler"></i> <span data-amily-i18n="summaryWorkflow.manualHide">手动隐藏消息</span></legend>
 
 
     <div class="manual-command-block">
-        <label>隐藏范围:</label>
-        <input type="number" id="amily2_manual_hide_from" class="manual-input" placeholder="起始层">
+        <label data-amily-i18n="summaryWorkflow.hideRange">隐藏范围:</label>
+        <input type="number" id="amily2_manual_hide_from" class="manual-input" data-amily-i18n-placeholder="summaryWorkflow.startFloor" placeholder="起始层">
         <span class="manual-command-divider">-</span>
-        <input type="number" id="amily2_manual_hide_to" class="manual-input" placeholder="结束层">
+        <input type="number" id="amily2_manual_hide_to" class="manual-input" data-amily-i18n-placeholder="summaryWorkflow.endFloor" placeholder="结束层">
         <button id="amily2_manual_hide_confirm" class="menu_button primary small_button interactable">
-            <i class="fas fa-eye-slash"></i> 确认隐藏
+            <i class="fas fa-eye-slash"></i> <span data-amily-i18n="summaryWorkflow.confirmHide">确认隐藏</span>
         </button>
     </div>
 
     <div class="manual-command-block">
-        <label>取消隐藏:</label>
-        <input type="number" id="amily2_manual_unhide_from" class="manual-input" placeholder="起始层">
+        <label data-amily-i18n="summaryWorkflow.unhideRange">取消隐藏:</label>
+        <input type="number" id="amily2_manual_unhide_from" class="manual-input" data-amily-i18n-placeholder="summaryWorkflow.startFloor" placeholder="起始层">
         <span class="manual-command-divider">-</span>
-        <input type="number" id="amily2_manual_unhide_to" class="manual-input" placeholder="结束层">
+        <input type="number" id="amily2_manual_unhide_to" class="manual-input" data-amily-i18n-placeholder="summaryWorkflow.endFloor" placeholder="结束层">
         <button id="amily2_manual_unhide_confirm" class="menu_button accent small_button interactable">
-            <i class="fas fa-eye"></i> 确认取消
+            <i class="fas fa-eye"></i> <span data-amily-i18n="summaryWorkflow.confirmUnhide">确认取消</span>
         </button>
     </div>
 
-    <small class="notes" style="text-align: center; display: block; margin-top: 10px;">
+    <small class="notes" data-amily-i18n="summaryWorkflow.hideHelp" style="text-align: center; display: block; margin-top: 10px;">
         提示：若「起始层」留空，则只操作「结束层」那一层。
     </small>
 </fieldset>
 
 
 <fieldset class="settings-group">
-    <legend><i class="fas fa-gavel"></i> 总结写入设置</legend>
+    <legend><i class="fas fa-gavel"></i> <span data-amily-i18n="summaryWorkflow.writeSettings">总结写入设置</span></legend>
     <div class="lore-config-grid">
         <!-- Left Column -->
         <div class="amily2_settings_block grid-left-col">
-            <label>总结写入位置:</label>
+            <label data-amily-i18n="summaryWorkflow.writeTarget">总结写入位置:</label>
             <div class="radio-group vertical">
                 <input type="radio" id="amily2_target_main" name="amily2_lorebook_target" value="character_main" checked>
-                <label for="amily2_target_main">写入【主世界书】</label>
+                <label for="amily2_target_main" data-amily-i18n="summaryWorkflow.mainWorldbook">写入【主世界书】</label>
                 <input type="radio" id="amily2_target_dedicated" name="amily2_lorebook_target" value="dedicated">
-                <label for="amily2_target_dedicated">写入【独立档案】</label>
+                <label for="amily2_target_dedicated" data-amily-i18n="summaryWorkflow.dedicatedWorldbook">写入【独立档案】</label>
             </div>
-            <small class="notes">更推荐独立档案：会新建一本世界书专门放总结。</small>
+            <small class="notes" data-amily-i18n="summaryWorkflow.dedicatedHelp">更推荐独立档案：会新建一本世界书专门放总结。</small>
         </div>
         <!-- Right Column -->
         <div class="grid-right-col">
             <div class="amily2_settings_block">
-                <label for="amily2_lore_activation_mode">默认激活方式:</label>
+                <label for="amily2_lore_activation_mode" data-amily-i18n="summaryWorkflow.activation">默认激活方式:</label>
                 <select id="amily2_lore_activation_mode" class="text_pole">
-                    <option value="always">始终启用</option>
-                    <option value="keyed">关键词触发</option>
+                    <option value="always" data-amily-i18n="summaryWorkflow.always">始终启用</option>
+                    <option value="keyed" data-amily-i18n="summaryWorkflow.keyed">关键词触发</option>
                 </select>
             </div>
             <div class="amily2_settings_block">
-                <label for="amily2_lore_insertion_position">默认插入位置:</label>
+                <label for="amily2_lore_insertion_position" data-amily-i18n="summaryWorkflow.position">默认插入位置:</label>
                 <select id="amily2_lore_insertion_position" class="text_pole">
-                    <option value="before_char">角色定义之前</option>
-                    <option value="after_char">角色定义之后</option>
-                    <option value="before_an">作者注释之前</option>
-                    <option value="after_an">作者注释之后</option>
-                    <option value="at_depth">按深度插入</option>
+                    <option value="before_char" data-amily-i18n="summaryWorkflow.beforeChar">角色定义之前</option>
+                    <option value="after_char" data-amily-i18n="summaryWorkflow.afterChar">角色定义之后</option>
+                    <option value="before_an" data-amily-i18n="summaryWorkflow.beforeAn">作者注释之前</option>
+                    <option value="after_an" data-amily-i18n="summaryWorkflow.afterAn">作者注释之后</option>
+                    <option value="at_depth" data-amily-i18n="summaryWorkflow.atDepth">按深度插入</option>
                 </select>
             </div>
             <div id="amily2_lore_depth_container" class="amily2_settings_block" style="display: none;">
-                <label for="amily2_lore_depth_input">插入深度:</label>
-                <input id="amily2_lore_depth_input" title="深度" class="text_pole" type="number" name="depth" placeholder="2" min="0" max="9999">
+                <label for="amily2_lore_depth_input" data-amily-i18n="summaryWorkflow.depth">插入深度:</label>
+                <input id="amily2_lore_depth_input" data-amily-i18n-title="summaryWorkflow.depthTip" title="深度" class="text_pole" type="number" name="depth" placeholder="2" min="0" max="9999">
             </div>
             <div class="amily2_settings_block">
-                <button id="amily2_save_lore_settings" class="menu_button"><i class="fas fa-save"></i> 保存设置</button>
+                <button id="amily2_save_lore_settings" class="menu_button"><i class="fas fa-save"></i> <span data-amily-i18n="summaryWorkflow.saveSettings">保存设置</span></button>
                 <small id="amily2_lore_save_status" class="notes" style="text-align: center; width: 100%;"></small>
             </div>
         </div>
@@ -128,12 +128,12 @@
 
 
 <fieldset class="settings-group am2-compact-block" id="amily2_ngms_fieldset">
-    <legend><i class="fas fa-satellite-dish"></i> 总结专用接口</legend>
+    <legend><i class="fas fa-satellite-dish"></i> <span data-amily-i18n="summaryWorkflow.summaryApi">总结专用接口</span></legend>
 
     <div class="am2-inline-toggle-row">
         <div class="am2-inline-toggle-text">
-            <label for="amily2_ngms_enabled">单独给总结用另一套模型</label>
-            <small class="notes">关掉时不占空间；开了可与主接口并存。也可在「API 连接配置」里分配。</small>
+            <label for="amily2_ngms_enabled" data-amily-i18n="summaryWorkflow.separateModel">单独给总结用另一套模型</label>
+            <small class="notes" data-amily-i18n="summaryWorkflow.separateModelHelp">关掉时不占空间；开了可与主接口并存。也可在「API 连接配置」里分配。</small>
         </div>
         <label class="toggle-switch">
             <input id="amily2_ngms_enabled" type="checkbox" />
@@ -143,28 +143,28 @@
 
     <div id="amily2_ngms_content" class="am2-ngms-body" style="display: none;">
         <div class="control-group">
-            <label for="amily2_ngms_api_mode">调用方式</label>
+            <label for="amily2_ngms_api_mode" data-amily-i18n="summaryWorkflow.apiMode">调用方式</label>
             <select id="amily2_ngms_api_mode" class="text_pole">
-                <option value="openai_test">通用接口（自填地址）</option>
-                <option value="sillytavern_preset">SillyTavern 预设</option>
+                <option value="openai_test" data-amily-i18n="summaryWorkflow.genericApi">通用接口（自填地址）</option>
+                <option value="sillytavern_preset" data-amily-i18n="summaryWorkflow.tavernPreset">SillyTavern 预设</option>
             </select>
         </div>
 
         <div id="amily2_ngms_config_panel">
             <div id="amily2_ngms_compatible_config">
                 <div class="control-group">
-                    <label for="amily2_ngms_api_url">接口地址</label>
+                    <label for="amily2_ngms_api_url" data-amily-i18n="summaryWorkflow.apiUrl">接口地址</label>
                     <input type="text" id="amily2_ngms_api_url" class="text_pole" placeholder="https://api.openai.com/v1" />
                 </div>
                 <div class="control-group">
-                    <label for="amily2_ngms_api_key">密钥</label>
+                    <label for="amily2_ngms_api_key" data-amily-i18n="summaryWorkflow.apiKey">密钥</label>
                     <input type="password" id="amily2_ngms_api_key" class="text_pole" placeholder="sk-..." />
                 </div>
                 <div class="control-group">
-                    <label for="amily2_ngms_model">模型</label>
+                    <label for="amily2_ngms_model" data-amily-i18n="summaryWorkflow.model">模型</label>
                     <div class="select-with-refresh">
                         <select id="amily2_ngms_model_select" class="text_pole" style="flex-grow: 1; display: none;">
-                            <option value="">— 选择模型 —</option>
+                            <option value="" data-amily-i18n="summaryWorkflow.modelPlaceholder">— 选择模型 —</option>
                         </select>
                         <input type="text" id="amily2_ngms_model" class="text_pole" placeholder="gpt-4" style="flex-grow: 1;" />
                     </div>
@@ -173,24 +173,24 @@
 
             <div id="amily2_ngms_preset_config" style="display: none;">
                 <div class="control-group">
-                    <label for="amily2_ngms_tavern_profile">SillyTavern 预设</label>
+                    <label for="amily2_ngms_tavern_profile" data-amily-i18n="summaryWorkflow.tavernPreset">SillyTavern 预设</label>
                     <select id="amily2_ngms_tavern_profile" class="text_pole">
-                        <option value="">— 选择预设 —</option>
+                        <option value="" data-amily-i18n="summaryWorkflow.presetPlaceholder">— 选择预设 —</option>
                     </select>
                 </div>
             </div>
 
             <div class="am2-inline-toggle-row" style="margin-top: 8px;">
-                <label for="amily2_ngms_fakestream_enabled">防超时（流式收完再拼）</label>
+                <label for="amily2_ngms_fakestream_enabled" data-amily-i18n="summaryWorkflow.fakeStream">防超时（流式收完再拼）</label>
                 <input type="checkbox" id="amily2_ngms_fakestream_enabled" style="width: auto;" />
             </div>
 
             <div class="ngms-button-row am2-action-row">
                 <button id="amily2_ngms_test_connection" class="menu_button primary small_button interactable" type="button">
-                    <i class="fas fa-plug"></i> 测试连接
+                    <i class="fas fa-plug"></i> <span data-amily-i18n="summaryWorkflow.testConnection">测试连接</span>
                 </button>
-                <button id="amily2_ngms_fetch_models" class="menu_button secondary small_button interactable" type="button" title="获取可用模型列表">
-                    <i class="fas fa-download"></i> 获取模型
+                <button id="amily2_ngms_fetch_models" class="menu_button secondary small_button interactable" type="button" data-amily-i18n-title="summaryWorkflow.fetchModelsTip" title="获取可用模型列表">
+                    <i class="fas fa-download"></i> <span data-amily-i18n="summaryWorkflow.fetchModels">获取模型</span>
                 </button>
             </div>
         </div>
@@ -198,39 +198,39 @@
 </fieldset>
 
 <fieldset class="settings-group" id="amily2_manual_historiography_bureau">
-    <legend><i class="fas fa-gavel"></i> 手动总结</legend>
-    <small class="notes" style="text-align: center; display: block; margin-bottom: 15px;">
+    <legend><i class="fas fa-gavel"></i> <span data-amily-i18n="summary.manualTitle">手动总结</span></legend>
+    <small class="notes" data-amily-i18n="summaryWorkflow.manualHelp" style="text-align: center; display: block; margin-bottom: 15px;">
         自选一段聊天范围，生成总结并保存。
     </small>
 
     <div class="amily2_settings_block">
-        <label for="historiography_prompt_protocol_selector">提示词版本:</label>
-        <select id="historiography_prompt_protocol_selector" class="text_pole">
-            <option value="segmented-v1">分段史册 v1（当前）</option>
-            <option value="legacy-v0.1">滚动史册 v0.1（兼容）</option>
+        <label for="historiography_prompt_protocol_selector" data-amily-i18n="summaryWorkflow.promptVersion">请求提示词版本:</label>
+        <select id="historiography_prompt_protocol_selector" class="text_pole" data-amily-i18n-title="summaryWorkflow.promptVersionHelp" title="只切换总结请求使用的提示词；史册数据格式由活动史册与下方设置决定。">
+            <option value="segmented-v1" data-amily-i18n="summaryWorkflow.promptV1">提示词 v1（当前）</option>
+            <option value="legacy-v0.1" data-amily-i18n="summaryWorkflow.promptLegacy">提示词 v0.1（兼容）</option>
         </select>
     </div>
 
 
     <fieldset class="settings-group" style="border-style: dashed;">
-        <legend>小总结</legend>
+        <legend data-amily-i18n="summary.small">小总结</legend>
 
 
         <div class="amily2_settings_block">
             <div class="label-with-button">
-                <label for="amily2_mhb_small_prompt_selector">选择要编辑的提示词:</label>
-                <i id="amily2_mhb_small_expand_editor" class="editor_maximize fa-solid fa-maximize right_menu_button interactable" title="展开编辑器" tabindex="0"></i>
+                <label for="amily2_mhb_small_prompt_selector" data-amily-i18n="summaryWorkflow.editPrompt">选择要编辑的提示词:</label>
+                <i id="amily2_mhb_small_expand_editor" class="editor_maximize fa-solid fa-maximize right_menu_button interactable" data-amily-i18n-title="summaryWorkflow.expandEditor" title="展开编辑器" tabindex="0"></i>
             </div>
             <select id="amily2_mhb_small_prompt_selector" class="text_pole">
-                <option value="jailbreak">小总结主要提示词</option>
-                <option value="summary">小总结任务提示词</option>
+                <option value="jailbreak" data-amily-i18n="summary.smallPrimaryPrompt">小总结主要提示词</option>
+                <option value="summary" data-amily-i18n="summary.smallTaskPrompt">小总结任务提示词</option>
             </select>
         </div>
         <div class="amily2_settings_block prompt-editor-area">
             <textarea id="amily2_mhb_small_editor" class="text_pole" rows="3"></textarea>
             <div class="editor-buttons-panel">
-                <button id="amily2_mhb_small_save_button" class="menu_button accent small_button interactable"><i class="fas fa-save"></i> 保存当前</button>
-                <button id="amily2_mhb_small_restore_button" class="menu_button secondary small_button interactable"><i class="fas fa-undo"></i> 恢复默认</button>
+                <button id="amily2_mhb_small_save_button" class="menu_button accent small_button interactable"><i class="fas fa-save"></i> <span data-amily-i18n="actions.saveCurrent">保存当前</span></button>
+                <button id="amily2_mhb_small_restore_button" class="menu_button secondary small_button interactable"><i class="fas fa-undo"></i> <span data-amily-i18n="actions.restoreDefault">恢复默认</span></button>
             </div>
         </div>
 
@@ -238,23 +238,23 @@
         <div class="mhb-controls-wrapper">
 
             <div class="manual-command-block">
-                <label>手动总结范围:</label>
-                <input type="number" id="amily2_mhb_small_start_floor" class="manual-input" placeholder="起始层">
+                <label data-amily-i18n="summaryWorkflow.manualRange">手动总结范围:</label>
+                <input type="number" id="amily2_mhb_small_start_floor" class="manual-input" data-amily-i18n-placeholder="summaryWorkflow.startFloor" placeholder="起始层">
                 <span class="manual-command-divider">-</span>
-                <input type="number" id="amily2_mhb_small_end_floor" class="manual-input" placeholder="结束层">
+                <input type="number" id="amily2_mhb_small_end_floor" class="manual-input" data-amily-i18n-placeholder="summaryWorkflow.endFloor" placeholder="结束层">
                 <button id="amily2_mhb_small_manual_execute" class="menu_button primary small_button interactable">
-                    <i class="fas fa-fire"></i> 开始
+                    <i class="fas fa-fire"></i> <span data-amily-i18n="summaryWorkflow.begin">开始</span>
                 </button>
             </div>
 
             <div class="hly-control-block" style="margin-top: 10px;">
-                <label style="font-weight: bold;">提取规则</label>
+                <label style="font-weight: bold;" data-amily-i18n="summaryWorkflow.extractionRules">提取规则</label>
                 <select id="historiography-rule-profile-select" class="hly-imperial-brush" style="width: 100%;"></select>
-                <small class="hly-notes">选择在「规则配置」里建好的规则，用于小总结和大总结。</small>
+                <small class="hly-notes" data-amily-i18n="summaryWorkflow.extractionHelp">选择在「规则配置」里建好的规则，用于小总结和大总结。</small>
             </div>
             <div class="hly-button-group" style="justify-content: flex-start; margin-top: 10px; display: flex; align-items: center; gap: 20px;">
                 <div class="auto-control-pair" style="margin-bottom: 0;">
-                    <label for="historiography_auto_summary_interactive" title="开启后，自动总结会弹出确认窗口，而不是在后台静默运行。">总结前弹出确认:</label>
+                    <label for="historiography_auto_summary_interactive" data-amily-i18n="summaryWorkflow.confirmBefore" data-amily-i18n-title="summaryWorkflow.confirmBeforeHelp" title="开启后，自动总结先预览并确认原文；关闭则直接生成。两种方式都需要确认生成结果后才会写入。">生成前确认原文:</label>
                     <label class="toggle-switch">
                         <input id="historiography_auto_summary_interactive" type="checkbox" />
                         <span class="slider"></span>
@@ -265,13 +265,13 @@
 
             <div class="auto-command-block" id="amily2_mhb_auto_command_block">
 
-                <button id="amily2_mhb_small_expedition_execute" class="menu_button primary small_button interactable" title="立刻把所有还没总结过的历史一次性总结完。">
-                    <i class="fas fa-flag-checkered"></i> 开始总结
+                <button id="amily2_mhb_small_expedition_execute" class="menu_button primary small_button interactable" data-amily-i18n-title="summaryWorkflow.startHelp" title="立刻把所有还没总结过的历史一次性总结完。">
+                    <i class="fas fa-flag-checkered"></i> <span data-amily-i18n="summaryWorkflow.start">开始总结</span>
                 </button>
 
 
                 <div class="auto-control-pair">
-                    <label for="amily2_mhb_small_auto_enabled" title="聊天时在后台自动做小总结。">后台自动总结:</label>
+                    <label for="amily2_mhb_small_auto_enabled" data-amily-i18n="summaryWorkflow.autoSummary" data-amily-i18n-title="summaryWorkflow.autoSummaryHelp" title="聊天时在后台自动做小总结。">后台自动总结:</label>
                     <label class="toggle-switch">
                         <input id="amily2_mhb_small_auto_enabled" type="checkbox" />
                         <span class="slider"></span>
@@ -280,7 +280,7 @@
 
 
                 <div class="auto-control-pair">
-                    <label for="historiography_write_to_lorebook" title="把生成的总结写入世界书。">写入世界书:</label>
+                    <label for="historiography_write_to_lorebook" data-amily-i18n="summaryWorkflow.writeWorldbook" data-amily-i18n-title="summaryWorkflow.writeWorldbookHelp" title="把生成的总结写入世界书。">写入世界书:</label>
                     <label class="toggle-switch">
                         <input id="historiography_write_to_lorebook" type="checkbox" checked />
                         <span class="slider"></span>
@@ -288,7 +288,7 @@
                 </div>
 
                 <div class="auto-control-pair">
-                    <label for="historiography_ingest_to_rag" title="把生成的总结存进智能检索知识库。">写入智能检索:</label>
+                    <label for="historiography_ingest_to_rag" data-amily-i18n="summaryWorkflow.writeRag" data-amily-i18n-title="summaryWorkflow.writeRagHelp" title="把生成的总结存进智能检索知识库。">写入智能检索:</label>
                     <label class="toggle-switch">
                         <input id="historiography_ingest_to_rag" type="checkbox" />
                         <span class="slider"></span>
@@ -296,23 +296,23 @@
                 </div>
 
                 <div class="auto-control-pair">
-                    <label for="amily2_mhb_small_trigger_count" title="后台自动总结和开始总结时，每次处理的消息层数。">每次总结层数:</label>
+                    <label for="amily2_mhb_small_trigger_count" data-amily-i18n="summaryWorkflow.batchSize" data-amily-i18n-title="summaryWorkflow.batchSizeHelp" title="后台自动总结和开始总结时，每次处理的消息层数。">每次总结层数:</label>
                     <input id="amily2_mhb_small_trigger_count" type="number" min="1" class="text_pole" style="width: 70px;" placeholder="30">
                 </div>
 
                 <div class="auto-control-pair">
-                    <label for="historiography_retention_count" title="最近这几层对话不参与自动总结。">保留最近层数:</label>
+                    <label for="historiography_retention_count" data-amily-i18n="summaryWorkflow.retention" data-amily-i18n-title="summaryWorkflow.retentionHelp" title="最近这几层对话不参与自动总结。">保留最近层数:</label>
                     <input id="historiography_retention_count" type="number" min="0" class="text_pole" style="width: 70px;" placeholder="5">
                 </div>
 
                 <div class="auto-control-pair">
-                    <label for="historiography_max_retries" title="总结失败时自动再试几次。">失败重试次数:</label>
+                    <label for="historiography_max_retries" data-amily-i18n="summaryWorkflow.retries" data-amily-i18n-title="summaryWorkflow.retriesHelp" title="总结失败时自动再试几次。">失败重试次数:</label>
                     <input id="historiography_max_retries" type="number" min="0" max="10" class="text_pole" style="width: 70px;" placeholder="2">
                 </div>
             </div>
 
 
-            <small class="notes" style="text-align: center; display: block; margin-top: 5px;">
+            <small class="notes" data-amily-i18n="summaryWorkflow.autoHelp" style="text-align: center; display: block; margin-top: 5px;">
                 【开始总结】将立即清算所有未记录的历史。 【后台自动总结】则聊天时在后台自动做小总结。
             </small>
 
@@ -324,41 +324,44 @@
     <hr class="header-divider" style="margin: 20px 0;">
 
     <fieldset class="settings-group" style="border-style: dashed;">
-        <legend>史册格式与迁移</legend>
+        <legend data-amily-i18n="summaryWorkflow.formatMigration">史册格式与迁移</legend>
 
         <div class="auto-control-pair">
-            <label for="historiography_preferred_protocol" title="只决定没有活动史册时创建哪种格式；已有史册按其自身协议运行。">新建史册格式:</label>
+            <label for="historiography_preferred_protocol" data-amily-i18n="summaryWorkflow.newFormat" data-amily-i18n-title="summaryWorkflow.newFormatHelp" title="只决定没有活动史册时创建哪种格式；已有史册按其自身协议运行。">新建史册格式:</label>
             <select id="historiography_preferred_protocol" class="text_pole" style="width: 190px;">
-                <option value="segmented-v1">分段史册 v1</option>
-                <option value="legacy-v0.1">滚动史册 v0.1</option>
+                <option value="segmented-v1" data-amily-i18n="summaryWorkflow.segmented">分段史册 v1</option>
+                <option value="legacy-v0.1" data-amily-i18n="summaryWorkflow.legacy">滚动史册 v0.1</option>
             </select>
         </div>
 
         <div id="historiography_ledger_status" class="sm-intro-box" style="margin: 10px 0;">
-            <small class="notes">尚未读取当前活动史册。</small>
+            <small class="notes" data-amily-i18n="summaryWorkflow.notRead">尚未读取当前活动史册。</small>
         </div>
 
         <div class="editor-buttons-panel" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px;">
             <button id="historiography_refresh_ledger_status" class="menu_button secondary small_button interactable" type="button">
-                <i class="fas fa-sync-alt"></i> 刷新状态
+                <i class="fas fa-sync-alt"></i> <span data-amily-i18n="summaryWorkflow.refreshStatus">刷新状态</span>
             </button>
             <button id="historiography_preview_migration" class="menu_button secondary small_button interactable" type="button">
-                <i class="fas fa-search"></i> 预览旧账迁移
+                <i class="fas fa-search"></i> <span data-amily-i18n="summaryWorkflow.previewMigration">预览旧账迁移</span>
             </button>
             <button id="historiography_execute_migration" class="menu_button primary small_button interactable" type="button" disabled>
-                <i class="fas fa-code-branch"></i> 执行迁移
+                <i class="fas fa-code-branch"></i> <span data-amily-i18n="summaryWorkflow.executeMigration">执行迁移</span>
             </button>
             <button id="historiography_rollback_segmented" class="menu_button secondary small_button interactable" type="button" disabled>
-                <i class="fas fa-undo"></i> 回滚为旧格式
+                <i class="fas fa-undo"></i> <span data-amily-i18n="summaryWorkflow.rollbackLegacy">回滚为旧格式</span>
             </button>
-            <button id="historiography_retry_segment_vectors" class="menu_button secondary small_button interactable" type="button" disabled title="重新检查失败任务；Embedding 模型或维度变化时，按新 fingerprint 重建全部宏史卷分段索引。">
-                <i class="fas fa-database"></i> 检查/重建向量
+            <button id="historiography_retry_segment_vectors" class="menu_button secondary small_button interactable" type="button" disabled data-amily-i18n-title="summary.vectorRebuildHelp" title="重新检查失败任务；Embedding 模型或维度变化时，按新 fingerprint 重建全部大总结分段索引。">
+                <i class="fas fa-database"></i> <span data-amily-i18n="summaryWorkflow.rebuildVectors">检查/重建向量</span>
             </button>
-            <button id="historiography_export_diagnostics" class="menu_button secondary small_button interactable" type="button" title="校验分段史册并下载不含正文的 JSON 诊断报告；孤儿条目只报告，不自动删除。">
-                <i class="fas fa-file-export"></i> 校验/导出诊断
+            <button id="historiography_export_diagnostics" class="menu_button secondary small_button interactable" type="button" data-amily-i18n-title="summaryWorkflow.exportDiagnosticsHelp" title="校验分段史册并下载不含正文的 JSON 诊断报告；孤儿条目只报告，不自动删除。">
+                <i class="fas fa-file-export"></i> <span data-amily-i18n="summaryWorkflow.exportDiagnostics">校验/导出诊断</span>
             </button>
-            <button id="historiography_repair_safe_states" class="menu_button secondary small_button interactable" type="button" disabled title="仅按刚生成的诊断恢复 Manifest、尾部、分段和源归档的启用/禁用位。">
-                <i class="fas fa-tools"></i> 应用安全加载修复
+            <button id="historiography_repair_safe_states" class="menu_button secondary small_button interactable" type="button" disabled data-amily-i18n-title="summaryWorkflow.repairHelp" title="仅按刚生成的诊断恢复 Manifest、尾部、分段和源归档的启用/禁用位。">
+                <i class="fas fa-tools"></i> <span data-amily-i18n="summaryWorkflow.applyRepair">应用安全加载修复</span>
+            </button>
+            <button id="historiography_safe_edit" class="menu_button secondary small_button interactable" type="button" disabled data-amily-i18n-title="summary.safeEditHelp" title="在受控事务中修订小总结或大总结正文；结构、哈希与 revision 由程序维护。">
+                <i class="fas fa-edit"></i> <span data-amily-i18n="summaryWorkflow.safeEdit">安全修改总结</span>
             </button>
         </div>
     </fieldset>
@@ -367,25 +370,25 @@
     <hr class="header-divider" style="margin: 20px 0;">
 
     <fieldset class="settings-group" style="border-style: dashed;">
-        <legend>总结归档与恢复</legend>
-        <small class="notes" style="text-align: center; display: block; margin-bottom: 15px;">
+        <legend data-amily-i18n="summaryWorkflow.archiveRestore">总结归档与恢复</legend>
+        <small class="notes" data-amily-i18n="summaryWorkflow.archiveHelp" style="text-align: center; display: block; margin-bottom: 15px;">
             管理多份总结记录，可以封存当前进度，或恢复以前的总结。
         </small>
 
         <div class="amily2_settings_block">
             <button id="amily2_mhb_archive_current" class="menu_button secondary small_button interactable" style="width: 100%; margin-bottom: 10px;">
-                <i class="fas fa-archive"></i> 归档当前总结流水并停用
+                <i class="fas fa-archive"></i> <span data-amily-i18n="summaryWorkflow.archiveCurrent">归档当前总结流水并停用</span>
             </button>
         </div>
 
         <div class="mhb-selector-container">
             <div class="mhb-selector-group">
-                <label for="amily2_mhb_archive_selector">选择要恢复的旧总结</label>
+                <label for="amily2_mhb_archive_selector" data-amily-i18n="summaryWorkflow.restoreSelection">选择要恢复的旧总结</label>
                 <div class="select-with-refresh">
                     <select id="amily2_mhb_archive_selector" class="text_pole" style="flex-grow: 1;">
-                        <option value="">请刷新列表...</option>
+                        <option value="" data-amily-i18n="summaryWorkflow.refreshListPlease">请刷新列表...</option>
                     </select>
-                    <button id="amily2_mhb_refresh_archives" class="menu_button secondary small_button interactable" title="刷新归档列表">
+                    <button id="amily2_mhb_refresh_archives" class="menu_button secondary small_button interactable" data-amily-i18n-title="summaryWorkflow.refreshArchives" title="刷新归档列表">
                         <i class="fas fa-sync-alt"></i>
                     </button>
                 </div>
@@ -393,7 +396,7 @@
         </div>
 
         <button id="amily2_mhb_restore_archive" class="menu_button primary small_button interactable" style="margin-top: 10px; width: 100%;">
-            <i class="fas fa-trash-restore"></i> 恢复所选总结（会先归档当前）
+            <i class="fas fa-trash-restore"></i> <span data-amily-i18n="summaryWorkflow.restoreSelected">恢复所选总结（会先归档当前）</span>
         </button>
 
     </fieldset>
@@ -402,24 +405,24 @@
     <hr class="header-divider" style="margin: 20px 0;">
 
     <fieldset class="settings-group" style="border-style: dashed;">
-        <legend>大总结（合并精炼）</legend>
+        <legend data-amily-i18n="summary.largeSection">大总结（合并精炼）</legend>
 
 
         <div class="amily2_settings_block">
             <div class="label-with-button">
-                <label for="amily2_mhb_large_prompt_selector">选择要编辑的提示词:</label>
-                <i id="amily2_mhb_large_expand_editor" class="editor_maximize fa-solid fa-maximize right_menu_button interactable" title="展开编辑器" tabindex="0"></i>
+                <label for="amily2_mhb_large_prompt_selector" data-amily-i18n="summaryWorkflow.editPrompt">选择要编辑的提示词:</label>
+                <i id="amily2_mhb_large_expand_editor" class="editor_maximize fa-solid fa-maximize right_menu_button interactable" data-amily-i18n-title="summaryWorkflow.expandEditor" title="展开编辑器" tabindex="0"></i>
             </div>
             <select id="amily2_mhb_large_prompt_selector" class="text_pole">
-                <option value="jailbreak">大总结主要提示词</option>
-                <option value="summary">大总结任务提示词</option>
+                <option value="jailbreak" data-amily-i18n="summary.largePrimaryPrompt">大总结主要提示词</option>
+                <option value="summary" data-amily-i18n="summary.largeTaskPrompt">大总结任务提示词</option>
             </select>
         </div>
         <div class="amily2_settings_block prompt-editor-area">
             <textarea id="amily2_mhb_large_editor" class="text_pole" rows="4"></textarea>
             <div class="editor-buttons-panel">
-                <button id="amily2_mhb_large_save_button" class="menu_button accent small_button interactable"><i class="fas fa-save"></i> 保存当前</button>
-                <button id="amily2_mhb_large_restore_button" class="menu_button secondary small_button interactable"><i class="fas fa-undo"></i> 恢复默认</button>
+                <button id="amily2_mhb_large_save_button" class="menu_button accent small_button interactable"><i class="fas fa-save"></i> <span data-amily-i18n="actions.saveCurrent">保存当前</span></button>
+                <button id="amily2_mhb_large_restore_button" class="menu_button secondary small_button interactable"><i class="fas fa-undo"></i> <span data-amily-i18n="actions.restoreDefault">恢复默认</span></button>
             </div>
         </div>
 
@@ -428,72 +431,71 @@
 
             <div class="sm-intro-box" style="border-left: 3px solid #58a6ff; margin-bottom: 12px;">
                 <small class="notes" style="display: block; line-height: 1.6;">
-                    <strong>分段宏史卷：</strong>每次只编纂活动尾部最旧的连续微言录，不会把旧宏史卷再次发送给模型。
-                    分段、源微言录归档、尾部裁剪和 Manifest 更新在同一次严格保存中完成。旧格式仍可选用兼容提示词并回滚。
+                    <strong data-amily-i18n="summary.segmentedHeading">分段大总结：</strong><span data-amily-i18n="summary.segmentedHelp">每次只合并活动尾部最旧的连续小总结，不会把旧大总结再次发送给模型。分段、源小总结归档、尾部裁剪和 Manifest 更新在同一次严格保存中完成。旧格式仍可选用兼容提示词并回滚。</span>
                 </small>
             </div>
 
             <button id="amily2_mhb_large_refine_active" class="menu_button primary small_button interactable" style="width: 100%; margin-bottom: 12px;">
-                <i class="fas fa-compress-alt"></i> 合并当前活动史册
+                <i class="fas fa-compress-alt"></i> <span data-amily-i18n="summaryWorkflow.mergeActive">合并当前活动史册</span>
             </button>
 
             <div class="auto-control-pair amily2-refinement-limit-row">
-                <label for="historiography_refine_reminder_blocks" title="尚未合并的微言录达到该数量时提醒；只提醒，不自动调用模型。">合并提醒块数:</label>
+                <label for="historiography_refine_reminder_blocks" data-amily-i18n="summaryWorkflow.reminderBlocks" data-amily-i18n-title="summary.reminderHelp" title="尚未合并的小总结达到该数量时提醒；只提醒，不自动调用模型。">合并提醒块数:</label>
                 <input id="historiography_refine_reminder_blocks" type="number" min="5" max="500" class="text_pole" style="width: 90px;" value="40">
             </div>
 
             <div class="auto-control-pair amily2-refinement-limit-row">
-                <label for="historiography_segment_max_blocks" title="分段协议每次最多选取最旧的连续微言录块数，仍受输入 Token 上限约束。">单次最多编纂块数:</label>
+                <label for="historiography_segment_max_blocks" data-amily-i18n="summaryWorkflow.maxBlocks" data-amily-i18n-title="summary.segmentLimitHelp" title="分段协议每次最多选取最旧的连续小总结块数，仍受输入 Token 上限约束。">单次最多编纂块数:</label>
                 <input id="historiography_segment_max_blocks" type="number" min="1" max="20" class="text_pole" style="width: 90px;" value="4">
             </div>
 
             <div class="auto-control-pair amily2-refinement-limit-row">
-                <label for="historiography_refine_input_max_tokens" title="活动史册及其送入重铸模型前的估算 Token 硬上限；达到上限后会要求先合并。">史册/重铸输入上限:</label>
+                <label for="historiography_refine_input_max_tokens" data-amily-i18n="summaryWorkflow.inputLimit" data-amily-i18n-title="summaryWorkflow.inputLimitHelp" title="活动史册及其送入重铸模型前的估算 Token 硬上限；达到上限后会要求先合并。">史册/重铸输入上限:</label>
                 <input id="historiography_refine_input_max_tokens" type="number" min="5000" max="128000" step="1000" class="text_pole" style="width: 100px;" value="48000">
             </div>
 
             <div class="auto-control-pair amily2-refinement-limit-row">
-                <label for="historiography_rolling_summary_max_tokens" title="活动宏史卷的估算 Token 硬上限；超限结果不会写入，必须继续缩减。">活动宏史卷上限:</label>
+                <label for="historiography_rolling_summary_max_tokens" data-amily-i18n="summary.activeLimit" data-amily-i18n-title="summary.activeLimitHelp" title="活动大总结的估算 Token 硬上限；超限结果不会写入，必须继续缩减。">活动大总结上限:</label>
                 <input id="historiography_rolling_summary_max_tokens" type="number" min="1000" max="32000" step="500" class="text_pole" style="width: 100px;" value="12000">
             </div>
 
             <div class="auto-control-pair amily2-refinement-limit-row">
-                <label for="historiography_vector_retain_recent" title="向量回读验证后，最多保留在世界书上下文中的最近宏史卷分段数；Token 上限优先。">向量常驻最近段:</label>
+                <label for="historiography_vector_retain_recent" data-amily-i18n="summaryWorkflow.recentSegments" data-amily-i18n-title="summary.vectorRetainHelp" title="向量回读验证后，最多保留在世界书上下文中的最近大总结分段数；建议常驻 1~3 段，Token 上限优先。">向量常驻最近段:</label>
                 <input id="historiography_vector_retain_recent" type="number" min="1" max="100" class="text_pole" style="width: 100px;" value="2">
             </div>
 
             <div class="auto-control-pair amily2-refinement-limit-row">
-                <label for="historiography_resident_max_tokens" title="已加载宏史卷分段与活动微言录尾部的合计本地估算上限；未验证分段不会为满足预算而被强制卸载。">常驻史册总上限:</label>
+                <label for="historiography_resident_max_tokens" data-amily-i18n="summaryWorkflow.residentLimit" data-amily-i18n-title="summary.residentLimitHelp" title="已加载大总结分段与活动小总结尾部的合计本地估算上限；未验证分段不会为满足预算而被强制卸载。">常驻史册总上限:</label>
                 <input id="historiography_resident_max_tokens" type="number" min="5000" max="256000" step="1000" class="text_pole" style="width: 110px;" value="72000">
             </div>
 
-            <small class="notes" style="display: block; margin: 6px 0 12px; line-height: 1.5;">
-                Token 为保守估算（中文约 1 字/Token）。常驻总量包含仍加载的宏史卷分段与活动尾部；
-                未通过向量回读的分段不会为凑预算而禁用，超额时会显示安全阻塞原因。活动史册达到输入上限后，新微言录会保持待重试、要求先合并；
-                重铸输入超限会在调用前停止，输出超限会回到预览继续编辑。任何一种情况都不会截断或覆盖原史册。
+            <small class="notes" data-amily-i18n="summary.budgetHelp" style="display: block; margin: 6px 0 12px; line-height: 1.5;">
+                Token 为保守估算（中文约 1 字/Token）。大总结建议常驻 1~3 段；常驻总量包含仍加载的大总结分段与活动尾部；
+                未通过向量回读的分段不会为凑预算而禁用，超额时会显示安全阻塞原因。活动总结达到输入上限后，新小总结会保持待重试、要求先合并；
+                合并输入超限会在调用前停止，输出超限会回到预览继续编辑。任何一种情况都不会截断或覆盖原总结。
             </small>
 
             <div class="mhb-selector-container">
 
                 <div class="mhb-selector-group">
-                    <label for="amily2_mhb_large_worldbook_selector">目标世界书</label>
+                    <label for="amily2_mhb_large_worldbook_selector" data-amily-i18n="summaryWorkflow.targetWorldbook">目标世界书</label>
                     <div class="select-with-refresh">
                         <select id="amily2_mhb_large_worldbook_selector" class="text_pole" style="flex-grow: 1;">
-                            <option value="">刷新列表...</option>
+                            <option value="" data-amily-i18n="summaryWorkflow.refreshList">刷新列表...</option>
                         </select>
-                        <button id="amily2_mhb_large_refresh_worldbooks" class="menu_button secondary small_button interactable" title="刷新世界书列表">
+                        <button id="amily2_mhb_large_refresh_worldbooks" class="menu_button secondary small_button interactable" data-amily-i18n-title="summaryWorkflow.refreshWorldbooks" title="刷新世界书列表">
                             <i class="fas fa-atlas"></i>
                         </button>
                     </div>
                 </div>
 
                 <div class="mhb-selector-group">
-                    <label for="amily2_mhb_large_lore_selector">待合并的总结条目</label>
+                    <label for="amily2_mhb_large_lore_selector" data-amily-i18n="summaryWorkflow.entryToMerge">待合并的总结条目</label>
                     <div class="select-with-refresh">
                         <select id="amily2_mhb_large_lore_selector" class="text_pole" style="flex-grow: 1;">
-                            <option value="">请先选择世界书...</option>
+                            <option value="" data-amily-i18n="summary.selectWorldbook">请先选择世界书...</option>
                         </select>
-                        <button id="amily2_mhb_large_refresh_lores" class="menu_button secondary small_button interactable" title="刷新所选世界书的总结列表">
+                        <button id="amily2_mhb_large_refresh_lores" class="menu_button secondary small_button interactable" data-amily-i18n-title="summaryWorkflow.refreshEntries" title="刷新所选世界书的总结列表">
                             <i class="fas fa-sync-alt"></i>
                         </button>
                     </div>
@@ -502,11 +504,11 @@
 
 
             <button id="amily2_mhb_large_refine_execute" class="menu_button primary small_button interactable" style="margin-top: 15px; width: 100%;">
-                <i class="fas fa-gem"></i> 开始合并
+                <i class="fas fa-gem"></i> <span data-amily-i18n="summaryWorkflow.beginMerge">开始合并</span>
             </button>
 
             <div class="auto-control-pair" style="margin-top: 10px; justify-content: center;">
-                <label for="amily2_vectorize_summary_content">将前段的大总结内容自动送去向量化。</label>
+                <label for="amily2_vectorize_summary_content" data-amily-i18n="summaryWorkflow.vectorizePrevious">将前段的大总结内容自动送去向量化。</label>
                 <label class="toggle-switch">
                     <input id="amily2_vectorize_summary_content" type="checkbox" />
                     <span class="slider"></span>

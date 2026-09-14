@@ -207,6 +207,36 @@
     margin: 0;
 }
 
+.amily2-historiography-safe-edit {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    min-width: 0;
+}
+
+.amily2-historiography-safe-edit > label {
+    font-weight: 600;
+}
+
+.amily2-historiography-safe-edit select,
+.amily2-historiography-safe-edit textarea {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+}
+
+.amily2-historiography-safe-edit textarea {
+    min-height: min(46vh, 520px);
+    resize: vertical;
+    white-space: pre-wrap;
+}
+
+.amily2-historiography-safe-edit-meta,
+.amily2-historiography-safe-edit-notice {
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+
 .editor_maximize {
     color: #ccc;
     cursor: pointer;

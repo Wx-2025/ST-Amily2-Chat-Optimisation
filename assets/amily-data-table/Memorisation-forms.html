@@ -2,8 +2,29 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>Amily2 表格编辑器</title>
+    <title data-amily-i18n="apiTableUi.table.editor">Amily2 表格编辑器</title>
     <style>
+        #amily2_memorisation_forms_panel #amily2-shujuku-compat-panel .menu_button {
+            width: auto;
+            max-width: 100%;
+            min-width: 0;
+            height: auto;
+            white-space: normal !important;
+            overflow-wrap: anywhere;
+        }
+
+        #amily2_memorisation_forms_panel #amily2-shujuku-compat-panel .action-center-buttons > .menu_button {
+            flex: 1 1 160px;
+        }
+
+        #amily2-shujuku-compat-panel .menu_button > span {
+            min-width: 0;
+        }
+
+        #amily2-shujuku-compat-panel .menu_button > i {
+            flex-shrink: 0;
+        }
+
         .worldbook-selection-container {
             display: flex;
             gap: 15px;
@@ -66,85 +87,85 @@
     <div class="amily2-header">
         <div class="am2-panel-title-row">
             <div class="additional-features-title">
-                <i class="fas fa-table"></i> 表格模块
+                <i class="fas fa-table"></i> <span data-amily-i18n="apiTableUi.table.panel">表格模块</span>
             </div>
-            <button id="amily2_open_table_tutorial" class="menu_button small_button secondary interactable am2-panel-tutorial-btn" type="button" title="小白教程：表格模块要配什么模型">
-                <i class="fas fa-book-open"></i> 教程
+            <button id="amily2_open_table_tutorial" class="menu_button small_button secondary interactable am2-panel-tutorial-btn" type="button" title="小白教程：表格模块要配什么模型" data-amily-i18n-title="apiTableUi.table.tutorialHint">
+                <i class="fas fa-book-open"></i> <span data-amily-i18n="apiTableUi.common.tutorial">教程</span>
             </button>
         </div>
         <button id="amily2_back_to_main_from_forms" class="menu_button secondary small_button interactable" type="button">
-            <i class="fas fa-arrow-left"></i> 返回
+            <i class="fas fa-arrow-left"></i> <span data-amily-i18n="apiTableUi.common.back">返回</span>
         </button>
     </div>
 
     <div id="upper-controls-wrapper">
         <fieldset class="settings-group" style="padding: 10px; margin-bottom: 10px;">
-            <legend><i class="fas fa-brain"></i> 中枢决策室</legend>
+            <legend><i class="fas fa-brain"></i> <span data-amily-i18n="apiTableUi.table.settings">中枢决策室</span></legend>
             
             <div class="sinan-navigation-deck" style="gap: 5px; margin-bottom: 10px;">
-                <button class="sinan-nav-item active" data-tab="injection-settings"><i class="fas fa-cogs"></i> 注入设置</button>
-                <button class="sinan-nav-item" data-tab="action-center"><i class="fas fa-toolbox"></i> 操作中心</button>
+                <button class="sinan-nav-item active" data-tab="injection-settings"><i class="fas fa-cogs"></i> <span data-amily-i18n="apiTableUi.table.injection">注入设置</span></button>
+                <button class="sinan-nav-item" data-tab="action-center"><i class="fas fa-toolbox"></i> <span data-amily-i18n="apiTableUi.table.actions">操作中心</span></button>
                 <button class="sinan-nav-item amily2-fill-review-nav" data-tab="fill-review">
-                    <i class="fas fa-exclamation-triangle"></i> 错误审查
+                    <i class="fas fa-exclamation-triangle"></i> <span data-amily-i18n="apiTableUi.table.review">错误审查</span>
                     <span id="amily2-fill-review-count-badge" class="amily2-fill-review-count-badge" hidden>0</span>
                 </button>
-                <button class="sinan-nav-item" data-tab="ai-template"><i class="fas fa-robot"></i> 指令模板</button>
-                <button class="sinan-nav-item" data-tab="world-settings"><i class="fas fa-globe"></i> 世界读取</button>
-                <button class="sinan-nav-item" data-tab="shujuku-compat" hidden><i class="fas fa-shield-alt"></i> 数据库兼容</button>
+                <button class="sinan-nav-item" data-tab="ai-template"><i class="fas fa-robot"></i> <span data-amily-i18n="apiTableUi.table.templates">指令模板</span></button>
+                <button class="sinan-nav-item" data-tab="world-settings"><i class="fas fa-globe"></i> <span data-amily-i18n="apiTableUi.table.world">世界读取</span></button>
+                <button class="sinan-nav-item" data-tab="shujuku-compat" hidden><i class="fas fa-shield-alt"></i> <span data-amily-i18n="apiTableUi.table.compat">shujuku兼容</span></button>
             </div>
 
             <div class="sinan-content-wrapper">
                 <div id="sinan-injection-settings-tab" class="sinan-tab-pane active">
                     <div class="inline-settings-grid">
-                        <label for="table-injection-position">注入位置</label>
+                        <label for="table-injection-position" data-amily-i18n="apiTableUi.table.position">注入位置</label>
                         <select id="table-injection-position" class="text_pole">
-                            <option value="2">主提示前</option>
-                            <option value="0">主提示后</option>
-                            <option value="1">聊天内</option>
+                            <option value="2" data-amily-i18n="apiTableUi.table.beforePrompt">主提示前</option>
+                            <option value="0" data-amily-i18n="apiTableUi.table.afterPrompt">主提示后</option>
+                            <option value="1" data-amily-i18n="apiTableUi.table.inChat">聊天内</option>
                         </select>
-                        <label for="table-injection-depth">注入深度</label>
+                        <label for="table-injection-depth" data-amily-i18n="apiTableUi.table.depth">注入深度</label>
                         <input type="number" id="table-injection-depth" class="text_pole" value="3">
-                        <label>注入角色</label>
+                        <label data-amily-i18n="apiTableUi.table.role">注入角色</label>
                         <div class="radio-group">
                             <input type="radio" id="table-role-system" name="table-injection-role" value="0" data-setting-key="injection.role" data-type="integer">
-                            <label for="table-role-system">系统</label>
+                            <label for="table-role-system" data-amily-i18n="apiTableUi.table.system">系统</label>
                             <input type="radio" id="table-role-user" name="table-injection-role" value="1" data-setting-key="injection.role" data-type="integer">
-                            <label for="table-role-user">用户</label>
+                            <label for="table-role-user" data-amily-i18n="apiTableUi.table.user">用户</label>
                             <input type="radio" id="table-role-ai" name="table-injection-role" value="2" data-setting-key="injection.role" data-type="integer">
                             <label for="table-role-ai">AI</label>
                         </div>
-                        <label for="batch-filling-threshold">批处理阈值</label>
+                        <label for="batch-filling-threshold" data-amily-i18n="apiTableUi.table.batchThreshold">批处理阈值</label>
                         <input type="number" id="batch-filling-threshold" class="text_pole" value="30">
-                        <label for="table-fill-tables-per-request" title="将同一段正文拆成多个仅表格子集不同的请求，并在全部成功后一次提交。">每批处理表数</label>
+                        <label for="table-fill-tables-per-request" title="将同一段正文拆成多个仅表格子集不同的请求，并在全部成功后一次提交。" data-amily-i18n-title="apiTableUi.table.tablesPerBatchHint" data-amily-i18n="apiTableUi.table.tablesPerBatch">每批处理表数</label>
                         <input type="number" id="table-fill-tables-per-request" class="text_pole" min="0" max="128" step="1" value="0">
-                        <small class="notes" style="grid-column: 1 / -1;">0 = 不按表拆批；大于 0 时每次只向模型公开指定数量的表，最多 16 个子批。已声明外键的用户表会自动放在同一批且不会拆开；未声明关系的跨组依赖请调大“每批处理表数”。同一轮正文保持不变，所有子批校验成功后才会一次写入。</small>
-                        <label for="table-fill-parallel-max-concurrency" title="第一批真实填表完成后，其余子批同时在途的最大数量。">并行请求上限</label>
+                        <small class="notes" style="grid-column: 1 / -1;" data-amily-i18n="apiTableUi.table.tablesPerBatchHelp">0 = 不按表拆批；大于 0 时每次只向模型公开指定数量的表，最多 16 个子批。已声明外键的用户表会自动放在同一批且不会拆开；未声明关系的跨组依赖请调大“每批处理表数”。同一轮正文保持不变，所有子批校验成功后才会一次写入。</small>
+                        <label for="table-fill-parallel-max-concurrency" title="第一批真实填表完成后，其余子批同时在途的最大数量。" data-amily-i18n-title="apiTableUi.table.parallelHint" data-amily-i18n="apiTableUi.table.parallelLimit">并行请求上限</label>
                         <input type="number" id="table-fill-parallel-max-concurrency" class="text_pole" min="1" max="16" step="1" value="4">
-                        <small class="notes" style="grid-column: 1 / -1;">并行模式先完成第 1 个真实子批作为缓存预热，再按此上限并行执行其余子批；不会额外发送空回请求。服务商是否命中缓存及如何计费仍以其规则为准。</small>
+                        <small class="notes" style="grid-column: 1 / -1;" data-amily-i18n="apiTableUi.table.parallelHelp">并行模式先完成第 1 个真实子批作为缓存预热，再按此上限并行执行其余子批；不会额外发送空回请求。服务商是否命中缓存及如何计费仍以其规则为准。</small>
                     </div>
                     <div class="control-block-with-switch" style="margin-top: 10px;">
-                        <label for="table-fill-parallel-enabled" title="仅在实际拆出多个表格子批时生效。">缓存预热并行填表</label>
+                        <label for="table-fill-parallel-enabled" title="仅在实际拆出多个表格子批时生效。" data-amily-i18n-title="apiTableUi.table.parallelOnlyBatches" data-amily-i18n="apiTableUi.table.parallel">缓存预热并行填表</label>
                         <label class="toggle-switch">
                             <input type="checkbox" id="table-fill-parallel-enabled">
                             <span class="slider"></span>
                         </label>
                     </div>
                     <div class="control-block-with-switch" style="margin-top: 10px;">
-                        <label for="table-fill-omit-random-seed" title="移除的是填表提示词首条随机 system 消息，不是 HTTP 请求头。">移除填表随机头</label>
+                        <label for="table-fill-omit-random-seed" title="移除的是填表提示词首条随机 system 消息，不是 HTTP 请求头。" data-amily-i18n-title="apiTableUi.table.omitSeedHint" data-amily-i18n="apiTableUi.table.omitSeed">移除填表随机头</label>
                         <label class="toggle-switch">
                             <input type="checkbox" id="table-fill-omit-random-seed">
                             <span class="slider"></span>
                         </label>
                     </div>
                     <div class="control-block-with-switch" style="margin-top: 10px;">
-                        <label for="show-table-in-chat-toggle">聊天内显示表格</label>
+                        <label for="show-table-in-chat-toggle" data-amily-i18n="apiTableUi.table.showInChat">聊天内显示表格</label>
                         <label class="toggle-switch">
                             <input type="checkbox" id="show-table-in-chat-toggle" data-setting-key="show_table_in_chat" data-type="boolean">
                             <span class="slider"></span>
                         </label>
                     </div>
                     <div class="control-block-with-switch" style="margin-top: 10px;">
-                        <label for="render-on-every-message-toggle">持续渲染最新消息</label>
+                        <label for="render-on-every-message-toggle" data-amily-i18n="apiTableUi.table.renderLatest">持续渲染最新消息</label>
                         <label class="toggle-switch">
                             <input type="checkbox" id="render-on-every-message-toggle" data-setting-key="render_on_every_message" data-type="boolean">
                             <span class="slider"></span>
@@ -154,7 +175,7 @@
 
                 <div id="sinan-world-settings-tab" class="sinan-tab-pane">
                     <div class="amily2_opt_settings_block">
-                        <label for="table_worldbook_enabled">启用世界书</label>
+                        <label for="table_worldbook_enabled"><span data-amily-i18n="apiTableUi.tableCompat.world.enable">启用世界书</span></label>
                         <label class="toggle-switch">
                             <input id="table_worldbook_enabled" type="checkbox" />
                             <span class="slider"></span>
@@ -162,19 +183,19 @@
                     </div>
 
                     <div class="amily2_opt_settings_block">
-                        <label for="table_worldbook_char_limit">世界书最大字符数: <span id="table_worldbook_char_limit_value">60000</span></label>
+                        <label for="table_worldbook_char_limit"><span data-amily-i18n="apiTableUi.tableCompat.world.maxChars">世界书最大字符数:</span> <span id="table_worldbook_char_limit_value">60000</span></label>
                         <input type="number" class="text_pole" id="table_worldbook_char_limit" min="1000" max="200000" value="60000">
                     </div>
 
                     <hr>
 
                     <div class="amily2_opt_settings_block_radio">
-                        <label>世界书来源</label>
+                        <label><span data-amily-i18n="apiTableUi.tableCompat.world.source">世界书来源</span></label>
                         <div class="amily2_opt_radio_group">
                             <input type="radio" id="table_worldbook_source_character" name="table_worldbook_source" value="character" checked>
-                            <label for="table_worldbook_source_character">角色卡主世界书</label>
+                            <label for="table_worldbook_source_character"><span data-amily-i18n="apiTableUi.tableCompat.world.character">角色卡主世界书</span></label>
                             <input type="radio" id="table_worldbook_source_manual" name="table_worldbook_source" value="manual">
-                            <label for="table_worldbook_source_manual">手动选择世界书</label>
+                            <label for="table_worldbook_source_manual"><span data-amily-i18n="apiTableUi.tableCompat.world.manual">手动选择世界书</span></label>
                         </div>
                     </div>
 
@@ -183,64 +204,64 @@
                             <!-- World Book List Column -->
                             <div class="worldbook-column">
                                 <div class="amily2_opt_label_with_button_wrapper">
-                                    <label>选择世界书 (可多选)</label>
-                                    <button id="table_refresh_worldbooks" class="menu_button" title="刷新世界书列表"><i class="fa-solid fa-sync"></i></button>
+                                    <label><span data-amily-i18n="apiTableUi.tableCompat.world.chooseBooks">选择世界书 (可多选)</span></label>
+                                    <button id="table_refresh_worldbooks" class="menu_button" title="刷新世界书列表" data-amily-i18n-title="apiTableUi.tableCompat.world.refresh"><i class="fa-solid fa-sync"></i></button>
                                 </div>
                                 <div class="table-search-wrapper">
-                                    <input type="text" id="table_worldbook_search" class="table-search-input" placeholder="搜索世界书名称...">
+                                    <input type="text" id="table_worldbook_search" class="table-search-input" placeholder="搜索世界书名称..." data-amily-i18n-placeholder="apiTableUi.tableCompat.world.searchBooks">
                                     <i class="fas fa-search table-search-icon"></i>
                                 </div>
                                 <div id="table_worldbook_checkbox_list" class="scrollable-container">
                                     <!-- 世界书勾选框将在这里动态生成 -->
                                 </div>
-                                <small class="notes">勾选需要启用的世界书。</small>
+                                <small class="notes"><span data-amily-i18n="apiTableUi.tableCompat.world.chooseBooksHelp">勾选需要启用的世界书。</span></small>
                             </div>
                         </div>
                     </div>
 
                     <!-- World Book Entry List Column -->
                     <div class="worldbook-column" style="margin-top: 10px;">
-                        <label>选择条目 (可多选)</label>
+                        <label><span data-amily-i18n="apiTableUi.tableCompat.world.chooseEntries">选择条目 (可多选)</span></label>
                         <div class="table-search-wrapper">
-                            <input type="text" id="table_entry_search" class="table-search-input" placeholder="搜索条目名称、关键词...">
+                            <input type="text" id="table_entry_search" class="table-search-input" placeholder="搜索条目名称、关键词..." data-amily-i18n-placeholder="apiTableUi.tableCompat.world.searchEntries">
                             <i class="fas fa-search table-search-icon"></i>
                         </div>
                         <div id="table_worldbook_entry_list" class="scrollable-container">
                             <!-- 世界书条目勾选框将在这里动态生成 -->
                         </div>
-                        <small class="notes">勾选需要注入的条目。</small>
+                        <small class="notes"><span data-amily-i18n="apiTableUi.tableCompat.world.chooseEntriesHelp">勾选需要注入的条目。</span></small>
                     </div>
                 </div>
 
                 <div id="sinan-shujuku-compat-tab" class="sinan-tab-pane" hidden>
                     <fieldset id="amily2-shujuku-compat-panel" class="settings-group" style="border-style: dashed; padding: 8px; margin-bottom: 10px;">
-                        <legend><i class="fas fa-shield-alt"></i> shujuku 角色卡兼容（实验性）</legend>
+                        <legend><i class="fas fa-shield-alt"></i> <span data-amily-i18n="apiTableUi.tableCompat.compat.title">shujuku 角色卡兼容（实验性）</span></legend>
                         <details class="amily2-shujuku-quick-guide" style="margin-bottom:10px;">
-                            <summary><i class="fas fa-graduation-cap"></i> 第一次使用：按什么顺序配置？</summary>
+                            <summary><i class="fas fa-graduation-cap"></i> <span data-amily-i18n="apiTableUi.tableCompat.compat.guide">第一次使用：按什么顺序配置？</span></summary>
                             <ol class="notes" style="margin:8px 0 8px 20px;padding:0;">
-                                <li>确认当前账号具有有效 Type2 及以上授权。</li>
-                                <li>开启全局兼容层，再扫描当前卡并核对迁移摘要。</li>
-                                <li>只开启这张卡确实需要的功能；优先使用只读授权。</li>
-                                <li>为“本聊天”确认精确授权；需要复用时再保存为本卡默认。</li>
-                                <li>若卡片需要 Agent，再前往右侧“Agent 兼容”按准备、构建、激活的顺序操作。</li>
+                                <li><span data-amily-i18n="apiTableUi.tableCompat.compat.guide1">确认当前账号具有有效 Type2 及以上授权。</span></li>
+                                <li><span data-amily-i18n="apiTableUi.tableCompat.compat.guide2">开启全局兼容层，再扫描当前卡并核对迁移摘要。</span></li>
+                                <li><span data-amily-i18n="apiTableUi.tableCompat.compat.guide3">只开启这张卡确实需要的功能；优先使用只读授权。</span></li>
+                                <li><span data-amily-i18n="apiTableUi.tableCompat.compat.guide4">为“本聊天”确认精确授权；需要复用时再保存为本卡默认。</span></li>
+                                <li><span data-amily-i18n="apiTableUi.tableCompat.compat.guide5">若卡片需要 Agent，在本页下方的 Agent 兼容区域按准备、构建、激活的顺序操作。</span></li>
                             </ol>
-                            <button id="amily2_open_shujuku_tutorial" class="menu_button small_button secondary interactable am2-panel-tutorial-btn" type="button" style="white-space:nowrap;" title="打开数据库兼容完整教程">
-                                <i class="fas fa-book-open"></i> 打开完整教程
+                            <button id="amily2_open_shujuku_tutorial" class="menu_button small_button secondary interactable am2-panel-tutorial-btn" type="button" style="white-space:nowrap;" title="打开shujuku兼容完整教程" data-amily-i18n-title="apiTableUi.tableCompat.compat.tutorialHint">
+                                <i class="fas fa-book-open"></i> <span data-amily-i18n="apiTableUi.tableCompat.common.tutorial">打开完整教程</span>
                             </button>
                         </details>
                         <div class="control-block-with-switch" style="margin-bottom: 6px;">
                             <label for="amily2-shujuku-compat-enabled">
-                                <strong>启用全局兼容层</strong>
+                                <strong><span data-amily-i18n="apiTableUi.tableCompat.compat.enable">启用全局兼容层</span></strong>
                             </label>
                             <label class="toggle-switch">
                                 <input type="checkbox" id="amily2-shujuku-compat-enabled" data-setting-key="shujuku_compat_enabled" data-type="boolean" disabled>
                                 <span class="slider"></span>
                             </label>
                         </div>
-                        <p class="notes" style="margin: 0 0 8px;">全局层只决定兼容能力上限；本卡层可在本机记住默认能力，真正授权仍按聊天隔离。</p>
+                        <p class="notes" style="margin: 0 0 8px;"><span data-amily-i18n="apiTableUi.tableCompat.compat.scopeHelp">全局层只决定兼容能力上限；本卡层可在本机记住默认能力，真正授权仍按聊天隔离。</span></p>
                         <div class="control-block-with-switch" style="margin-bottom: 8px;">
                             <label for="amily2-shujuku-auto-prompt-enabled">
-                                <strong>新聊天自动检测并询问</strong>
+                                <strong><span data-amily-i18n="apiTableUi.tableCompat.compat.autoDetect">新聊天自动检测并询问</span></strong>
                             </label>
                             <label class="toggle-switch">
                                 <input type="checkbox" id="amily2-shujuku-auto-prompt-enabled" disabled>
@@ -248,130 +269,148 @@
                             </label>
                         </div>
                         <div class="amily2-shujuku-scope-summary" style="display:grid;gap:5px;margin-bottom:8px;">
-                            <div class="notes">全局：<strong id="amily2-shujuku-global-scope-status">检测中…</strong></div>
-                            <div class="notes">本卡：<strong id="amily2-shujuku-card-scope-status">检测中…</strong></div>
-                            <div class="notes">本聊天：<strong id="amily2-shujuku-chat-scope-status">检测中…</strong></div>
+                            <div class="notes"><span data-amily-i18n="apiTableUi.tableCompat.compat.globalLabel">全局：</span><strong id="amily2-shujuku-global-scope-status"><span data-amily-i18n="apiTableUi.tableCompat.common.detecting">检测中…</span></strong></div>
+                            <div class="notes"><span data-amily-i18n="apiTableUi.tableCompat.compat.cardLabel">本卡：</span><strong id="amily2-shujuku-card-scope-status"><span data-amily-i18n="apiTableUi.tableCompat.common.detecting">检测中…</span></strong></div>
+                            <div class="notes"><span data-amily-i18n="apiTableUi.tableCompat.compat.chatLabel">本聊天：</span><strong id="amily2-shujuku-chat-scope-status"><span data-amily-i18n="apiTableUi.tableCompat.common.detecting">检测中…</span></strong></div>
                         </div>
                         <div class="action-center-buttons" style="gap:8px;margin-bottom:8px;">
                             <button id="amily2-shujuku-save-card-policy-btn" class="menu_button secondary small_button interactable" type="button" disabled>
-                                <i class="fas fa-id-card"></i> 记住当前授权为本卡默认
+                                <i class="fas fa-id-card"></i> <span data-amily-i18n="apiTableUi.tableCompat.compat.remember">记住当前授权为本卡默认</span>
                             </button>
                             <button id="amily2-shujuku-remove-card-policy-btn" class="menu_button small_button interactable" type="button" disabled>
-                                <i class="fas fa-eraser"></i> 清除本卡默认
+                                <i class="fas fa-eraser"></i> <span data-amily-i18n="apiTableUi.tableCompat.compat.clearDefaults">清除本卡默认</span>
                             </button>
                         </div>
-                        <p class="notes" style="margin:0 0 8px;">本卡默认只保存在本机并按卡内容指纹匹配，不会写回角色卡，也不会复制聊天授权或凭据。</p>
+                        <p class="notes" style="margin:0 0 8px;"><span data-amily-i18n="apiTableUi.tableCompat.compat.defaultsHelp">本卡默认只保存在本机并按卡内容指纹匹配，不会写回角色卡，也不会复制聊天授权或凭据。</span></p>
                         <div class="notes" style="margin-bottom: 6px;">
-                            当前状态：<strong id="amily2-shujuku-compat-status" aria-live="polite">检测中…</strong>
+                            <span data-amily-i18n="apiTableUi.tableCompat.compat.statusLabel">当前状态：</span><strong id="amily2-shujuku-compat-status" aria-live="polite"><span data-amily-i18n="apiTableUi.tableCompat.common.detecting">检测中…</span></strong>
                         </div>
                         <div class="notes" style="margin-bottom: 8px;">
-                            档案请求：<span id="amily2-shujuku-requested-capabilities">检测中…</span>
+                            <span data-amily-i18n="apiTableUi.tableCompat.compat.requestedLabel">档案请求：</span><span id="amily2-shujuku-requested-capabilities"><span data-amily-i18n="apiTableUi.tableCompat.common.detecting">检测中…</span></span>
                         </div>
                         <button id="amily2-shujuku-migrate-current-card-btn" class="menu_button" type="button" disabled style="margin-bottom: 6px;">
-                            <i class="fas fa-search"></i> 扫描并建立当前聊天兼容档案
+                            <i class="fas fa-search"></i> <span data-amily-i18n="apiTableUi.tableCompat.compat.scan">扫描并建立当前聊天兼容档案</span>
                         </button>
                         <p class="notes" style="margin: 0 0 10px;">
-                            只会静态读取当前角色卡并先显示确认摘要；不会执行卡内脚本、修改原角色卡或静默覆盖已有表格数据。
+                            <span data-amily-i18n="apiTableUi.tableCompat.compat.scanHelp">只会静态读取当前角色卡并先显示确认摘要；不会执行卡内脚本、修改原角色卡或静默覆盖已有表格数据。</span>
                         </p>
                         <section class="amily2-shujuku-compat-card" aria-labelledby="amily2-shujuku-chat-recovery-heading">
                             <div id="amily2-shujuku-chat-recovery-heading" class="amily2-shujuku-compat-card-title">
-                                <i class="fas fa-history"></i> 旧聊天表格恢复
+                                <i class="fas fa-history"></i> <span data-amily-i18n="apiTableUi.tableCompat.recovery.title">旧聊天表格恢复</span>
                             </div>
-                            <div id="amily2-shujuku-chat-recovery-status" class="notes" aria-live="polite">检测中…</div>
+                            <div id="amily2-shujuku-chat-recovery-status" class="notes" aria-live="polite"><span data-amily-i18n="apiTableUi.tableCompat.common.detecting">检测中…</span></div>
                             <select id="amily2-shujuku-chat-recovery-lane" class="text_pole" hidden disabled style="margin-top:7px;">
-                                <option value="">请选择数据隔离线</option>
+                                <option value="" data-amily-i18n="apiTableUi.tableCompat.recovery.selectLane">请选择数据隔离线</option>
                             </select>
                             <button id="amily2-shujuku-recover-current-chat-btn" class="menu_button small_button interactable" type="button" disabled style="margin-top:7px;">
-                                <i class="fas fa-search"></i> 扫描当前聊天旧表格
+                                <i class="fas fa-search"></i> <span data-amily-i18n="apiTableUi.tableCompat.recovery.scan">扫描当前聊天旧表格</span>
                             </button>
-                            <p class="notes">仅扫描当前聊天内的 `TavernDB_ACU_*` 数据；多条隔离线必须手动选择，写入前会再次核对来源摘要和当前表状态。</p>
+                            <p class="notes"><span data-amily-i18n="apiTableUi.tableCompat.recovery.help">仅扫描当前聊天内的 `TavernDB_ACU_*` 数据；多条隔离线必须手动选择，写入前会再次核对来源摘要和当前表状态。</span></p>
+                        </section>
+                        <section class="amily2-shujuku-compat-card" aria-labelledby="amily2-shujuku-backup-heading">
+                            <div id="amily2-shujuku-backup-heading" class="amily2-shujuku-compat-card-title">
+                                <i class="fas fa-archive"></i> <span data-amily-i18n="apiTableUi.tableCompat.backup.title">完整表状态备份</span>
+                            </div>
+                            <div id="amily2-shujuku-backup-status" class="notes" aria-live="polite"><span data-amily-i18n="apiTableUi.tableCompat.backup.initial">点击刷新读取当前聊天备份。</span></div>
+                            <div class="amily2-shujuku-backup-controls">
+                                <select id="amily2-shujuku-backup-select" class="text_pole" disabled>
+                                    <option value="" data-amily-i18n="apiTableUi.tableCompat.backup.unloaded">尚未读取备份历史</option>
+                                </select>
+                                <button id="amily2-shujuku-backup-refresh-btn" class="menu_button small_button interactable" type="button" disabled title="刷新备份历史" data-amily-i18n-title="apiTableUi.tableCompat.backup.refreshHint">
+                                    <i class="fas fa-sync-alt"></i>
+                                </button>
+                            </div>
+                            <button id="amily2-shujuku-backup-preview-btn" class="menu_button warning small_button interactable" type="button" disabled>
+                                <i class="fas fa-undo-alt"></i> <span data-amily-i18n="apiTableUi.tableCompat.backup.preview">预览并尝试还原</span>
+                            </button>
+                            <p class="notes"><span data-amily-i18n="apiTableUi.tableCompat.backup.help">整表批量替换前会自动保存结构、数据和档案；还原前会再次备份当前状态，并要求二次确认。</span></p>
                         </section>
                         <section class="amily2-shujuku-compat-card" aria-labelledby="amily2-shujuku-resource-heading">
                             <div id="amily2-shujuku-resource-heading" class="amily2-shujuku-compat-card-title">
-                                <i class="fas fa-box-open"></i> B3 已登记资源
+                                <i class="fas fa-box-open"></i> <span data-amily-i18n="apiTableUi.tableCompat.resource.title">B3 已登记资源</span>
                             </div>
-                            <div id="amily2-shujuku-resource-catalog-status" class="notes" aria-live="polite">检测中…</div>
+                            <div id="amily2-shujuku-resource-catalog-status" class="notes" aria-live="polite"><span data-amily-i18n="apiTableUi.tableCompat.common.detecting">检测中…</span></div>
                             <div class="amily2-shujuku-resource-row">
-                                <label for="amily2-shujuku-template-select">表格模板</label>
+                                <label for="amily2-shujuku-template-select"><span data-amily-i18n="apiTableUi.tableCompat.resource.template">表格模板</span></label>
                                 <select id="amily2-shujuku-template-select" class="text_pole" disabled>
-                                    <option value="">检测中…</option>
+                                    <option value="" data-amily-i18n="apiTableUi.tableCompat.common.detecting">检测中…</option>
                                 </select>
                                 <div class="amily2-shujuku-resource-actions">
                                     <button id="amily2-shujuku-view-template-btn" class="menu_button small_button interactable" type="button" disabled>
-                                        <i class="fas fa-eye"></i> 查看内容
+                                        <i class="fas fa-eye"></i> <span data-amily-i18n="apiTableUi.tableCompat.resource.view">查看内容</span>
                                     </button>
                                     <button id="amily2-shujuku-bind-template-btn" class="menu_button small_button interactable" type="button" disabled>
-                                        <i class="fas fa-link"></i> 绑定到本聊天
+                                        <i class="fas fa-link"></i> <span data-amily-i18n="apiTableUi.tableCompat.resource.bind">绑定到本聊天</span>
                                     </button>
                                 </div>
-                                <span class="notes">当前：<strong id="amily2-shujuku-active-template">检测中…</strong></span>
+                                <span class="notes"><span data-amily-i18n="apiTableUi.tableCompat.resource.currentLabel">当前：</span><strong id="amily2-shujuku-active-template"><span data-amily-i18n="apiTableUi.tableCompat.common.detecting">检测中…</span></strong></span>
                             </div>
                             <div class="amily2-shujuku-resource-row">
-                                <label for="amily2-shujuku-plot-select">剧情预设</label>
+                                <label for="amily2-shujuku-plot-select"><span data-amily-i18n="apiTableUi.tableCompat.resource.plot">剧情预设</span></label>
                                 <select id="amily2-shujuku-plot-select" class="text_pole" disabled>
-                                    <option value="">检测中…</option>
+                                    <option value="" data-amily-i18n="apiTableUi.tableCompat.common.detecting">检测中…</option>
                                 </select>
                                 <div class="amily2-shujuku-resource-actions">
                                     <button id="amily2-shujuku-view-plot-btn" class="menu_button small_button interactable" type="button" disabled>
-                                        <i class="fas fa-eye"></i> 查看内容
+                                        <i class="fas fa-eye"></i> <span data-amily-i18n="apiTableUi.tableCompat.resource.view">查看内容</span>
                                     </button>
                                     <button id="amily2-shujuku-bind-plot-btn" class="menu_button small_button interactable" type="button" disabled>
-                                        <i class="fas fa-link"></i> 绑定到本聊天
+                                        <i class="fas fa-link"></i> <span data-amily-i18n="apiTableUi.tableCompat.resource.bind">绑定到本聊天</span>
                                     </button>
                                 </div>
-                                <span class="notes">当前：<strong id="amily2-shujuku-active-plot">检测中…</strong></span>
+                                <span class="notes"><span data-amily-i18n="apiTableUi.tableCompat.resource.currentLabel">当前：</span><strong id="amily2-shujuku-active-plot"><span data-amily-i18n="apiTableUi.tableCompat.common.detecting">检测中…</span></strong></span>
                             </div>
-                            <p class="notes">这里只读取静态迁移时登记的资源；查看窗口不会执行其中内容，页面也不会创建全局预设。</p>
+                            <p class="notes"><span data-amily-i18n="apiTableUi.tableCompat.resource.help">这里只读取静态迁移时登记的资源；查看窗口不会执行其中内容，页面也不会创建全局预设。</span></p>
                         </section>
                         <section class="amily2-shujuku-compat-card" aria-labelledby="amily2-shujuku-b4-heading">
                             <div id="amily2-shujuku-b4-heading" class="amily2-shujuku-compat-card-title">
-                                <i class="fas fa-robot"></i> B4 专用模型槽
+                                <i class="fas fa-robot"></i> <span data-amily-i18n="apiTableUi.tableCompat.diagnostic.title">B4 专用模型槽</span>
                             </div>
                             <div class="notes">
-                                旧卡兼容模型任务：<strong id="amily2-shujuku-legacy-card-task-status" aria-live="polite">检测中…</strong>
+                                <span data-amily-i18n="apiTableUi.tableCompat.diagnostic.slotLabel">旧卡兼容模型任务：</span><strong id="amily2-shujuku-legacy-card-task-status" aria-live="polite"><span data-amily-i18n="apiTableUi.tableCompat.common.detecting">检测中…</span></strong>
                             </div>
                             <div class="amily2-shujuku-b4-diagnostic-row">
                                 <button id="amily2-shujuku-b4-diagnostic-btn" class="menu_button small_button interactable" type="button" disabled>
-                                    <i class="fas fa-vial"></i> 运行 B4 极短诊断
+                                    <i class="fas fa-vial"></i> <span data-amily-i18n="apiTableUi.tableCompat.diagnostic.run">运行 B4 极短诊断</span>
                                 </button>
-                                <span id="amily2-shujuku-b4-diagnostic-status" class="notes" aria-live="polite">检测中…</span>
+                                <span id="amily2-shujuku-b4-diagnostic-status" class="notes" aria-live="polite"><span data-amily-i18n="apiTableUi.tableCompat.common.detecting">检测中…</span></span>
                             </div>
-                            <p class="notes">仅显示脱敏后的 provider、model 与 token 上限；不会显示配置 ID、URL、Key、headers 或其他功能槽。</p>
+                            <p class="notes"><span data-amily-i18n="apiTableUi.tableCompat.diagnostic.help">仅显示脱敏后的 provider、model 与 token 上限；不会显示配置 ID、URL、Key、headers 或其他功能槽。</span></p>
                         </section>
                         <div class="notes" style="margin-bottom: 6px;">
-                            <strong>扩展能力独立开关与当前聊天授权</strong>
+                            <strong><span data-amily-i18n="apiTableUi.tableCompat.compat.capabilitiesTitle">扩展能力独立开关与当前聊天授权</span></strong>
                         </div>
                         <div id="amily2-shujuku-capability-policy-list" style="display: grid; gap: 6px; margin-bottom: 8px;">
-                            <span class="notes">检测中…</span>
+                            <span class="notes"><span data-amily-i18n="apiTableUi.tableCompat.common.detecting">检测中…</span></span>
                         </div>
                         <button id="amily2-shujuku-grant-selected-btn" class="menu_button" type="button" disabled style="margin-bottom: 8px;">
-                            <i class="fas fa-user-shield"></i> 按勾选项更新当前聊天扩展授权
+                            <i class="fas fa-user-shield"></i> <span data-amily-i18n="apiTableUi.tableCompat.compat.grantSelected">按勾选项更新当前聊天扩展授权</span>
                         </button>
                         <p class="notes" style="margin: 0 0 8px;">
-                            功能开关与聊天授权缺一不可。Agent 项在附属 Provider 未安装时保持禁用；开启新功能不会自动补入旧授权。
+                            <span data-amily-i18n="apiTableUi.tableCompat.compat.capabilitiesHelp">功能开关与聊天授权缺一不可。Agent 项在附属 Provider 未安装时保持禁用；开启新功能不会自动补入旧授权。</span>
                         </p>
                         <div class="action-center-buttons" style="gap: 8px; margin-bottom: 8px;">
                             <button id="amily2-shujuku-grant-read-btn" class="menu_button secondary small_button interactable" type="button" disabled>
-                                <i class="fas fa-eye"></i> 授权当前聊天：只读
+                                <i class="fas fa-eye"></i> <span data-amily-i18n="apiTableUi.tableCompat.compat.grantRead">授权当前聊天：只读</span>
                             </button>
                             <button id="amily2-shujuku-grant-write-btn" class="menu_button danger small_button interactable" type="button" disabled>
-                                <i class="fas fa-edit"></i> 授权当前聊天：读写
+                                <i class="fas fa-edit"></i> <span data-amily-i18n="apiTableUi.tableCompat.compat.grantWrite">授权当前聊天：读写</span>
                             </button>
                             <button id="amily2-shujuku-revoke-btn" class="menu_button small_button interactable" type="button" disabled>
-                                <i class="fas fa-ban"></i> 撤销当前聊天授权
+                                <i class="fas fa-ban"></i> <span data-amily-i18n="apiTableUi.tableCompat.compat.revoke">撤销当前聊天授权</span>
                             </button>
                             <button id="amily2-shujuku-force-once-btn" class="menu_button warning small_button interactable" type="button" disabled>
-                                <i class="fas fa-plug"></i> 强制单次挂载 ACUAPI
+                                <i class="fas fa-plug"></i> <span data-amily-i18n="apiTableUi.tableCompat.compat.mountOnce">强制单次挂载 ACUAPI</span>
                             </button>
                         </div>
                         <p class="notes" style="margin: 0 0 8px;">
-                            仅在静态检测遗漏时使用：只开放表快照与更新通知，绑定当前聊天和当前页面；刷新或切换聊天即失效，不保存授权，也不开放写表、SQL、模型或 Agent 能力。
+                            <span data-amily-i18n="apiTableUi.tableCompat.compat.mountHelp">仅在静态检测遗漏时使用：只开放表快照与更新通知，绑定当前聊天和当前页面；刷新或切换聊天即失效，不保存授权，也不开放写表、SQL、模型或 Agent 能力。</span>
                         </p>
                         <div class="notes" style="padding: 7px; margin-bottom: 8px; border: 1px dashed var(--SmartThemeQuoteColor); border-radius: 4px;">
-                            <div><strong>B3 已提供受控兼容：</strong>仅可读取、导入并绑定迁移清单内摘要匹配的表格模板和剧情预设；第三方剧情任务及 Agent 世界书不会自动执行。</div>
-                            <div style="margin-top: 4px;"><strong>B4 已提供受限兼容：</strong>有界 AI 剧情尾部、专用槽脱敏摘要与严格限额的 callAI 可分别授权；Agent 方法仅在可选 Provider 已安装且逐项授权后出现，核心不会直接开放世界书。</div>
-                            <div style="margin-top: 4px;">当前档案检测到的未实现请求类型：<span id="amily2-shujuku-unsupported-groups">检测中…</span></div>
-                            <div id="amily2-shujuku-unsupported-methods" class="amily2-shujuku-unsupported-methods">检测中…</div>
+                            <div><strong><span data-amily-i18n="apiTableUi.tableCompat.compat.b3Label">B3 已提供受控兼容：</span></strong><span data-amily-i18n="apiTableUi.tableCompat.compat.b3Help">仅可读取、导入并绑定迁移清单内摘要匹配的表格模板和剧情预设；第三方剧情任务及 Agent 世界书不会自动执行。</span></div>
+                            <div style="margin-top: 4px;"><strong><span data-amily-i18n="apiTableUi.tableCompat.compat.b4Label">B4 已提供受限兼容：</span></strong><span data-amily-i18n="apiTableUi.tableCompat.compat.b4Help">有界 AI 剧情尾部、专用槽脱敏摘要与严格限额的 callAI 可分别授权；Agent 方法仅在可选 Provider 已安装且逐项授权后出现，核心不会直接开放世界书。</span></div>
+                            <div style="margin-top: 4px;"><span data-amily-i18n="apiTableUi.tableCompat.compat.unsupportedLabel">当前档案检测到的未实现请求类型：</span><span id="amily2-shujuku-unsupported-groups"><span data-amily-i18n="apiTableUi.tableCompat.common.detecting">检测中…</span></span></div>
+                            <div id="amily2-shujuku-unsupported-methods" class="amily2-shujuku-unsupported-methods"><span data-amily-i18n="apiTableUi.tableCompat.common.detecting">检测中…</span></div>
                         </div>
                         <div id="amily2-shujuku-action-confirm-dialog"
                              class="amily2-shujuku-action-dialog"
@@ -381,21 +420,21 @@
                              aria-describedby="amily2-shujuku-action-confirm-message"
                              hidden>
                             <div class="amily2-shujuku-action-dialog-surface">
-                                <div id="amily2-shujuku-action-confirm-title" class="amily2-shujuku-action-dialog-title">确认兼容操作</div>
+                                <div id="amily2-shujuku-action-confirm-title" class="amily2-shujuku-action-dialog-title"><span data-amily-i18n="apiTableUi.tableCompat.confirm.title">确认兼容操作</span></div>
                                 <div id="amily2-shujuku-action-confirm-message" class="notes amily2-shujuku-action-dialog-message"></div>
                                 <div class="action-center-buttons amily2-shujuku-action-dialog-actions">
                                     <button id="amily2-shujuku-action-cancel-btn" class="menu_button small_button interactable" type="button">
-                                        <i class="fas fa-times"></i> 取消
+                                        <i class="fas fa-times"></i> <span data-amily-i18n="apiTableUi.tableCompat.common.cancel">取消</span>
                                     </button>
                                     <button id="amily2-shujuku-action-confirm-btn" class="menu_button danger small_button interactable" type="button">
-                                        <i class="fas fa-check"></i> 确认
+                                        <i class="fas fa-check"></i> <span data-amily-i18n="apiTableUi.tableCompat.common.confirm">确认</span>
                                     </button>
                                 </div>
                             </div>
                         </div>
                         <p class="notes" style="margin: 0; color: var(--warning-color, #e57373);">
                             <i class="fas fa-exclamation-triangle"></i>
-                            <strong>危险：</strong>授权后，当前角色卡脚本可读取迁移表或已登记资源；“读写”和资源绑定能力还可修改并保存当前聊天的数据。只对可信角色卡授权。关闭全局开关会停止兼容桥，但已保存的聊天授权仍应使用“撤销”明确删除。
+                            <strong><span data-amily-i18n="apiTableUi.tableCompat.compat.danger">危险：</span></strong><span data-amily-i18n="apiTableUi.tableCompat.compat.permissionWarning">授权后，当前角色卡脚本可读取迁移表或已登记资源；“读写”和资源绑定能力还可修改并保存当前聊天的数据。只对可信角色卡授权。关闭全局开关会停止兼容桥，但已保存的聊天授权仍应使用“撤销”明确删除。</span>
                         </p>
                     </fieldset>
                 </div>
@@ -403,7 +442,7 @@
                 <div id="sinan-action-center-tab" class="sinan-tab-pane">
                     <div class="control-block-with-switch" style="margin-bottom: 15px; padding: 8px; border: 2px solid #4a9eff; border-radius: 5px; background: rgba(74, 158, 255, 0.1);">
                         <label for="table-system-master-switch" style="font-weight: bold; color: #4a9eff;">
-                            <i class="fas fa-power-off"></i> 表格系统总开关
+                            <i class="fas fa-power-off"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.enable">表格系统总开关</span>
                         </label>
                         <label class="toggle-switch">
                             <input type="checkbox" id="table-system-master-switch" data-setting-key="table_system_enabled" data-type="boolean">
@@ -411,28 +450,28 @@
                         </label> 
                     </div>
                     <div class="control-block-with-switch" style="margin-bottom: 10px;">
-                        <label for="table-injection-enabled-toggle">启用表格注入</label>
+                        <label for="table-injection-enabled-toggle"><span data-amily-i18n="apiTableUi.tableCompat.table.inject">启用表格注入</span></label>
                         <label class="toggle-switch">
                             <input type="checkbox" id="table-injection-enabled" data-setting-key="table_injection_enabled" data-type="boolean">
                             <span class="slider"></span>
                         </label> 
                     </div>
                     <div class="control-block-with-switch" style="margin-bottom: 10px;">
-                        <label for="context-optimization-enabled-toggle">启用上下文优化 (合并世界书)</label>
+                        <label for="context-optimization-enabled-toggle"><span data-amily-i18n="apiTableUi.tableCompat.table.optimize">启用上下文优化 (合并世界书)</span></label>
                         <label class="toggle-switch">
                             <input type="checkbox" id="context-optimization-enabled" data-setting-key="context_optimization_enabled" data-type="boolean">
                             <span class="slider"></span>
                         </label> 
                     </div>
                     <div class="control-block-with-switch" style="margin-bottom: 10px;">
-                        <label>填表模式</label>
+                        <label><span data-amily-i18n="apiTableUi.tableCompat.table.mode">填表模式</span></label>
                         <div class="radio-group">
                             <input type="radio" id="main-api-mode" name="filling-mode" value="main-api" checked>
-                            <label for="main-api-mode">原始</label>
+                            <label for="main-api-mode"><span data-amily-i18n="apiTableUi.tableCompat.table.original">原始</span></label>
                             <input type="radio" id="secondary-api-mode" name="filling-mode" value="secondary-api">
-                            <label for="secondary-api-mode">分步</label>
+                            <label for="secondary-api-mode"><span data-amily-i18n="apiTableUi.tableCompat.table.staged">分步</span></label>
                             <input type="radio" id="optimized-mode" name="filling-mode" value="optimized">
-                            <label for="optimized-mode">兼容优化</label>
+                            <label for="optimized-mode"><span data-amily-i18n="apiTableUi.tableCompat.table.compatMode">兼容优化</span></label>
                         </div>
                     </div>
                     
@@ -441,114 +480,123 @@
                         
                         <!-- 上下文深度 -->
                         <div class="control-block-with-switch" style="margin-bottom: 10px; flex-direction: column; align-items: flex-start;">
-                            <label for="secondary-filler-context">上下文深度</label>
+                            <label for="secondary-filler-context"><span data-amily-i18n="apiTableUi.tableCompat.table.contextDepth">上下文深度</span></label>
                             <input type="number" id="secondary-filler-context" min="0" max="20" step="1" value="2" class="text_pole" style="width: 80px; margin-top: 5px;">
-                            <small class="notes" style="margin-top: 5px; display: block;">填表时参考的历史上下文消息数量。</small>
+                            <small class="notes" style="margin-top: 5px; display: block;"><span data-amily-i18n="apiTableUi.tableCompat.table.contextHelp">填表时参考的历史上下文消息数量。</span></small>
                         </div>
 
                         <!-- 填表批次 -->
                         <div class="control-block-with-switch" style="margin-bottom: 10px; flex-direction: column; align-items: flex-start;">
-                            <label for="secondary-filler-batch">填表批次 (Batch)</label>
+                            <label for="secondary-filler-batch"><span data-amily-i18n="apiTableUi.tableCompat.table.batch">填表批次 (Batch)</span></label>
                             <input type="number" id="secondary-filler-batch" min="0" max="20" step="1" value="0" class="text_pole" style="width: 80px; margin-top: 5px;">
-                            <small class="notes" style="margin-top: 5px; display: block;">单次填表处理的消息数量 (0 = 实时单条模式)。</small>
+                            <small class="notes" style="margin-top: 5px; display: block;"><span data-amily-i18n="apiTableUi.tableCompat.table.batchHelp">单次填表处理的消息数量 (0 = 实时单条模式)。</span></small>
                         </div>
 
                         <!-- 保留楼层 -->
                         <div class="control-block-with-switch" style="margin-bottom: 10px; flex-direction: column; align-items: flex-start;">
-                            <label for="secondary-filler-buffer">保留楼层 (Buffer)</label>
+                            <label for="secondary-filler-buffer"><span data-amily-i18n="apiTableUi.tableCompat.table.buffer">保留 AI 楼层 (Buffer)</span></label>
                             <input type="number" id="secondary-filler-buffer" min="0" max="10" step="1" value="0" class="text_pole" style="width: 80px; margin-top: 5px;">
-                            <small class="notes" style="margin-top: 5px; display: block;">始终保留不填表的最新消息数量 (缓冲防抖)。</small>
+                            <small class="notes" style="margin-top: 5px; display: block;"><span data-amily-i18n="apiTableUi.tableCompat.table.bufferHelp">自动填表保留的最新 AI 回复数量；用户消息不计入，0 表示不保留。</span></small>
                         </div>
 
                         <!-- 最大重试次数 -->
                         <div class="control-block-with-switch" style="margin-bottom: 10px; flex-direction: column; align-items: flex-start;">
-                            <label for="secondary-filler-max-retries">最大重试次数</label>
+                            <label for="secondary-filler-max-retries"><span data-amily-i18n="apiTableUi.tableCompat.table.retries">最大重试次数</span></label>
                             <input type="number" id="secondary-filler-max-retries" min="0" max="10" step="1" value="2" class="text_pole" style="width: 80px; margin-top: 5px;">
-                            <small class="notes" style="margin-top: 5px; display: block;">分步填表失败时的自动重试次数 (0 = 不重试)。</small>
+                            <small class="notes" style="margin-top: 5px; display: block;"><span data-amily-i18n="apiTableUi.tableCompat.table.retriesHelp">分步填表失败时的自动重试次数 (0 = 不重试)。</span></small>
                         </div>
 
                         <!-- 触发延迟（防抖） -->
                         <div class="control-block-with-switch" style="margin-bottom: 10px; flex-direction: column; align-items: flex-start;">
-                            <label for="secondary-filler-delay">触发延迟 (毫秒)</label>
+                            <label for="secondary-filler-delay"><span data-amily-i18n="apiTableUi.tableCompat.table.delay">触发延迟 (毫秒)</span></label>
                             <input type="number" id="secondary-filler-delay" min="0" max="60000" step="100" value="0" class="text_pole" style="width: 80px; margin-top: 5px;">
-                            <small class="notes" style="margin-top: 5px; display: block;">收到新消息后延迟多少毫秒再触发分步填表 (0 = 立即触发)；延迟期内若再次收到消息会重置计时，起到防抖作用。</small>
+                            <small class="notes" style="margin-top: 5px; display: block;"><span data-amily-i18n="apiTableUi.tableCompat.table.delayHelp">收到新消息后延迟多少毫秒再触发分步填表 (0 = 立即触发)；延迟期内若再次收到消息会重置计时，起到防抖作用。</span></small>
                         </div>
 
                         <!-- 分步填表稀疏进度游标 -->
                         <div class="control-block-with-switch" style="margin-bottom: 10px; flex-direction: column; align-items: flex-start;">
-                            <label for="secondary-filler-cursor">下一补扫起点（稀疏游标）</label>
+                            <label for="secondary-filler-cursor"><span data-amily-i18n="apiTableUi.tableCompat.table.cursor">下一补扫起点（稀疏游标）</span></label>
                             <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px; flex-wrap: wrap;">
                                 <input type="number" id="secondary-filler-cursor" min="1" step="1" value="1" class="text_pole" style="width: 90px;">
                                 <button id="amily2-refresh-secondary-filler-cursor" class="menu_button small_button interactable" type="button">
-                                    <i class="fas fa-sync-alt"></i> 刷新
+                                    <i class="fas fa-sync-alt"></i> <span data-amily-i18n="apiTableUi.tableCompat.common.refresh">刷新</span>
                                 </button>
                                 <button id="amily2-apply-secondary-filler-cursor" class="menu_button warning small_button interactable" type="button">
-                                    <i class="fas fa-forward"></i> 跳过至此
+                                    <i class="fas fa-forward"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.skipTo">跳过至此</span>
                                 </button>
                             </div>
-                            <span id="amily2-secondary-filler-cursor-status" class="notes" style="font-size: 12px; margin-top: 5px;">正在读取当前聊天进度...</span>
+                            <span id="amily2-secondary-filler-cursor-status" class="notes" style="font-size: 12px; margin-top: 5px;"><span data-amily-i18n="apiTableUi.tableCompat.table.progressLoading">正在读取当前聊天进度...</span></span>
                             <small class="notes" style="margin-top: 5px; display: block;">
-                                游标按聊天中的原始楼层计数（包含用户楼），表示最早仍待处理的 AI 楼层；状态栏会另行显示最近成功处理楼层，较新的成功不会掩盖旧空洞。
+                                <span data-amily-i18n="apiTableUi.tableCompat.table.cursorHelp">游标按聊天中的原始楼层计数（包含用户楼），表示最早仍待处理的 AI 楼层；状态栏会另行显示最近成功处理楼层，较新的成功不会掩盖旧空洞。
                                 数值调大后，目标之前尚未处理或异常暂停的 AI 楼层会明确标记为“手动略过”，正文变化后会重新变为待处理。
                                 本操作只修改补扫进度，不会调用模型，也不会回滚当前表格。
-                                为避免在已含后续结果的表上重复写入，这里不允许把数值调小；如需重填更早楼层，请先使用“填表记录”恢复目标之前的快照。
+                                为避免在已含后续结果的表上重复写入，这里不允许把数值调小；如需重填更早楼层，请先使用“填表记录”恢复目标之前的快照。</span>
                             </small>
                         </div>
 
                         <!-- 中断与手动解锁（兜底） -->
                         <div class="control-block-with-switch" style="margin-bottom: 10px; flex-direction: column; align-items: flex-start;">
-                            <label>填表运行控制</label>
+                            <label><span data-amily-i18n="apiTableUi.tableCompat.table.runControl">填表运行控制</span></label>
                             <div style="display: flex; align-items: center; gap: 8px; margin-top: 5px; flex-wrap: wrap;">
                                 <button id="amily2-abort-secondary-filler" class="menu_button danger small_button interactable" type="button">
-                                    <i class="fas fa-stop-circle"></i> 强制中断当前填表
+                                    <i class="fas fa-stop-circle"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.abort">强制中断当前填表</span>
                                 </button>
                                 <button id="amily2-reset-secondary-filler-lock" class="menu_button warning small_button interactable" type="button">
-                                    <i class="fas fa-unlock"></i> 手动解除填表锁
+                                    <i class="fas fa-unlock"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.unlock">手动解除填表锁</span>
                                 </button>
-                                <span id="amily2-secondary-filler-lock-status" class="notes" style="font-size: 12px;">状态：空闲</span>
+                                <span id="amily2-secondary-filler-lock-status" class="notes" style="font-size: 12px;"><span data-amily-i18n="apiTableUi.tableCompat.table.idle">状态：空闲</span></span>
                             </div>
-                            <small class="notes" style="margin-top: 5px; display: block;"><b>强制中断</b>：通过 AbortController 真正掐断进行中的 API 请求并丢弃结果（写表/写 hash/saveChat 都不会执行）。<br><b>手动解除填表锁</b>：仅释放 UI 锁，用于"中断"也救不回来的极端死锁兜底——若遇到"分步填表正在进行中，跳过本次触发"反复出现且新消息无法触发，可手动点击释放。</small>
+                            <small class="notes" style="margin-top: 5px; display: block;"><b><span data-amily-i18n="apiTableUi.tableCompat.table.abortLabel">强制中断</span></b><span data-amily-i18n="apiTableUi.tableCompat.table.abortHelp">：通过 AbortController 真正掐断进行中的 API 请求并丢弃结果（写表/写 hash/saveChat 都不会执行）。</span><br><b><span data-amily-i18n="apiTableUi.tableCompat.table.unlock">手动解除填表锁</span></b><span data-amily-i18n="apiTableUi.tableCompat.table.unlockHelp">：仅释放 UI 锁，用于"中断"也救不回来的极端死锁兜底——若遇到"分步填表正在进行中，跳过本次触发"反复出现且新消息无法触发，可手动点击释放。</span></small>
                         </div>
                     </div>
                     
                     <div class="control-block-with-switch" style="margin-bottom: 10px; display: flex; flex-direction: column; align-items: flex-start; gap: 8px;">
-                        <label style="font-weight: bold;">提取规则配置</label>
+                        <label style="font-weight: bold;"><span data-amily-i18n="apiTableUi.tableCompat.table.rules">提取规则配置</span></label>
                         <select id="table-rule-profile-select" class="text_pole" style="width: 100%;"></select>
-                        <small class="notes">选择在「规则配置中心」里创建的提取规则，应用于分步填表和批量填表。未选择时使用默认行为。</small>
+                        <small class="notes"><span data-amily-i18n="apiTableUi.tableCompat.table.rulesHelp">选择在「规则配置中心」里创建的提取规则，应用于分步填表和批量填表。未选择时使用默认行为。</span></small>
                     </div>
                     <div class="action-center-buttons" style="gap: 8px;">
-                        <button id="amily2-open-relationship-graph-btn" class="menu_button accent small_button interactable"><i class="fas fa-project-diagram"></i> 关系图谱</button>
-                        <button id="amily2-export-preset-btn" class="menu_button primary small_button interactable"><i class="fas fa-file-export"></i> 导出预设</button>
-                        <button id="amily2-export-preset-full-btn" class="menu_button primary small_button interactable"><i class="fas fa-file-archive"></i> 导出备份</button>
-                        <button id="amily2-import-preset-btn" class="menu_button secondary small_button interactable"><i class="fas fa-file-upload"></i> 导入预设</button>
-                        <button id="amily2-import-global-preset-btn" class="menu_button secondary small_button interactable"><i class="fas fa-globe"></i> 导入全局</button>
-                        <button id="amily2-clear-global-preset-btn" class="menu_button danger small_button interactable"><i class="fas fa-undo"></i> 清除全局</button>
-                        <button id="amily2-clear-all-tables-btn" class="menu_button danger small_button interactable"><i class="fas fa-trash-alt"></i> 清空内容</button>
+                        <button id="amily2-open-relationship-graph-btn" class="menu_button accent small_button interactable"><i class="fas fa-project-diagram"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.graph">关系图谱</span></button>
+                        <button id="amily2-export-preset-btn" class="menu_button primary small_button interactable"><i class="fas fa-file-export"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.exportPreset">导出预设</span></button>
+                        <button id="amily2-export-preset-full-btn" class="menu_button primary small_button interactable"><i class="fas fa-file-archive"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.exportBackup">导出备份</span></button>
+                        <button id="amily2-import-preset-btn" class="menu_button secondary small_button interactable"><i class="fas fa-file-upload"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.importPreset">导入预设</span></button>
+                        <button id="amily2-import-global-preset-btn" class="menu_button secondary small_button interactable"><i class="fas fa-globe"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.importGlobal">导入全局</span></button>
+                        <button id="amily2-clear-global-preset-btn" class="menu_button danger small_button interactable"><i class="fas fa-undo"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.clearGlobal">清除全局</span></button>
+                        <button id="amily2-clear-all-tables-btn" class="menu_button danger small_button interactable"><i class="fas fa-trash-alt"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.clear">清空内容</span></button>
                     </div>
-                    <p class="notes" style="margin-top: 8px; margin-bottom: 10px;">说明：可以导出不含剧情的"纯净预设"用于分享，或导出包含剧情的"完整备份"用于存档。</p>
+                    <div id="amily2-table-clear-recovery" class="notes" style="margin-top: 8px; margin-bottom: 10px;" hidden>
+                        <strong><span data-amily-i18n="apiTableUi.tableCompat.table.pendingDelete">清空内容待删除</span></strong>
+                        <span id="amily2-table-clear-recovery-summary"></span>
+                        <div class="action-center-buttons" style="gap: 8px; margin-top: 6px;">
+                            <button id="amily2-restore-cleared-tables-btn" class="menu_button primary small_button interactable" type="button"><i class="fas fa-undo"></i> <span data-amily-i18n="apiTableUi.tableCompat.common.restore">恢复</span></button>
+                            <button id="amily2-export-cleared-tables-btn" class="menu_button secondary small_button interactable" type="button"><i class="fas fa-file-download"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.exportDeleted">导出待删除备份</span></button>
+                            <button id="amily2-discard-cleared-tables-btn" class="menu_button danger small_button interactable" type="button"><i class="fas fa-trash-alt"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.deleteForever">永久删除</span></button>
+                        </div>
+                    </div>
+                    <p class="notes" style="margin-top: 8px; margin-bottom: 10px;"><span data-amily-i18n="apiTableUi.tableCompat.table.exportHelp">说明：可以导出不含剧情的"纯净预设"用于分享，或导出包含剧情的"完整备份"用于存档。</span></p>
 
                     <fieldset class="settings-group" style="border-style: dashed; padding: 8px; margin-bottom: 10px;">
-                        <legend><i class="fas fa-id-card"></i> 角色卡表格档案</legend>
+                        <legend><i class="fas fa-id-card"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.profile">角色卡表格档案</span></legend>
                         <div class="notes" style="margin-bottom: 8px;">
-                            当前来源：<strong id="amily2-table-profile-source">检测中…</strong>
+                            <span data-amily-i18n="apiTableUi.tableCompat.table.sourceLabel">当前来源：</span><strong id="amily2-table-profile-source"><span data-amily-i18n="apiTableUi.tableCompat.common.detecting">检测中…</span></strong>
                         </div>
                         <div class="action-center-buttons" style="gap: 8px;">
                             <button id="amily2-export-table-profile-btn" class="menu_button primary small_button interactable" type="button">
-                                <i class="fas fa-file-export"></i> 导出表格档案
+                                <i class="fas fa-file-export"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.exportProfile">导出表格档案</span>
                             </button>
                             <button id="amily2-save-profile-to-character-btn" class="menu_button danger small_button interactable" type="button">
-                                <i class="fas fa-exclamation-triangle"></i> 保存／覆盖到当前角色卡
+                                <i class="fas fa-exclamation-triangle"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.saveCharacter">保存／覆盖到当前角色卡</span>
                             </button>
                             <button id="amily2-remove-character-profile-btn" class="menu_button danger small_button interactable" type="button">
-                                <i class="fas fa-unlink"></i> 解除角色卡档案
+                                <i class="fas fa-unlink"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.unlinkCharacter">解除角色卡档案</span>
                             </button>
                         </div>
                         <label class="checkbox_label" style="margin-top: 8px; display: inline-flex; gap: 6px; align-items: center;">
                             <input id="amily2-import-sync-character-profile" type="checkbox">
-                            导入预设后，同时写入当前角色卡
+                            <span data-amily-i18n="apiTableUi.tableCompat.table.syncCharacter">导入预设后，同时写入当前角色卡</span>
                         </label>
                         <p class="notes" style="margin: 6px 0 0; color: var(--SmartThemeQuoteColor);">
-                            角色卡仅保存表结构、视图定义和模板，不保存聊天中的行数据。写入与解除都必须手动确认；已有聊天不会被角色卡后续更新覆盖。
+                            <span data-amily-i18n="apiTableUi.tableCompat.table.profileHelp">角色卡仅保存表结构、视图定义和模板，不保存聊天中的行数据。写入与解除都必须手动确认；已有聊天不会被角色卡后续更新覆盖。</span>
                         </p>
                     </fieldset>
 
@@ -556,17 +604,17 @@
 
                     <!-- 历史记录清理区域 -->
                     <fieldset class="settings-group" style="border-style: dashed; padding: 8px; margin-bottom: 10px;">
-                        <legend><i class="fas fa-trash-alt"></i> 历史记录清理</legend>
+                        <legend><i class="fas fa-trash-alt"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.historyCleanup">历史记录清理</span></legend>
                         <div class="control-block-with-switch" style="margin-bottom: 10px; flex-direction: column; align-items: flex-start;">
-                            <label for="clear-records-before-floor">清除此楼层前的表格记录</label>
+                            <label for="clear-records-before-floor"><span data-amily-i18n="apiTableUi.tableCompat.table.clearBefore">清除此楼层前的表格记录</span></label>
                             <div style="display: flex; gap: 10px; align-items: center; width: 100%; margin-top: 5px;">
-                                <input type="number" id="clear-records-before-floor" class="text_pole" style="flex: 1;" placeholder="输入楼层号 (例如: 100)">
+                                <input type="number" id="clear-records-before-floor" class="text_pole" style="flex: 1;" placeholder="输入楼层号 (例如: 100)" data-amily-i18n-placeholder="apiTableUi.tableCompat.table.floorHint">
                                 <button id="clear-records-btn" class="menu_button danger small_button interactable">
-                                    <i class="fas fa-eraser"></i> 一键清除
+                                    <i class="fas fa-eraser"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.clearRecords">一键清除</span>
                                 </button>
                             </div>
                             <small class="notes" style="margin-top: 5px; display: block;">
-                                警告：此操作将永久删除指定楼层之前所有消息中存储的表格快照。这可以显著减小聊天记录文件的大小，但会导致无法回退到这些楼层的表格状态。当前最新的表格状态不会受影响。
+                                <span data-amily-i18n="apiTableUi.tableCompat.table.clearWarning">警告：此操作将永久删除指定楼层之前所有消息中存储的表格快照。这可以显著减小聊天记录文件的大小，但会导致无法回退到这些楼层的表格状态。当前最新的表格状态不会受影响。</span>
                             </small>
                         </div>
                     </fieldset>
@@ -575,32 +623,32 @@
 
                     <!-- Tool Call V2 填表 -->
                     <div class="control-block-with-switch" style="margin-bottom: 6px;">
-                        <label for="table-fill-function-call-enabled" title="使用 Tool Call V2 进行填表。模型按表名、列名返回结构化操作，插件解析为稳定 ID 后再原子校验和提交。">使用 Tool Call V2 填表</label>
+                        <label for="table-fill-function-call-enabled" title="使用 Tool Call V2 进行填表。模型按表名、列名返回结构化操作，插件解析为稳定 ID 后再原子校验和提交。" data-amily-i18n-title="apiTableUi.tableCompat.table.toolCallHint"><span data-amily-i18n="apiTableUi.tableCompat.table.toolCall">使用 Tool Call V2 填表</span></label>
                         <label class="toggle-switch">
                             <input type="checkbox" id="table-fill-function-call-enabled">
                             <span class="slider"></span>
                         </label>
                     </div>
-                    <p class="notes" style="margin-bottom: 6px;">支持 OpenAI、Custom OAI、OpenRouter、DeepSeek 与 xAI 兼容接口（固定使用 tableFilling 槽位）。启用后优先使用表名/列名结构化操作；“独立 API 填表”只影响严格文本路径及 Tool 不可用后的文本降级。</p>
+                    <p class="notes" style="margin-bottom: 6px;"><span data-amily-i18n="apiTableUi.tableCompat.table.toolCallHelp">支持 OpenAI、Custom OAI、OpenRouter、DeepSeek 与 xAI 兼容接口（固定使用 tableFilling 槽位）。启用后优先使用表名/列名结构化操作；“独立 API 填表”只影响严格文本路径及 Tool 不可用后的文本降级。</span></p>
                     <div class="control-block-with-switch" style="margin-bottom: 6px;">
-                        <label for="table-fill-tool-fallback-enabled" title="当当前接口或模型不返回 tools 时，退回严格的 Amily2Edit 文本兼容路径。Tool 协议兼容重试、文本降级和任务自身重试都可能产生额外请求，并共同受连接 RPM 限制。">Tools 不可用时降级为文本填表</label>
+                        <label for="table-fill-tool-fallback-enabled" title="当当前接口或模型不返回 tools 时，退回严格的 Amily2Edit 文本兼容路径。Tool 协议兼容重试、文本降级和任务自身重试都可能产生额外请求，并共同受连接 RPM 限制。" data-amily-i18n-title="apiTableUi.tableCompat.table.toolFallbackHint"><span data-amily-i18n="apiTableUi.tableCompat.table.toolFallback">Tools 不可用时降级为文本填表</span></label>
                         <label class="toggle-switch">
                             <input type="checkbox" id="table-fill-tool-fallback-enabled">
                             <span class="slider"></span>
                         </label>
                     </div>
                     <div style="background: rgba(255, 160, 0, 0.12); border-left: 3px solid #ffa000; border-radius: 3px; padding: 6px 10px; margin-bottom: 10px; font-size: 0.85em; color: #ffcc80;">
-                        ⚠️ Tool Call 只返回受限的结构化表格操作，插件不会执行模型生成的代码。部分公益站仍可能屏蔽 tools 参数；协议兼容、文本降级与任务重试可能形成多次请求，请结合连接 RPM 和所用接口规则配置。
+                        <span data-amily-i18n="apiTableUi.tableCompat.table.toolWarning">⚠️ Tool Call 只返回受限的结构化表格操作，插件不会执行模型生成的代码。部分公益站仍可能屏蔽 tools 参数；协议兼容、文本降级与任务重试可能形成多次请求，请结合连接 RPM 和所用接口规则配置。</span>
                     </div>
 
                     <hr class="section-divider" style="margin: 10px 0;">
 
                     <!-- 独立 API 填表（内部 nccs 槽） -->
                     <fieldset class="settings-group" style="border-style: dashed; padding: 8px; margin-bottom: 10px;">
-                        <legend><i class="fas fa-brain"></i> 独立API填表</legend>
+                        <legend><i class="fas fa-brain"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.independent">独立API填表</span></legend>
                         
                         <div class="control-block-with-switch" style="margin-bottom: 10px;">
-                            <label for="nccs-api-enabled">启用独立API填表</label>
+                            <label for="nccs-api-enabled"><span data-amily-i18n="apiTableUi.tableCompat.table.enableIndependent">启用独立API填表</span></label>
                             <label class="toggle-switch">
                                 <input type="checkbox" id="nccs-api-enabled" data-setting-key="nccsEnabled" data-type="boolean">
                                 <span class="slider"></span>
@@ -609,10 +657,10 @@
 
                         <div id="nccs-api-config" style="display: none;">
                             <div class="amily2_opt_settings_block" style="margin-bottom: 10px;">
-                                <label for="nccs-api-mode">API 模式</label>
+                                <label for="nccs-api-mode"><span data-amily-i18n="apiTableUi.tableCompat.table.apiMode">API 模式</span></label>
                                 <select id="nccs-api-mode" class="text_pole">
-                                    <option value="openai_test">全兼容模式</option>
-                                    <option value="sillytavern_preset">SillyTavern预设模式</option>
+                                    <option value="openai_test" data-amily-i18n="apiTableUi.tableCompat.table.fullCompat">全兼容模式</option>
+                                    <option value="sillytavern_preset" data-amily-i18n="apiTableUi.tableCompat.table.stPresetMode">SillyTavern预设模式</option>
                                 </select>
                             </div>
 
@@ -623,35 +671,35 @@
 
                             <div class="amily2_opt_settings_block" style="margin-bottom: 10px;">
                                 <label for="nccs-api-key">API Key</label>
-                                <input type="password" id="nccs-api-key" class="text_pole" placeholder="输入您的API密钥">
+                                <input type="password" id="nccs-api-key" class="text_pole" placeholder="输入您的API密钥" data-amily-i18n-placeholder="apiTableUi.tableCompat.table.keyHint">
                             </div>
 
                             <div class="amily2_opt_settings_block" style="margin-bottom: 10px;">
-                                <label for="nccs-api-model">模型</label>
+                                <label for="nccs-api-model"><span data-amily-i18n="apiTableUi.tableCompat.common.model">模型</span></label>
                                 <div style="display: flex; gap: 5px; align-items: center;">
-                                    <input type="text" id="nccs-api-model" class="text_pole" placeholder="选择或输入模型">
+                                    <input type="text" id="nccs-api-model" class="text_pole" placeholder="选择或输入模型" data-amily-i18n-placeholder="apiTableUi.tableCompat.table.modelHint">
                                 </div>
                             </div>
 
 
                             <div class="amily2_opt_settings_block" style="margin-bottom: 10px;">
-                                <label for="nccs-api-fakestream-enabled">启用流式支持: </label>
+                                <label for="nccs-api-fakestream-enabled"><span data-amily-i18n="apiTableUi.tableCompat.table.stream">启用流式支持:</span> </label>
                                 <input type="checkbox" id="nccs-api-fakestream-enabled" data-setting-key="nccsFakeStreamEnabled" data-type="boolean">
                             </div>
 
                             <div class="amily2_opt_settings_block" style="margin-bottom: 10px;">
-                                <label for="nccs-sillytavern-preset">SillyTavern 预设</label>
+                                <label for="nccs-sillytavern-preset"><span data-amily-i18n="apiTableUi.tableCompat.table.stPreset">SillyTavern 预设</span></label>
                                 <select id="nccs-sillytavern-preset" class="text_pole">
-                                    <option value="">选择预设</option>
+                                    <option value="" data-amily-i18n="apiTableUi.tableCompat.table.selectPreset">选择预设</option>
                                 </select>
                             </div>
 
                             <div class="nccs-button-row" style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
                                 <button id="nccs-test-connection" class="menu_button primary small_button interactable">
-                                    <i class="fas fa-plug"></i> 测试连接
+                                    <i class="fas fa-plug"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.testConnection">测试连接</span>
                                 </button>
                                 <button id="nccs-fetch-models" class="menu_button secondary small_button interactable">
-                                    <i class="fas fa-download"></i> 获取模型
+                                    <i class="fas fa-download"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.fetchModels">获取模型</span>
                                 </button>
                             </div>
                         </div>
@@ -660,55 +708,55 @@
                     <hr class="section-divider" style="margin: 10px 0;">
                     
                     <div class="action-center-buttons" id="theme-action-buttons" style="gap: 8px;">
-                        <button id="amily2-import-theme-btn" class="menu_button small_button interactable"><i class="fas fa-palette"></i> 导入主题</button>
-                        <button id="amily2-export-theme-btn" class="menu_button small_button interactable"><i class="fas fa-paint-brush"></i> 导出主题</button>
-                        <button id="amily2-reset-theme-btn" class="menu_button small_button interactable"><i class="fas fa-undo"></i> 恢复默认</button>
+                        <button id="amily2-import-theme-btn" class="menu_button small_button interactable"><i class="fas fa-palette"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.importTheme">导入主题</span></button>
+                        <button id="amily2-export-theme-btn" class="menu_button small_button interactable"><i class="fas fa-paint-brush"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.exportTheme">导出主题</span></button>
+                        <button id="amily2-reset-theme-btn" class="menu_button small_button interactable"><i class="fas fa-undo"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.resetTheme">恢复默认</span></button>
                     </div>
-                    <p class="notes" style="margin-top: 8px;">说明：导入下载的主题JSON文件，或将当前的外观导出分享。</p>
+                    <p class="notes" style="margin-top: 8px;"><span data-amily-i18n="apiTableUi.tableCompat.table.themeHelp">说明：导入下载的主题JSON文件，或将当前的外观导出分享。</span></p>
                 </div>
 
                 <div id="sinan-fill-review-tab" class="sinan-tab-pane">
                     <div class="amily2-fill-review-panel-heading">
                         <div>
-                            <h3><i class="fas fa-clipboard-check"></i> 填表错误审查</h3>
+                            <h3><i class="fas fa-clipboard-check"></i> <span data-amily-i18n="apiTableUi.tableCompat.review.title">填表错误审查</span></h3>
                             <p class="notes">
-                                这里按当前聊天保存尚未处理的填表错误。关闭插件面板不会丢失记录；
+                                <span data-amily-i18n="apiTableUi.tableCompat.review.help">这里按当前聊天保存尚未处理的填表错误。关闭插件面板不会丢失记录；
                                 修复文本仍会经过严格解析与原子校验；忽略错误不会改表，
-                                只会将对应楼层记为人工跳过。
+                                只会将对应楼层记为人工跳过。</span>
                             </p>
                         </div>
                         <span id="amily2-fill-review-summary" class="amily2-fill-review-summary" role="status" aria-live="polite">
-                            正在读取当前聊天…
+                            <span data-amily-i18n="apiTableUi.tableCompat.review.loading">正在读取当前聊天…</span>
                         </span>
                     </div>
                     <div id="amily2-fill-review-list"
                          class="amily2-fill-review-list"
                          aria-live="polite"
                          aria-busy="false">
-                        <div class="amily2-fill-review-empty">当前聊天没有待处理的填表错误。</div>
+                        <div class="amily2-fill-review-empty"><span data-amily-i18n="apiTableUi.tableCompat.review.empty">当前聊天没有待处理的填表错误。</span></div>
                     </div>
                 </div>
 
 
                 <div id="sinan-ai-template-tab" class="sinan-tab-pane">
                     <fieldset class="settings-group" style="border-style: dashed; padding: 8px; margin-bottom: 10px;">
-                        <legend><i class="fas fa-scroll"></i> 规则提示词</legend>
+                        <legend><i class="fas fa-scroll"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.rulePrompt">规则提示词</span></legend>
                         <div class="amily2_settings_block prompt-editor-area">
                             <textarea id="ai-rule-template-editor" class="text_pole" rows="2"></textarea>
                             <div class="editor-buttons-panel">
-                                <button id="ai-rule-template-save-btn" class="menu_button accent small_button interactable"><i class="fas fa-save"></i> 保存</button>
-                                <button id="ai-rule-template-restore-btn" class="menu_button secondary small_button interactable"><i class="fas fa-undo"></i> 默认</button>
+                                <button id="ai-rule-template-save-btn" class="menu_button accent small_button interactable"><i class="fas fa-save"></i> <span data-amily-i18n="apiTableUi.tableCompat.common.save">保存</span></button>
+                                <button id="ai-rule-template-restore-btn" class="menu_button secondary small_button interactable"><i class="fas fa-undo"></i> <span data-amily-i18n="apiTableUi.tableCompat.common.default">默认</span></button>
                             </div>
                         </div>
                     </fieldset>
 
                     <fieldset class="settings-group" style="border-style: dashed; padding: 8px;">
-                        <legend><i class="fas fa-tasks"></i> 流程提示词</legend>
+                        <legend><i class="fas fa-tasks"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.flowPrompt">流程提示词</span></legend>
                         <div class="amily2_settings_block prompt-editor-area">
                             <textarea id="ai-flow-template-editor" class="text_pole" rows="2"></textarea>
                             <div class="editor-buttons-panel">
-                                <button id="ai-flow-template-save-btn" class="menu_button accent small_button interactable"><i class="fas fa-save"></i> 保存</button>
-                                <button id="ai-flow-template-restore-btn" class="menu_button secondary small_button interactable"><i class="fas fa-undo"></i> 默认</button>
+                                <button id="ai-flow-template-save-btn" class="menu_button accent small_button interactable"><i class="fas fa-save"></i> <span data-amily-i18n="apiTableUi.tableCompat.common.save">保存</span></button>
+                                <button id="ai-flow-template-restore-btn" class="menu_button secondary small_button interactable"><i class="fas fa-undo"></i> <span data-amily-i18n="apiTableUi.tableCompat.common.default">默认</span></button>
                             </div>
                         </div>
                     </fieldset>
@@ -718,20 +766,20 @@
                     <div id="table-filling-controls" style="display: flex; flex-direction: column; gap: 10px; align-items: center;">
                         <!-- 楼层选择区域 -->
                         <div style="display: flex; gap: 10px; align-items: center; justify-content: center;">
-                            <label for="floor-start-input" style="font-size: 12px; white-space: nowrap;">起始楼层:</label>
+                            <label for="floor-start-input" style="font-size: 12px; white-space: nowrap;"><span data-amily-i18n="apiTableUi.tableCompat.table.floorStart">起始楼层:</span></label>
                             <input type="number" id="floor-start-input" class="text_pole" style="width: 80px;" placeholder="1" min="1">
-                            <label for="floor-end-input" style="font-size: 12px; white-space: nowrap;">结束楼层:</label>
+                            <label for="floor-end-input" style="font-size: 12px; white-space: nowrap;"><span data-amily-i18n="apiTableUi.tableCompat.table.floorEnd">结束楼层:</span></label>
                             <input type="number" id="floor-end-input" class="text_pole" style="width: 80px;" placeholder="10" min="1">
                         </div>
                         
                         <!-- 填表按钮区域 -->
                         <div style="display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap;">
-                            <button id="fill-table-now-btn" class="menu_button small_button">立即填表</button>
-                            <button id="fill-selected-floors-btn" class="menu_button accent small_button">选定楼层填表</button>
-                            <button id="fill-current-floor-btn" class="menu_button secondary small_button">填当前楼层</button>
-                            <button id="rollback-and-refill-btn" class="menu_button secondary small_button">回退重填</button>
-                            <button id="table-fill-history-btn" class="menu_button secondary small_button" title="浏览各楼层保存的表格快照，可恢复到任意版本（救回被模型清空的表格）">填表记录</button>
-                            <button id="reorganize-table-btn" class="menu_button warning small_button">重新整理</button>
+                            <button id="fill-table-now-btn" class="menu_button small_button"><span data-amily-i18n="apiTableUi.tableCompat.table.fillNow">立即填表</span></button>
+                            <button id="fill-selected-floors-btn" class="menu_button accent small_button"><span data-amily-i18n="apiTableUi.tableCompat.table.fillSelected">选定楼层填表</span></button>
+                            <button id="fill-current-floor-btn" class="menu_button secondary small_button"><span data-amily-i18n="apiTableUi.tableCompat.table.fillCurrent">填当前楼层</span></button>
+                            <button id="rollback-and-refill-btn" class="menu_button secondary small_button"><span data-amily-i18n="apiTableUi.tableCompat.table.refill">回退重填</span></button>
+                            <button id="table-fill-history-btn" class="menu_button secondary small_button" title="浏览各楼层保存的表格快照，可恢复到任意版本（救回被模型清空的表格）" data-amily-i18n-title="apiTableUi.tableCompat.table.historyHint"><span data-amily-i18n="apiTableUi.tableCompat.table.history">填表记录</span></button>
+                            <button id="reorganize-table-btn" class="menu_button warning small_button"><span data-amily-i18n="apiTableUi.tableCompat.table.reorganize">重新整理</span></button>
                         </div>
                     </div>
                 </div>
@@ -745,7 +793,7 @@
 
 <div id="all-tables-container" class="hly-scroll">
 
-    <div id="add-table-placeholder" title="敕令新表">
+    <div id="add-table-placeholder" title="敕令新表" data-amily-i18n-title="apiTableUi.tableCompat.table.add">
         <i class="fas fa-plus"></i>
     </div>
 </div>

@@ -3,13 +3,13 @@
     <div class="acc-header">
         <div class="acc-header-left">
             <i class="fas fa-robot acc-logo"></i>
-            <span class="acc-title">Amily2 自动构建器</span>
-            <span id="acc-status-indicator" class="acc-status-badge status-idle">空闲</span>
+            <span class="acc-title" data-acc-i18n="autoCardUi.title">Amily2 自动构建器</span>
+            <span id="acc-status-indicator" class="acc-status-badge status-idle" data-acc-i18n="autoCardUi.status.idle">空闲</span>
         </div>
         <div class="acc-header-controls">
-            <button id="acc-minimize-btn" class="acc-control-btn" title="最小化"><i class="fas fa-window-minimize"></i></button>
-            <button id="acc-maximize-btn" class="acc-control-btn" title="全屏/还原"><i class="fas fa-expand"></i></button>
-            <button id="acc-close-btn" class="acc-control-btn" title="关闭"><i class="fas fa-times"></i></button>
+            <button id="acc-minimize-btn" class="acc-control-btn" title="最小化" data-acc-i18n-title="autoCardUi.minimize"><i class="fas fa-window-minimize"></i></button>
+            <button id="acc-maximize-btn" class="acc-control-btn" title="全屏/还原" data-acc-i18n-title="autoCardUi.maximize"><i class="fas fa-expand"></i></button>
+            <button id="acc-close-btn" class="acc-control-btn" title="关闭" data-acc-i18n-title="autoCardUi.close"><i class="fas fa-times"></i></button>
         </div>
     </div>
 
@@ -18,38 +18,38 @@
         <!-- 左栏：工作区设置 -->
         <div class="acc-column acc-left-panel">
             <div class="acc-panel-header">
-                <i class="fas fa-cog"></i> 工作区设置
+                <i class="fas fa-cog"></i> <span data-acc-i18n="autoCardUi.workspace">工作区设置</span>
             </div>
             <div class="acc-panel-content">
                 <div class="acc-form-group" style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-                    <label for="acc_master_enabled" style="margin:0;"><strong>一键生卡总开关</strong></label>
-                    <label class="switch" title="关闭后一键生卡不再调用模型" style="flex-shrink:0;">
+                    <label for="acc_master_enabled" style="margin:0;"><strong data-acc-i18n="autoCardUi.master">一键生卡总开关</strong></label>
+                    <label class="switch" title="关闭后一键生卡不再调用模型" data-acc-i18n-title="autoCardUi.masterHint" style="flex-shrink:0;">
                         <input type="checkbox" id="acc_master_enabled" checked />
                         <span class="slider round"></span>
                     </label>
                 </div>
                 <div class="acc-form-group">
-                    <label>目标角色卡</label>
+                    <label data-acc-i18n="autoCardUi.targetCharacter">目标角色卡</label>
                     <select id="acc-target-char" class="acc-select">
-                        <option value="">-- 请选择或新建 --</option>
-                        <option value="new">新建空白角色</option>
+                        <option value="" data-acc-i18n="autoCardUi.chooseOrCreate">-- 请选择或新建 --</option>
+                        <option value="new" data-acc-i18n="autoCardUi.newBlankCharacter">新建空白角色</option>
                     </select>
                 </div>
                 <div class="acc-form-group">
-                    <label>关联世界书</label>
+                    <label data-acc-i18n="autoCardUi.targetWorld">关联世界书</label>
                     <select id="acc-target-world" class="acc-select">
-                        <option value="">-- 请选择或新建 --</option>
-                        <option value="new">新建世界书</option>
+                        <option value="" data-acc-i18n="autoCardUi.chooseOrCreate">-- 请选择或新建 --</option>
+                        <option value="new" data-acc-i18n="autoCardUi.newWorld">新建世界书</option>
                     </select>
                 </div>
                 
                 <div class="acc-divider"></div>
                 
                 <div class="acc-panel-header" style="cursor: pointer;" id="acc-sessions-toggle">
-                    <i class="fas fa-history"></i> 历史会话 <i class="fas fa-chevron-down" style="float: right;"></i>
+                    <i class="fas fa-history"></i> <span data-acc-i18n="autoCardUi.sessions">历史会话</span> <i class="fas fa-chevron-down" style="float: right;"></i>
                 </div>
                 <div id="acc-sessions-content" style="display: none; padding-top: 10px;">
-                    <button id="acc-new-session-btn" class="acc-btn-primary" style="width: 100%; margin-bottom: 10px;"><i class="fas fa-plus"></i> 新建会话</button>
+                    <button id="acc-new-session-btn" class="acc-btn-primary" style="width: 100%; margin-bottom: 10px;"><i class="fas fa-plus"></i> <span data-acc-i18n="autoCardUi.newSession">新建会话</span></button>
                     <div id="acc-sessions-list" class="acc-sessions-list" style="max-height: 150px; overflow-y: auto;">
                         <!-- Sessions will be added here -->
                     </div>
@@ -57,21 +57,21 @@
 
                 <div class="acc-divider"></div>
                 
-                <div class="acc-section-title">当前任务</div>
+                <div class="acc-section-title" data-acc-i18n="autoCardUi.task">当前任务</div>
                 <div id="acc-task-list" class="acc-task-list">
-                    <div class="acc-task-item pending">等待指令...</div>
+                    <div class="acc-task-item pending" data-acc-i18n="autoCardUi.waiting">等待指令...</div>
                 </div>
 
                 <div class="acc-divider"></div>
 
                 <div class="acc-panel-header" style="cursor: pointer;" id="acc-rules-toggle">
-                    <i class="fas fa-book"></i> 动态规则 <i class="fas fa-chevron-down" style="float: right;"></i>
+                    <i class="fas fa-book"></i> <span data-acc-i18n="autoCardUi.rules">动态规则</span> <i class="fas fa-chevron-down" style="float: right;"></i>
                 </div>
                 <div id="acc-rules-content" style="display: none; padding-top: 10px;">
                     <div class="acc-form-group">
-                        <label>添加新规则 (格式: 关键词|规则内容)</label>
+                        <label data-acc-i18n="autoCardUi.ruleFormat">添加新规则 (格式: 关键词|规则内容)</label>
                         <div style="display: flex; gap: 5px;">
-                            <input type="text" id="acc-new-rule-input" class="acc-input" placeholder="例如: 魔法|描写魔法时必须包含咒语">
+                            <input type="text" id="acc-new-rule-input" class="acc-input" placeholder="例如: 魔法|描写魔法时必须包含咒语" data-acc-i18n-placeholder="autoCardUi.ruleExample">
                             <button id="acc-add-rule-btn" class="acc-btn-secondary"><i class="fas fa-plus"></i></button>
                         </div>
                     </div>
@@ -83,7 +83,7 @@
                 <div class="acc-divider"></div>
 
                 <div class="acc-panel-header" style="cursor: pointer;" id="acc-api-settings-toggle">
-                    <i class="fas fa-network-wired"></i> API 配置 <i class="fas fa-chevron-down" style="float: right;"></i>
+                    <i class="fas fa-network-wired"></i> <span data-acc-i18n="autoCardUi.api.title">API 配置</span> <i class="fas fa-chevron-down" style="float: right;"></i>
                 </div>
                 <div id="acc-api-settings-content" style="display: none; padding-top: 10px;">
                     <div id="acc-api-executor" class="acc-api-group">
@@ -96,22 +96,22 @@
                             <input type="password" id="acc-executor-key" class="acc-input" placeholder="sk-...">
                         </div>
                         <div class="acc-form-group">
-                            <label>Model</label>
+                            <label data-acc-i18n="autoCardUi.api.model">模型</label>
                             <div style="display: flex; gap: 5px;">
                                 <select id="acc-executor-model" class="acc-select" style="flex: 1;">
-                                    <option value="">请刷新获取模型</option>
+                                    <option value="" data-acc-i18n="autoCardUi.api.refreshPrompt">请刷新获取模型</option>
                                 </select>
-                                <button id="acc-executor-refresh-models" class="acc-btn-secondary" title="刷新模型列表"><i class="fas fa-sync-alt"></i></button>
+                                <button id="acc-executor-refresh-models" class="acc-btn-secondary" title="刷新模型列表" data-acc-i18n-title="autoCardUi.api.refresh"><i class="fas fa-sync-alt"></i></button>
                             </div>
                         </div>
                         <div class="acc-form-group">
-                            <label>Max Tokens</label>
+                            <label data-acc-i18n="autoCardUi.api.maxTokens">最大 Token 数</label>
                             <input type="number" id="acc-executor-max-tokens" class="acc-input" placeholder="4000" value="4000">
                         </div>
-                        <button id="acc-executor-test" class="acc-btn-secondary" style="width: 100%;">测试连接</button>
+                        <button id="acc-executor-test" data-acc-i18n="autoCardUi.api.test" class="acc-btn-secondary" style="width: 100%;">测试连接</button>
                     </div>
                     
-                    <button id="acc-save-api" class="acc-btn-primary" style="width: 100%; margin-top: 10px;">保存配置</button>
+                    <button id="acc-save-api" data-acc-i18n="autoCardUi.api.save" class="acc-btn-primary" style="width: 100%; margin-top: 10px;">保存配置</button>
                 </div>
             </div>
         </div>
@@ -119,27 +119,27 @@
         <!-- 中栏：互动区域 -->
         <div class="acc-column acc-center-panel">
             <div class="acc-panel-header">
-                <i class="fas fa-comments"></i> 交互控制台
+                <i class="fas fa-comments"></i> <span data-acc-i18n="autoCardUi.console">交互控制台</span>
             </div>
             <div id="acc-chat-stream" class="acc-chat-stream">
                 <div class="acc-message system">
                     <div class="acc-message-content">
-                        欢迎使用 Amily2 自动构建器。<br>
-                        请在左侧配置工作区，然后在下方输入您的需求。<br>
-                        当使用时，最好不要进入所选的角色卡中，以便后台执行即时生效。
+                        <span data-acc-i18n="autoCardUi.welcome.title">欢迎使用 Amily2 自动构建器。</span><br>
+                        <span data-acc-i18n="autoCardUi.welcome.workspace">请在左侧配置工作区，然后在下方输入您的需求。</span><br>
+                        <span data-acc-i18n="autoCardUi.welcome.character">当使用时，最好不要进入所选的角色卡中，以便后台执行即时生效。</span>
                     </div>
                 </div>
             </div>
             <div class="acc-input-area">
                 <div class="acc-input-wrapper">
-                    <textarea id="acc-user-input" placeholder="描述您的需求，例如：创建一个赛博朋克风格的黑客少女..." rows="2"></textarea>
-                    <button id="acc-send-btn" class="acc-send-btn"><i class="fas fa-paper-plane"></i></button>
+                    <textarea id="acc-user-input" placeholder="描述您的需求，例如：创建一个赛博朋克风格的黑客少女..." data-acc-i18n-placeholder="autoCardUi.input.example" rows="2"></textarea>
+                    <button id="acc-send-btn" title="发送" data-acc-i18n-title="autoCardUi.send" class="acc-send-btn"><i class="fas fa-paper-plane"></i></button>
                 </div>
                 <div class="acc-input-controls">
-                    <label class="acc-checkbox-label" title="写入工具始终需要逐次批准；开启后，只读工具也会在执行前请求确认">
-                        <input type="checkbox" id="acc-require-approval"> 只读也确认
+                    <label class="acc-checkbox-label" title="写入工具始终需要逐次批准；开启后，只读工具也会在执行前请求确认" data-acc-i18n-title="autoCardUi.approval.readHint">
+                        <input type="checkbox" id="acc-require-approval"> <span data-acc-i18n="autoCardUi.approval.readConfirm">只读也确认</span>
                     </label>
-                    <button id="acc-stop-btn" class="acc-btn-danger" style="display: none;"><i class="fas fa-stop"></i> 停止生成</button>
+                    <button id="acc-stop-btn" class="acc-btn-danger" style="display: none;"><i class="fas fa-stop"></i> <span data-acc-i18n="autoCardUi.stop">停止生成</span></button>
                 </div>
             </div>
             
@@ -151,7 +151,7 @@
             <div style="display: flex; align-items: center; gap: 5px; flex: 1; min-width: 0;">
                 <i class="fas fa-eye" style="flex-shrink: 0;"></i> 
                 <select id="acc-file-selector" class="acc-select" style="height: 24px; padding: 0 5px; font-size: 12px; width: auto; flex: 1; min-width: 100px;">
-                    <option value="">-- 选择文件 --</option>
+                    <option value="" data-acc-i18n="autoCardUi.file.choose">-- 选择文件 --</option>
                 </select>
             </div>
                 <div class="acc-preview-tabs" style="display: flex; gap: 2px; overflow-x: auto; max-width: 60%;">
@@ -162,7 +162,7 @@
                 <!-- 预览内容将动态插入这里 -->
                 <div class="acc-empty-state">
                     <i class="fas fa-file-alt"></i>
-                    <p>暂无修改内容</p>
+                    <p data-acc-i18n="autoCardUi.file.noChanges">暂无修改内容</p>
                 </div>
             </div>
         </div>
@@ -172,15 +172,15 @@
     <div class="acc-mobile-nav">
         <button class="acc-nav-btn" data-target="acc-left-panel">
             <i class="fas fa-cog"></i>
-            <span>设置</span>
+            <span data-acc-i18n="autoCardUi.nav.settings">设置</span>
         </button>
         <button class="acc-nav-btn active" data-target="acc-center-panel">
             <i class="fas fa-comments"></i>
-            <span>聊天</span>
+            <span data-acc-i18n="autoCardUi.nav.chat">聊天</span>
         </button>
         <button class="acc-nav-btn" data-target="acc-right-panel">
             <i class="fas fa-eye"></i>
-            <span>预览</span>
+            <span data-acc-i18n="autoCardUi.nav.preview">预览</span>
         </button>
     </div>
 </div>

@@ -1,0 +1,116 @@
+.amily2-home-status {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    padding-block: 12px;
+    border-block: 1px solid var(--SmartThemeBorderColor, #777);
+    color: var(--SmartThemeBodyColor, inherit);
+    font-size: 13px;
+    line-height: 1.5;
+    letter-spacing: 0;
+    overflow-wrap: anywhere;
+}
+
+.amily2-home-status .amily2-home-status__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    cursor: pointer;
+    list-style: none;
+}
+
+.amily2-home-status .amily2-home-status__header::-webkit-details-marker {
+    display: none;
+}
+
+.amily2-home-status .amily2-home-status__chevron {
+    flex: 0 0 12px;
+    width: 12px;
+    text-align: center;
+    font-size: 12px;
+}
+
+.amily2-home-status[open] > .amily2-home-status__header > .amily2-home-status__chevron {
+    transform: rotate(90deg);
+}
+
+.amily2-home-status .amily2-home-status__title {
+    margin: 0;
+    min-width: 0;
+    flex: 1;
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.amily2-home-status .amily2-home-status__refresh {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+    margin: 0;
+    padding: 0;
+    border-radius: 4px;
+}
+
+.amily2-home-status .amily2-home-status__list {
+    margin: 8px 0;
+}
+
+.amily2-home-status .amily2-home-status__row {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    gap: 8px 12px;
+    padding-block: 6px;
+}
+
+.amily2-home-status .amily2-home-status__label,
+.amily2-home-status .amily2-home-status__value {
+    min-width: 0;
+    margin: 0;
+}
+
+.amily2-home-status .amily2-home-status__value {
+    font-weight: 600;
+}
+
+.amily2-home-status .amily2-home-status__note {
+    margin: 6px 0;
+    font-size: 12px;
+}
+
+.amily2-home-status .amily2-home-status__details > summary {
+    cursor: pointer;
+    padding-block: 6px;
+}
+
+.amily2-home-status .amily2-home-status__modules {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.amily2-home-status .amily2-home-status__module {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+    padding-block: 3px;
+}
+
+.amily2-home-status [data-state="expired"],
+.amily2-home-status [data-state="invalid"],
+.amily2-home-status [data-state="insecure"] {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+    text-underline-offset: 3px;
+}
+
+@media (max-width: 420px) {
+    .amily2-home-status .amily2-home-status__row {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 2px;
+    }
+}

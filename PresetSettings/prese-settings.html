@@ -161,6 +161,7 @@
         /* 条件块水平线格式样式 */
         #amily2-preset-settings-popup .conditional-line-format {
             display: flex;
+            flex-wrap: wrap;
             align-items: center;
             padding: 8px 12px;
             background: #3a3a3a;
@@ -189,7 +190,9 @@
             color: #fff;
             font-weight: 600;
             font-size: 14px;
-            white-space: nowrap;
+            white-space: normal;
+            min-width: 0;
+            overflow-wrap: anywhere;
             text-align: center;
         }
         
@@ -272,6 +275,9 @@
             align-items: center;
             justify-content: center;
             line-height: 1.2;
+            white-space: normal;
+            overflow-wrap: anywhere;
+            max-width: 100%;
         }
         
         #amily2-preset-settings-popup .btn:hover {
@@ -388,15 +394,24 @@
         #amily2-preset-settings-popup::-webkit-scrollbar-thumb:hover {
             background: #666;
         }
+
+        #amily2-preset-settings-popup h3,
+        #amily2-preset-settings-popup .conditional-description {
+            overflow-wrap: anywhere;
+        }
+
+        #amily2-preset-settings-popup #preset-select {
+            max-width: 100%;
+        }
     </style>
 
-    <h3 style="margin: 0 0 16px 0; color: #fff; font-weight: 600;">Amily2 提示词链编辑器</h3>
+    <h3 data-preset-editor-i18n="title" style="margin: 0 0 16px 0; color: #fff; font-weight: 600;">Amily2 提示词链编辑器</h3>
 
     <div class="button-group">
-        <button id="save-all-presets" class="btn btn-success">全部保存</button>
-        <button id="import-all-presets" class="btn btn-info">导入配置</button>
-        <button id="export-all-presets" class="btn btn-warning">导出配置</button>
-        <button id="reset-all-presets" class="btn btn-danger">恢复全部</button>
+        <button id="save-all-presets" class="btn btn-success" data-preset-editor-i18n="all.save">全部保存</button>
+        <button id="import-all-presets" class="btn btn-info" data-preset-editor-i18n="all.import">导入配置</button>
+        <button id="export-all-presets" class="btn btn-warning" data-preset-editor-i18n="all.export">导出配置</button>
+        <button id="reset-all-presets" class="btn btn-danger" data-preset-editor-i18n="all.reset">恢复全部</button>
     </div>
 
     <div id="preset-manager-container">
