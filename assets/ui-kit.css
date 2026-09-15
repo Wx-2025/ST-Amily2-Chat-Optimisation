@@ -2794,6 +2794,73 @@
     align-items: center !important;
 }
 
+#amily2_rule_config_panel .am2-rule-preview {
+    border-top: var(--am2-border);
+    padding-top: 12px;
+    min-width: 0;
+    letter-spacing: 0;
+}
+
+#amily2_rule_config_panel .am2-rule-preview > summary {
+    cursor: pointer;
+    padding: 4px 0;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+#amily2_rule_config_panel .am2-rule-preview > summary small {
+    margin-inline-start: 8px;
+}
+
+#amily2_rule_config_panel .am2-rule-preview-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    margin-top: 10px;
+}
+
+#amily2_rule_config_panel .am2-rule-preview-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+#amily2_rule_config_panel .am2-rule-preview-toolbar > select {
+    flex: 1 1 140px;
+    min-width: 0;
+    width: auto;
+}
+
+#amily2_rule_config_panel .am2-rule-preview-toolbar > .menu_button {
+    flex: 0 0 auto;
+    min-width: 36px;
+    min-height: 36px;
+    margin: 0;
+    white-space: nowrap;
+}
+
+#amily2_rule_config_panel .am2-rule-preview textarea {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    min-height: 120px;
+    box-sizing: border-box;
+    resize: vertical;
+    border-radius: 6px;
+    font-family: var(--monoFontFamily, monospace);
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+#amily2_rule_config_panel .am2-rule-preview-status {
+    min-height: 1.5em;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    line-height: 1.5;
+}
+
 #amily2_rule_config_panel .am2-rule-actions {
     display: flex;
     gap: 8px;

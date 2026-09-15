@@ -73,6 +73,30 @@
             <div id="amily2_rule_profile_rules" class="am2-rule-rows"></div>
         </div>
 
+        <details id="amily2_rule_preview" class="am2-rule-preview">
+            <summary><span data-amily-i18n="auxiliaryUi.rule.preview.title">提取预览</span> <small class="notes" data-amily-i18n="auxiliaryUi.rule.preview.draft">当前编辑草稿</small></summary>
+            <div class="am2-rule-preview-body">
+                <div class="am2-rule-preview-toolbar">
+                    <label for="amily2_rule_preview_role" data-amily-i18n="auxiliaryUi.rule.preview.role">消息类型</label>
+                    <select id="amily2_rule_preview_role" class="text_pole">
+                        <option value="assistant" data-amily-i18n="auxiliaryUi.rule.preview.assistant">AI 消息</option>
+                        <option value="user" data-amily-i18n="auxiliaryUi.rule.preview.user">用户消息</option>
+                    </select>
+                    <button id="amily2_rule_preview_run" class="menu_button small_button secondary" type="button">
+                        <i class="fas fa-eye" aria-hidden="true"></i> <span data-amily-i18n="auxiliaryUi.rule.preview.run">提取</span>
+                    </button>
+                    <button id="amily2_rule_preview_clear" class="menu_button small_button secondary" type="button" title="清空预览" aria-label="清空预览" data-amily-i18n-title="auxiliaryUi.rule.preview.clear" data-amily-i18n-aria-label="auxiliaryUi.rule.preview.clear">
+                        <i class="fas fa-eraser" aria-hidden="true"></i>
+                    </button>
+                </div>
+                <label for="amily2_rule_preview_source" data-amily-i18n="auxiliaryUi.rule.preview.source">原文</label>
+                <textarea id="amily2_rule_preview_source" class="text_pole" rows="6" spellcheck="false" autocomplete="off"></textarea>
+                <div id="amily2_rule_preview_status" class="notes am2-rule-preview-status" role="status" aria-live="polite"></div>
+                <label for="amily2_rule_preview_output" data-amily-i18n="auxiliaryUi.rule.preview.output">提取结果</label>
+                <textarea id="amily2_rule_preview_output" class="text_pole" rows="6" readonly spellcheck="false" autocomplete="off"></textarea>
+            </div>
+        </details>
+
         <div class="am2-rule-actions">
             <button id="amily2_rule_profile_save" class="menu_button menu_button_primary primary" type="button">
                 <i class="fas fa-save"></i> <span data-amily-i18n="actions.save">保存</span>
