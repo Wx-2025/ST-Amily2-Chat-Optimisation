@@ -46,3 +46,40 @@ export function applyExclusionRules(text, rules) {
 
     return processedText;
 }
+
+export function previewRuleExtraction(text, profile = {}, { isUser = false } = {}) {
+    const source = String(text ?? '');
+    const result = {
+        content: '',
+        mode: 'disabled',
+        matchedTags: [],
+        unmatchedTags: [],
+        excludedCharacters: 0,
+    };
+    if (isUser && profile.excludeUserMessages) {
+        return { ...result, mode: 'skipped' };
+    }
+
+    let content = source;
+    if (profile.tagExtractionEnabled) {
+        const tags = String(profile.tags || '').split(',').map(tag => tag.trim()).filter(Boolean);
+        const blocks = [];
+        for (const tag of tags) {
+            const matches = extractBlocksByTags(source, [tag]);
+            if (matches.length) {
+                result.matchedTags.push({ tag, count: matches.length });
+                blocks.push(...matches);
+            } else {
+                result.unmatchedTags.push(tag);
+            }
+        }
+        // Keep the runtime's tag order, full blocks and no-match fallback.
+        result.mode = !tags.length ? 'no-tags' : blocks.length ? 'extracted' : 'fallback';
+        if (blocks.length) content = blocks.join('\n\n');
+    }
+
+    const filtered = applyExclusionRules(content, profile.exclusionRules || []);
+    result.excludedCharacters = content.length - filtered.length;
+    result.content = filtered.trim();
+    return result;
+}
