@@ -33,6 +33,8 @@ import {
     createHistoriographyVectorPipeline,
 } from './historiography/vector-pipeline.js';
 import { superSort } from './super-sorter.js';
+import { isHistoriographyVectorCurrent } from './historiography/vector-authority.js';
+import { loadBookFresh } from './lore-service.js';
 import { executeGraphRetrieval } from './relationship-graph/executor.js';
 import { initializeArchiveManager } from './archive-manager.js';
 import {
@@ -928,6 +930,17 @@ function isHistoriographyVectorBase(base) {
         );
 }
 
+async function canQueryHistoriographyBase(base) {
+    try {
+        // Older registrations lack bookName. Resolve their current summary target,
+        // but still require an exact ledger/segment/hash/receipt identity match.
+        const bookName = base.historiographyVector?.bookName
+            || await (await import('./historiographer.js')).getTargetLorebookName();
+        if (!bookName) return false;
+        return await isHistoriographyVectorCurrent(base, await loadBookFresh(bookName));
+    } catch { return false; }
+}
+
 function registerHistoriographyVectorBase(job, range = {}) {
     const bases = getLocalKnowledgeBases();
     const marker = {
@@ -938,6 +951,7 @@ function registerHistoriographyVectorBase(job, range = {}) {
         segmentId: String(job.segmentId),
         contentHash: String(job.contentHash),
         fingerprint: String(job.fingerprint),
+        bookName: String(range.bookName || ''),
     };
     let base = Object.values(bases).find(candidate =>
         isHistoriographyVectorBase(candidate)
@@ -1122,6 +1136,7 @@ async function queryVectors(queryText, options = {}) {
 
 
 async function _executeQueryForBase(base, queryText, queryEmbedding = null) {
+    if (isHistoriographyVectorBase(base) && !await canQueryHistoriographyBase(base)) return [];
     const charId = getCharacterStableId();
     let collectionId;
 
@@ -1193,6 +1208,9 @@ async function _executeQueryForBase(base, queryText, queryEmbedding = null) {
             rawData = result.data;
         }
 
+        // Recheck after the network wait: a rollback may have committed while
+        // this query was in flight. Never inject the now-revoked historical text.
+        if (isHistoriographyVectorBase(base) && !await canQueryHistoriographyBase(base)) return [];
         const data = [];
         for (const rawItem of rawData) {
             if (!rawItem || typeof rawItem.text !== 'string') continue;

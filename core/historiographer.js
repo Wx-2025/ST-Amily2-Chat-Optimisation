@@ -13,7 +13,7 @@ import {
   mutateBookStrict,
   withLoreLock,
 } from "./lore-service.js";
-import { extensionName } from "../utils/settings.js";
+import { extensionName, saveSettings as savePluginSettings } from "../utils/settings.js";
 import { t } from '../utils/i18n/index.js';
 import { pluginAuthStatus } from "../utils/auth-state.js";
 import {
@@ -74,6 +74,8 @@ import {
   previewLegacyMigration,
   repairSegmentedLedgerSafeStates,
   rollbackSegmentedLedger,
+  prepareSegmentedRevisionRecovery,
+  restoreSegmentedRevision,
 } from './historiography/segmented-runtime.js';
 import {
   isHistoriographyVectorJobVerified,
@@ -155,6 +157,10 @@ async function readHistoriographyContextKey() {
   }
 }
 
+const recoveryEpochs = new Map();
+const leaseRecoveryEpochs = new WeakMap();
+const revisionRecoveryLeases = new WeakMap();
+
 async function captureHistoriographyExecutionLease({
   targetLorebookName = null,
   requireCurrentTarget = true,
@@ -162,13 +168,15 @@ async function captureHistoriographyExecutionLease({
   const targetKey = requireCurrentTarget
     ? (targetLorebookName || await getTargetLorebookName())
     : targetLorebookName;
-  return captureHistoriographyOperationLease({
+  const lease = captureHistoriographyOperationLease({
     authState: pluginAuthStatus,
     targetKey,
     contextKey: requireCurrentTarget
       ? await readHistoriographyContextKey()
       : null,
   });
+  leaseRecoveryEpochs.set(lease, recoveryEpochs.get(targetKey) || 0);
+  return lease;
 }
 
 async function assertHistoriographyExecutionLease(
@@ -178,6 +186,12 @@ async function assertHistoriographyExecutionLease(
   const targetKey = requireCurrentTarget
     ? await getTargetLorebookName()
     : (targetLorebookName || lease?.targetKey || null);
+  if (leaseRecoveryEpochs.has(lease)
+    && leaseRecoveryEpochs.get(lease) !== (recoveryEpochs.get(targetKey) || 0)) {
+    const error = new Error('史册已回滚，此前生成的总结／向量任务已经失效。');
+    error.code = 'HISTORIOGRAPHY_STALE_LEDGER';
+    throw error;
+  }
   return assertHistoriographyOperationLease(lease, {
     authState: pluginAuthStatus,
     targetKey,
@@ -373,6 +387,41 @@ export async function getHistoriographyLedgerStatus() {
     migrationAvailable: true,
     migrationBlockedReason: parsed.reason || '',
   };
+}
+
+export async function getActiveLedgerRevisionSnapshot() {
+  const bookName = await getTargetLorebookName();
+  if (!bookName) throw new Error('当前聊天没有目标世界书。');
+  const lease = await captureHistoriographyExecutionLease({ targetLorebookName: bookName });
+  // Recovery must remain available even when the normal status validator fails.
+  const snapshot = await prepareSegmentedRevisionRecovery({ bookName });
+  await assertHistoriographyTargetLease(bookName, lease);
+  revisionRecoveryLeases.set(snapshot, lease);
+  return snapshot;
+}
+
+export async function applyActiveLedgerRevisionRecovery(snapshot, checkpointId, keepThroughFloor) {
+  const lease = revisionRecoveryLeases.get(snapshot);
+  if (!lease || snapshot.bookName !== await getTargetLorebookName()) {
+    throw new Error('回滚窗口已失效或聊天已切换，请重新打开。');
+  }
+  const persistence = await restoreSegmentedRevision({
+    bookName: snapshot.bookName,
+    request: { ...snapshot, checkpointId, keepThroughFloor },
+    assertTarget: () => assertHistoriographyTargetLease(snapshot.bookName, lease),
+  });
+  if (!persistence.committed) throw new Error('回滚尚未确认保存。');
+  revisionRecoveryLeases.delete(snapshot);
+  recoveryEpochs.set(snapshot.bookName, (recoveryEpochs.get(snapshot.bookName) || 0) + 1);
+  if (isExpeditionRunning) stopExpedition();
+  await runHistoriographyPostCommitEffect('回滚后暂停自动总结', () => {
+    extension_settings[extensionName].historiographySmallAutoEnable = false;
+    const toggle = document.getElementById('amily2_mhb_small_auto_enabled');
+    if (toggle) toggle.checked = false;
+    savePluginSettings();
+  });
+  await runHistoriographyPostCommitEffect('刷新回滚后的世界书', () => reloadEditor(snapshot.bookName));
+  return persistence.mutation;
 }
 
 export async function getActiveLedgerSafeEditSnapshot() {
@@ -1426,6 +1475,8 @@ async function writeSummary(
                     activation,
                     maxTailTokens: refinementLimits.inputMaxTokens,
                     maxResidentTokens: getHistoriographyResidentMaxTokens(),
+                    expectedManifestKey: currentLedger.manifestRecord?.key ?? null,
+                    assertTarget: () => assertHistoriographyTargetLease(targetLorebookName, operationLease),
                 });
                 if (!persistence.committed) {
                     if (persistence.mutation?.idempotent) {

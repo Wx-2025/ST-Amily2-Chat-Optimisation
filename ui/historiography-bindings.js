@@ -7,6 +7,7 @@ import {
   saveSettings,
 } from "../utils/settings.js";
 import { showHtmlModal } from './page-window.js';
+import { showHistoriographyRecoveryDialog } from './historiography-recovery-dialog.js';
 import { configManager } from '../utils/config/ConfigManager.js';
 import { ruleProfileManager, resolveHistoriographyRuleConfig } from '../utils/config/RuleProfileManager.js';
 import { clearSecretInput, markSecretInputStored, readSecretInputUpdate } from './secret-input.js';
@@ -27,6 +28,8 @@ import {
   repairActiveHistoriographyLedger,
   getActiveLedgerSafeEditSnapshot,
   applyActiveLedgerSafeEdit,
+  getActiveLedgerRevisionSnapshot,
+  applyActiveLedgerRevisionRecovery,
 } from "../core/historiographer.js";
 import {
   HISTORIOGRAPHY_PROTOCOL_LEGACY,
@@ -518,6 +521,7 @@ export function bindHistoriographyEvents() {
     const safeEditBtn = document.getElementById(
       'historiography_safe_edit',
     );
+    const revisionRestoreBtn = document.getElementById('historiography_revision_restore');
     let migrationPreviewSnapshot = null;
     let ledgerStatusSnapshot = null;
     let diagnosticSnapshot = null;
@@ -836,6 +840,27 @@ export function bindHistoriographyEvents() {
         });
       }
     });
+    // Independent of renderLedgerStatus: validation failures must not lock out recovery.
+    revisionRestoreBtn.addEventListener('click', async () => {
+      revisionRestoreBtn.disabled = true;
+      try {
+        const snapshot = await getActiveLedgerRevisionSnapshot();
+        if (!snapshot.options.length) throw new Error(t('summaryWorkflow.revisionNoHistory'));
+        showHistoriographyRecoveryDialog({
+          snapshot, showHtmlModal, t, escapeHtml: _escapeHtml,
+          restore: applyActiveLedgerRevisionRecovery,
+          onRestored: async result => {
+            toastr.success(t('summaryWorkflow.revisionDone', { revision: result.revision, floor: result.lastSummarizedFloor }), t('summaryWorkflow.revisionTitle'));
+            await refreshLedgerStatus();
+          },
+        });
+      } catch (error) {
+        toastr.error(_escapeHtml(t('summaryWorkflow.revisionFailed', { error: error.message })), t('summaryWorkflow.revisionTitle'));
+      } finally {
+        revisionRestoreBtn.disabled = false;
+      }
+    });
+
     safeEditBtn.addEventListener('click', async () => {
       safeEditBtn.disabled = true;
       try {
