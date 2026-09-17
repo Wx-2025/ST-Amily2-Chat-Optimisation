@@ -29,6 +29,7 @@ import { showPresetSettings } from '../PresetSettings/prese_ui.js';
 import { watchProfileSliderGuard } from './profile-slider-guard.js';
 import { refreshSuperMemoryPanel } from '../core/super-memory/bindings.js';
 import { hasSuperMemoryAccess } from '../core/super-memory/access-policy.js';
+import { getModuleAccessDecision } from '../utils/module-access-policy.js';
 import { refreshProgressiveMemorySourceOptions } from '../core/progressive-memory/bindings.js';
 import { refreshTimeRiverPanel } from '../core/time-river/bindings.js';
 import { getTimeRiverAccess } from '../core/time-river/auth.js';
@@ -1160,9 +1161,8 @@ export function bindModalEvents() {
                 refreshSuperMemoryPanel();
                 break;
             case 'amily2_open_progressive_memory': {
-                const pmUserType = parseInt(localStorage.getItem("plugin_user_type") || "0");
-                if (pmUserType < 3) {
-                    toastr.info(t('shell.access.developing'), t('shell.access.developingTitle'));
+                if (!getModuleAccessDecision('ProgressiveMemory').allowed) {
+                    toastr.info(t('memoryUi.type2Required'), t('shell.access.denied'));
                     mainPanel.show();
                     return;
                 }
