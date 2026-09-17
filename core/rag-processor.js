@@ -38,6 +38,7 @@ import { initializeArchiveManager } from './archive-manager.js';
 import {
     createUnicodeBoundaryNavigator,
 } from './utils/unicode-boundary.js';
+import { createRagVectorWriter } from './rag-vector-writer.js';
 
 const MODULE_NAME = 'hanlinyuan-rag-core';
 const OFFICIAL_REARRANGE_CHAT_FUNCTION_NAME = 'vectors_rearrangeChat';
@@ -48,6 +49,11 @@ const GLOBAL_SCOPE_ID = '_global';
 let context = null;
 let settings = null;
 let lockedCollectionId = null;
+const ragVectorWriter = createRagVectorWriter({
+    fetchImpl: (...args) => fetch(...args),
+    getRequestHeaders: () => context.getRequestHeaders(),
+    embedTexts: (texts, signal) => getEmbeddings(texts, signal),
+});
 
 function filterWorldbooks(searchQuery, worldbooks) {
     if (!searchQuery || !searchQuery.trim()) {
@@ -279,6 +285,8 @@ async function ingestTextToHanlinyuan(text, source = 'manual', metadata = {}, pr
 
         const batchSize = settings.retrieval.batchSize || 5;
         let processedCount = resumeFromIndex; 
+        let insertedCount = 0;
+        let skippedCount = 0;
 
         for (let i = resumeFromIndex; i < totalChunks; i += batchSize) {
             if (signal?.aborted) throw new Error('AbortError');
@@ -287,20 +295,9 @@ async function ingestTextToHanlinyuan(text, source = 'manual', metadata = {}, pr
             
             progressCallback({ message: `正在处理 ${i + 1}-${i + batchChunks.length} 块`, processed: i, total: totalChunks });
 
-            const batchTexts = batchChunks.map(c => c.text);
-            const embeddings = await getEmbeddings(batchTexts, signal);
-            if (signal?.aborted) throw new Error('AbortError');
-
-            if (batchChunks.length !== embeddings.length) {
-                throw new Error('文本块和向量数量不匹配');
-            }
-
-            const vectorItems = batchChunks.map((chunk, index) => ({
-                ...chunk,
-                vector: embeddings[index],
-            }));
-
-            await insertVectors(vectorItems, signal, collectionId);
+            const written = await insertVectors(batchChunks, signal, collectionId);
+            insertedCount += written.count;
+            skippedCount += written.skipped;
             
             processedCount += batchChunks.length;
 
@@ -316,8 +313,8 @@ async function ingestTextToHanlinyuan(text, source = 'manual', metadata = {}, pr
         }
 
 
-        logCallback(`[翰林院-核心] 成功插入 ${processedCount} 个向量条目。`, 'success');
-        return { success: true, count: processedCount };
+        logCallback(`[翰林院-核心] 新增 ${insertedCount} 个向量条目，跳过 ${skippedCount} 个重复块。`, 'success');
+        return { success: true, count: insertedCount, skipped: skippedCount, processed: processedCount };
 
     } catch (error) {
         if (error.name === 'AbortError') {
@@ -1021,17 +1018,6 @@ function toggleKnowledgeBase(taskId, scope) {
     }
 }
 
-function generateHash(text) {
-    let hash = 0;
-    for (let i = 0; i < text.length; i++) {
-        const char = text.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash; 
-    }
-    return Math.abs(hash).toString(36);
-}
-
-
 async function createQueryEmbedding(queryText) {
     const queryEmbedding = (await getEmbeddings([queryText]))[0];
     if (!queryEmbedding) {
@@ -1296,46 +1282,8 @@ async function _executeQueryForBase(base, queryText, queryEmbedding = null) {
 }
 
 
-async function insertVectors(vectorItems, signal = null, collectionId) {
-    if (!collectionId) {
-        throw new Error("insertVectors 必须接收一个有效的 collectionId 参数。");
-    }
-
-    if (vectorItems.length === 0) {
-        return { success: true, count: 0 };
-    }
-
-    const items = vectorItems.map((item, index) => ({
-        hash: generateHash(item.text + Date.now() + index),
-        text: item.text,
-        metadata: item.metadata || { source: 'unknown', timestamp: new Date().toISOString() },
-    }));
-    const embeddingsMap = items.reduce((acc, item, index) => {
-        acc[item.text] = vectorItems[index].vector;
-        return acc;
-    }, {});
-
-    const requestBody = {
-        collectionId: collectionId,
-        items: items,
-        source: 'webllm',
-        embeddings: embeddingsMap,
-    };
-
-    const response = await fetch('/api/vector/insert', {
-        method: 'POST',
-        headers: context.getRequestHeaders(),
-        body: JSON.stringify(requestBody),
-        signal: signal, 
-    });
-
-    if (!response.ok) {
-        const errorText = await response.text();
-        console.error('[翰林院-日志] 忆识存入API错误:', errorText);
-        throw new Error(`忆识存入API错误 ${response.status}: ${errorText}`);
-    }
-    
-    return { success: true, count: items.length };
+async function insertVectors(chunks, signal = null, collectionId) {
+    return ragVectorWriter.write(collectionId, chunks, { signal });
 }
 
 
@@ -1537,7 +1485,7 @@ async function processCondensation(messages, logCallback = () => {}, range = nul
 
             const sendDate = new Date(msg.send_date);
             const timestamp = isNaN(sendDate.getTime())
-                ? new Date().toISOString()
+                ? undefined
                 : sendDate.toISOString();
 
             const msgChunks = splitIntoChunks(text, 'chat_history', {
@@ -1556,23 +1504,13 @@ async function processCondensation(messages, logCallback = () => {}, range = nul
 
         const batchSize = settings.retrieval.batchSize || 5;
         let processedCount = 0;
+        let skippedCount = 0;
 
         for (let i = 0; i < allChunks.length; i += batchSize) {
             const batchChunks = allChunks.slice(i, i + batchSize);
-            const batchTexts = batchChunks.map(c => c.text);
-            const embeddings = await getEmbeddings(batchTexts);
-
-            if (batchChunks.length !== embeddings.length) {
-                throw new Error('文本块和向量数量不匹配');
-            }
-
-            const vectorItems = batchChunks.map((chunk, index) => ({
-                ...chunk,
-                vector: embeddings[index],
-            }));
-
-            await insertVectors(vectorItems, null, collectionId);
-            processedCount += batchChunks.length;
+            const written = await insertVectors(batchChunks, null, collectionId);
+            processedCount += written.count;
+            skippedCount += written.skipped;
         }
 
         if (range) {
@@ -1590,14 +1528,14 @@ async function processCondensation(messages, logCallback = () => {}, range = nul
             logCallback(`[翰林院-核心] 已为宝库 ${collectionId} 记录凝识范围: ${range.start}-${finalEnd}`, 'info');
         }
 
-        logCallback(`[翰林院-核心] 聊天记录凝识完成，成功插入 ${processedCount} 个条目。`, 'success');
+        logCallback(`[翰林院-核心] 聊天记录凝识完成，新增 ${processedCount} 个条目，跳过 ${skippedCount} 个重复块。`, 'success');
         const successMessages = messages.map(msg => {
             const floorIndex = fullChat.findIndex(chatMsg => chatMsg === msg);
             const floor = floorIndex !== -1 ? floorIndex + 1 : -1;
             const author = msg.is_user ? '用户' : (getCharacterName() || 'AI');
             return `[${author} - 楼层 #${floor}] 的消息已成功凝识。`;
         });
-        return { success: true, count: processedCount, messages: successMessages };
+        return { success: true, count: processedCount, skipped: skippedCount, messages: successMessages };
 
     } catch (error) {
         console.error('[翰林院-核心] processCondensation 失败:', error);
@@ -2003,6 +1941,17 @@ async function rearrangeChat(chat, contextSize, abort, type) {
 
         let finalResults = [];
         const prioritySettings = settings.rerank.priorityRetrieval;
+        // Count the initial recall, not the smaller pool left after reranking.
+        // Parallel priority groups share one turn-level notification.
+        const retrievedTexts = new Set();
+        const recordRetrieval = candidates => {
+            for (const candidate of candidates) retrievedTexts.add(candidate.text.trim());
+        };
+        const notifyRetrieval = () => {
+            if (settings.retrieval.notify && retrievedTexts.size > 0) {
+                showNotification(`Embedding 检索成功，召回 ${retrievedTexts.size} 条候选。`, 'success');
+            }
+        };
 
         if (prioritySettings.enabled) {
             // =================== 多路并行独立检索流程 (V2-精确版) ===================
@@ -2032,6 +1981,7 @@ async function rearrangeChat(chat, contextSize, abort, type) {
                         queryEmbeddingPromise: sharedQueryEmbeddingPromise,
                     })
                         .then(candidates => {
+                            recordRetrieval(candidates);
                             console.log(`[翰林院] 优先组 ${sourceName} 返回 ${candidates.length} 条结果。`);
                             let processed = candidates.filter(r => r.metadata?.source === sourceName);
                             processed = processed.slice(0, sourceSettings.count);
@@ -2052,6 +2002,7 @@ async function rearrangeChat(chat, contextSize, abort, type) {
                     queryEmbeddingPromise: sharedQueryEmbeddingPromise,
                 })
                     .then(async (candidates) => {
+                        recordRetrieval(candidates);
                         console.log(`[翰林院] 常规组返回 ${candidates.length} 条结果。`);
                         console.log('[翰林院] 开始处理常规池...');
                         const rerankOutput = await rerankResults(candidates, queryText, settings);
@@ -2069,11 +2020,14 @@ async function rearrangeChat(chat, contextSize, abort, type) {
 
             const allResultGroups = await Promise.all(queryPromises);
             finalResults = allResultGroups.flat();
+            notifyRetrieval();
 
         } else {
             // =================== 传统流程 ===================
             console.log('[翰林院] 进入传统处理流程...');
             const allCandidates = await queryVectors(queryText);
+            recordRetrieval(allCandidates);
+            notifyRetrieval();
             const rerankOutput = await rerankResults(allCandidates, queryText, settings);
             finalResults = rerankOutput.results;
             if (rerankOutput.reranked && settings.rerank.notify) {

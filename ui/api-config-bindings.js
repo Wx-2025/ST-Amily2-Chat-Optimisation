@@ -69,9 +69,9 @@ const SLOT_TOGGLES = {
     autoCharCard: { key: 'autoCharCardEnabled',                          checkbox: '#acc_master_enabled', defaultTrue: true },
     sybd:         { key: 'sybdEnabled',                                  checkbox: '#amily2_sybd_enabled', defaultTrue: true },
     tableFilling: { key: 'table_system_enabled',                         checkbox: '#table-system-master-switch', defaultTrue: true },
-    // 向量化 / 重排共用翰林院「启用智能检索」总开关
+    // 初次检索与结果重排各自使用原面板开关，关闭重排不能关闭 Embedding 检索。
     ragEmbed:     { key: 'hanlinyuan-rag-core.retrieval.enabled',         checkbox: '#hly-retrieval-enabled' },
-    ragRerank:    { key: 'hanlinyuan-rag-core.retrieval.enabled',         checkbox: '#hly-retrieval-enabled' },
+    ragRerank:    { key: 'hanlinyuan-rag-core.rerank.enabled',            checkbox: '#hly-rerank-enabled' },
 };
 
 function _getByPath(obj, path) {
@@ -1093,7 +1093,7 @@ export function renderSlotAssignments($c) {
         const s = extension_settings[extensionName];
         if (s) _setByPath(s, toggle.key, checked);
 
-        // 同一设置键可能对应多个槽（如 ragEmbed / ragRerank），同步其它开关 UI
+        // 如有多个槽明确绑定同一设置键，保持其开关 UI 一致。
         $slots.find('.amily2_slot_toggle').each(function () {
             const other = SLOT_TOGGLES[$(this).data('slot')];
             if (other && other.key === toggle.key && this !== currentEl && this.checked !== checked) {
