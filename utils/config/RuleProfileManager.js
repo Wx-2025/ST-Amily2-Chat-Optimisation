@@ -220,10 +220,15 @@ export function resolveCondensationRuleConfig(settings = {}) {
 
 export function resolveQueryPreprocessingRuleConfig(settings = {}) {
     const queryPreprocessing = settings.queryPreprocessing || {};
-    return resolveSlotRuleConfig('queryPreprocessing', {
-        ...queryPreprocessing,
-        ruleProfileId: queryPreprocessing.ruleProfileId,
-    });
+    return {
+        ...resolveSlotRuleConfig('queryPreprocessing', {
+            ...queryPreprocessing,
+            ruleProfileId: queryPreprocessing.ruleProfileId,
+        }),
+        // The switch belongs to this module, not to the shared rule profile.
+        // Profiles intentionally omit it, but retrieval needs it to run cleanup.
+        enabled: Boolean(queryPreprocessing.enabled),
+    };
 }
 
 export function resolveTableRuleConfig(settings = {}) {
