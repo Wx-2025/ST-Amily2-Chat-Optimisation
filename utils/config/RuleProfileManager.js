@@ -9,6 +9,7 @@ const RULE_ASSIGNMENTS_KEY = 'ruleProfileAssignments';
 // ── 功能槽定义 ──────────────────────────────────────────────────────────────────
 export const RULE_SLOTS = {
     table:             { label: '表格提取规则' },
+    tableResponse:     { label: '填表响应提取规则' },
     historiography:    { label: '史官/总结提取规则' },
     condensation:      { label: '翰林院·浓缩规则' },
     queryPreprocessing:{ label: '翰林院·查询预处理规则' },
@@ -238,6 +239,10 @@ export function resolveTableRuleConfig(settings = {}) {
         tags: settings.table_tags_to_extract || '',
         exclusionRules: settings.table_exclusion_rules || [],
     });
+}
+
+export function resolveTableResponseRuleConfig() {
+    return ruleProfileManager.getAssignedProfile('tableResponse');
 }
 
 export function resolveHistoriographyRuleConfig(settings = {}) {

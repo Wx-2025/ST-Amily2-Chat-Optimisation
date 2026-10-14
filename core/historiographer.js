@@ -76,6 +76,8 @@ import {
   rollbackSegmentedLedger,
   prepareSegmentedRevisionRecovery,
   restoreSegmentedRevision,
+  prepareLegacyHistoricalRecovery,
+  restoreLegacyHistoricalRecovery,
 } from './historiography/segmented-runtime.js';
 import {
   isHistoriographyVectorJobVerified,
@@ -160,6 +162,7 @@ async function readHistoriographyContextKey() {
 const recoveryEpochs = new Map();
 const leaseRecoveryEpochs = new WeakMap();
 const revisionRecoveryLeases = new WeakMap();
+const legacyRecoveryLeases = new WeakMap();
 
 async function captureHistoriographyExecutionLease({
   targetLorebookName = null,
@@ -387,6 +390,32 @@ export async function getHistoriographyLedgerStatus() {
     migrationAvailable: true,
     migrationBlockedReason: parsed.reason || '',
   };
+}
+
+export async function getActiveLegacyRecoverySnapshot() {
+  const bookName = await getTargetLorebookName();
+  if (!bookName) throw new Error(t('summaryWorkflow.restoreNoTarget'));
+  const lease = await captureHistoriographyExecutionLease({ targetLorebookName: bookName });
+  const snapshot = await prepareLegacyHistoricalRecovery({ bookName });
+  await assertHistoriographyTargetLease(bookName, lease);
+  legacyRecoveryLeases.set(snapshot, lease);
+  return snapshot;
+}
+
+export async function applyActiveLegacyRecovery(snapshot) {
+  const lease = legacyRecoveryLeases.get(snapshot);
+  if (!lease) throw new Error(t('summaryWorkflow.previewTargetChanged'));
+  const persistence = await restoreLegacyHistoricalRecovery({
+    bookName: lease.targetKey,
+    request: snapshot,
+    assertTarget: () => assertHistoriographyTargetLease(lease.targetKey, lease),
+  });
+  if (!persistence.committed) throw new Error(t('summaryWorkflow.historyRecoveryNotSaved'));
+  legacyRecoveryLeases.delete(snapshot);
+  recoveryEpochs.set(lease.targetKey, (recoveryEpochs.get(lease.targetKey) || 0) + 1);
+  if (isExpeditionRunning) stopExpedition();
+  await runHistoriographyPostCommitEffect('刷新历史正文还原后的世界书', () => reloadEditor(lease.targetKey));
+  return persistence.mutation;
 }
 
 export async function getActiveLedgerRevisionSnapshot() {

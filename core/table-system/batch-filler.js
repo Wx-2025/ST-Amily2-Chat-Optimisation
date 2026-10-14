@@ -16,7 +16,8 @@ import { getPresetPrompts, getMixedOrder } from '../../PresetSettings/index.js';
 import { callAI, generateRandomSeed } from '../api.js';
 import { callNccsAI } from '../api/NccsApi.js';
 import { extractBlocksByTags, applyExclusionRules } from '../utils/rag-tag-extractor.js';
-import { resolveTableRuleConfig } from '../../utils/config/RuleProfileManager.js';
+import { resolveTableRuleConfig, resolveTableResponseRuleConfig } from '../../utils/config/RuleProfileManager.js';
+import { extractTableFillResponse } from './response-extraction.js';
 import { showTableFillReviewModal } from '../../ui/page-window.js';
 import { TABLE_FILL_SAFETY_POLICY } from './settings.js';
 import {
@@ -460,6 +461,7 @@ async function runBatchAttempt(batchNum, attemptNum, runControl) {
             endFloor - 1,
         );
         const batchSettings = extension_settings[extensionName] || {};
+        const responseRuleConfig = resolveTableResponseRuleConfig();
         const tableBatches = planTableFillBatches(
             fillLease.scopedState,
             batchSettings.table_fill_tables_per_request,
@@ -568,6 +570,7 @@ async function runBatchAttempt(batchNum, attemptNum, runControl) {
                 stableToolMessages: toolMessages,
                 stableTextMessages: textMessages,
                 settings: batchSettings,
+                responseRuleConfig,
                 slot: 'tableFilling',
                 runControl,
                 requestBudget: activeImmediateFillRequestBudget,
@@ -712,21 +715,22 @@ async function runBatchAttempt(batchNum, attemptNum, runControl) {
                 log(`批次 ${batchNum} 的 Tool Call V2 不可用（${toolResult.reason}），改用严格文本指令。`, 'warn');
                 toastr.warning('Tool Call V2 当前不可用，已改用严格文本填表。', `批次 ${batchNum}`);
             }
-            const resultText = await callTableModel(
+            const rawResponse = await callTableModel(
                 textMessages,
                 fillLease,
                 immediateRequestBudget,
             );
-            console.log(`[Amily2 立即远征] 批次 ${batchNum}/${totalBatches} - 收到 API 原始回复:`, resultText);
-            if (typeof resultText !== 'string' || !resultText.trim()) {
+            console.log(`[Amily2 立即远征] 批次 ${batchNum}/${totalBatches} - 收到 API 原始回复:`, rawResponse);
+            if (typeof rawResponse !== 'string' || !rawResponse.trim()) {
                 throw createRetryableResponseError('TABLE_FILL_EMPTY_RESPONSE', 'API返回内容为空。');
             }
+            const resultText = extractTableFillResponse(rawResponse, responseRuleConfig);
             assertBatchFillerScope(activeBatchChatScope);
 
             if (!resultText.includes('<Amily2Edit>')) {
                 log(`批次 ${batchNum} 的响应未包含 <Amily2Edit> 指令块，弹出检查窗口等待用户处理。`, 'warn');
                 updateButtonState('paused');
-                showTableFillReviewModal(resultText, {
+                showTableFillReviewModal(rawResponse, {
                     title: `填表响应检查 - 批次 ${batchNum}/${totalBatches}`,
                     subtitle: `批次 ${batchNum}/${totalBatches}（楼层 ${startFloor}-${endFloor}）的 AI 响应未包含有效的 <Amily2Edit> 指令块。请检查原始响应并选择处理方式。`,
                     onContinue: async (currentText) => {
@@ -1130,6 +1134,7 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
             endFloor - 1,
         );
         const floorSettings = extension_settings[extensionName] || {};
+        const responseRuleConfig = resolveTableResponseRuleConfig();
         const tableBatches = planTableFillBatches(
             fillLease.scopedState,
             floorSettings.table_fill_tables_per_request,
@@ -1237,6 +1242,7 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
                 stableToolMessages: toolMessages,
                 stableTextMessages: textMessages,
                 settings: floorSettings,
+                responseRuleConfig,
                 slot: 'tableFilling',
                 signal,
                 runControl,
@@ -1399,20 +1405,21 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
                 log(`楼层 ${startFloor}-${endFloor} 的 Tool Call V2 不可用（${toolResult.reason}），改用严格文本指令。`, 'warn');
                 toastr.warning('Tool Call V2 当前不可用，已改用严格文本填表。', `楼层 ${startFloor}-${endFloor}`);
             }
-            const resultText = await callTableModel(
+            const rawResponse = await callTableModel(
                 textMessages,
                 fillLease,
                 runControl.requestBudget,
             );
-            console.log(`[Amily2 楼层填表] 楼层 ${startFloor}-${endFloor} - 收到 API 原始回复:`, resultText);
-            if (typeof resultText !== 'string' || !resultText.trim()) {
+            console.log(`[Amily2 楼层填表] 楼层 ${startFloor}-${endFloor} - 收到 API 原始回复:`, rawResponse);
+            if (typeof rawResponse !== 'string' || !rawResponse.trim()) {
                 throw createRetryableResponseError('TABLE_FILL_EMPTY_RESPONSE', 'API返回内容为空。');
             }
+            const resultText = extractTableFillResponse(rawResponse, responseRuleConfig);
             assertBatchFillerScope(requestScope);
 
             if (!resultText.includes('<Amily2Edit>')) {
                 log(`楼层 ${startFloor}-${endFloor} 的响应未包含 <Amily2Edit> 指令块，弹出检查窗口等待用户处理。`, 'warn');
-                showTableFillReviewModal(resultText, {
+                showTableFillReviewModal(rawResponse, {
                     title: `填表响应检查 - 楼层 ${startFloor}-${endFloor}`,
                     subtitle: `楼层 ${startFloor}-${endFloor} 的 AI 响应未包含有效的 <Amily2Edit> 指令块。请检查原始响应并选择处理方式。`,
                     onContinue: async (currentText) => {

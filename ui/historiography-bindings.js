@@ -8,6 +8,7 @@ import {
 } from "../utils/settings.js";
 import { showHtmlModal } from './page-window.js';
 import { showHistoriographyRecoveryDialog } from './historiography-recovery-dialog.js';
+import { showLegacyHistoricalRecoveryDialog } from './historiography-legacy-recovery-dialog.js';
 import { configManager } from '../utils/config/ConfigManager.js';
 import { ruleProfileManager, resolveHistoriographyRuleConfig } from '../utils/config/RuleProfileManager.js';
 import { clearSecretInput, markSecretInputStored, readSecretInputUpdate } from './secret-input.js';
@@ -30,6 +31,8 @@ import {
   applyActiveLedgerSafeEdit,
   getActiveLedgerRevisionSnapshot,
   applyActiveLedgerRevisionRecovery,
+  getActiveLegacyRecoverySnapshot,
+  applyActiveLegacyRecovery,
 } from "../core/historiographer.js";
 import {
   HISTORIOGRAPHY_PROTOCOL_LEGACY,
@@ -522,6 +525,7 @@ export function bindHistoriographyEvents() {
       'historiography_safe_edit',
     );
     const revisionRestoreBtn = document.getElementById('historiography_revision_restore');
+    const historicalRestoreBtn = document.getElementById('historiography_restore_historical');
     let migrationPreviewSnapshot = null;
     let ledgerStatusSnapshot = null;
     let diagnosticSnapshot = null;
@@ -841,6 +845,26 @@ export function bindHistoriographyEvents() {
       }
     });
     // Independent of renderLedgerStatus: validation failures must not lock out recovery.
+    historicalRestoreBtn.addEventListener('click', async () => {
+      historicalRestoreBtn.disabled = true;
+      try {
+        const snapshot = await getActiveLegacyRecoverySnapshot();
+        showLegacyHistoricalRecoveryDialog({
+          snapshot, showHtmlModal, t, escapeHtml: _escapeHtml,
+          restore: applyActiveLegacyRecovery,
+          onRestored: async result => {
+            toastr.success(t('summaryWorkflow.historyRecoveryDone', { floor: result.restoredThroughFloor, progress: result.lastSummarizedFloor }), t('summaryWorkflow.historyRecoveryTitle'));
+            await refreshLedgerStatus();
+            await updateArchiveList();
+          },
+        });
+      } catch (error) {
+        toastr.error(_escapeHtml(t('summaryWorkflow.historyRecoveryFailed', { error: error.message })), t('summaryWorkflow.historyRecoveryTitle'));
+      } finally {
+        historicalRestoreBtn.disabled = false;
+      }
+    });
+
     revisionRestoreBtn.addEventListener('click', async () => {
       revisionRestoreBtn.disabled = true;
       try {

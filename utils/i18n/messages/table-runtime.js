@@ -204,6 +204,8 @@ const messages = [
     ['settings.textFallback', 'Tool Call 文本降级已{state}。', 'Tool Call text fallback {state}.'],
     ['settings.ruleAssigned', '表格提取规则已切换为「{name}」', 'Table extraction rules changed to "{name}"'],
     ['settings.ruleUnassigned', '表格提取规则已取消分配', 'Table extraction rules unassigned'],
+    ['settings.responseRuleAssigned', '填表响应提取规则已切换为「{name}」', 'Table response extraction rules changed to "{name}"'],
+    ['settings.responseRuleUnassigned', '填表响应提取已关闭', 'Table response extraction disabled'],
     ['world.loading', '加载条目中...', 'Loading entries...'],
     ['world.characterFailed', '获取角色世界书失败。', 'Could not load the character worldbook.'],
     ['world.noCharacter', '请先加载一个角色。', 'Load a character first.'],
