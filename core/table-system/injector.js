@@ -1,6 +1,6 @@
 
 import { setExtensionPrompt } from '/script.js';
-import { extension_settings } from '/scripts/extensions.js';
+import { extension_settings, getContext } from '/scripts/extensions.js';
 import { getBatchFillerFlowTemplate, convertTablesToCsvString, convertTablesToCsvStringForContentOnly, getMemoryState, setMemoryState, triggerSync } from './manager.js';
 import { commitToLastMessageAsync } from './infra/persistence.js';
 import { applyPendingRecordDeletions, hasPendingRecordDeletions } from './module-tables.js';
@@ -11,9 +11,9 @@ import { renderTables } from '../../ui/table-bindings.js';
 import { updateOrInsertTableInChat } from '../../ui/message-table-renderer.js';
 import { getChatContextEpoch } from './infra/chat-scope.js';
 import { getActiveTableGroupId } from './table-group-selection.js';
+import { getModuleAccessDecision } from '../../utils/module-access-policy.js';
 
 const INJECTION_KEY = 'AMILY2_TABLE_SYSTEM';
-
 export function generateTableContent() {
     const settings = extension_settings[extensionName] || {};
     let injectionContent = '';
@@ -24,8 +24,8 @@ export function generateTableContent() {
 
     try {
         const tableGroupId = getActiveTableGroupId(getChatContextEpoch());
-
-        const fillingMode = settings.filling_mode || 'main-api'; 
+        if (!getModuleAccessDecision('Table').allowed) return '';
+        const fillingMode = settings.filling_mode || 'main-api';
 
         if (fillingMode === 'secondary-api') {
             const contentOnlyTemplate = "##以下内容是故事发生的剧情中提取出的内容，已经转化为表格形式呈现给你，请将以下内容作为后续剧情的一部分参考：\n{{{Amily2TableDataContent}}}";
@@ -42,7 +42,7 @@ export function generateTableContent() {
         }
         else { 
             const flowTemplate = getBatchFillerFlowTemplate();
-            const dataString = convertTablesToCsvString(tableGroupId);
+            const dataString = convertTablesToCsvString(tableGroupId, { excludeAutomation: true });
             if (flowTemplate && dataString.trim()) {
                 injectionContent = flowTemplate.replace('{{{Amily2TableData}}}', dataString);
             }
@@ -52,7 +52,7 @@ export function generateTableContent() {
             injectionContent = `%%AMILY2_TABLE_INJECTION%%${injectionContent}`;
         }
     } catch (error) {
-        console.error('[Amily2-表格内容生成器] 生成表格内容时发生错误:', error);
+        console.warn('[Amily2] Table projection unavailable:', 'TABLE_PROJECTION_FAILED');
         return ''; 
     }
 
@@ -61,31 +61,40 @@ export function generateTableContent() {
 
 
 
+export function hasPendingTableDataForGeneration(type) {
+    return type !== 'quiet'
+        && (extension_settings[extensionName] || {}).table_system_enabled !== false
+        && getModuleAccessDecision('Table').allowed
+        && hasPendingRecordDeletions(getMemoryState() || []);
+}
+
+// Run before acquiring the prompt's table revision, never during projection.
+export async function prepareTableDataForGeneration(type) {
+    if (!hasPendingTableDataForGeneration(type)) return false;
+    const deletion = applyPendingRecordDeletions(getMemoryState() || []);
+    if (!deletion.deletedCount) return false;
+    const saved = await commitToLastMessageAsync(deletion.state, undefined, {
+        publish: state => setMemoryState(state),
+    });
+    if (!saved) throw Object.assign(new Error('TABLE_GENERATION_PREPARATION_FAILED'), {
+        code: 'TABLE_GENERATION_PREPARATION_FAILED',
+    });
+    log(`【延迟删除】已在注入前提交 ${deletion.deletedCount} 条待删除行并永久保存状态。`, 'info');
+    try {
+        triggerSync();
+        renderTables();
+        updateOrInsertTableInChat();
+    } catch (error) {
+        console.warn('[Amily2-延迟删除] 保存已完成，界面刷新失败。');
+    }
+    return true;
+}
+
 export async function injectTableData(chat, contextSize, abort, type) {
     const masterOff = (extension_settings[extensionName] || {}).table_system_enabled === false;
     if (masterOff) {
         setExtensionPrompt(INJECTION_KEY, '', 0, 0, false, 'SYSTEM');
         return;
-    }
-
-    // 【V15.3 核心修正】将提交删除的逻辑移至此处，确保在用户发送消息时立即触发
-    try {
-        const currentState = getMemoryState() || [];
-        if (hasPendingRecordDeletions(currentState)) {
-            const deletion = applyPendingRecordDeletions(currentState);
-            if (deletion.deletedCount > 0) {
-                if (!await commitToLastMessageAsync(deletion.state)) {
-                    throw new Error('待删除行无法原子持久化，已保留原状态。');
-                }
-                setMemoryState(deletion.state);
-                triggerSync();
-                log(`【延迟删除】已在注入前提交 ${deletion.deletedCount} 条待删除行并永久保存状态。`, 'info');
-                renderTables();
-                updateOrInsertTableInChat();
-            }
-        }
-    } catch (error) {
-        console.error('[Amily2-延迟删除] 在注入前提交待删除行时发生错误:', error);
     }
 
     if (window.AMILY2_MACRO_REPLACED === true) {

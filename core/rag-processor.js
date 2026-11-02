@@ -34,7 +34,7 @@ import {
 } from './historiography/vector-pipeline.js';
 import { superSort } from './super-sorter.js';
 import { isHistoriographyVectorCurrent } from './historiography/vector-authority.js';
-import { loadBookFresh } from './lore-service.js';
+import { loadBookFresh } from './historiography/storage.js';
 import { executeGraphRetrieval } from './relationship-graph/executor.js';
 import { initializeArchiveManager } from './archive-manager.js';
 import {
@@ -193,7 +193,7 @@ function initialize() {
 }
 
 
-async function ingestTextToHanlinyuan(text, source = 'manual', metadata = {}, progressCallback = () => {}, signal = null, logCallback = () => {}, batchCompleteCallback = () => {}, jobId = null, resumeFromIndex = 0) {
+async function ingestTextToHanlinyuan(text, source = 'manual', metadata = {}, progressCallback = () => {}, signal = null, logCallback = () => {}, batchCompleteCallback = () => {}, jobId = null, resumeFromIndex = 0, safety = {}) {
     if (!text || !text.trim()) {
         return { success: false, error: '输入文本为空' };
     }
@@ -202,7 +202,9 @@ async function ingestTextToHanlinyuan(text, source = 'manual', metadata = {}, pr
     try {
         const idInfo = getCollectionIdInfo();
         const legacyCollectionId = await getDynamicCollectionId();
+        if (safety.isCurrent && !safety.isCurrent()) throw new Error('Stale archive source');
         if (idInfo.oldId && idInfo.oldId === legacyCollectionId && idInfo.oldId !== idInfo.newId) {
+            if (safety.allowLegacyMigration === false) return {success:false,error:'Manual migration required'};
             const confirmMigration = confirm('检测到旧版数据。此操作将把旧数据迁移到新格式，过程不可逆，是否继续？');
             if (confirmMigration) {
                 logCallback(`[翰林院-迁移] 用户确认迁移，正在处理旧宝库: ${idInfo.oldId}`, 'warn');
@@ -291,6 +293,7 @@ async function ingestTextToHanlinyuan(text, source = 'manual', metadata = {}, pr
         let skippedCount = 0;
 
         for (let i = resumeFromIndex; i < totalChunks; i += batchSize) {
+            if (safety.isCurrent && !safety.isCurrent()) throw new Error('Stale archive source');
             if (signal?.aborted) throw new Error('AbortError');
             
             const batchChunks = chunks.slice(i, i + batchSize);

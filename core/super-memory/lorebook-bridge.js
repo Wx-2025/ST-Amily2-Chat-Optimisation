@@ -188,11 +188,12 @@ export async function syncToLorebook(tableName, data, indexText, role, headers, 
         const primaryVal = String(rawVal).trim();
         if (primaryVal === '') return;
 
-        const isPendingDeletion = rowStatuses && rowStatuses[index] === 'pending-deletion';
+        const isPendingDeletion = ['pending-deletion', 'deleted'].includes(rowStatuses?.[index]);
         const isEnabled = !isPendingDeletion;
 
         const triggerKeys = [primaryVal];
-        const entryComment = `[Amily2] Detail: ${tableName} - ${primaryVal}`;
+        const entryKey = opts.recordIds?.[index] ? `record:${opts.recordIds[index]}` : primaryVal;
+        const entryComment = `[Amily2] Detail: ${tableName} - ${entryKey}`;
 
         // 首行常驻：第一行通常是总调/全局定义（基调、主线目标等），
         // 绿灯模式下没人提到其主键就永远不注入；开启后升为蓝灯常驻。
@@ -205,13 +206,13 @@ export async function syncToLorebook(tableName, data, indexText, role, headers, 
     const tablePrefix = `[Amily2] Detail: ${tableName} -`;
 
     const activeKeys = new Set();
-    for(const row of data) {
+    for(const [index, row] of data.entries()) {
         if(row && row.length > 0) {
             const rVal = row[0];
             if (rVal !== undefined && rVal !== null) {
                 const sVal = String(rVal).trim();
                 if (sVal !== '') {
-                    activeKeys.add(sVal);
+                    activeKeys.add(opts.recordIds?.[index] ? `record:${opts.recordIds[index]}` : sVal);
                 }
             }
         }

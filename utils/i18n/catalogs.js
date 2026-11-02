@@ -19,6 +19,7 @@ import { PLAIN as HOME_PLAIN, TRADITIONAL as HOME_TRADITIONAL, EN as HOME_EN } f
 import { PLAIN as INSPECTOR_PLAIN, TRADITIONAL as INSPECTOR_TRADITIONAL, EN as INSPECTOR_EN } from './messages/inspectors.js';
 import { PLAIN as PRESET_PLAIN, TRADITIONAL as PRESET_TRADITIONAL, EN as PRESET_EN } from './messages/preset-editor.js';
 import { PLAIN as AUTO_CARD_PLAIN, TRADITIONAL as AUTO_CARD_TRADITIONAL, EN as AUTO_CARD_EN } from './messages/auto-char-card.js';
+import { PLAIN as FILL_AUTOMATION_PLAIN, TRADITIONAL as FILL_AUTOMATION_TRADITIONAL, EN as FILL_AUTOMATION_EN } from './messages/fill-automation.js';
 
 export const I18N_SCHEMA_VERSION = 1;
 
@@ -61,6 +62,7 @@ export const ZH_CN_PLAIN_MESSAGES = Object.freeze({
     ...INSPECTOR_PLAIN,
     ...PRESET_PLAIN,
     ...AUTO_CARD_PLAIN,
+    ...FILL_AUTOMATION_PLAIN,
     'app.name': 'Amily2 优化助手',
     'app.extensionTitle': 'Amily2 优化中枢',
     'app.readyTitle': 'Amily2 插件已就绪',
@@ -251,6 +253,7 @@ export const ZH_CN_AMILY_OVERRIDES = Object.freeze({
     ...INSPECTOR_TRADITIONAL,
     ...PRESET_TRADITIONAL,
     ...AUTO_CARD_TRADITIONAL,
+    ...FILL_AUTOMATION_TRADITIONAL,
     'app.name': 'Amily2号优化助手',
     'app.extensionTitle': 'Amily2号 优化中枢',
     'settings.iconTopbar': '驻扎顶栏',
@@ -334,6 +337,7 @@ export const EN_US_MESSAGES = Object.freeze({
     ...INSPECTOR_EN,
     ...PRESET_EN,
     ...AUTO_CARD_EN,
+    ...FILL_AUTOMATION_EN,
     'app.name': 'Amily2 Assistant',
     'app.extensionTitle': 'Amily2 Control Center',
     'app.readyTitle': 'Amily2 is ready',

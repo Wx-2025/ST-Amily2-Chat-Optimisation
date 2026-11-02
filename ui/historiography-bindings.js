@@ -9,6 +9,10 @@ import {
 import { showHtmlModal } from './page-window.js';
 import { showHistoriographyRecoveryDialog } from './historiography-recovery-dialog.js';
 import { showLegacyHistoricalRecoveryDialog } from './historiography-legacy-recovery-dialog.js';
+import { bindLegacyRecoveryScan } from './historiography-legacy-scan.js';
+import { bindChatSummaryTransferControls } from './historiography-chat-transfer-dialog.js';
+import { previewChatSummaryTransfer, confirmChatSummaryTransfer, exportChatSummaryTransferSource, exportRawChatLedger } from '../core/historiography/storage.js';
+import { pluginAuthStatus } from '../utils/auth-state.js';
 import { configManager } from '../utils/config/ConfigManager.js';
 import { ruleProfileManager, resolveHistoriographyRuleConfig } from '../utils/config/RuleProfileManager.js';
 import { clearSecretInput, markSecretInputStored, readSecretInputUpdate } from './secret-input.js';
@@ -33,6 +37,7 @@ import {
   applyActiveLedgerRevisionRecovery,
   getActiveLegacyRecoverySnapshot,
   applyActiveLegacyRecovery,
+  previewWorldbookToChat, copyWorldbookToChat, exportChatSummaryWorldbook,
 } from "../core/historiographer.js";
 import {
   HISTORIOGRAPHY_PROTOCOL_LEGACY,
@@ -57,6 +62,17 @@ function getHistoriographyRuleConfig() {
 
 function _escapeHtml(text) {
   return String(text ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function formatLedgerValidationError(message) {
+  switch (message) {
+    case 'Summary metadata belongs to another chat or is invalid; export it before recovery.':
+      return t('summaryWorkflow.chatMetadataInvalid');
+    case 'Summary metadata belongs to another chat or is invalid/unsupported; export it before recovery.':
+      return t('summaryWorkflow.chatMetadataUnsupported');
+    default:
+      return message;
+  }
 }
 
 let unsubscribeLedgerLocale = () => {};
@@ -595,7 +611,8 @@ export function bindHistoriographyEvents() {
         const context = getContext();
         return [context.chat, context.characterId, context.groupId,
           context.getCurrentChatId?.(),
-          extension_settings[extensionName]?.lorebookTarget];
+          extension_settings[extensionName]?.lorebookTarget,
+          extension_settings[extensionName]?.historiographyStorageMode];
       },
       connected: () => ledgerStatusBox.isConnected,
       loading: () => {
@@ -616,7 +633,7 @@ export function bindHistoriographyEvents() {
       },
       failed: error => {
         ledgerStatusSnapshot = null;
-        ledgerStatusBox.innerHTML = `<small class="notes" style="color: var(--SmartThemeQuoteColor);">${_escapeHtml(t('summaryWorkflow.validationFailed', { error: error.message }))}<br>${_escapeHtml(t('summaryWorkflow.validationAdvice'))}</small>`;
+        ledgerStatusBox.innerHTML = `<small class="notes" style="color: var(--SmartThemeQuoteColor);">${_escapeHtml(t('summaryWorkflow.validationFailed', { error: formatLedgerValidationError(error.message) }))}<br>${_escapeHtml(t('summaryWorkflow.validationAdvice'))}</small>`;
         previewMigrationBtn.disabled = true;
         rollbackSegmentedBtn.disabled = true;
         retrySegmentVectorsBtn.disabled = true;
@@ -624,7 +641,89 @@ export function bindHistoriographyEvents() {
       },
     });
     const refreshLedgerStatus = () => statusRefresh.refresh();
-    const refreshOnEvent = () => { void refreshLedgerStatus(); };
+    let historicalScan = null;
+    const storageMode = document.getElementById('historiography_storage_mode');
+    const chatInjection = document.getElementById('historiography_chat_injection');
+    const copySource = document.getElementById('historiography_copy_source');
+    const copyButton = document.getElementById('historiography_copy_to_chat');
+    const exportCard = document.getElementById('historiography_export_card');
+    const chatTransfers = bindChatSummaryTransferControls({
+      root: document, getContext, getSettings: () => extension_settings[extensionName],
+      getAuthState: () => pluginAuthStatus,
+      exportSource: exportChatSummaryTransferSource, exportRaw: exportRawChatLedger,
+      previewTransfer: previewChatSummaryTransfer, confirmTransfer: confirmChatSummaryTransfer,
+      showHtmlModal, escapeHtml: _escapeHtml, t,
+      onError: error => toastr.error(_escapeHtml(error.message)),
+      onSaved: () => {
+        toastr.success(t('summaryWorkflow.transferSaved'));
+        void refreshLedgerStatus();
+      },
+      download: (json, filename) => {
+        const href = URL.createObjectURL(new Blob([json], { type: 'application/json;charset=utf-8' }));
+        const anchor = document.createElement('a');
+        anchor.href = href; anchor.download = filename;
+        document.body.appendChild(anchor); anchor.click(); anchor.remove();
+        URL.revokeObjectURL(href);
+      },
+    });
+    const renderStorage = () => {
+      const settings = extension_settings[extensionName];
+      storageMode.value = settings.historiographyStorageMode === 'worldbook' ? 'worldbook' : 'chat';
+      chatInjection.value = settings.historiographyChatInjection || 'character';
+      const shared = storageMode.value === 'worldbook';
+      document.getElementById('historiography_worldbook_target_controls').hidden = !shared;
+      chatInjection.disabled = shared;
+      copyButton.disabled = shared;
+      exportCard.disabled = shared;
+      chatTransfers.refresh();
+      const selected = copySource.value;
+      copySource.replaceChildren(...world_names.map(name => new Option(name, name)));
+      if (world_names.includes(selected)) copySource.value = selected;
+    };
+    renderStorage();
+    storageMode.addEventListener('change', () => {
+      historicalScan?.cancel();
+      const selectedMode = storageMode.value;
+      const apply = () => {
+        extension_settings[extensionName].historiographyStorageMode = selectedMode;
+        saveSettings(); renderStorage(); void refreshLedgerStatus();
+      };
+      if (storageMode.value === 'worldbook') {
+        showHtmlModal(t('summaryWorkflow.storageMode'), _escapeHtml(t('summaryWorkflow.sharedStorageWarning')), {
+          onOk: apply, onCancel: renderStorage,
+        });
+      } else apply();
+    });
+    chatInjection.addEventListener('change', () => {
+      extension_settings[extensionName].historiographyChatInjection = chatInjection.value;
+      saveSettings();
+    });
+    copyButton.addEventListener('click', async () => {
+      copyButton.disabled = true;
+      try {
+        const preview = await previewWorldbookToChat(copySource.value);
+        showHtmlModal(t('summaryWorkflow.copyToChat'),
+          `<p>${_escapeHtml(t('summaryWorkflow.copyPreview', { book: preview.sourceBookName, floor: preview.floor }))}</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere">${_escapeHtml(preview.text)}</pre>`, {
+            onOk: () => {
+              void copyWorldbookToChat(preview).then(() => {
+                toastr.success(t('summaryWorkflow.copiedToChat')); void refreshLedgerStatus();
+              }).catch(error => toastr.error(_escapeHtml(error.message)));
+            },
+          });
+      } catch (error) { toastr.error(_escapeHtml(error.message)); }
+      finally { renderStorage(); }
+    });
+    exportCard.addEventListener('click', () => {
+      showHtmlModal(t('summaryWorkflow.exportCard'), _escapeHtml(t('summaryWorkflow.exportCardConfirm')), {
+        onOk: () => {
+          exportCard.disabled = true;
+          void exportChatSummaryWorldbook().then(name => {
+            toastr.success(_escapeHtml(t('summaryWorkflow.exportCardDone', { book: name })), '', { timeOut: 15000 });
+          }).catch(error => toastr.error(_escapeHtml(error.message))).finally(renderStorage);
+        },
+      });
+    });
+    const refreshOnEvent = () => { historicalScan?.cancel(); renderStorage(); void refreshLedgerStatus(); };
     const hostEvents = [event_types.CHAT_CHANGED, event_types.WORLDINFO_UPDATED]
       .filter(Boolean);
     hostEvents.forEach(type => eventSource.on(type, refreshOnEvent));
@@ -637,15 +736,19 @@ export function bindHistoriographyEvents() {
       if (event.target?.name === 'amily2_lorebook_target') refreshOnEvent();
     };
     document.addEventListener('amily-lorebook-created', refreshOnEvent);
+    document.addEventListener('amily2:historiographyLedgerCreated', refreshOnEvent);
     document.addEventListener('click', refreshOnOpen);
     document.addEventListener('change', refreshOnTarget);
     unsubscribeLedgerStatus = () => {
+      historicalScan?.dispose();
+      chatTransfers.dispose();
       statusRefresh.dispose();
       for (const type of hostEvents) {
         if (typeof eventSource.off === 'function') eventSource.off(type, refreshOnEvent);
         else eventSource.removeListener?.(type, refreshOnEvent);
       }
       document.removeEventListener('amily-lorebook-created', refreshOnEvent);
+      document.removeEventListener('amily2:historiographyLedgerCreated', refreshOnEvent);
       document.removeEventListener('click', refreshOnOpen);
       document.removeEventListener('change', refreshOnTarget);
     };
@@ -845,10 +948,9 @@ export function bindHistoriographyEvents() {
       }
     });
     // Independent of renderLedgerStatus: validation failures must not lock out recovery.
-    historicalRestoreBtn.addEventListener('click', async () => {
-      historicalRestoreBtn.disabled = true;
-      try {
-        const snapshot = await getActiveLegacyRecoverySnapshot();
+    historicalScan = bindLegacyRecoveryScan({
+      button: historicalRestoreBtn, scan: getActiveLegacyRecoverySnapshot, t, getContext,
+      onResult: snapshot => {
         showLegacyHistoricalRecoveryDialog({
           snapshot, showHtmlModal, t, escapeHtml: _escapeHtml,
           restore: applyActiveLegacyRecovery,
@@ -858,11 +960,10 @@ export function bindHistoriographyEvents() {
             await updateArchiveList();
           },
         });
-      } catch (error) {
-        toastr.error(_escapeHtml(t('summaryWorkflow.historyRecoveryFailed', { error: error.message })), t('summaryWorkflow.historyRecoveryTitle'));
-      } finally {
-        historicalRestoreBtn.disabled = false;
-      }
+      },
+      onError: error => toastr.error(_escapeHtml(t('summaryWorkflow.historyRecoveryFailed', {
+        error: error.code || 'HISTORIOGRAPHY_SCAN_FAILED',
+      })), t('summaryWorkflow.historyRecoveryTitle')),
     });
 
     revisionRestoreBtn.addEventListener('click', async () => {

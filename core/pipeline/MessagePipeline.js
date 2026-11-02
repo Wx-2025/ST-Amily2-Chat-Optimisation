@@ -24,6 +24,7 @@ import { registerInternalBusPlugin } from '../../SL/bus/Amily2Bus.js';
 import { autoHideStage } from './stages/auto-hide.js';
 import { textOptimizeStage } from './stages/text-optimize.js';
 import { tableUpdateStage } from './stages/table-update.js';
+import { fillAutomationStage } from './stages/fill-automation.js';
 import { superMemorySyncStage } from './stages/super-memory-sync.js';
 import { autoSummaryStage } from './stages/auto-summary.js';
 
@@ -33,6 +34,7 @@ pipeline
     .use(autoHideStage)
     .use(textOptimizeStage)
     .use(tableUpdateStage)
+    .use(fillAutomationStage)
     .use(superMemorySyncStage)
     .use(autoSummaryStage);
 

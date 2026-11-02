@@ -33,7 +33,7 @@ function normalizeApiResponse(responseData) {
         try {
             data = JSON.parse(data);
         } catch (e) {
-            console.error(`[${extensionName}] Jqyh API响应JSON解析失败:`, e);
+            console.error(`[${extensionName}] Jqyh API响应JSON解析失败:`);
             return { error: { message: 'Invalid JSON response' } };
         }
     }
@@ -48,7 +48,7 @@ function normalizeApiResponse(responseData) {
     if (data && data.content) {
         return { content: data.content.trim() };
     }
-    if (data && data.data) { 
+    if (data && data.data) {
         return { data: data.data };
     }
     if (data && data.error) {
@@ -119,14 +119,13 @@ export async function callJqyhAI(messages, options = {}) {
     }
 
     console.groupCollapsed(`[Amily2号-Jqyh统一API调用] ${new Date().toLocaleTimeString()}`);
-    console.log("【请求参数】:", { 
+    console.log("【请求参数】:", {
         mode: finalOptions.apiMode,
-        model: finalOptions.model, 
-        maxTokens: finalOptions.maxTokens, 
+        model: finalOptions.model,
+        maxTokens: finalOptions.maxTokens,
         temperature: finalOptions.temperature,
         messagesCount: messages.length
     });
-    console.log("【消息内容】:", messages);
     console.groupEnd();
 
     try {
@@ -154,10 +153,6 @@ export async function callJqyhAI(messages, options = {}) {
             return null;
         }
 
-        console.groupCollapsed("[Amily2号-Jqyh AI回复]");
-        console.log(responseContent);
-        console.groupEnd();
-
         return responseContent;
 
     } catch (error) {
@@ -177,7 +172,7 @@ export async function callJqyhAI(messages, options = {}) {
         } else {
             toastr.error(`API调用失败: ${error.message}`, "Jqyh API调用失败");
         }
-        
+
         return null;
     }
 }
@@ -219,8 +214,7 @@ async function callJqyhOpenAITest(messages, options) {
     });
 
     if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Jqyh全兼容API请求失败: ${response.status} - ${errorText}`);
+        throw new Error(`Jqyh全兼容API请求失败: ${response.status}`);
     }
 
     const responseData = await readOpenAICompatibleResponse(response, {
@@ -307,38 +301,36 @@ async function callJqyhSillyTavernPreset(messages, options) {
 
 export async function fetchJqyhModels() {
     console.log('[Amily2号-Jqyh外交部] 开始获取模型列表');
-    
+
     const apiSettings = await getJqyhApiSettings();
-    
+
     try {
         if (apiSettings.apiMode === 'sillytavern_preset') {
             const context = getContext();
             if (!context?.extensionSettings?.connectionManager?.profiles) {
                 throw new Error('无法获取SillyTavern配置文件列表');
             }
-            
+
             const targetProfile = context.extensionSettings.connectionManager.profiles.find(p => p.id === apiSettings.tavernProfile);
             if (!targetProfile) {
                 throw new Error(`未找到配置文件ID: ${apiSettings.tavernProfile}`);
             }
-            
+
             const models = [];
             if (targetProfile.openai_model) {
                 models.push({ id: targetProfile.openai_model, name: targetProfile.openai_model });
             }
-            
+
             if (models.length === 0) {
                 throw new Error('当前预设未配置模型');
             }
-            
-            console.log('[Amily2号-Jqyh外交部] SillyTavern预设模式获取到模型:', models);
             return models;
-            
+
         } else {
             if (!apiSettings.apiUrl || !apiSettings.apiKey) {
                 throw new Error('API URL或Key未配置');
             }
-            
+
             const response = await fetch('/api/backends/chat-completions/status', {
                 method: 'POST',
                 headers: {
@@ -375,8 +367,6 @@ export async function fetchJqyhModels() {
                 })
                 .filter(m => m.id)
                 .sort((a, b) => String(a.name).localeCompare(String(b.name)));
-
-            console.log('[Amily2号-Jqyh外交部] 全兼容模式获取到模型:', formattedModels);
             return formattedModels;
         }
     } catch (error) {
@@ -388,7 +378,7 @@ export async function fetchJqyhModels() {
 
 export async function testJqyhApiConnection() {
     console.log('[Amily2号-Jqyh外交部] 开始API连接测试');
-    
+
     const apiSettings = await getJqyhApiSettings();
 
     if (apiSettings.apiMode === 'sillytavern_preset') {
@@ -405,7 +395,7 @@ export async function testJqyhApiConnection() {
 
     try {
         toastr.info('正在发送测试消息"你好！"...', 'Jqyh API连接测试');
-        
+
         const userName = window.SillyTavern.getContext?.()?.name1 || '用户';
         const systemPrompt = `接下来用户会使用测试按钮测试api连接是否正常，请回复ta连接是正常的，称呼用户为：“${userName}大人”，并复述群号1060183271，告知ta，本扩展开发者：“诗与酒.”正静待ta的入驻。`;
 
@@ -413,11 +403,10 @@ export async function testJqyhApiConnection() {
             { role: 'system', content: systemPrompt },
             { role: 'user', content: '你好！' }
         ];
-        
+
         const response = await callJqyhAI(testMessages);
-        
+
         if (response && response.trim()) {
-            console.log('[Amily2号-Jqyh外交部] 测试消息响应:', response);
             toastr.success(
                 `连接测试成功！AI回复: "${response}"`,
                 'Jqyh API连接测试成功',
@@ -427,7 +416,7 @@ export async function testJqyhApiConnection() {
         } else {
             throw new Error('API未返回有效响应');
         }
-        
+
     } catch (error) {
         console.error('[Amily2号-Jqyh外交部] 连接测试失败:', error);
         toastr.error(

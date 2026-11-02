@@ -4,6 +4,11 @@ import { loadWorldInfo, createNewWorldInfo, createWorldInfoEntry, saveWorldInfo,
 import { compatibleWriteToLorebook, safeLorebooks, safeCharLorebooks, safeLorebookEntries } from "./tavernhelper-compatibility.js";
 import { extensionName } from "../utils/settings.js";
 import { isActiveChatContext } from "./utils/chat-context-state.js";
+import { callGenericPopup, POPUP_TYPE, POPUP_RESULT } from '/scripts/popup.js';
+import { loadBookFresh, withLoreLock, saveBookStrictUnlocked } from './lore-service.js';
+import { captureChatScope } from './table-system/infra/chat-scope.js';
+import { t } from '../utils/i18n/index.js';
+import { createLegacyWorldbookSwitch, createLegacySwitchFetch, buildLegacySwitchPreview } from './historiography/legacy-worldbook-switch.js';
 
 
 document.addEventListener('amily-lorebook-created', (event) => {
@@ -515,56 +520,55 @@ export async function getPlotOptimizedWorldbookContent(context, apiSettings, isC
 }
 
 
+let legacyWorldbookChatEpoch = 0;
+eventSource.on(event_types.CHAT_CHANGED, () => { legacyWorldbookChatEpoch += 1; });
+
+function legacyWorldbookScope() {
+    const context = getContext();
+    if (!context || context.characterId == null || context.characterId === ''
+        || (context.groupId != null && context.groupId !== '')) return null;
+    const character = characters[context.characterId];
+    if (!character) return null;
+    return { ...captureChatScope(context), switchEpoch: legacyWorldbookChatEpoch,
+        characterId: context.characterId, avatar: character.avatar,
+        primaryBook: character.data?.extensions?.world,
+        books: JSON.stringify(world_names) };
+}
+
+const switchLegacyWorldbooks = createLegacyWorldbookSwitch({
+    prefix: LOREBOOK_PREFIX,
+    getScope: legacyWorldbookScope,
+    resolveTargets: async () => {
+        const marker = await getChatIdentifier();
+        if (!marker || marker.startsWith('unknown_chat')) throw new Error('Missing legacy marker');
+        const linked = await safeCharLorebooks({ type: 'all' });
+        return { marker: `${LOREBOOK_PREFIX}${marker}`,
+            books: [linked.primary, ...(linked.additional || []), `${DEDICATED_LOREBOOK_NAME}-${marker}`]
+                .filter(book => book && world_names.includes(book)) };
+    },
+    readBook: book => loadBookFresh(book, { cache: null }),
+    withLock: action => withLoreLock('legacy-worldbook-switch', action),
+    saveBook: (book, draft, guard) => saveBookStrictUnlocked(book, draft, {
+        fetchImpl: createLegacySwitchFetch(globalThis.fetch, book, draft, guard.beforeDispatch),
+    }),
+    confirm: async preview => {
+        const result = await callGenericPopup(buildLegacySwitchPreview(preview, { document, t }),
+            POPUP_TYPE.CONFIRM, '', {
+                okButton: t(preview.changes ? 'summaryWorkflow.legacyWorldbookSwitch.apply' : 'summaryWorkflow.legacyWorldbookSwitch.keep'),
+                cancelButton: t('actions.cancel'), wider: true,
+            });
+        return result === true || (typeof result === 'number' && result === POPUP_RESULT.AFFIRMATIVE);
+    },
+});
+
 export async function manageLorebookEntriesForChat() {
-    try {
-        const chatIdentifier = await getChatIdentifier();
-        if (!chatIdentifier || chatIdentifier.startsWith("unknown_chat")) {
-            console.error(`[Amily2-国史馆] 无法获取有效的聊天标识符，中止条目状态管理。`);
-            return;
-        }
-
-        const context = getContext();
-        if (!context || !context.characterId) {
-            console.log("[Amily2-国史馆] 未选择任何角色，跳过世界书管理。");
-            return;
-        }
-
-        const charLorebooks = await safeCharLorebooks({ type: 'all' });
-        const bookNames = [];
-        if (charLorebooks.primary) bookNames.push(charLorebooks.primary);
-        if (charLorebooks.additional?.length) bookNames.push(...charLorebooks.additional);
-
-        const dedicatedBookName = `${DEDICATED_LOREBOOK_NAME}-${chatIdentifier}`;
-        if (!bookNames.includes(dedicatedBookName)) {
-            bookNames.push(dedicatedBookName);
-        }
-
-        for (const bookName of bookNames) {
-            if (!world_names.includes(bookName)) continue; 
-
-            const entries = await safeLorebookEntries(bookName);
-            const entriesToUpdate = [];
-
-            for (const entry of entries) {
-                if (entry.comment && entry.comment.startsWith(LOREBOOK_PREFIX)) {
-                    const isForCurrentChat = entry.comment.includes(chatIdentifier);
-                    if (isForCurrentChat && entry.disable) {
-                        entriesToUpdate.push({ uid: entry.uid, enabled: true });
-                    } else if (!isForCurrentChat && !entry.disable) {
-                        entriesToUpdate.push({ uid: entry.uid, enabled: false });
-                    }
-                }
-            }
-
-            if (entriesToUpdate.length > 0) {
-                const success = await safeUpdateLorebookEntries(bookName, entriesToUpdate);
-                if (success) {
-                    console.log(`[Amily2-国史馆] 已为《${bookName}》更新了 ${entriesToUpdate.length} 个条目的状态以匹配当前聊天: ${chatIdentifier}`);
-                }
-            }
-        }
-
-    } catch (error) {
-        console.error("[Amily2-国史馆] 管理世界书条目状态时发生错误:", error);
-    }
+    const result = await switchLegacyWorldbooks();
+    if (['inactive', 'empty', 'unchanged'].includes(result.status)) return result;
+    const message = t(`summaryWorkflow.legacyWorldbookSwitch.${result.status}`, {
+        count: result.written.length,
+    });
+    const notify = result.status === 'saved' ? toastr.success : toastr.warning;
+    // Notifications render HTML in some hosts; never include book names or raw errors.
+    notify(message, t('summaryWorkflow.legacyWorldbookSwitch.title'));
+    return result;
 }

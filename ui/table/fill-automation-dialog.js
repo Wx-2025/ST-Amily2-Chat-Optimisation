@@ -1,0 +1,80 @@
+import { getContext } from '/scripts/extensions.js';
+import { callGenericPopup, POPUP_TYPE } from '/scripts/popup.js';
+import { getMemoryStateForScope } from '../../core/table-system/manager.js';
+import { captureChatScope, chatScopesMatch } from '../../core/table-system/infra/chat-scope.js';
+import { initializeCurrentFillAutomation } from '../../core/table-system/fill-automation/integration/runtime.js';
+import { getModuleAccessDecision } from '../../utils/module-access-policy.js';
+import { getLocale, t } from '../../utils/i18n/index.js';
+import { PLAIN, EN } from '../../utils/i18n/messages/fill-automation.js';
+import { createFillAutomationControls } from './fill-automation-controls.js';
+
+export function fillAutomationLabel(key) {
+    const fullKey = `fillAutomationUi.${key}`;
+    const translated = t(fullKey);
+    return translated !== fullKey ? translated : (getLocale() === 'en-US' ? EN : PLAIN)[fullKey] ?? PLAIN['fillAutomationUi.failed'];
+}
+
+export async function openCurrentFillAutomation(tableIndex) {
+    if (!Number.isSafeInteger(tableIndex) || tableIndex < 0) return false;
+    const scope = captureChatScope(getContext());
+    const selected = getMemoryStateForScope(scope)?.[tableIndex];
+    if (!selected || selected.owner !== 'user' || selected.readOnly === true
+        || !getModuleAccessDecision('Table').allowed) return false;
+    const root = document.createElement('div');
+    Object.assign(root.style, { minWidth: '0', maxWidth: '100%', textAlign: 'left', overflowWrap: 'anywhere' });
+    const title = document.createElement('h3'); title.textContent = `${fillAutomationLabel('title')}: ${selected.name || selected.id}`;
+    const status = document.createElement('p'); status.setAttribute('role', 'alert');
+    root.append(title, status);
+    let mounted;
+    const isCurrent = () => chatScopesMatch(scope, captureChatScope(getContext()))
+        && getModuleAccessDecision('Table').allowed
+        && getMemoryStateForScope(scope)?.some(table => table.id === selected.id && table.owner === 'user' && table.readOnly !== true);
+    try {
+        const runtime = initializeCurrentFillAutomation();
+        if (!runtime.getState().running) await runtime.initialize();
+        if (!isCurrent()) return false;
+        mounted = createFillAutomationControls({ document, runtime, tableId: selected.id, label: fillAutomationLabel,
+            onError: error => {
+                const code = typeof error?.code === 'string'
+                    && (/^FILL_[A-Z_]{1,64}$/.test(error.code) || /^FILL_CONNECTION_HTTP_[45]\d{2}$/.test(error.code))
+                    ? error.code : null;
+                status.textContent = `${fillAutomationLabel('failed')}${code ? ` (${code})` : ''}`;
+            },
+            async confirmAction({ action, details }) {
+                if (!isCurrent()) return false;
+                const confirmation = document.createElement('div');
+                const title = document.createElement('h4'); title.textContent = fillAutomationLabel(action); confirmation.append(title);
+                for (const detail of details) {
+                    const row = document.createElement('p'); row.textContent = detail; confirmation.append(row);
+                }
+                const confirmed = await callGenericPopup(confirmation, POPUP_TYPE.CONFIRM, '', {
+                    okButton: fillAutomationLabel('confirm'), cancelButton: fillAutomationLabel('dismiss'),
+                });
+                return Boolean(confirmed) && isCurrent();
+            },
+            async confirmProfileImpact({ affectedTableIds, deleteProfileId }) {
+                if (!isCurrent()) return false;
+                const confirmation = document.createElement('div');
+                const text = document.createElement('p');
+                text.textContent = fillAutomationLabel(deleteProfileId ? 'confirmDelete' : 'confirmImpact'); confirmation.append(text);
+                const list = document.createElement('ul');
+                for (const tableId of affectedTableIds) {
+                    const row = document.createElement('li');
+                    row.textContent = getMemoryStateForScope(scope)?.find(table => table.id === tableId)?.name || tableId;
+                    list.append(row);
+                }
+                confirmation.append(list);
+                const confirmed = await callGenericPopup(confirmation, POPUP_TYPE.CONFIRM, '', {
+                    okButton: fillAutomationLabel('confirm'), cancelButton: fillAutomationLabel('dismiss'),
+                });
+                return Boolean(confirmed) && isCurrent();
+            },
+        });
+        root.append(mounted.element);
+    } catch {
+        mounted?.dispose(); mounted = null;
+        status.textContent = fillAutomationLabel('unavailable');
+    }
+    try { await callGenericPopup(root, POPUP_TYPE.TEXT, '', { wide: true }); return Boolean(mounted); }
+    finally { mounted?.dispose(); }
+}

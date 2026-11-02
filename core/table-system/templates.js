@@ -21,7 +21,8 @@ import { saveSettingsDebounced } from '/script.js';
 import { extensionName } from '../../utils/settings.js';
 import { DEFAULT_AI_RULE_TEMPLATE, DEFAULT_AI_FLOW_TEMPLATE } from './settings.js';
 import { getState } from './infra/store.js';
-import { deepClone, persistChatTableState, readChatTableState } from './infra/database-state.js';
+import { persistChatTableState, readChatTableState } from './infra/database-state.js';
+
 
 const PROFILE_TEMPLATE_KEYS = Object.freeze({
     rule: 'batchFillerRuleTemplate',
@@ -43,7 +44,7 @@ export function getBatchFillerRuleTemplate() {
  * @param {string} template
  */
 export function saveBatchFillerRuleTemplate(template) {
-    saveActiveTemplate(PROFILE_TEMPLATE_KEYS.rule, template, saveGlobalBatchFillerRuleTemplate);
+    return saveActiveTemplate(PROFILE_TEMPLATE_KEYS.rule, template, saveGlobalBatchFillerRuleTemplate);
 }
 
 /**
@@ -60,7 +61,7 @@ export function getBatchFillerFlowTemplate() {
  * @param {string} template
  */
 export function saveBatchFillerFlowTemplate(template) {
-    saveActiveTemplate(PROFILE_TEMPLATE_KEYS.flow, template, saveGlobalBatchFillerFlowTemplate);
+    return saveActiveTemplate(PROFILE_TEMPLATE_KEYS.flow, template, saveGlobalBatchFillerFlowTemplate);
 }
 
 /**
@@ -78,7 +79,7 @@ export function getAiFlowTemplateForInjection() {
  * @param {string} template
  */
 export function saveAiTemplate(template) {
-    saveActiveTemplate(PROFILE_TEMPLATE_KEYS.injection, template, saveGlobalAiTemplate);
+    return saveActiveTemplate(PROFILE_TEMPLATE_KEYS.injection, template, saveGlobalAiTemplate);
 }
 
 export function getGlobalBatchFillerRuleTemplate() {
@@ -136,24 +137,35 @@ export function getAiTemplate() {
 }
 
 function getActiveTemplate(key, fallback) {
-    const profile = readChatTableState(getContext())?.profile;
+    const context = getContext();
+    if (!context?.chatMetadata?.amily2_table_state) return fallback;
+    const profile = readChatTableState(context)?.profile;
     const value = profile?.templates?.[key];
     return typeof value === 'string' ? value : fallback;
 }
 
-function saveActiveTemplate(key, template, saveGlobal) {
+// 'chat' confirms durable persistence; 'global' only schedules the legacy host
+// settings save. Callers must not describe the latter as a durable receipt.
+async function saveActiveTemplate(key, template, saveGlobal) {
     const context = getContext();
+    if (!context?.chatMetadata?.amily2_table_state) {
+        saveGlobal(template);
+        return 'global';
+    }
     const envelope = readChatTableState(context);
     if (!envelope?.profile) {
         saveGlobal(template);
         return 'global';
     }
 
-    const profile = deepClone(envelope.profile);
-    profile.templates = {
-        ...(profile.templates && typeof profile.templates === 'object' ? profile.templates : {}),
-        [key]: String(template ?? ''),
+    const templates = envelope.profile.templates ?? {};
+    const profileTemplatePatch = {
+        key, value: String(template ?? ''),
+        expectedPresent: Object.hasOwn(templates, key),
+        expectedValue: templates[key] ?? null,
     };
-    persistChatTableState(context, getState() || envelope.tables, profile);
+    if (!await persistChatTableState(context, getState() || envelope.tables, undefined, { profileTemplatePatch })) {
+        throw Object.assign(new Error('The template was not durably saved.'), { code: 'TABLE_TEMPLATE_SAVE_FAILED' });
+    }
     return 'chat';
 }

@@ -3,7 +3,7 @@ import { saveSettingsDebounced } from "/script.js";
 import { pluginAuthStatus } from "./auth-state.js";
 import { DEFAULT_LOCALE } from "./i18n/catalogs.js";
 
-export const pluginVersion = "2.4.0";
+export const pluginVersion = "2.4.1";
 
 // 从当前文件 URL 动态推导插件文件夹名和根路径，兼容任意文件夹名（Dev / 正式版均适用）
 // URL 结构：.../scripts/extensions/third-party/<folderName>/utils/settings.js
@@ -997,6 +997,8 @@ export const mainOptDefaults = {
 
 export const loreDefaults = {
   lorebookTarget: "character_main",
+  historiographyStorageMode: "chat",
+  historiographyChatInjection: "character",
   loreActivationMode: 'keyed',
   loreInsertionPosition: 'at_depth',
   loreDepth: 10,

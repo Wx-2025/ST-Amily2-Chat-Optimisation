@@ -1,9 +1,7 @@
 import { getContext, extension_settings } from "/scripts/extensions.js";
 import { SlashCommandParser } from "/scripts/slash-commands/SlashCommandParser.js";
 import { extensionName } from "../utils/settings.js";
-import { readGoldenLedgerProgress } from "./historiographer.js";
-import { characters } from "/script.js";
-import { getChatIdentifier } from "./lore.js";
+import { readGoldenLedgerProgress, getTargetLorebookName } from "./historiographer.js";
 
 
 async function executeSlashCommand(commandString) {
@@ -36,16 +34,7 @@ export async function executeAutoHide() {
         let hideUntilIndex = -1;
 
         if (settings.autoHideSummarizedEnabled) {
-            let targetLorebookName;
-            switch (settings.lorebookTarget) {
-                case "character_main":
-                    targetLorebookName = characters[context.characterId]?.data?.extensions?.world;
-                    break;
-                case "dedicated":
-                    const chatIdentifier = await getChatIdentifier();
-                    targetLorebookName = `Amily2-Lore-${chatIdentifier}`;
-                    break;
-            }
+            const targetLorebookName = await getTargetLorebookName();
 
             if (targetLorebookName) {
                 const summarizedCount = await readGoldenLedgerProgress(targetLorebookName);

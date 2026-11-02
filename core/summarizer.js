@@ -41,7 +41,6 @@ export async function processOptimization(latestMessage, previousMessages) {
  
     console.groupCollapsed(`[Amily2号-正文优化任务] ${new Date().toLocaleTimeString()}`);
     console.time("优化任务总耗时");
- 
     try {
         window.Amily2PreOptimizationSnapshot = {
             original: null,
@@ -90,6 +89,7 @@ export async function processOptimization(latestMessage, previousMessages) {
         // readiness or be discarded because an unrelated table refresh ran.
         const requestLease = automaticTableFillEnabled
             ? captureTableFillRequestLease(context, {
+                excludeAutomation: true,
                 tableGroupId,
             })
             : null;
@@ -144,6 +144,7 @@ export async function processOptimization(latestMessage, previousMessages) {
                             const flowTemplate = getBatchFillerFlowTemplate();
                             const tableData = convertAiFillableTablesToCsvString(
                                 requestLease.tableGroupId,
+                                { excludeAutomation: true },
                             );
                             const filledFlowTemplate = flowTemplate.replace('{{{Amily2TableData}}}', tableData);
                             
@@ -292,7 +293,6 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
 
     console.groupCollapsed(`[${extensionName}] 剧情优化任务启动... ${new Date().toLocaleTimeString()}`);
     console.time('剧情优化任务总耗时');
-
     try {
         const userMessageContent = currentUserMessage.mes;
         if (!userMessageContent || userMessageContent.trim() === '') {
@@ -514,6 +514,8 @@ export async function processPlotOptimization(currentUserMessage, contextMessage
                 onProgress(getRandomText(['正在与核心意识同步 (LLM-A)...', '正在等待灵魂共鸣 (LLM-A)...']), true);
                 return res;
             });
+            // LLM-B preparation can fail while A is already in flight.
+            void promise1.catch(() => {});
 
             // 为并发LLM (LLM-B) 准备独立的世界书设置
             const concurrentApiSettings = {

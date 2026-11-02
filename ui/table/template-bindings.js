@@ -1,4 +1,5 @@
 const editorSyncBaselines = new WeakMap();
+const editorRefreshVersions = new WeakMap();
 
 function refreshEditorValue(editor, nextValue, force) {
     const normalizedValue = String(nextValue ?? '');
@@ -12,11 +13,8 @@ function refreshEditorValue(editor, nextValue, force) {
 
     editor.value = normalizedValue;
     editorSyncBaselines.set(editor, normalizedValue);
+    editorRefreshVersions.set(editor, (editorRefreshVersions.get(editor) ?? 0) + 1);
     return true;
-}
-
-function markEditorValueSynced(editor) {
-    editorSyncBaselines.set(editor, String(editor.value ?? ''));
 }
 
 export function resolveTableTemplateLifecycleRefresh(
@@ -62,6 +60,7 @@ export function bindTableTemplateEditors({
     defaultFlowTemplate,
     refreshValues = false,
     forceRefreshValues = false,
+    translate = (_key, fallback) => fallback,
 }) {
     const ruleEditor = document.getElementById('ai-rule-template-editor');
     const ruleSaveBtn = document.getElementById('ai-rule-template-save-btn');
@@ -89,42 +88,50 @@ export function bindTableTemplateEditors({
 
     refreshTableTemplateEditorValues({ TableManager, log });
 
-    ruleSaveBtn.addEventListener('click', () => {
-        TableManager.saveBatchFillerRuleTemplate(ruleEditor.value);
-        markEditorValueSynced(ruleEditor);
-        toastr.success('Rule template saved.');
-        log('Batch filler rule template saved.', 'success');
-    });
-
-    flowSaveBtn.addEventListener('click', () => {
-        TableManager.saveBatchFillerFlowTemplate(flowEditor.value);
-        markEditorValueSynced(flowEditor);
-        toastr.success('Flow template saved.');
-        log('Batch filler flow template saved.', 'success');
-    });
-
-    ruleRestoreBtn.addEventListener('click', () => {
-        if (!confirm('Restore the default rule template?')) {
-            return;
+    let busy = false;
+    const buttons = [ruleSaveBtn, flowSaveBtn, ruleRestoreBtn, flowRestoreBtn].filter(Boolean);
+    async function save(editor, value, write, restore = false) {
+        if (busy) return;
+        busy = true;
+        const version = editorRefreshVersions.get(editor);
+        const original = editor.value;
+        const disabled = buttons.map(button => button.disabled);
+        buttons.forEach(button => { button.disabled = true; });
+        try {
+            const target = await write(value);
+            if (target !== 'chat' && target !== 'global') throw Object.assign(new Error('Unconfirmed template save.'), { code: 'TABLE_TEMPLATE_SAVE_FAILED' });
+            if (editorRefreshVersions.get(editor) !== version) return;
+            // Typing while a save is pending must remain an unsaved edit.
+            if (restore && editor.value === original) editor.value = value;
+            editorSyncBaselines.set(editor, String(value ?? ''));
+            const message = target === 'global'
+                ? translate('templateEditor.queued', 'Global template update queued; persistence is not yet confirmed.')
+                : translate('templateEditor.saved', 'Template saved.');
+            if (target === 'global') toastr.info(message);
+            else toastr.success(message);
+            log(message, target === 'global' ? 'info' : 'success');
+        } catch (error) {
+            if (editorRefreshVersions.get(editor) !== version) return;
+            const code = /^TABLE_[A-Z_]+$/.test(error?.code ?? '') ? error.code : 'TABLE_TEMPLATE_SAVE_FAILED';
+            const message = `${translate('templateEditor.failed', 'Template not saved. Your edit was kept.')} (${code})`;
+            toastr.error?.(message);
+            log(message, 'error');
+        } finally {
+            buttons.forEach((button, index) => { button.disabled = disabled[index]; });
+            busy = false;
         }
-
-        ruleEditor.value = defaultRuleTemplate;
-        TableManager.saveBatchFillerRuleTemplate(ruleEditor.value);
-        markEditorValueSynced(ruleEditor);
-        toastr.info('Rule template restored.');
-        log('Batch filler rule template restored.', 'info');
+    }
+    ruleSaveBtn.addEventListener('click', () => save(ruleEditor, ruleEditor.value,
+        value => TableManager.saveBatchFillerRuleTemplate(value)));
+    flowSaveBtn.addEventListener('click', () => save(flowEditor, flowEditor.value,
+        value => TableManager.saveBatchFillerFlowTemplate(value)));
+    ruleRestoreBtn?.addEventListener('click', () => {
+        if (busy || !confirm(translate('templateEditor.restoreRule', 'Restore the default rule template?'))) return;
+        return save(ruleEditor, defaultRuleTemplate, value => TableManager.saveBatchFillerRuleTemplate(value), true);
     });
-
-    flowRestoreBtn.addEventListener('click', () => {
-        if (!confirm('Restore the default flow template?')) {
-            return;
-        }
-
-        flowEditor.value = defaultFlowTemplate;
-        TableManager.saveBatchFillerFlowTemplate(flowEditor.value);
-        markEditorValueSynced(flowEditor);
-        toastr.info('Flow template restored.');
-        log('Batch filler flow template restored.', 'info');
+    flowRestoreBtn?.addEventListener('click', () => {
+        if (busy || !confirm(translate('templateEditor.restoreFlow', 'Restore the default flow template?'))) return;
+        return save(flowEditor, defaultFlowTemplate, value => TableManager.saveBatchFillerFlowTemplate(value), true);
     });
 
     ruleSaveBtn.dataset.templateEventsBound = 'true';

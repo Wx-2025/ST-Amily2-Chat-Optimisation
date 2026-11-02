@@ -1,4 +1,5 @@
-const ROW_STATUSES = new Set(['normal', 'pending-deletion']);
+import { isDeletedRow } from '../row-lifecycle.js';
+const ROW_STATUSES = new Set(['normal', 'pending-deletion', 'deleted']);
 
 /**
  * Replace one row status without cloning unchanged table data. The store treats
@@ -21,7 +22,8 @@ export function createRowStatusCandidate(currentState, tableIndex, rowIndex, nex
         return null;
     }
 
-    const previousStatus = sourceTable.rowStatuses?.[rowIndex] === 'pending-deletion'
+    if (nextStatus === 'pending-deletion' && sourceTable.softDelete === true) nextStatus = 'deleted';
+    const previousStatus = isDeletedRow(sourceTable, rowIndex) ? 'deleted' : sourceTable.rowStatuses?.[rowIndex] === 'pending-deletion'
         ? 'pending-deletion'
         : 'normal';
     if (previousStatus === nextStatus) {
@@ -29,13 +31,18 @@ export function createRowStatusCandidate(currentState, tableIndex, rowIndex, nex
     }
 
     const rowStatuses = sourceTable.rows.map((_, index) => (
-        sourceTable.rowStatuses?.[index] === 'pending-deletion'
+        isDeletedRow(sourceTable, index) ? 'deleted' : sourceTable.rowStatuses?.[index] === 'pending-deletion'
             ? 'pending-deletion'
             : 'normal'
     ));
     rowStatuses[rowIndex] = nextStatus;
 
-    const table = { ...sourceTable, rowStatuses };
+    let rowMeta = sourceTable.rowMeta;
+    if (nextStatus === 'deleted' || previousStatus === 'deleted') {
+        rowMeta = (rowMeta || []).slice();
+        rowMeta[rowIndex] = { ...rowMeta[rowIndex], is_delete: nextStatus === 'deleted' };
+    }
+    const table = { ...sourceTable, rowStatuses, ...(sourceTable.rowMeta || nextStatus === 'deleted' ? { rowMeta } : {}) };
     const state = currentState.slice();
     state[tableIndex] = table;
     return { changed: true, state, table, previousStatus };

@@ -27,7 +27,8 @@ function _checkTableRules(table) {
     const warnings = [];
 
     // 行数限制
-    if (table.rowLimitRule && table.rowLimitRule > 0 && table.rows.length > table.rowLimitRule) {
+    const activeCount = table.rows.filter((_, index) => !['pending-deletion', 'deleted'].includes(table.rowStatuses?.[index])).length;
+    if (table.rowLimitRule && table.rowLimitRule > 0 && activeCount > table.rowLimitRule) {
         warnings.push(`【当前（${table.name}）超出规定（${table.rowLimitRule}）行，请结合剧情缩减至（${table.rowLimitRule}）行以下，但切莫完全删除。】`);
     }
 
@@ -40,7 +41,7 @@ function _checkTableRules(table) {
             const colName = table.headers[colIndex];
             const offendingRows = [];
             table.rows.forEach((row, rowIndex) => {
-                if (table.rowStatuses && table.rowStatuses[rowIndex] === 'pending-deletion') return;
+                if (['pending-deletion', 'deleted'].includes(table.rowStatuses?.[rowIndex])) return;
                 const cellContent = row[colIndex] || '';
                 if (cellContent.length > limit) offendingRows.push(rowIndex);
             });
@@ -63,7 +64,7 @@ function _checkTableRules(table) {
  */
 function _renderTableBody(table, tagName) {
     let out = '';
-    const activeRows = table.rows.filter((row, i) => !table.rowStatuses || table.rowStatuses[i] !== 'pending-deletion');
+    const activeRows = table.rows.filter((row, i) => !['pending-deletion', 'deleted'].includes(table.rowStatuses?.[i]));
 
     if (activeRows.length === 0) {
         out += '（该表当前内容为空）\n';
@@ -72,7 +73,7 @@ function _renderTableBody(table, tagName) {
         let simplifiedCount = 0;
 
         table.rows.forEach((row, rowIndex) => {
-            if (table.rowStatuses && table.rowStatuses[rowIndex] === 'pending-deletion') return;
+            if (['pending-deletion', 'deleted'].includes(table.rowStatuses?.[rowIndex])) return;
 
             // 历史内容简化：前 N 行用 ---已锁定--- 占位
             if (simplifyThreshold > 0 && rowIndex < simplifyThreshold) {
@@ -104,6 +105,13 @@ function _renderTableBody(table, tagName) {
     }
 
     return out;
+}
+
+function renderConstraints(table) {
+    const keys = table.primaryKey?.columnIds || table.columns?.filter(c=>c.primaryKey).map(c=>c.id) || [];
+    let text = keys.length ? `【主键约束】: ${JSON.stringify(keys)}；组合值必须唯一，各列不可为空；已软删除记录的键仍保留。\n` : '';
+    if (table.softDelete) text += '【删除方式】: 软删除，原记录保留但不参与注入；禁止更新已删除记录。\n';
+    return text;
 }
 
 function _ordinaryTables(state) {
@@ -167,6 +175,7 @@ function renderTablesToCsv(state, includeTable) {
         fullString += `【增加】: ${table.rule_add || '允许'}\n`;
         fullString += `【删除】: ${table.rule_delete || '允许'}\n`;
         fullString += `【修改】: ${table.rule_update || '允许'}\n`;
+        fullString += renderConstraints(table);
 
         if (visibleIndex < visibleTables.length - 1) fullString += '\n---\n';
     });
@@ -244,6 +253,7 @@ function renderTablesToCsvWithSelection(state, selectedIndices, includeTable) {
             fullString += `【增加】: ${table.rule_add || '允许'}\n`;
             fullString += `【删除】: ${table.rule_delete || '允许'}\n`;
             fullString += `【修改】: ${table.rule_update || '允许'}\n`;
+            fullString += renderConstraints(table);
         } else {
             fullString += `【操作权限】: 禁止修改此表格\n`;
         }
@@ -276,7 +286,7 @@ export function tablesToCsvContentOnly(state, options = {}) {
         outputString += `|${table.headers.map(() => '---').join('|')}|\n`;
 
         // 数据
-        const activeRows = table.rows.filter((row, i) => !table.rowStatuses || table.rowStatuses[i] !== 'pending-deletion');
+        const activeRows = table.rows.filter((row, i) => !['pending-deletion', 'deleted'].includes(table.rowStatuses?.[i]));
         if (activeRows.length > 0) {
             activeRows.forEach(row => {
                 if (Array.isArray(row)) {

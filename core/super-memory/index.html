@@ -92,23 +92,24 @@
             <fieldset class="sm-settings-group">
                 <legend><i class="fas fa-archive"></i> 历史归档</legend>
                 <div class="sm-control-block">
-                    <label>启用自动归档:</label>
+                    <label data-amily-i18n="tableRuntimeUi.archive.enable">复制旧记录到向量库（不删除原表）:</label>
                     <label class="sm-toggle-switch">
                         <input type="checkbox" id="sm-archive-enabled">
                         <span class="sm-slider"></span>
                     </label>
                 </div>
                 <div class="sm-control-block">
-                    <label>开始归档的行数:</label>
+                    <label data-amily-i18n="tableRuntimeUi.archive.reserve">保留在复制范围外的最新行数:</label>
                     <input type="number" id="sm-archive-threshold" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px;" value="20">
                 </div>
                 <div class="sm-control-block">
-                    <label title="每次归档时，一次性挪走的旧行数。">每次归档行数:</label>
+                    <label data-amily-i18n="tableRuntimeUi.archive.batch">每次最多复制行数:</label>
                     <input type="number" id="sm-archive-batch-size" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px;" value="10">
                 </div>
                 <small style="color: #888; font-size: 0.8em; display: block; margin-top: -5px; margin-bottom: 10px; padding-left: 5px;">
-                    例如阈值 20、每次 10：表格到 21 行时，会把最早的 10 行存进长期记忆，表格和世界书里还留 11 条。
+                    <span data-amily-i18n="tableRuntimeUi.archive.retention">原表及世界书记录不会被删除或隐藏。旧版开关需要重新确认；未完成或结果未知的复制不会自动重试。更改来源或批量设置后需重新启用。</span>
                 </small>
+                <small id="sm-archive-copy-status" role="status"></small>
                 <div class="sm-control-block">
                     <label>要归档的表格名:</label>
                     <input type="text" id="sm-archive-target-table" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px;" value="总结表">

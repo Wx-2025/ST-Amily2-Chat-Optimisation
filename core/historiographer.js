@@ -3,8 +3,6 @@ import { characters } from "/script.js";
 import { extractBlocksByTags, applyExclusionRules } from './utils/rag-tag-extractor.js';
 import {
   world_names,
-  loadWorldInfo,
-  createNewWorldInfo,
   createWorldInfoEntry,
 } from "/scripts/world-info.js";
 import {
@@ -12,13 +10,20 @@ import {
   saveBookStrictUnlocked,
   mutateBookStrict,
   withLoreLock,
-} from "./lore-service.js";
+  loadWorldInfo,
+  loadBookFresh,
+} from "./historiography/storage.js";
+import { chatLedgerTarget, chatLedgerIdentity, isChatLedgerTarget } from './historiography/chat-ledger.js';
+import { getChatContextEpoch, captureChatScope, chatScopesMatch } from './table-system/infra/chat-scope.js';
+import { prepareChatLedgerCopy, createCardSummarySnapshot } from './historiography/chat-transfer.js';
+import { hashHistoriographyText } from './historiography/segmented-ledger.js';
+import { assertLegacyRecoveryScanCurrent } from './historiography/legacy-recovery.js';
 import { extensionName, saveSettings as savePluginSettings } from "../utils/settings.js";
 import { t } from '../utils/i18n/index.js';
 import { pluginAuthStatus } from "../utils/auth-state.js";
 import {
   getChatIdentifier,
-  refreshWorldbookListOnly,
+  refreshWorldbookListOnly as refreshHostWorldbookList,
 } from "./lore.js";
 import {
   ingestTextToHanlinyuan,
@@ -28,6 +33,8 @@ import { showSummaryModal, showHtmlModal } from "../ui/page-window.js";
 import { getPresetPrompts, getMixedOrder } from '../PresetSettings/index.js';
 import { generateRandomSeed } from "./api.js";
 import { callNgmsAI } from "./api/Ngms_api.js";
+import { captureMicroLedgerSource, attachMicroLedgerCoverage, captureMacroLedgerSource,
+  attachMacroLedgerCoverage } from './progressive-memory/ledger-producer.js';
 import { executeAutoHide } from "./autoHideManager.js";
 import { resolveHistoriographyRuleConfig } from "../utils/config/RuleProfileManager.js";
 import {
@@ -94,13 +101,19 @@ let reloadEditor = () => {
     try {
         const { reloadEditor: importedReloadEditor } = await import("/scripts/world-info.js");
         if (importedReloadEditor) {
-            reloadEditor = importedReloadEditor;
+            reloadEditor = name => isChatLedgerTarget(name) ? undefined : importedReloadEditor(name);
             console.log("[大史官] 已成功动态导入 reloadEditor。");
         }
     } catch (error) {
         console.warn("[大史官] 动态导入 reloadEditor 失败，将使用空函数。错误信息：", error.message);
     }
 })();
+
+const refreshWorldbookListOnly = name => isChatLedgerTarget(name) ? undefined : refreshHostWorldbookList(name);
+function publishHistoriographyUpdate(bookName) {
+    document.dispatchEvent(new CustomEvent(isChatLedgerTarget(bookName)
+        ? 'amily2:historiographyLedgerCreated' : 'amily-lorebook-created', { detail: { bookName } }));
+}
 
 let isExpeditionRunning = false; 
 let manualStopRequested = false; 
@@ -132,6 +145,7 @@ function getHistoriographyResidentMaxTokens() {
 }
 
 async function getHistoriographyScopeKey(targetLorebookName) {
+  if (isChatLedgerTarget(targetLorebookName)) return targetLorebookName;
   try {
     const chatIdentifier = await getChatIdentifier();
     if (chatIdentifier) return `chat:${chatIdentifier}`;
@@ -151,18 +165,22 @@ async function inspectTargetHistoriography(targetLorebookName = null) {
 }
 
 async function readHistoriographyContextKey() {
-  try {
-    const chatIdentifier = await getChatIdentifier();
-    return chatIdentifier == null ? null : String(chatIdentifier);
-  } catch {
-    return null;
-  }
+  const identity = chatLedgerIdentity(getContext());
+  return identity ? `${identity}:${getChatContextEpoch()}` : null;
 }
 
 const recoveryEpochs = new Map();
 const leaseRecoveryEpochs = new WeakMap();
 const revisionRecoveryLeases = new WeakMap();
 const legacyRecoveryLeases = new WeakMap();
+
+function invalidateReboundChatSummary(event) {
+  const target = event.detail?.target;
+  if (!isChatLedgerTarget(target)) return;
+  recoveryEpochs.set(target, (recoveryEpochs.get(target) || 0) + 1);
+}
+
+document.addEventListener('amily2:historiographyChatRebound', invalidateReboundChatSummary);
 
 async function captureHistoriographyExecutionLease({
   targetLorebookName = null,
@@ -392,12 +410,35 @@ export async function getHistoriographyLedgerStatus() {
   };
 }
 
-export async function getActiveLegacyRecoverySnapshot() {
+export async function getActiveLegacyRecoverySnapshot({ signal, assertCurrent } = {}) {
+  const scope = captureChatScope(getContext());
+  const identity = chatLedgerIdentity(getContext());
+  const targetImage = () => JSON.stringify([
+    extension_settings[extensionName]?.historiographyStorageMode,
+    extension_settings[extensionName]?.lorebookTarget,
+    characters[getContext().characterId]?.data?.extensions?.world,
+  ]);
+  const expectedTarget = targetImage();
+  const checkpoint = () => {
+    assertLegacyRecoveryScanCurrent({ signal, assertCurrent });
+    if (!chatScopesMatch(scope, captureChatScope(getContext()))
+        || identity !== chatLedgerIdentity(getContext())) throw Object.assign(new Error('HISTORIOGRAPHY_STALE_LEDGER'), {
+      code: 'HISTORIOGRAPHY_STALE_LEDGER',
+    });
+    if (targetImage() !== expectedTarget) throw Object.assign(new Error('HISTORIOGRAPHY_STALE_LEDGER'), {
+      code: 'HISTORIOGRAPHY_STALE_LEDGER',
+    });
+  };
+  checkpoint();
   const bookName = await getTargetLorebookName();
+  checkpoint();
   if (!bookName) throw new Error(t('summaryWorkflow.restoreNoTarget'));
   const lease = await captureHistoriographyExecutionLease({ targetLorebookName: bookName });
-  const snapshot = await prepareLegacyHistoricalRecovery({ bookName });
+  checkpoint();
+  const snapshot = await prepareLegacyHistoricalRecovery({ bookName, signal, assertCurrent: checkpoint });
+  checkpoint();
   await assertHistoriographyTargetLease(bookName, lease);
+  checkpoint();
   legacyRecoveryLeases.set(snapshot, lease);
   return snapshot;
 }
@@ -885,19 +926,7 @@ export async function checkAndTriggerAutoSummary() {
   if (!settings.historiographySmallAutoEnable) return;
 
   const context = getContext();
-  let targetLorebookName = null;
-  switch (settings.lorebookTarget) {
-    case "character_main":
-      targetLorebookName =
-        characters[context.characterId]?.data?.extensions?.world;
-      break;
-    case "dedicated":
-      const chatIdentifier = await getChatIdentifier();
-      targetLorebookName = `Amily2-Lore-${chatIdentifier}`;
-      break;
-    default:
-      return;
-  }
+  const targetLorebookName = await getTargetLorebookName();
 
   if (!targetLorebookName) return;
 
@@ -1002,6 +1031,7 @@ export async function executeManualSummary(startFloor, endFloor, isAuto = false)
                 return resolve(false);
             }
             const textToSummarize = messages.map(m => `【第 ${m.floor} 楼】 ${m.author}: ${m.content}`).join('\n');
+            const sourceCoverage = await captureMicroLedgerSource(getContext, startFloor, endFloor, messages);
             const summary = await getSummary(
                 textToSummarize,
                 toastTitle,
@@ -1022,6 +1052,7 @@ export async function executeManualSummary(startFloor, endFloor, isAuto = false)
                             toastTitle,
                             summaryProtocol,
                             operationLease,
+                            sourceCoverage,
                         );
                         resolve(success);
                     },
@@ -1058,6 +1089,8 @@ export async function executeManualSummary(startFloor, endFloor, isAuto = false)
             toastr.warning(t('summaryWorkflow.noValidMessages'), t('summaryWorkflow.invalidRequest'));
             return resolve(false);
         }
+        const sourceCoverage = await captureMicroLedgerSource(getContext, startFloor, endFloor, messages);
+        const completeInput = messages.map(m => `【第 ${m.floor} 楼】 ${m.author}: ${m.content}`).join('\n');
 
         const generateModalHtml = (msgList) => {
             const messageHtml = msgList.map(msg => `
@@ -1159,6 +1192,7 @@ export async function executeManualSummary(startFloor, endFloor, isAuto = false)
                                 toastTitle,
                                 summaryProtocol,
                                 operationLease,
+                                textToSummarize === completeInput ? sourceCoverage : null,
                             );
                             resolve(success);
                         },
@@ -1357,6 +1391,7 @@ async function writeSummary(
     toastTitle,
     expectedProtocol = getPreferredHistoriographyProtocol(),
     operationLease = null,
+    sourceCoverage = null,
 ) {
     const settings = extension_settings[extensionName];
     const context = getContext();
@@ -1370,22 +1405,8 @@ async function writeSummary(
 
     let targetLorebookName;
     try {
-        switch (settings.lorebookTarget) {
-            case "character_main":
-                targetLorebookName =
-                    characters[context.characterId]?.data?.extensions?.world;
-                if (!targetLorebookName) {
-                    throw new Error("当前角色未绑定主世界书。");
-                }
-                break;
-            case "dedicated": {
-                const chatIdentifier = await getChatIdentifier();
-                targetLorebookName = `Amily2-Lore-${chatIdentifier}`;
-                break;
-            }
-            default:
-                throw new Error("未知的史册写入指令。");
-        }
+        targetLorebookName = await getTargetLorebookName();
+        if (!targetLorebookName) throw new Error(t('summaryWorkflow.noTarget'));
     } catch (error) {
         toastr.error(escapeHtml(t('summaryWorkflow.targetFailed', { error: error.message })), t('summaryWorkflow.records'));
         return false;
@@ -1506,6 +1527,8 @@ async function writeSummary(
                     maxResidentTokens: getHistoriographyResidentMaxTokens(),
                     expectedManifestKey: currentLedger.manifestRecord?.key ?? null,
                     assertTarget: () => assertHistoriographyTargetLease(targetLorebookName, operationLease),
+                    prepareDraft: (draft, source) => attachMicroLedgerCoverage({
+                        getContext, draft, source, token: sourceCoverage, startFloor, endFloor }),
                 });
                 if (!persistence.committed) {
                     if (persistence.mutation?.idempotent) {
@@ -1545,10 +1568,7 @@ async function writeSummary(
                 );
                 await runHistoriographyPostCommitEffect(
                     '发布世界书更新通知',
-                    () => document.dispatchEvent(new CustomEvent(
-                        'amily-lorebook-created',
-                        { detail: { bookName: targetLorebookName } },
-                    )),
+                    () => publishHistoriographyUpdate(targetLorebookName),
                 );
                 await runHistoriographyPostCommitEffect(
                     '显示写入成功提示',
@@ -1622,7 +1642,7 @@ async function writeSummary(
             const targetWasListed = world_names.includes(targetLorebookName);
             const persistence = await mutateBookStrict(
                 targetLorebookName,
-                (candidateBookData) => {
+                async (candidateBookData, source) => {
                     if (!candidateBookData.entries
                         || typeof candidateBookData.entries !== "object"
                         || Array.isArray(candidateBookData.entries)) {
@@ -1686,6 +1706,8 @@ async function writeSummary(
                         });
                     }
                     targetEntry.content = appendResult.content;
+                    await attachMicroLedgerCoverage({ getContext,
+                        draft: candidateBookData, source, token: sourceCoverage, startFloor, endFloor });
                     return {
                         changed: true,
                         // Some SillyTavern versions answer a read for a
@@ -1721,10 +1743,7 @@ async function writeSummary(
                 );
                 await runHistoriographyPostCommitEffect(
                     "发布世界书更新通知",
-                    () => document.dispatchEvent(new CustomEvent(
-                        'amily-lorebook-created',
-                        { detail: { bookName: targetLorebookName } },
-                    )),
+                    () => publishHistoriographyUpdate(targetLorebookName),
                 );
                 await runHistoriographyPostCommitEffect(
                     "显示写入成功提示",
@@ -1913,6 +1932,8 @@ async function executeSegmentedRefinement(
 
         const unselectedCount =
             validated.batches.length - selectedCandidate.count;
+        const sourceCoverage = await captureMacroLedgerSource(
+            getContext, inspected.bookData, selectedCandidate.endFloor);
         if (unselectedCount > 0) {
             toastr.info(
                 t('summaryWorkflow.segmentSelection', { count: selectedCandidate.count, start: selectedCandidate.startFloor, end: selectedCandidate.endFloor, remaining: unselectedCount }),
@@ -1995,6 +2016,8 @@ async function executeSegmentedRefinement(
                             modelSummary: cleanBody,
                             maxResidentTokens:
                                 getHistoriographyResidentMaxTokens(),
+                            prepareDraft: (draft, source) => attachMacroLedgerCoverage({
+                                draft, source, token: sourceCoverage }),
                         });
                         if (!persistence.committed) {
                             if (persistence.mutation?.reason
@@ -2434,6 +2457,8 @@ export async function executeRefinement(worldbook, loreKey, options = {}) {
         }
 
         const selectedBlockCount = selectedCandidate.selectedBlockCount;
+        const sourceCoverage = await captureMacroLedgerSource(getContext, bookData,
+            parsedLedger.pendingBlocks[selectedBlockCount - 1].endFloor);
         const remainingBlockCount =
             parsedLedger.pendingBlockCount - selectedBlockCount;
         const messages = selectedCandidate.messages;
@@ -2612,9 +2637,12 @@ export async function executeRefinement(worldbook, loreKey, options = {}) {
                                 archiveEntry.key = [];
 
                                 candidateEntry.content = finalContent;
+                                await attachMacroLedgerCoverage({
+                                    draft: candidateBookData, source: latestBookData, token: sourceCoverage });
                                 await saveBookStrictUnlocked(
                                     worldbook,
                                     candidateBookData,
+                                    { sourceData: latestBookData },
                                 );
                             },
                         );
@@ -2832,27 +2860,9 @@ export async function executeExpedition() {
         const settings = extension_settings[extensionName];
         const context = getContext();
 
-        let targetLorebookName = null;
-        switch (settings.lorebookTarget) {
-            case "character_main":
-                targetLorebookName = characters[context.characterId]?.data?.extensions?.world;
-                if (!targetLorebookName) {
-                    toastr.error(t('summaryWorkflow.noMainWorldbook'), t('summaryWorkflow.summary'));
-                    isExpeditionRunning = false;
-                    document.dispatchEvent(new CustomEvent('amily2-expedition-state-change', { detail: { isRunning: false, manualStop: false } }));
-                    return;
-                }
-                break;
-            case "dedicated":
-                const chatIdentifier = await getChatIdentifier();
-                targetLorebookName = `Amily2-Lore-${chatIdentifier}`;
-                break;
-            default:
-                toastr.error(t('summaryWorkflow.invalidTarget'), t('summaryWorkflow.summary'));
-                isExpeditionRunning = false;
-                document.dispatchEvent(new CustomEvent('amily2-expedition-state-change', { detail: { isRunning: false, manualStop: false } }));
-                return;
-        }
+        const targetLorebookName = await getTargetLorebookName();
+        if (!targetLorebookName) throw new Error(t('summaryWorkflow.noTarget'));
+        const expeditionLease = await captureHistoriographyExecutionLease({ targetLorebookName });
 
         const summarizedCount = await readGoldenLedgerProgress(targetLorebookName);
         const retentionCount = settings.historiographyRetentionCount ?? 5;
@@ -2873,6 +2883,7 @@ export async function executeExpedition() {
         let currentProgress = summarizedCount;
 
         for (let i = 0; i < totalBatches; i++) {
+            await assertHistoriographyExecutionLease(expeditionLease);
             if (manualStopRequested) {
                 toastr.warning(t('summaryWorkflow.catchupPaused'), t('summaryWorkflow.summary'));
                 break;
@@ -2887,6 +2898,7 @@ export async function executeExpedition() {
                 toastr.info(t('summaryWorkflow.preparingBatch', { index: i + 1, seconds: delay / 1000 }), toastTitle);
                 await new Promise(resolve => setTimeout(resolve, delay));
             }
+            await assertHistoriographyExecutionLease(expeditionLease);
 
             if (manualStopRequested) {
                 toastr.warning(t('summaryWorkflow.preparationPaused'), t('summaryWorkflow.summary'));
@@ -3003,6 +3015,7 @@ export async function executeCompilation(worldbook, loreKeys) {
 export async function getTargetLorebookName() {
     const settings = extension_settings[extensionName];
     const context = getContext();
+    if (settings.historiographyStorageMode !== 'worldbook') return chatLedgerTarget(context);
     let targetLorebookName = null;
     switch (settings.lorebookTarget) {
         case "character_main":
@@ -3014,6 +3027,57 @@ export async function getTargetLorebookName() {
             break;
     }
     return targetLorebookName;
+}
+
+const chatCopyPreviews = new WeakMap();
+
+export async function previewWorldbookToChat(sourceBookName) {
+    const target = await getTargetLorebookName();
+    if (!isChatLedgerTarget(target) || !world_names.includes(sourceBookName)) throw new Error(t('summaryWorkflow.chatModeRequired'));
+    const lease = await captureHistoriographyExecutionLease({ targetLorebookName: target });
+    const source = await loadBookFresh(sourceBookName);
+    const copy = await prepareChatLedgerCopy(source, target);
+    await assertHistoriographyExecutionLease(lease);
+    if (copy.floor > getContext().chat.length) throw new Error(t('summaryWorkflow.copyFloorTooHigh'));
+    const preview = Object.freeze({ sourceBookName, target, floor: copy.floor,
+        sourceHash: copy.sourceHash, text: Object.values(copy.book.entries)
+            .filter(entry => !entry.disable).map(entry => entry.content).join('\n\n') });
+    chatCopyPreviews.set(preview, lease);
+    return preview;
+}
+
+export async function copyWorldbookToChat(preview) {
+    const lease = chatCopyPreviews.get(preview);
+    if (!lease) throw new Error(t('summaryWorkflow.previewRequired'));
+    await assertHistoriographyExecutionLease(lease);
+    const source = await loadBookFresh(preview.sourceBookName);
+    if (await hashHistoriographyText(JSON.stringify(source)) !== preview.sourceHash) throw new Error(t('summaryWorkflow.targetChanged'));
+    const copy = await prepareChatLedgerCopy(source, preview.target);
+    await assertHistoriographyExecutionLease(lease);
+    if (copy.floor > getContext().chat.length) throw new Error(t('summaryWorkflow.copyFloorTooHigh'));
+    const result = await mutateBookStrict(preview.target, async draft => {
+        await assertHistoriographyExecutionLease(lease);
+        if (Object.keys(draft.entries || {}).length) throw new Error(t('summaryWorkflow.copyNeedsEmpty'));
+        Object.assign(draft, copy.book);
+    }, { createEmptyData: () => ({ entries: {} }) });
+    chatCopyPreviews.delete(preview);
+    return result;
+}
+
+export async function exportChatSummaryWorldbook() {
+    const target = await getTargetLorebookName();
+    if (!isChatLedgerTarget(target)) throw new Error(t('summaryWorkflow.chatModeRequired'));
+    const lease = await captureHistoriographyExecutionLease({ targetLorebookName: target });
+    const snapshot = await createCardSummarySnapshot(await loadWorldInfo(target));
+    await assertHistoriographyExecutionLease(lease);
+    const name = `Amily2-Summary-${Date.now()}-${globalThis.crypto.randomUUID().slice(0, 8)}`;
+    await mutateBookStrict(name, async (draft, source) => {
+        await assertHistoriographyExecutionLease(lease);
+        if (source && Object.keys(source.entries || {}).length) throw new Error('Worldbook already exists.');
+        Object.assign(draft, snapshot);
+    }, { createEmptyData: () => ({ entries: {} }) });
+    await refreshWorldbookListOnly(name);
+    return name;
 }
 
 export async function archiveCurrentLedger() {

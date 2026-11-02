@@ -13,7 +13,11 @@
  */
 
 import { getContext } from '/scripts/extensions.js';
+import { getRelationLifecycleRowState } from '../record-relation-lifecycle.js';
+
 import { log } from '../logger.js';
+import { t } from '../../../utils/i18n/index.js';
+import { formatTableError } from '../../../ui/table/error-message.js';
 import { updateRenderedTableRowStatus } from '../../../ui/table-bindings.js';
 import { dispatchTableUpdate, dispatchAllTablesUpdate } from '../events-dispatch.js';
 import { getMemoryStateForScope, loadTables, setMemoryState } from '../manager.js';
@@ -38,6 +42,7 @@ import {
     deepClone,
     normalizeTableDatabaseState,
     normalizeTableIdentity,
+    readChatTableState,
 } from '../infra/database-state.js';
 import { applyPendingRecordDeletions, validateTableState } from '../module-tables.js';
 import { captureChatScope, chatScopesMatch } from '../infra/chat-scope.js';
@@ -45,8 +50,17 @@ import { CURRENT_TABLE_FILL_PROTOCOL_VERSION } from '../table-fill-protocol.js';
 import {
     isUserTableCreationGroupId,
     TABLE_GROUP_IDS,
+    resolveTableGroupRegistryForState,
+    isTableGroupUserEditable,
 } from '../table-groups.js';
+import { assertRecordRelationCommitContext, createRecordRelationCandidate, assertRecordRelationDeletionTransition } from '../record-relations.js';
 import { createRowStatusCandidate } from './row-status-candidate.js';
+import { invalidateSummaryCompactionOwnership } from '../summary-compaction-ownership.js';
+import { readCurrentIndexDependencies } from '../index-dependencies-runtime.js';
+import { assertIndexChangesAllowed, assertIndexDependencySnapshot } from '../index-dependencies.js';
+import { createRelationMigrationBackupPlan } from '../relation-migration-backup.js';
+import { configureUserTable, insertUserTableRow, configureUserTableIndexes } from '../table-foundation.js';
+import { isDeletedRow } from '../row-lifecycle.js';
 import { acquireSecondaryFillerProgressMutationLock } from '../secondary-filler.js';
 import {
     createTableClearRecoveryPlan,
@@ -73,22 +87,27 @@ function assertStructureEditable(table, action) {
     }
 }
 
-function acceptMutation(draft, action, { persist = true } = {}) {
-    const previous = Array.isArray(getState()) ? deepClone(getState()) : null;
-    let applied = false;
+async function acceptMutation(draft, action) {
+    const scope = captureChatScope(getContext());
+    const expectedStateRevision = getStateRevision();
+    let validated;
     try {
-        const validated = validateTableState(draft);
-        setMemoryState(validated);
-        applied = true;
-        if (persist && !commitToLastMessage(validated)) {
-            throw Object.assign(new Error('当前聊天状态无法持久化。'), { code: 'TABLE_PERSIST_FAILED' });
-        }
-        if (persist) cancelScheduledRowStatusPersistence();
+        assertRecordRelationDeletionTransition(getState(), draft);
+        validated = validateTableState(draft);
+        const committed = await commitToLastMessageAsync(validated, undefined, {
+            expectedChatId: scope.chatId, expectedChatScope: scope, expectedStateRevision,
+            publish: state => setMemoryState(state, scope),
+        });
+        if (!committed) throw Object.assign(new Error('Table state was not persisted.'), { code: 'TABLE_PERSIST_FAILED' });
+        cancelScheduledRowStatusPersistence();
         return validated;
     } catch (error) {
-        if (applied) setMemoryState(previous);
-        log(`${action}失败，变更已回退: ${error.code || 'TABLE_VALIDATION_FAILED'} ${error.message}`, 'error');
-        if (typeof toastr !== 'undefined') toastr.error(error.message, `${action}失败`);
+        const persistenceCodes = new Set(['TABLE_WRITE_OUTCOME_UNKNOWN', 'TABLE_WRITE_DURABLE_UNPUBLISHED',
+            'TABLE_WRITE_RECOVERY_REQUIRED', 'TABLE_PERSISTENCE_CONFLICT', 'TABLE_PERSISTENCE_SCOPE_CHANGED']);
+        const diagnostic = persistenceCodes.has(error?.code) ? error.code : 'TABLE_PERSIST_FAILED';
+        const message = formatTableError({ code: error?.code }, key => t(`tableRuntimeUi.${key}`), `${diagnostic} [phase=commit]`);
+        log(`${action}失败: ${message}`, 'error');
+        if (typeof toastr !== 'undefined') toastr.error(message, `${action}失败`);
         return null;
     }
 }
@@ -130,7 +149,7 @@ async function persistLatestRowStatusSnapshot(sequence, expectedScope) {
     try {
         committed = await commitToLastMessageAsync(state, undefined, transaction);
     } catch (error) {
-        log(`删除状态后台保存失败: ${error.code || 'TABLE_PERSIST_FAILED'} ${error.message}`, 'error');
+        log(`删除状态后台保存失败: ${formatTableError(error, key => t(`tableRuntimeUi.${key}`), `${error.code || 'TABLE_PERSIST_FAILED'} ${error.message}`)}`, 'error');
     }
 
     const stillLatest = sequence === rowStatusPersistenceSequence
@@ -144,26 +163,125 @@ async function persistLatestRowStatusSnapshot(sequence, expectedScope) {
     }
 }
 
-function applyRowStatusMutation(tableIndex, rowIndex, nextStatus, action) {
+async function applyRowStatusMutation(tableIndex, rowIndex, nextStatus, action) {
     const mutation = createRowStatusCandidate(getState(), tableIndex, rowIndex, nextStatus);
-    if (!mutation || !mutation.changed) return false;
+    if (!mutation) return false;
+    // The status candidate shares metadata on no-op/normal transitions.
+    // Revoke only a private copy so even a rejected operation leaves the source intact.
+    const table = { ...mutation.table, rowMeta: mutation.table.rowMeta?.slice() };
+    if (table.rowMeta?.[rowIndex]) table.rowMeta[rowIndex] = { ...table.rowMeta[rowIndex] };
+    const revoked = invalidateSummaryCompactionOwnership(table, rowIndex, { reason: 'ui-row-status' });
+    if (!mutation.changed && !revoked) return false;
+    mutation.state = mutation.state.slice();
+    mutation.state[tableIndex] = table;
+    mutation.table = table;
 
-    try {
-        setMemoryState(mutation.state);
-    } catch (error) {
-        log(`${action}失败: ${error.code || 'TABLE_STATE_UPDATE_FAILED'} ${error.message}`, 'error');
-        if (typeof toastr !== 'undefined') toastr.error(error.message, `${action}失败`);
-        return false;
-    }
+    if (!await acceptMutation(mutation.state, action)) return false;
 
     markTableUpdated(tableIndex);
     updateRenderedTableRowStatus(tableIndex, rowIndex);
     dispatchTableUpdate(tableIndex);
-    scheduleRowStatusPersistence();
     return mutation.table;
 }
 
-export function deleteColumn(tableIndex, colIndex) {
+export async function configureCurrentUserTable(tableId, options, expectedScope, expectedRevision) {
+    return commitUserTableDialog(expectedScope, expectedRevision,
+        state => configureUserTable(state, tableId, options));
+}
+
+export async function configureCurrentUserTableIndexes(tableId, definitions, expectedScope, expectedRevision, dependencySnapshot) {
+    let expected;
+    let dependencies;
+    const check = () => {
+        const current = getCurrentRecordRelationSnapshot(expected.expectedGroupId);
+        assertRecordRelationCommitContext(expected, current);
+        const table = current.state.find(item => item.id === tableId);
+        if (!table || !current.access.canWriteTable(table)) {
+            throw Object.assign(new Error('Table group is read-only.'), { code: 'TABLE_ACCESS_DENIED' });
+        }
+        const latest = readCurrentIndexDependencies(table);
+        if (dependencies) assertIndexDependencySnapshot(dependencies, latest);
+        if (dependencySnapshot) assertIndexDependencySnapshot(dependencySnapshot, latest);
+        assertIndexChangesAllowed(table, definitions, latest);
+        dependencies ??= latest;
+    };
+    return commitUserTableDialog(expectedScope, expectedRevision, state => {
+        const table = state.find(item => item.id === tableId);
+        const snapshot = getCurrentRecordRelationSnapshot(table?.groupId);
+        expected = { expectedChatScope: expectedScope, expectedStateRevision: expectedRevision,
+            expectedGroupRevision: snapshot.access.registry.revision, expectedGroupId: table?.groupId, expectedCaller: 'user' };
+        check();
+        return configureUserTableIndexes(state, tableId, definitions);
+    }, check);
+}
+
+export function getCurrentRecordRelationSnapshot(groupId) {
+    const context = getContext();
+    const scope = captureChatScope(context);
+    const state = getMemoryStateForScope(scope);
+    const registry = resolveTableGroupRegistryForState(state, readChatTableState(context)?.tableGroups);
+    const group = registry.groups.find(item => item.id === groupId);
+    return { state: deepClone(state), scope, revision: getStateRevision(), access: {
+        caller: 'user', groupId, registry,
+        getRowState: (table, index) => getRelationLifecycleRowState(context, table, index),
+        canReadTable: table => table.owner === 'user' && table.groupId === groupId,
+        canWriteTable: table => table.owner === 'user' && table.readOnly !== true
+            && table.groupId === groupId && isTableGroupUserEditable(group),
+    } };
+}
+
+export async function commitCurrentRecordRelation(request, expected) {
+    if (!['configure', 'set', 'migrate'].includes(request?.type)) {
+        throw Object.assign(new Error('Unsupported relation write.'), { code: 'RELATION_OPERATION_UNSUPPORTED' });
+    }
+    let backupPlan;
+    const check = info => {
+        assertRecordRelationCommitContext(expected, getCurrentRecordRelationSnapshot(expected.expectedGroupId));
+        backupPlan?.beforeSave(info);
+    };
+    return commitUserTableDialog(expected.expectedChatScope, expected.expectedStateRevision, state => {
+        const current = getCurrentRecordRelationSnapshot(expected.expectedGroupId);
+        assertRecordRelationCommitContext(expected, current);
+        const candidate = createRecordRelationCandidate(state, request, current.access);
+        if (candidate.repairBackup) backupPlan = createRelationMigrationBackupPlan(getContext(), candidate.repairBackup);
+        return validateTableState(candidate.state);
+    }, check, info => backupPlan?.rollback(info));
+}
+
+export async function insertCurrentUserTableRow(tableId, values, index, expectedScope, expectedRevision) {
+    return commitUserTableDialog(expectedScope, expectedRevision,
+        state => insertUserTableRow(state, tableId, values, index));
+}
+
+async function commitUserTableDialog(expectedScope, expectedRevision, createDraft, assertCurrent = () => {}, rollback) {
+    const release = acquireSecondaryFillerProgressMutationLock();
+    if (!release) throw Object.assign(new Error('Table filling is busy.'), { code: 'TABLE_BUSY' });
+    try {
+        if (!expectedScope?.chatId || !chatScopesMatch(expectedScope, captureChatScope(getContext()))
+            || getStateRevision() !== expectedRevision) {
+            throw Object.assign(new Error('The table changed. Reopen its settings.'), { code: 'TABLE_STALE' });
+        }
+        const draft = createDraft(getMemoryStateForScope(expectedScope));
+        const saved = await commitToLastMessageAsync(draft, undefined, {
+            expectedStateRevision: expectedRevision,
+            expectedChatId: expectedScope.chatId,
+            expectedChatScope: expectedScope,
+            strictExpectedChatScope: true,
+            beforeSave: assertCurrent,
+            rollback,
+            publish: state => setMemoryState(state, expectedScope),
+        });
+        if (!saved || !chatScopesMatch(expectedScope, captureChatScope(getContext()))) {
+            throw Object.assign(new Error('Table settings were not saved.'), { code: 'TABLE_PERSIST_FAILED' });
+        }
+        dispatchAllTablesUpdate();
+        return true;
+    } finally {
+        release();
+    }
+}
+
+export async function deleteColumn(tableIndex, colIndex) {
     const tables = createMutationDraft();
     if (!tables || !tables[tableIndex] || colIndex < 0 || colIndex >= tables[tableIndex].headers.length) {
         log(`删除列失败：在表格 ${tableIndex} 中找不到索引为 ${colIndex} 的列。`, 'error');
@@ -187,12 +305,12 @@ export function deleteColumn(tableIndex, colIndex) {
     }
     table.columns.splice(colIndex, 1);
 
-    if (!acceptMutation(tables, '删除列')) return;
+    if (!await acceptMutation(tables, '删除列')) return;
     log(`成功删除了表格 ${tableIndex} 的第 ${colIndex + 1} 列。`, 'success');
     dispatchTableUpdate(tableIndex);
 }
 
-export function moveRow(tableIndex, rowIndex, direction) {
+export async function moveRow(tableIndex, rowIndex, direction) {
     const tables = createMutationDraft();
     const table = tables?.[tableIndex] && normalizeTableIdentity(tables[tableIndex], tableIndex);
     if (!table || rowIndex < 0 || rowIndex >= table.rows.length) return;
@@ -210,12 +328,12 @@ export function moveRow(tableIndex, rowIndex, direction) {
     const [movedMeta] = table.rowMeta.splice(rowIndex, 1);
     table.rowMeta.splice(newIndex, 0, movedMeta);
 
-    if (!acceptMutation(tables, '移动行')) return;
+    if (!await acceptMutation(tables, '移动行')) return;
     log(`成功将表格 ${tableIndex} 的第 ${rowIndex + 1} 行移动到第 ${newIndex + 1} 行。`, 'success');
     dispatchTableUpdate(tableIndex);
 }
 
-export function insertRow(tableIndex, data, position = 'below') {
+export async function insertRow(tableIndex, data, position = 'below') {
     const tables = createMutationDraft();
     const table = tables?.[tableIndex] && normalizeTableIdentity(tables[tableIndex], tableIndex);
     if (!table) {
@@ -248,7 +366,7 @@ export function insertRow(tableIndex, data, position = 'below') {
     table.rowStatuses.splice(insertIndex, 0, 'normal');
     table.rowMeta.splice(insertIndex, 0, createRecordMetadata(table, newRow, insertIndex));
 
-    if (!acceptMutation(tables, '插入行')) return;
+    if (!await acceptMutation(tables, '插入行')) return;
     if (typeof data === 'object' && data !== null) {
         Object.keys(data).forEach(colIndex => {
             const parsed = Number.parseInt(colIndex, 10);
@@ -262,7 +380,7 @@ export function insertRow(tableIndex, data, position = 'below') {
     log(`成功在表格 ${table.name} (索引 ${tableIndex}) 的第 ${insertIndex + 1} 行位置插入了新行。`, 'success');
 }
 
-export function addRow(tableIndex) {
+export async function addRow(tableIndex) {
     const tables = createMutationDraft();
     if (!tables || !tables[tableIndex]) return;
     const table = normalizeTableIdentity(tables[tableIndex], tableIndex);
@@ -272,14 +390,14 @@ export function addRow(tableIndex) {
     if (!table.rowStatuses) table.rowStatuses = Array(table.rows.length).fill('normal');
     table.rowStatuses.push('normal');
     table.rowMeta.push(createRecordMetadata(table, newRow, table.rows.length - 1));
-    if (!acceptMutation(tables, '新增行')) return;
+    if (!await acceptMutation(tables, '新增行')) return;
     markTableUpdated(tableIndex);
     dispatchTableUpdate(tableIndex);
     log(`表格 [${table.name}] 新增了一行。`, 'info');
 
 }
 
-export function addColumn(tableIndex) {
+export async function addColumn(tableIndex) {
     const tables = createMutationDraft();
     if (!tables || !tables[tableIndex]) return;
     const table = normalizeTableIdentity(tables[tableIndex], tableIndex);
@@ -296,11 +414,11 @@ export function addColumn(tableIndex) {
     if (!table.columnWidths) table.columnWidths = [];
     table.columnWidths.push(null);
     table.columns.push({ id: `column-${globalThis.crypto?.randomUUID?.() || Date.now()}`, label: newHeader, type: 'string' });
-    if (!acceptMutation(tables, '新增列')) return;
+    if (!await acceptMutation(tables, '新增列')) return;
     log(`表格 [${table.name}] 新增了一列。`, 'info');
 }
 
-export function updateHeader(tableIndex, colIndex, value) {
+export async function updateHeader(tableIndex, colIndex, value) {
     const tables = createMutationDraft();
     if (!tables || !tables[tableIndex] || tables[tableIndex].headers[colIndex] === undefined) return;
     const table = normalizeTableIdentity(tables[tableIndex], tableIndex);
@@ -315,12 +433,12 @@ export function updateHeader(tableIndex, colIndex, value) {
     const originalHeader = table.headers[colIndex];
     table.headers[colIndex] = value;
     table.columns[colIndex].label = value;
-    if (!acceptMutation(tables, '修改列名')) return;
+    if (!await acceptMutation(tables, '修改列名')) return;
     log(`表格 [${tableName}] 的表头“${originalHeader}”已更新为“${value}”。`, 'info');
 }
 
 export async function deleteRow(tableIndex, rowIndex) {
-    const table = applyRowStatusMutation(
+    const table = await applyRowStatusMutation(
         tableIndex,
         rowIndex,
         'pending-deletion',
@@ -332,26 +450,26 @@ export async function deleteRow(tableIndex, rowIndex) {
 }
 
 export async function restoreRow(tableIndex, rowIndex) {
-    const table = applyRowStatusMutation(tableIndex, rowIndex, 'normal', '恢复行');
+    const table = await applyRowStatusMutation(tableIndex, rowIndex, 'normal', '恢复行');
     if (!table) return false;
     log(`表格 [${table.name}] 的第 ${rowIndex + 1} 行已恢复。`, 'info');
     return true;
 }
 
-export function commitPendingDeletions() {
+export async function commitPendingDeletions() {
     const tables = createMutationDraft();
     if (!tables) return false;
     let result;
     try {
         result = applyPendingRecordDeletions(tables);
     } catch (error) {
-        log(`提交删除行失败，整批变更已回退: ${error.code || 'TABLE_VALIDATION_FAILED'} ${error.message}`, 'error');
-        if (typeof toastr !== 'undefined') toastr.error(error.message, '提交删除行失败');
+        log(`提交删除行失败，整批变更已回退: ${formatTableError(error, key => t(`tableRuntimeUi.${key}`), `${error.code || 'TABLE_VALIDATION_FAILED'} ${error.message}`)}`, 'error');
+        if (typeof toastr !== 'undefined') toastr.error(formatTableError(error, key => t(`tableRuntimeUi.${key}`), error.message), '提交删除行失败');
         return false;
     }
 
     if (result.deletedCount > 0) {
-        if (!acceptMutation(result.state, '提交删除行', { persist: false })) return false;
+        if (!await acceptMutation(result.state, '提交删除行')) return false;
         result.affectedTableIndices.forEach(tableIndex => markTableUpdated(tableIndex));
         log(`已提交并永久删除了 ${result.deletedCount} 行。`, 'info');
         const updated = getUpdatedTables();
@@ -363,7 +481,7 @@ export function commitPendingDeletions() {
     return false;
 }
 
-export function insertColumn(tableIndex, colIndex, position) {
+export async function insertColumn(tableIndex, colIndex, position) {
     const tables = createMutationDraft();
     if (!tables || !tables[tableIndex]) return;
     const table = normalizeTableIdentity(tables[tableIndex], tableIndex);
@@ -382,11 +500,11 @@ export function insertColumn(tableIndex, colIndex, position) {
     table.columnWidths.splice(insertAt, 0, null);
     table.columns.splice(insertAt, 0, { id: `column-${globalThis.crypto?.randomUUID?.() || Date.now()}`, label: '新列', type: 'string' });
 
-    if (!acceptMutation(tables, '插入列')) return;
+    if (!await acceptMutation(tables, '插入列')) return;
     log(`表格 [${table.name}] 在第 ${colIndex + 1} 列的${position === 'left' ? '左侧' : '右侧'}插入了新列。`, 'info');
 }
 
-export function moveColumn(tableIndex, colIndex, direction) {
+export async function moveColumn(tableIndex, colIndex, direction) {
     const tables = createMutationDraft();
     if (!tables || !tables[tableIndex]) return;
     const table = normalizeTableIdentity(tables[tableIndex], tableIndex);
@@ -421,11 +539,11 @@ export function moveColumn(tableIndex, colIndex, direction) {
     const [columnToMove] = table.columns.splice(colIndex, 1);
     table.columns.splice(targetIndex, 0, columnToMove);
 
-    if (!acceptMutation(tables, '移动列')) return;
+    if (!await acceptMutation(tables, '移动列')) return;
     log(`表格 [${table.name}] 的列“${headerToMove}”已向${direction === 'left' ? '左' : '右'}移动。`, 'info');
 }
 
-export function deleteTable(tableIndex) {
+export async function deleteTable(tableIndex) {
     const tables = createMutationDraft();
     if (!tables || !tables[tableIndex]) return;
     try {
@@ -437,7 +555,7 @@ export function deleteTable(tableIndex) {
     }
     const tableName = tables[tableIndex].name;
     tables.splice(tableIndex, 1);
-    const success = !!acceptMutation(tables, '删除表格');
+    const success = !!await acceptMutation(tables, '删除表格');
     if (success) {
         log(`表格 [${tableName}] 已被成功废黜。`, 'success');
         log('废黜表格后的状态已强制写入最新消息并立即保存。', 'success');
@@ -446,7 +564,7 @@ export function deleteTable(tableIndex) {
     }
 }
 
-export function addTable(tableName, options = {}) {
+export async function addTable(tableName, options = {}) {
     if (!tableName || !tableName.trim()) {
         log('无法创建表格：名称不能为空。', 'error');
         toastr.error('表格名称不能为空。', '创建失败');
@@ -454,7 +572,7 @@ export function addTable(tableName, options = {}) {
     }
     let tables = createMutationDraft();
     if (!tables) {
-        loadTables();
+        await loadTables();
         tables = createMutationDraft();
     }
 
@@ -489,7 +607,7 @@ export function addTable(tableName, options = {}) {
 
     tables.push(newTable);
     normalizeTableDatabaseState(tables);
-    const success = !!acceptMutation(tables, '创建表格');
+    const success = !!await acceptMutation(tables, '创建表格');
     if (success) {
         log(`已成功创建新表格：[${tableName.trim()}]。`, 'success');
         log('新表格状态已强制写入最新消息并立即保存。', 'success');
@@ -499,7 +617,7 @@ export function addTable(tableName, options = {}) {
     return success;
 }
 
-export function renameTable(tableIndex, newName) {
+export async function renameTable(tableIndex, newName) {
     const tables = createMutationDraft();
     if (!tables || !tables[tableIndex]) {
         log('重命名失败：表格不存在。', 'error');
@@ -528,11 +646,11 @@ export function renameTable(tableIndex, newName) {
 
     const oldName = tables[tableIndex].name;
     tables[tableIndex].name = trimmedName;
-    if (!acceptMutation(tables, '重命名表格')) return;
+    if (!await acceptMutation(tables, '重命名表格')) return;
     log(`表格 "${oldName}" 已重命名为 "${trimmedName}"。`, 'success');
 }
 
-export function moveTable(tableIndex, direction) {
+export async function moveTable(tableIndex, direction) {
     const tables = createMutationDraft();
     if (!tables || !tables[tableIndex]) return;
 
@@ -553,7 +671,7 @@ export function moveTable(tableIndex, direction) {
     tables[tableIndex] = tables[newIndex];
     tables[newIndex] = temp;
 
-    const success = !!acceptMutation(tables, '移动表格');
+    const success = !!await acceptMutation(tables, '移动表格');
     if (success) {
         log(`表格 [${temp.name}] 的顺序已调整。`, 'success');
         log('表格顺序调整后的状态已强制写入最新消息并立即保存。', 'success');
@@ -562,7 +680,7 @@ export function moveTable(tableIndex, direction) {
     }
 }
 
-export function updateTableRules(tableIndex, newRules) {
+export async function updateTableRules(tableIndex, newRules) {
     const tables = createMutationDraft();
     if (!tables || !tables[tableIndex]) return;
     const table = normalizeTableIdentity(tables[tableIndex], tableIndex);
@@ -583,21 +701,25 @@ export function updateTableRules(tableIndex, newRules) {
 
     delete table.charLimitRule;
 
-    if (!acceptMutation(tables, '更新表格规则')) return;
+    if (!await acceptMutation(tables, '更新表格规则')) return;
     log(`表格 [${table.name}] 的规则已更新。`, 'info');
 }
 
-export function updateRow(tableIndex, rowIndex, data) {
+export async function updateRow(tableIndex, rowIndex, data) {
     const tables = createMutationDraft();
     if (!tables || !tables[tableIndex]) {
         log(`AI指令错误：尝试在不存在的表格索引 ${tableIndex} 中操作。`, 'error');
         return;
     }
     const table = tables[tableIndex];
+    if (isDeletedRow(table, rowIndex)) {
+        if (typeof toastr !== 'undefined') toastr.warning('请先恢复已软删除的记录。');
+        return;
+    }
 
     if (rowIndex >= table.rows.length) {
         log(`AI指令意图更新不存在的行 (rowIndex: ${rowIndex})，已智能转换为在表格 [${table.name}] 末尾新增一行。`, 'warn');
-        insertRow(tableIndex, data);
+        await insertRow(tableIndex, data);
         return;
     }
 
@@ -611,7 +733,8 @@ export function updateRow(tableIndex, rowIndex, data) {
         }
     }
 
-    if (!acceptMutation(tables, '更新行')) return;
+    invalidateSummaryCompactionOwnership(table, rowIndex, { reason: 'ui-row-update' });
+    if (!await acceptMutation(tables, '更新行')) return;
     highlightedColumns.forEach(colIndex => addHighlight(tableIndex, rowIndex, colIndex));
     markTableUpdated(tableIndex);
     dispatchTableUpdate(tableIndex);
@@ -665,13 +788,13 @@ async function clearAllTablesUnlocked() {
         preservePendingTableClearRecovery: true,
         beforeSave: plan.beforeSave,
         rollback: plan.rollback,
+        publish: state => setMemoryState(state, scope),
     });
     if (!committed || !chatScopesMatch(scope, captureChatScope(getContext()))) {
         toastr.error('清空结果未能确认，请回到原聊天检查；仍存在的待删除记录可先导出备份。', '清空失败');
         return false;
     }
 
-    setMemoryState(cleared, scope);
     cancelScheduledRowStatusPersistence();
     dispatchAllTablesUpdate();
     notifyTableClearRecoveryChanged({ action: 'created' });
@@ -722,12 +845,12 @@ async function restorePendingTableClearRecoveryUnlocked() {
         preservePendingTableClearRecovery: true,
         beforeSave: plan.beforeSave,
         rollback: plan.rollback,
+        publish: state => setMemoryState(state, scope),
     });
     if (!committed || !chatScopesMatch(scope, captureChatScope(getContext()))) {
         toastr.error('恢复结果未能确认，请回到原聊天检查；仍存在的待删除记录可先导出备份。', '恢复失败');
         return false;
     }
-    setMemoryState(restored, scope);
     cancelScheduledRowStatusPersistence();
     dispatchAllTablesUpdate();
     notifyTableClearRecoveryChanged({ action: 'restored' });
@@ -758,7 +881,7 @@ async function discardPendingTableClearRecoveryUnlocked() {
     return committed;
 }
 
-export function updateColumnWidth(tableIndex, colIndex, width) {
+export async function updateColumnWidth(tableIndex, colIndex, width) {
     const tables = createMutationDraft();
     if (!tables || !tables[tableIndex]) return;
     const table = tables[tableIndex];
@@ -768,5 +891,5 @@ export function updateColumnWidth(tableIndex, colIndex, width) {
     }
     table.columnWidths[colIndex] = width;
 
-    acceptMutation(tables, '更新列宽');
+    await acceptMutation(tables, '更新列宽');
 }

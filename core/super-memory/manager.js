@@ -27,6 +27,12 @@ export async function awaitSync() {
     if (_syncPromise) await _syncPromise;
 }
 
+// Generation-only rule reads never synchronize or modify the persistent memory book.
+export async function injectSuperMemoryRules(type) {
+    const { injectReadOnlyRuleConsumer } = await import('../progressive-memory/consumer-host.js');
+    return injectReadOnlyRuleConsumer('super-memory', type);
+}
+
 export async function initializeSuperMemory() {
     const access = getSuperMemoryAccessDecision();
     if (!access.allowed) {
@@ -108,10 +114,10 @@ function enqueueTableUpdate(payload) {
         }
     }
 
-    const { tableName, data, role, headers, rowStatuses, hint } = safePayload;
+    const { tableName, data, role, headers, rowStatuses, hint, recordIds } = safePayload;
     console.log(`[Amily2-SuperMemory] 收到表格更新: ${tableName} (Role: ${role})`);
 
-    updateQueue.push({ tableName, data, role, headers, rowStatuses, hint });
+    updateQueue.push({ tableName, data, role, headers, rowStatuses, hint, recordIds });
     // 【修复】队列正忙时不可覆盖 _syncPromise：旧实现每次都赋值 processQueue()，
     // 而 processQueue 在 isProcessing 时立即返回（已 resolve 的空 Promise），
     // 导致 Pipeline Stage 4 的 awaitSync() 穿透、在同步未完成时放行后续阶段。
@@ -168,7 +174,7 @@ async function processQueue() {
 
 async function processUpdateTask(task) {
     if (!hasSuperMemoryAccess()) return;
-    const { tableName, data, role, hint, headers, rowStatuses } = task;
+    const { tableName, data, role, hint, headers, rowStatuses, recordIds } = task;
 
     const settings = extension_settings[extensionName] || {};
     const tableSettings = settings.superMemory_tableSettings?.[tableName] || {};
@@ -180,7 +186,7 @@ async function processUpdateTask(task) {
 
     const isIndexConstant = tableSettings.constant !== false;
 
-    const activeData = data.filter((_, i) => !rowStatuses || rowStatuses[i] !== 'pending-deletion');
+    const activeData = data.filter((_, i) => !['pending-deletion', 'deleted'].includes(rowStatuses?.[i]));
     const indexText = generateIndex(activeData, headers, role, tableName);
 
     const allTables = getMemoryState();
@@ -191,6 +197,7 @@ async function processUpdateTask(task) {
         depth,
         isIndexConstant,
         pinFirstRow: tableSettings.pinFirstRow === true,
+        recordIds,
     });
 
     if (hint) {

@@ -392,7 +392,7 @@ function renderTablesToHtml(tables, highlights) {
         let tbodyHtml = '<tbody>';
         table.rows.forEach((row, rowIndex) => {
             const rowStatus = table.rowStatuses ? table.rowStatuses[rowIndex] : 'normal';
-            if (rowStatus === 'pending-deletion') return;
+            if (['pending-deletion', 'deleted'].includes(rowStatus)) return;
 
             tbodyHtml += '<tr>';
             row.forEach((cell, colIndex) => {

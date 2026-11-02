@@ -11,6 +11,7 @@ import {
     updateTableFromText,
 } from './manager.js';
 import { extensionName } from '../../utils/settings.js';
+import { t } from '../../utils/i18n/index.js';
 import { renderTables } from '../../ui/table-bindings.js';
 import { getPresetPrompts, getMixedOrder } from '../../PresetSettings/index.js';
 import { callAI, generateRandomSeed } from '../api.js';
@@ -45,6 +46,8 @@ import {
 } from './infra/persistence-scope.js';
 import {
     canAutomaticallyRetryTableFill,
+    resolveTableFillRetryLimit,
+    describeTableFillFailure,
     combineTableFillRequestBudgets,
     createDeterministicTableFillError,
     createImmediateFillActionRequestBudget,
@@ -172,7 +175,6 @@ let threshold = 30;
 let activeBatchChatScope = null;
 let activeBatchTableGroupId = TABLE_GROUP_IDS.AMILY;
 let activeImmediateFillRequestBudget = null;
-const MAX_RETRIES = 2; 
 
 function assertImmediateFillContinue() {
     if (manualStopRequested) {
@@ -319,6 +321,7 @@ async function callTableModel(messages, requestLease, requestBudget, signal) {
             const result = await callNccsAI(messages, {
                 ...(signal ? { signal } : {}),
                 throwOnError: true,
+                rejectTruncatedResponse: true,
             });
             if (requestLease) assertTableFillRequestLease(requestLease, getContext());
             const normalizedResult = typeof result === 'string' ? result : '';
@@ -336,6 +339,7 @@ async function callTableModel(messages, requestLease, requestBudget, signal) {
                 requestBudget,
                 requestKind: 'text-fallback',
                 throwOnError: true,
+                rejectTruncatedResponse: true,
                 ...(signal ? { signal } : {}),
             });
             if (requestLease) assertTableFillRequestLease(requestLease, getContext());
@@ -446,6 +450,7 @@ async function runBatchAttempt(batchNum, attemptNum, runControl) {
         const fillContext = getContext();
         const fillLease = captureTableFillRequestLease(fillContext, {
             tableGroupId: activeBatchTableGroupId,
+            excludeAutomation: true,
         });
         if (fillLease.targetTableIds.length === 0) {
             throw createBatchFillerError(
@@ -474,7 +479,7 @@ async function runBatchAttempt(batchNum, attemptNum, runControl) {
             )
             : runControl.requestBudget;
 
-        log(`正在处理批次 ${batchNum}/${totalBatches} (楼层 ${startFloor}-${endFloor}, 尝试 ${attemptNum + 1}/${MAX_RETRIES + 1})`, 'info');
+        log(`正在处理批次 ${batchNum}/${totalBatches} (楼层 ${startFloor}-${endFloor}, 尝试 ${attemptNum + 1})`, 'info');
 
         const purifiedMessages = getRawMessagesForSummary(startFloor, endFloor, fillContext);
         if (!purifiedMessages || purifiedMessages.length === 0) {
@@ -924,7 +929,7 @@ async function runBatchAttempt(batchNum, attemptNum, runControl) {
             updateButtonState('idle');
             return;
         }
-        log(`批次 ${batchNum} 尝试 ${attemptNum + 1} 失败: ${error.message}`, 'error');
+        log(`批次 ${batchNum} 尝试 ${attemptNum + 1} 失败: ${describeTableFillFailure(error, t)}`, 'error');
         if (isTableFillRequestLeaseError(error)) {
             log(`批次 ${batchNum} 的聊天或表格请求租约已失效，已停止任务且不会自动重试。`, 'warn');
             toastr.warning('聊天或表格已变化，过期填表结果已安全丢弃。', '任务停止');
@@ -934,23 +939,23 @@ async function runBatchAttempt(batchNum, attemptNum, runControl) {
             return;
         }
         const normalizedError = normalizeTableFillInferenceError(error);
-        if (attemptNum >= MAX_RETRIES
-            || !canAutomaticallyRetryTableFill(normalizedError, runControl)) {
+        const maxRetries = resolveTableFillRetryLimit(extension_settings[extensionName] || {});
+        if (attemptNum >= maxRetries
+            || !canAutomaticallyRetryTableFill(normalizedError, runControl, maxRetries > 0)) {
             const usage = describeRequestBudget(error, activeImmediateFillRequestBudget);
             const stopReason = runControl.automaticRetriesDisabled
                 ? `按表拆批整轮禁止自动重跑${usage ? `（真实请求 ${usage}）` : ''}`
-                : normalizedError.retryable === true
-                    ? `请求预算已用 ${runControl.requestBudget.used}/${runControl.requestBudget.limit}`
-                    : '错误不可通过重复请求修复';
+                : '已停止自动重试，请核对错误后手动重试';
             const isFormatError = String(normalizedError?.code || '').startsWith('TOOL_CALL_V2_')
                 || String(normalizedError?.code || '').startsWith('TABLE_FILL_TOOL_ARGS_');
             const failureDetail = isFormatError
-                ? `模型返回的结构化数据未通过整批校验：${normalizedError.message}`
-                : normalizedError.message;
+                ? `模型返回的结构化数据未通过整批校验：${describeTableFillFailure(normalizedError, t)}`
+                : describeTableFillFailure(normalizedError, t);
             log(`批次 ${batchNum} 已停止自动重试：${stopReason}。`, 'error');
             toastr.error(
                 `批次 ${batchNum} 失败：${failureDetail}；${stopReason}。当前批次尚未跳过，可手动继续。`,
                 '任务暂停',
+                { escapeHtml: true },
             );
             currentBatch = batchNum - 1;
             updateButtonState('error');
@@ -958,17 +963,21 @@ async function runBatchAttempt(batchNum, attemptNum, runControl) {
             log(`将在3秒后自动重试批次 ${batchNum}...`, 'warn');
             try {
                 toastr.warning(
-                    `批次 ${batchNum} 填表失败：${normalizedError.message}。`
-                    + `3 秒后自动重试 ${attemptNum + 1}/${MAX_RETRIES}；`
+                    `批次 ${batchNum} 填表失败：${describeTableFillFailure(normalizedError, t, { manual: false })}。`
+                    + `3 秒后自动重试 ${attemptNum + 1}/${maxRetries}；`
                     + `本轮请求预算剩余 ${runControl.requestBudget.remaining} 次。`,
                     `批次 ${batchNum} 自动重试`,
+                    { escapeHtml: true },
                 );
             } catch {}
-            setTimeout(() => runBatchAttempt(
-                batchNum,
-                attemptNum + 1,
-                runControl,
-            ), 3000);
+            setTimeout(() => {
+                if (resolveTableFillRetryLimit(extension_settings[extensionName] || {}) <= attemptNum) {
+                    currentBatch = batchNum - 1;
+                    updateButtonState('error');
+                    return;
+                }
+                runBatchAttempt(batchNum, attemptNum + 1, runControl);
+            }, 3000);
         }
     }
 }
@@ -1121,6 +1130,7 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
     try {
         const fillLease = captureTableFillRequestLease(context, {
             tableGroupId: options.tableGroupId || TABLE_GROUP_IDS.AMILY,
+            excludeAutomation: true,
         });
         if (fillLease.targetTableIds.length === 0) {
             toastr.warning('当前 Group 没有可由 AI 填写的表格。');
@@ -1611,8 +1621,9 @@ export async function startFloorRangeFilling(startFloor, endFloor, options = {})
             return false;
         }
         const normalizedError = normalizeTableFillInferenceError(error);
-        log(`楼层 ${startFloor}-${endFloor} 填表失败: ${normalizedError.message}`, 'error');
-        toastr.error(`楼层填表失败: ${normalizedError.message}`, '处理失败');
+        const failureDetail = describeTableFillFailure(normalizedError, t);
+        log(`楼层 ${startFloor}-${endFloor} 填表失败: ${failureDetail}`, 'error');
+        toastr.error(`楼层填表失败: ${failureDetail}`, '处理失败', { escapeHtml: true });
         return false;
     }
 }

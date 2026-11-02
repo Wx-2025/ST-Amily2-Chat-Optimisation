@@ -25,7 +25,10 @@
  */
 
 import { log } from '../logger.js';
+import { isDeletedRow, markDeletedRow } from '../row-lifecycle.js';
 import { createRecordMetadata, normalizeTableDatabaseState, normalizeTableIdentity } from '../infra/database-state.js';
+import { assertRecordRelationIdentities, assertRecordRelationDeletionTransition } from '../record-relations.js';
+import { invalidateSummaryCompactionOwnership } from '../summary-compaction-ownership.js';
 import {
     assertAiFillOperationTargets,
     validateTableState,
@@ -97,12 +100,17 @@ function _updateRow(state, tableIndex, rowIndex, data) {
 
     const table = state[tableIndex];
 
+    if (isDeletedRow(table, rowIndex)) {
+        throw Object.assign(new Error('Restore a deleted row before updating it.'), { code: 'RECORD_DELETED' });
+    }
+
     if (rowIndex >= table.rows.length) {
         log(`AI指令修正：updateRow 的行索引 ${rowIndex} 超出范围，自动转换为 insertRow。`, 'warn');
         return _insertRow(state, tableIndex, data);
     }
 
     const row = table.rows[rowIndex];
+    invalidateSummaryCompactionOwnership(table, rowIndex, { reason: 'fill-update' });
     /** @type {Change[]} */
     const changes = [];
     for (const colIndex in data) {
@@ -134,6 +142,13 @@ function _deleteRow(state, tableIndex, rowIndex) {
         table.rowStatuses = Array(table.rows.length).fill('normal');
     }
 
+    const revoked = invalidateSummaryCompactionOwnership(table, rowIndex, { reason: 'fill-delete' });
+    if (isDeletedRow(table, rowIndex)) return { state, changes: revoked ? [{ type: 'delete', tableIndex, rowIndex }] : [] };
+    if (table.softDelete === true) {
+        markDeletedRow(table, rowIndex);
+        return { state, changes: [{ type: 'delete', tableIndex, rowIndex }] };
+    }
+
     if (table.rowStatuses[rowIndex] !== 'pending-deletion') {
         table.rowStatuses[rowIndex] = 'pending-deletion';
         /** @type {Change[]} */
@@ -141,7 +156,7 @@ function _deleteRow(state, tableIndex, rowIndex) {
         return { state, changes };
     }
 
-    return { state, changes: [] };
+    return { state, changes: revoked ? [{ type: 'delete', tableIndex, rowIndex }] : [] };
 }
 
 /** @type {Object<string, (state: TableState, op: Operation) => { state: TableState, changes: Change[] }>} */
@@ -169,6 +184,8 @@ export function applyOperations(initialState, operations, options = {}) {
         return { state: initialState, changes: [], accepted: true };
     }
 
+    try { assertRecordRelationIdentities(initialState); }
+    catch (error) { return { state: initialState, changes: [], accepted: false, error }; }
     const originalState = normalizeTableDatabaseState(JSON.parse(JSON.stringify(initialState)));
     try {
         assertAiFillOperationTargets(originalState, operations);
@@ -269,6 +286,7 @@ export function applyOperations(initialState, operations, options = {}) {
     }
 
     try {
+        assertRecordRelationDeletionTransition(originalState, state);
         state = validateTableState(state);
     } catch (error) {
         log(`整批填表操作未通过数据库约束校验，已原子回退: ${error.code || 'TABLE_VALIDATION_FAILED'} ${error.message}`, 'error');

@@ -1,4 +1,5 @@
 import { deepClone, normalizeTableDatabaseState } from './infra/database-state.js';
+import { assertRecordRelationIdentities, normalizeRecordRelation, validateRecordRelationState } from './record-relations.js';
 
 export const TABLE_PROFILE_FORMAT = 'amily2.table-profile';
 export const TABLE_PROFILE_SCHEMA_VERSION = 1;
@@ -7,7 +8,11 @@ export const TABLE_PROFILE_SCHEMA_VERSION = 1;
  * Creates a portable structure-only profile. Runtime rows never leave the chat.
  */
 export function createTableProfile(tables, options = {}) {
-    const normalizedTables = normalizeTableDatabaseState(deepClone(tables || [])).map(stripRuntimeRows);
+    const source = deepClone(tables || []);
+    // Opt-in relations must retain their identities before legacy ID repair runs.
+    assertRecordRelationIdentities(source);
+    const normalizedTables = normalizeTableDatabaseState(source).map(stripRuntimeRows);
+    validateRecordRelationState(normalizedTables);
     return {
         format: TABLE_PROFILE_FORMAT,
         schemaVersion: TABLE_PROFILE_SCHEMA_VERSION,
@@ -54,11 +59,31 @@ export function materializeTableProfile(profile, fallbackTemplates = {}, meta = 
     });
 }
 
-export function normalizeTableProfile(profile) {
+export function normalizeTableProfile(profile, { relationTargetTables } = {}) {
     if (!profile || typeof profile !== 'object' || profile.format !== TABLE_PROFILE_FORMAT) return null;
     if (profile.schemaVersion !== TABLE_PROFILE_SCHEMA_VERSION || !Array.isArray(profile.tables)) return null;
 
-    return createTableProfile(profile.tables, {
+    const tables = deepClone(profile.tables);
+    // A chat profile can predate user-created relation targets. Add only their
+    // structure, including transitive targets; never infer IDs or replace schemas.
+    if (Array.isArray(relationTargetTables)) {
+        const present = new Set(tables.map(table => table.id));
+        for (const table of tables) {
+            for (const column of table.columns || []) {
+                if (!Object.hasOwn(column, 'recordRelation')) continue;
+                const { targetTableId } = normalizeRecordRelation(column.recordRelation);
+                if (present.has(targetTableId)) continue;
+                const targets = relationTargetTables.filter(candidate => candidate.id === targetTableId);
+                if (targets.length !== 1) {
+                    const code = targets.length ? 'RELATION_IDENTITY_INVALID' : 'RELATION_TARGET_MISSING';
+                    throw Object.assign(new Error(code), { code });
+                }
+                tables.push(stripRuntimeRows(deepClone(targets[0])));
+                present.add(targetTableId);
+            }
+        }
+    }
+    return createTableProfile(tables, {
         id: profile.id,
         name: profile.name,
         description: profile.description,

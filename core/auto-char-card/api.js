@@ -113,33 +113,33 @@ export async function callAi(role, messages, options = {}, onChunk = null) {
         });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`API 请求失败: ${response.status} - ${errorText}`);
+            throw new Error(`API 请求失败: ${response.status}`);
         }
 
         const responseData = await readOpenAICompatibleResponse(response, {
             stream: useStream,
-            onTextDelta: typeof onChunk === 'function' ? onChunk : undefined,
+            onTextDelta: typeof onChunk === 'function'
+                ? text => { if (!config.signal?.aborted) onChunk(text); } : undefined,
         });
 
         if (!responseData || !responseData.choices || responseData.choices.length === 0) {
             if (responseData?.error) {
-                throw new Error(`API 返回错误: ${responseData.error.message || JSON.stringify(responseData.error)}`);
+                throw new Error('API 返回错误。');
             }
             throw new Error('API 返回了空响应。');
         }
 
         const content = responseData.choices[0].message?.content;
         if (!content) {
-            console.warn(`[自动构建器] AI (${roleName}) 响应内容为空。完整响应:`, responseData);
+            console.warn(`[自动构建器] AI (${roleName}) 响应内容为空。`);
         }
 
         console.log(`[自动构建器] AI (${roleName}) 响应接收成功。长度: ${content?.length}`);
         return content;
 
     } catch (error) {
-        console.error(`[自动构建器] AI (${roleName}) 调用失败:`, error);
-        throw error;
+        if (error?.name === 'AbortError') throw error;
+        throw new Error('模型请求失败，请检查连接设置。');
     }
 }
 
@@ -203,7 +203,7 @@ export async function fetchModels(apiUrl, apiKey) {
         return [...new Set(ids)].sort();
 
     } catch (error) {
-        console.error('[自动构建器] 获取模型列表失败:', error);
+        console.error('[自动构建器] 获取模型列表失败:', 'MODEL_LIST_FAILED');
         throw error;
     }
 }

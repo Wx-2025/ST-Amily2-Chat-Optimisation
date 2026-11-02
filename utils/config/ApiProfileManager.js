@@ -139,6 +139,8 @@ class ApiProfileManager {
         // this cannot be forged by card scripts to drive privileged state and
         // never carries profile metadata or credentials.
         this._lifecycleListeners = new Set();
+        this._connectionEdits = new Set();
+        this._keyRevisions = new Map();
     }
 
     // ── 内部工具 ────────────────────────────────────────────────────────────
@@ -226,10 +228,52 @@ class ApiProfileManager {
         return this.createProfile(data);
     }
 
+    /** Keep a replacement key and its address together during async key storage. */
+    async saveProfileWithKey(id, data, key, isCurrent = () => true) {
+        if (!isCurrent()) throw new Error('PROFILE_CONNECTION_CHANGED');
+        if (!id) {
+            const newId = this._newId();
+            const profile = this._buildProfile(newId, data);
+            if (key) await apiKeyStore.storeById(newId, key);
+            this._profiles().push(profile);
+            this._save();
+            return newId;
+        }
+        if (this._connectionEdits.has(id)) throw new Error('PROFILE_CONNECTION_BUSY');
+        const original = this._profiles().find(profile => profile.id === id);
+        if (!original) throw new Error('PROFILE_CONNECTION_UNAVAILABLE');
+        if (!key) {
+            if (!this.updateProfile(id, data)) throw new Error('PROFILE_CONNECTION_UNAVAILABLE');
+            return id;
+        }
+        if (original.connectionSourceId) throw new Error('PROFILE_CONNECTION_INHERITED');
+        const prepared = this._prepareProfileUpdate(id, data);
+        this._connectionEdits.add(id);
+        try {
+            await apiKeyStore.storeById(id, key);
+            this._keyRevisions.set(id, (this._keyRevisions.get(id) ?? 0) + 1);
+            // Once storage starts, finish the captured save rather than rolling a
+            // credential back asynchronously against a possibly different address.
+            this._connectionEdits.delete(id);
+            this._publishProfileUpdate(id, prepared);
+            return id;
+        } finally {
+            this._connectionEdits.delete(id);
+        }
+    }
+
     /**
      * 更新 Profile 元数据（不更新 Key，Key 用 setKey()）。
      */
     updateProfile(id, data) {
+        if (this._connectionEdits.has(id)) throw new Error('PROFILE_CONNECTION_BUSY');
+        const profile = this._prepareProfileUpdate(id, data);
+        if (!profile) return false;
+        this._publishProfileUpdate(id, profile);
+        return true;
+    }
+
+    _prepareProfileUpdate(id, data) {
         const list = this._profiles();
         const idx  = list.findIndex(p => p.id === id);
         if (idx === -1) return false;
@@ -249,7 +293,13 @@ class ApiProfileManager {
         }
         this._normalizeConnectionSource(id, originalSourceId);
         merged.connectionSourceId = originalSourceId;
-        list[idx] = this._buildProfile(id, merged);
+        return this._buildProfile(id, merged);
+    }
+
+    _publishProfileUpdate(id, profile) {
+        const list = this._profiles();
+        const idx = list.findIndex(item => item.id === id);
+        list[idx] = profile;
         refreshApiRequestRateLimit(id);
         this._save();
         this._emitLifecycle({
@@ -257,13 +307,13 @@ class ApiProfileManager {
             profileId: id,
             assignedSlots: this._assignedSlots(id),
         });
-        return true;
     }
 
     /**
      * 删除 Profile（同时清理存储的 Key 和功能槽引用）。
      */
     async deleteProfile(id) {
+        if (this._connectionEdits.has(id)) throw new Error('PROFILE_CONNECTION_BUSY');
         const dependents = this._connectionDependents(id);
         if (dependents.length > 0) {
             const error = new Error(`该连接仍被 ${dependents.length} 个派生配置引用，请先删除派生配置。`);
@@ -274,9 +324,11 @@ class ApiProfileManager {
         const assignedSlots = this._assignedSlots(id);
         clearApiRequestRateLimit(id, 'API 连接配置已删除，取消等待中的请求。');
         // 先持久删除异步 Key；失败时不触碰 Profile/槽位元数据。
+        this._connectionEdits.add(id);
         try {
             await apiKeyStore.deleteById(id);
         } catch (error) {
+            this._connectionEdits.delete(id);
             console.warn('[ApiProfiles] Profile 密钥删除失败，已保留 Profile 元数据。');
             throw error;
         }
@@ -288,6 +340,8 @@ class ApiProfileManager {
             if (asgn[slot] === id) delete asgn[slot];
         }
 
+        this._connectionEdits.delete(id);
+        this._keyRevisions.delete(id);
         this._save();
         this._emitLifecycle({
             type: 'profile-deleted',
@@ -301,25 +355,41 @@ class ApiProfileManager {
     /** 读取 Profile 的 API Key（异步，自动解密） */
     async getKey(id) {
         const profile = this._profiles().find(item => item.id === id);
-        if (!profile?.connectionSourceId) return apiKeyStore.retrieveById(id);
-        const source = this._resolveConnectionSourceProfile(id);
-        if (!source) throw new Error('连接继承来源不存在或已损坏。');
-        return apiKeyStore.retrieveById(source.id);
+        const source = profile?.connectionSourceId ? this._resolveConnectionSourceProfile(id) : profile;
+        if (profile?.connectionSourceId && !source) throw new Error('连接继承来源不存在或已损坏。');
+        const sourceId = source?.id ?? id;
+        if (this._connectionEdits.has(sourceId)) throw new Error('PROFILE_CONNECTION_BUSY');
+        const revision = this._keyRevisions.get(sourceId);
+        const key = await apiKeyStore.retrieveById(sourceId);
+        const current = this._profiles().find(item => item.id === sourceId);
+        if (this._connectionEdits.has(sourceId) || this._keyRevisions.get(sourceId) !== revision
+            || Boolean(current) !== Boolean(source) || current?.apiUrl !== source?.apiUrl || current?.provider !== source?.provider) {
+            throw new Error('PROFILE_CONNECTION_CHANGED');
+        }
+        return key;
     }
 
     /** 写入 Profile 的 API Key（异步，自动加密） */
     async setKey(id, value) {
+        if (this._connectionEdits.has(id)) throw new Error('PROFILE_CONNECTION_BUSY');
         const profile = this._profiles().find(item => item.id === id);
         if (profile?.connectionSourceId) {
             throw new Error('派生配置的密钥由连接来源管理，不能单独写入。');
         }
-        const result = await apiKeyStore.storeById(id, value);
-        this._emitLifecycle({
-            type: 'profile-key-updated',
-            profileId: id,
-            assignedSlots: this._assignedSlots(id),
-        });
-        return result;
+        this._connectionEdits.add(id);
+        try {
+            const result = await apiKeyStore.storeById(id, value);
+            this._keyRevisions.set(id, (this._keyRevisions.get(id) ?? 0) + 1);
+            this._connectionEdits.delete(id);
+            this._emitLifecycle({
+                type: 'profile-key-updated',
+                profileId: id,
+                assignedSlots: this._assignedSlots(id),
+            });
+            return result;
+        } finally {
+            this._connectionEdits.delete(id);
+        }
     }
 
     // ── 功能槽分配 ──────────────────────────────────────────────────────────
@@ -479,6 +549,9 @@ class ApiProfileManager {
         const profile = this.getProfile(id);
         if (!profile) return null;
         const apiKey = await this.getKey(id);
+        const current = this.getProfile(id);
+        if (!current || current.apiUrl !== profile.apiUrl || current.provider !== profile.provider
+            || current.connectionSourceId !== profile.connectionSourceId) throw new Error('PROFILE_CONNECTION_CHANGED');
         return { ...profile, apiKey };
     }
 

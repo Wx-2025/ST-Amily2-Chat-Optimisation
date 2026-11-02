@@ -14,6 +14,7 @@ import { configManager } from '../../utils/config/ConfigManager.js';
 import { detectVendor } from '../../utils/api-vendor.js';
 import { mergeSafeModelCallOptions } from './safe-call-options.js';
 import {
+    assertModelResponseNotTruncated,
     readOpenAICompatibleResponse,
     readSillyTavernPresetResponse,
 } from './streaming-response.js';
@@ -116,6 +117,8 @@ export async function callNccsAI(messages, options = {}) {
 
     const settings = await getNccsApiSettings();
     const finalOptions = mergeSafeModelCallOptions(settings, options);
+    finalOptions.rejectTruncatedResponse = options.rejectTruncatedResponse === true;
+
     finalOptions.onUsage = typeof options.onUsage === 'function'
         ? options.onUsage
         : null;
@@ -228,11 +231,12 @@ async function callNccsOpenAITest(messages, options) {
         '/api/backends/chat-completions/generate',
         { ...fetchOpts, signal: options.signal },
     );
-    if (!response.ok) throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const responseData = await readOpenAICompatibleResponse(response, {
         stream: options.stream === true,
     });
     reportNccsUsage(options, responseData);
+    assertModelResponseNotTruncated(responseData, options);
     return normalizeApiResponse(responseData);
 }
 
@@ -264,7 +268,7 @@ async function callNccsSillyTavernPreset(messages, options) {
                 8192,
                 { stream: useStream, signal: options.signal },
             ),
-            { stream: useStream },
+            { stream: useStream, rejectTruncatedResponse: options.rejectTruncatedResponse },
         );
         reportNccsUsage(options, result);
         return normalizeApiResponse(result);
@@ -303,8 +307,6 @@ export async function fetchNccsModels() {
             if (models.length === 0) {
                 throw new Error('当前预设未配置模型');
             }
-
-            console.log('[Amily2号-Nccs外交部] SillyTavern预设模式获取到模型:', models);
             return models;
         } else {
             if (!apiSettings.apiUrl || !apiSettings.apiKey) {
@@ -332,7 +334,7 @@ export async function fetchNccsModels() {
             const models = Array.isArray(rawData) ? rawData : (rawData.data || rawData.models || []);
 
             if (!Array.isArray(models)) {
-                const errorMessage = rawData.error?.message || 'API未返回有效的模型列表数组';
+                const errorMessage = 'API未返回有效的模型列表数组';
                 throw new Error(errorMessage);
             }
 
@@ -348,8 +350,6 @@ export async function fetchNccsModels() {
                 })
                 .filter(m => m.id)
                 .sort((a, b) => String(a.name).localeCompare(String(b.name)));
-
-            console.log('[Amily2号-Nccs外交部] 全兼容模式获取到模型:', formattedModels);
             return formattedModels;
         }
     } catch (error) {
@@ -390,7 +390,6 @@ export async function testNccsApiConnection() {
         const response = await callNccsAI(testMessages);
 
         if (response && response.trim()) {
-            console.log('[Amily2号-Nccs外交部] 测试消息响应:', response);
             toastr.success(
                 `连接测试成功！AI回复: "${response}"`,
                 '独立API填表·测试成功',

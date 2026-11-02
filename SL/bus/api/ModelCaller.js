@@ -9,6 +9,7 @@ import {
 } from '../../../core/api/streaming-response.js';
 import Options from './Options.js';
 import RequestBody from './RequestBody.js';
+import { buildJsonToolPrompt, parseJsonToolResponse, buildJsonRetryMessage, buildJsonToolResultMessage } from '../tool/json-transport.js';
 
 // 带 tools 的请求失败时统一追加的提示：很多中转站偷懒直接禁用了工具调用，
 // 收到 tools 参数即拒。这没法靠 URL 预判，只能在失败时把原因讲清楚，少一批截图提问。
@@ -68,7 +69,7 @@ export default class ModelCaller {
             // 但为了统一，我们还是传进去检查一下
             return this._normalize(result, options.fakeStream);
         } catch (error) {
-            this._log('error', `Request Failed: ${error.message}`, callerName);
+            this._log('error', 'Model request failed.', callerName);
             throw error;
         }
     }
@@ -169,9 +170,10 @@ export default class ModelCaller {
             try {
                 return await dispatch(name, args);
             } catch (err) {
+                if (err?.name === 'AbortError') throw err;
                 if (onToolError === 'throw') throw err;
-                this._log('warn', `tool "${name}" 出错，回喂模型自纠: ${err.message}`, callerName);
-                return { error: String(err.message || err) };
+                this._log('warn', 'Tool execution failed.', callerName);
+                return { error: 'Tool execution failed.' };
             }
         };
 
@@ -185,11 +187,12 @@ export default class ModelCaller {
                     // 仅请求/响应校验在 try 内：dispatch 失败是业务错误，不触发运输降级
                     message = await this._requestToolsMessage(callerName, convo, options, toolDefs, toolChoice);
                 } catch (reqErr) {
+                    if (reqErr?.name === 'AbortError') throw reqErr;
                     if (transport !== 'auto') {
-                        throw new Error(`${reqErr.message} ${TOOL_REJECT_HINT}`);
+                        throw new Error(`Model request failed. ${TOOL_REJECT_HINT}`);
                     }
                     // auto：大概率中转拒收 tools → 降级 JSON 续跑（本步在下方用 json 重试）
-                    this._log('warn', `tools 运输失败，自动降级 JSON 模式: ${reqErr.message}`, callerName);
+                    this._log('warn', 'Tools transport failed; trying JSON transport.', callerName);
                     enterJsonMode();
                 }
 
@@ -219,8 +222,9 @@ export default class ModelCaller {
                             args = tc?.function?.arguments ? JSON.parse(tc.function.arguments) : {};
                             result = await runHandler(name, args);
                         } catch (parseErr) {
+                            if (parseErr?.name === 'AbortError') throw parseErr;
                             if (onToolError === 'throw') throw parseErr;
-                            result = { error: `arguments JSON 解析失败: ${parseErr.message}` };
+                            result = { error: 'Tool arguments or execution failed.' };
                         }
                         allToolCalls.push({ name, args, result });
                         convo.push({
@@ -249,8 +253,7 @@ export default class ModelCaller {
             });
             const raw = await this._callDirect(callerName, new RequestBody(convo, stepOptions), stepOptions);
             if (raw && raw.error) {
-                const msg = raw.error?.message || (typeof raw.error === 'string' ? raw.error : JSON.stringify(raw.error));
-                throw new Error(`接口拒绝了请求: ${msg}`);
+                throw new Error('Model request failed.');
             }
             const jsonMessage = this._extractMessage(raw);
             const text = (jsonMessage?.content || '').trim();
@@ -320,8 +323,7 @@ export default class ModelCaller {
         const raw = await this._callDirect(callerName, new RequestBody(convo, stepOptions), stepOptions);
         // 部分中转返回 HTTP 200 但 body 带 error（如"工具调用未启用"）
         if (raw && raw.error) {
-            const msg = raw.error?.message || (typeof raw.error === 'string' ? raw.error : JSON.stringify(raw.error));
-            throw new Error(`接口拒绝了请求: ${msg}`);
+            throw new Error('Model request failed.');
         }
         const message = this._extractMessage(raw);
         if (!message) {
@@ -346,7 +348,6 @@ export default class ModelCaller {
             body: JSON.stringify(payload),
             signal: options.signal,
         };
-
         return options.fakeStream
             ? this._fetchFakeStream(url, fetchOpts)
             : this._fetchStandard(url, fetchOpts);
@@ -365,13 +366,13 @@ export default class ModelCaller {
 
         if (!targetProfile) throw new Error(`Preset ID ${options.presetId} not found`);
 
-        if (originalProfile !== targetProfile.name) {
-            this._log('info', `Switching profile: ${originalProfile} -> ${targetProfile.name}`, callerName);
-            const escapedName = targetProfile.name.replace(/"/g, '\\"');
-            await amilyHelper.triggerSlash(`/profile await=true "${escapedName}"`);
-        }
-
         try {
+            if (originalProfile !== targetProfile.name) {
+                this._log('info', `Switching profile: ${originalProfile} -> ${targetProfile.name}`, callerName);
+                const escapedName = targetProfile.name.replace(/"/g, '\\"');
+                await amilyHelper.triggerSlash(`/profile await=true "${escapedName}"`);
+            }
+
             if (!context.ConnectionManagerRequestService) {
                 throw new Error('ST Request Service unavailable');
             }
@@ -402,7 +403,7 @@ export default class ModelCaller {
                         await amilyHelper.triggerSlash(`/profile await=true "${escapedOriginal}"`);
                     }
                 } catch (e) {
-                    this._log('warn', `Failed to restore profile: ${e.message}`, callerName);
+                    this._log('warn', 'Failed to restore profile.', callerName);
                 }
             }
         }

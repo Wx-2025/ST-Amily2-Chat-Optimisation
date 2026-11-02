@@ -1,12 +1,19 @@
 import { extensionName } from "../../utils/settings.js";
-import { extension_settings } from "/scripts/extensions.js";
+import { extension_settings, getContext } from "/scripts/extensions.js";
 import { saveSettingsDebounced, eventSource, event_types } from "/script.js";
 import { initializeSuperMemory, purgeSuperMemory, forceSyncAll } from "./manager.js";
 import { defaultSettings as ragDefaultSettings } from "../rag-settings.js";
 import { getMemoryState } from "../table-system/manager.js";
 import { escapeHTML } from "../../utils/utils.js";
+import { t } from "../../utils/i18n/index.js";
+import { summarizeArchiveCopies, ARCHIVE_COPY_RECEIPTS_KEY, ARCHIVE_COPY_STATUS_EVENT } from '../archive-policy.js';
 
 const RAG_MODULE_NAME = 'hanlinyuan-rag-core';
+
+function refreshArchiveCopyStatus() {
+    const counts = summarizeArchiveCopies(getContext()?.chatMetadata?.[ARCHIVE_COPY_RECEIPTS_KEY], getRagSettings().archive?.targetTableId);
+    $('#sm-archive-copy-status').text(t('tableRuntimeUi.archive.status', counts));
+}
 
 function getRagSettings() {
     if (!extension_settings[extensionName]) extension_settings[extensionName] = {};
@@ -20,6 +27,8 @@ function getRagSettings() {
 export function bindSuperMemoryEvents() {
     const panel = $('#amily2_super_memory_panel');
     if (panel.length === 0) return;
+    document.removeEventListener(ARCHIVE_COPY_STATUS_EVENT, refreshArchiveCopyStatus);
+    document.addEventListener(ARCHIVE_COPY_STATUS_EVENT, refreshArchiveCopyStatus);
 
     panel.on('click', '.sm-nav-item', function() {
         const tab = $(this).data('tab');
@@ -62,7 +71,22 @@ export function bindSuperMemoryEvents() {
         
         if (id === 'sm-archive-enabled') {
             if (!ragSettings.archive) ragSettings.archive = {};
-            ragSettings.archive.enabled = this.checked;
+            const archive = ragSettings.archive;
+            archive.enabled = false;
+            delete archive.copyConsentVersion;
+            delete archive.targetTableId;
+            if (this.checked) {
+                const matches = (getMemoryState() || []).filter(table => table.owner === 'user'
+                    && table.name === (archive.targetTable || '总结表'));
+                if (matches.length !== 1) {
+                    toastr.warning(t('tableRuntimeUi.archive.sourceRequired'));
+                    this.checked = false;
+                } else if (window.confirm(t('tableRuntimeUi.archive.copyConsent', { name: matches[0].name }))) {
+                    archive.enabled = true;
+                    archive.targetTableId = matches[0].id;
+                    archive.copyConsentVersion = 1;
+                } else this.checked = false;
+            }
         }
         else if (id === 'sm-relationship-graph-enabled') {
             if (!ragSettings.relationshipGraph) ragSettings.relationshipGraph = {};
@@ -98,6 +122,13 @@ export function bindSuperMemoryEvents() {
         }
         else if (id === 'sm-archive-target-table') {
             ragSettings.archive.targetTable = this.value;
+        }
+
+        if (id.startsWith('sm-archive-')) {
+            ragSettings.archive.enabled = false;
+            delete ragSettings.archive.copyConsentVersion;
+            delete ragSettings.archive.targetTableId;
+            $('#sm-archive-enabled').prop('checked', false);
         }
 
         saveSettingsDebounced();
@@ -224,10 +255,11 @@ function loadSuperMemorySettings() {
 
     // 归档设置
     if (ragSettings.archive) {
-        $('#sm-archive-enabled').prop('checked', ragSettings.archive.enabled ?? false);
+        $('#sm-archive-enabled').prop('checked', ragSettings.archive.enabled === true && ragSettings.archive.copyConsentVersion === 1);
         $('#sm-archive-threshold').val(ragSettings.archive.threshold ?? 20);
         $('#sm-archive-batch-size').val(ragSettings.archive.batchSize ?? 10);
         $('#sm-archive-target-table').val(ragSettings.archive.targetTable ?? '总结表');
+        refreshArchiveCopyStatus();
     }
 
     // 关联图谱设置

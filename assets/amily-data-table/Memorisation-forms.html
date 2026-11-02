@@ -440,6 +440,9 @@
                 </div>
 
                 <div id="sinan-action-center-tab" class="sinan-tab-pane">
+                    <button id="amily2-table-write-recovery-btn" class="menu_button secondary small_button interactable" type="button">
+                        <i class="fas fa-sync-alt"></i> <span data-amily-i18n="tableRuntimeUi.writeRecovery.check">核查保存结果</span>
+                    </button>
                     <div class="control-block-with-switch" style="margin-bottom: 15px; padding: 8px; border: 2px solid #4a9eff; border-radius: 5px; background: rgba(74, 158, 255, 0.1);">
                         <label for="table-system-master-switch" style="font-weight: bold; color: #4a9eff;">
                             <i class="fas fa-power-off"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.enable">表格系统总开关</span>
@@ -475,6 +478,16 @@
                         </div>
                     </div>
                     
+                    <div class="control-block-with-switch" style="margin-bottom: 10px; flex-direction: column; align-items: flex-start;">
+                        <label for="table-fill-auto-retry-5xx" class="checkbox_label">
+                            <input type="checkbox" id="table-fill-auto-retry-5xx" aria-describedby="table-fill-retry-help">
+                            <span data-amily-i18n="apiTableUi.tableCompat.table.autoRetry5xx">HTTP 5xx 自动重试（默认关闭）</span>
+                        </label>
+                        <label for="secondary-filler-max-retries"><span data-amily-i18n="apiTableUi.tableCompat.table.retries">5xx 最大重试次数</span></label>
+                        <input type="number" id="secondary-filler-max-retries" min="0" max="10" step="1" value="2" disabled aria-describedby="table-fill-retry-help" class="text_pole" style="width: 80px; margin-top: 5px;">
+                        <small id="table-fill-retry-help" class="notes" style="margin-top: 5px; display: block;"><span data-amily-i18n="apiTableUi.tableCompat.table.retriesHelp">适用于分步/批量填表；仅勾选后对 HTTP 5xx 自动重试，最多 0–10 次（默认 2 次，0 = 不重试），受本轮请求预算限制。所有 4xx（包括 429）均不自动重试；网络结果未知时可能已计费，请核对后手动确认重试。</span></small>
+                    </div>
+
                     <!-- 分步填表高级控制 - 仅在分步模式下显示 -->
                     <div id="secondary-filler-controls" style="display: none; border-left: 2px solid #4a9eff; padding-left: 10px; margin-bottom: 10px;">
                         
@@ -497,13 +510,6 @@
                             <label for="secondary-filler-buffer"><span data-amily-i18n="apiTableUi.tableCompat.table.buffer">保留 AI 楼层 (Buffer)</span></label>
                             <input type="number" id="secondary-filler-buffer" min="0" max="10" step="1" value="0" class="text_pole" style="width: 80px; margin-top: 5px;">
                             <small class="notes" style="margin-top: 5px; display: block;"><span data-amily-i18n="apiTableUi.tableCompat.table.bufferHelp">自动填表保留的最新 AI 回复数量；用户消息不计入，0 表示不保留。</span></small>
-                        </div>
-
-                        <!-- 最大重试次数 -->
-                        <div class="control-block-with-switch" style="margin-bottom: 10px; flex-direction: column; align-items: flex-start;">
-                            <label for="secondary-filler-max-retries"><span data-amily-i18n="apiTableUi.tableCompat.table.retries">最大重试次数</span></label>
-                            <input type="number" id="secondary-filler-max-retries" min="0" max="10" step="1" value="2" class="text_pole" style="width: 80px; margin-top: 5px;">
-                            <small class="notes" style="margin-top: 5px; display: block;"><span data-amily-i18n="apiTableUi.tableCompat.table.retriesHelp">分步填表失败时的自动重试次数 (0 = 不重试)。</span></small>
                         </div>
 
                         <!-- 触发延迟（防抖） -->
@@ -567,6 +573,7 @@
                         <button id="amily2-import-global-preset-btn" class="menu_button secondary small_button interactable"><i class="fas fa-globe"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.importGlobal">导入全局</span></button>
                         <button id="amily2-clear-global-preset-btn" class="menu_button danger small_button interactable"><i class="fas fa-undo"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.clearGlobal">清除全局</span></button>
                         <button id="amily2-clear-all-tables-btn" class="menu_button danger small_button interactable"><i class="fas fa-trash-alt"></i> <span data-amily-i18n="apiTableUi.tableCompat.table.clear">清空内容</span></button>
+                        <button id="amily2-index-worldbook-recovery-btn" class="menu_button small_button interactable" type="button" data-amily-i18n-title="tableRuntimeUi.workflow.recoverIndex" title="恢复索引世界书"><i class="fas fa-rotate-left"></i> <span data-amily-i18n="tableRuntimeUi.workflow.recoverIndex">恢复索引世界书</span></button>
                     </div>
                     <div id="amily2-table-clear-recovery" class="notes" style="margin-top: 8px; margin-bottom: 10px;" hidden>
                         <strong><span data-amily-i18n="apiTableUi.tableCompat.table.pendingDelete">清空内容待删除</span></strong>

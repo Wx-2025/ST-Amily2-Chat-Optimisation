@@ -9,6 +9,7 @@ import { fillWithSecondaryApi } from '../../table-system/secondary-filler.js';
 import { getMemoryState } from '../../table-system/manager.js';
 import { isAiFillableTable } from '../../table-system/module-tables.js';
 import { captureChatScope, chatScopesMatch } from '../../table-system/infra/chat-scope.js';
+import { restrictLegacyFillScope } from '../../table-system/fill-automation/integration/legacy-scope.js';
 import {
     createTableGroupFillScope,
     normalizeTableGroupRegistry,
@@ -33,11 +34,13 @@ export async function tableUpdateStage(ctx, next) {
             && context.chat?.[messageId] === latestMessage;
     };
     if (!isCurrent()) return;
+    ctx.tablePipelineSucceeded = true;
     const secondaryAutomatic = isSecondaryAutomaticMode();
     try {
         // 主 API 模式（secondary-api / optimized 模式下函数内部自行跳过）
         await processMessageUpdate(messageId);
     } catch (e) {
+        ctx.tablePipelineSucceeded = false;
         console.error('[Pipeline:TableUpdate] 阶段异常:', e);
     }
     if (!isCurrent()) return;
@@ -59,18 +62,20 @@ export async function tableUpdateStage(ctx, next) {
                         || !isTableGroupAutomaticFillEnabled(context, liveRegistry, tableGroupId)) continue;
                     const tables = getMemoryState();
                     if (!Array.isArray(tables)) continue;
-                    const groupScope = createTableGroupFillScope(tables, liveRegistry, tableGroupId);
+                    const groupScope = restrictLegacyFillScope(createTableGroupFillScope(tables, liveRegistry, tableGroupId), context);
                     if (!groupScope.scopedState.some(isAiFillableTable)) continue;
                     await fillWithSecondaryApi(latestMessage, false, {
                         tableGroupId,
                         __secondaryExpectedScope: requestScope,
                     });
                 } catch (error) {
+                    ctx.tablePipelineSucceeded = false;
                     console.error(`[Pipeline:TableUpdate] Automatic Group "${tableGroupId}" failed:`, error);
                 }
                 if (!isCurrent()) return;
             }
         } catch (error) {
+            ctx.tablePipelineSucceeded = false;
             console.error('[Pipeline:TableUpdate] Automatic Group scheduling failed:', error);
         }
     }

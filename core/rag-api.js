@@ -20,6 +20,7 @@ const GOOGLE_API_BASE_URL = 'https://generativelanguage.googleapis.com';
 // 历史上 saveSettingsFromUI 曾把这个占位符写回 settings.{rerank,retrieval}.apiKey，
 // 导致取消 Profile 分配后实际请求带占位符 token 被 401。这里做防御性还原。
 const PROFILE_MASKED_KEY = '••••••••';
+
 function sanitizeMaskedKey(key) {
     return key === PROFILE_MASKED_KEY ? '' : key;
 }
@@ -218,8 +219,7 @@ export async function fetchEmbeddingModels(overrideSettings = null) {
     });
 
     if (!response.ok) {
-        const errorBody = await response.text();
-        throw new Error(`获取模型列表失败 (${response.status}): ${errorBody}`);
+        throw new Error(`获取模型列表失败 (${response.status}).`);
     }
 
     const data = await response.json();
@@ -281,8 +281,7 @@ export async function fetchRerankModels() {
     });
 
     if (!response.ok) {
-        const errorBody = await response.text();
-        throw new Error(`获取Rerank模型列表失败 (${response.status}): ${errorBody}`);
+        throw new Error(`获取Rerank模型列表失败 (${response.status}).`);
     }
 
     const data = await response.json();
@@ -328,7 +327,7 @@ export async function executeRerank(query, documents, rerankSettings = null) {
         if (apiMode === 'st_backend' && response.status === 404) {
             throw new Error('酒馆 Rerank 代理不可用（404）；请检查 enableCorsProxy 与反向代理路由。未回退前端直连。');
         }
-        throw new Error(`Rerank API 请求失败 (${response.status}): ${await response.text()}`);
+        throw new Error(`Rerank API 请求失败 (${response.status}).`);
     }
 
     const data = await response.json();
@@ -396,6 +395,9 @@ export function getApiHeaders(overrideRetrieval = null) {
 export async function getEmbeddings(texts, signal = null, overrideSettings = null) {
     const settings = overrideSettings || await getEmbedRetrievalSettings();
     const { apiEndpoint, customApiUrl, apiKey, embeddingModel, batchSize = 5 } = settings;
+    if (!Number.isSafeInteger(batchSize) || batchSize < 1 || batchSize > 2048) {
+        throw new Error('Invalid embedding batch size.');
+    }
 
     const allEmbeddings = [];
 

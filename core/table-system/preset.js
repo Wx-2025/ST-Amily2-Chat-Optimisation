@@ -10,15 +10,19 @@
  * 设计要点：
  *   - 不内含 SuperMemory dispatch 逻辑（避免与 manager.js 循环依赖）
  *   - importPreset 接受 hooks: { targetGroupId, onAfterApply, onImported }，调用方注入目标 Group 与副作用
- *   - 所有持久化走 infra/persistence.js，不再复制 saveStateToMessage 样板
+ *   - 聊天导入走 infra/persistence.js；全局预设仍使用宿主设置保存路径
  */
 
 import { extension_settings, getContext } from '/scripts/extensions.js';
+import { createManualRepairCheckpointPlan } from './manual-repair-checkpoint.js';
+import { captureChatScope, chatScopesMatch } from './infra/chat-scope.js';
 import { saveSettingsDebounced } from '/script.js';
 import { extensionName } from '../../utils/settings.js';
 import { log } from './logger.js';
 import { getState, getStateRevision, setState } from './infra/store.js';
 import { commitToLastMessageAsync } from './infra/persistence.js';
+import { assertTablePublication } from './infra/table-write-transaction.js';
+
 import { isSafeCharacterProfileEnvelope } from './character-profile.js';
 import { isTableDefinitionRegistered, validateTableState } from './module-tables.js';
 import {
@@ -39,9 +43,6 @@ import {
     getAiFlowTemplateForInjection,
     getCurrentTableTemplateSnapshot,
     getGlobalTableTemplateSnapshot,
-    saveBatchFillerRuleTemplate,
-    saveBatchFillerFlowTemplate,
-    saveAiTemplate,
     saveGlobalBatchFillerRuleTemplate,
     saveGlobalBatchFillerFlowTemplate,
     saveGlobalAiTemplate,
@@ -139,11 +140,11 @@ function exportPresetBase(includeData = false) {
 }
 
 export function exportPreset() {
-    exportPresetBase(false);
+    return exportPresetBase(false);
 }
 
 export function exportPresetFull() {
-    exportPresetBase(true);
+    return exportPresetBase(true);
 }
 
 // ── 导入 ──────────────────────────────────────────────────────────────────
@@ -179,28 +180,6 @@ function _normalizeImportedTables(importedTables) {
         if (table.rowLimitRule === undefined) table.rowLimitRule = 0;
         if (table.columnWidths === undefined) table.columnWidths = [];
     });
-}
-
-/**
- * 把导入的预设里的模板字段写回 extension_settings。版本兼容三档：
- * v3.0(separated) / v2.1(aiRule+aiFlow) / v2.0(aiTemplate)
- */
-function _applyImportedTemplates(preset) {
-    if (preset.version === 'Amily2-Table-Preset-v3.0-separated_templates') {
-        saveBatchFillerRuleTemplate(preset.batchFillerRuleTemplate || '');
-        saveBatchFillerFlowTemplate(preset.batchFillerFlowTemplate || '');
-        saveAiTemplate(preset.injectionFlowTemplate || '');
-    } else if (preset.aiRuleTemplate !== undefined && preset.aiFlowTemplate !== undefined) {
-        saveBatchFillerRuleTemplate(preset.aiRuleTemplate || '');
-        saveBatchFillerFlowTemplate(preset.aiFlowTemplate || '');
-        saveAiTemplate(preset.aiFlowTemplate || '');
-    } else if (preset.aiTemplate) {
-        saveBatchFillerRuleTemplate('');
-        saveBatchFillerFlowTemplate(preset.aiTemplate || '');
-        saveAiTemplate(preset.aiTemplate || '');
-    } else {
-        log('导入的预设中缺少指令模板字段，模板将不会被更新。', 'warn');
-    }
 }
 
 function _extractPresetTemplates(preset) {
@@ -397,16 +376,16 @@ export function importPreset(hooksOrCallback) {
         reader.onload = async event => {
             try {
                 const preset = JSON.parse(event.target.result);
-
+                const context = getContext();
+                const targetGroupId = hooks.targetGroupId || TABLE_GROUP_IDS.AMILY;
+                const stateRevision = getStateRevision();
+                const expectedChatScope = captureChatScope(context);
                 const imported = _resolveImportedProfile(preset, {
                     fallbackTemplates: getCurrentTableTemplateSnapshot(),
                     source: 'import',
                 });
 
-                const context = getContext();
                 const rawRegistry = context?.chatMetadata?.[TABLE_STATE_METADATA_KEY]?.tableGroups;
-                const targetGroupId = hooks.targetGroupId || TABLE_GROUP_IDS.AMILY;
-                const stateRevision = getStateRevision();
                 const importPlan = planTableGroupPresetImport(
                     getState() || [],
                     imported.tables,
@@ -421,7 +400,7 @@ export function importPreset(hooksOrCallback) {
                     `【表格预设导入】\n\n目标 Group：${importPlan.targetGroup.label}\n`
                     + `将导入 ${importPlan.importedCount} 张表，并替换本组现有的 ${importPlan.replacedCount} 张用户表。\n`
                     + `其他 Group 与模块表共 ${importPlan.preservedCount} 张，将保持不变。\n\n`
-                    + '当前 AI 指令模板也会更新。此操作不可逆，是否确定继续？'
+                    + '当前 AI 指令模板也会更新。导入内容会额外保存在当前聊天的独立修复备份中（覆盖上一份），重 roll 不会自动重放它。是否确定继续？'
                 );
                 if (!confirmation) {
                     log('用户取消了导入操作。', 'info');
@@ -445,9 +424,12 @@ export function importPreset(hooksOrCallback) {
                     },
                 );
 
+                const repairCheckpoint = createManualRepairCheckpointPlan(context, nextState, imported.profile.templates);
                 if (!await commitToLastMessageAsync(nextState, nextProfile, {
                     expectedStateRevision: stateRevision,
                     ...(expectedChatId ? { expectedChatId } : {}),
+                    expectedChatScope,
+                    strictExpectedChatScope: true,
                     tableGroups: importPlan.registry,
                     beforeSave({ context: liveContext }) {
                         const liveRegistry = liveContext?.chatMetadata
@@ -457,15 +439,21 @@ export function importPreset(hooksOrCallback) {
                             error.code = 'TABLE_GROUP_REGISTRY_CHANGED';
                             throw error;
                         }
+                        repairCheckpoint.beforeSave({ context: liveContext });
+                    },
+                    rollback: repairCheckpoint.rollback,
+                    publish(state) {
+                        assertTablePublication(state);
+                        setState(state);
                     },
                 })) {
                     throw new Error('当前聊天无法原子持久化导入的表格档案。');
                 }
-                setState(nextState);
-                _applyImportedTemplates({
-                    version: 'Amily2-Table-Preset-v3.0-separated_templates',
-                    ...imported.profile.templates,
-                });
+                if (!chatScopesMatch(expectedChatScope, captureChatScope(getContext()))) {
+                    throw new Error('聊天已切换，导入结果不会应用到其他聊天。');
+                }
+                // The imported templates are already part of nextProfile and
+                // were committed atomically with the tables and checkpoint.
 
                 // 钩子：让调用方注入 SuperMemory 全量同步等副作用
                 if (typeof hooks.onAfterApply === 'function') {

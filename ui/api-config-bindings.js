@@ -105,6 +105,7 @@ function _readSlotToggle(settings, toggle) {
 // ── 状态 ─────────────────────────────────────────────────────────────────────
 
 let _editingId      = null;   // 当前编辑的 Profile ID（null = 新建）
+let _profileEditorRevision = 0;
 let _currentFilter  = 'all';  // 当前类型筛选
 let _slotAssignmentPanel = null;
 let _slotAssignmentRefreshBound = false;
@@ -959,7 +960,7 @@ export function renderProfileList($c) {
             await openModal($c, duplicateId);
             toastr.success(t('apiTableUi.api.duplicated', { name: duplicate?.name || t('apiTableUi.api.derived') }));
         } catch (error) {
-            console.error('[ApiConfig] 创建派生配置失败。', error);
+            console.error('[ApiConfig] 创建派生配置失败。');
             $button.prop('disabled', false).html(originalHtml);
             toastr.error(t('apiTableUi.api.duplicateFailed'));
         }
@@ -1125,6 +1126,7 @@ function _switchAcTab($c, tab, { keepForm = false } = {}) {
         else this.setAttribute('hidden', '');
     });
     if (!keepForm && tab !== 'connections') {
+        _profileEditorRevision++;
         _hideFormOnly($c);
         _editingId = null;
         $c.find('.am2-ac-row').removeClass('is-selected');
@@ -1177,6 +1179,7 @@ function _resetProfileTypeFields($c) {
 }
 
 async function openModal($c, id) {
+    _profileEditorRevision++;
     _switchAcTab($c, 'connections', { keepForm: true });
     _editingId = id;
     _resetProfileTypeFields($c);
@@ -1240,9 +1243,72 @@ async function openModal($c, id) {
 }
 
 function closeModal($c) {
+    _profileEditorRevision++;
     _hideFormOnly($c);
     _editingId = null;
     $c.find('.am2-ac-row').removeClass('is-selected');
+}
+
+function _profileConnectionOrigin(value) {
+    try {
+        const url = new URL(value);
+        if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) return null;
+        return url.origin;
+    } catch { return null; }
+}
+
+async function _prepareProfileConnection($c, action) {
+    const id = _editingId;
+    const revision = _profileEditorRevision;
+    const read = () => ({
+        provider: $c.find('#amily2_pf_provider').val(),
+        apiUrl: $c.find('#amily2_pf_url').val().trim(),
+        key: $c.find('#amily2_pf_key').val().trim(),
+        type: $c.find('#amily2_pf_type').val(),
+    });
+    const draft = read();
+    const profile = id ? apiProfileManager.getProfile(id) : null;
+    const isEditorCurrent = () => {
+        const current = read();
+        return _editingId === id && _profileEditorRevision === revision
+            && Object.keys(draft).every(key => draft[key] === current[key]);
+    };
+    const isCurrent = () => {
+        const saved = id ? apiProfileManager.getProfile(id) : null;
+        return isEditorCurrent() && (!id || (saved && saved.apiUrl === profile?.apiUrl && saved.provider === profile?.provider
+            && saved.connectionSourceId === profile?.connectionSourceId));
+    };
+    const assertCurrent = () => {
+        if (!isCurrent()) throw new Error('PROFILE_CONNECTION_CHANGED');
+    };
+    if (id && !profile) throw new Error('PROFILE_CONNECTION_UNAVAILABLE');
+    if (profile?.connectionSourceId && (draft.apiUrl !== profile.apiUrl || draft.provider !== profile.provider || draft.key)) {
+        throw new Error('PROFILE_CONNECTION_INHERITED');
+    }
+    const managed = ['sillytavern_backend', 'sillytavern_preset'].includes(draft.provider);
+    if ((!managed || action !== 'save') && (draft.apiUrl || action !== 'save') && !_profileConnectionOrigin(draft.apiUrl)) {
+        toastr.warning(t('apiTableUi.api.invalidAddress'));
+        return null;
+    }
+    const oldKey = id ? await apiProfileManager.getKey(id) ?? '' : '';
+    assertCurrent();
+    const apiKey = draft.key || oldKey;
+    // Native Google probes use their fixed endpoint, not the URL field.
+    const targetUrl = action !== 'save' && draft.provider === 'google'
+        ? 'https://generativelanguage.googleapis.com' : draft.apiUrl;
+    const from = _profileConnectionOrigin(profile?.apiUrl);
+    const to = _profileConnectionOrigin(targetUrl);
+    const downgrade = from?.startsWith('https:') && to?.startsWith('http:');
+    const reusesKey = oldKey && apiKey === oldKey;
+    if (apiKey && to && from !== to && (reusesKey || downgrade)) {
+        const message = t(reusesKey ? 'apiTableUi.api.reuseKeyConfirm' : 'apiTableUi.api.keyDestinationConfirm', {
+            from: from || t('apiTableUi.api.unknownOrigin'),
+            to: to || t('apiTableUi.api.unknownOrigin'),
+        }) + (downgrade ? '\n\n' + t('apiTableUi.api.keyDowngradeWarning') : '');
+        if (!confirm(message)) return null;
+        assertCurrent();
+    }
+    return { id, apiKey, keyUpdate: draft.key, isCurrent, isEditorCurrent, assertCurrent };
 }
 
 async function saveProfile($c) {
@@ -1252,7 +1318,6 @@ async function saveProfile($c) {
     const name     = $c.find('#amily2_pf_name').val().trim();
     const provider = $c.find('#amily2_pf_provider').val();
     const apiUrl   = $c.find('#amily2_pf_url').val().trim();
-    const apiKey   = inheritsConnection ? '' : $c.find('#amily2_pf_key').val();
     const $sel = $c.find('#amily2_pf_model_select');
     const model = ($sel.is(':visible') ? $sel.val() : $c.find('#amily2_pf_model').val()).trim();
 
@@ -1293,25 +1358,18 @@ async function saveProfile($c) {
     const $btn = $c.find('#amily2_profile_modal_save').prop('disabled', true);
 
     try {
-        let profileId;
-        if (_editingId) {
-            apiProfileManager.updateProfile(_editingId, data);
-            profileId = _editingId;
-        } else {
-            profileId = apiProfileManager.createProfile(data);
-        }
+        const connection = await _prepareProfileConnection($c, 'save');
+        if (!connection) return;
+        connection.assertCurrent();
+        await apiProfileManager.saveProfileWithKey(connection.id, data,
+            inheritsConnection ? '' : connection.keyUpdate, connection.isCurrent);
 
-        // 保存 Key（非空才写入）
-        if (apiKey) {
-            await apiProfileManager.setKey(profileId, apiKey);
-        }
-
-        closeModal($c);
+        if (connection.isEditorCurrent()) closeModal($c);
         renderProfileList($c);
         renderSlotAssignments($c);
         toastr.success(t('apiTableUi.api.saved', { name }));
     } catch (e) {
-        console.error('[ApiConfig] 保存 Profile 失败:', e);
+        console.error('[ApiConfig] 保存 Profile 失败。');
         toastr.error(t('apiTableUi.api.saveFailed'));
     } finally {
         $btn.prop('disabled', false);
@@ -1324,18 +1382,16 @@ async function _fetchModels($c) {
     const apiUrl   = $c.find('#amily2_pf_url').val().trim();
     const provider = $c.find('#amily2_pf_provider').val();
 
-    // 编辑模式下 Key 不回显，字段为空时从 ApiKeyStore 读取已存储的 Key
-    let apiKey = $c.find('#amily2_pf_key').val().trim();
-    if (!apiKey && _editingId) {
-        apiKey = await apiProfileManager.getKey(_editingId) ?? '';
-    }
-
     if (!apiUrl) { toastr.warning(t('apiTableUi.api.addressRequired')); return; }
 
     const $btn = $c.find('#amily2_pf_fetch_models').prop('disabled', true);
     $btn.html(`<i class="fas fa-spinner fa-spin"></i> ${apiTableHtml('apiTableUi.api.fetching')}`);
 
     try {
+        const connection = await _prepareProfileConnection($c, 'models');
+        if (!connection) return;
+        connection.assertCurrent();
+        const { apiKey } = connection;
         let models;
 
         if (provider === 'google') {
@@ -1343,7 +1399,7 @@ async function _fetchModels($c) {
             if (!apiKey) { toastr.warning(t('apiTableUi.api.googleKeyRequired')); return; }
             const resp = await fetch(
                 'https://generativelanguage.googleapis.com/v1beta/models',
-                { headers: { 'x-goog-api-key': apiKey } }
+                { headers: { 'x-goog-api-key': apiKey }, redirect: 'error' }
             );
             if (!resp.ok) {
                 const status = resp.status;
@@ -1388,6 +1444,7 @@ async function _fetchModels($c) {
             models = list.map(m => m.id ?? m.name ?? m).filter(m => typeof m === 'string' && m);
         }
 
+        connection.assertCurrent();
         if (models.length === 0) {
             toastr.warning(t('apiTableUi.api.modelsEmpty'));
             return;
@@ -1404,7 +1461,7 @@ async function _fetchModels($c) {
 
         toastr.success(t('apiTableUi.api.modelsFetched', { count: models.length }));
     } catch (e) {
-        toastr.error(t('apiTableUi.api.fetchFailed', { error: _apiErrorText(e) }));
+        toastr.error(t('apiTableUi.api.fetchFailed', { error: t(_knownApiErrorKey(e) || 'apiTableUi.vault.unknownError') }));
     } finally {
         $btn.prop('disabled', false).html(`<i class="fas fa-list"></i> ${apiTableHtml('apiTableUi.api.fetch')}`);
     }
@@ -1413,12 +1470,6 @@ async function _fetchModels($c) {
 async function _testConnection($c) {
     const apiUrl   = $c.find('#amily2_pf_url').val().trim();
     const provider = $c.find('#amily2_pf_provider').val();
-
-    // 编辑模式下 Key 不回显，字段为空时从 ApiKeyStore 读取已存储的 Key
-    let apiKey = $c.find('#amily2_pf_key').val().trim();
-    if (!apiKey && _editingId) {
-        apiKey = await apiProfileManager.getKey(_editingId) ?? '';
-    }
 
     // An existing profile must share the exact same limiter bucket as every
     // feature slot using it. Use only its persisted ID/RPM; unsaved form values
@@ -1436,6 +1487,13 @@ async function _testConnection($c) {
     $btn.html(`<i class="fas fa-spinner fa-spin"></i> ${apiTableHtml('apiTableUi.api.testing')}`);
 
     try {
+        const connection = await _prepareProfileConnection($c, 'test');
+        if (!connection) {
+            setApiTableText($result, 'apiTableUi.api.testCancelled').css('color', 'var(--SmartThemeQuoteColor)');
+            return;
+        }
+        connection.assertCurrent();
+        const { apiKey } = connection;
         if ($c.find('#amily2_pf_type').val() === 'embedding') {
             const $modelSelect = $c.find('#amily2_pf_model_select');
             const model = ($modelSelect.is(':visible') ? $modelSelect.val() : $c.find('#amily2_pf_model').val()).trim();
@@ -1446,6 +1504,7 @@ async function _testConnection($c) {
             };
             const vectors = await getEmbeddings(['连接测试'], null,
                 savedProfile ? bindSlotProfileRateLimit(settings, savedProfile) : settings);
+            connection.assertCurrent();
             if (!Array.isArray(vectors[0]) || !vectors[0].length || !vectors[0].every(Number.isFinite)) {
                 throw new Error(t('apiTableUi.api.embeddingInvalid'));
             }
@@ -1461,10 +1520,11 @@ async function _testConnection($c) {
             }
             const resp = await fetch(
                 'https://generativelanguage.googleapis.com/v1beta/models',
-                { headers: { 'x-goog-api-key': apiKey } }
+                { headers: { 'x-goog-api-key': apiKey }, redirect: 'error' }
             );
             if (resp.ok) {
                 const data  = await resp.json();
+                connection.assertCurrent();
                 const count = (data.models ?? []).length;
                 setApiTableText($result, count ? 'apiTableUi.api.connectedModels' : 'apiTableUi.api.connected', { count }).css('color', 'var(--green)');
                 toastr.success(t('apiTableUi.api.googlePassed'));
@@ -1492,6 +1552,7 @@ async function _testConnection($c) {
 
         if (modelsResp.ok) {
             const rawData = await modelsResp.json();
+            connection.assertCurrent();
             const rawList = Array.isArray(rawData) ? rawData : (rawData.data ?? rawData.models ?? []);
             const list    = Array.isArray(rawList) ? rawList : [];
             const count   = list.length;
@@ -1504,6 +1565,7 @@ async function _testConnection($c) {
             if (type === 'chat' && model) {
                 setApiTableText($result, 'apiTableUi.api.verifyingCompletion').css('color', 'var(--SmartThemeQuoteColor)');
                 await acquireProfileRequestPermit(rateLimitSettings);
+                connection.assertCurrent();
                 const officialDeepSeek = isOfficialDeepSeekEndpoint(apiUrl);
                 const useStream = $c.find('#amily2_pf_fake_stream').prop('checked') === true;
                 const genResp = await fetch('/api/backends/chat-completions/generate', {
@@ -1526,6 +1588,7 @@ async function _testConnection($c) {
                 const genData = await readOpenAICompatibleResponse(genResp, {
                     stream: useStream,
                 }).catch(() => ({}));
+                connection.assertCurrent();
                 if (!genResp.ok || genData?.error) {
                     const genErr = genData;
                     const errorKey = _knownApiErrorKey(genErr?.error);
@@ -1573,6 +1636,7 @@ const VENDOR_PRESETS = new Set(['anthropic', 'openai', 'google', 'openrouter', '
  * URL 自动填充由 _autofillVendorUrl 单独负责，仅在用户主动 change 时触发。
  */
 async function _handleProviderChange($c, provider) {
+    $c.find('#amily2_pf_st_preset_warning').prop('hidden', provider !== 'sillytavern_preset');
     const $urlRow   = $c.find('#amily2_pf_url_row');
     const $note     = $c.find('#amily2_pf_vendor_note');
     const $noteText = $c.find('#amily2_pf_vendor_note_text');

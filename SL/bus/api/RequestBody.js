@@ -1,5 +1,6 @@
 import Options from './Options.js';
 import { detectVendorSync, getRegistry } from '../../../utils/api-vendor.js';
+import { sanitizeCustomModelParams } from '../../../core/api/safe-call-options.js';
 
 getRegistry().catch(() => {});
 
@@ -34,7 +35,7 @@ export class RequestBody {
 
         // 基础字段 (Base Fields)
         const payload = {
-            ...params,
+            ...sanitizeCustomModelParams(params),
             chat_completion_source: 'openai',
             messages: this.messages,
             model: model,
@@ -73,7 +74,7 @@ export class RequestBody {
      */
     toMinimalPayload() {
         return {
-            ...this.options.params,
+            ...sanitizeCustomModelParams(this.options.params),
             messages: this.messages,
             // 同样需要联动
             stream: this.options.fakeStream,
