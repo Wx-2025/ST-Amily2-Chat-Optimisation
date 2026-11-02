@@ -86,6 +86,18 @@
     <div class="lore-config-grid">
         <!-- Left Column -->
         <div class="amily2_settings_block grid-left-col">
+            <label for="historiography_storage_mode" data-amily-i18n="summaryWorkflow.storageMode">史册存储</label>
+            <select id="historiography_storage_mode" class="text_pole">
+                <option value="chat" data-amily-i18n="summaryWorkflow.chatStorage">当前聊天（独立进度）</option>
+                <option value="worldbook" data-amily-i18n="summaryWorkflow.sharedStorage">世界书（跨聊天共享进度）</option>
+            </select>
+            <label for="historiography_chat_injection" data-amily-i18n="summaryWorkflow.chatInjection">聊天史册注入</label>
+            <select id="historiography_chat_injection" class="text_pole">
+                <option value="character" data-amily-i18n="summaryWorkflow.characterInjection">随角色世界书</option>
+                <option value="chat" data-amily-i18n="summaryWorkflow.chatInjectionFirst">随聊天世界书</option>
+                <option value="off" data-amily-i18n="summaryWorkflow.injectionOff">不注入</option>
+            </select>
+            <div id="historiography_worldbook_target_controls" hidden>
             <label data-amily-i18n="summaryWorkflow.writeTarget">总结写入位置:</label>
             <div class="radio-group vertical">
                 <input type="radio" id="amily2_target_main" name="amily2_lorebook_target" value="character_main" checked>
@@ -94,6 +106,7 @@
                 <label for="amily2_target_dedicated" data-amily-i18n="summaryWorkflow.dedicatedWorldbook">写入【独立档案】</label>
             </div>
             <small class="notes" data-amily-i18n="summaryWorkflow.dedicatedHelp">更推荐独立档案：会新建一本世界书专门放总结。</small>
+            </div>
         </div>
         <!-- Right Column -->
         <div class="grid-right-col">
@@ -338,6 +351,35 @@
             <small class="notes" data-amily-i18n="summaryWorkflow.notRead">尚未读取当前活动史册。</small>
         </div>
 
+        <div class="amily2_settings_block">
+            <label for="historiography_copy_source" data-amily-i18n="summaryWorkflow.copySource">迁入来源世界书</label>
+            <select id="historiography_copy_source" class="text_pole"></select>
+            <div class="editor-buttons-panel">
+                <button id="historiography_copy_to_chat" class="menu_button secondary small_button interactable" type="button"><i class="fas fa-file-import"></i> <span data-amily-i18n="summaryWorkflow.copyToChat">预览并复制到当前聊天</span></button>
+                <button id="historiography_export_card" class="menu_button secondary small_button interactable" type="button"><i class="fas fa-file-export"></i> <span data-amily-i18n="summaryWorkflow.exportCard">导出随卡世界书快照</span></button>
+            </div>
+            <div class="amily2_settings_block" id="historiography_transfer_controls" style="width:100%;min-width:0">
+                <label for="historiography_transfer_kind" data-amily-i18n="summaryWorkflow.transferKind">聊天接续类型</label>
+                <select id="historiography_transfer_kind" class="text_pole">
+                    <option value="import" data-amily-i18n="summaryWorkflow.transferImportKind">跨实例导入</option>
+                    <option value="branch" data-amily-i18n="summaryWorkflow.transferBranchKind">创建分支</option>
+                    <option value="rename" data-amily-i18n="summaryWorkflow.transferRenameKind">重命名</option>
+                    <option value="card-update" data-amily-i18n="summaryWorkflow.transferCardUpdateKind">角色卡更新接续</option>
+                </select>
+                <label for="historiography_transfer_mode" data-amily-i18n="summaryWorkflow.transferMode">接续模式</label>
+                <select id="historiography_transfer_mode" class="text_pole">
+                    <option value="resume" data-amily-i18n="summaryWorkflow.transferResumeMode">核对消息并接续进度</option>
+                    <option value="snapshot" data-amily-i18n="summaryWorkflow.transferSnapshotMode">仅背景快照（不接续进度）</option>
+                </select>
+                <div style="display:flex;flex-wrap:wrap;gap:6px;min-width:0">
+                    <button id="historiography_transfer_export" class="menu_button secondary small_button interactable" type="button"><i class="fas fa-download"></i> <span data-amily-i18n="summaryWorkflow.transferExport">导出接续 JSON 包</span></button>
+                    <button id="historiography_transfer_raw" class="menu_button secondary small_button interactable" type="button"><i class="fas fa-file-export"></i> <span data-amily-i18n="summaryWorkflow.transferRaw">导出原始只读备份</span></button>
+                    <button id="historiography_transfer_import" class="menu_button secondary small_button interactable" type="button"><i class="fas fa-file-import"></i> <span data-amily-i18n="summaryWorkflow.transferImport">导入接续 JSON 包并预览</span></button>
+                    <button id="historiography_transfer_background" class="menu_button secondary small_button interactable" type="button"><i class="fas fa-copy"></i> <span data-amily-i18n="summaryWorkflow.transferBackground">将当前复制元数据预览为背景</span></button>
+                </div>
+                <input id="historiography_transfer_file" type="file" accept=".json,application/json" hidden>
+            </div>
+        </div>
         <div class="editor-buttons-panel" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px;">
             <button id="historiography_refresh_ledger_status" class="menu_button secondary small_button interactable" type="button">
                 <i class="fas fa-sync-alt"></i> <span data-amily-i18n="summaryWorkflow.refreshStatus">刷新状态</span>

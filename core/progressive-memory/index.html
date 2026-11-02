@@ -46,11 +46,14 @@
         <div class="sm-control-block" style="display: block;">
             <strong id="pm-runtime-state" aria-live="polite"><span data-amily-i18n="memoryUi.status.context-not-ready">等待当前聊天的表格状态就绪</span></strong>
             <small id="pm-runtime-detail" style="color: #888; font-size: 0.8em; display: block; margin-top: 4px;"><span data-amily-i18n="memoryUi.noSample">尚无本轮取样数据</span></small>
+            <pre id="pm-source-diagnostics" style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto;"></pre>
         </div>
         <button type="button" id="pm-disable-clear" class="menu_button secondary interactable" data-amily-i18n-title="memoryUi.disableTip" title="立即关闭渐进记忆、使在途取样失效并清除当前宿主提示词注入">
             <i class="fas fa-power-off"></i> <span data-amily-i18n="memoryUi.disableClear">停用并清除</span>
         </button>
     </fieldset>
+
+    <div id="pm-sources-v2"></div>
 
     <fieldset class="sm-settings-group">
         <legend><i class="fas fa-sliders-h"></i> <span data-amily-i18n="memoryUi.sampling">取样设置</span></legend>
@@ -69,22 +72,26 @@
         <small style="color: #888; font-size: 0.8em; display: block; margin-top: -5px; margin-bottom: 10px; padding-left: 5px;">
             <span data-amily-i18n="memoryUi.samplingHelp">表格按时间从旧到新：最新几行完整保留；其余历史对半拆开，较近一半均匀抽若干行、更远一半再均匀抽若干行（固定间距取样，不随机）。</span>
         </small>
-        <div class="sm-control-block">
+        <div class="sm-control-block" data-pm-legacy-budget>
             <label data-amily-i18n-title="memoryUi.tokensTip" title="取样内容的用户 Token 上限；0 = 不设置更低的用户上限，仍受系统硬上限。超出时从最旧的行开始丢弃，优先保住最新行"><span data-amily-i18n="memoryUi.tokens">内容 Token 上限:</span></label>
             <input type="number" id="pm-max-tokens" min="0" step="100" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 100px;" value="0">
         </div>
-        <small style="color: #888; font-size: 0.8em; display: block; margin-top: -5px; margin-bottom: 10px; padding-left: 5px;">
+        <small data-pm-legacy-budget style="color: #888; font-size: 0.8em; display: block; margin-top: -5px; margin-bottom: 10px; padding-left: 5px;">
             <span data-amily-i18n="memoryUi.tokensHelp">Token 为粗略估算（CJK 约 1/字，其余按 ~4 字符/token）。0 = 不设置更低的用户上限，仍受系统硬上限。</span>
         </small>
         <div class="sm-control-block">
             <label data-amily-i18n-title="memoryUi.skipTip" title="取样前先跳过最新 N 行——它们对应还在聊天窗口里的消息，原文已经在上下文里，再塞摘要等于重复。0 = 不跳过。"><span data-amily-i18n="memoryUi.skip">跳过最新可见行数:</span></label>
             <input type="number" id="pm-reserve-recent" min="0" step="1" style="background: rgba(0, 0, 0, 0.3); border: 1px solid #444; color: #e0e0e0; padding: 5px; border-radius: 4px; width: 80px;" value="0">
         </div>
+        <div class="sm-control-block">
+            <label for="pm-min-eligible-rows" data-amily-i18n="tableRuntimeUi.foundation.minEligibleRows">渐进记忆最少候选行数（跳过最新行后）</label>
+            <input type="number" id="pm-min-eligible-rows" min="1" step="1" value="1" style="width: 80px;">
+        </div>
         <small style="color: #888; font-size: 0.8em; display: block; margin-top: -5px; margin-bottom: 10px; padding-left: 5px;">
             <span data-amily-i18n="memoryUi.skipHelpBefore">可与「自动隐藏」配合：取样只针对已经滚出视野的旧摘要。注意这里按</span><strong><span data-amily-i18n="memoryUi.tableRows">表格行</span></strong><span data-amily-i18n="memoryUi.skipHelpAfter">算，不是聊天消息层——一行总结往往覆盖很多层消息。</span>
         </small>
     </fieldset>
-    <div class="sm-intro-box" style="border-left: 3px solid #ffc107;">
+    <div class="sm-intro-box" data-pm-legacy-budget style="border-left: 3px solid #ffc107;">
         <small style="color: #bbb; font-size: 0.85em;"><i class="fas fa-info-circle"></i> <span data-amily-i18n="memoryUi.triggerHelp">什么时候会生效：来源表有效行数低于总结模块的「自动隐藏保留数」时不会塞进上下文——内容太少时近期对话本身就够用。该门槛跟总结模块的自动隐藏设置走，不用单独再配。</span></small>
     </div>
 

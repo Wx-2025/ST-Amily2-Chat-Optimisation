@@ -673,12 +673,13 @@ hr.header-divider {
 /* === New Lore Config Grid Layout === */
 #amily2_chat_optimiser .lore-config-grid {
     display: grid;
-    grid-template-columns: 1fr 1.5fr;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
     gap: 15px;
     align-items: start;
 }
 
 #amily2_chat_optimiser .grid-left-col {
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -686,6 +687,7 @@ hr.header-divider {
 }
 
 #amily2_chat_optimiser .grid-right-col {
+    min-width: 0;
     display: flex;
     flex-direction: column;
     gap: 10px;
