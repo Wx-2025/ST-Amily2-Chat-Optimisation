@@ -11,6 +11,9 @@ import { showHistoriographyRecoveryDialog } from './historiography-recovery-dial
 import { showLegacyHistoricalRecoveryDialog } from './historiography-legacy-recovery-dialog.js';
 import { bindLegacyRecoveryScan } from './historiography-legacy-scan.js';
 import { bindChatSummaryTransferControls } from './historiography-chat-transfer-dialog.js';
+import { bindChatSummaryClearControls } from './historiography-chat-clear.js';
+import { bindSummaryHistoryCleanup } from './historiography-history-cleanup.js';
+import { bindSummaryReconciliation } from './historiography-reconciliation.js';
 import { previewChatSummaryTransfer, confirmChatSummaryTransfer, exportChatSummaryTransferSource, exportRawChatLedger } from '../core/historiography/storage.js';
 import { pluginAuthStatus } from '../utils/auth-state.js';
 import { configManager } from '../utils/config/ConfigManager.js';
@@ -38,6 +41,9 @@ import {
   getActiveLegacyRecoverySnapshot,
   applyActiveLegacyRecovery,
   previewWorldbookToChat, copyWorldbookToChat, exportChatSummaryWorldbook,
+  previewActiveChatSummaryClear, clearActiveChatSummary,
+  previewActiveSummaryHistoryCleanup, clearActiveSummaryHistory,
+  previewActiveSummaryReconciliation, acceptActiveSummaryReconciliation,
 } from "../core/historiographer.js";
 import {
   HISTORIOGRAPHY_PROTOCOL_LEGACY,
@@ -77,6 +83,7 @@ function formatLedgerValidationError(message) {
 
 let unsubscribeLedgerLocale = () => {};
 let unsubscribeLedgerStatus = () => {};
+let unsubscribeChatClear = () => {};
 
 function buildLedgerStatusHtml(status) {
   if (!status.available) {
@@ -296,8 +303,9 @@ export function bindHistoriographyEvents() {
           }
         };
       },
+      getLockReason: () => t('worldEditorUi.managed.lockReason'),
       onBlocked: () => toastr.warning(
-        t('summary.structureProtected'),
+        t('summary.structureProtected') + ' ' + t('worldEditorUi.managed.lockReason'),
         t('summaryWorkflow.readOnly'),
       ),
       onError: error => console.warn(
@@ -605,6 +613,7 @@ export function bindHistoriographyEvents() {
     });
 
     unsubscribeLedgerStatus();
+    unsubscribeChatClear();
     const statusRefresh = createLedgerStatusRefresh({
       load: getHistoriographyLedgerStatus,
       scope: () => {
@@ -666,9 +675,53 @@ export function bindHistoriographyEvents() {
         URL.revokeObjectURL(href);
       },
     });
+    const chatClear = bindChatSummaryClearControls({
+      root: document, getContext, getSettings: () => extension_settings[extensionName],
+      getAuthState: () => pluginAuthStatus,
+      previewClear: previewActiveChatSummaryClear,
+      clear: async (preview, options) => {
+        try { return await clearActiveChatSummary(preview, options); }
+        finally {
+          const auto = document.getElementById('amily2_mhb_small_auto_enabled');
+          if (auto) auto.checked = extension_settings[extensionName]?.historiographySmallAutoEnable === true;
+        }
+      },
+      showHtmlModal, escapeHtml: _escapeHtml, t,
+      onSaved: () => { void refreshLedgerStatus(); },
+      download: (json, filename) => {
+        const href = URL.createObjectURL(new Blob([json], { type: 'application/json;charset=utf-8' }));
+        const anchor = document.createElement('a');
+        anchor.href = href; anchor.download = filename;
+        document.body.appendChild(anchor); anchor.click(); anchor.remove();
+        setTimeout(() => URL.revokeObjectURL(href), 1000);
+      },
+    });
+    const historyCleanup = bindSummaryHistoryCleanup({ root: document,
+      preview: previewActiveSummaryHistoryCleanup, clear: clearActiveSummaryHistory,
+      showHtmlModal, t, escapeHtml: _escapeHtml, onSaved: () => refreshLedgerStatus(),
+      download: (json, filename) => {
+        const href = URL.createObjectURL(new Blob([json], { type: 'application/json;charset=utf-8' }));
+        const anchor = document.createElement('a');
+        anchor.href = href; anchor.download = filename;
+        document.body.appendChild(anchor); anchor.click(); anchor.remove();
+        setTimeout(() => URL.revokeObjectURL(href), 60000);
+      },
+    });
+    const summaryComparison = bindSummaryReconciliation({ root: document,
+      preview: previewActiveSummaryReconciliation, accept: acceptActiveSummaryReconciliation,
+      showHtmlModal, t, escapeHtml: _escapeHtml, onSaved: refreshLedgerStatus,
+      download: (json, filename) => {
+        const href = URL.createObjectURL(new Blob([json], { type: 'application/json' }));
+        const anchor = document.createElement('a');
+        anchor.href = href; anchor.download = filename;
+        document.body.append(anchor); anchor.click(); anchor.remove();
+        setTimeout(() => URL.revokeObjectURL(href), 1000);
+      },
+    });
+    unsubscribeChatClear = () => { chatClear.dispose(); historyCleanup.dispose(); summaryComparison.dispose(); };
     const renderStorage = () => {
       const settings = extension_settings[extensionName];
-      storageMode.value = settings.historiographyStorageMode === 'worldbook' ? 'worldbook' : 'chat';
+      storageMode.value = settings.historiographyStorageMode === 'chat' ? 'chat' : 'worldbook';
       chatInjection.value = settings.historiographyChatInjection || 'character';
       const shared = storageMode.value === 'worldbook';
       document.getElementById('historiography_worldbook_target_controls').hidden = !shared;
@@ -676,6 +729,9 @@ export function bindHistoriographyEvents() {
       copyButton.disabled = shared;
       exportCard.disabled = shared;
       chatTransfers.refresh();
+      chatClear.refresh();
+      historyCleanup.refresh();
+      summaryComparison.refresh();
       const selected = copySource.value;
       copySource.replaceChildren(...world_names.map(name => new Option(name, name)));
       if (world_names.includes(selected)) copySource.value = selected;
@@ -688,11 +744,14 @@ export function bindHistoriographyEvents() {
         extension_settings[extensionName].historiographyStorageMode = selectedMode;
         saveSettings(); renderStorage(); void refreshLedgerStatus();
       };
-      if (storageMode.value === 'worldbook') {
-        showHtmlModal(t('summaryWorkflow.storageMode'), _escapeHtml(t('summaryWorkflow.sharedStorageWarning')), {
-          onOk: apply, onCancel: renderStorage,
-        });
-      } else apply();
+      showHtmlModal(t('summaryWorkflow.storageMode'), _escapeHtml(t(selectedMode === 'chat'
+        ? 'summaryWorkflow.chatStorageWarning' : 'summaryWorkflow.sharedStorageWarning')), {
+        onOk: apply, onCancel: renderStorage,
+        onShow: dialog => {
+          dialog[0].addEventListener('close', renderStorage, { once: true });
+          dialog[0].addEventListener('cancel', renderStorage, { once: true });
+        },
+      });
     });
     chatInjection.addEventListener('change', () => {
       extension_settings[extensionName].historiographyChatInjection = chatInjection.value;

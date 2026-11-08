@@ -509,18 +509,28 @@
     #world-editor-container .world-editor-header-controls,
     #world-editor-container .world-editor-toolbar-left,
     #world-editor-container .world-editor-toolbar-right {
-        flex-direction: column;
-        align-items: stretch;
-        width: 100%;
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    #world-editor-container .world-editor-toolbar {
+        flex-wrap: wrap;
+        gap: 10px;
     }
 
     #world-editor-container .world-editor-btn {
-        width: 100%;
-        margin-bottom: 5px;
+        width: auto;
+        min-height: 32px;
+        margin-bottom: 0;
     }
 
     #world-editor-container .world-editor-search-box {
-        width: 100%;
+        flex: 1 1 140px;
+        min-width: 0;
+        max-width: 100%;
         box-sizing: border-box;
     }
 
@@ -617,10 +627,12 @@
     }
 
     #world-editor-container .world-editor-batch-actions {
-        flex-direction: column;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 8px;
     }
 
-    #world-editor-container .world-editor-batch-actions .world-editor-btn {
-        width: auto;
+    #world-editor-container .world-editor-selected-count {
+        flex-basis: 100%;
     }
 }

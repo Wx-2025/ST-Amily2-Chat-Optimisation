@@ -997,7 +997,7 @@ export const mainOptDefaults = {
 
 export const loreDefaults = {
   lorebookTarget: "character_main",
-  historiographyStorageMode: "chat",
+  historiographyStorageMode: "worldbook",
   historiographyChatInjection: "character",
   loreActivationMode: 'keyed',
   loreInsertionPosition: 'at_depth',

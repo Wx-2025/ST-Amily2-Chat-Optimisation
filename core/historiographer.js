@@ -12,12 +12,19 @@ import {
   withLoreLock,
   loadWorldInfo,
   loadBookFresh,
+  previewChatLedgerClear,
+  clearChatLedger,
+  previewChatSummaryReconciliation,
+  acceptChatSummaryReconciliation,
 } from "./historiography/storage.js";
 import { chatLedgerTarget, chatLedgerIdentity, isChatLedgerTarget } from './historiography/chat-ledger.js';
 import { getChatContextEpoch, captureChatScope, chatScopesMatch } from './table-system/infra/chat-scope.js';
 import { prepareChatLedgerCopy, createCardSummarySnapshot } from './historiography/chat-transfer.js';
 import { hashHistoriographyText } from './historiography/segmented-ledger.js';
 import { assertLegacyRecoveryScanCurrent } from './historiography/legacy-recovery.js';
+import { buildRevisionHistoryCleanup } from './historiography/revision-history.js';
+import { createEntryManager } from './historiography/entry-management.js';
+import { createSummaryReconciler } from './historiography/reconciliation.js';
 import { extensionName, saveSettings as savePluginSettings } from "../utils/settings.js";
 import { t } from '../utils/i18n/index.js';
 import { pluginAuthStatus } from "../utils/auth-state.js";
@@ -174,11 +181,88 @@ const leaseRecoveryEpochs = new WeakMap();
 const revisionRecoveryLeases = new WeakMap();
 const legacyRecoveryLeases = new WeakMap();
 
+export function pauseForLedgerEntryRemoval(bookName) {
+  recoveryEpochs.set(bookName, (recoveryEpochs.get(bookName) || 0) + 1);
+  if (isExpeditionRunning) stopExpedition();
+  const settings = extension_settings[extensionName];
+  if (settings) {
+    settings.historiographySmallAutoEnable = false;
+    savePluginSettings();
+  }
+}
+
 function invalidateReboundChatSummary(event) {
   const target = event.detail?.target;
   if (!isChatLedgerTarget(target)) return;
   recoveryEpochs.set(target, (recoveryEpochs.get(target) || 0) + 1);
 }
+
+export function createChatSummaryClearActions({ getContext, getSettings, getAuthState,
+  previewClear, clear, getEpoch, pause }) {
+  const previews = new WeakMap();
+  const stale = () => {
+    throw Object.assign(new Error('Chat summary clear preview is no longer current.'), { code: 'HISTORIOGRAPHY_STALE_LEDGER' });
+  };
+  return {
+    async preview() {
+      const context = getContext();
+      const scope = captureChatScope(context);
+      const identity = chatLedgerIdentity(context);
+      if (!identity || getSettings()?.historiographyStorageMode !== 'chat') stale();
+      const lease = captureHistoriographyOperationLease({ authState: getAuthState(), targetKey: identity });
+      const target = await chatLedgerTarget(context);
+      let epoch = getEpoch(target);
+      // Store guards are synchronous: never pass the async execution-lease checker here.
+      const guard = () => {
+        if (getSettings()?.historiographyStorageMode !== 'chat'
+          || !chatScopesMatch(scope, captureChatScope(getContext()))
+          || chatLedgerIdentity(getContext()) !== identity || getEpoch(target) !== epoch) stale();
+        assertHistoriographyOperationLease(lease, { authState: getAuthState(), targetKey: identity });
+      };
+      guard();
+      const token = await previewClear(target);
+      guard();
+      const raw = token.backup;
+      const populated = value => value != null && !['', '[]', '{}'].includes(
+        typeof value === 'string' ? value : JSON.stringify(value));
+      const hasData = raw != null && (Object.keys(raw.book.entries).length > 0
+        || Object.entries(raw.book).some(([key, value]) => key !== 'entries' && populated(value))
+        || Object.entries(raw).some(([key, value]) => !['version', 'identity', 'revision', 'book'].includes(key) && populated(value)));
+      const preview = Object.freeze({ target, identity, revision: token.revision, hasData,
+        get backup() { return token.backup; },
+      });
+      previews.set(preview, { token, guard, beforeWrite: () => {
+        guard();
+        pause(target);
+        // Accept only our own single invalidation, never swallow a concurrent epoch change.
+        epoch += 1;
+        guard();
+      } });
+      return preview;
+    },
+    async clear(preview, { confirmed, backupConfirmed } = {}) {
+      const pending = previews.get(preview);
+      if (!pending) stale();
+      if (confirmed !== true) return { ok: true, committed: false, changed: false };
+      pending.guard();
+      if (!preview.hasData) return { ok: true, committed: false, changed: false };
+      if (backupConfirmed !== true) throw Object.assign(new Error('Backup confirmation required.'), {
+        code: 'HISTORIOGRAPHY_CLEAR_BACKUP_REQUIRED',
+      });
+      previews.delete(preview);
+      return clear(pending.token, { confirmed: true, backupConfirmed: true,
+        assertCurrent: pending.guard, beforeWrite: pending.beforeWrite });
+    },
+  };
+}
+
+const chatSummaryClearActions = createChatSummaryClearActions({
+  getContext, getSettings: () => extension_settings[extensionName], getAuthState: () => pluginAuthStatus,
+  previewClear: previewChatLedgerClear, clear: clearChatLedger,
+  getEpoch: target => recoveryEpochs.get(target) || 0, pause: pauseForLedgerEntryRemoval,
+});
+export const previewActiveChatSummaryClear = () => chatSummaryClearActions.preview();
+export const clearActiveChatSummary = (preview, options) => chatSummaryClearActions.clear(preview, options);
 
 document.addEventListener('amily2:historiographyChatRebound', invalidateReboundChatSummary);
 
@@ -468,6 +552,85 @@ export async function getActiveLedgerRevisionSnapshot() {
   await assertHistoriographyTargetLease(bookName, lease);
   revisionRecoveryLeases.set(snapshot, lease);
   return snapshot;
+}
+
+const historyCleanupLeases = new WeakMap();
+const summaryComparisonLeases = new WeakMap();
+const createComparisonEntry = (name, draft) => {
+  const entry = createWorldInfoEntry(name, draft);
+  const key = Object.keys(draft.entries).find(id => draft.entries[id] === entry);
+  if (!entry || key === undefined) throw new Error('Summary entry creation failed.');
+  return { key, uid: String(entry.uid ?? key), entry };
+};
+const summaryReconciler = createSummaryReconciler({ load: loadBookFresh, mutate: mutateBookStrict,
+  createEntry: createComparisonEntry });
+
+export async function previewActiveSummaryReconciliation() {
+  const bookName = await getTargetLorebookName();
+  if (!bookName) throw new Error('No summary target.');
+  const lease = await captureHistoriographyExecutionLease({ targetLorebookName: bookName });
+  const guard = () => assertHistoriographyTargetLease(bookName, lease);
+  const preview = isChatLedgerTarget(bookName)
+    ? await previewChatSummaryReconciliation(bookName) : await summaryReconciler.preview(bookName, guard);
+  await guard();
+  summaryComparisonLeases.set(preview, { lease, guard });
+  return preview;
+}
+
+export async function acceptActiveSummaryReconciliation(preview, options) {
+  const pending = summaryComparisonLeases.get(preview);
+  if (!pending || options?.confirmed !== true || options?.backupConfirmed !== true) throw new Error('Comparison confirmation required.');
+  await pending.guard();
+  summaryComparisonLeases.delete(preview);
+  const result = isChatLedgerTarget(preview.bookName)
+    ? await acceptChatSummaryReconciliation(preview, { ...options, assertCurrent: pending.guard,
+      createEntry: draft => createComparisonEntry(preview.bookName, draft) })
+    : await summaryReconciler.accept(preview, options);
+  if (!result.verified) throw new Error('Summary acceptance save is unconfirmed.');
+  recoveryEpochs.set(preview.bookName, (recoveryEpochs.get(preview.bookName) || 0) + 1);
+  if (isExpeditionRunning) stopExpedition();
+  await runHistoriographyPostCommitEffect('确认当前总结后暂停自动总结', () => {
+    extension_settings[extensionName].historiographySmallAutoEnable = false;
+    const toggle = document.getElementById('amily2_mhb_small_auto_enabled');
+    if (toggle) toggle.checked = false;
+    savePluginSettings();
+  });
+  await runHistoriographyPostCommitEffect('刷新已确认的总结', () => reloadEditor(preview.bookName));
+  return result;
+}
+const historyCleanupManager = createEntryManager({ load: loadBookFresh,
+  mutate: (name, fn) => mutateBookStrict(name, fn, { verifyAfterSave: true }),
+  // The summary dialog requires an exported backup acknowledgement before apply.
+  backup: async () => true });
+
+export async function previewActiveSummaryHistoryCleanup() {
+  const bookName = await getTargetLorebookName();
+  if (!bookName) throw new Error('No summary target.');
+  const lease = await captureHistoriographyExecutionLease({ targetLorebookName: bookName });
+  if (await historyCleanupManager.reconcile(bookName) === 'conflict') {
+    throw Object.assign(new Error('Cleanup save is uncertain.'), { code: 'ENTRY_SAVE_UNCERTAIN' });
+  }
+  const source = await loadBookFresh(bookName);
+  const plan = await buildRevisionHistoryCleanup(source, bookName);
+  await assertHistoriographyTargetLease(bookName, lease);
+  const preview = Object.freeze({ bookName, removedCount: plan.removedCount, removedBytes: plan.removedBytes,
+    revision: plan.revision, floor: plan.floor, get backup() { return structuredClone(source); } });
+  historyCleanupLeases.set(preview, { lease, source });
+  return preview;
+}
+
+export async function clearActiveSummaryHistory(preview, { confirmed, backupConfirmed } = {}) {
+  const pending = historyCleanupLeases.get(preview);
+  if (!pending || confirmed !== true || backupConfirmed !== true) throw new Error('Cleanup confirmation required.');
+  historyCleanupLeases.delete(preview);
+  const guard = () => assertHistoriographyTargetLease(preview.bookName, pending.lease);
+  await guard();
+  const result = await historyCleanupManager.apply(preview.bookName, pending.source,
+    { type: 'cleanup-summary-history' }, guard);
+  if (result.changed && result.verified) {
+    await runHistoriographyPostCommitEffect('刷新总结历史清理结果', () => reloadEditor(preview.bookName));
+  }
+  return result;
 }
 
 export async function applyActiveLedgerRevisionRecovery(snapshot, checkpointId, keepThroughFloor) {
@@ -3015,7 +3178,7 @@ export async function executeCompilation(worldbook, loreKeys) {
 export async function getTargetLorebookName() {
     const settings = extension_settings[extensionName];
     const context = getContext();
-    if (settings.historiographyStorageMode !== 'worldbook') return chatLedgerTarget(context);
+    if (settings.historiographyStorageMode === 'chat') return chatLedgerTarget(context);
     let targetLorebookName = null;
     switch (settings.lorebookTarget) {
         case "character_main":

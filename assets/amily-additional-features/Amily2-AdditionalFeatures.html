@@ -88,8 +88,8 @@
         <div class="amily2_settings_block grid-left-col">
             <label for="historiography_storage_mode" data-amily-i18n="summaryWorkflow.storageMode">史册存储</label>
             <select id="historiography_storage_mode" class="text_pole">
-                <option value="chat" data-amily-i18n="summaryWorkflow.chatStorage">当前聊天（独立进度）</option>
                 <option value="worldbook" data-amily-i18n="summaryWorkflow.sharedStorage">世界书（跨聊天共享进度）</option>
+                <option value="chat" data-amily-i18n="summaryWorkflow.chatStorage">当前聊天（独立进度）</option>
             </select>
             <label for="historiography_chat_injection" data-amily-i18n="summaryWorkflow.chatInjection">聊天史册注入</label>
             <select id="historiography_chat_injection" class="text_pole">
@@ -357,7 +357,9 @@
             <div class="editor-buttons-panel">
                 <button id="historiography_copy_to_chat" class="menu_button secondary small_button interactable" type="button"><i class="fas fa-file-import"></i> <span data-amily-i18n="summaryWorkflow.copyToChat">预览并复制到当前聊天</span></button>
                 <button id="historiography_export_card" class="menu_button secondary small_button interactable" type="button"><i class="fas fa-file-export"></i> <span data-amily-i18n="summaryWorkflow.exportCard">导出随卡世界书快照</span></button>
+                <button id="historiography_clear_chat" class="menu_button secondary small_button interactable" type="button" hidden disabled><i class="fas fa-trash-alt" aria-hidden="true"></i> <span data-amily-i18n="summaryWorkflow.clearChatTitle">清空当前聊天总结</span></button>
             </div>
+            <p id="historiography_clear_chat_status" role="status" aria-live="polite" style="overflow-wrap:anywhere"></p>
             <div class="amily2_settings_block" id="historiography_transfer_controls" style="width:100%;min-width:0">
                 <label for="historiography_transfer_kind" data-amily-i18n="summaryWorkflow.transferKind">聊天接续类型</label>
                 <select id="historiography_transfer_kind" class="text_pole">
@@ -395,6 +397,12 @@
             </button>
             <button id="historiography_revision_restore" class="menu_button secondary small_button interactable" type="button">
                 <i class="fas fa-history"></i> <span data-amily-i18n="summaryWorkflow.revisionTitle">总结历史／批次回滚</span>
+            </button>
+            <button id="historiography_reconcile" class="menu_button secondary small_button interactable" type="button">
+                <i class="fas fa-not-equal"></i> <span data-amily-i18n="summaryWorkflow.compareTitle">差异核对／确认继续</span>
+            </button>
+            <button id="historiography_clear_history" class="menu_button secondary small_button interactable" type="button">
+                <i class="fas fa-trash"></i> <span data-amily-i18n="summaryWorkflow.cleanupTitle">清除总结历史备份</span>
             </button>
             <button id="historiography_restore_historical" class="menu_button secondary small_button interactable" type="button">
                 <i class="fas fa-undo"></i> <span data-amily-i18n="summaryWorkflow.historyRecoveryTitle">还原历史正文</span>

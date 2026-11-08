@@ -105,7 +105,7 @@ export function bindChatSummaryTransferControls({ root, getContext, getSettings,
         listeners.push(() => element.removeEventListener(type, callback));
     };
     const refresh = () => {
-        const disabled = busy || getSettings()?.historiographyStorageMode === 'worldbook';
+        const disabled = busy || getSettings()?.historiographyStorageMode !== 'chat';
         Object.values(controls).forEach(element => { element.disabled = disabled; });
     };
     function boundary() {
@@ -121,7 +121,7 @@ export function bindChatSummaryTransferControls({ root, getContext, getSettings,
             const currentIdentity = chatLedgerIdentity(current);
             assertHistoriographyOperationLease(lease, { authState: getAuthState(), targetKey: currentIdentity,
                 contextKey: `${currentIdentity}:${captureChatScope(current).epoch}` });
-            if (disposed || !identity || getSettings()?.historiographyStorageMode === 'worldbook'
+            if (disposed || !identity || getSettings()?.historiographyStorageMode !== 'chat'
                 || !chatScopesMatch(scope, captureChatScope(current)) || messages !== chatMessageImage(current.chat)
                 || metadata !== JSON.stringify(current.chatMetadata?.[CHAT_LEDGER_KEY])) throw new Error(tr('ContextChanged'));
         };

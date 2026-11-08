@@ -1,0 +1,18 @@
+import { chatLedgerIdentity } from '../core/historiography/chat-ledger.js';
+import { captureChatScope, chatScopesMatch } from '../core/table-system/infra/chat-scope.js';
+import { captureHistoriographyOperationLease, assertHistoriographyOperationLease } from '../core/historiography/operation-lease.js';
+
+export function captureEntryEditorContext({ name, getContext, getMode, getAuth }) {
+    const contextKey = () => JSON.stringify([chatLedgerIdentity(getContext()), getMode()]);
+    const scope = captureChatScope(getContext());
+    const lease = captureHistoriographyOperationLease({ authState: getAuth(), targetKey: name, contextKey: contextKey() });
+    return () => {
+        assertHistoriographyOperationLease(lease, { authState: getAuth(), targetKey: name, contextKey: contextKey() });
+        const current = captureChatScope(getContext());
+        const sameLobby = !scope.chatId && !current.chatId && scope.epoch === current.epoch
+            && scope.chatRef === current.chatRef && scope.metadataRef === current.metadataRef;
+        if (!sameLobby && !chatScopesMatch(scope, current)) {
+            throw Object.assign(new Error('ENTRY_STALE'), { code: 'ENTRY_STALE' });
+        }
+    };
+}

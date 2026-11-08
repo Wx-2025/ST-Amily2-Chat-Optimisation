@@ -5,6 +5,10 @@ import { showHtmlModal } from '../ui/page-window.js';
 import { safeLorebooks, safeLorebookEntries, safeUpdateLorebookEntries, compatibleWriteToLorebook } from '../core/tavernhelper-compatibility.js';
 import { amilyHelper } from '../core/tavern-helper/main.js';
 import { escapeHTML } from '../utils/utils.js';
+import { loadBookFresh, safeEntryManager, safeEntryMessage, captureEntryScope, currentChatEntryTarget, isChatLedgerTarget } from './safe-entry-service.js';
+import { entryBookHash, isManagedBookEntry, previewEntryDeletion } from '../core/historiography/entry-management.js';
+import { confirmEntryAction, confirmLedgerRemoval, prepareLedgerRemoval } from './safe-entry-service.js';
+import { openManagedEntryDialog } from './managed-entry-dialog.js';
 import {
     t, bindWorldEditorTranslations, refreshWorldEditorTranslations, releaseWorldEditorTranslations, setWorldEditorText,
     worldEditorHtml, worldEditorAttr, worldEditorOption, worldEditorToast,
@@ -33,6 +37,8 @@ class WorldEditor {
         this.filteredEntries = [];
         this.currentEditingEntry = null;
         this.sortState = { key: 'order', asc: true };
+        this.entryReadVersion = 0;
+        this.entryScope = null;
 
         this.init();
     }
@@ -91,6 +97,10 @@ class WorldEditor {
         this.elements.worldEditorRefreshBtn.addEventListener('click', () => this.loadAvailableWorldBooks());
         this.elements.worldEditorCreateBookBtn.addEventListener('click', () => this.createNewWorldBook());
         this.elements.worldEditorCreateEntryBtn.addEventListener('click', () => this.openCreateModal());
+        document.getElementById('world-editor-chat-entries-btn')?.addEventListener('click', async () => {
+            try { this.switchToEntryView(await currentChatEntryTarget()); }
+            catch (error) { this.showError('worldEditorUi.error.loadEntries', () => ({ detail: safeEntryMessage(error) })); }
+        });
 
         // 世界书视图事件
         this.elements.worldBookSearchBox.addEventListener('input', () => this.filterWorldBooks());
@@ -117,6 +127,8 @@ class WorldEditor {
 
     // 视图管理
     switchToBookListView() {
+        this.entryReadVersion++;
+        this.entryScope = null;
         this.elements.worldBookSelectionView.style.display = 'block';
         this.elements.worldEditorEntryView.style.display = 'none';
         this.elements.worldEditorCreateEntryBtn.disabled = true;
@@ -127,12 +139,14 @@ class WorldEditor {
         this.elements.worldBookSelectionView.style.display = 'none';
         this.elements.worldEditorEntryView.style.display = 'block';
         this.elements.worldEditorCreateEntryBtn.disabled = false;
-        setWorldEditorText(this.elements.worldEditorCurrentBookTitle, 'worldEditorUi.currentBook', { name: bookName });
+        if (isChatLedgerTarget(bookName)) setWorldEditorText(this.elements.worldEditorCurrentBookTitle, 'worldEditorUi.chatEntries');
+        else setWorldEditorText(this.elements.worldEditorCurrentBookTitle, 'worldEditorUi.currentBook', { name: bookName });
         this.loadWorldBookEntries(bookName);
     }
 
     // 世界书数据处理
     async loadAvailableWorldBooks() {
+        if (this.currentWorldBook) return this.loadWorldBookEntries(this.currentWorldBook);
         this.setLoading(true);
         try {
             const books = await this.getAllWorldBooks();
@@ -249,7 +263,7 @@ class WorldEditor {
 
     async cloneSelectedBooks() {
         if (this.selectedWorldBooks.size === 0) return;
-        if (!confirm(t('worldEditorUi.confirm.cloneBooks', { count: this.selectedWorldBooks.size }))) return;
+        if (!await confirmEntryAction(t('worldEditorUi.confirm.cloneBooks', { count: this.selectedWorldBooks.size }))) return;
 
         this.setLoading(true);
         try {
@@ -272,7 +286,7 @@ class WorldEditor {
 
     async deleteSelectedBooks() {
         if (this.selectedWorldBooks.size === 0) return;
-        if (!confirm(t('worldEditorUi.confirm.deleteBooks', { count: this.selectedWorldBooks.size }))) return;
+        if (!await confirmEntryAction(t('worldEditorUi.confirm.deleteBooks', { count: this.selectedWorldBooks.size }))) return;
 
         this.setLoading(true);
         try {
@@ -304,6 +318,7 @@ class WorldEditor {
 
     // 条目数据处理 (大部分逻辑与旧版相似)
     async loadWorldBookEntries(worldBookName) {
+        const readVersion = ++this.entryReadVersion;
         if (!worldBookName) {
             this.entries = [];
             this.filteredEntries = [];
@@ -316,7 +331,14 @@ class WorldEditor {
         this.setLoading(true);
         this.currentWorldBook = worldBookName;
         try {
-            const bookData = await loadWorldInfo(worldBookName);
+            const guard = captureEntryScope(worldBookName);
+            const reconciliation = await safeEntryManager.reconcile(worldBookName);
+            if (reconciliation === 'conflict') this.showError('worldEditorUi.error.update', () => ({ detail: t('worldEditorUi.safe.ENTRY_SAVE_UNCERTAIN') }));
+            const bookData = await loadBookFresh(worldBookName);
+            guard();
+            if (this.currentWorldBook !== worldBookName || readVersion !== this.entryReadVersion) return;
+            this.entryScope = guard;
+            this.entryBookSnapshot = structuredClone(bookData);
             if (!bookData || !bookData.entries) {
                 this.entries = [];
                 this.filteredEntries = [];
@@ -351,10 +373,13 @@ class WorldEditor {
             this.renderEntries();
             this.updateEntryCount();
         } catch (error) {
+            if (readVersion !== this.entryReadVersion) return;
+            this.entryScope = null;
             this.showError('worldEditorUi.error.loadEntries', { detail: error.message });
             this.entries = [];
             this.filteredEntries = [];
         } finally {
+            if (readVersion !== this.entryReadVersion) return;
             this.selectedEntries.clear();
             this.updateSelectionUI();
             this.setLoading(false);
@@ -438,6 +463,13 @@ class WorldEditor {
                 this.updateSelectionUI();
             });
             row.querySelector('[data-action="open-editor"]').addEventListener('click', () => this.openEditModal(uid));
+            if (isManagedBookEntry(this.entryBookSnapshot, uid)) {
+                row.querySelectorAll('.inline-edit').forEach(input => { input.disabled = true; });
+                row.querySelectorAll('.inline-toggle').forEach(toggle => {
+                    toggle.addEventListener('click', () => this.openEditModal(uid));
+                });
+                return;
+            }
             row.querySelectorAll('.inline-toggle').forEach(toggle => {
                 toggle.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -471,23 +503,20 @@ class WorldEditor {
      * 使用原生 saveWorldInfo 更新条目，避免界面跳转
      * @param {Array<object>} entriesToUpdate - 需要更新的条目对象数组
      */
-    async updateEntriesWithNativeMethod(entriesToUpdate) {
+    async updateEntriesWithNativeMethod(entriesToUpdate, snapshot = this.entryBookSnapshot, scope = this.entryScope) {
+        const bookName = this.currentWorldBook;
         try {
-            // 将所有更新逻辑统一到 amilyHelper.setLorebookEntries
-            await amilyHelper.setLorebookEntries(this.currentWorldBook, entriesToUpdate);
-
-            // Optimistic UI update in local state
-            for (const updatedEntry of entriesToUpdate) {
-                const localEntry = this.entries.find(e => e.uid === updatedEntry.uid);
-                if (localEntry) {
-                    Object.assign(localEntry, updatedEntry);
-                }
-            }
-            this.renderEntries();
-
+            await safeEntryManager.apply(bookName, snapshot,
+                { type: 'edit', updates: entriesToUpdate }, () => {
+                    if (!scope) throw Object.assign(new Error('ENTRY_STALE'), { code: 'ENTRY_STALE' });
+                    scope();
+                    if (this.currentWorldBook !== bookName) throw Object.assign(new Error('ENTRY_STALE'), { code: 'ENTRY_STALE' });
+                });
+            if (this.currentWorldBook === bookName) await this.loadWorldBookEntries(bookName);
+            return true;
         } catch (error) {
-            this.showError('worldEditorUi.error.update', { detail: error.message });
-            this.loadWorldBookEntries(this.currentWorldBook); // On error, re-sync with truth
+            this.showError('worldEditorUi.error.update', () => ({ detail: safeEntryMessage(error) }));
+            return false;
         }
     }
     
@@ -513,14 +542,13 @@ class WorldEditor {
 
     async batchUpdateEntries(updates, confirmation = null) {
         if (this.selectedEntries.size === 0) return;
-        if (confirmation && !confirm(confirmation)) return;
+        if (confirmation && !await confirmEntryAction(confirmation)) return;
 
         const entriesToUpdate = this.entries
             .filter(e => this.selectedEntries.has(e.uid))
             .map(e => ({ ...e, ...updates }));
 
-        await this.updateEntriesWithNativeMethod(entriesToUpdate);
-        worldEditorToast('success', 'worldEditorUi.success.updatedEntries');
+        if (await this.updateEntriesWithNativeMethod(entriesToUpdate)) worldEditorToast('success', 'worldEditorUi.success.updatedEntries');
     }
 
     toggleBatchRecursion(field, fieldName) {
@@ -539,6 +567,8 @@ class WorldEditor {
             return;
         }
 
+        const source = { name: this.currentWorldBook, snapshot: structuredClone(this.entryBookSnapshot),
+            scope: this.entryScope, entries: structuredClone(this.entries.filter(e => this.selectedEntries.has(e.uid))) };
         // 获取所有世界书列表（包括当前世界书，允许在同一世界书内复制）
         const availableBooks = this.allWorldBooks.map(book => book.name);
 
@@ -582,7 +612,8 @@ class WorldEditor {
                 });
                 bindWorldEditorTranslations(dialog);
             },
-            onOk: async (dialog) => {
+            onOk: (dialog) => {
+                if (dialog.data('saving')) return false;
                 const targetBook = dialog.find('#target-worldbook').val();
                 
                 if (!targetBook) {
@@ -590,20 +621,43 @@ class WorldEditor {
                     return false;
                 }
 
-                await this.performCopy(targetBook);
-                return true;
+                dialog.data('saving', true);
+                dialog.find('button, select').prop('disabled', true);
+                this.performCopy(targetBook, source).then(saved => {
+                    if (saved) { dialog[0].close(); dialog.remove(); }
+                }).finally(() => {
+                    dialog.data('saving', false);
+                    dialog.find('button, select').prop('disabled', false);
+                });
+                return false;
             }
         });
     }
 
-    async performCopy(targetBookName) {
+    async performCopy(targetBookName, source = { name: this.currentWorldBook, snapshot: this.entryBookSnapshot,
+        scope: this.entryScope, entries: this.entries.filter(e => this.selectedEntries.has(e.uid)) }) {
+        const sourceName = source.name;
+        const sourceSnapshot = source.snapshot;
+        const assertCurrent = async () => {
+            if (!source.scope || this.currentWorldBook !== sourceName) throw Object.assign(new Error('ENTRY_STALE'), { code: 'ENTRY_STALE' });
+            source.scope();
+            if (await entryBookHash(await loadBookFresh(sourceName)) !== await entryBookHash(sourceSnapshot)) {
+                throw Object.assign(new Error('ENTRY_STALE'), { code: 'ENTRY_STALE' });
+            }
+            source.scope();
+        };
         this.setLoading(true);
         try {
+            await assertCurrent();
             // 获取要复制的条目
-            const entriesToCopy = this.entries.filter(e => this.selectedEntries.has(e.uid));
+            const entriesToCopy = source.entries;
             
-            console.log('[世界书编辑器] 过滤后的条目数量:', entriesToCopy.length);
-            console.log('[世界书编辑器] 条目详情:', entriesToCopy);
+            if (entriesToCopy.some(e => isManagedBookEntry(sourceSnapshot, e.uid))) {
+                throw Object.assign(new Error('ENTRY_USE_LEDGER_EDITOR'), { code: 'ENTRY_USE_LEDGER_EDITOR' });
+            }
+            if (await entryBookHash(await loadBookFresh(sourceName)) !== await entryBookHash(sourceSnapshot)) {
+                throw Object.assign(new Error('ENTRY_STALE'), { code: 'ENTRY_STALE' });
+            }
             
             if (entriesToCopy.length === 0) {
                 this.showError('worldEditorUi.error.noSelectedEntries');
@@ -611,7 +665,7 @@ class WorldEditor {
             }
 
             // 加载目标世界书
-            const targetBookData = await loadWorldInfo(targetBookName);
+            const targetBookData = await loadBookFresh(targetBookName);
             if (!targetBookData) {
                 this.showError('worldEditorUi.error.targetMissing', { name: targetBookName });
                 return;
@@ -631,10 +685,7 @@ class WorldEditor {
                 prevent_recursion: entry.prevent_recursion || false
             }));
 
-            console.log('[世界书编辑器] 准备创建的条目:', newEntries);
-
-            // 在目标世界书中创建条目
-            await amilyHelper.createLorebookEntries(targetBookName, newEntries);
+            await safeEntryManager.apply(targetBookName, targetBookData, { type: 'create', entries: newEntries }, assertCurrent);
 
             if (window.toastr) {
                 worldEditorToast('success', 'worldEditorUi.success.copied', { count: entriesToCopy.length, name: targetBookName });
@@ -644,27 +695,38 @@ class WorldEditor {
             if (targetBookName === this.currentWorldBook) {
                 await this.loadWorldBookEntries(this.currentWorldBook);
             }
+            return true;
             
         } catch (error) {
             console.error('[世界书编辑器] 复制失败:', error);
-            this.showError('worldEditorUi.error.copy', { detail: error.message });
+            this.showError('worldEditorUi.error.copy', () => ({ detail: safeEntryMessage(error) }));
+            return false;
         } finally {
             this.setLoading(false);
         }
     }
 
     async batchDeleteEntries() {
-        if (this.selectedEntries.size === 0 || !confirm(t('worldEditorUi.confirm.deleteEntries', { count: this.selectedEntries.size }))) return;
+        if (this.selectedEntries.size === 0) return;
+        const bookName = this.currentWorldBook;
+        const snapshot = structuredClone(this.entryBookSnapshot);
+        const scope = this.entryScope;
+        const assertCurrent = () => {
+            if (!scope) throw Object.assign(new Error('ENTRY_STALE'), { code: 'ENTRY_STALE' });
+            scope();
+            if (this.currentWorldBook !== bookName) throw Object.assign(new Error('ENTRY_STALE'), { code: 'ENTRY_STALE' });
+        };
         try {
-            const bookData = await loadWorldInfo(this.currentWorldBook);
-            if (!bookData) throw worldEditorError('worldEditorUi.error.bookMissing', { name: this.currentWorldBook });
-            this.selectedEntries.forEach(uid => {
-                delete bookData.entries[uid];
+            const preview = previewEntryDeletion(snapshot, [...this.selectedEntries].map(String));
+            if (!await confirmLedgerRemoval(preview)) return;
+            await safeEntryManager.apply(bookName, snapshot, {
+                type: 'delete', keys: preview.keys, includeActive: true,
+            }, assertCurrent, async () => {
+                if (preview.resetProgress) await prepareLedgerRemoval(bookName, assertCurrent);
             });
-            await saveWorldInfo(this.currentWorldBook, bookData, true);
-            this.loadWorldBookEntries(this.currentWorldBook);
+            if (this.currentWorldBook === bookName) await this.loadWorldBookEntries(bookName);
         } catch (error) {
-            this.showError('worldEditorUi.error.delete', worldEditorErrorParams(error));
+            this.showError('worldEditorUi.error.delete', () => ({ detail: safeEntryMessage(error) }));
         }
     }
 
@@ -701,19 +763,46 @@ class WorldEditor {
     openEditModal(uid) {
         const entry = this.entries.find(e => e.uid === uid);
         if (!entry) return;
+        if (isManagedBookEntry(this.entryBookSnapshot, uid)) {
+            const bookName = this.currentWorldBook;
+            const scope = this.entryScope;
+            const assertCurrent = () => {
+                if (!scope || this.currentWorldBook !== bookName) throw Object.assign(new Error('ENTRY_STALE'), { code: 'ENTRY_STALE' });
+                scope();
+            };
+            return openManagedEntryDialog({ bookName, entryKey: String(uid), assertCurrent,
+                onSaved: async () => { assertCurrent(); await this.loadWorldBookEntries(bookName); },
+            }).catch(error => this.showError('worldEditorUi.error.save', () => ({ detail: safeEntryMessage(error) })));
+        }
         this.currentEditingEntry = entry;
         this.showEditModal('worldEditorUi.modal.editTitle', entry);
     }
 
     showEditModal(title, entry) {
+        const bookName = this.currentWorldBook;
+        const editingEntry = this.currentEditingEntry;
+        const snapshot = this.entryBookSnapshot;
+        const scope = this.entryScope;
         const formHtml = this.getEditFormHtml();
         showHtmlModal(worldEditorHtml(title), formHtml, {
             okText: worldEditorHtml('worldEditorUi.modal.confirm'),
             cancelText: worldEditorHtml('worldEditorUi.modal.cancel'),
             onShow: (dialog) => this.populateEditForm(dialog, entry),
             onOk: (dialog) => {
-                this.saveEntry(dialog);
-                return true;
+                if (dialog.data('saving')) return false;
+                if (this.currentWorldBook !== bookName || this.currentEditingEntry !== editingEntry) {
+                    this.showError('worldEditorUi.error.save', { detail: t('worldEditorUi.safe.ENTRY_STALE') });
+                    return false;
+                }
+                dialog.data('saving', true);
+                dialog.find('button, input, select, textarea').prop('disabled', true);
+                this.saveEntry(dialog, editingEntry, snapshot, scope).then(saved => {
+                    if (saved) { dialog[0].close(); dialog.remove(); }
+                }).finally(() => {
+                    dialog.data('saving', false);
+                    dialog.find('button, input, select, textarea').prop('disabled', false);
+                });
+                return false;
             },
         });
     }
@@ -777,20 +866,27 @@ class WorldEditor {
         bindWorldEditorTranslations(dialog);
     }
 
-    async saveEntry(dialog) {
+    async saveEntry(dialog, editingEntry = this.currentEditingEntry, snapshot = this.entryBookSnapshot, scope = this.entryScope) {
         const formData = this.getFormDataFromModal(dialog);
         try {
-            if (this.currentEditingEntry) {
+            if (editingEntry) {
                 // 使用改造后的原生方法更新
-                await this.updateEntriesWithNativeMethod([{ ...this.currentEditingEntry, ...formData }]);
+                if (!await this.updateEntriesWithNativeMethod([{ ...editingEntry, ...formData }], snapshot, scope)) return false;
             } else {
                 // 创建条目仍然可以使用TavernHelper，因为它通常不会触发跳转
-                await amilyHelper.createLorebookEntries(this.currentWorldBook, [formData]);
+                const name = this.currentWorldBook;
+                await safeEntryManager.apply(name, snapshot, { type: 'create', entries: [formData] }, () => {
+                    if (!scope) throw Object.assign(new Error('ENTRY_STALE'), { code: 'ENTRY_STALE' });
+                    scope();
+                    if (this.currentWorldBook !== name) throw Object.assign(new Error('ENTRY_STALE'), { code: 'ENTRY_STALE' });
+                });
             }
             // 刷新当前视图
-            this.loadWorldBookEntries(this.currentWorldBook);
+            await this.loadWorldBookEntries(this.currentWorldBook);
+            return true;
         } catch (error) {
-            this.showError('worldEditorUi.error.save', { detail: error.message });
+            this.showError('worldEditorUi.error.save', () => ({ detail: safeEntryMessage(error) }));
+            return false;
         }
     }
 
@@ -839,7 +935,12 @@ class WorldEditor {
     bindExternalEvents() {
         eventSource.on(event_types.CHAT_CHANGED, () => {
             console.log('[世界书编辑器] 检测到聊天变更，将自动刷新。');
-            if (this.currentWorldBook) {
+            this.entryReadVersion++;
+            this.entryScope = null;
+            if (isChatLedgerTarget(this.currentWorldBook)) {
+                this.switchToBookListView();
+                this.loadAvailableWorldBooks();
+            } else if (this.currentWorldBook) {
                 this.loadWorldBookEntries(this.currentWorldBook);
             } else {
                 this.loadAvailableWorldBooks();
